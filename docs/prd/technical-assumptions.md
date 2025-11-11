@@ -1,0 +1,75 @@
+# Technical Assumptions
+
+## Repository Structure: Monorepo
+
+We will use a monorepo structure to maintain all services and packages in a single repository, enabling better code sharing, consistent tooling, and simplified dependency management across the platform. This approach supports our microservices architecture while keeping deployment and versioning manageable for a small team.
+
+## Service Architecture
+
+**CRITICAL DECISION** - The platform will use a **Microservices within Monorepo** architecture, with services separated by domain but not over-engineered:
+- **Document Service:** Handles all document operations, versioning, and Word integration
+- **Task Service:** Manages task lifecycle, dependencies, and automated workflows
+- **AI Service:** Coordinates LLM interactions, prompt management, and response caching
+- **Integration Service:** Microsoft 365 synchronization and webhook management
+- **Notification Service:** Email, in-app, and future push notifications
+
+Services communicate via GraphQL API (Apollo Server) with WebSocket support for real-time features. Each service can be independently scaled based on load patterns.
+
+## Testing Requirements
+
+**CRITICAL DECISION** - We will implement a **Full Testing Pyramid** approach:
+- **Unit Tests:** Jest for business logic with 80% coverage target
+- **Integration Tests:** Testing API endpoints and service interactions
+- **E2E Tests:** Playwright for critical user journeys (login, document creation, task management)
+- **AI Testing:** Dedicated test suite for prompt consistency and response quality
+- **Manual Testing Conveniences:** Seed data scripts and test account management for QA
+
+## Additional Technical Assumptions and Requests
+
+**Frontend Stack:**
+- Next.js 14+ with React 18 for optimal performance and SEO
+- Tailwind CSS with Radix UI for accessible, customizable components
+- Zustand for client state + React Query for server state management
+- TypeScript throughout for type safety
+
+**Backend Stack:**
+- Node.js with TypeScript for consistency across stack
+- GraphQL with Apollo Server for flexible data fetching
+- BullMQ with Redis for background job processing
+- Prisma ORM for database management
+
+**Database Architecture:**
+- PostgreSQL with pgvector extension for semantic search
+- Redis for session management and caching
+- Azure Blob Storage for document storage (aligns with Microsoft ecosystem)
+- Elasticsearch for full-text search (consider Algolia for faster MVP)
+
+**AI Infrastructure:**
+- Anthropic Claude as primary LLM (4.5 Haiku for simple, 4.5 Sonnet for standard, 4.1 Opus for complex)
+- OpenAI GPT-4 as fallback provider
+- LangChain for prompt management and complex reasoning chains
+- Token usage tracking per user/feature for cost management
+
+**Deployment & Infrastructure:**
+- Azure cloud (aligns with Microsoft 365 integration)
+- Docker containers with Azure Kubernetes Service (AKS)
+- GitHub Actions for CI/CD pipeline
+- Application Insights + Sentry for monitoring
+
+**Integration Requirements:**
+- Microsoft Graph API for full Outlook/OneDrive/Calendar access
+- OAuth 2.0 with Azure AD for enterprise SSO
+- Webhook support for real-time Microsoft 365 updates
+- Rate limiting with intelligent request queuing
+
+**Security & Compliance:**
+- All data stored in EU data centers (GDPR compliance)
+- AES-256 encryption at rest, TLS 1.3 in transit
+- Row-level security in PostgreSQL for data isolation
+- Complete audit logging for legal compliance
+
+**Performance Targets:**
+- Page loads under 2 seconds
+- AI responses under 5 seconds
+- Support 100+ concurrent users per firm
+- 99.9% uptime during business hours
