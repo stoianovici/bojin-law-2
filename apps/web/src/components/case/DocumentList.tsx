@@ -1,0 +1,277 @@
+/**
+ * DocumentList - Document list with search, filters, and table display
+ * Shows documents in a table format with version badges and status indicators
+ */
+
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { format } from 'date-fns';
+import { ro } from 'date-fns/locale';
+import { clsx } from 'clsx';
+import type { Document, DocumentStatus, DocumentType } from '@legal-platform/types';
+
+export interface DocumentListProps {
+  documents: Document[];
+  selectedDocumentId?: string;
+  onSelectDocument?: (document: Document) => void;
+  onNewDocument?: () => void;
+  className?: string;
+}
+
+/**
+ * Status Badge Component
+ */
+function StatusBadge({ status }: { status: DocumentStatus }) {
+  const statusConfig: Record<
+    DocumentStatus,
+    { label: string; className: string }
+  > = {
+    Draft: { label: 'Ciornă', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+    Review: {
+      label: 'În Revizuire',
+      className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    },
+    Approved: {
+      label: 'Aprobat',
+      className: 'bg-green-100 text-green-800 border-green-200',
+    },
+    Filed: {
+      label: 'Depus',
+      className: 'bg-blue-100 text-blue-800 border-blue-200',
+    },
+  };
+
+  const config = statusConfig[status];
+
+  return (
+    <span
+      className={clsx(
+        'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border',
+        config.className,
+      )}
+    >
+      {config.label}
+    </span>
+  );
+}
+
+/**
+ * Version Badge Component
+ */
+function VersionBadge({ version }: { version: number }) {
+  return (
+    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
+      v{version}
+    </span>
+  );
+}
+
+/**
+ * Document Type Label Component
+ */
+function DocumentTypeLabel({ type }: { type: DocumentType }) {
+  const typeLabels: Record<DocumentType, string> = {
+    Contract: 'Contract',
+    Motion: 'Moțiune',
+    Letter: 'Scrisoare',
+    Memo: 'Memoriu',
+    Pleading: 'Pledoarie',
+    Other: 'Altele',
+  };
+
+  return <span className="text-sm text-gray-600">{typeLabels[type]}</span>;
+}
+
+/**
+ * DocumentList Component
+ *
+ * Displays documents in a table format with search, filters, and sorting
+ */
+export function DocumentList({
+  documents,
+  selectedDocumentId,
+  onSelectDocument,
+  onNewDocument,
+  className,
+}: DocumentListProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter documents based on search query
+  const filteredDocuments = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return documents;
+    }
+    const query = searchQuery.toLowerCase();
+    return documents.filter((doc) =>
+      doc.title.toLowerCase().includes(query),
+    );
+  }, [documents, searchQuery]);
+
+  return (
+    <div className={clsx('flex flex-col h-full bg-white', className)}>
+      {/* Header with search and new button */}
+      <div className="px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h3 className="text-sm font-semibold text-gray-900">Listă Documente</h3>
+          <button
+            onClick={onNewDocument}
+            className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          >
+            <svg
+              className="w-4 h-4 mr-1.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Document Nou
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Caută documente după nume..."
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Document Count */}
+        <p className="mt-2 text-xs text-gray-600">
+          Afișare {filteredDocuments.length} din {documents.length} documente
+        </p>
+      </div>
+
+      {/* Document Table */}
+      <div className="flex-1 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Nume
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Tip
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Versiune
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Modificat
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {filteredDocuments.map((document) => (
+              <tr
+                key={document.id}
+                onClick={() => onSelectDocument?.(document)}
+                className={clsx(
+                  'cursor-pointer transition-colors',
+                  selectedDocumentId === document.id
+                    ? 'bg-blue-50'
+                    : 'hover:bg-gray-50',
+                )}
+              >
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-blue-600 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="font-medium text-gray-900 truncate">
+                      {document.title}
+                    </span>
+                    {document.aiGenerated && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                        AI
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <DocumentTypeLabel type={document.type} />
+                </td>
+                <td className="px-4 py-3">
+                  <VersionBadge version={document.currentVersion} />
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={document.status} />
+                </td>
+                <td className="px-4 py-3 text-gray-600">
+                  {format(document.updatedAt, 'dd MMM yyyy', { locale: ro })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Empty State */}
+        {filteredDocuments.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+            <svg
+              className="w-12 h-12 mb-3 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+              />
+            </svg>
+            <p className="text-sm font-medium">
+              {searchQuery
+                ? 'Niciun document găsit'
+                : 'Niciun document disponibil'}
+            </p>
+            {searchQuery && (
+              <p className="text-xs mt-1">
+                Încercați să căutați cu alți termeni
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+DocumentList.displayName = 'DocumentList';

@@ -1,0 +1,85 @@
+/* Dashboard Grid Styles */
+.dashboard-grid-container {
+  width: 100%;
+  position: relative;
+}
+
+.react-grid-layout {
+  position: relative;
+  transition: height 200ms ease;
+}
+
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.react-grid-item img {
+  pointer-events: none;
+  user-select: none;
+}
+
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+/* Dragging State */
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 100;
+  will-change: transform;
+}
+
+/* Drop Zone Highlighting */
+.react-grid-item.react-grid-placeholder {
+  background: rgb(59, 130, 246);
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  border-radius: 8px;
+  border: 2px dashed rgb(59, 130, 246);
+}
+
+/* Resizing State */
+.react-grid-item.resizing {
+  opacity: 0.9;
+  z-index: 100;
+}
+
+/* Static Items */
+.react-grid-item.static {
+  background-color: transparent;
+}
+
+/* Hover Effect */
+.react-grid-item:hover {
+  z-index: 10;
+}
+
+/* Drag Handle Cursor */
+.widget-drag-handle {
+  cursor: move;
+  cursor: grab;
+}
+
+.widget-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Disable interactions when not editing */
+.react-grid-item.static .react-resizable-handle {
+  display: none;
+}

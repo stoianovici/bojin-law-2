@@ -135,8 +135,11 @@ function DeadlineIndicator({ date, description }: { date: Date; description: str
  *
  * Main header component for case workspace showing case details,
  * team members, deadline, and action buttons.
+ *
+ * Memoized for performance optimization to prevent unnecessary re-renders
+ * when parent component updates but props remain unchanged.
  */
-export function CaseHeader({
+function CaseHeaderComponent({
   case: caseData,
   teamMembers = [],
   nextDeadline,
@@ -290,4 +293,6 @@ export function CaseHeader({
   );
 }
 
+// Memoized export for performance optimization
+export const CaseHeader = React.memo(CaseHeaderComponent);
 CaseHeader.displayName = 'CaseHeader';

@@ -1,0 +1,5 @@
+# Run lint-staged on staged files
+pnpm exec lint-staged
+
+# Run type checking (optional - can be slow)
+# pnpm run type-check

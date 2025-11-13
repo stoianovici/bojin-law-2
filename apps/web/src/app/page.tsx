@@ -1,0 +1,71 @@
+/**
+ * Dashboard Home Page
+ * Renders role-specific dashboard based on current user role
+ */
+
+'use client';
+
+import { useNavigationStore } from '@/stores/navigation.store';
+import { useDashboardStore } from '@/stores/dashboard.store';
+import { PartnerDashboard } from '@/components/dashboard/PartnerDashboard';
+import { AssociateDashboard } from '@/components/dashboard/AssociateDashboard';
+import { ParalegalDashboard } from '@/components/dashboard/ParalegalDashboard';
+import type { WidgetPosition } from '@legal-platform/types';
+
+export default function DashboardPage() {
+  const { currentRole } = useNavigationStore();
+  const { updateLayout } = useDashboardStore();
+
+  // Handle layout changes for the current role
+  const handleLayoutChange = (layout: WidgetPosition[]) => {
+    updateLayout(currentRole, layout);
+  };
+
+  // Determine page title based on role
+  const getPageTitle = () => {
+    switch (currentRole) {
+      case 'Partner':
+        return 'Dashboard - Partner';
+      case 'Associate':
+        return 'Dashboard - Avocat';
+      case 'Paralegal':
+        return 'Dashboard - Paralegal';
+      default:
+        return 'Dashboard';
+    }
+  };
+
+  // Render role-specific dashboard
+  const renderDashboard = () => {
+    switch (currentRole) {
+      case 'Partner':
+        return <PartnerDashboard onLayoutChange={handleLayoutChange} />;
+      case 'Associate':
+        return <AssociateDashboard onLayoutChange={handleLayoutChange} />;
+      case 'Paralegal':
+        return <ParalegalDashboard onLayoutChange={handleLayoutChange} />;
+      default:
+        return (
+          <div className="flex items-center justify-center h-screen">
+            <p className="text-gray-500">
+              Selectează un rol pentru a vedea dashboard-ul.
+            </p>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">{getPageTitle()}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Rol curent: {currentRole}
+          </p>
+        </div>
+        {renderDashboard()}
+      </div>
+    </main>
+  );
+}

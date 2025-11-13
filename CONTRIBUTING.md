@@ -188,11 +188,187 @@ Please follow our coding standards documented in [docs/architecture/coding-stand
 
 ## Testing Requirements
 
-All code changes must include appropriate tests:
+All code changes must include appropriate tests. We follow the **Testing Pyramid** strategy to ensure comprehensive coverage while maintaining test suite performance.
 
-- **Unit Tests**: For individual functions and components
-- **Integration Tests**: For service interactions
-- **E2E Tests**: For critical user workflows (when applicable)
+### Testing Pyramid
+
+Our testing strategy follows this distribution:
+
+- **70% Unit Tests**: Fast, isolated tests for functions, components, and services
+- **20% Integration Tests**: Tests for API endpoints, database operations, and service interactions
+- **10% E2E Tests**: Critical user workflows and complete application flows
+
+### Test Types and When to Use Them
+
+#### 1. Unit Tests
+
+**Use For:**
+- Individual React components in isolation
+- Utility functions and helpers
+- Custom hooks
+- Business logic and data transformations
+- State management (stores, reducers)
+
+**Template:** `packages/shared/test-utils/templates/unit-test.template.tsx`
+
+**Key Practices:**
+- Test behavior, not implementation details
+- Use accessible queries (`getByRole`, `getByLabel`)
+- Mock external dependencies
+- Keep tests focused and isolated
+- Use `renderWithProviders()` for components needing context
+
+**Example:**
+```typescript
+import { render, screen } from '@testing-library/react';
+
+test('should display user name', () => {
+  render(<UserProfile name="John Doe" />);
+  expect(screen.getByText('John Doe')).toBeInTheDocument();
+});
+```
+
+#### 2. Integration Tests
+
+**Use For:**
+- API endpoints with database connections
+- GraphQL resolvers with data loaders
+- Component integration with backend services
+- Database operations and queries
+- Multiple services working together
+- Authentication and authorization flows
+
+**Template:** `packages/shared/test-utils/templates/integration-test.template.tsx`
+
+**Key Practices:**
+- Use real test database connection
+- Clean database between tests
+- Use Supertest for API testing
+- Test complete request/response cycles
+- Verify HTTP status codes and response formats
+- Use factories for test data creation
+
+**Example:**
+```typescript
+import request from 'supertest';
+
+describe('POST /api/cases', () => {
+  it('should create new case', async () => {
+    const response = await request(app)
+      .post('/api/cases')
+      .send({ title: 'New Case', clientId: '123' })
+      .expect(201);
+
+    expect(response.body.data).toHaveProperty('id');
+  });
+});
+```
+
+#### 3. E2E Tests
+
+**Use For:**
+- Complete user workflows (login → create case → upload document)
+- AI features requiring full integration
+- Multi-page navigation flows
+- Cross-browser compatibility
+- Critical business workflows
+- Smoke testing after deployment
+
+**Template:** `tests/e2e/templates/e2e-test.template.spec.ts`
+
+**Key Practices:**
+- Use Page Object Model pattern
+- Test real user scenarios end-to-end
+- Use accessible locators
+- Run tests in parallel
+- Capture screenshots/videos on failure
+- Test authentication and sessions
+
+**Example:**
+```typescript
+test('should create case and upload document', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.loginAsPartner();
+
+  const dashboardPage = new DashboardPage(page);
+  await dashboardPage.clickCreateCase();
+
+  // Continue workflow...
+});
+```
+
+#### 4. Accessibility Tests
+
+**Use For:**
+- WCAG 2.0/2.1/2.2 Level AA compliance
+- Keyboard navigation
+- Screen reader compatibility
+- Color contrast ratios
+- Focus management
+- Semantic HTML structure
+- ARIA labels and roles
+
+**Template:** `tests/e2e/templates/a11y-test.template.spec.ts`
+
+**Key Practices:**
+- Test every page for a11y compliance
+- Use `testA11y()` helper from test-utils
+- Test keyboard navigation
+- Verify focus management
+- Check color contrast
+- Zero violations policy
+
+**Example:**
+```typescript
+import { testA11y } from '@legal-platform/test-utils/a11y';
+
+test('should have no accessibility violations', async ({ page }) => {
+  await page.goto('/dashboard');
+  await testA11y(page, 'Dashboard');
+});
+```
+
+#### 5. Performance Tests
+
+**Use For:**
+- Page load times
+- Core Web Vitals (LCP, FID, CLS)
+- Bundle size monitoring
+- API response times
+- Memory leak detection
+- Rendering performance
+
+**Template:** `tests/performance/template.spec.ts`
+
+**Key Practices:**
+- Set performance budgets
+- Monitor Core Web Vitals
+- Test on throttled networks
+- Check bundle sizes
+- Test mobile viewports
+- Use Lighthouse CI for automation
+
+**Example:**
+```typescript
+test('should load within performance budget', async ({ page }) => {
+  const startTime = Date.now();
+  await page.goto('/dashboard');
+  const loadTime = Date.now() - startTime;
+
+  expect(loadTime).toBeLessThan(2000);
+});
+```
+
+### Coverage Requirements
+
+All code must meet these minimum coverage thresholds:
+
+- **Statements**: 80%
+- **Branches**: 80%
+- **Functions**: 80%
+- **Lines**: 80%
+
+Coverage is enforced in CI pipeline and will fail if thresholds are not met.
 
 ### Running Tests
 
@@ -200,15 +376,229 @@ All code changes must include appropriate tests:
 # Run all tests
 pnpm test
 
-# Run tests for specific package
-pnpm test --filter=@legal-platform/document-service
+# Run tests with coverage
+pnpm test:coverage
 
 # Run tests in watch mode
-pnpm test -- --watch
+pnpm test:watch
 
-# Generate coverage report
-pnpm test -- --coverage
+# Run tests for specific package
+pnpm test --filter=@legal-platform/ui
+
+# Run E2E tests
+pnpm test:e2e
+
+# Run E2E tests in UI mode (with visual debugger)
+pnpm test:e2e:ui
+
+# Run E2E tests in debug mode
+pnpm test:e2e:debug
+
+# Run E2E tests in headed mode (see browser)
+pnpm test:e2e:headed
+
+# Run accessibility tests
+pnpm test:a11y
+
+# Run performance tests
+pnpm test:perf
+
+# Run specific test file
+pnpm test:e2e tests/e2e/auth/login.spec.ts
+
+# Run Lighthouse CI
+pnpm test:perf:collect
 ```
+
+### Using Test Templates
+
+Each test template provides comprehensive examples and best practices:
+
+1. **Copy the template** to your test file location
+2. **Rename** it to match the component/feature you're testing
+3. **Adapt** the examples to your specific use case
+4. **Follow** the patterns and best practices documented in the template
+
+Templates include:
+- Detailed comments explaining each pattern
+- Multiple examples for common scenarios
+- Best practices checklist
+- Common pitfalls to avoid
+
+### Test Data Factories
+
+Use factories from `@legal-platform/test-utils/factories` to generate test data:
+
+```typescript
+import { createUser, createCase, createDocument } from '@legal-platform/test-utils/factories';
+
+// Create user with defaults
+const user = createUser();
+
+// Create user with overrides
+const partner = createUser({ role: 'Partner', firstName: 'Maria' });
+
+// Create related entities
+const caseData = createCase({ status: 'Active' });
+const document = createDocument({ caseId: caseData.id });
+```
+
+Available factories:
+- `createUser()` - User entities with all role variations
+- `createCase()` - Case entities with all status types
+- `createDocument()` - Document entities with all document types
+- `createTask()` - Task entities with all 6 task types
+
+All factories support:
+- Default values following project standards
+- Romanian names with diacritics for localization testing
+- Override capabilities for specific test scenarios
+- TypeScript type safety
+
+### Test Utilities
+
+Use helpers from `@legal-platform/test-utils`:
+
+```typescript
+import { renderWithProviders, waitForLoadingToFinish, fillForm } from '@legal-platform/test-utils';
+
+// Render component with all providers
+const { getByText } = renderWithProviders(<MyComponent />);
+
+// Wait for loading states to complete
+await waitForLoadingToFinish();
+
+// Fill form fields
+await fillForm({ name: 'John Doe', email: 'john@example.com' });
+```
+
+### Database Testing
+
+For integration tests requiring database:
+
+```typescript
+import { cleanupDatabase, seedDatabase } from '@legal-platform/test-utils/database';
+
+beforeEach(async () => {
+  await cleanupDatabase(); // Clean before each test
+});
+
+afterAll(async () => {
+  await closeDatabase(); // Close connection
+});
+```
+
+Test database runs on port 5433 (separate from dev database on 5432).
+
+### Debugging Tests
+
+#### Debugging Unit Tests
+
+```bash
+# Run in watch mode with coverage
+pnpm test:watch
+
+# Debug in VS Code
+# Add breakpoint and use "Jest: Debug" configuration
+```
+
+#### Debugging E2E Tests
+
+```bash
+# UI Mode (visual test runner)
+pnpm test:e2e:ui
+
+# Debug mode (step through)
+pnpm test:e2e:debug
+
+# Headed mode (see browser)
+pnpm test:e2e:headed
+
+# Add page.pause() in test to pause execution
+await page.pause();
+```
+
+#### Debugging Failed Tests
+
+1. **Check screenshots**: Failed E2E tests capture screenshots in `test-results/`
+2. **Check videos**: Videos recorded on failure in `test-results/`
+3. **Check trace**: Playwright traces available in `test-results/`
+4. **View HTML report**: `pnpm test:e2e:report`
+5. **Run single test**: Add `.only` to test: `test.only('...', ...)`
+
+### CI/CD Integration
+
+All tests run automatically on:
+
+- **Every Pull Request**: Unit, integration, E2E, accessibility tests
+- **Main Branch**: All tests + performance tests with Lighthouse CI
+- **Status Checks**: All tests must pass before PR can be merged
+
+### Best Practices Summary
+
+✅ **DO:**
+- Write tests before or alongside code (TDD/BDD)
+- Test behavior, not implementation
+- Use accessible queries
+- Keep tests focused and isolated
+- Mock external dependencies
+- Clean up after tests
+- Use descriptive test names
+- Group related tests with `describe()`
+- Test error scenarios
+- Use factories for test data
+
+❌ **DON'T:**
+- Test implementation details
+- Use test IDs unless absolutely necessary
+- Write tests that depend on other tests
+- Skip error cases
+- Use hard-coded waits
+- Test framework/library code
+- Leave commented-out tests
+- Skip flaky tests (fix them!)
+
+### Test File Organization
+
+```
+packages/
+  ui/src/
+    components/
+      Button.tsx
+      Button.test.tsx          # Unit test co-located
+      Button.a11y.test.tsx     # A11y test co-located
+  shared/test-utils/
+    src/
+      factories/               # Test data factories
+      helpers/                 # Test utilities
+      templates/               # Test templates
+
+tests/
+  e2e/
+    auth/                      # E2E tests by feature
+    cases/
+    documents/
+    accessibility/             # Dedicated a11y tests
+    templates/                 # E2E templates
+  performance/                 # Performance tests
+  fixtures/                    # Test fixtures and data
+```
+
+### Getting Help
+
+- **Templates**: Comprehensive examples in `packages/shared/test-utils/templates/` and `tests/e2e/templates/`
+- **Test Utils**: Helper functions documented in `packages/shared/test-utils/`
+- **Factories**: Usage examples in factory test files
+- **Documentation**: Testing best practices in template comments
+
+### Additional Resources
+
+- [Jest Documentation](https://jestjs.io/docs/getting-started)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+- [Playwright Documentation](https://playwright.dev/)
+- [axe-core Rules](https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md)
+- [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+- [Web Vitals](https://web.dev/vitals/)
 
 ## Questions or Issues?
 

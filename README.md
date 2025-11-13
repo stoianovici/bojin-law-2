@@ -130,6 +130,47 @@ pnpm test
 pnpm lint
 ```
 
+### 4. Docker Development Environment
+
+The project includes a complete Docker development environment with PostgreSQL 16 (with pgvector), Redis, and Node.js 20.
+
+```bash
+# Start all services (PostgreSQL, Redis, and the app)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (WARNING: This will delete all data)
+docker-compose down -v
+
+# Rebuild containers after dependency changes
+docker-compose up -d --build
+
+# Run commands inside the app container
+docker-compose exec app pnpm test
+docker-compose exec app pnpm build
+
+# Access PostgreSQL
+docker-compose exec postgres psql -U postgres -d legal_platform
+
+# Access Redis CLI
+docker-compose exec redis redis-cli
+```
+
+**Health Checks:**
+- App: http://localhost:3000/api/health
+- PostgreSQL: Automatic with pg_isready
+- Redis: Automatic with redis-cli ping
+
+**Services:**
+- **App**: Port 3000 (Next.js), Port 6006 (Storybook)
+- **PostgreSQL**: Port 5432 (includes pgvector extension)
+- **Redis**: Port 6379
+
 ## Repository Structure
 
 This project uses a **Turborepo monorepo** structure for optimal development experience and build performance:
@@ -199,6 +240,149 @@ Detailed documentation is available in the `docs/` directory:
   - [Testing Strategy](docs/architecture/testing-strategy.md)
   - [Coding Standards](docs/architecture/coding-standards.md)
 - **[Development Stories](docs/stories/)** - Feature implementation stories
+
+## Testing
+
+We maintain comprehensive test coverage across all layers of the application using the **Testing Pyramid** approach:
+
+- **70% Unit Tests** - Components, services, utilities (Jest + React Testing Library)
+- **20% Integration Tests** - API endpoints, database operations (Jest + Supertest)
+- **10% E2E Tests** - Critical user workflows (Playwright)
+
+### Quick Commands
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests with coverage report
+pnpm test:coverage
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run E2E tests (all browsers)
+pnpm test:e2e
+
+# Run E2E tests with UI (visual debugger)
+pnpm test:e2e:ui
+
+# Run E2E tests in debug mode
+pnpm test:e2e:debug
+
+# Run accessibility tests
+pnpm test:a11y
+
+# Run performance tests
+pnpm test:perf
+```
+
+### Coverage Requirements
+
+All code must meet **80% minimum coverage** for:
+- Statements
+- Branches
+- Functions
+- Lines
+
+Coverage is automatically checked in CI and will fail if thresholds are not met.
+
+### Test Types
+
+#### Unit Tests
+Fast, isolated tests for components and functions. Co-located with source files:
+```
+packages/ui/src/atoms/Button.tsx
+packages/ui/src/atoms/Button.test.tsx  ← Unit test
+```
+
+#### Integration Tests
+Test API endpoints and service interactions with real database connections:
+```typescript
+import request from 'supertest';
+
+test('POST /api/cases', async () => {
+  const response = await request(app)
+    .post('/api/cases')
+    .send({ title: 'New Case' })
+    .expect(201);
+});
+```
+
+#### E2E Tests
+Complete user workflows across the full application stack using Playwright:
+```typescript
+test('user can create case and upload document', async ({ page }) => {
+  await loginPage.loginAsPartner();
+  await dashboardPage.clickCreateCase();
+  // ... complete workflow
+});
+```
+
+### Test Data Factories
+
+Use factories to generate test data:
+```typescript
+import { createUser, createCase, createDocument } from '@legal-platform/test-utils/factories';
+
+const user = createUser({ role: 'Partner' });
+const caseData = createCase({ status: 'Active' });
+const document = createDocument({ caseId: caseData.id });
+```
+
+### Test Templates
+
+Comprehensive test templates with examples and best practices:
+- **Unit Tests**: `packages/shared/test-utils/templates/unit-test.template.tsx`
+- **Integration Tests**: `packages/shared/test-utils/templates/integration-test.template.tsx`
+- **E2E Tests**: `tests/e2e/templates/e2e-test.template.spec.ts`
+- **Accessibility**: `tests/e2e/templates/a11y-test.template.spec.ts`
+- **Performance**: `tests/performance/template.spec.ts`
+
+### Database Testing
+
+Test database runs on **port 5433** (separate from dev database):
+
+```bash
+# Start test database
+docker-compose up -d postgres-test
+
+# Run tests with database
+pnpm test:integration
+```
+
+### Debugging Tests
+
+```bash
+# Debug E2E tests visually
+pnpm test:e2e:ui
+
+# Run with headed browser (see execution)
+pnpm test:e2e:headed
+
+# View test report
+pnpm test:e2e:report
+```
+
+Failed E2E tests automatically capture:
+- Screenshots in `test-results/`
+- Videos of the failure
+- Playwright traces for debugging
+
+### CI/CD Integration
+
+All tests run automatically on every pull request:
+- ✓ Unit tests with coverage
+- ✓ Integration tests
+- ✓ E2E tests (Chromium, Firefox, WebKit)
+- ✓ Accessibility tests (WCAG AA compliance)
+- ✓ Performance tests (Lighthouse CI on main branch)
+
+**All tests must pass before PR can be merged.**
+
+For detailed testing documentation, see:
+- [TESTING.md](TESTING.md) - Comprehensive testing guide
+- [CONTRIBUTING.md](CONTRIBUTING.md#testing-requirements) - Testing requirements and best practices
 
 ## Development Workflow
 

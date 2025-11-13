@@ -25,3 +25,129 @@
 | Monitoring | Application Insights | Latest SDK | APM and logging | Native Azure integration, excellent performance tracking, AI-powered insights |
 | Logging | Winston + App Insights | Winston 3.11+ | Structured logging | Flexible log levels, multiple transports, Azure integration |
 | CSS Framework | Tailwind CSS | 3.4+ | Utility-first CSS | Rapid development, consistent spacing, excellent tree-shaking, dark mode support |
+| Data Visualization | Recharts | 2.5+ | React charting library | TypeScript support, responsive charts, 100KB gzipped, MIT license, integrates with React/Tailwind |
+| Calendar Component | React Big Calendar + date-fns | 1.8+ / 3.0+ | Calendar/scheduler UI + date utilities | Full-featured calendar with drag-and-drop, 65KB total gzipped, MIT license, TypeScript support |
+
+---
+
+## Pending Architectural Decisions
+
+### 1. Data Visualization Library (Required for Story 1.4)
+
+**Context:**
+Story 1.4 (Dashboard Mockups) requires charting capabilities for:
+- Bar charts (billable hours over time)
+- Pie charts (case distribution by type)
+- KPI metric visualizations with trend indicators
+
+**Proposed Solution: Recharts 2.5+**
+
+**Pros:**
+- ✅ Built specifically for React with component-based API
+- ✅ Excellent TypeScript support with full type definitions
+- ✅ Responsive by default with ResponsiveContainer component
+- ✅ ~100KB gzipped (reasonable bundle size)
+- ✅ Customizable with Tailwind CSS classes
+- ✅ MIT license (permissive)
+- ✅ Active maintenance (last release within 3 months)
+- ✅ 23K+ GitHub stars, widely adopted in production
+- ✅ Supports all required chart types (Bar, Pie, Line, Area)
+- ✅ Accessibility features (SVG-based, screen reader compatible)
+
+**Cons:**
+- ⚠️ Not as feature-rich as D3.js for complex visualizations
+- ⚠️ Performance can degrade with very large datasets (>1000 points)
+
+**Alternatives Considered:**
+
+| Library | Pros | Cons | Decision |
+|---------|------|------|----------|
+| **Chart.js + react-chartjs-2** | Lightweight (60KB), canvas-based, fast rendering | Limited TypeScript support, less React-friendly API, harder to customize with Tailwind | ❌ Rejected - Poor TypeScript integration |
+| **Victory** | Excellent accessibility, animation support | Large bundle (200KB+), slower performance | ❌ Rejected - Bundle size exceeds budget |
+| **Nivo** | Beautiful defaults, excellent docs | 180KB gzipped, opinionated styling | ❌ Rejected - Bundle size too large |
+| **D3.js** | Most powerful, infinite customization | Steep learning curve, requires manual React integration, 250KB+ | ❌ Rejected - Overkill for dashboard needs |
+| **Tremor** | Built for dashboards, Tailwind-first | Young project (2022), smaller community, 80KB | ⚠️ Alternative option - Consider for future |
+
+**Recommendation:** ✅ **APPROVE Recharts 2.5+**
+
+**Bundle Impact:**
+- Recharts: ~100KB gzipped
+- Target dashboard bundle: <500KB gzipped
+- Remaining budget: 400KB for other dependencies
+
+---
+
+### 2. Calendar/Scheduler Component (Required for Story 1.4)
+
+**Context:**
+Story 1.4 requires calendar widget for Paralegal dashboard showing:
+- Monthly calendar view with deadline highlights
+- Date hover tooltips with deadline details
+- Previous/next month navigation
+
+**Proposed Solution: React Big Calendar 1.8+**
+
+**Pros:**
+- ✅ Full-featured calendar with month/week/day/agenda views
+- ✅ Drag-and-drop event support (useful for future stories)
+- ✅ ~50KB gzipped (reasonable bundle size)
+- ✅ MIT license
+- ✅ TypeScript support via @types/react-big-calendar
+- ✅ Widely adopted (10K+ GitHub stars)
+- ✅ Customizable styling with CSS/Tailwind
+- ✅ Event handlers for all interactions (click, select, navigate)
+- ✅ Responsive with breakpoint support
+
+**Cons:**
+- ⚠️ Requires separate date library (date-fns or moment.js)
+- ⚠️ Styling requires CSS overrides (not Tailwind-native)
+- ⚠️ Documentation could be more comprehensive
+
+**Alternatives Considered:**
+
+| Library | Pros | Cons | Decision |
+|---------|------|------|----------|
+| **FullCalendar** | Most feature-rich, excellent docs, drag-and-drop | 150KB+ gzipped, commercial license for some features, jQuery heritage | ❌ Rejected - Bundle size + licensing concerns |
+| **react-calendar** | Lightweight (20KB), simple API | Limited features, no event scheduling, basic styling | ⚠️ Could work for simple use case |
+| **Custom with date-fns** | Full control, minimal bundle (~15KB) | Requires building calendar UI from scratch, time-intensive | ⚠️ Alternative if bundle budget tight |
+| **@schedule-x/calendar** | Modern, TypeScript-first, small bundle | Very new (2023), small community, limited docs | ❌ Rejected - Too immature |
+
+**Recommendation:** ✅ **APPROVE React Big Calendar 1.8+** OR ⚠️ **CONSIDER react-calendar** if bundle budget is constrained
+
+**Bundle Impact:**
+- React Big Calendar: ~50KB gzipped
+- date-fns (localizer): ~15KB gzipped
+- Total: ~65KB
+- Combined with Recharts: 165KB (within budget)
+
+**Alternative Lightweight Option:**
+- If bundle size becomes critical, use **react-calendar** (~20KB) or build **custom calendar with date-fns** (~15KB)
+- Would save 35-50KB but lose drag-and-drop and advanced features
+
+---
+
+## ✅ DECISION APPROVED - 2025-11-12
+
+**Decision:**
+- ✅ **APPROVED:** Recharts 2.5+ for data visualization
+- ✅ **APPROVED:** React Big Calendar 1.8+ with date-fns 3.0+ for calendar component
+
+**Approved By:** Sarah (Product Owner)
+**Date:** 2025-11-12
+**Rationale:**
+- Both libraries meet technical requirements for Story 1.4
+- Combined bundle size (165KB) well within 500KB dashboard budget
+- Industry-standard choices with excellent TypeScript support
+- Active maintenance and strong community support
+- MIT licenses ensure no legal concerns
+- All alternatives properly evaluated and documented
+
+**Implementation Notes:**
+- Libraries added to approved tech stack table (lines 29-30)
+- Story 1.4 updated with proper source references
+- Dev agent may proceed with implementation using these libraries
+
+**Future Considerations:**
+- Monitor bundle size during implementation
+- Consider Tremor library for future dashboard enhancements if additional features needed
+- Evaluate react-calendar as lightweight alternative if bundle budget becomes constrained in future stories
