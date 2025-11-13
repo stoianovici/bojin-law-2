@@ -1,0 +1,293 @@
+/**
+ * CaseHeader - Header component for case workspace
+ * Displays case information, team members, deadline, and action buttons
+ */
+
+'use client';
+
+import React from 'react';
+import * as Avatar from '@radix-ui/react-avatar';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { format, differenceInDays } from 'date-fns';
+import { ro } from 'date-fns/locale';
+import { clsx } from 'clsx';
+import type { Case, CaseStatus, CaseType, User } from '@legal-platform/types';
+
+export interface CaseHeaderProps {
+  case: Case;
+  teamMembers?: User[];
+  nextDeadline?: {
+    date: Date;
+    description: string;
+  };
+  onEditCase?: () => void;
+  onAddTeamMember?: () => void;
+  onMenuAction?: (action: string) => void;
+}
+
+/**
+ * Status Badge Component
+ */
+function StatusBadge({ status }: { status: CaseStatus }) {
+  const statusConfig: Record<CaseStatus, { label: string; className: string }> = {
+    Active: { label: 'Activ', className: 'bg-green-100 text-green-800 border-green-200' },
+    OnHold: { label: 'În Așteptare', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+    Closed: { label: 'Închis', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+    Archived: { label: 'Arhivat', className: 'bg-slate-100 text-slate-800 border-slate-200' },
+  };
+
+  const config = statusConfig[status];
+
+  return (
+    <span
+      className={clsx(
+        'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border',
+        config.className
+      )}
+    >
+      {config.label}
+    </span>
+  );
+}
+
+/**
+ * Case Type Label Component
+ */
+function CaseTypeLabel({ type }: { type: CaseType }) {
+  const typeLabels: Record<CaseType, string> = {
+    Litigation: 'Litigiu',
+    Contract: 'Contract',
+    Advisory: 'Consultanță',
+    Criminal: 'Penal',
+    Other: 'Altele',
+  };
+
+  return (
+    <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+      {typeLabels[type]}
+    </span>
+  );
+}
+
+/**
+ * Team Member Avatar Component
+ */
+function TeamMemberAvatar({ user }: { user: User }) {
+  const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+
+  return (
+    <Avatar.Root className="relative inline-flex h-9 w-9 rounded-full hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 transition-all">
+      <Avatar.Fallback
+        className="flex h-full w-full items-center justify-center rounded-full bg-blue-600 text-white text-sm font-medium"
+        title={`${user.firstName} ${user.lastName} - ${user.role}`}
+      >
+        {initials}
+      </Avatar.Fallback>
+    </Avatar.Root>
+  );
+}
+
+/**
+ * Deadline Indicator Component
+ */
+function DeadlineIndicator({ date, description }: { date: Date; description: string }) {
+  const daysUntil = differenceInDays(date, new Date());
+
+  const urgencyConfig = {
+    className:
+      daysUntil < 3
+        ? 'text-red-700 bg-red-50'
+        : daysUntil < 7
+          ? 'text-yellow-700 bg-yellow-50'
+          : 'text-blue-700 bg-blue-50',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+        />
+      </svg>
+    ),
+  };
+
+  return (
+    <div
+      className={clsx(
+        'inline-flex items-center gap-2 px-4 py-2 rounded-lg border',
+        urgencyConfig.className
+      )}
+    >
+      {urgencyConfig.icon}
+      <div className="flex flex-col">
+        <span className="text-xs font-medium">Termen Următor:</span>
+        <span className="text-sm font-semibold">
+          {format(date, 'dd MMM yyyy', { locale: ro })} - {description}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * CaseHeader Component
+ *
+ * Main header component for case workspace showing case details,
+ * team members, deadline, and action buttons.
+ */
+export function CaseHeader({
+  case: caseData,
+  teamMembers = [],
+  nextDeadline,
+  onEditCase,
+  onAddTeamMember,
+  onMenuAction,
+}: CaseHeaderProps) {
+  const visibleTeamMembers = teamMembers.slice(0, 5);
+  const remainingCount = teamMembers.length - 5;
+
+  return (
+    <header className="bg-white border-b border-gray-200 shadow-sm p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Top Row: Case Number, Title, Status */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Case Number Badge */}
+              <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-semibold bg-blue-600 text-white">
+                {caseData.caseNumber}
+              </span>
+              <StatusBadge status={caseData.status} />
+              <CaseTypeLabel type={caseData.type} />
+            </div>
+
+            {/* Case Title */}
+            <h1 className="text-3xl font-bold text-gray-900 leading-tight">{caseData.title}</h1>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onEditCase}
+              className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              Editează Cazul
+            </button>
+
+            <button
+              onClick={onAddTeamMember}
+              className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Adaugă Membru
+            </button>
+
+            {/* More Options Dropdown */}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  aria-label="Mai multe opțiuni"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                    />
+                  </svg>
+                </button>
+              </DropdownMenu.Trigger>
+
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  className="min-w-[200px] bg-white rounded-md shadow-lg border border-gray-200 p-1 z-50"
+                  sideOffset={5}
+                >
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 focus:bg-gray-100 cursor-pointer outline-none"
+                    onSelect={() => onMenuAction?.('export')}
+                  >
+                    Exportă Detalii
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 focus:bg-gray-100 cursor-pointer outline-none"
+                    onSelect={() => onMenuAction?.('archive')}
+                  >
+                    Arhivează Caz
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Separator className="h-px bg-gray-200 my-1" />
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm text-red-700 rounded-md hover:bg-red-50 focus:bg-red-50 cursor-pointer outline-none"
+                    onSelect={() => onMenuAction?.('delete')}
+                  >
+                    Șterge Caz
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </div>
+        </div>
+
+        {/* Bottom Row: Client, Team Members, Deadline */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-wrap">
+            {/* Client Name */}
+            <div className="flex items-center gap-2 text-gray-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              <span className="text-sm font-medium">Client: {caseData.clientId}</span>
+            </div>
+
+            {/* Team Members */}
+            {teamMembers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Echipă:</span>
+                <div className="flex items-center -space-x-2">
+                  {visibleTeamMembers.map((member) => (
+                    <TeamMemberAvatar key={member.id} user={member} />
+                  ))}
+                  {remainingCount > 0 && (
+                    <span className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-200 text-gray-700 text-xs font-medium border-2 border-white">
+                      +{remainingCount}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Next Deadline */}
+          {nextDeadline && (
+            <DeadlineIndicator date={nextDeadline.date} description={nextDeadline.description} />
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+CaseHeader.displayName = 'CaseHeader';
