@@ -5,7 +5,8 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QuickActions } from './QuickActions';
-import { useNavigationStore } from '@/stores/navigation.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../../stores/navigation.store';
 
 describe('QuickActions', () => {
   beforeEach(() => {

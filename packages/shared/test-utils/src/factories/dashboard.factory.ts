@@ -1,9 +1,16 @@
 /**
  * Dashboard Factory
- * Creates test dashboard entities (KPIs, AI Suggestions) with Romanian localization support
+ * Creates test dashboard entities (KPIs, AI Suggestions, Widgets) with Romanian localization support
  */
 
 import { faker } from '@faker-js/faker';
+import type {
+  SupervisedCasesWidget,
+  FirmCasesOverviewWidget,
+  FirmTasksOverviewWidget,
+  EmployeeWorkloadWidget,
+  WidgetPosition,
+} from '@legal-platform/types';
 
 /**
  * KPI Metric type
@@ -273,4 +280,399 @@ export function createAISuggestionsForRole(
  */
 export function createAISuggestions(count: number, overrides: AISuggestionOverrides = {}): AISuggestion[] {
   return Array.from({ length: count }, () => createAISuggestion(overrides));
+}
+
+// =====================================
+// Widget Factories for Story 1.6
+// =====================================
+
+/**
+ * Romanian first names for realistic test data
+ */
+const ROMANIAN_FIRST_NAMES = [
+  'Alexandru', 'Andrei', 'Adrian', 'Bogdan', 'Cătălin', 'Cristian', 'Dan', 'Emil',
+  'Florin', 'Gabriel', 'Ion', 'Liviu', 'Marius', 'Mihai', 'Nicolae', 'Radu',
+  'Ștefan', 'Vasile', 'Victor', 'Vlad',
+  'Alexandra', 'Alina', 'Ana', 'Andreea', 'Cristina', 'Elena', 'Ioana', 'Larisa',
+  'Maria', 'Mihaela', 'Monica', 'Ramona', 'Roxana', 'Simona', 'Valentina', 'Viorica'
+];
+
+/**
+ * Romanian last names for realistic test data
+ */
+const ROMANIAN_LAST_NAMES = [
+  'Popescu', 'Ionescu', 'Popa', 'Pop', 'Radu', 'Georgescu', 'Stan', 'Dumitrescu',
+  'Munteanu', 'Constantin', 'Dima', 'Stoica', 'Nistor', 'Stanciu', 'Șerban', 'Țîrlea'
+];
+
+/**
+ * Generate Romanian name with diacritics support
+ */
+function generateRomanianName(): string {
+  const firstName = faker.helpers.arrayElement(ROMANIAN_FIRST_NAMES);
+  const lastName = faker.helpers.arrayElement(ROMANIAN_LAST_NAMES);
+  return `${firstName} ${lastName}`;
+}
+
+/**
+ * Generate Romanian client name
+ */
+function generateRomanianClientName(): string {
+  const types = [
+    () => generateRomanianName(), // Individual
+    () => `${faker.company.name()} SRL`,
+    () => `${faker.company.name()} SA`,
+    () => `SC ${faker.company.name()} SRL`,
+  ];
+  return faker.helpers.arrayElement(types)();
+}
+
+/**
+ * Generate case title with Romanian support
+ */
+function generateCaseTitle(useRomanian: boolean): string {
+  const romanianTitles = [
+    'Contract Comercial - Furnizare Servicii',
+    'Litigiu de Muncă - Concediere Abuzivă',
+    'Consultanță Fiscală și Juridică',
+    'Reorganizare Structurală Societate',
+    'Achiziție Imobiliară Rezidențială',
+    'Drept de Proprietate Intelectuală',
+    'Litigiu Comercial cu Partener',
+    'Revizuire Contract Închiriere',
+  ];
+
+  const englishTitles = [
+    'Commercial Contract - Service Provision',
+    'Employment Dispute - Wrongful Termination',
+    'Tax and Legal Consultation',
+    'Corporate Restructuring',
+    'Residential Real Estate Acquisition',
+    'Intellectual Property Rights',
+    'Commercial Dispute with Partner',
+    'Lease Contract Review',
+  ];
+
+  return faker.helpers.arrayElement(useRomanian ? romanianTitles : englishTitles);
+}
+
+/**
+ * Generate employee utilization data
+ * @param count - Number of employees to generate
+ * @returns Array of employee utilization objects
+ */
+export function generateEmployeeUtilization(count: number) {
+  return Array.from({ length: count }, () => {
+    const dailyUtilization = faker.number.int({ min: 20, max: 180 });
+    const weeklyUtilization = faker.number.int({ min: 30, max: 160 });
+    const taskCount = faker.number.int({ min: 2, max: 15 });
+    const estimatedHours = faker.number.int({ min: 4, max: 80 });
+
+    // Determine status based on utilization
+    let status: 'over' | 'optimal' | 'under';
+    const utilization = dailyUtilization;
+    if (utilization > 100) {
+      status = 'over';
+    } else if (utilization >= 50) {
+      status = 'optimal';
+    } else {
+      status = 'under';
+    }
+
+    // Generate tasks for this employee
+    const tasks = Array.from({ length: taskCount }, () => ({
+      id: faker.string.uuid(),
+      title: faker.helpers.arrayElement([
+        'Revizuire Contract',
+        'Cercetare Jurisprudență',
+        'Redactare Memoriu',
+        'Întâlnire Client',
+        'Review Contract',
+        'Legal Research',
+        'Draft Memorandum',
+        'Client Meeting',
+      ]),
+      estimate: faker.number.int({ min: 1, max: 8 }),
+      type: faker.helpers.arrayElement(['Research', 'Document', 'Meeting', 'Court', 'Administrative']),
+    }));
+
+    return {
+      employeeId: faker.string.uuid(),
+      name: generateRomanianName(),
+      dailyUtilization,
+      weeklyUtilization,
+      taskCount,
+      estimatedHours,
+      status,
+      tasks,
+    };
+  });
+}
+
+/**
+ * Generate at-risk cases
+ * @param count - Number of at-risk cases to generate
+ * @returns Array of at-risk case objects
+ */
+export function generateAtRiskCases(count: number) {
+  return Array.from({ length: count }, () => {
+    const daysUntilDeadline = faker.number.int({ min: 1, max: 7 });
+    const useRomanian = faker.datatype.boolean();
+
+    const reasons = useRomanian
+      ? [
+          `Termen în ${daysUntilDeadline} zile`,
+          'Sarcini întârziate',
+          'Fără activitate >14 zile',
+          'Alertă AI - Necesită atenție',
+        ]
+      : [
+          `Deadline in ${daysUntilDeadline} days`,
+          'Overdue tasks',
+          'No activity >14 days',
+          'AI Alert - Requires attention',
+        ];
+
+    return {
+      id: faker.string.uuid(),
+      caseNumber: `C-${faker.number.int({ min: 1000, max: 9999 })}`,
+      title: generateCaseTitle(useRomanian),
+      reason: faker.helpers.arrayElement(reasons),
+      assignedPartner: generateRomanianName(),
+      daysUntilDeadline,
+    };
+  });
+}
+
+/**
+ * Generate high-value cases
+ * @param count - Number of high-value cases to generate
+ * @returns Array of high-value case objects
+ */
+export function generateHighValueCases(count: number) {
+  return Array.from({ length: count }, () => {
+    const useRomanian = faker.datatype.boolean();
+    const value = faker.number.int({ min: 25000, max: 500000 });
+
+    return {
+      id: faker.string.uuid(),
+      caseNumber: `C-${faker.number.int({ min: 1000, max: 9999 })}`,
+      title: generateCaseTitle(useRomanian),
+      value,
+      assignedPartner: generateRomanianName(),
+      priority: faker.helpers.arrayElement<'strategic' | 'vip' | 'highValue'>(['strategic', 'vip', 'highValue']),
+    };
+  });
+}
+
+/**
+ * Generate AI insights for firm cases
+ * @param count - Number of AI insights to generate
+ * @returns Array of AI insight objects
+ */
+export function generateAIInsights(count: number) {
+  return Array.from({ length: count }, () => {
+    const useRomanian = faker.datatype.boolean();
+    const caseNumber = `C-${faker.number.int({ min: 1000, max: 9999 })}`;
+
+    const messages: Record<'pattern' | 'bottleneck' | 'opportunity', string[]> = useRomanian
+      ? {
+          pattern: [
+            `Caz ${caseNumber}: Tipar detectat - similitudine cu 3 cazuri anterioare rezolvate`,
+            `Flux de lucru repetat identificat în ${caseNumber}`,
+            `Model de activitate neobișnuit în ${caseNumber}`,
+          ],
+          bottleneck: [
+            `Caz ${caseNumber}: Blocaj detectat - așteptare aprobare >7 zile`,
+            `${caseNumber}: Întârziere documentație - impact asupra termenului`,
+            `Resurse insuficiente alocate pentru ${caseNumber}`,
+          ],
+          opportunity: [
+            `Caz ${caseNumber}: Oportunitate automatizare - 40% reducere timp`,
+            `Șablon refolosibil identificat în ${caseNumber}`,
+            `Potențial de standardizare proces pentru ${caseNumber}`,
+          ],
+        }
+      : {
+          pattern: [
+            `Case ${caseNumber}: Pattern detected - similarity with 3 prior resolved cases`,
+            `Repeated workflow identified in ${caseNumber}`,
+            `Unusual activity pattern in ${caseNumber}`,
+          ],
+          bottleneck: [
+            `Case ${caseNumber}: Bottleneck detected - awaiting approval >7 days`,
+            `${caseNumber}: Document delay - deadline impact`,
+            `Insufficient resources allocated to ${caseNumber}`,
+          ],
+          opportunity: [
+            `Case ${caseNumber}: Automation opportunity - 40% time reduction`,
+            `Reusable template identified in ${caseNumber}`,
+            `Process standardization potential for ${caseNumber}`,
+          ],
+        };
+
+    const type = faker.helpers.arrayElement<'pattern' | 'bottleneck' | 'opportunity'>(['pattern', 'bottleneck', 'opportunity']);
+
+    return {
+      id: faker.string.uuid(),
+      caseId: faker.string.uuid(),
+      caseNumber,
+      message: faker.helpers.arrayElement(messages[type]),
+      type,
+      timestamp: faker.date.recent({ days: 7 }).toISOString(),
+    };
+  });
+}
+
+/**
+ * Create a default widget position
+ */
+function createWidgetPosition(id: string, x: number, y: number, w: number, h: number): WidgetPosition {
+  return {
+    i: id,
+    x,
+    y,
+    w,
+    h,
+  };
+}
+
+/**
+ * Create a Supervised Cases Widget with realistic test data
+ * @param overrides - Partial widget object to override default values
+ * @returns SupervisedCasesWidget entity
+ */
+export function createSupervisedCasesWidget(
+  overrides: Partial<SupervisedCasesWidget> = {}
+): SupervisedCasesWidget {
+  const supervisorId = faker.string.uuid();
+  const caseCount = faker.number.int({ min: 3, max: 20 });
+  const useRomanian = faker.datatype.boolean();
+
+  const cases = Array.from({ length: caseCount }, () => ({
+    id: faker.string.uuid(),
+    caseNumber: `C-${faker.number.int({ min: 1000, max: 9999 })}`,
+    title: generateCaseTitle(useRomanian),
+    clientName: generateRomanianClientName(),
+    status: faker.helpers.arrayElement<'Active' | 'OnHold' | 'Closed' | 'Archived'>(['Active', 'OnHold', 'Closed', 'Archived']),
+    supervisorId,
+    teamSize: faker.number.int({ min: 2, max: 8 }),
+    riskLevel: faker.helpers.arrayElement<'high' | 'medium' | 'low'>(['high', 'medium', 'low']),
+    nextDeadline: faker.datatype.boolean() ? faker.date.future({ years: 0.5 }) : undefined,
+  }));
+
+  return {
+    id: 'supervised-cases',
+    type: 'supervisedCases',
+    title: useRomanian ? 'Cazuri Supravegheate' : 'Supervised Cases',
+    position: createWidgetPosition('supervised-cases', 0, 0, 6, 5),
+    collapsed: false,
+    cases,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a Firm Cases Overview Widget with realistic test data
+ * @param overrides - Partial widget object to override default values
+ * @returns FirmCasesOverviewWidget entity
+ */
+export function createFirmCasesOverviewWidget(
+  overrides: Partial<FirmCasesOverviewWidget> = {}
+): FirmCasesOverviewWidget {
+  const useRomanian = faker.datatype.boolean();
+
+  return {
+    id: 'firm-cases-overview',
+    type: 'firmCasesOverview',
+    title: useRomanian ? 'Vedere de Ansamblu Cazuri Firmă' : 'Firm Cases Overview',
+    position: createWidgetPosition('firm-cases-overview', 0, 5, 8, 5),
+    collapsed: false,
+    atRiskCases: generateAtRiskCases(faker.number.int({ min: 2, max: 8 })),
+    highValueCases: generateHighValueCases(faker.number.int({ min: 1, max: 5 })),
+    aiInsights: generateAIInsights(faker.number.int({ min: 2, max: 6 })),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a Firm Tasks Overview Widget with realistic test data
+ * @param overrides - Partial widget object to override default values
+ * @returns FirmTasksOverviewWidget entity
+ */
+export function createFirmTasksOverviewWidget(
+  overrides: Partial<FirmTasksOverviewWidget> = {}
+): FirmTasksOverviewWidget {
+  const useRomanian = faker.datatype.boolean();
+  const totalActiveTasks = faker.number.int({ min: 50, max: 300 });
+  const overdueCount = faker.number.int({ min: 0, max: Math.floor(totalActiveTasks * 0.15) });
+  const dueTodayCount = faker.number.int({ min: 0, max: Math.floor(totalActiveTasks * 0.1) });
+  const dueThisWeekCount = faker.number.int({ min: 0, max: Math.floor(totalActiveTasks * 0.25) });
+  const completionRate = faker.number.int({ min: 60, max: 95 });
+
+  const taskTypes = useRomanian
+    ? ['Cercetare', 'Redactare Document', 'Întâlnire', 'Instanță', 'Administrativ', 'Revizuire']
+    : ['Research', 'Document Creation', 'Meeting', 'Court', 'Administrative', 'Review'];
+
+  const taskBreakdown = taskTypes.map(type => ({
+    type,
+    count: faker.number.int({ min: 5, max: 50 }),
+  }));
+
+  const priorityTasks = Array.from({ length: 5 }, () => ({
+    id: faker.string.uuid(),
+    title: faker.helpers.arrayElement([
+      useRomanian ? 'Depunere Memoriu Instanță' : 'Court Memorandum Filing',
+      useRomanian ? 'Întâlnire Urgentă Client' : 'Urgent Client Meeting',
+      useRomanian ? 'Revizuire Contract Important' : 'Critical Contract Review',
+      useRomanian ? 'Cercetare Jurisprudență' : 'Legal Research',
+      useRomanian ? 'Pregătire Audiere' : 'Hearing Preparation',
+    ]),
+    caseContext: `C-${faker.number.int({ min: 1000, max: 9999 })}`,
+    priority: faker.helpers.arrayElement<'High' | 'Urgent'>(['High', 'Urgent']),
+    assignee: generateRomanianName(),
+    dueDate: faker.date.soon({ days: 7 }),
+  }));
+
+  return {
+    id: 'firm-tasks-overview',
+    type: 'firmTasksOverview',
+    title: useRomanian ? 'Vedere de Ansamblu Sarcini Firmă' : 'Firm Tasks Overview',
+    position: createWidgetPosition('firm-tasks-overview', 8, 5, 4, 5),
+    collapsed: false,
+    taskMetrics: {
+      totalActiveTasks,
+      overdueCount,
+      dueTodayCount,
+      dueThisWeekCount,
+      completionRate,
+      avgCompletionRateTrend: faker.helpers.arrayElement<'up' | 'down' | 'neutral'>(['up', 'down', 'neutral']),
+    },
+    taskBreakdown,
+    priorityTasks,
+    ...overrides,
+  };
+}
+
+/**
+ * Create an Employee Workload Widget with realistic test data
+ * @param overrides - Partial widget object to override default values
+ * @returns EmployeeWorkloadWidget entity
+ */
+export function createEmployeeWorkloadWidget(
+  overrides: Partial<EmployeeWorkloadWidget> = {}
+): EmployeeWorkloadWidget {
+  const useRomanian = faker.datatype.boolean();
+  const employeeCount = faker.number.int({ min: 5, max: 30 });
+
+  return {
+    id: 'employee-workload',
+    type: 'employeeWorkload',
+    title: useRomanian ? 'Sarcina de Lucru Angajați' : 'Employee Workload',
+    position: createWidgetPosition('employee-workload', 0, 10, 12, 6),
+    collapsed: false,
+    viewMode: 'daily',
+    employeeUtilization: generateEmployeeUtilization(employeeCount),
+    ...overrides,
+  };
 }

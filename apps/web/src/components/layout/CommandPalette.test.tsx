@@ -5,7 +5,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CommandPalette } from './CommandPalette';
-import { useNavigationStore } from '@/stores/navigation.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../../stores/navigation.store';
 
 // Mock Next.js router
 const mockPush = jest.fn();

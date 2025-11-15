@@ -8,19 +8,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
-import { useCaseWorkspaceStore } from '@/stores/case-workspace.store';
-import { CaseHeader } from '@/components/case/CaseHeader';
-import { WorkspaceTabs } from '@/components/case/WorkspaceTabs';
-import { DocumentsTab } from '@/components/case/tabs/DocumentsTab';
-import { TasksTab } from '@/components/case/tabs/TasksTab';
-import { OverviewTab } from '@/components/case/tabs/OverviewTab';
-import { CommunicationsTab } from '@/components/case/tabs/CommunicationsTab';
-import { TimeEntriesTab } from '@/components/case/tabs/TimeEntriesTab';
-import { NotesTab } from '@/components/case/tabs/NotesTab';
-import { AIInsightsPanel } from '@/components/case/AIInsightsPanel';
-import { QuickActionsBar } from '@/components/case/QuickActionsBar';
-import { ErrorBoundary } from '@/components/errors/ErrorBoundary';
-import { createMockCaseWorkspace } from '@/lib/mockData';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useCaseWorkspaceStore } from '../../../stores/case-workspace.store';
+import { CaseHeader } from '../../../components/case/CaseHeader';
+import { WorkspaceTabs } from '../../../components/case/WorkspaceTabs';
+import { DocumentsTab } from '../../../components/case/tabs/DocumentsTab';
+import { TasksTab } from '../../../components/case/tabs/TasksTab';
+import { OverviewTab } from '../../../components/case/tabs/OverviewTab';
+import { CommunicationsTab } from '../../../components/case/tabs/CommunicationsTab';
+import { TimeEntriesTab } from '../../../components/case/tabs/TimeEntriesTab';
+import { NotesTab } from '../../../components/case/tabs/NotesTab';
+import { AIInsightsPanel } from '../../../components/case/AIInsightsPanel';
+import { QuickActionsBar } from '../../../components/case/QuickActionsBar';
+import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
+import { createMockCaseWorkspace } from '../../../lib/mockData';
 import type { Case, User, Document, Task, AISuggestion, DocumentNode } from '@legal-platform/types';
 
 interface CaseWorkspacePageProps {
@@ -85,7 +86,7 @@ function LoadingSkeleton() {
  * Displays complete case workspace with all tabs and panels
  */
 export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
-  const { caseId } = params;
+  const { caseId } = React.use(params);
   const { activeTab, setActiveTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
   const [loading, setLoading] = useState(true);
   const [caseData, setCaseData] = useState<CaseWorkspaceData | null>(null);

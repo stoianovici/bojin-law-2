@@ -11,6 +11,7 @@ import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
 import type { Case, User, Task } from '@legal-platform/types';
 import * as Avatar from '@radix-ui/react-avatar';
+import { Clock, FileText, ClipboardList } from 'lucide-react';
 
 export interface OverviewTabProps {
   case: Case;
@@ -101,18 +102,18 @@ export function OverviewTab({
             }
           >
             <dl className="space-y-3 text-sm">
-              <div>
+              <div key="description">
                 <dt className="text-gray-600 mb-1">Descriere</dt>
                 <dd className="text-gray-900">{caseData.description}</dd>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div key="dates-and-value" className="grid grid-cols-2 gap-4">
+                <div key="opened-date">
                   <dt className="text-gray-600 mb-1">Data Deschidere</dt>
                   <dd className="text-gray-900">
                     {format(caseData.openedDate, 'dd MMMM yyyy', { locale: ro })}
                   </dd>
                 </div>
-                <div>
+                <div key="case-value">
                   <dt className="text-gray-600 mb-1">Valoare Caz</dt>
                   <dd className="text-gray-900">
                     {caseData.value
@@ -121,7 +122,7 @@ export function OverviewTab({
                   </dd>
                 </div>
               </div>
-              <div>
+              <div key="case-type">
                 <dt className="text-gray-600 mb-1">Tip Caz</dt>
                 <dd className="text-gray-900">{caseData.type}</dd>
               </div>
@@ -206,19 +207,7 @@ export function OverviewTab({
                         statusColors[deadline.status],
                       )}
                     >
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                      <Clock className="w-3 h-3" />
                       <span>
                         {deadline.status === 'overdue'
                           ? 'Întârziat'
@@ -243,19 +232,7 @@ export function OverviewTab({
                 {/* Total Documents */}
                 <div className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-blue-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                      />
-                    </svg>
+                    <FileText className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">
@@ -268,19 +245,7 @@ export function OverviewTab({
                 {/* Open Tasks */}
                 <div className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-yellow-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
+                    <ClipboardList className="w-6 h-6 text-yellow-600" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">
@@ -293,19 +258,7 @@ export function OverviewTab({
                 {/* Billable Hours */}
                 <div className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-green-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
+                    <Clock className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">

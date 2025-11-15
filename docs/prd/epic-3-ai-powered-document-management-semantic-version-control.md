@@ -32,6 +32,50 @@
 5. Template library UI shows learned templates with usage statistics
 6. Manual template refinement allows editing AI-identified patterns
 
+**Note:** This story is implemented through two sub-stories that were added after the original PRD:
+- **Story 3.2.5** handles the user-facing document import and categorization workflow
+- **Story 3.2.6** implements the backend AI training pipeline that processes categorized documents
+
+## Story 3.2.5: Legacy Document Import & Categorization for AI Training
+
+**As a** law firm partner migrating to the platform,
+**I want** to import and categorize legacy documents from my email archives,
+**so that** the AI can learn from our firm's historical documents to provide better suggestions.
+
+**Acceptance Criteria:**
+1. PST file upload (up to 10GB) with secure server-side processing via Azure Blob Storage (encrypted)
+2. Document extraction preserving original Outlook folder hierarchy (collapsible tree view)
+3. Categorization interface with document preview (PDF/DOCX viewer) and folder navigation
+4. On-the-fly category creation with Romanian names (e.g., "Contract", "Notificare Avocateasca")
+5. Session persistence via IndexedDB for multi-session workflows (can resume after closing browser)
+6. Bulk folder operations (categorize all/skip all documents in a folder)
+7. OneDrive export to `/AI-Training/{CategoryName}/` with metadata JSON files
+8. Automatic cleanup: PST and temp files deleted from Azure Blob after export completes
+9. Audit logging for uploads, extractions, exports, and deletions
+10. Only Partners can access the standalone import app at `import.yourapp.com`
+
+**Rollback Plan:** Standalone app can be disabled via feature flag; OneDrive files can be manually deleted.
+
+## Story 3.2.6: AI Training Pipeline for Legacy Document Processing
+
+**As an** AI service,
+**I want** to automatically process categorized legacy documents from OneDrive,
+**so that** I can learn firm-specific language patterns and templates to improve document generation.
+
+**Acceptance Criteria:**
+1. OneDrive discovery scans `/AI-Training/` folders and identifies unprocessed documents
+2. Text extraction from PDFs and DOCX files with language detection (Romanian vs English)
+3. Embedding generation using OpenAI text-embedding-3-small model, stored in PostgreSQL with pgvector
+4. Pattern identification: repeated phrases (5+ words, 3+ docs), common document structures, standard clauses
+5. Template extraction from high-similarity documents (>85% similar) with structure analysis
+6. Knowledge base storage in PostgreSQL tables: TrainingDocuments, DocumentEmbeddings, DocumentPatterns, TemplateLibrary
+7. BullMQ job queue with batch processing (10 documents at a time) and retry logic
+8. Scheduled daily runs (2 AM) plus manual trigger via admin API endpoint
+9. Monitoring dashboard showing processing stats, token usage, and errors
+10. Semantic search API endpoint for AI service to query relevant documents and patterns
+
+**Rollback Plan:** Feature flags allow disabling pipeline; failed runs logged for debugging; can reprocess by deleting from training_documents table.
+
 ## Story 3.3: Intelligent Document Drafting
 
 **As a** lawyer creating documents,

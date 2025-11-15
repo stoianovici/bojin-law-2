@@ -6,15 +6,15 @@
 'use client';
 
 import React from 'react';
-import { useNavigationStore } from '@/stores/navigation.store';
-import { useDashboardStore } from '@/stores/dashboard.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../../stores/navigation.store';
 import { useRouter } from 'next/navigation';
 
 // Import KPI widgets that were moved from Partner dashboard
-import { FirmKPIsWidget } from '@/components/dashboard/widgets/FirmKPIsWidget';
-import { BillableHoursChartWidget } from '@/components/dashboard/widgets/BillableHoursChartWidget';
-import { CaseDistributionWidget } from '@/components/dashboard/widgets/CaseDistributionWidget';
-import { PendingApprovalsWidget } from '@/components/dashboard/widgets/PendingApprovalsWidget';
+import { FirmKPIsWidget } from '../../components/dashboard/widgets/FirmKPIsWidget';
+import { BillableHoursChartWidget } from '../../components/dashboard/widgets/BillableHoursChartWidget';
+import { CaseDistributionWidget } from '../../components/dashboard/widgets/CaseDistributionWidget';
+import { PendingApprovalsWidget } from '../../components/dashboard/widgets/PendingApprovalsWidget';
 
 import type { KPIWidget, ChartWidget, ApprovalListWidget } from '@legal-platform/types';
 
@@ -25,6 +25,11 @@ import type { KPIWidget, ChartWidget, ApprovalListWidget } from '@legal-platform
 export default function AnalyticsPage() {
   const currentRole = useNavigationStore((state) => state.currentRole);
   const router = useRouter();
+
+  // Set document title
+  React.useEffect(() => {
+    document.title = 'Analytics';
+  }, []);
 
   // Redirect non-Partners to dashboard
   React.useEffect(() => {

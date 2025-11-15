@@ -8,7 +8,8 @@
 
 import React from 'react';
 import { DashboardGrid } from './DashboardGrid';
-import { useDashboardStore } from '@/stores/dashboard.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useDashboardStore } from '../../stores/dashboard.store';
 import { SupervisedCasesWidget } from './widgets/SupervisedCasesWidget';
 import { FirmCasesOverviewWidget } from './widgets/FirmCasesOverviewWidget';
 import { FirmTasksOverviewWidget } from './widgets/FirmTasksOverviewWidget';

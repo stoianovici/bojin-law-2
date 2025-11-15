@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { RoleSwitcher } from './RoleSwitcher';
-import { useNavigationStore } from '@/stores/navigation.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../../stores/navigation.store';
 import { fn } from '@storybook/test';
 import { useEffect } from 'react';
 import type { UserRole } from '@legal-platform/types';

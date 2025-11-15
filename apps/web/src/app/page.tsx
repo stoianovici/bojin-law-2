@@ -5,11 +5,11 @@
 
 'use client';
 
-import { useNavigationStore } from '@/stores/navigation.store';
-import { useDashboardStore } from '@/stores/dashboard.store';
-import { PartnerDashboard } from '@/components/dashboard/PartnerDashboard';
-import { AssociateDashboard } from '@/components/dashboard/AssociateDashboard';
-import { ParalegalDashboard } from '@/components/dashboard/ParalegalDashboard';
+import { useNavigationStore } from '../stores/navigation.store';
+import { useDashboardStore } from '../stores/dashboard.store';
+import { PartnerDashboard } from '../components/dashboard/PartnerDashboard';
+import { AssociateDashboard } from '../components/dashboard/AssociateDashboard';
+import { ParalegalDashboard } from '../components/dashboard/ParalegalDashboard';
 import type { WidgetPosition } from '@legal-platform/types';
 
 export default function DashboardPage() {

@@ -104,6 +104,26 @@
 5. AI insights panel (collapsible) shows mockup suggestions relevant to case context
 6. Quick actions bar enables natural language input (visual only, no processing)
 
+## Story 1.5.5: Enhanced Partner Dashboard with Operational Focus
+
+**As a** law firm Partner,
+**I want** my dashboard to prioritize operational oversight of supervised cases, tasks, and team workload,
+**so that** I can effectively manage day-to-day operations before reviewing strategic KPIs.
+
+**Acceptance Criteria:**
+1. Partner dashboard shows supervised cases widget first (cases where partner is lead/supervisor)
+2. My Tasks widget displays tasks from supervised cases with priority and deadline visibility
+3. Firm Cases Overview widget displays at-risk cases, high-value cases, and AI-detected patterns
+4. Firm Tasks Overview widget shows aggregate task insights across the firm
+5. Employee Workload widget displays daily/weekly utilization with visual indicators for over/under-utilization
+6. KPI widgets (firm KPIs, billable hours, case distribution, pending approvals) moved to separate Analytics section/tab
+7. Navigation includes new "Analytics" section for accessing KPI dashboard
+8. All new widgets support drag-and-drop rearrangement within dashboard grid
+9. Widgets maintain collapsed/expanded state via Zustand store
+10. Romanian language support maintained in all new widgets
+
+**Rollback Plan:** Dashboard layout changes are per-user preferences; can revert to previous default layout via migration script.
+
 ## Story 1.6: Document Editor Interface
 
 **As a** user creating or editing documents,
@@ -146,19 +166,24 @@
 5. Compose interface includes natural language enhancements mockup
 6. Filter bar allows filtering by case, sender, date range, has-deadline
 
-## Story 1.9: Interactive Prototype Assembly
+## Story 1.8.5: Communications Hub - Task Creation & Reply Enhancement
 
-**As a** stakeholder evaluating the platform,
-**I want** a clickable prototype demonstrating key workflows,
-**so that** I can validate the UX before development.
+**As a** legal professional processing case communications,
+**I want** to reply to messages and create tasks directly from emails,
+**so that** I can efficiently triage my inbox and ensure follow-up actions are tracked in the system.
 
 **Acceptance Criteria:**
-1. Prototype allows navigation between all major screens
-2. Three complete workflows demonstrated: create document, assign task, respond to email
-3. Role switching shows different data and permissions for same screens
-4. Loading states and transitions demonstrated between screens
-5. Error states shown for form validation and system messages
-6. Deployed prototype accessible via web browser for stakeholder review
+1. Each message in MessageView has a "Reply" button that opens the compose modal with AI-suggested response
+2. All extracted items (Deadlines/Termene, Commitments/Angajamente, Action Items/Acțiuni) can be converted to tasks via quick-create button
+3. Task creation from extracted items opens inline editing form with pre-populated fields
+4. Users can dismiss individual extracted items (tracked for AI learning)
+5. Multiple tasks can be created from a single email thread
+6. Email threads can be marked as "processed" and removed from /communications inbox view
+7. Processed emails remain accessible in the case's communication tab
+8. Tasks created from communications include metadata linking back to source message/thread
+9. All UI interactions maintain Romanian language support
+
+**Rollback Plan:** Reply and task creation features can be disabled via feature flag; processed emails can be re-displayed in inbox by removing isProcessed filter.
 
 ## Story 1.10: Developer Onboarding Documentation
 

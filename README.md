@@ -224,6 +224,59 @@ legal-platform/
 | **CI/CD** | GitHub Actions, Azure DevOps | Automation pipeline |
 | **Monitoring** | Application Insights | APM & logging |
 
+## Dashboard System
+
+The Legal Platform features a flexible, role-based dashboard system with customizable widgets and layouts.
+
+### Role-Based Dashboards
+
+Each user role has a customized dashboard optimized for their workflow:
+
+#### Partner Dashboard
+
+Partners have an **operational oversight dashboard** with the following widgets:
+
+1. **Supervised Cases**: Track cases where you're the supervising attorney
+2. **My Tasks**: Personal task management and tracking
+3. **Firm Cases Overview**: Firm-wide case management with 3 views:
+   - At Risk: Cases requiring immediate attention
+   - High Value: High-value cases requiring supervision
+   - AI Insights: AI-suggested cases needing review
+4. **Firm Tasks Overview**: Aggregate firm task metrics and completion rates
+5. **Employee Workload**: Monitor team utilization with daily/weekly views
+6. **AI Suggestions**: AI-powered insights and recommendations
+
+#### Analytics Section (Partner Only)
+
+Partners have access to a dedicated **Analytics section** with strategic KPI widgets:
+
+- **Firm KPIs**: Active cases, clients, approvals, billable hours
+- **Billable Hours Chart**: Visual trends and year-over-year comparisons
+- **Case Distribution**: Case breakdown by status and type
+- **Pending Approvals**: Documents and timesheets awaiting approval
+
+**Access**: Navigate via sidebar Analytics link (Partner role only)
+
+#### Associate & Paralegal Dashboards
+
+- **Associates**: Task-focused widgets for personal productivity
+- **Paralegals**: Document-focused widgets for document management workflows
+
+### Dashboard Features
+
+- **Drag-and-Drop**: Rearrange widgets using React Grid Layout
+- **Collapsible Widgets**: Collapse widgets to save screen space
+- **Persistent Layouts**: Your layout is saved automatically
+- **Responsive**: Optimized for desktop, tablet, and mobile
+- **Real-time Updates**: Data refreshes automatically
+- **Accessible**: WCAG AA compliant with keyboard navigation
+
+### Customization Guide
+
+For information on customizing dashboards and creating widgets, see:
+- **[Dashboard Widgets Guide](docs/guides/dashboard-widgets.md)** - Widget development and customization
+- **[Dashboard Customization](CONTRIBUTING.md#dashboard-customization)** - Layout and widget configuration
+
 ## Documentation
 
 Detailed documentation is available in the `docs/` directory:
@@ -240,6 +293,8 @@ Detailed documentation is available in the `docs/` directory:
   - [Testing Strategy](docs/architecture/testing-strategy.md)
   - [Coding Standards](docs/architecture/coding-standards.md)
 - **[Development Stories](docs/stories/)** - Feature implementation stories
+- **[Guides](docs/guides/)** - Development guides and best practices
+  - [Dashboard Widgets Guide](docs/guides/dashboard-widgets.md)
 
 ## Testing
 

@@ -10,19 +10,44 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as NavigationMenu from '@radix-ui/react-navigation-menu';
-import { useNavigationStore } from '@/stores/navigation.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../../stores/navigation.store';
 import { QuickActions } from './QuickActions';
 import type { NavigationItem, NavigationSection } from '@legal-platform/types';
+import {
+  LayoutDashboard,
+  TrendingUp,
+  Scale,
+  FileText,
+  CheckSquare,
+  Mail,
+  Clock,
+  BarChart3,
+  type LucideIcon
+} from 'lucide-react';
 
 /**
- * Navigation items configuration
- * Icons are simple emoji placeholders - will be replaced with proper icon library
+ * Icon mapping for navigation items
+ */
+const iconMap: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  analytics: TrendingUp,
+  cases: Scale,
+  documents: FileText,
+  tasks: CheckSquare,
+  communications: Mail,
+  'time-tracking': Clock,
+  reports: BarChart3,
+};
+
+/**
+ * Navigation items configuration with Lucide React icons
  */
 const navigationItems: NavigationItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
-    icon: '📊',
+    icon: 'dashboard',
     href: '/',
     section: 'dashboard',
     roles: ['Partner', 'Associate', 'Paralegal'],
@@ -30,7 +55,7 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'analytics',
     label: 'Analytics',
-    icon: '📈',
+    icon: 'analytics',
     href: '/analytics',
     section: 'analytics',
     roles: ['Partner'], // Partner only
@@ -38,7 +63,7 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'cases',
     label: 'Cazuri',
-    icon: '⚖️',
+    icon: 'cases',
     href: '/cases',
     section: 'cases',
     roles: ['Partner', 'Associate', 'Paralegal'],
@@ -46,7 +71,7 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'documents',
     label: 'Documente',
-    icon: '📄',
+    icon: 'documents',
     href: '/documents',
     section: 'documents',
     roles: ['Partner', 'Associate', 'Paralegal'],
@@ -54,7 +79,7 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'tasks',
     label: 'Sarcini',
-    icon: '✓',
+    icon: 'tasks',
     href: '/tasks',
     section: 'tasks',
     roles: ['Partner', 'Associate', 'Paralegal'],
@@ -62,7 +87,7 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'communications',
     label: 'Comunicări',
-    icon: '✉️',
+    icon: 'communications',
     href: '/communications',
     section: 'communications',
     roles: ['Partner', 'Associate', 'Paralegal'],
@@ -70,7 +95,7 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'time-tracking',
     label: 'Pontaj',
-    icon: '⏱️',
+    icon: 'time-tracking',
     href: '/time-tracking',
     section: 'time-tracking',
     roles: ['Partner', 'Associate', 'Paralegal'],
@@ -78,7 +103,7 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'reports',
     label: 'Rapoarte',
-    icon: '📈',
+    icon: 'reports',
     href: '/reports',
     section: 'reports',
     roles: ['Partner', 'Associate'],
@@ -108,6 +133,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
     currentSection,
     isSidebarCollapsed,
     setCurrentSection,
+    toggleSidebar,
   } = useNavigationStore();
 
   // Filter navigation items by current role
@@ -125,21 +151,35 @@ export function Sidebar({ className = '' }: SidebarProps) {
   // Handle navigation item click
   const handleItemClick = (section: NavigationSection) => {
     setCurrentSection(section);
+    // Auto-collapse sidebar when item is selected (if currently expanded)
+    if (!isSidebarCollapsed) {
+      toggleSidebar();
+    }
   };
 
   return (
-    <aside
-      className={`
-        ${className}
-        flex flex-col
-        bg-white border-r border-gray-200
-        transition-all duration-300 ease-in-out
-        ${isSidebarCollapsed ? 'w-16' : 'w-64'}
-        h-screen sticky top-0
-        overflow-y-auto
-      `}
-      aria-label="Main navigation"
-    >
+    <>
+      {/* Backdrop overlay when sidebar is expanded */}
+      {!isSidebarCollapsed && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40 transition-opacity duration-300"
+          onClick={toggleSidebar}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`
+          ${className}
+          flex flex-col
+          bg-white border-r border-gray-200
+          transition-all duration-300 ease-in-out
+          ${isSidebarCollapsed ? 'w-16' : 'w-64'}
+          h-screen fixed top-0 left-0 z-50
+          overflow-y-auto
+        `}
+        aria-label="Main navigation"
+      >
       <div className="flex-1 p-4">
         <NavigationMenu.Root
           orientation="vertical"
@@ -148,6 +188,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
           <NavigationMenu.List className="flex flex-col gap-2">
             {visibleItems.map((item) => {
               const active = isActive(item);
+              const IconComponent = iconMap[item.icon];
               return (
                 <NavigationMenu.Item key={item.id} value={item.id}>
                   <NavigationMenu.Link asChild>
@@ -169,12 +210,12 @@ export function Sidebar({ className = '' }: SidebarProps) {
                       aria-current={active ? 'page' : undefined}
                       title={isSidebarCollapsed ? item.label : undefined}
                     >
-                      <span
-                        className="text-xl flex-shrink-0"
-                        aria-hidden="true"
-                      >
-                        {item.icon}
-                      </span>
+                      {IconComponent && (
+                        <IconComponent
+                          className="w-5 h-5 flex-shrink-0"
+                          aria-hidden="true"
+                        />
+                      )}
                       {!isSidebarCollapsed && (
                         <span className="truncate">{item.label}</span>
                       )}
@@ -194,5 +235,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
         </div>
       )}
     </aside>
+    </>
   );
 }

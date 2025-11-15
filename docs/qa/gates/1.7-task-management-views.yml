@@ -1,0 +1,319 @@
+# Quality Gate Decision for Story 1.7
+# Task Management Views - Calendar, Kanban, List with NL Creation
+
+schema: 1
+story: "1.7"
+story_title: "Task Management Views"
+gate: PENDING
+status_reason: "Pending QA review - All tasks completed, awaiting test execution and validation"
+reviewer: "TBD (Quinn - Test Architect)"
+updated: "2025-11-14T00:00:00Z"
+
+# Test coverage expectations
+test_coverage:
+  unit_tests:
+    required: true
+    minimum_coverage: 70
+    status: PENDING
+    notes: "Component tests created for CalendarView, KanbanBoard, ListView, TaskCreationBar, TaskDetailModal. Store tests created. Execution pending."
+
+  accessibility_tests:
+    required: true
+    wcag_level: AA
+    status: PENDING
+    notes: "Comprehensive a11y tests created covering all task components, Romanian diacritics, color contrast for 6 task types, keyboard navigation, and screen reader compatibility."
+
+  e2e_tests:
+    required: true
+    browsers: [chromium, firefox, webkit]
+    status: PENDING
+    notes: "E2E test suite created covering view switching, task creation, drag-and-drop, modal interactions, and Romanian language support."
+
+  storybook_coverage:
+    required: true
+    status: COMPLETE
+    notes: "Storybook stories created for all 5 main components with multiple states and Romanian locale demonstrations."
+
+# Acceptance criteria validation
+acceptance_criteria:
+  - id: AC1
+    description: "Calendar view shows week with tasks as time blocks, color-coded by type"
+    status: PENDING
+    implementation:
+      - "CalendarView.tsx implements React Big Calendar with Romanian locale"
+      - "6 task type colors defined: Research (Blue), DocumentCreation (Green), DocumentRetrieval (Purple), CourtDate (Red), Meeting (Yellow), BusinessTrip (Indigo)"
+      - "Week view default with drag-and-drop rescheduling"
+    validation_pending:
+      - "Visual verification of color coding in all browsers"
+      - "Drag-and-drop functionality tested end-to-end"
+      - "Romanian date/time formatting verified"
+
+  - id: AC2
+    description: "Kanban board displays tasks in columns: To Do, In Progress, Review, Complete"
+    status: PENDING
+    implementation:
+      - "KanbanBoard.tsx with 4 columns (De Făcut, În Progres, În Revizuire, Finalizat)"
+      - "@dnd-kit/core drag-and-drop with touch support"
+      - "Task cards show type badge, assignee, due date, priority indicator"
+    validation_pending:
+      - "Drag-and-drop between columns tested in E2E"
+      - "Empty state rendering verified"
+      - "Responsive horizontal scroll on mobile verified"
+
+  - id: AC3
+    description: "List view presents tasks in table format with sortable columns"
+    status: PENDING
+    implementation:
+      - "ListView.tsx with 6 sortable columns"
+      - "Pagination (10 tasks per page)"
+      - "Romanian date format (dd.MM.yyyy)"
+    validation_pending:
+      - "Column sorting tested (ascending/descending)"
+      - "Pagination controls tested with >10 tasks"
+      - "Responsive table scroll verified on mobile"
+
+  - id: AC4
+    description: "Natural language task creation bar at top with example text showing parsing"
+    status: PENDING
+    implementation:
+      - "TaskCreationBar.tsx with Romanian placeholder and suggestions"
+      - "Mock NLP parser highlights: task type, dates, case refs, person names"
+      - "4 task template suggestions"
+    validation_pending:
+      - "Entity highlighting tested with Romanian keywords"
+      - "Suggestion click functionality verified"
+      - "Create button opens modal with pre-filled fields"
+
+  - id: AC5
+    description: "Task detail modal includes all six task types with appropriate fields"
+    status: PENDING
+    implementation:
+      - "TaskDetailModal.tsx with Radix UI Dialog"
+      - "Type-specific fields for all 6 task types"
+      - "Form validation with Romanian error messages"
+    validation_pending:
+      - "All 6 task types tested with type-specific fields"
+      - "Form validation tested (required fields)"
+      - "Save/Cancel/Delete actions tested"
+      - "Modal focus trap verified for accessibility"
+
+  - id: AC6
+    description: "Drag-and-drop demonstrated between calendar slots and kanban columns"
+    status: PENDING
+    implementation:
+      - "React Big Calendar built-in drag for calendar"
+      - "@dnd-kit/core for kanban board"
+      - "Visual feedback and drop zone highlights"
+    validation_pending:
+      - "Calendar drag-and-drop rescheduling tested"
+      - "Kanban column-to-column drag tested"
+      - "Touch support verified on tablet viewport"
+      - "Keyboard alternative dragging tested for a11y"
+
+# Technical implementation validation
+technical_validation:
+  architecture:
+    status: PENDING
+    checks:
+      - component_structure: "Components in apps/web/src/components/task/"
+      - state_management: "Zustand store with localStorage persistence"
+      - type_definitions: "Types in packages/shared/types/src/task-management.ts"
+      - mock_data: "Factories in packages/shared/test-utils/src/factories/task-management.factory.ts"
+
+  dependencies:
+    status: PENDING
+    checks:
+      - react_big_calendar: "Version 1.8+, Romanian locale configured"
+      - dnd_kit: "@dnd-kit/core installed for accessible drag-and-drop"
+      - radix_ui: "Dialog, Select, Tabs components used"
+      - date_fns: "Version 3.0+ for Romanian date formatting"
+
+  coding_standards:
+    status: PENDING
+    checks:
+      - typescript_strict: "No type errors, strict mode enabled"
+      - naming_conventions: "PascalCase components, kebab-case stores"
+      - no_any_types: "All types properly defined"
+      - romanian_support: "UTF-8 encoding, diacritics (ă, â, î, ș, ț) rendered"
+
+# Performance baselines (for prototype)
+performance:
+  page_load:
+    target: "< 2s"
+    status: PENDING
+    notes: "Measure initial page load time for /tasks route"
+
+  drag_drop_smoothness:
+    target: "60 FPS during drag operations"
+    status: PENDING
+    notes: "Verify smooth animations on desktop and tablet"
+
+  task_list_rendering:
+    target: "< 500ms for 50 tasks"
+    status: PENDING
+    notes: "Measure rendering time for list view with multiple tasks"
+
+# Accessibility requirements (WCAG AA)
+accessibility:
+  keyboard_navigation:
+    status: PENDING
+    requirements:
+      - "Tab through view switcher, task cards, controls"
+      - "Arrow keys for calendar navigation"
+      - "Enter/Space to select tasks"
+      - "Escape to close modal"
+      - "Accessible drag-and-drop keyboard alternatives"
+
+  screen_reader:
+    status: PENDING
+    requirements:
+      - "Calendar events announced with time and title"
+      - "Kanban columns announced with task count"
+      - "Table headers and cells properly labeled"
+      - "Modal focus trap with proper ARIA labels"
+
+  color_contrast:
+    status: PENDING
+    requirements:
+      - "All 6 task type badge colors meet WCAG AA (4.5:1)"
+      - "Priority indicators meet contrast requirements"
+      - "Text on colored backgrounds readable"
+
+# Romanian language support
+i18n_validation:
+  status: PENDING
+  checks:
+    - diacritics_rendering: "ă, â, î, ș, ț displayed correctly in all components"
+    - date_formatting: "dd.MM.yyyy format with Romanian month names"
+    - ui_labels: "All labels in Romanian (Sarcini, Creează, Salvează, etc.)"
+    - mock_data: "Realistic Romanian names, legal terminology"
+
+# Files created (to be validated)
+files_created:
+  components:
+    - "apps/web/src/app/tasks/page.tsx"
+    - "apps/web/src/components/task/CalendarView.tsx"
+    - "apps/web/src/components/task/KanbanBoard.tsx"
+    - "apps/web/src/components/task/ListView.tsx"
+    - "apps/web/src/components/task/TaskCreationBar.tsx"
+    - "apps/web/src/components/task/TaskDetailModal.tsx"
+
+  tests:
+    - "apps/web/src/components/task/CalendarView.test.tsx"
+    - "apps/web/src/components/task/KanbanBoard.test.tsx"
+    - "apps/web/src/components/task/ListView.test.tsx"
+    - "apps/web/src/components/task/TaskCreationBar.test.tsx"
+    - "apps/web/src/components/task/TaskDetailModal.test.tsx"
+    - "apps/web/src/components/task/TaskManagement.a11y.test.tsx"
+    - "apps/web/src/stores/task-management.store.test.ts"
+    - "tests/e2e/tasks/task-management.spec.ts"
+
+  stories:
+    - "apps/web/src/components/task/CalendarView.stories.tsx"
+    - "apps/web/src/components/task/KanbanBoard.stories.tsx"
+    - "apps/web/src/components/task/ListView.stories.tsx"
+    - "apps/web/src/components/task/TaskCreationBar.stories.tsx"
+    - "apps/web/src/components/task/TaskDetailModal.stories.tsx"
+
+  stores:
+    - "apps/web/src/stores/task-management.store.ts"
+
+  types:
+    - "packages/shared/types/src/task-management.ts"
+
+  factories:
+    - "packages/shared/test-utils/src/factories/task-management.factory.ts"
+    - "packages/shared/test-utils/src/factories/task-management.factory.test.ts"
+
+  qa:
+    - "docs/qa/gates/1.7-task-management-views.yml"
+
+# Pre-validation checklist (for dev to complete before QA)
+pre_qa_checklist:
+  - item: "Run all unit tests and verify 70%+ coverage"
+    status: PENDING
+  - item: "Run accessibility tests and verify 0 violations"
+    status: PENDING
+  - item: "Run E2E tests in all 3 browsers (Chromium, Firefox, WebKit)"
+    status: PENDING
+  - item: "Verify Storybook stories render correctly"
+    status: PENDING
+  - item: "Test responsive layout on desktop, tablet, mobile viewports"
+    status: PENDING
+  - item: "Verify Romanian diacritics render in all components"
+    status: PENDING
+  - item: "Test all 6 task types with type-specific fields"
+    status: PENDING
+  - item: "Test drag-and-drop in calendar and kanban"
+    status: PENDING
+  - item: "Verify navigation to /tasks route works"
+    status: PENDING
+  - item: "Test localStorage persistence for view preference"
+    status: PENDING
+
+# Expected quality score range (to be calculated after testing)
+expected_quality_score:
+  minimum: 80
+  target: 90
+  notes: "Score will be calculated based on test results, accessibility compliance, and code quality"
+
+# Context for QA reviewer
+context: |
+  Story 1.7 is part of Epic 1: "UI Foundation & Interactive Prototype".
+  This is a clickable mockup/prototype story for pilot firm validation.
+  The implementation focuses on visual design and interactivity demonstration,
+  not production-ready backend integration.
+
+  Key features:
+  - 3 task views: Calendar (React Big Calendar), Kanban (@dnd-kit), List (sortable table)
+  - Natural language task creation with mock parsing
+  - 6 task types with type-specific fields
+  - Drag-and-drop for rescheduling and status changes
+  - Romanian language support throughout
+  - Full accessibility (WCAG AA) compliance
+
+  All tasks (1-15) have been completed by dev agent. Awaiting test execution
+  and validation before final gate decision.
+
+# Next steps for QA
+qa_instructions: |
+  1. Execute unit test suite and verify:
+     - All component tests pass
+     - Store tests pass
+     - Factory tests pass
+     - Coverage ≥ 70%
+
+  2. Execute accessibility test suite and verify:
+     - 0 axe-core violations
+     - All 6 task type colors meet WCAG AA contrast
+     - Keyboard navigation works (Tab, Arrow, Enter, Escape)
+     - Screen reader compatible
+
+  3. Execute E2E test suite and verify:
+     - All tests pass in Chromium, Firefox, WebKit
+     - View switching works
+     - Drag-and-drop works in calendar and kanban
+     - Task creation modal works
+     - Romanian text renders correctly
+
+  4. Manual testing:
+     - Verify responsive layout on multiple viewports
+     - Test drag-and-drop touch support on tablet
+     - Verify all 6 task types display correct fields
+     - Test localStorage view preference persistence
+
+  5. Code review:
+     - Verify TypeScript strict mode compliance
+     - Check Romanian diacritics in source code
+     - Validate project structure alignment
+     - Review component architecture
+
+  6. Update gate status based on findings:
+     - PASS: All tests passing, no accessibility violations, good code quality
+     - CONCERNS: Minor issues acceptable for prototype, documented for future
+     - FAIL: Blocking issues preventing pilot demonstration
+
+# Waiver consideration (if needed)
+waiver:
+  active: false
+  notes: "Waiver may be activated for minor test failures if they don't block Epic 1 prototype objectives"

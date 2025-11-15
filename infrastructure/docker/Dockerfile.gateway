@@ -1,0 +1,42 @@
+# Multi-stage Dockerfile for Legal Platform API Gateway (GraphQL/Express)
+
+# Stage 1: Install dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile --only=production
+
+# Stage 2: Build the application
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm build  # If using TypeScript, build to dist/
+
+# Stage 3: Production runtime
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 gateway
+
+# Copy built application
+COPY --from=builder --chown=gateway:nodejs /app/dist ./dist  # Assume build outputs to dist
+COPY --from=builder --chown=gateway:nodejs /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+USER gateway
+
+EXPOSE 4000
+
+ENV PORT=4000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:4000/health || exit 1
+
+CMD ["node", "dist/server.js"]
