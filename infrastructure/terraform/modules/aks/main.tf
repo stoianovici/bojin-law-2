@@ -1,50 +1,87 @@
-resource "azurerm_kubernetes_cluster" "this" {
-  name                = var.aks_cluster_name
+# AKS Module - Azure Kubernetes Service Cluster
+# Creates AKS cluster with system and user node pools
+
+resource "azurerm_kubernetes_cluster" "main" {
+  name                = "${var.project_name}-${var.environment}-aks"
   location            = var.location
   resource_group_name = var.resource_group_name
-  dns_prefix          = var.aks_cluster_name
+  dns_prefix          = "${var.project_name}-${var.environment}"
+  kubernetes_version  = var.kubernetes_version
 
   default_node_pool {
     name                = "system"
-    node_count          = 2
-    vm_size             = "Standard_D2s_v3"
-    type                = "System"
+    node_count          = var.system_node_count
+    vm_size             = var.system_node_size
+    vnet_subnet_id      = var.vnet_subnet_id
+    type                = "VirtualMachineScaleSets"
     enable_auto_scaling = false
     os_disk_size_gb     = 30
+
+    node_labels = {
+      "nodepool-type" = "system"
+      "environment"   = var.environment
+    }
+
+    tags = merge(var.tags, {
+      "nodepool" = "system"
+    })
   }
 
   identity {
     type = "SystemAssigned"
   }
 
-  linux_profile {
-    admin_username = "azureuser"
-    ssh_key {
-      key_data = var.ssh_public_key
-    }
+  network_profile {
+    network_plugin     = "azure"
+    network_policy     = "azure"
+    load_balancer_sku  = "standard"
+    service_cidr       = "10.2.0.0/16"
+    dns_service_ip     = "10.2.0.10"
   }
 
-  network_profile {
-    network_plugin    = "azure"
-    load_balancer_sku = "standard"
-    service_cidr      = var.service_cidr
-    dns_service_ip    = var.dns_service_ip
+  auto_scaler_profile {
+    balance_similar_node_groups = true
+    max_graceful_termination_sec = 600
   }
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      default_node_pool[0].node_count,
+    ]
+  }
 }
 
+# User Node Pool for application workloads
 resource "azurerm_kubernetes_cluster_node_pool" "user" {
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.this.id
-  name                  = "userpool"
-  node_count            = 3
-  vm_size               = "Standard_D4s_v3"
-  enable_auto_scaling   = true
-  min_count             = 3
-  max_count             = 10
-  os_disk_size_gb       = 100
-  vnet_subnet_id        = var.user_node_subnet_id
-  zones                 = ["1", "2", "3"]
+  name                  = "user"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
+  vm_size               = var.user_node_size
+  vnet_subnet_id        = var.vnet_subnet_id
 
-  tags = var.tags
+  node_count          = var.user_node_count
+  enable_auto_scaling = true
+  min_count           = var.user_node_min
+  max_count           = var.user_node_max
+
+  node_labels = {
+    "nodepool-type" = "user"
+    "environment"   = var.environment
+  }
+
+  node_taints = []
+
+  tags = merge(var.tags, {
+    "nodepool" = "user"
+  })
+}
+
+# Role Assignment for AKS to pull from ACR
+resource "azurerm_role_assignment" "aks_acr_pull" {
+  count                = var.acr_id != "" ? 1 : 0
+  principal_id         = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
+  role_definition_name = "AcrPull"
+  scope                = var.acr_id
+  skip_service_principal_aad_check = true
 }

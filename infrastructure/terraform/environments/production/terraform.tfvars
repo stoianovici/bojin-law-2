@@ -1,14 +1,47 @@
-resource_group_name = "legal-platform-prod-rg"
-location           = "West Europe"
-environment        = "production"
-aks_cluster_name   = "legal-platform-aks-prod"
-postgres_server_name = "legal-platform-postgres-prod"
-redis_cache_name   = "legal-platform-redis-prod"
-storage_account_name = "legalplatformstorageprod${random_string.suffix.result}"
-app_insights_name  = "legal-platform-ai-prod"
-key_vault_name     = "legal-platform-kv-prod"
+# Terraform Variables for Production Environment
+
+# General Configuration
+project_name = "legal-platform"
+environment  = "production"
+location     = "West Europe"
+
 tags = {
-  Environment = "production"
   Project     = "Legal Platform"
+  Environment = "Production"
   ManagedBy   = "Terraform"
+  CostCenter  = "Operations"
+  Compliance  = "GDPR"
 }
+
+# Networking
+vnet_address_space = ["10.1.0.0/16"]
+
+# AKS Cluster (Higher capacity for production)
+aks_system_node_count = 3
+aks_system_node_size  = "Standard_D4s_v3"
+aks_user_node_count   = 5
+aks_user_node_size    = "Standard_D8s_v3"
+aks_user_node_min     = 5
+aks_user_node_max     = 20
+
+# Database (PostgreSQL - Higher tier for production)
+db_admin_username         = "psqladmin"
+# db_admin_password should be set via environment variable: TF_VAR_db_admin_password
+db_sku_name               = "GP_Standard_D8s_v3"
+db_storage_mb             = 65536 # 64GB
+db_backup_retention_days  = 35    # 5 weeks
+
+# Redis Cache (Higher tier for production)
+redis_capacity = 2
+redis_family   = "C"
+redis_sku_name = "Premium"
+
+# Storage (Zone-redundant for production)
+storage_replication_type = "GZRS" # Geo-zone-redundant storage
+
+# Monitoring (Longer retention for production)
+log_retention_days = 90
+
+# Cost Management
+monthly_budget       = 1300
+budget_alert_emails  = ["devops@example.com", "engineering-manager@example.com", "finance@example.com"]

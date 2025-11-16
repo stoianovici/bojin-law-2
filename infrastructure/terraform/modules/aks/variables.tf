@@ -1,41 +1,80 @@
+# AKS Module Variables
+
+variable "project_name" {
+  description = "Project name used for resource naming"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (staging, production)"
+  type        = string
+}
+
+variable "location" {
+  description = "Azure region for resources"
+  type        = string
+}
+
 variable "resource_group_name" {
   description = "Name of the resource group"
   type        = string
 }
 
-variable "location" {
-  description = "Azure location"
+variable "vnet_subnet_id" {
+  description = "ID of the subnet for AKS nodes"
   type        = string
 }
 
-variable "aks_cluster_name" {
-  description = "Name of the AKS cluster"
+variable "kubernetes_version" {
+  description = "Kubernetes version"
   type        = string
+  default     = "1.28"
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for AKS nodes"
-  type        = string
+variable "system_node_count" {
+  description = "Number of nodes in the system node pool"
+  type        = number
+  default     = 2
 }
 
-variable "service_cidr" {
-  description = "CIDR for Kubernetes services"
+variable "system_node_size" {
+  description = "VM size for system nodes"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "Standard_D2s_v3"
 }
 
-variable "dns_service_ip" {
-  description = "IP for Kubernetes DNS"
-  type        = string
-  default     = "10.0.0.10"
+variable "user_node_count" {
+  description = "Initial number of nodes in the user node pool"
+  type        = number
+  default     = 3
 }
 
-variable "user_node_subnet_id" {
-  description = "Subnet ID for user node pool"
+variable "user_node_size" {
+  description = "VM size for user nodes"
   type        = string
+  default     = "Standard_D4s_v3"
+}
+
+variable "user_node_min" {
+  description = "Minimum number of user nodes (autoscaling)"
+  type        = number
+  default     = 3
+}
+
+variable "user_node_max" {
+  description = "Maximum number of user nodes (autoscaling)"
+  type        = number
+  default     = 10
+}
+
+variable "acr_id" {
+  description = "ID of Azure Container Registry for AcrPull role assignment"
+  type        = string
+  default     = ""
 }
 
 variable "tags" {
-  description = "Tags for the resources"
+  description = "Tags to apply to all resources"
   type        = map(string)
+  default     = {}
 }
