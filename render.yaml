@@ -1,17 +1,22 @@
 # Render.com Infrastructure Configuration
 # Legal Platform - Microservices Architecture
 #
-# Cost Breakdown (Production):
-#   Web: 2× 4GB @ $25/mo = $50/mo
-#   Gateway: 2× 4GB @ $25/mo = $50/mo
-#   Document Service: 1× 2GB @ $15/mo = $15/mo
-#   AI Service: 1× 2GB @ $15/mo = $15/mo
-#   Task Service: 1× 2GB @ $15/mo = $15/mo
-#   Integration Service: 1× 2GB @ $15/mo = $15/mo
-#   Notification Service: 1× 2GB @ $15/mo = $15/mo
-#   PostgreSQL: Standard 25GB = $25/mo
-#   Redis: 1GB = $10/mo
-#   Total: $207/month
+# Cost Breakdown (Testing - Current Config):
+#   Web: 1× 512MB Starter = $7/mo
+#   Gateway: 1× 512MB Starter = $7/mo
+#   Document Service: 1× 512MB Starter = $7/mo
+#   AI Service: 1× 512MB Starter = $7/mo
+#   Task Service: 1× 512MB Starter = $7/mo
+#   Integration Service: 1× 512MB Starter = $7/mo
+#   Notification Service: 1× 512MB Starter = $7/mo
+#   PostgreSQL: Starter 10GB = $7/mo
+#   Redis: Starter 1GB = $10/mo
+#   Total: ~$66/month (for testing)
+#
+# Production Config (upgrade later):
+#   - Increase web/gateway to 'standard' plan (4GB) with 2 instances each
+#   - Increase database to 'pro' plan for more storage/performance
+#   - Estimated production cost: ~$200-250/month
 #
 # See infrastructure/COST_ESTIMATION.md for detailed analysis
 
@@ -26,8 +31,8 @@ services:
     branch: main # Production deploys from main
     dockerfilePath: ./infrastructure/docker/Dockerfile.web
     dockerContext: .
-    plan: standard # 4GB RAM, 2 CPU
-    numInstances: 2 # High availability with 2 instances
+    plan: starter # 512MB RAM - for testing (upgrade to 'standard' for production)
+    numInstances: 1 # Single instance for testing (increase to 2+ for production HA)
     region: oregon # US West
     envVars:
       - key: NODE_ENV
@@ -49,8 +54,8 @@ services:
     branch: main
     dockerfilePath: ./infrastructure/docker/Dockerfile.gateway
     dockerContext: .
-    plan: standard # 4GB RAM, 2 CPU
-    numInstances: 2 # High availability
+    plan: starter # 512MB RAM - for testing (upgrade to 'standard' for production)
+    numInstances: 1 # Single instance for testing (increase to 2+ for production HA)
     region: oregon
     envVars:
       - key: NODE_ENV
@@ -363,7 +368,7 @@ databases:
   # PostgreSQL - Primary Database with pgvector Extension
   ##############################################################################
   - name: legal-platform-db
-    plan: standard # 25GB storage, Standard plan ($25/month)
+    plan: starter # 1GB RAM, 10GB storage, Starter plan ($7/month) - can upgrade to 'pro' later
     databaseName: legal_platform_prod
     user: legal_platform_user
     region: oregon
