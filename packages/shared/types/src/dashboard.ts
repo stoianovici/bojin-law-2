@@ -57,8 +57,17 @@ export interface KPIWidget extends BaseWidget {
   }>;
 }
 
-// Chart Widget (bar charts, pie charts)
-export type ChartType = 'bar' | 'pie' | 'line' | 'area';
+// Chart Widget (bar charts, pie charts, etc.)
+// Extended to support reports (radar, gauge, table, composed)
+export type ChartType =
+  | 'bar'
+  | 'pie'
+  | 'line'
+  | 'area'
+  | 'radar'
+  | 'gauge'
+  | 'table'
+  | 'composed';
 
 export interface ChartWidget extends BaseWidget {
   type: 'chart';

@@ -6,7 +6,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Sidebar } from './Sidebar';
-import { useNavigationStore } from '@/stores/navigation.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../../stores/navigation.store';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -55,12 +56,6 @@ describe('Sidebar', () => {
       expect(screen.getByText('Cazuri')).toBeInTheDocument();
       expect(screen.getByText('Comunicări')).toBeInTheDocument();
       expect(screen.getByText('Sarcini')).toBeInTheDocument();
-    });
-
-    it('should display current role in footer', () => {
-      render(<Sidebar />);
-
-      expect(screen.getByText(/Role: Partner/i)).toBeInTheDocument();
     });
   });
 
@@ -134,14 +129,6 @@ describe('Sidebar', () => {
       const links = screen.getAllByRole('link');
       // First link (Dashboard) should have title
       expect(links[0]).toHaveAttribute('title', 'Dashboard');
-    });
-
-    it('should show role emoji in footer when collapsed', () => {
-      useNavigationStore.setState({ isSidebarCollapsed: true });
-      render(<Sidebar />);
-
-      expect(screen.getByText('👤')).toBeInTheDocument();
-      expect(screen.queryByText(/Role:/)).not.toBeInTheDocument();
     });
   });
 

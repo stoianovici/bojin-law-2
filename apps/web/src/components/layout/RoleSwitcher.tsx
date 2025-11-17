@@ -1,27 +1,35 @@
 /**
- * Role Switcher Component
- * Allows switching between different user roles for testing
+ * RoleSwitcher Component
+ * Dropdown component for switching between user roles in demo mode
  */
 
 'use client';
 
 import React from 'react';
-import * as Select from '@radix-ui/react-select';
-import { useNavigationStore } from '@/stores/navigation.store';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../../stores/navigation.store';
 import type { UserRole } from '@legal-platform/types';
 
-const roleConfig: Record<UserRole, { color: string; icon: string }> = {
-  Partner: { color: 'blue', icon: '👔' },
-  Associate: { color: 'green', icon: '⚖️' },
-  Paralegal: { color: 'purple', icon: '📋' },
-};
+const roleOptions: { value: UserRole; label: string; description: string }[] = [
+  {
+    value: 'Partner',
+    label: 'Partener',
+    description: 'Lider de echipă cu acces complet',
+  },
+  {
+    value: 'Associate',
+    label: 'Asociat',
+    description: 'Avocat cu cazuri asignate',
+  },
+  {
+    value: 'Paralegal',
+    label: 'Asistent Juridic',
+    description: 'Suport administrativ și documente',
+  },
+];
 
 export interface RoleSwitcherProps {
-  /**
-   * Callback when role changes
-   */
-  onRoleChange?: (role: UserRole) => void;
-
   /**
    * Optional CSS class name
    */
@@ -29,112 +37,132 @@ export interface RoleSwitcherProps {
 }
 
 /**
- * Role Switcher component
- * Features:
- * - Role selection dropdown
- * - Visual feedback with colors and icons
- * - Toast notification on role switch
- * - localStorage persistence via navigation store
+ * RoleSwitcher component for demo mode role switching
  */
-export function RoleSwitcher({ onRoleChange, className = '' }: RoleSwitcherProps) {
+export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
   const { currentRole, setCurrentRole } = useNavigationStore();
+
+  const currentRoleOption = roleOptions.find(option => option.value === currentRole);
 
   const handleRoleChange = (role: UserRole) => {
     setCurrentRole(role);
-    onRoleChange?.(role);
-
-    // Show toast notification (simplified - would use a toast library in production)
+    // Show toast notification
     console.log(`Switched to ${role} view`);
   };
 
-  const config = roleConfig[currentRole];
-
   return (
-    <div className={className}>
-      <Select.Root value={currentRole} onValueChange={handleRoleChange as (value: string) => void}>
-        <Select.Trigger
-          className="
-            flex items-center justify-between gap-2
-            w-full px-3 py-2 rounded-lg
-            bg-gray-100 hover:bg-gray-200
-            text-sm font-medium text-gray-900
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button
+          className={`
+            ${className}
+            flex items-center gap-2
+            px-3 py-2 rounded-lg
+            bg-blue-50 hover:bg-blue-100
+            border border-blue-200
+            text-blue-700 text-sm font-medium
             focus:outline-none focus:ring-2 focus:ring-blue-500
             transition-colors
-          "
-          aria-label="Select role"
+          `}
+          aria-label="Switch user role"
         >
-          <div className="flex items-center gap-2">
-            <span className="text-lg" aria-hidden="true">{config.icon}</span>
-            <Select.Value />
-          </div>
-          <Select.Icon>
-            <svg
-              className="w-4 h-4 text-gray-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </Select.Icon>
-        </Select.Trigger>
-
-        <Select.Portal>
-          <Select.Content
-            className="
-              overflow-hidden
-              bg-white rounded-lg shadow-lg border border-gray-200
-              z-50
-            "
-            position="popper"
-            sideOffset={5}
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
           >
-            <Select.Viewport className="p-1">
-              {(Object.keys(roleConfig) as UserRole[]).map((role) => {
-                const { color, icon } = roleConfig[role];
-                return (
-                  <Select.Item
-                    key={role}
-                    value={role}
-                    className={`
-                      flex items-center gap-2
-                      px-3 py-2 rounded-md
-                      text-sm cursor-pointer
-                      hover:bg-${color}-50
-                      focus:bg-${color}-50 focus:outline-none
-                      data-[state=checked]:bg-${color}-100
-                      transition-colors
-                    `}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
+          <span>{currentRoleOption?.label || 'Partener'}</span>
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+      </DropdownMenu.Trigger>
+
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          className="
+            min-w-[280px] p-2
+            bg-white rounded-lg
+            shadow-lg border border-gray-200
+            z-50
+          "
+          align="end"
+          sideOffset={5}
+        >
+          <DropdownMenu.Label className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Schimbă Rol Demonstrativ
+          </DropdownMenu.Label>
+
+          <DropdownMenu.Separator className="h-px my-2 bg-gray-200" />
+
+          {roleOptions.map((option) => (
+            <DropdownMenu.Item
+              key={option.value}
+              className={`
+                flex flex-col px-3 py-3
+                text-sm rounded-md
+                cursor-pointer
+                hover:bg-gray-100
+                focus:bg-gray-100 focus:outline-none
+                transition-colors
+                ${currentRole === option.value ? 'bg-blue-50 border border-blue-200' : ''}
+              `}
+              onSelect={() => handleRoleChange(option.value)}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-900">
+                  {option.label}
+                </span>
+                {currentRole === option.value && (
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
-                    <span className="text-lg" aria-hidden="true">{icon}</span>
-                    <Select.ItemText>{role}</Select.ItemText>
-                    <Select.ItemIndicator className="ml-auto">
-                      <svg
-                        className="w-4 h-4 text-blue-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </Select.ItemIndicator>
-                  </Select.Item>
-                );
-              })}
-            </Select.Viewport>
-          </Select.Content>
-        </Select.Portal>
-      </Select.Root>
-    </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+              <span className="text-xs text-gray-500 mt-1">
+                {option.description}
+              </span>
+            </DropdownMenu.Item>
+          ))}
+
+          <DropdownMenu.Separator className="h-px my-2 bg-gray-200" />
+
+          <div className="px-3 py-2 text-xs text-gray-500">
+            Datele se schimbă în funcție de rol pentru demonstrație
+          </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }

@@ -600,6 +600,292 @@ tests/
 - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
 - [Web Vitals](https://web.dev/vitals/)
 
+## Dashboard Customization
+
+The Legal Platform features a flexible, role-based dashboard system with drag-and-drop widget functionality and persistent layouts.
+
+### Dashboard Architecture
+
+The dashboard system is built with:
+
+- **React Grid Layout**: Drag-and-drop widget rearrangement
+- **Zustand**: State management with localStorage persistence
+- **Role-Based Layouts**: Different widget sets per user role
+- **Responsive Design**: Mobile-friendly breakpoints
+
+### Customizing Dashboard Layouts
+
+Dashboard layouts are managed in `apps/web/src/stores/dashboard.store.ts`.
+
+#### Layout Configuration
+
+Each role has a default layout defined as an array of layout items:
+
+```typescript
+const partnerLayout: LayoutItem[] = [
+  {
+    id: 'supervised-cases',        // Unique widget ID
+    type: 'supervised-cases',       // Widget type
+    x: 0,                           // Grid column position (0-11)
+    y: 0,                           // Grid row position
+    w: 6,                           // Width in grid units (1-12)
+    h: 4,                           // Height in grid units
+  },
+  // More widgets...
+];
+```
+
+#### Grid System
+
+The dashboard uses a **12-column grid** with the following constraints:
+
+- **Total Columns**: 12
+- **Row Height**: 60px
+- **Minimum Width**: 1 grid unit (w: 1)
+- **Maximum Width**: 12 grid units (w: 12)
+- **Responsive Breakpoints**:
+  - Large (lg): 1200px - 12 columns
+  - Medium (md): 996px - 10 columns
+  - Small (sm): 768px - 6 columns
+  - Extra Small (xs): 480px - 4 columns
+
+#### Adding a Widget to a Layout
+
+To add a new widget to a role's dashboard:
+
+1. **Define the widget in the store's initial state**:
+
+```typescript
+const initialPartnerWidgets = {
+  // Existing widgets...
+  myNewWidget: {
+    id: 'my-new-widget',
+    type: WidgetType.MY_NEW_WIDGET,
+    title: 'My New Widget',
+    data: { /* widget data */ },
+  } as MyNewWidget,
+};
+```
+
+2. **Add to the layout array**:
+
+```typescript
+const partnerLayout = [
+  // Existing layout items...
+  {
+    id: 'my-new-widget',
+    type: 'my-new-widget',
+    x: 0,           // Start at column 0
+    y: 16,          // Position below existing widgets
+    w: 6,           // Half-width widget
+    h: 3,           // 3 row units tall
+  },
+];
+```
+
+3. **Register widget rendering in the dashboard page**:
+
+```typescript
+// In apps/web/src/app/page.tsx
+{widgetConfig.type === WidgetType.MY_NEW_WIDGET && (
+  <MyNewWidget
+    widget={widgets.myNewWidget as MyNewWidget}
+    isLoading={isLoading}
+    onRefresh={handleRefresh}
+  />
+)}
+```
+
+#### Modifying Existing Layouts
+
+To change the default layout for a role:
+
+1. Open `apps/web/src/stores/dashboard.store.ts`
+2. Locate the role's layout array (e.g., `partnerLayout`)
+3. Adjust the `x`, `y`, `w`, or `h` values
+4. Ensure no widgets overlap (grid collision detection will prevent overlaps)
+5. Test the layout in Storybook or development environment
+
+**Example**: Make a widget full-width:
+
+```typescript
+{
+  id: 'firm-cases-overview',
+  type: 'firm-cases-overview',
+  x: 0,           // Start at column 0
+  y: 4,           // Position below previous widgets
+  w: 12,          // Full width (all 12 columns)
+  h: 5,           // 5 row units tall
+}
+```
+
+### Widget State Management
+
+#### Collapse/Expand State
+
+Widget collapse state is stored per widget and persists across sessions:
+
+```typescript
+// In dashboard.store.ts
+toggleWidgetCollapse: (widgetId: string) => {
+  set((state) => {
+    const widget = state.widgets[widgetId];
+    if (widget) {
+      widget.isCollapsed = !widget.isCollapsed;
+    }
+  });
+},
+```
+
+#### Layout Persistence
+
+User layout changes are automatically saved to localStorage:
+
+```typescript
+// Layout changes persist automatically via Zustand middleware
+persist(
+  (set, get) => ({
+    // Store state...
+  }),
+  {
+    name: 'dashboard-storage',
+    storage: createJSONStorage(() => localStorage),
+  }
+)
+```
+
+To reset to default layout:
+
+```typescript
+// In dashboard.store.ts
+resetLayout: () => {
+  set((state) => ({
+    layout: getDefaultLayout(state.currentRole),
+  }));
+},
+```
+
+### Creating Analytics Layouts
+
+The Analytics section has a separate layout configuration:
+
+```typescript
+const analyticsLayout: LayoutItem[] = [
+  { id: 'firm-kpis', type: 'firm-kpis', x: 0, y: 0, w: 12, h: 3 },
+  { id: 'billable-hours-chart', type: 'billable-hours-chart', x: 0, y: 3, w: 6, h: 4 },
+  { id: 'case-distribution', type: 'case-distribution', x: 6, y: 3, w: 6, h: 4 },
+  { id: 'pending-approvals', type: 'pending-approvals', x: 0, y: 7, w: 12, h: 4 },
+];
+```
+
+Analytics layouts follow the same grid system and are managed separately from dashboard layouts.
+
+### Role-Based Access Control
+
+Widgets and layouts are filtered by user role:
+
+```typescript
+// In dashboard.store.ts
+const getWidgetsForRole = (role: UserRole) => {
+  switch (role) {
+    case 'Partner':
+      return initialPartnerWidgets;
+    case 'Associate':
+      return initialAssociateWidgets;
+    case 'Paralegal':
+      return initialParalegalWidgets;
+    default:
+      return {};
+  }
+};
+```
+
+To restrict a widget to specific roles:
+
+1. Only include the widget in that role's initial widgets
+2. Only add the widget to that role's layout
+3. E2E tests should verify other roles cannot access the widget
+
+### Widget Development
+
+For detailed information on creating new widgets, see:
+
+**[Dashboard Widgets Guide](docs/guides/dashboard-widgets.md)**
+
+This comprehensive guide covers:
+
+- Widget architecture and structure
+- Available widget types
+- Creating new widgets
+- Testing widgets
+- Performance optimization
+- Accessibility requirements
+- Employee workload calculations
+
+### Layout Best Practices
+
+1. **Visual Hierarchy**: Place most important widgets at the top
+2. **Related Widgets**: Group related widgets together
+3. **Full-Width Widgets**: Use full-width (w: 12) for complex widgets like case tables
+4. **Half-Width Widgets**: Use half-width (w: 6) for simple widgets like KPIs
+5. **Consistent Heights**: Try to keep widgets in the same row at the same height
+6. **Avoid Overlaps**: Grid collision detection will prevent overlaps, but plan layouts carefully
+7. **Responsive Testing**: Test layouts on all breakpoints
+
+### Testing Dashboard Changes
+
+When modifying dashboards or widgets:
+
+1. **Unit Tests**: Test widget components in isolation
+   ```bash
+   pnpm test --filter=@legal-platform/web
+   ```
+
+2. **Storybook**: Preview widgets in Storybook
+   ```bash
+   pnpm storybook
+   ```
+
+3. **E2E Tests**: Test dashboard functionality end-to-end
+   ```bash
+   pnpm test:e2e tests/e2e/dashboard/
+   ```
+
+4. **Accessibility**: Verify WCAG AA compliance
+   ```bash
+   pnpm test:a11y
+   ```
+
+5. **Visual Regression**: Check for unintended visual changes
+   ```bash
+   pnpm test:visual
+   ```
+
+### Common Dashboard Issues
+
+#### Issue: Widget Not Rendering
+
+**Solution**: Ensure widget is:
+1. Defined in the store's initial state
+2. Added to the role's layout array
+3. Registered in the dashboard page rendering logic
+4. Type definition exists in `packages/shared/types`
+
+#### Issue: Layout Not Persisting
+
+**Solution**: Check that:
+1. Zustand persist middleware is configured
+2. localStorage is available in the browser
+3. No console errors related to localStorage quota
+4. Layout changes trigger store updates
+
+#### Issue: Widget Overlapping
+
+**Solution**: React Grid Layout prevents overlaps automatically, but check:
+1. Grid positions are within bounds (x: 0-11, y: any positive integer)
+2. Widget widths don't exceed 12 columns
+3. No duplicate widget IDs in the layout
+
 ## Questions or Issues?
 
 If you have questions or encounter issues:

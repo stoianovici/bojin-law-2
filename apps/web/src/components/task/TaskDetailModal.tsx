@@ -1,0 +1,642 @@
+/**
+ * TaskDetailModal Component
+ * Modal dialog for creating and editing tasks with type-specific fields
+ * Uses Radix UI Dialog for accessibility
+ */
+
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import * as Select from '@radix-ui/react-select';
+import { format } from 'date-fns';
+import type { Task, TaskType } from '@legal-platform/types';
+
+/**
+ * Task type labels in Romanian
+ */
+const TASK_TYPE_OPTIONS: Array<{ value: TaskType; label: string }> = [
+  { value: 'Research', label: 'Cercetare' },
+  { value: 'DocumentCreation', label: 'Creare Document' },
+  { value: 'DocumentRetrieval', label: 'Recuperare Document' },
+  { value: 'CourtDate', label: 'Termen Instanță' },
+  { value: 'Meeting', label: 'Întâlnire' },
+  { value: 'BusinessTrip', label: 'Deplasare' },
+];
+
+/**
+ * Priority options in Romanian
+ */
+const PRIORITY_OPTIONS: Array<{ value: Task['priority']; label: string }> = [
+  { value: 'Low', label: 'Scăzută' },
+  { value: 'Medium', label: 'Medie' },
+  { value: 'High', label: 'Ridicată' },
+  { value: 'Urgent', label: 'Urgentă' },
+];
+
+/**
+ * Status options in Romanian
+ */
+const STATUS_OPTIONS: Array<{ value: Task['status']; label: string }> = [
+  { value: 'Pending', label: 'În Așteptare' },
+  { value: 'InProgress', label: 'În Progres' },
+  { value: 'Completed', label: 'Finalizat' },
+  { value: 'Cancelled', label: 'Anulat' },
+];
+
+/**
+ * Task form data interface
+ */
+interface TaskFormData {
+  type: TaskType;
+  title: string;
+  description: string;
+  assignedTo: string;
+  dueDate: string; // ISO date string
+  priority: Task['priority'];
+  status: Task['status'];
+  metadata: Record<string, unknown>;
+}
+
+/**
+ * TaskDetailModal Props
+ */
+interface TaskDetailModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  task?: Task | null;
+  onSave: (task: Partial<Task>) => void;
+  onDelete?: (taskId: string) => void;
+}
+
+/**
+ * TaskDetailModal Component
+ */
+export function TaskDetailModal({
+  isOpen,
+  onClose,
+  task,
+  onSave,
+  onDelete,
+}: TaskDetailModalProps) {
+  const isEditMode = Boolean(task);
+
+  // Form state
+  const [formData, setFormData] = useState<TaskFormData>({
+    type: 'Research',
+    title: '',
+    description: '',
+    assignedTo: 'user-1', // Mock user ID
+    dueDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    priority: 'Medium',
+    status: 'Pending',
+    metadata: {},
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  /**
+   * Initialize form data when task changes
+   */
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        type: task.type,
+        title: task.title,
+        description: task.description,
+        assignedTo: task.assignedTo,
+        dueDate: format(new Date(task.dueDate), "yyyy-MM-dd'T'HH:mm"),
+        priority: task.priority,
+        status: task.status,
+        metadata: task.metadata || {},
+      });
+    } else {
+      // Reset form for new task
+      setFormData({
+        type: 'Research',
+        title: '',
+        description: '',
+        assignedTo: 'user-1',
+        dueDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        priority: 'Medium',
+        status: 'Pending',
+        metadata: {},
+      });
+    }
+    setErrors({});
+    setShowDeleteConfirm(false);
+  }, [task, isOpen]);
+
+  /**
+   * Update form field
+   */
+  const updateField = (field: keyof TaskFormData, value: unknown) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error for this field
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  /**
+   * Update metadata field
+   */
+  const updateMetadata = (key: string, value: unknown) => {
+    setFormData((prev) => ({
+      ...prev,
+      metadata: { ...prev.metadata, [key]: value },
+    }));
+  };
+
+  /**
+   * Validate form
+   */
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = 'Titlul este obligatoriu';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Descrierea este obligatorie';
+    }
+
+    if (!formData.dueDate) {
+      newErrors.dueDate = 'Data scadenței este obligatorie';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Handle save
+   */
+  const handleSave = () => {
+    if (!validateForm()) return;
+
+    const taskData: Partial<Task> = {
+      ...formData,
+      dueDate: new Date(formData.dueDate),
+    };
+
+    if (task) {
+      taskData.id = task.id;
+    }
+
+    onSave(taskData);
+    onClose();
+  };
+
+  /**
+   * Handle delete
+   */
+  const handleDelete = () => {
+    if (task && onDelete) {
+      onDelete(task.id);
+      onClose();
+    }
+  };
+
+  /**
+   * Render type-specific fields based on selected TaskType
+   */
+  const renderTypeSpecificFields = () => {
+    switch (formData.type) {
+      case 'Research':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Subiect Cercetare
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.researchTopic as string) || ''}
+                onChange={(e) => updateMetadata('researchTopic', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Jurisprudență CEDO privind..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Domeniu Juridic
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.legalArea as string) || ''}
+                onChange={(e) => updateMetadata('legalArea', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Drept Civil, Drept Penal"
+              />
+            </div>
+          </div>
+        );
+
+      case 'DocumentCreation':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tip Document
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.documentType as string) || ''}
+                onChange={(e) => updateMetadata('documentType', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Contract, Cerere, Memoriu"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nume Client
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.clientName as string) || ''}
+                onChange={(e) => updateMetadata('clientName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Ion Popescu"
+              />
+            </div>
+          </div>
+        );
+
+      case 'DocumentRetrieval':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nume Document
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.documentName as string) || ''}
+                onChange={(e) => updateMetadata('documentName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Certificat fiscal client"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Locație Sursă
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.sourceLocation as string) || ''}
+                onChange={(e) => updateMetadata('sourceLocation', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Arhiva Cabinet, Primărie"
+              />
+            </div>
+          </div>
+        );
+
+      case 'CourtDate':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nume Instanță
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.courtName as string) || ''}
+                onChange={(e) => updateMetadata('courtName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Judecătoria Sector 1"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tip Ședință
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.hearingType as string) || ''}
+                onChange={(e) => updateMetadata('hearingType', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Fond, Apel, Recurs"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Număr Dosar
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.caseNumber as string) || ''}
+                onChange={(e) => updateMetadata('caseNumber', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: 1234/2025"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Locație</label>
+              <input
+                type="text"
+                value={(formData.metadata.location as string) || ''}
+                onChange={(e) => updateMetadata('location', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Sala 12"
+              />
+            </div>
+          </div>
+        );
+
+      case 'Meeting':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tip Întâlnire
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.meetingType as string) || ''}
+                onChange={(e) => updateMetadata('meetingType', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Consultare Client, Negociere"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Locație</label>
+              <input
+                type="text"
+                value={(formData.metadata.location as string) || ''}
+                onChange={(e) => updateMetadata('location', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Cabinet, Sediu Client, Online"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Participanți
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.attendees as string) || ''}
+                onChange={(e) => updateMetadata('attendees', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Ion Popescu, Maria Ionescu"
+              />
+            </div>
+          </div>
+        );
+
+      case 'BusinessTrip':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Destinație
+              </label>
+              <input
+                type="text"
+                value={(formData.metadata.destination as string) || ''}
+                onChange={(e) => updateMetadata('destination', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Cluj-Napoca, Timișoara"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Scop</label>
+              <input
+                type="text"
+                value={(formData.metadata.purpose as string) || ''}
+                onChange={(e) => updateMetadata('purpose', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Participare la termen"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cazare</label>
+              <input
+                type="text"
+                value={(formData.metadata.accommodation as string) || ''}
+                onChange={(e) => updateMetadata('accommodation', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Ex: Hotel Continental"
+              />
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Dialog.Root open={isOpen} onOpenChange={onClose}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+        <Dialog.Content
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto z-50 p-6"
+          onEscapeKeyDown={onClose}
+        >
+          {/* Modal header */}
+          <div className="flex items-center justify-between mb-6">
+            <Dialog.Title className="text-xl font-bold text-gray-900">
+              {isEditMode ? 'Editare Sarcină' : 'Sarcină Nouă'}
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Închide"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </Dialog.Close>
+          </div>
+
+          {/* Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
+            className="space-y-6"
+          >
+            {/* Task Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tip Sarcină <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => updateField('type', e.target.value as TaskType)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {TASK_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Title */}
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                Titlu <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="title"
+                type="text"
+                value={formData.title}
+                onChange={(e) => updateField('title', e.target.value)}
+                className={`w-full px-3 py-2 border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                placeholder="Introduceți titlul sarcinii"
+              />
+              {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+            </div>
+
+            {/* Description */}
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Descriere <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => updateField('description', e.target.value)}
+                rows={4}
+                className={`w-full px-3 py-2 border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                placeholder="Descrieți sarcina în detaliu"
+              />
+              {errors.description && (
+                <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+              )}
+            </div>
+
+            {/* Due Date */}
+            <div>
+              <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-1">
+                Data Scadenței <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="dueDate"
+                type="datetime-local"
+                value={formData.dueDate}
+                onChange={(e) => updateField('dueDate', e.target.value)}
+                className={`w-full px-3 py-2 border ${errors.dueDate ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+              {errors.dueDate && <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>}
+            </div>
+
+            {/* Priority */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prioritate</label>
+              <select
+                value={formData.priority}
+                onChange={(e) => updateField('priority', e.target.value as Task['priority'])}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {PRIORITY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => updateField('status', e.target.value as Task['status'])}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Type-specific fields */}
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">Detalii Specifice</h3>
+              {renderTypeSpecificFields()}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+              <div>
+                {isEditMode && onDelete && (
+                  <>
+                    {!showDeleteConfirm ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors font-medium"
+                      >
+                        Șterge Sarcina
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">Sigur doriți să ștergeți?</span>
+                        <button
+                          type="button"
+                          onClick={handleDelete}
+                          className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+                        >
+                          Da, Șterge
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowDeleteConfirm(false)}
+                          className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
+                        >
+                          Anulează
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Anulează
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                >
+                  {isEditMode ? 'Salvează Modificările' : 'Creează Sarcina'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+export default TaskDetailModal;

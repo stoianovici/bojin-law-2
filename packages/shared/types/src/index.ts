@@ -17,3 +17,18 @@ export * from './dashboard';
 
 // Workspace Types
 export * from './workspace';
+
+// Document Editor Types
+export * from './document-editor';
+
+// Task Management Types
+export * from './task-management';
+
+// Communication Hub Types
+export * from './communication';
+
+// Time Tracking Types
+export * from './time-tracking';
+
+// Reports & Analytics Types
+export * from './reports';

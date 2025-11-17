@@ -8,12 +8,37 @@
 
 import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useNavigationStore } from '@/stores/navigation.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../../stores/navigation.store';
 import { useRouter } from 'next/navigation';
 import type { Command } from '@legal-platform/types';
+import {
+  LayoutDashboard,
+  Scale,
+  FileText,
+  CheckSquare,
+  PlusCircle,
+  FileEdit,
+  ClipboardList,
+  Search,
+  type LucideIcon
+} from 'lucide-react';
 
 /**
- * Command palette commands configuration
+ * Icon mapping for command palette
+ */
+const iconMap: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  cases: Scale,
+  documents: FileText,
+  tasks: CheckSquare,
+  'new-case': PlusCircle,
+  'new-document': FileEdit,
+  'new-task': ClipboardList,
+};
+
+/**
+ * Command palette commands configuration with Lucide React icons
  */
 const commands: Command[] = [
   // Navigation commands
@@ -21,7 +46,7 @@ const commands: Command[] = [
     id: 'nav-dashboard',
     label: 'Go to Dashboard',
     description: 'Navigate to dashboard',
-    icon: '📊',
+    icon: 'dashboard',
     action: () => {},
     keywords: ['dashboard', 'home', 'overview'],
     section: 'dashboard',
@@ -30,7 +55,7 @@ const commands: Command[] = [
     id: 'nav-cases',
     label: 'Go to Cases',
     description: 'Navigate to cases',
-    icon: '⚖️',
+    icon: 'cases',
     action: () => {},
     keywords: ['cases', 'cazuri', 'legal'],
     section: 'cases',
@@ -39,7 +64,7 @@ const commands: Command[] = [
     id: 'nav-documents',
     label: 'Go to Documents',
     description: 'Navigate to documents',
-    icon: '📄',
+    icon: 'documents',
     action: () => {},
     keywords: ['documents', 'documente', 'files'],
     section: 'documents',
@@ -48,7 +73,7 @@ const commands: Command[] = [
     id: 'nav-tasks',
     label: 'Go to Tasks',
     description: 'Navigate to tasks',
-    icon: '✓',
+    icon: 'tasks',
     action: () => {},
     keywords: ['tasks', 'sarcini', 'todo'],
     section: 'tasks',
@@ -58,7 +83,7 @@ const commands: Command[] = [
     id: 'action-new-case',
     label: 'Create New Case',
     description: 'Create a new legal case',
-    icon: '➕',
+    icon: 'new-case',
     action: () => {},
     keywords: ['create', 'new', 'case', 'caz'],
   },
@@ -66,7 +91,7 @@ const commands: Command[] = [
     id: 'action-new-document',
     label: 'Create Document',
     description: 'Create a new document',
-    icon: '📝',
+    icon: 'new-document',
     action: () => {},
     keywords: ['create', 'document', 'document', 'new'],
   },
@@ -74,7 +99,7 @@ const commands: Command[] = [
     id: 'action-new-task',
     label: 'Add Task',
     description: 'Add a new task',
-    icon: '📋',
+    icon: 'new-task',
     action: () => {},
     keywords: ['add', 'task', 'sarcină', 'new'],
   },
@@ -218,20 +243,7 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
           {/* Search Input */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <svg
-                className="w-5 h-5 text-gray-400 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+              <Search className="w-5 h-5 text-gray-400 flex-shrink-0" aria-hidden="true" />
               <input
                 type="text"
                 role="textbox"
@@ -263,37 +275,43 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
               </div>
             ) : (
               <div className="space-y-1" role="listbox">
-                {filteredCommands.map((command, index) => (
-                  <button
-                    key={command.id}
-                    onClick={() => handleCommandSelect(command)}
-                    data-selected={index === selectedIndex}
-                    className={`
-                      w-full flex items-center gap-3 px-4 py-3 rounded-lg
-                      text-left transition-colors
-                      ${
-                        index === selectedIndex
-                          ? 'bg-blue-50 text-blue-900'
-                          : 'hover:bg-gray-100 text-gray-900'
-                      }
-                      focus:outline-none focus:bg-blue-50
-                    `}
-                    role="option"
-                    aria-selected={index === selectedIndex}
-                  >
-                    <span className="text-2xl flex-shrink-0" aria-hidden="true">
-                      {command.icon}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">
-                        {command.label}
+                {filteredCommands.map((command, index) => {
+                  const IconComponent = iconMap[command.icon];
+                  return (
+                    <button
+                      key={command.id}
+                      onClick={() => handleCommandSelect(command)}
+                      data-selected={index === selectedIndex}
+                      className={`
+                        w-full flex items-center gap-3 px-4 py-3 rounded-lg
+                        text-left transition-colors
+                        ${
+                          index === selectedIndex
+                            ? 'bg-blue-50 text-blue-900'
+                            : 'hover:bg-gray-100 text-gray-900'
+                        }
+                        focus:outline-none focus:bg-blue-50
+                      `}
+                      role="option"
+                      aria-selected={index === selectedIndex}
+                    >
+                      {IconComponent && (
+                        <IconComponent
+                          className="w-5 h-5 flex-shrink-0"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">
+                          {command.label}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate">
+                          {command.description}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500 truncate">
-                        {command.description}
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

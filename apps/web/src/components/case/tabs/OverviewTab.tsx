@@ -9,8 +9,9 @@ import React from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import type { Case, User, Task } from '@legal-platform/types';
+import type { Case, User } from '@legal-platform/types';
 import * as Avatar from '@radix-ui/react-avatar';
+import { Clock, FileText, ClipboardList } from 'lucide-react';
 
 export interface OverviewTabProps {
   case: Case;
@@ -55,12 +56,7 @@ interface CardProps {
 
 function Card({ title, children, action, className }: CardProps) {
   return (
-    <div
-      className={clsx(
-        'bg-white rounded-lg border border-gray-200 shadow-sm',
-        className,
-      )}
-    >
+    <div className={clsx('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
       <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
         {action}
@@ -101,27 +97,25 @@ export function OverviewTab({
             }
           >
             <dl className="space-y-3 text-sm">
-              <div>
+              <div key="description">
                 <dt className="text-gray-600 mb-1">Descriere</dt>
                 <dd className="text-gray-900">{caseData.description}</dd>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div key="dates-and-value" className="grid grid-cols-2 gap-4">
+                <div key="opened-date">
                   <dt className="text-gray-600 mb-1">Data Deschidere</dt>
                   <dd className="text-gray-900">
                     {format(caseData.openedDate, 'dd MMMM yyyy', { locale: ro })}
                   </dd>
                 </div>
-                <div>
+                <div key="case-value">
                   <dt className="text-gray-600 mb-1">Valoare Caz</dt>
                   <dd className="text-gray-900">
-                    {caseData.value
-                      ? `${caseData.value.toLocaleString('ro-RO')} RON`
-                      : 'N/A'}
+                    {caseData.value ? `${caseData.value.toLocaleString('ro-RO')} RON` : 'N/A'}
                   </dd>
                 </div>
               </div>
-              <div>
+              <div key="case-type">
                 <dt className="text-gray-600 mb-1">Tip Caz</dt>
                 <dd className="text-gray-900">{caseData.type}</dd>
               </div>
@@ -132,7 +126,8 @@ export function OverviewTab({
           <Card title="Membrii Echipei">
             <div className="space-y-3">
               {teamMembers.map((member) => {
-                const initials = `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
+                const initials =
+                  `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
                 return (
                   <div key={member.id} className="flex items-center gap-3">
                     <Avatar.Root className="inline-flex h-10 w-10 rounded-full">
@@ -188,14 +183,9 @@ export function OverviewTab({
                   overdue: 'text-red-700 bg-red-50',
                 };
                 return (
-                  <div
-                    key={deadline.id}
-                    className="flex items-center justify-between gap-3"
-                  >
+                  <div key={deadline.id} className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {deadline.title}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{deadline.title}</p>
                       <p className="text-xs text-gray-600 mt-0.5">
                         {format(deadline.date, 'dd MMMM yyyy', { locale: ro })}
                       </p>
@@ -203,22 +193,10 @@ export function OverviewTab({
                     <div
                       className={clsx(
                         'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
-                        statusColors[deadline.status],
+                        statusColors[deadline.status]
                       )}
                     >
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                      <Clock className="w-3 h-3" />
                       <span>
                         {deadline.status === 'overdue'
                           ? 'Întârziat'
@@ -241,76 +219,34 @@ export function OverviewTab({
             <Card title="Statistici Rapide">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Total Documents */}
-                <div className="flex items-center gap-4">
+                <div key="total-documents" className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-blue-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                      />
-                    </svg>
+                    <FileText className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.totalDocuments}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalDocuments}</p>
                     <p className="text-sm text-gray-600">Total Documente</p>
                   </div>
                 </div>
 
                 {/* Open Tasks */}
-                <div className="flex items-center gap-4">
+                <div key="open-tasks" className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-yellow-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
+                    <ClipboardList className="w-6 h-6 text-yellow-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.openTasks}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.openTasks}</p>
                     <p className="text-sm text-gray-600">Sarcini Deschise</p>
                   </div>
                 </div>
 
                 {/* Billable Hours */}
-                <div className="flex items-center gap-4">
+                <div key="billable-hours" className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-green-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
+                    <Clock className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.billableHours}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.billableHours}</p>
                     <p className="text-sm text-gray-600">Ore Facturabile Luna Aceasta</p>
                   </div>
                 </div>

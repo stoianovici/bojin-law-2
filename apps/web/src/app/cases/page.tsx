@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 
 // Mock cases data
@@ -34,15 +35,14 @@ const mockCases = [
 ];
 
 export default function CasesPage() {
+  // Set document title
+  useEffect(() => {
+    document.title = 'Cazuri';
+  }, []);
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Cazuri</h1>
-          <p className="text-gray-600 mt-2">
-            Gestionează toate cazurile din portofoliu
-          </p>
-        </div>
 
         <div className="bg-white rounded-lg shadow">
           <div className="overflow-x-auto">

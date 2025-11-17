@@ -92,6 +92,15 @@ export interface DocumentVersion {
   createdBy: string; // UUID (User ID)
 }
 
+// Task Metadata (flexible structure with known communication-related fields)
+export interface TaskMetadata {
+  sourceMessageId?: string; // Link to originating message
+  sourceThreadId?: string; // Link to thread
+  extractedItemId?: string; // Link to specific extracted item
+  extractedItemType?: 'deadline' | 'commitment' | 'actionItem';
+  [key: string]: unknown; // Allow other metadata
+}
+
 // Task Entity
 export interface Task {
   id: string; // UUID
@@ -103,7 +112,7 @@ export interface Task {
   dueDate: Date;
   status: 'Pending' | 'InProgress' | 'Completed' | 'Cancelled';
   priority: 'Low' | 'Medium' | 'High' | 'Urgent';
-  metadata: Record<string, unknown>;
+  metadata: TaskMetadata;
   createdAt: Date;
   updatedAt: Date;
 }

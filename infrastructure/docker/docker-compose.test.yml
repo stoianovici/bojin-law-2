@@ -1,0 +1,105 @@
+name: legal-platform-test
+
+# CI Testing Environment
+# Lightweight configuration for running automated tests in GitHub Actions
+
+services:
+  # PostgreSQL Test Database
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: legal-platform-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: legal_platform_test
+    ports:
+      - '5434:5432'
+    tmpfs:
+      - /var/lib/postgresql/data # Use tmpfs for faster tests
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - legal-platform-test
+
+  # Redis Test Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: legal-platform-redis-test
+    command: redis-server --save "" # Disable persistence for tests
+    ports:
+      - '6381:6379'
+    tmpfs:
+      - /data # Use tmpfs for faster tests
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - legal-platform-test
+
+  # API Gateway (for integration tests)
+  gateway:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.gateway
+    image: legal-platform-gateway:test
+    container_name: legal-platform-gateway-test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_test
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: test-secret-key
+      DOCUMENT_SERVICE_URL: http://document-service:5001
+      TASK_SERVICE_URL: http://task-service:5003
+      AI_SERVICE_URL: http://ai-service:5002
+      INTEGRATION_SERVICE_URL: http://integration-service:5004
+      NOTIFICATION_SERVICE_URL: http://notification-service:5005
+      LOG_LEVEL: error # Reduce log noise in tests
+    ports:
+      - '4020:4000'
+    networks:
+      - legal-platform-test
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Web App (for E2E tests)
+  web:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4020/graphql
+    image: legal-platform-web:test
+    container_name: legal-platform-web-test
+    depends_on:
+      gateway:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+    ports:
+      - '3002:3000'
+    networks:
+      - legal-platform-test
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  legal-platform-test:
+    driver: bridge

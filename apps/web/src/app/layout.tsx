@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { MainLayout } from '@/components/layout/MainLayout';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { MainLayout } from '../components/layout/MainLayout';
 
 export const metadata: Metadata = {
   title: 'Legal Platform',

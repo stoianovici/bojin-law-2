@@ -8,11 +8,22 @@ import { useCaseWorkspaceStore } from './case-workspace.store';
 
 describe('useCaseWorkspaceStore', () => {
   beforeEach(() => {
+    // Clear localStorage to prevent test interference
+    localStorage.clear();
+
     // Reset store state before each test
     const { result } = renderHook(() => useCaseWorkspaceStore());
     act(() => {
       result.current.setActiveTab('overview');
       result.current.setSelectedCase(null);
+
+      // Reset panel states to defaults
+      if (result.current.aiPanelCollapsed) {
+        result.current.toggleAIPanel();
+      }
+      if (!result.current.quickActionsVisible) {
+        result.current.toggleQuickActions();
+      }
     });
   });
 

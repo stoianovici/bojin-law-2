@@ -10,7 +10,8 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { CommandPalette } from './CommandPalette';
 import { RoleSwitcher } from './RoleSwitcher';
-import { UserProvider, useUser } from '@/contexts/UserContext';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { UserProvider, useUser } from '../../contexts/UserContext';
 
 interface MainLayoutContentProps {
   children: ReactNode;
@@ -20,12 +21,12 @@ function MainLayoutContent({ children }: MainLayoutContentProps) {
   const { user } = useUser();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Sidebar with QuickActions */}
+    <div className="h-screen overflow-hidden bg-gray-50">
+      {/* Sidebar with QuickActions - Fixed position, overlays content */}
       <Sidebar />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main Content Area - Full width with left padding for collapsed sidebar */}
+      <div className="flex flex-col h-screen pl-16 overflow-hidden">
         {/* Top Bar */}
         <TopBar
           userName={`${user.firstName} ${user.lastName}`}
@@ -37,12 +38,6 @@ function MainLayoutContent({ children }: MainLayoutContentProps) {
         <main className="flex-1 overflow-y-auto p-6">
           {children}
         </main>
-      </div>
-
-      {/* Role Switcher - Fixed Bottom Right */}
-      <div className="fixed bottom-6 right-6 z-40 w-48 shadow-lg rounded-lg bg-white p-3 border border-gray-200">
-        <div className="text-xs text-gray-500 mb-2 font-medium">Switch Role</div>
-        <RoleSwitcher />
       </div>
 
       {/* Command Palette Modal */}
@@ -62,8 +57,6 @@ export interface MainLayoutProps {
  * - Sidebar with collapse/expand
  * - Top bar navigation
  * - Command palette
- * - Role switcher
- * - Quick actions
  * - User context provider
  */
 export function MainLayout({ children }: MainLayoutProps) {

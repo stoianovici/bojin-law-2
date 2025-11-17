@@ -6,7 +6,8 @@
 'use client';
 
 import React, { createContext, useContext, type ReactNode } from 'react';
-import { useNavigationStore } from '@/stores/navigation.store';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../stores/navigation.store';
 import type { User } from '@legal-platform/types';
 
 interface UserContextType {

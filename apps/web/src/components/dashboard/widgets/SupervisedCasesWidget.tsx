@@ -153,15 +153,9 @@ function CaseListItem({
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <button
-              className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-              }}
-            >
+            <span className="text-sm font-medium text-blue-600">
               {caseItem.caseNumber}
-            </button>
+            </span>
             <CaseStatusBadge status={caseItem.status} />
             <RiskLevelIndicator level={caseItem.riskLevel} />
           </div>

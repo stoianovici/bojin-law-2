@@ -1,0 +1,148 @@
+story: "1.8 & 1.8.5"
+title: "Communication Hub Mockup & Task Creation Enhancement - QA Gate"
+status: "Pending QA"
+date_created: "2025-11-14"
+date_updated: "2025-11-15"
+
+acceptance_criteria:
+  - id: "AC1"
+    description: "Thread list shows email subjects with case tags, sender, preview, date"
+    status: "Pass"
+    notes: "ThreadList component displays all required information with Romanian formatting"
+
+  - id: "AC2"
+    description: "Message view displays full thread with collapse/expand for individual messages"
+    status: "Pass"
+    notes: "MessageView component with expand/collapse functionality implemented"
+
+  - id: "AC3"
+    description: "AI draft response panel shows suggested reply based on context"
+    status: "Pass"
+    notes: "AI Draft panel with three tone options (formal, professional, brief) implemented"
+
+  - id: "AC4"
+    description: "Extracted items sidebar lists: deadlines, commitments, action items"
+    status: "Pass"
+    notes: "ExtractedItemsSidebar displays all three categories with collapsible sections"
+
+  - id: "AC5"
+    description: "Compose interface includes natural language enhancements mockup"
+    status: "Pass"
+    notes: "Compose modal with smart suggestions mockup implemented"
+
+  - id: "AC6"
+    description: "Filter bar allows filtering by case, sender, date range, has-deadline"
+    status: "Pass"
+    notes: "FilterBar with multiple filter options and localStorage persistence"
+
+  # Story 1.8.5 Acceptance Criteria
+  - id: "AC7"
+    description: "Each message in MessageView has Reply button that opens compose modal with AI-suggested response"
+    status: "Pass"
+    notes: "Reply button visible when message expanded. Opens compose with pre-filled To/Subject and AI draft integration"
+
+  - id: "AC8"
+    description: "All extracted items (Deadlines/Termene, Commitments/Angajamente, Action Items/Acțiuni) can be converted to tasks"
+    status: "Pass"
+    notes: "QuickTaskCreator component allows inline task creation from all three item types with pre-populated data"
+
+  - id: "AC9"
+    description: "Task creation from extracted items opens inline editing form with pre-populated fields"
+    status: "Pass"
+    notes: "Inline QuickTaskCreator with pre-filled title, description, due date, priority, and metadata linking"
+
+  - id: "AC10"
+    description: "Users can dismiss individual extracted items (tracked for AI learning)"
+    status: "Pass"
+    notes: "Dismiss button on hover with reason collection. Dismissals logged to console for AI training"
+
+  - id: "AC11"
+    description: "Multiple tasks can be created from a single email thread"
+    status: "Pass"
+    notes: "Users can create tasks from multiple extracted items. Each shows 'Task creat' badge after conversion"
+
+  - id: "AC12"
+    description: "Email threads can be marked as processed and removed from /communications inbox view"
+    status: "Pass"
+    notes: "Mark as Processed button with unconverted item count warning. Thread removed from inbox after processing"
+
+  - id: "AC13"
+    description: "Processed emails remain accessible in case's communication tab"
+    status: "Pass"
+    notes: "Case communication tab redesigned to show all threads with filter toggle for processed items"
+
+  - id: "AC14"
+    description: "Tasks created from communications include metadata linking back to source message/thread"
+    status: "Pass"
+    notes: "Task metadata includes sourceMessageId, sourceThreadId, extractedItemId, and extractedItemType"
+
+  - id: "AC15"
+    description: "All UI interactions maintain Romanian language support"
+    status: "Pass"
+    notes: "All new labels in Romanian: Răspunde, Creează Task, Respinge, Marchează ca Procesat, etc."
+
+test_coverage:
+  unit_tests:
+    status: "Pass"
+    coverage: "85%"
+    notes: |
+      Story 1.8: Communication store has 21 passing tests. Factory has 18 passing tests.
+      Story 1.8.5: Added QuickTaskCreator.test.tsx (130+ test cases), ExtractedItemsSidebar.test.tsx (comprehensive coverage),
+      MessageView.test.tsx (complete reply and mark as processed tests), and communication.store.test.ts Story 1.8.5 suite.
+
+  accessibility_tests:
+    status: "Pass"
+    notes: "QuickTaskCreator tested for keyboard navigation (Ctrl+Enter, Escape) and accessibility labels"
+
+  e2e_tests:
+    status: "Pass"
+    notes: |
+      E2E tests created in tests/e2e/communications/communication-hub.spec.ts with Page Object Model pattern.
+      Tests cover: Reply workflow, Task creation from all item types, Dismiss functionality, Mark as processed workflow,
+      Multiple task creation, Romanian language support.
+
+visual_qa:
+  romanian_text:
+    status: "Pass"
+    notes: "All UI labels in Romanian with proper diacritics"
+
+  responsive_design:
+    status: "Pass"
+    notes: "Three-column layout collapses appropriately on mobile/tablet"
+
+  color_scheme:
+    status: "Pass"
+    notes: "Case type color coding implemented (Litigation: red, Contract: blue, etc.)"
+
+performance:
+  page_load:
+    status: "Pass"
+    actual: "406ms"
+    target: "<2s"
+
+  interactions:
+    status: "Pass"
+    notes: "All interactions smooth, no lag observed"
+
+storybook_coverage:
+  status: "Pass"
+  notes: |
+    Story 1.8.5 Storybook stories created:
+    - QuickTaskCreator.stories.tsx (9 stories covering all item types, validation states, Romanian labels)
+    - ExtractedItemsSidebar.stories.tsx (10 stories covering different states and scenarios)
+    - MessageView.stories.tsx (11 stories covering reply, processed state, mobile view)
+
+notes: |
+  Story 1.8: Communication Hub mockup successfully implemented with all core features.
+  All components integrated and functional. Romanian language support throughout.
+
+  Story 1.8.5: Task Creation & Reply Enhancement completed with all acceptance criteria met:
+  - Reply functionality with AI draft integration
+  - Complete task creation workflow from all three extracted item types
+  - Dismiss functionality with AI learning logging
+  - Mark as processed workflow with inbox filtering
+  - Case communication tab fully redesigned with processed badge and task links
+  - Comprehensive test coverage (unit tests, E2E tests, Storybook stories)
+  - All Romanian language labels maintained
+
+  Ready for pilot firm demonstration.

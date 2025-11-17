@@ -1,4 +1,5 @@
 {
+  "extends": "./packages/config/tsconfig.base.json",
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     // Type checking

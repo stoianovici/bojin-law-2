@@ -1,0 +1,253 @@
+import type { Meta, StoryObj } from '@storybook/react';
+import AnalyticsPage from './page';
+
+/**
+ * Analytics Page displays KPI widgets for Partners.
+ * Includes Firm KPIs, Billable Hours Chart, Case Distribution, and Pending Approvals widgets.
+ * Features role-based access control (Partner only), date range selector, and drag-and-drop layout.
+ */
+const meta: Meta<typeof AnalyticsPage> = {
+  title: 'Pages/Analytics',
+  component: AnalyticsPage,
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+    nextjs: {
+      appDirectory: true,
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof AnalyticsPage>;
+
+/**
+ * Default Analytics page for Partner role
+ */
+export const Default: Story = {};
+
+/**
+ * Loading state while fetching analytics data
+ */
+export const Loading: Story = {
+  render: () => (
+    <div className="min-h-screen bg-neutral-50 p-8">
+      <div className="mb-8">
+        <div className="h-10 w-64 bg-neutral-200 rounded animate-pulse mb-2"></div>
+        <div className="h-6 w-96 bg-neutral-200 rounded animate-pulse"></div>
+      </div>
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-6 h-64 bg-neutral-200 rounded-lg animate-pulse"></div>
+        <div className="col-span-6 h-64 bg-neutral-200 rounded-lg animate-pulse"></div>
+        <div className="col-span-8 h-96 bg-neutral-200 rounded-lg animate-pulse"></div>
+        <div className="col-span-4 h-96 bg-neutral-200 rounded-lg animate-pulse"></div>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Analytics page with Romanian language
+ */
+export const RomanianLanguage: Story = {
+  render: () => (
+    <div className="min-h-screen bg-neutral-50 p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-neutral-900 mb-2">Analiză și KPI-uri</h1>
+        <p className="text-neutral-600">
+          Vizualizează indicatorii cheie de performanță și analizele firmei
+        </p>
+      </div>
+      <div className="grid grid-cols-12 gap-4">
+        {/* Placeholder for Romanian content */}
+        <div className="col-span-12 p-6 bg-white rounded-lg shadow-sm border border-neutral-200">
+          <p className="text-neutral-500 text-center">
+            Conținut în limba română - widget-uri KPI
+          </p>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Empty Analytics state (no data available)
+ */
+export const EmptyState: Story = {
+  render: () => (
+    <div className="min-h-screen bg-neutral-50 p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-neutral-900 mb-2">Analytics & KPIs</h1>
+        <p className="text-neutral-600">View firm key performance indicators and analytics</p>
+      </div>
+      <div className="flex items-center justify-center min-h-[400px] bg-white rounded-lg border-2 border-dashed border-neutral-300">
+        <div className="text-center">
+          <p className="text-neutral-500 text-lg mb-2">No analytics data available</p>
+          <p className="text-neutral-400 text-sm">Data will appear here once activity is tracked</p>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Analytics page with date range selector
+ */
+export const WithDateRangeSelector: Story = {
+  render: () => (
+    <div className="min-h-screen bg-neutral-50 p-8">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-neutral-900 mb-2">Analytics & KPIs</h1>
+          <p className="text-neutral-600">View firm key performance indicators and analytics</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select className="px-4 py-2 border border-neutral-300 rounded-lg bg-white">
+            <option>Last 7 days</option>
+            <option>Last 30 days</option>
+            <option>Last 90 days</option>
+            <option>This year</option>
+            <option>Custom range</option>
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-12 p-6 bg-white rounded-lg shadow-sm border border-neutral-200">
+          <p className="text-neutral-500 text-center">KPI widgets filtered by date range</p>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Accessibility: Keyboard navigation demonstration
+ */
+export const AccessibilityKeyboardNav: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Analytics page supports full keyboard navigation. Use Tab to navigate between widgets, Enter to interact, and arrow keys for widget rearrangement.',
+      },
+    },
+    a11y: {
+      config: {
+        rules: [
+          {
+            id: 'color-contrast',
+            enabled: true,
+          },
+          {
+            id: 'landmark-one-main',
+            enabled: true,
+          },
+          {
+            id: 'region',
+            enabled: true,
+          },
+        ],
+      },
+    },
+  },
+};
+
+/**
+ * Accessibility: Screen reader compatibility
+ */
+export const AccessibilityScreenReader: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'All KPI values, trends, and charts have proper ARIA labels for screen reader compatibility. Widget titles and metrics are announced clearly.',
+      },
+    },
+  },
+};
+
+/**
+ * Partner-only access (role-based)
+ */
+export const PartnerOnlyAccess: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Analytics page is only accessible to Partners. Associates and Paralegals attempting to access will be redirected to Dashboard with an info message.',
+      },
+    },
+  },
+};
+
+/**
+ * Large layout with many KPI widgets
+ */
+export const LargeLayout: Story = {
+  render: () => (
+    <div className="min-h-screen bg-neutral-50 p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-neutral-900 mb-2">Analytics & KPIs</h1>
+        <p className="text-neutral-600">Comprehensive analytics dashboard</p>
+      </div>
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-6 h-64 bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <h3 className="font-semibold mb-4">Firm KPIs</h3>
+        </div>
+        <div className="col-span-6 h-64 bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <h3 className="font-semibold mb-4">Case Distribution</h3>
+        </div>
+        <div className="col-span-8 h-96 bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <h3 className="font-semibold mb-4">Billable Hours Chart</h3>
+        </div>
+        <div className="col-span-4 h-96 bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <h3 className="font-semibold mb-4">Pending Approvals</h3>
+        </div>
+        <div className="col-span-12 h-64 bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <h3 className="font-semibold mb-4">Revenue Trends</h3>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Responsive mobile view
+ */
+export const MobileView: Story = {
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+  render: () => (
+    <div className="min-h-screen bg-neutral-50 p-4">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-neutral-900 mb-1">Analytics</h1>
+        <p className="text-neutral-600 text-sm">Firm KPIs</p>
+      </div>
+      <div className="space-y-4">
+        <div className="h-48 bg-white rounded-lg shadow-sm border border-neutral-200 p-4">
+          <h3 className="font-semibold text-sm mb-2">Firm KPIs</h3>
+        </div>
+        <div className="h-48 bg-white rounded-lg shadow-sm border border-neutral-200 p-4">
+          <h3 className="font-semibold text-sm mb-2">Billable Hours</h3>
+        </div>
+        <div className="h-48 bg-white rounded-lg shadow-sm border border-neutral-200 p-4">
+          <h3 className="font-semibold text-sm mb-2">Case Distribution</h3>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Tablet view
+ */
+export const TabletView: Story = {
+  parameters: {
+    viewport: {
+      defaultViewport: 'tablet',
+    },
+  },
+};

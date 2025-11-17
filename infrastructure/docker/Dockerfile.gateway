@@ -1,0 +1,77 @@
+# Production Dockerfile for GraphQL API Gateway
+# Multi-stage build for optimized image size
+
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY services/gateway/package.json ./services/gateway/
+COPY packages/shared/types/package.json ./packages/shared/types/
+COPY packages/database/package.json ./packages/database/
+COPY packages/logger/package.json ./packages/logger/
+COPY packages/config/package.json ./packages/config/
+
+# Install dependencies (production only)
+RUN pnpm install --frozen-lockfile --prod
+
+# Stage 2: Builder
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy dependencies and source
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/services ./services
+COPY --from=deps /app/packages ./packages
+
+# Copy source code
+COPY tsconfig.json ./
+COPY packages/shared ./packages/shared
+COPY packages/database ./packages/database
+COPY packages/logger ./packages/logger
+COPY packages/config ./packages/config
+COPY services/gateway ./services/gateway
+
+# Build TypeScript
+WORKDIR /app/services/gateway
+RUN pnpm build
+
+# Stage 3: Production runner
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs
+
+# Copy production dependencies
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/services/gateway/node_modules ./services/gateway/node_modules
+
+# Copy built application
+COPY --from=builder --chown=nodejs:nodejs /app/services/gateway/dist ./services/gateway/dist
+COPY --from=builder --chown=nodejs:nodejs /app/services/gateway/package.json ./services/gateway/
+COPY --from=builder --chown=nodejs:nodejs /app/packages ./packages
+
+USER nodejs
+
+EXPOSE 4000
+
+ENV PORT=4000
+ENV API_HOST="0.0.0.0"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:4000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+CMD ["node", "services/gateway/dist/index.js"]

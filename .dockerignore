@@ -1,0 +1,80 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+dist
+build
+out
+*.tsbuildinfo
+
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Documentation
+docs
+*.md
+!apps/*/README.md
+!packages/*/README.md
+!services/*/README.md
+README.md
+
+# Tests and coverage
+tests
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+**/*.spec.ts
+**/*.spec.tsx
+**/*.spec.js
+coverage
+.nyc_output
+__tests__
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CI/CD
+.github/workflows
+azure-pipelines*.yml
+
+# Infrastructure (not needed in Docker build)
+infrastructure/terraform
+infrastructure/kubernetes
+infrastructure/archive
+infrastructure/render
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Misc
+.turbo
+.cache
+.parcel-cache
+tmp
+temp
+
+# OS files
+Thumbs.db
+.DS_Store

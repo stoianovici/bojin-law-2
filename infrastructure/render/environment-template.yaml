@@ -1,0 +1,615 @@
+# Render Environment Variables Template
+# This file documents all environment variables needed for the Legal Platform on Render.com
+#
+# Usage:
+# 1. Copy this template and fill in the values
+# 2. Set variables in Render Dashboard: Service Settings → Environment
+# 3. OR use render.yaml envVars section for non-sensitive values
+# 4. Use Render Secret Files for sensitive multi-line values (certificates, keys)
+#
+# Auto-Injected Variables (Render provides these automatically):
+# - DATABASE_URL: PostgreSQL connection string
+# - REDIS_URL: Redis connection string
+# - RENDER_SERVICE_NAME: Current service name
+# - RENDER_EXTERNAL_URL: Public URL of the service
+# - RENDER_GIT_COMMIT: Deployed commit SHA
+# - RENDER_INSTANCE_ID: Unique instance identifier
+#
+# Documentation: https://render.com/docs/environment-variables
+
+# =============================================================================
+# SHARED ENVIRONMENT VARIABLES (All Services)
+# =============================================================================
+
+shared:
+  # Runtime Environment
+  NODE_ENV:
+    description: 'Runtime environment (development/staging/production)'
+    required: true
+    sensitive: false
+    staging_value: 'staging'
+    production_value: 'production'
+    example: 'production'
+
+  LOG_LEVEL:
+    description: 'Logging verbosity level'
+    required: false
+    sensitive: false
+    staging_value: 'debug'
+    production_value: 'info'
+    example: 'info'
+    options: ['debug', 'info', 'warn', 'error']
+
+  # Database (Auto-injected by Render)
+  DATABASE_URL:
+    description: 'PostgreSQL connection string (auto-injected by Render)'
+    required: true
+    sensitive: true
+    auto_injected: true
+    example: 'postgresql://user:password@host.render.com:5432/database'
+    notes: 'Render automatically injects this when you link a PostgreSQL database'
+
+  # Cache (Auto-injected by Render)
+  REDIS_URL:
+    description: 'Redis connection string (auto-injected by Render)'
+    required: true
+    sensitive: true
+    auto_injected: true
+    example: 'redis://red-xxxxx:6379'
+    notes: 'Render automatically injects this when you link a Redis instance'
+
+  # Authentication
+  JWT_SECRET:
+    description: 'Secret key for signing JWT tokens (minimum 32 characters)'
+    required: true
+    sensitive: true
+    example: 'your-super-secret-jwt-key-min-32-chars-long-random-string'
+    rotation_frequency: 'Every 90 days'
+    generation_command: 'openssl rand -base64 48'
+
+  JWT_EXPIRES_IN:
+    description: 'JWT token expiration duration'
+    required: false
+    sensitive: false
+    staging_value: '7d'
+    production_value: '7d'
+    example: '7d'
+
+# =============================================================================
+# WEB SERVICE (Next.js Frontend - apps/web)
+# =============================================================================
+
+web:
+  # Public API URL (exposed to browser)
+  NEXT_PUBLIC_API_URL:
+    description: 'GraphQL API endpoint (publicly accessible, exposed to browser)'
+    required: true
+    sensitive: false
+    staging_value: 'https://gateway-staging.onrender.com/graphql'
+    production_value: 'https://api.legal-platform.com/graphql'
+    example: 'https://api.legal-platform.com/graphql'
+    notes: 'Use NEXT_PUBLIC_ prefix to expose to browser. Must be HTTPS in production.'
+
+  NEXT_PUBLIC_APP_URL:
+    description: 'Frontend application URL (exposed to browser)'
+    required: true
+    sensitive: false
+    staging_value: 'https://web-staging.onrender.com'
+    production_value: 'https://app.legal-platform.com'
+    example: 'https://app.legal-platform.com'
+    notes: 'Used for OAuth redirects and absolute URLs'
+
+  PORT:
+    description: 'Next.js server port (Render auto-sets to 10000)'
+    required: false
+    sensitive: false
+    render_default: '10000'
+    example: '3000'
+    notes: 'Render automatically sets this. Use process.env.PORT in your app.'
+
+  NEXT_PUBLIC_GA_MEASUREMENT_ID:
+    description: 'Google Analytics measurement ID (optional)'
+    required: false
+    sensitive: false
+    example: 'G-XXXXXXXXXX'
+
+# =============================================================================
+# GATEWAY SERVICE (GraphQL API Gateway - services/gateway)
+# =============================================================================
+
+gateway:
+  PORT:
+    description: 'Gateway server port (Render auto-sets to 10000)'
+    required: false
+    sensitive: false
+    render_default: '10000'
+    example: '4000'
+
+  API_HOST:
+    description: 'Bind address for the API server'
+    required: false
+    sensitive: false
+    default_value: '0.0.0.0'
+    example: '0.0.0.0'
+
+  # Internal Service URLs (Render private networking)
+  DOCUMENT_SERVICE_URL:
+    description: 'Document service internal URL'
+    required: true
+    sensitive: false
+    example: 'https://document-service.onrender.com'
+    notes: 'Use Render private service URLs for internal communication'
+
+  TASK_SERVICE_URL:
+    description: 'Task service internal URL'
+    required: true
+    sensitive: false
+    example: 'https://task-service.onrender.com'
+
+  AI_SERVICE_URL:
+    description: 'AI service internal URL'
+    required: true
+    sensitive: false
+    example: 'https://ai-service.onrender.com'
+
+  INTEGRATION_SERVICE_URL:
+    description: 'Integration service internal URL'
+    required: true
+    sensitive: false
+    example: 'https://integration-service.onrender.com'
+
+  NOTIFICATION_SERVICE_URL:
+    description: 'Notification service internal URL'
+    required: true
+    sensitive: false
+    example: 'https://notification-service.onrender.com'
+
+# =============================================================================
+# DOCUMENT SERVICE (services/document-service)
+# =============================================================================
+
+document-service:
+  PORT:
+    description: 'Service port (Render auto-sets to 10000)'
+    required: false
+    sensitive: false
+    render_default: '10000'
+    example: '5001'
+
+  SERVICE_NAME:
+    description: 'Service identifier for logging'
+    required: false
+    sensitive: false
+    default_value: 'document-service'
+    example: 'document-service'
+
+  # File Storage Configuration
+  STORAGE_PROVIDER:
+    description: 'File storage provider (cloudflare-r2, s3, or render-disk)'
+    required: true
+    sensitive: false
+    staging_value: 'render-disk'
+    production_value: 'cloudflare-r2'
+    example: 'cloudflare-r2'
+    options: ['cloudflare-r2', 's3', 'render-disk']
+    notes: 'Use Render Disk for staging, Cloudflare R2 for production (cost-effective)'
+
+  STORAGE_BUCKET:
+    description: 'Storage bucket/container name'
+    required: true
+    sensitive: false
+    staging_value: 'legal-platform-staging-documents'
+    production_value: 'legal-platform-prod-documents'
+    example: 'legal-platform-prod-documents'
+
+  # Cloudflare R2 Configuration (if using R2)
+  R2_ACCOUNT_ID:
+    description: 'Cloudflare R2 account ID'
+    required: false
+    sensitive: false
+    example: 'your-cloudflare-account-id'
+
+  R2_ACCESS_KEY_ID:
+    description: 'Cloudflare R2 access key ID'
+    required: false
+    sensitive: true
+    example: 'your-r2-access-key-id'
+
+  R2_SECRET_ACCESS_KEY:
+    description: 'Cloudflare R2 secret access key'
+    required: false
+    sensitive: true
+    example: 'your-r2-secret-access-key'
+    rotation_frequency: 'Every 90 days'
+
+  R2_BUCKET_ENDPOINT:
+    description: 'Cloudflare R2 bucket endpoint URL'
+    required: false
+    sensitive: false
+    example: 'https://your-account-id.r2.cloudflarestorage.com'
+
+# =============================================================================
+# AI SERVICE (services/ai-service)
+# =============================================================================
+
+ai-service:
+  PORT:
+    description: 'Service port (Render auto-sets to 10000)'
+    required: false
+    sensitive: false
+    render_default: '10000'
+    example: '5002'
+
+  SERVICE_NAME:
+    description: 'Service identifier for logging'
+    required: false
+    sensitive: false
+    default_value: 'ai-service'
+    example: 'ai-service'
+
+  # AI Provider Strategy
+  AI_PROVIDER:
+    description: 'Primary AI provider (anthropic or grok)'
+    required: false
+    sensitive: false
+    staging_value: 'anthropic'
+    production_value: 'anthropic'
+    default_value: 'anthropic'
+    example: 'anthropic'
+    options: ['anthropic', 'grok']
+    notes: 'Set to "anthropic" for Claude (primary) or "grok" for xAI Grok (fallback)'
+
+  AI_FALLBACK_ENABLED:
+    description: 'Enable automatic fallback to secondary provider on failure'
+    required: false
+    sensitive: false
+    default_value: 'true'
+    example: 'true'
+    notes: 'If Claude fails, automatically fallback to Grok'
+
+  # Anthropic Claude Configuration (PRIMARY)
+  ANTHROPIC_API_KEY:
+    description: 'Anthropic API key for Claude models (PRIMARY AI)'
+    required: true
+    sensitive: true
+    example: 'sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    rotation_frequency: 'When compromised or every 180 days'
+    notes: 'Get from https://console.anthropic.com/settings/keys'
+
+  ANTHROPIC_MODEL:
+    description: 'Default Claude model to use'
+    required: false
+    sensitive: false
+    staging_value: 'claude-3-5-haiku-20241022'
+    production_value: 'claude-3-5-sonnet-20241022'
+    example: 'claude-3-5-sonnet-20241022'
+    options: ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229']
+    notes: 'Haiku for simple tasks ($0.25/MTok), Sonnet for standard ($3/MTok), Opus for complex ($15/MTok)'
+
+  ANTHROPIC_MAX_TOKENS:
+    description: 'Maximum tokens per Claude request'
+    required: false
+    sensitive: false
+    default_value: '4096'
+    example: '4096'
+    notes: 'Claude supports up to 200K context, but limit output tokens for cost control'
+
+  ANTHROPIC_TEMPERATURE:
+    description: 'Claude response randomness (0.0 = deterministic, 1.0 = creative)'
+    required: false
+    sensitive: false
+    default_value: '0.7'
+    example: '0.7'
+
+  # Claude Cost Optimization Features
+  ANTHROPIC_USE_PROMPT_CACHING:
+    description: 'Enable Prompt Caching to reduce costs by 90% on repeated prompts'
+    required: false
+    sensitive: false
+    staging_value: 'true'
+    production_value: 'true'
+    default_value: 'true'
+    example: 'true'
+    notes: 'Cache system prompts and large contexts. Cached tokens cost 90% less ($0.30 vs $3.00 per MTok for Sonnet)'
+
+  ANTHROPIC_USE_BATCHING:
+    description: 'Enable Batch API for 50% cost reduction on non-real-time requests'
+    required: false
+    sensitive: false
+    default_value: 'true'
+    example: 'true'
+    notes: 'Use for document analysis, bulk processing. Batch API costs 50% less but has 24hr processing time'
+
+  # xAI Grok Configuration (FALLBACK)
+  GROK_API_KEY:
+    description: 'xAI Grok API key (FALLBACK AI when Claude unavailable)'
+    required: false
+    sensitive: true
+    example: 'xai-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    rotation_frequency: 'When compromised or every 180 days'
+    notes: 'Get from https://console.x.ai/api-keys (Optional fallback provider)'
+
+  GROK_MODEL:
+    description: 'Default Grok model to use'
+    required: false
+    sensitive: false
+    default_value: 'grok-beta'
+    example: 'grok-beta'
+    options: ['grok-beta', 'grok-vision-beta']
+    notes: 'Grok Beta for text ($5/MTok), Grok Vision for images'
+
+  GROK_MAX_TOKENS:
+    description: 'Maximum tokens per Grok request'
+    required: false
+    sensitive: false
+    default_value: '4096'
+    example: '4096'
+
+  GROK_TEMPERATURE:
+    description: 'Grok response randomness (0.0 = deterministic, 1.0 = creative)'
+    required: false
+    sensitive: false
+    default_value: '0.7'
+    example: '0.7'
+
+# =============================================================================
+# TASK SERVICE (services/task-service)
+# =============================================================================
+
+task-service:
+  PORT:
+    description: 'Service port (Render auto-sets to 10000)'
+    required: false
+    sensitive: false
+    render_default: '10000'
+    example: '5003'
+
+  SERVICE_NAME:
+    description: 'Service identifier for logging'
+    required: false
+    sensitive: false
+    default_value: 'task-service'
+    example: 'task-service'
+
+# =============================================================================
+# INTEGRATION SERVICE (services/integration-service)
+# =============================================================================
+
+integration-service:
+  PORT:
+    description: 'Service port (Render auto-sets to 10000)'
+    required: false
+    sensitive: false
+    render_default: '10000'
+    example: '5004'
+
+  SERVICE_NAME:
+    description: 'Service identifier for logging'
+    required: false
+    sensitive: false
+    default_value: 'integration-service'
+    example: 'integration-service'
+
+  # Microsoft 365 Integration
+  M365_CLIENT_ID:
+    description: 'Microsoft 365 OAuth client ID'
+    required: true
+    sensitive: false
+    example: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+    notes: 'Register app at https://portal.azure.com → App registrations'
+
+  M365_CLIENT_SECRET:
+    description: 'Microsoft 365 OAuth client secret'
+    required: true
+    sensitive: true
+    example: 'xxxxx~xxxxxxxxxxxxxxxxxxxxxxxxx'
+    rotation_frequency: 'Every 90 days or when expires'
+
+  M365_TENANT_ID:
+    description: 'Microsoft 365 tenant ID'
+    required: true
+    sensitive: false
+    example: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+    notes: 'Found in Azure AD → Overview'
+
+  M365_REDIRECT_URI:
+    description: 'OAuth redirect URI for Microsoft 365'
+    required: true
+    sensitive: false
+    staging_value: 'https://integration-service-staging.onrender.com/auth/callback'
+    production_value: 'https://integration.legal-platform.com/auth/callback'
+    example: 'https://integration.legal-platform.com/auth/callback'
+
+# =============================================================================
+# NOTIFICATION SERVICE (services/notification-service)
+# =============================================================================
+
+notification-service:
+  PORT:
+    description: 'Service port (Render auto-sets to 10000)'
+    required: false
+    sensitive: false
+    render_default: '10000'
+    example: '5005'
+
+  SERVICE_NAME:
+    description: 'Service identifier for logging'
+    required: false
+    sensitive: false
+    default_value: 'notification-service'
+    example: 'notification-service'
+
+  # SMTP Email Configuration
+  SMTP_HOST:
+    description: 'SMTP server hostname'
+    required: true
+    sensitive: false
+    staging_value: 'smtp.gmail.com'
+    production_value: 'smtp.sendgrid.net'
+    example: 'smtp.sendgrid.net'
+    notes: 'Use SendGrid, Mailgun, or similar transactional email provider'
+
+  SMTP_PORT:
+    description: 'SMTP server port'
+    required: true
+    sensitive: false
+    default_value: '587'
+    example: '587'
+    options: ['587', '465', '25']
+
+  SMTP_USER:
+    description: 'SMTP username/email'
+    required: true
+    sensitive: true
+    example: 'apikey'
+    notes: "For SendGrid, username is 'apikey'"
+
+  SMTP_PASSWORD:
+    description: 'SMTP password/API key'
+    required: true
+    sensitive: true
+    example: 'SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    rotation_frequency: 'Every 90 days'
+
+  SMTP_FROM:
+    description: 'Email from address'
+    required: true
+    sensitive: false
+    staging_value: 'noreply-staging@legal-platform.com'
+    production_value: 'noreply@legal-platform.com'
+    example: 'noreply@legal-platform.com'
+
+  SMTP_SECURE:
+    description: 'Use TLS for SMTP connection'
+    required: false
+    sensitive: false
+    default_value: 'false'
+    example: 'false'
+    notes: "Set to 'true' for port 465, 'false' for port 587 (STARTTLS)"
+
+# =============================================================================
+# RENDER-SPECIFIC VARIABLES (Auto-Injected)
+# =============================================================================
+# These variables are automatically provided by Render and do not need to be set manually.
+
+render_auto_injected:
+  RENDER_SERVICE_NAME:
+    description: 'Name of the current Render service'
+    auto_injected: true
+    example: 'web'
+    notes: 'Useful for logging and identifying which service is running'
+
+  RENDER_EXTERNAL_URL:
+    description: 'Public URL of the current service'
+    auto_injected: true
+    example: 'https://web-xyz123.onrender.com'
+    notes: 'Use for generating absolute URLs and OAuth redirects'
+
+  RENDER_GIT_COMMIT:
+    description: 'Git commit SHA of the deployed code'
+    auto_injected: true
+    example: 'a1b2c3d4e5f6...'
+    notes: 'Useful for debugging and tracking deployed versions'
+
+  RENDER_INSTANCE_ID:
+    description: 'Unique identifier for the service instance'
+    auto_injected: true
+    example: 'srv-xyz123-abc456'
+
+  DATABASE_URL:
+    description: 'PostgreSQL connection string (injected when database is linked)'
+    auto_injected: true
+    sensitive: true
+    example: 'postgresql://user:password@dpg-xxxxx.oregon-postgres.render.com:5432/database'
+
+  REDIS_URL:
+    description: 'Redis connection string (injected when Redis is linked)'
+    auto_injected: true
+    sensitive: true
+    example: 'redis://red-xxxxx:6379'
+
+# =============================================================================
+# SECRET ROTATION STRATEGY
+# =============================================================================
+
+secret_rotation:
+  policy:
+    - JWT_SECRET: 'Rotate every 90 days. Update in Render dashboard and restart all services.'
+    - ANTHROPIC_API_KEY: 'Rotate when compromised or every 180 days.'
+    - GROK_API_KEY: 'Rotate when compromised or every 180 days.'
+    - SMTP_PASSWORD: 'Rotate every 90 days. Coordinate with email provider.'
+    - M365_CLIENT_SECRET: 'Rotate every 90 days or when Azure notifies of expiration.'
+    - R2_SECRET_ACCESS_KEY: 'Rotate every 90 days. Update Cloudflare credentials.'
+    - Database credentials: 'Render manages automatically. Manual rotation not recommended.'
+
+  rotation_process:
+    1: 'Generate new secret value'
+    2: 'Update secret in Render dashboard (Service Settings → Environment)'
+    3: 'Deploy new version with updated secret'
+    4: 'Verify service health after deployment'
+    5: 'Revoke old secret from provider (OpenAI, SendGrid, etc.)'
+    6: 'Document rotation in change log'
+
+# =============================================================================
+# ENVIRONMENT VARIABLE MANAGEMENT
+# =============================================================================
+
+management:
+  render_dashboard:
+    description: 'Set environment variables via Render Dashboard'
+    steps:
+      1: 'Navigate to Render Dashboard → Select Service'
+      2: 'Go to Environment tab'
+      3: "Click 'Add Environment Variable'"
+      4: 'Enter key and value'
+      5: "Click 'Save Changes' (triggers automatic redeploy)"
+    notes: 'Changes trigger automatic redeploy. Plan accordingly.'
+
+  render_yaml:
+    description: 'Define environment variables in render.yaml (for non-sensitive values)'
+    example: |
+      services:
+        - type: web
+          name: web
+          envVars:
+            - key: NODE_ENV
+              value: production
+            - key: LOG_LEVEL
+              value: info
+    notes: 'Only for non-sensitive values. Sensitive values should be set in dashboard.'
+
+  render_cli:
+    description: 'Set environment variables via Render CLI'
+    example: |
+      render env set JWT_SECRET="your-secret" --service web
+    notes: 'Requires Render CLI installation: npm install -g @render/cli'
+
+  environment_groups:
+    description: 'Use Render Environment Groups for shared variables'
+    steps:
+      1: 'Create Environment Group in Render Dashboard'
+      2: 'Add shared variables (DATABASE_URL, REDIS_URL, JWT_SECRET)'
+      3: 'Link Environment Group to multiple services'
+    notes: 'Changes to group apply to all linked services. Use carefully.'
+
+# =============================================================================
+# VALIDATION
+# =============================================================================
+
+validation:
+  script: 'scripts/render/validate-env.sh'
+  description: 'Validates all required environment variables are set'
+  usage: |
+    # Validate all services
+    npm run validate:env
+
+    # Validate specific service
+    npm run validate:env -- web
+    npm run validate:env -- gateway
+
+  checks:
+    - 'Required variables are set'
+    - 'Sensitive variables are not empty'
+    - 'Database and Redis URLs are valid'
+    - 'Service URLs are HTTPS in production'
+    - 'JWT_SECRET is at least 32 characters'

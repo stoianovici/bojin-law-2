@@ -1,6 +1,11 @@
 /**
  * FirmCasesOverviewWidget - Partner Dashboard Firm Cases Overview
  * Displays at-risk cases, high-value cases, and AI insights with tabbed interface
+ *
+ * Performance Optimizations (Story 1.6 Task 16):
+ * - Radix UI Tabs lazy-loads tab content (only active tab renders)
+ * - Memoized case item components to prevent unnecessary re-renders
+ * - Efficient tab switching with React.memo
  */
 
 'use client';
@@ -49,9 +54,9 @@ function SummaryBadge({
 }
 
 /**
- * At-Risk Case Item Component
+ * At-Risk Case Item Component (Memoized for performance)
  */
-function AtRiskCaseItem({
+const AtRiskCaseItem = React.memo(function AtRiskCaseItem({
   caseItem,
   onClick,
 }: {
@@ -75,15 +80,11 @@ function AtRiskCaseItem({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <button
-              className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-              }}
+            <span
+              className="text-sm font-medium text-blue-600"
             >
               {caseItem.caseNumber}
-            </button>
+            </span>
             {caseItem.daysUntilDeadline !== undefined && caseItem.daysUntilDeadline <= 3 && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                 {caseItem.daysUntilDeadline === 0 ? 'Astăzi' : `${caseItem.daysUntilDeadline} zile`}
@@ -106,25 +107,15 @@ function AtRiskCaseItem({
             <span>{caseItem.assignedPartner}</span>
           </div>
         </div>
-        <button
-          className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            // Handle review action
-            onClick();
-          }}
-        >
-          Revizuiește
-        </button>
       </div>
     </div>
   );
-}
+});
 
 /**
- * High-Value Case Item Component
+ * High-Value Case Item Component (Memoized for performance)
  */
-function HighValueCaseItem({
+const HighValueCaseItem = React.memo(function HighValueCaseItem({
   caseItem,
   onClick,
 }: {
@@ -156,15 +147,11 @@ function HighValueCaseItem({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <button
-              className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-              }}
+            <span
+              className="text-sm font-medium text-blue-600"
             >
               {caseItem.caseNumber}
-            </button>
+            </span>
             <span className={clsx('inline-flex items-center px-2 py-1 rounded-full text-xs font-medium', config.className)}>
               {config.label}
             </span>
@@ -187,24 +174,15 @@ function HighValueCaseItem({
             <span>{caseItem.assignedPartner}</span>
           </div>
         </div>
-        <button
-          className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-        >
-          Vezi
-        </button>
       </div>
     </div>
   );
-}
+});
 
 /**
- * AI Insight Item Component
+ * AI Insight Item Component (Memoized for performance)
  */
-function AIInsightItem({
+const AIInsightItem = React.memo(function AIInsightItem({
   insight,
   onClick,
 }: {
@@ -269,15 +247,11 @@ function AIInsightItem({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <button
-              className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-              }}
+            <span
+              className="text-sm font-medium text-blue-600"
             >
               {insight.caseNumber}
-            </button>
+            </span>
             <span className={clsx('inline-flex items-center px-2 py-1 rounded-full text-xs font-medium', config.className)}>
               {config.label}
             </span>
@@ -288,13 +262,15 @@ function AIInsightItem({
       </div>
     </div>
   );
-}
+});
 
 /**
  * FirmCasesOverviewWidget - Displays firm-wide case insights with tabs
  *
  * Shows at-risk cases, high-value cases, and AI insights in a tabbed interface.
  * Uses Radix UI Tabs for accessible tab navigation.
+ *
+ * Performance: Radix Tabs lazy-loads content, memoized case items
  */
 export function FirmCasesOverviewWidget({
   widget,
