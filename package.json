@@ -24,7 +24,14 @@
     "test:a11y:ui": "playwright test tests/e2e/accessibility --ui",
     "clean": "turbo run clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky"
+    "validate:env": "tsx scripts/validate-env.ts",
+    "prepare": "husky",
+    "deploy:staging": "scripts/render/deploy.sh staging",
+    "deploy:production": "scripts/render/deploy.sh production",
+    "logs:web": "scripts/render/logs.sh web",
+    "logs:api": "scripts/render/logs.sh gateway",
+    "render:setup": "scripts/render/setup.sh",
+    "render:status": "scripts/render/status.sh"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
