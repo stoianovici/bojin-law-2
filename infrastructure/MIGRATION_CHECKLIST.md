@@ -1,621 +1,1197 @@
-# Render Migration Checklist
+# Migration Checklist: Azure → Render.com
 
-Complete checklist for migrating from Azure to Render.com infrastructure.
+**Purpose:** This checklist guides the migration from Azure AKS/Kubernetes infrastructure to Render.com PaaS platform.
 
-**Migration Overview:**
+**Migration Type:** Greenfield (no existing production data to migrate)
 
-- **From:** Azure AKS/Kubernetes (planned, not deployed)
-- **To:** Render.com PaaS
-- **Strategy:** Greenfield deployment (no existing infrastructure to migrate)
-- **Timeline:** 2-3 weeks
-- **Risk:** Low (no production data, pre-deployment pivot)
+**Estimated Total Time:** 15-20 hours over 5-7 days
+
+**Last Updated:** 2025-11-17
 
 ---
 
 ## Pre-Migration Checklist
 
-Complete these tasks before beginning the migration.
+Complete these items before starting the migration:
 
-### 1. Render Account Setup
+### 1. Render Account Setup (Time: 30 minutes)
 
-- [ ] Create Render account (https://render.com/signup)
-- [ ] Verify email and complete account setup
-- [ ] Add payment method to Render account
-- [ ] Enable billing for production deployments
-- [ ] Invite team members to Render organization
-- [ ] Set up two-factor authentication (2FA)
-- [ ] Review Render pricing and understand costs ($207/month expected)
+- [ ] Create Render account at https://render.com
+- [ ] Verify email address
+- [ ] Set up billing information (credit card required)
+- [ ] Enable two-factor authentication (2FA) for security
+- [ ] Invite team members to Render account with appropriate roles
+  - Admin: Platform operators
+  - Developer: Engineering team
+  - Viewer: QA team
+- [ ] Set up billing alerts:
+  - Warning: $230/month (110% of estimate)
+  - Critical: $250/month (120% of estimate)
 
 **Time Estimate:** 30 minutes
-**Owner:** Platform Operator
-**Documentation:** https://render.com/docs/getting-started
+**Blockers:** Requires billing information (credit card)
+**Success Criteria:** All team members have Render access and billing alerts configured
 
-### 2. GitHub Integration
+---
 
-- [ ] Connect GitHub repository to Render
-- [ ] Authorize Render to access repository
-- [ ] Verify Render can read repository content
-- [ ] Test webhook connectivity (optional preview)
-- [ ] Configure branch permissions (main = production, develop = staging)
+### 2. GitHub Integration (Time: 15 minutes)
+
+- [ ] Connect GitHub repository to Render account
+- [ ] Grant Render access to repository permissions:
+  - Read access to code
+  - Write access for commit status checks
+  - Webhook management for auto-deploy
+- [ ] Configure branch access:
+  - `main` → Production environment
+  - `develop` → Staging environment
+- [ ] Verify webhook creation in GitHub repository settings
 
 **Time Estimate:** 15 minutes
-**Owner:** Platform Operator
-**Documentation:** https://render.com/docs/github
+**Blockers:** Requires GitHub admin access
+**Success Criteria:** Render appears in GitHub repository integrations
 
-### 3. Environment Variables Preparation
+---
 
-- [ ] Review `infrastructure/ENVIRONMENT_VARIABLES.md`
-- [ ] Prepare all required environment variables
-- [ ] Generate JWT_SECRET (use: `openssl rand -base64 32`)
-- [ ] Obtain third-party API keys (OpenAI, SMTP, etc.)
-- [ ] Create separate variable files for staging and production
-- [ ] Document secret rotation schedule (90 days)
-- [ ] Set up secure password manager for secrets
+### 3. Environment Variables Preparation (Time: 1-2 hours)
 
-**Time Estimate:** 2 hours
-**Owner:** Platform Operator + Team Lead
-**Documentation:** `infrastructure/ENVIRONMENT_VARIABLES.md`
+- [ ] Generate production secrets:
+  - [ ] `JWT_SECRET` (256-bit random string)
+  - [ ] `SESSION_SECRET` (256-bit random string)
+  - [ ] `ENCRYPTION_KEY` (AES-256 key)
+- [ ] Collect third-party API keys:
+  - [ ] `ANTHROPIC_API_KEY` (Claude AI - primary)
+  - [ ] `GROK_API_KEY` (xAI Grok - fallback, optional)
+  - [ ] Storage provider credentials (Cloudflare R2 or AWS S3)
+  - [ ] SMTP credentials (SendGrid recommended, 12K free emails/month)
+- [ ] Set up Cloudflare R2 storage (recommended):
+  - [ ] Create R2 bucket for document storage
+  - [ ] Generate R2 API tokens
+  - [ ] Configure CORS policy for web access
+- [ ] Prepare environment variable files:
+  - [ ] Copy `infrastructure/render/environment-template.yaml`
+  - [ ] Fill in all required values
+  - [ ] Validate no placeholder values remain
+  - [ ] Store securely (1Password, LastPass, or encrypted file)
+- [ ] Review `infrastructure/ENVIRONMENT_VARIABLES.md` for complete list
 
-### 4. render.yaml Validation
+**Time Estimate:** 1-2 hours
+**Blockers:** Requires API key signups, storage provider setup
+**Success Criteria:** All environment variables documented and ready to deploy
 
-- [ ] Review `render.yaml` in project root
-- [ ] Verify all 7 services are defined correctly
-- [ ] Confirm database and Redis configurations
-- [ ] Validate health check paths (/health, /api/health)
-- [ ] Check resource allocations (2×4GB web/gateway, 1×2GB services)
-- [ ] Verify auto-deploy triggers (commit on main/develop)
-- [ ] Test render.yaml syntax (optional: Render CLI validation)
+---
+
+### 4. Database Planning (Time: 30 minutes)
+
+- [ ] Review database schema in `docs/architecture/database-schema.md`
+- [ ] Confirm PostgreSQL version compatibility (Render uses PostgreSQL 16)
+- [ ] Verify pgvector extension availability (included in Render PostgreSQL)
+- [ ] Plan database size:
+  - Staging: 10GB (Standard plan, $25/month)
+  - Production: 25GB (Standard plan, $25/month)
+- [ ] Review backup strategy:
+  - Render automatic daily backups (7-day retention on Standard plan)
+  - Manual backup before critical operations
+- [ ] Prepare database initialization scripts:
+  - [ ] Schema creation (DDL)
+  - [ ] Seed data (if any)
+  - [ ] pgvector extension installation
 
 **Time Estimate:** 30 minutes
-**Owner:** Developer
-**Documentation:** https://render.com/docs/yaml-spec
+**Blockers:** None
+**Success Criteria:** Database plan documented and migration scripts ready
 
-### 5. Database Migration Plan
+---
 
-- [ ] Design database schema (Prisma migrations)
-- [ ] Prepare seed data for staging environment
-- [ ] Create database backup strategy
-- [ ] Plan zero-downtime migration approach (if needed)
-- [ ] Document rollback procedures
-- [ ] Test migrations in local Docker environment
+### 5. Infrastructure Configuration Review (Time: 1 hour)
 
-**Time Estimate:** 4 hours
-**Owner:** Developer
-**Documentation:** `infrastructure/DEPLOYMENT_GUIDE.md`
-
-### 6. Team Training
-
-- [ ] Share Render documentation with team
-- [ ] Review `infrastructure/DEPLOYMENT_GUIDE.md` with team
-- [ ] Review `infrastructure/OPERATIONS_RUNBOOK.md` with team
-- [ ] Demo Render dashboard features
-- [ ] Practice deployment using `scripts/render/` helpers
-- [ ] Assign on-call rotation for migration week
-- [ ] Create team communication channel (Slack/Discord)
-
-**Time Estimate:** 3 hours
-**Owner:** Team Lead
-**Documentation:** `infrastructure/DEPLOYMENT_GUIDE.md`
-
-### 7. Pre-Flight Checks
-
-- [ ] All GitHub Actions workflows passing
-- [ ] All unit and integration tests passing
-- [ ] Docker images build successfully
-- [ ] `render.yaml` validated
-- [ ] Environment variables documented
-- [ ] Team trained and ready
-- [ ] Backup plan documented
-- [ ] Rollback procedures documented
+- [ ] Review `render.yaml` configuration:
+  - [ ] All 7 services defined (web, gateway, 5 microservices)
+  - [ ] PostgreSQL database configured
+  - [ ] Redis keyvalue store configured
+  - [ ] Health check paths correct
+  - [ ] Environment variable references correct
+  - [ ] Auto-deploy triggers configured
+  - [ ] Instance sizes appropriate (2×4GB web/gateway, 1×2GB services)
+- [ ] Review Dockerfiles:
+  - [ ] `infrastructure/docker/Dockerfile.web` optimized
+  - [ ] `infrastructure/docker/Dockerfile.gateway` optimized
+  - [ ] `infrastructure/docker/Dockerfile.service` optimized
+  - [ ] Health check endpoints implemented
+  - [ ] Non-root user configured
+- [ ] Review `.dockerignore` and `.renderignore` files
+- [ ] Test Docker builds locally:
+  ```bash
+  docker build -f infrastructure/docker/Dockerfile.web -t test-web .
+  docker build -f infrastructure/docker/Dockerfile.gateway -t test-gateway .
+  docker build -f infrastructure/docker/Dockerfile.service -t test-service .
+  ```
 
 **Time Estimate:** 1 hour
-**Owner:** Team Lead
-**Sign-off Required:** Yes
+**Blockers:** Docker must be running locally
+**Success Criteria:** All Docker images build successfully without errors
+
+---
+
+### 6. CI/CD Pipeline Validation (Time: 30 minutes)
+
+- [ ] Review `.github/workflows/build-publish.yml`:
+  - [ ] Render Deploy Hooks configured
+  - [ ] Pre-deployment checks enabled
+  - [ ] Staging and production jobs separated
+- [ ] Review `.github/workflows/pr-validation.yml`:
+  - [ ] All test jobs present
+  - [ ] Docker build validation enabled
+  - [ ] Security scanning enabled
+- [ ] Configure GitHub Secrets:
+  - [ ] `RENDER_DEPLOY_HOOK_STAGING` (from Render dashboard)
+  - [ ] `RENDER_DEPLOY_HOOK_PRODUCTION` (from Render dashboard)
+  - [ ] `RENDER_API_KEY` (for CLI operations)
+- [ ] Configure GitHub Environment Variables:
+  - [ ] `STAGING_URL` (will be set after staging deployment)
+  - [ ] `PRODUCTION_URL` (will be set after production deployment)
+
+**Time Estimate:** 30 minutes
+**Blockers:** Requires Render services created to get Deploy Hooks
+**Success Criteria:** All GitHub secrets configured and workflows validated
+
+---
+
+### 7. Team Training (Time: 2-3 hours)
+
+- [ ] Schedule training session with all team members
+- [ ] Review Render platform overview:
+  - [ ] Dashboard navigation
+  - [ ] Service management
+  - [ ] Environment variables
+  - [ ] Logs and metrics
+  - [ ] Deployment workflows
+- [ ] Walk through deployment procedures:
+  - [ ] Git-based deployments (push to main/develop)
+  - [ ] Manual deployments via dashboard
+  - [ ] Rollback procedures
+- [ ] Review operational runbook:
+  - [ ] Daily health checks
+  - [ ] Incident response
+  - [ ] Scaling procedures
+  - [ ] Cost monitoring
+- [ ] Hands-on practice:
+  - [ ] Deploy to staging
+  - [ ] View logs
+  - [ ] Open shell in service
+  - [ ] Update environment variables
+- [ ] Q&A session
+
+**Time Estimate:** 2-3 hours
+**Blockers:** Requires all team members available
+**Success Criteria:** All team members comfortable with Render platform
+
+---
+
+### 8. Documentation Review (Time: 1 hour)
+
+- [ ] Review all infrastructure documentation:
+  - [ ] `infrastructure/README.md`
+  - [ ] `infrastructure/DEPLOYMENT_GUIDE.md`
+  - [ ] `infrastructure/OPERATIONS_RUNBOOK.md`
+  - [ ] `infrastructure/COST_ESTIMATION.md`
+  - [ ] `infrastructure/ENVIRONMENT_VARIABLES.md`
+  - [ ] `infrastructure/LOCAL_DEVELOPMENT.md`
+- [ ] Verify all Azure references removed
+- [ ] Confirm all Render procedures documented
+- [ ] Test sample commands from documentation
+- [ ] Update any outdated information
+
+**Time Estimate:** 1 hour
+**Blockers:** None
+**Success Criteria:** All documentation accurate and current
+
+---
+
+### 9. Local Development Testing (Time: 1-2 hours)
+
+- [ ] Test local Docker Compose stack:
+  ```bash
+  cd infrastructure/docker
+  docker-compose up -d
+  docker-compose ps  # verify all services running
+  docker-compose logs web  # check for errors
+  ```
+- [ ] Verify all services healthy:
+  - [ ] Web (Next.js) - http://localhost:3000
+  - [ ] Gateway (GraphQL API) - http://localhost:4000
+  - [ ] Document Service - http://localhost:5001/health
+  - [ ] AI Service - http://localhost:5002/health
+  - [ ] Task Service - http://localhost:5003/health
+  - [ ] Integration Service - http://localhost:5004/health
+  - [ ] Notification Service - http://localhost:5005/health
+  - [ ] PostgreSQL - Port 5432
+  - [ ] Redis - Port 6379
+- [ ] Run database migrations locally:
+  ```bash
+  npm run db:migrate
+  ```
+- [ ] Run integration tests:
+  ```bash
+  npm run test:integration
+  ```
+- [ ] Clean up:
+  ```bash
+  docker-compose down -v
+  ```
+
+**Time Estimate:** 1-2 hours
+**Blockers:** Docker must be running, all dependencies installed
+**Success Criteria:** All services start successfully and tests pass
+
+---
+
+### 10. Stakeholder Communication (Time: 30 minutes)
+
+- [ ] Notify stakeholders of migration plan:
+  - [ ] Executive team (cost savings, timeline)
+  - [ ] Product team (deployment changes)
+  - [ ] Development team (workflow changes)
+  - [ ] QA team (testing environments)
+- [ ] Schedule maintenance windows:
+  - [ ] Staging deployment: [DATE/TIME]
+  - [ ] Production deployment: [DATE/TIME]
+- [ ] Prepare status update template
+- [ ] Set up communication channels:
+  - [ ] Slack/Discord migration channel
+  - [ ] Email distribution list
+  - [ ] Incident escalation contacts
+
+**Time Estimate:** 30 minutes
+**Blockers:** None
+**Success Criteria:** All stakeholders informed and aligned
+
+---
+
+## Pre-Migration Checklist Summary
+
+**Total Estimated Time:** 8-12 hours
+**Critical Path Items:**
+
+1. Render account setup (blocks everything)
+2. GitHub integration (blocks deployments)
+3. Environment variables (blocks service startup)
+
+**Go/No-Go Decision Criteria:**
+
+- ✅ All checklist items completed
+- ✅ Local development environment tested successfully
+- ✅ All team members trained
+- ✅ All documentation reviewed
+- ✅ Stakeholders informed
+
+**If No-Go:** Defer migration and address blockers before proceeding.
 
 ---
 
 ## Migration Steps
 
-Execute these steps in order to complete the migration.
+### Stage 1: Create Staging Environment (Time: 2-3 hours)
 
-### Phase 1: Staging Environment Deployment (Day 1-2)
+#### Step 1.1: Create Render Services from Dashboard (Time: 1 hour)
 
-#### Step 1: Create Render Services (Staging)
+**Option A: Using render.yaml (Recommended)**
 
-**Time:** 30 minutes
-
-- [ ] Log in to Render dashboard (https://dashboard.render.com)
-- [ ] Click "New" → "Blueprint" (if using render.yaml)
-  - OR manually create each service from dashboard
-- [ ] Select GitHub repository
-- [ ] Select `develop` branch for staging
-- [ ] Review service configurations
-- [ ] Confirm resource allocations
-- [ ] Click "Apply" to create all services
-
-**Expected Result:** 9 services created (7 web services, 1 database, 1 Redis)
-
-**Rollback:** Delete all services from Render dashboard
-
-#### Step 2: Configure Environment Variables (Staging)
-
-**Time:** 1 hour
-
-For each service:
-
-- [ ] Navigate to service in Render dashboard
-- [ ] Go to "Environment" tab
-- [ ] Add all required environment variables
-- [ ] Verify Render auto-injected variables (DATABASE_URL, REDIS_URL)
-- [ ] Save changes
-- [ ] Repeat for all 7 services
-
-**Shortcut:** Use `scripts/render/env-sync.sh` with staging .env file
-
-**Expected Result:** All services have required environment variables
-
-**Rollback:** Update environment variables, redeploy services
-
-#### Step 3: Initial Deployment (Staging)
-
-**Time:** 15 minutes (build time)
-
-- [ ] Trigger deployment (automatic if webhook connected)
-  - OR click "Manual Deploy" for each service
-- [ ] Monitor deployment logs in Render dashboard
-- [ ] Verify all services deploy successfully
-- [ ] Check service health status (should be "Live")
-
-**Expected Result:** All 7 services show "Live" status
-
-**Rollback:** Delete services and restart from Step 1
-
-#### Step 4: Database Initialization (Staging)
-
-**Time:** 30 minutes
-
-- [ ] Open shell in gateway service: `npm run shell gateway`
-- [ ] Run database migrations: `npx prisma migrate deploy`
-- [ ] Verify migrations applied: `npx prisma migrate status`
-- [ ] Seed staging data: `npm run db:seed` (if applicable)
-- [ ] Verify database connectivity from all services
-
-**Expected Result:** Database schema created, seed data loaded
-
-**Rollback:** Drop database, re-create, run migrations again
-
-#### Step 5: Smoke Tests (Staging)
-
-**Time:** 1 hour
-
-- [ ] Test web app loads: Visit staging URL
-- [ ] Test API gateway: `curl https://gateway-staging.onrender.com/api/health`
-- [ ] Test authentication flow (if implemented)
-- [ ] Test database reads/writes
-- [ ] Test Redis connectivity
-- [ ] Test file uploads (if applicable)
-- [ ] Test inter-service communication
-- [ ] Review logs for errors: `npm run logs:web`
-
-**Expected Result:** All smoke tests pass, no critical errors
-
-**Rollback:** Review logs, fix issues, redeploy
-
-#### Step 6: Integration Tests (Staging)
-
-**Time:** 2 hours
-
-- [ ] Run integration test suite against staging
-- [ ] Test API endpoints
-- [ ] Test database operations
-- [ ] Test service-to-service communication
-- [ ] Verify environment variables
-- [ ] Check monitoring data collection (if enabled)
-
-**Expected Result:** All integration tests pass
-
-**Rollback:** Fix failing tests, redeploy
-
-#### Step 7: Load Testing (Staging)
-
-**Time:** 2 hours
-
-- [ ] Run load tests (100 concurrent users)
-- [ ] Monitor CPU/memory usage in Render dashboard
-- [ ] Verify auto-scaling triggers (if enabled)
-- [ ] Check response times (p95 < 2s)
-- [ ] Monitor error rates (<1%)
-- [ ] Verify database connection pooling
-
-**Expected Result:** System handles expected load without issues
-
-**Rollback:** Adjust resource allocations, redeploy
-
-#### Step 8: Staging Approval
-
-**Time:** 30 minutes
-
-- [ ] Demo staging environment to team
-- [ ] Review all test results
-- [ ] Review Render dashboard metrics
-- [ ] Review logs for any warnings
-- [ ] Get sign-off from team lead
-- [ ] Document any issues found and resolutions
-
-**Expected Result:** Staging approved for production deployment
-
-**Decision Point:** Proceed to production OR fix issues
-
----
-
-### Phase 2: Production Environment Deployment (Day 3-5)
-
-#### Step 9: Pre-Production Backup
-
-**Time:** 30 minutes
-
-- [ ] Backup staging database: `npm run db-backup staging`
-- [ ] Export staging environment variables as backup
-- [ ] Backup current git state: `git tag v1.0.0-pre-render`
-- [ ] Document current state for rollback
-
-**Expected Result:** All backups completed and verified
-
-#### Step 10: Create Production Services
-
-**Time:** 30 minutes
-
-- [ ] Log in to Render dashboard
-- [ ] Click "New" → "Blueprint" (if using render.yaml)
-- [ ] Select GitHub repository
-- [ ] Select `main` branch for production
-- [ ] Review service configurations
-- [ ] **Use higher resource allocations:**
-  - Web: 2× 4GB instances ($50/month)
-  - Gateway: 2× 4GB instances ($50/month)
-  - Services: 1× 2GB each ($15/month each)
-  - PostgreSQL: Standard 25GB ($25/month)
+- [ ] Push `render.yaml` to `develop` branch:
+  ```bash
+  git checkout develop
+  git pull origin develop
+  ```
+- [ ] In Render Dashboard, click "New" → "Blueprint"
+- [ ] Select repository and branch (`develop`)
+- [ ] Review detected services from `render.yaml`:
+  - 7 web services
+  - 1 PostgreSQL database
+  - 1 Redis instance
+- [ ] Confirm service plan sizes:
+  - Web/Gateway: Starter (2GB RAM, $15/month each for staging)
+  - Microservices: Starter (2GB RAM, $15/month each)
+  - PostgreSQL: Standard 10GB ($25/month)
   - Redis: 1GB ($10/month)
 - [ ] Click "Apply" to create all services
 
-**Expected Result:** 9 production services created
+**Option B: Manual Creation (Alternative)**
 
-**Rollback:** Delete production services, continue using staging
+- [ ] Create PostgreSQL database:
+  - Name: `bojin-law-db-staging`
+  - Plan: Standard 10GB ($25/month)
+  - Region: Oregon (us-west-2) or closest to team
+  - Wait for database to provision (~5 minutes)
+- [ ] Create Redis instance:
+  - Name: `bojin-law-redis-staging`
+  - Plan: 1GB ($10/month)
+  - Region: Same as database
+- [ ] Create Web Service:
+  - Name: `bojin-law-web-staging`
+  - Repository: [your-repo]
+  - Branch: `develop`
+  - Build Command: `npm install && npm run build --workspace=apps/web`
+  - Start Command: `npm run start --workspace=apps/web`
+  - Dockerfile: `infrastructure/docker/Dockerfile.web`
+  - Plan: Starter (2GB RAM, $15/month)
+  - Health Check: `/health`
+- [ ] Create Gateway Service:
+  - Name: `bojin-law-gateway-staging`
+  - Repository: [your-repo]
+  - Branch: `develop`
+  - Dockerfile: `infrastructure/docker/Dockerfile.gateway`
+  - Plan: Starter (2GB RAM, $15/month)
+  - Health Check: `/api/health`
+- [ ] Repeat for 5 microservices (document, ai, task, integration, notification)
 
-#### Step 11: Configure Production Environment Variables
-
-**Time:** 1 hour
-
-For each production service:
-
-- [ ] Navigate to service in Render dashboard
-- [ ] Go to "Environment" tab
-- [ ] Add all production environment variables
-- [ ] Use production secrets (different from staging)
-- [ ] Verify Render auto-injected variables
-- [ ] Double-check all values (no staging URLs)
-- [ ] Save changes
-
-**CRITICAL:** Verify JWT_SECRET, database credentials, API keys are production values
-
-**Expected Result:** All production services configured correctly
-
-**Rollback:** Fix environment variables, redeploy
-
-#### Step 12: Production Deployment
-
-**Time:** 15 minutes (build time)
-
-- [ ] Trigger production deployment
-- [ ] Monitor deployment logs closely
-- [ ] Verify all services deploy successfully
-- [ ] Check service health status (should be "Live")
-- [ ] Monitor for any startup errors
-
-**Expected Result:** All services deployed and healthy
-
-**Rollback:** Rollback deployment in Render dashboard
-
-#### Step 13: Production Database Setup
-
-**Time:** 30 minutes
-
-- [ ] Open shell in production gateway: `npm run shell gateway --env production`
-- [ ] Run database migrations: `npx prisma migrate deploy`
-- [ ] Verify migrations: `npx prisma migrate status`
-- [ ] DO NOT seed with test data (production is empty initially)
-- [ ] Verify database connectivity from all services
-
-**Expected Result:** Production database schema created
-
-**Rollback:** Drop database, re-create, run migrations
-
-#### Step 14: DNS Configuration
-
-**Time:** 1 hour (plus DNS propagation time: 24-48 hours)
-
-- [ ] Add custom domain in Render dashboard
-- [ ] Get DNS records from Render (A/CNAME records)
-- [ ] Update DNS records in domain registrar
-- [ ] Configure `www` subdomain redirect (if applicable)
-- [ ] Wait for DNS propagation (check with `dig yourapp.com`)
-- [ ] Verify HTTPS certificate issued by Render (Let's Encrypt)
-- [ ] Test domain access: https://yourapp.com
-
-**Expected Result:** Domain points to Render production, HTTPS works
-
-**Rollback:** Revert DNS records
-
-#### Step 15: Production Smoke Tests
-
-**Time:** 2 hours
-
-- [ ] Test web app loads: Visit production URL
-- [ ] Test API gateway health endpoint
-- [ ] Test user registration/authentication
-- [ ] Test database operations
-- [ ] Test all critical user flows
-- [ ] Verify email sending works
-- [ ] Check monitoring data collection
-- [ ] Review production logs for errors
-
-**Expected Result:** All critical flows work, no errors
-
-**Rollback:** Take production offline, fix issues
-
-#### Step 16: Production Monitoring Setup
-
-**Time:** 1 hour
-
-See Task 23 for detailed monitoring setup. Quick checklist:
-
-- [ ] Configure Render native monitoring
-- [ ] Set up uptime monitoring
-- [ ] Configure alert channels (email, Slack)
-- [ ] Set up error tracking (optional: Sentry)
-- [ ] Configure CPU/memory alerts
-- [ ] Test alert delivery
-
-**Expected Result:** Monitoring active, alerts configured
+**Time Estimate:** 1 hour
+**Blockers:** None
+**Success Criteria:** All services created and in "Building" state
 
 ---
 
-### Phase 3: Cutover and Verification (Day 6-7)
+#### Step 1.2: Configure Environment Variables (Time: 30 minutes)
 
-#### Step 17: Production Launch
+- [ ] For each service, set environment variables via Render Dashboard:
+  - Navigate to service → Environment tab
+  - Add all required variables from `infrastructure/render/environment-template.yaml`
+  - Render auto-injects:
+    - `DATABASE_URL` (from database connection)
+    - `REDIS_URL` (from Redis connection)
+    - `RENDER_SERVICE_NAME`
+    - `RENDER_EXTERNAL_URL`
+    - `RENDER_GIT_COMMIT`
+  - Set manually:
+    - `NODE_ENV=staging`
+    - `JWT_SECRET=[generated-secret]`
+    - `SESSION_SECRET=[generated-secret]`
+    - `NEXT_PUBLIC_API_URL=https://bojin-law-gateway-staging.onrender.com`
+    - `NEXT_PUBLIC_APP_URL=https://bojin-law-web-staging.onrender.com`
+    - `ANTHROPIC_API_KEY=[your-key]`
+    - `GROK_API_KEY=[your-key]` (optional)
+    - `AI_PROVIDER=anthropic`
+    - `ANTHROPIC_USE_PROMPT_CACHING=true`
+    - `ANTHROPIC_USE_BATCHING=true`
+    - Storage provider variables (Cloudflare R2 or S3)
+    - SMTP credentials (SendGrid or other)
 
-**Time:** 30 minutes
+**Alternative: Use Render CLI**
 
-- [ ] Announce production deployment to team
-- [ ] Share production URL with team
-- [ ] Begin 48-hour monitoring period
-- [ ] Assign on-call engineer for first week
-- [ ] Monitor Render dashboard continuously
+```bash
+# Install Render CLI
+npm install -g @render/cli
+render login
 
-**Expected Result:** Production live and stable
+# Set environment variables from file
+render env set --service bojin-law-web-staging --env-file .env.staging
+```
 
-#### Step 18: Post-Launch Monitoring (48 hours)
+**Time Estimate:** 30 minutes
+**Blockers:** Requires all API keys and secrets ready
+**Success Criteria:** All services have environment variables configured
 
-**Time:** Continuous for 48 hours
+---
 
-- [ ] Monitor CPU/memory usage (should be <60% average)
-- [ ] Monitor error rates (should be <0.1%)
-- [ ] Monitor response times (p95 <2s)
-- [ ] Check database connection pool
-- [ ] Verify auto-scaling works (if triggered)
-- [ ] Review logs every 4 hours
-- [ ] Respond to alerts immediately
+#### Step 1.3: Initialize Database (Time: 30 minutes)
 
-**Expected Result:** No critical issues, system stable
+- [ ] Connect to staging PostgreSQL database:
 
-**Escalation:** If critical issues, roll back immediately
+  ```bash
+  # Get database URL from Render Dashboard
+  export DATABASE_URL="postgresql://..."
 
-#### Step 19: User Acceptance Testing
+  # Or use Render shell
+  render shell --service bojin-law-db-staging
+  ```
 
-**Time:** 4 hours
+- [ ] Install pgvector extension:
+  ```sql
+  CREATE EXTENSION IF NOT EXISTS vector;
+  ```
+- [ ] Run database migrations:
 
-- [ ] Invite select users to test production
-- [ ] Gather feedback on performance
-- [ ] Monitor user sessions in production logs
-- [ ] Document any issues reported
-- [ ] Fix any critical bugs immediately
+  ```bash
+  # From local machine or CI/CD
+  npm run db:migrate
 
-**Expected Result:** Users can use production successfully
+  # Or from Render service shell
+  render shell --service bojin-law-gateway-staging
+  npm run db:migrate
+  ```
 
-#### Step 20: Cost Validation
+- [ ] Verify schema created:
+  ```sql
+  \dt  -- list tables
+  \d users  -- describe users table
+  ```
+- [ ] Seed initial data (if any):
+  ```bash
+  npm run db:seed
+  ```
 
-**Time:** 30 minutes
+**Time Estimate:** 30 minutes
+**Blockers:** Database must be running, migrations must be prepared
+**Success Criteria:** Database schema created and pgvector extension installed
 
-- [ ] Review Render billing dashboard
-- [ ] Verify costs match estimates ($207/month ±10%)
-- [ ] Check for unexpected charges
-- [ ] Set up budget alerts ($230/month warning)
-- [ ] Document actual vs estimated costs
+---
 
-**Expected Result:** Costs within budget
+#### Step 1.4: Verify Staging Deployment (Time: 30 minutes)
+
+- [ ] Wait for all services to deploy (5-10 minutes):
+  - Check Render Dashboard for deployment status
+  - All services should show "Live" status
+- [ ] Check service health:
+  ```bash
+  curl https://bojin-law-web-staging.onrender.com/health
+  curl https://bojin-law-gateway-staging.onrender.com/api/health
+  curl https://bojin-law-document-service-staging.onrender.com/health
+  curl https://bojin-law-ai-service-staging.onrender.com/health
+  curl https://bojin-law-task-service-staging.onrender.com/health
+  curl https://bojin-law-integration-service-staging.onrender.com/health
+  curl https://bojin-law-notification-service-staging.onrender.com/health
+  ```
+- [ ] Review service logs:
+  ```bash
+  render logs --service bojin-law-web-staging --tail
+  render logs --service bojin-law-gateway-staging --tail
+  ```
+- [ ] Check for errors or warnings:
+  - Database connection issues
+  - Redis connection issues
+  - Missing environment variables
+  - Service startup failures
+- [ ] Access staging web app:
+  - Navigate to `https://bojin-law-web-staging.onrender.com`
+  - Verify homepage loads
+  - Check browser console for errors
+
+**Time Estimate:** 30 minutes
+**Blockers:** Services must finish building
+**Success Criteria:** All services healthy and accessible
+
+---
+
+#### Step 1.5: Run Integration Tests Against Staging (Time: 30 minutes)
+
+- [ ] Configure test environment:
+  ```bash
+  export TEST_API_URL=https://bojin-law-gateway-staging.onrender.com
+  export TEST_WEB_URL=https://bojin-law-web-staging.onrender.com
+  ```
+- [ ] Run integration test suite:
+  ```bash
+  npm run test:integration
+  ```
+- [ ] Verify test results:
+  - [ ] Health checks pass (all services respond)
+  - [ ] Database connectivity passes
+  - [ ] Redis connectivity passes
+  - [ ] Service communication passes
+  - [ ] Environment variables validated
+  - [ ] File storage working (upload/download)
+- [ ] Review test failures (if any):
+  - Check service logs
+  - Verify environment variables
+  - Check network connectivity
+
+**Time Estimate:** 30 minutes
+**Blockers:** Integration tests must be implemented (Task 20)
+**Success Criteria:** All integration tests pass
+
+---
+
+#### Step 1.6: Load Testing (Time: 30 minutes)
+
+- [ ] Run load test against staging:
+  ```bash
+  # Using Artillery, k6, or similar
+  npm run test:load -- --target https://bojin-law-web-staging.onrender.com
+  ```
+- [ ] Simulate 100 concurrent users:
+  - Browse pages
+  - Login/logout
+  - Create/read/update operations
+  - File uploads/downloads
+- [ ] Monitor Render metrics:
+  - CPU usage
+  - Memory usage
+  - Request latency
+  - Error rate
+- [ ] Review performance:
+  - [ ] Response times <2s (p95)
+  - [ ] Error rate <1%
+  - [ ] Memory usage <80%
+  - [ ] CPU usage <80%
+
+**Time Estimate:** 30 minutes
+**Blockers:** Load testing tools must be set up
+**Success Criteria:** Performance meets SLAs under load
+
+---
+
+### Stage 2: Create Production Environment (Time: 2-3 hours)
+
+#### Step 2.1: Create Production Services (Time: 1 hour)
+
+Follow the same process as staging (Step 1.1), but:
+
+- [ ] Use `main` branch instead of `develop`
+- [ ] Use production service names (remove `-staging` suffix)
+- [ ] Use production-sized instances:
+  - Web/Gateway: Standard (4GB RAM, $25/month each) - 2 instances each
+  - Microservices: Starter (2GB RAM, $15/month each) - 1 instance each
+  - PostgreSQL: Standard 25GB ($25/month)
+  - Redis: 1GB ($10/month)
+
+**Expected Monthly Cost:** $207
+
+**Time Estimate:** 1 hour
+**Success Criteria:** All production services created
+
+---
+
+#### Step 2.2: Configure Production Environment Variables (Time: 30 minutes)
+
+- [ ] Set production environment variables (similar to staging):
+  - Use production secrets (different from staging)
+  - Use production API URLs
+  - Use production third-party credentials
+- [ ] Verify all required variables set
+- [ ] Double-check sensitive values (API keys, secrets)
+
+**Time Estimate:** 30 minutes
+**Success Criteria:** All production environment variables configured
+
+---
+
+#### Step 2.3: Initialize Production Database (Time: 30 minutes)
+
+- [ ] Run migrations on production database (same as Step 1.3)
+- [ ] Verify schema matches staging
+- [ ] Do NOT seed test data in production
+- [ ] Create production admin user (if applicable)
+
+**Time Estimate:** 30 minutes
+**Success Criteria:** Production database initialized
+
+---
+
+#### Step 2.4: Verify Production Deployment (Time: 30 minutes)
+
+- [ ] Check all service health endpoints
+- [ ] Review production logs for errors
+- [ ] Access production web app
+- [ ] Test critical user flows:
+  - [ ] User login/logout
+  - [ ] Create case
+  - [ ] Upload document
+  - [ ] View dashboard
+  - [ ] Generate report
+
+**Time Estimate:** 30 minutes
+**Success Criteria:** All production services healthy and functional
+
+---
+
+### Stage 3: DNS and Domain Configuration (Time: 1-2 hours)
+
+#### Step 3.1: Configure Custom Domains (Time: 30 minutes)
+
+- [ ] Purchase domain (if not already owned):
+  - Example: `bojinlaw.com`
+- [ ] In Render Dashboard, add custom domains:
+  - Web service: `app.bojinlaw.com`
+  - Gateway service: `api.bojinlaw.com`
+- [ ] Configure DNS records (in domain registrar):
+  - [ ] Add CNAME for `app.bojinlaw.com` → `bojin-law-web.onrender.com`
+  - [ ] Add CNAME for `api.bojinlaw.com` → `bojin-law-gateway.onrender.com`
+  - [ ] Wait for DNS propagation (5-60 minutes)
+- [ ] Verify DNS resolution:
+  ```bash
+  dig app.bojinlaw.com
+  dig api.bojinlaw.com
+  ```
+
+**Time Estimate:** 30 minutes + DNS propagation
+**Blockers:** Requires domain ownership
+**Success Criteria:** Custom domains resolve correctly
+
+---
+
+#### Step 3.2: Configure SSL/TLS (Time: 15 minutes)
+
+- [ ] Render automatically provisions Let's Encrypt certificates
+- [ ] Verify SSL certificates active:
+  ```bash
+  curl -vI https://app.bojinlaw.com
+  ```
+- [ ] Update environment variables with custom domains:
+  - `NEXT_PUBLIC_APP_URL=https://app.bojinlaw.com`
+  - `NEXT_PUBLIC_API_URL=https://api.bojinlaw.com`
+- [ ] Redeploy services to pick up new URLs
+
+**Time Estimate:** 15 minutes
+**Blockers:** DNS must be configured first
+**Success Criteria:** HTTPS working on all custom domains
+
+---
+
+#### Step 3.3: Update GitHub Actions (Time: 15 minutes)
+
+- [ ] Add Deploy Hook URLs to GitHub Secrets:
+  - Get Deploy Hooks from Render Dashboard (each service has one)
+  - `RENDER_DEPLOY_HOOK_STAGING` = staging deploy hook
+  - `RENDER_DEPLOY_HOOK_PRODUCTION` = production deploy hook
+- [ ] Update GitHub Environment Variables:
+  - `STAGING_URL=https://bojin-law-web-staging.onrender.com`
+  - `PRODUCTION_URL=https://app.bojinlaw.com`
+- [ ] Test deployment workflow:
+  - Push to `develop` → should trigger staging deployment
+  - Push to `main` → should trigger production deployment
+
+**Time Estimate:** 15 minutes
+**Success Criteria:** GitHub Actions triggering deployments correctly
+
+---
+
+### Stage 4: Monitoring and Alerting (Time: 2-3 hours)
+
+#### Step 4.1: Configure Render Monitoring (Time: 30 minutes)
+
+- [ ] Enable Render metrics for all services:
+  - CPU monitoring
+  - Memory monitoring
+  - Request count
+  - Error rate
+- [ ] Configure Render alerts:
+  - CPU >80% for 5 minutes → Email + Slack
+  - Memory >85% for 5 minutes → Email + Slack
+  - Service down → Email + Slack + SMS
+- [ ] Set up notification channels:
+  - Email: ops@company.com
+  - Slack: #infrastructure-alerts
+  - SMS: On-call engineer
+
+**Time Estimate:** 30 minutes
+**Success Criteria:** Alerts configured and tested
+
+---
+
+#### Step 4.2: Configure New Relic (Optional, Recommended) (Time: 1-2 hours)
+
+- [ ] Sign up for New Relic account (100GB/month free tier)
+- [ ] Create New Relic applications:
+  - Web (Next.js)
+  - Gateway (Node.js)
+  - Each microservice
+- [ ] Install New Relic APM:
+  - Add `newrelic` npm package to services
+  - Configure `newrelic.js` in each service
+  - Add `NEW_RELIC_LICENSE_KEY` environment variable
+  - Add `NEW_RELIC_APP_NAME` for each service
+- [ ] Verify data flowing:
+  - Check New Relic dashboard for incoming metrics
+  - Verify transactions captured
+  - Check error tracking working
+- [ ] Configure New Relic alerts:
+  - Error rate >5% → Critical
+  - Response time >2s (p95) → Warning
+  - Throughput drop >50% → Warning
+  - Apdex score <0.7 → Warning
+- [ ] Create custom dashboards:
+  - Application health overview
+  - Database performance
+  - AI service usage and costs
+  - Error tracking
+
+**Time Estimate:** 1-2 hours
+**Blockers:** Requires New Relic account
+**Success Criteria:** New Relic receiving data and alerts working
+
+---
+
+#### Step 4.3: Configure Uptime Monitoring (Time: 30 minutes)
+
+**Option A: Use Render Built-in**
+
+- Already included, monitors health check endpoints
+
+**Option B: External Monitoring (UptimeRobot, Pingdom, etc.)**
+
+- [ ] Sign up for uptime monitoring service
+- [ ] Add monitors:
+  - `https://app.bojinlaw.com/health` (every 5 minutes)
+  - `https://api.bojinlaw.com/api/health` (every 5 minutes)
+- [ ] Configure alerts:
+  - Service down → Email + Slack + SMS
+  - Response time >5s → Email + Slack
+- [ ] Set up status page (optional):
+  - Public status page for customers
+  - Incident history
+
+**Time Estimate:** 30 minutes
+**Success Criteria:** Uptime monitoring active and alerting
+
+---
+
+### Stage 5: Final Validation and Go-Live (Time: 2-3 hours)
+
+#### Step 5.1: Run Full Test Suite (Time: 1 hour)
+
+- [ ] Run all tests against production:
+  ```bash
+  export TEST_ENV=production
+  npm run test:unit
+  npm run test:integration
+  npm run test:e2e
+  ```
+- [ ] Verify all tests pass:
+  - [ ] Unit tests: 100% pass
+  - [ ] Integration tests: 100% pass
+  - [ ] E2E tests: 100% pass
+- [ ] Manual smoke testing:
+  - [ ] User registration/login
+  - [ ] Case creation and management
+  - [ ] Document upload/download
+  - [ ] Time tracking
+  - [ ] Report generation
+  - [ ] Dashboard widgets
+  - [ ] Search functionality
+- [ ] Performance testing:
+  - [ ] Page load times <2s
+  - [ ] API response times <500ms
+  - [ ] No memory leaks
+  - [ ] No console errors
+
+**Time Estimate:** 1 hour
+**Success Criteria:** All tests pass and manual testing confirms functionality
+
+---
+
+#### Step 5.2: Security Review (Time: 30 minutes)
+
+- [ ] Verify all sensitive data encrypted:
+  - Database connections use SSL
+  - Redis connections use TLS
+  - All external API calls use HTTPS
+- [ ] Verify secrets management:
+  - No secrets in code
+  - All secrets in Render environment variables
+  - Secret rotation plan documented
+- [ ] Verify authentication:
+  - JWT tokens working
+  - Session management secure
+  - CSRF protection enabled
+- [ ] Verify authorization:
+  - Role-based access control working
+  - API endpoints protected
+  - File access restricted by ownership
+- [ ] Run security scan:
+  ```bash
+  npm audit
+  npm run test:security
+  ```
+
+**Time Estimate:** 30 minutes
+**Success Criteria:** No critical security issues found
+
+---
+
+#### Step 5.3: Backup Verification (Time: 30 minutes)
+
+- [ ] Verify Render automatic backups enabled:
+  - Database: Daily backups with 7-day retention
+  - Review backup schedule
+- [ ] Test manual backup:
+  ```bash
+  render db backup --database bojin-law-db
+  ```
+- [ ] Verify backup exists in Render dashboard
+- [ ] Document backup restoration procedure
+- [ ] Test backup restoration on staging:
+  ```bash
+  render db restore --database bojin-law-db-staging --backup [backup-id]
+  ```
+
+**Time Estimate:** 30 minutes
+**Success Criteria:** Backups working and restoration tested
+
+---
+
+#### Step 5.4: Documentation Final Review (Time: 30 minutes)
+
+- [ ] Update all documentation with production URLs
+- [ ] Verify runbook procedures against production
+- [ ] Update README with production deployment status
+- [ ] Document any production-specific configurations
+- [ ] Create post-migration report (see Task 26)
+
+**Time Estimate:** 30 minutes
+**Success Criteria:** All documentation current and accurate
 
 ---
 
 ## Post-Migration Checklist
 
-Complete these tasks after production is stable.
+### Day 1: Immediate Monitoring (Time: 2-4 hours)
 
-### Immediate (Day 8-10)
+- [ ] Monitor production for first 4-6 hours:
+  - Check logs every 30 minutes
+  - Review error rates
+  - Monitor performance metrics
+  - Check database connection pool
+  - Verify caching working
+- [ ] Verify all scheduled tasks running:
+  - Background jobs
+  - Email notifications
+  - Report generation
+  - Data synchronization
+- [ ] Test critical user flows:
+  - User login
+  - Case creation
+  - Document upload
+  - Report generation
+- [ ] Monitor costs:
+  - Check Render billing dashboard
+  - Verify usage within expected ranges
 
-- [ ] **Verify Production Health**
-  - All services running without errors
-  - Response times acceptable
-  - Error rates below threshold
-  - Monitoring data being collected
+**Success Criteria:** No critical issues in first 6 hours
 
-- [ ] **Document Issues**
-  - Create list of all issues encountered
-  - Document resolutions
-  - Update runbooks with learnings
+---
 
-- [ ] **Update Team Documentation**
-  - Share production URLs with team
-  - Update README with production links
-  - Update internal wiki/docs
+### Day 2-7: Daily Health Checks (Time: 30 minutes/day)
 
-- [ ] **Enable Full Monitoring**
-  - Complete Task 23 (Configure Monitoring)
-  - Set up alerts for all critical metrics
-  - Test alert delivery
+- [ ] Daily morning check (15 minutes):
+  - [ ] Review overnight logs for errors
+  - [ ] Check service health status
+  - [ ] Review New Relic dashboard
+  - [ ] Check uptime monitoring reports
+  - [ ] Verify backups completed successfully
+- [ ] Daily evening check (15 minutes):
+  - [ ] Review day's performance metrics
+  - [ ] Check for any alerts or incidents
+  - [ ] Verify costs tracking to estimate
+  - [ ] Review user feedback (if any)
 
-### Week 2
+**Success Criteria:** No major issues for 7 consecutive days
 
-- [ ] **48-Hour Stability Check**
-  - Review all logs from first 48 hours
-  - Verify no critical issues
-  - Confirm costs within budget
-  - Validate monitoring accuracy
+---
 
-- [ ] **Performance Baseline**
-  - Document baseline performance metrics
-  - Set up performance budgets
-  - Configure performance alerts
+### Week 2: Stabilization (Time: 4-6 hours)
 
-- [ ] **Team Training**
-  - Complete Task 24 (Team Training and Handoff)
-  - Ensure all team members can deploy
-  - Practice incident response scenarios
+- [ ] Performance optimization:
+  - [ ] Analyze slow queries in database
+  - [ ] Review API response times
+  - [ ] Optimize caching strategy
+  - [ ] Adjust instance sizes if needed
+- [ ] Cost optimization:
+  - [ ] Review actual costs vs. estimates
+  - [ ] Right-size instances based on usage
+  - [ ] Optimize database queries to reduce load
+  - [ ] Review New Relic data ingestion (stay within free tier)
+- [ ] Documentation updates:
+  - [ ] Document any production issues encountered
+  - [ ] Update runbook with production learnings
+  - [ ] Add FAQ based on team questions
+- [ ] Team retrospective:
+  - What went well?
+  - What could be improved?
+  - Any unexpected issues?
+  - Lessons learned
 
-### Week 3-4
+**Success Criteria:** Performance stable, costs within budget
 
-- [ ] **Decommission Azure (If Any Resources Exist)**
-  - Complete Task 25 (Decommission Azure Resources)
-  - Verify no Azure costs
-  - Archive Azure documentation
+---
 
-- [ ] **Final Migration Report**
-  - Complete Task 26 (Create Final Migration Report)
-  - Share with stakeholders
-  - Celebrate success! 🎉
+### Month 1: Azure Decommissioning (Time: 3-4 hours)
+
+⚠️ **IMPORTANT:** Only proceed if production is stable for 30+ days with zero critical incidents.
+
+- [ ] Verify production stability:
+  - [ ] 30+ days uptime
+  - [ ] Zero critical incidents
+  - [ ] Performance meeting SLAs
+  - [ ] Costs within budget
+  - [ ] Team comfortable with Render
+- [ ] Export Azure resources for historical reference:
+  - [ ] Export all configuration (Terraform state, K8s manifests)
+  - [ ] Export monitoring dashboards and alerts
+  - [ ] Export logs (last 90 days)
+  - [ ] Take screenshots of Azure portal configurations
+  - [ ] Store in `infrastructure/archive/azure-export/`
+- [ ] Azure resource deletion (see Task 25):
+  - ⚠️ Double-check no production data will be lost
+  - [ ] Create final Azure backup
+  - [ ] Delete test/dev resources first
+  - [ ] Wait 7 days
+  - [ ] Delete production resources
+  - [ ] Verify all resources deleted
+  - [ ] Cancel Azure subscriptions
+  - [ ] Request final invoice
+- [ ] Update billing alerts:
+  - [ ] Remove Azure cost alerts
+  - [ ] Confirm Render cost alerts active
+  - [ ] Set up quarterly cost reviews
+
+**Success Criteria:** Azure resources decommissioned, all data preserved
+
+---
+
+### Month 3: Final Review (Time: 2-3 hours)
+
+- [ ] Create final migration report (see Task 26):
+  - [ ] Actual vs. projected costs
+  - [ ] Actual vs. estimated timeline
+  - [ ] Issues encountered and resolutions
+  - [ ] Team feedback
+  - [ ] Lessons learned
+  - [ ] Recommendations for future
+- [ ] Share report with stakeholders:
+  - Executive team (ROI achieved)
+  - Product team (deployment velocity)
+  - Engineering team (operational improvements)
+- [ ] Celebrate success! 🎉
+  - 83% cost reduction achieved
+  - DevOps overhead reduced from 20 to 5 hours/month
+  - Deployment time reduced from 6-8 weeks to 3-5 days
+
+**Success Criteria:** Migration complete, ROI validated
 
 ---
 
 ## Rollback Procedures
 
-### Immediate Rollback (If Critical Issues During Migration)
+### When to Rollback
 
-**Scenario:** Critical issues discovered during or immediately after deployment
+Rollback if any of these occur:
 
-**Steps:**
+- **Critical:** Service unavailable for >15 minutes
+- **Critical:** Data loss or corruption detected
+- **Critical:** Security breach or vulnerability discovered
+- **High:** Error rate >10% for >10 minutes
+- **High:** Performance degradation >50% for >10 minutes
+- **High:** Cost exceeding budget by >50%
 
-1. **Stop deployments:** Disable auto-deploy in Render dashboard
-2. **Roll back service:** Click "Rollback" in Render dashboard for affected service
-3. **Verify rollback:** Check service is running previous version
-4. **Communicate:** Notify team of rollback
-5. **Investigate:** Review logs to identify issue
-6. **Fix:** Correct issue in code
-7. **Redeploy:** Deploy fix to staging, test, then production
+### Rollback Options
 
-**Time:** 15 minutes
+#### Option 1: Rollback to Previous Deployment (Fast, <5 minutes)
 
-### Full Rollback (If Migration Needs to be Aborted)
+Render keeps previous deployments for quick rollback:
 
-**Scenario:** Major issues requiring complete migration abort
+1. **Via Render Dashboard:**
+   - Navigate to service
+   - Click "Deploys" tab
+   - Find last successful deploy
+   - Click "Rollback to this deploy"
+   - Confirm rollback
+   - Monitor service health
 
-**Steps:**
+2. **Via Render CLI:**
+   ```bash
+   render rollback --service bojin-law-web --to-deploy [deploy-id]
+   ```
 
-1. **Take production offline:** Disable all Render services
-2. **Preserve data:** Backup Render database if any data exists
-3. **Notify stakeholders:** Send communication about rollback
-4. **Review issues:** Conduct post-mortem meeting
-5. **Plan remediation:** Create action plan to fix issues
-6. **Retry migration:** Schedule new migration date
+**Time to Rollback:** <5 minutes
+**Data Loss Risk:** None (database unchanged)
 
-**Time:** 2 hours
+---
 
-**Note:** Since this is a greenfield deployment (no existing production), full rollback simply means not proceeding with Render and reconsidering infrastructure options.
+#### Option 2: Rollback Database Migration (Medium, 10-30 minutes)
+
+If database migration caused issues:
+
+1. **Identify migration to rollback:**
+
+   ```bash
+   npm run db:migrate:status
+   ```
+
+2. **Rollback migration:**
+
+   ```bash
+   npm run db:migrate:undo
+   ```
+
+3. **Verify database state:**
+
+   ```sql
+   SELECT * FROM migration_history ORDER BY executed_at DESC LIMIT 5;
+   ```
+
+4. **Redeploy services with previous code:**
+   - Follow Option 1 to rollback service code
+
+**Time to Rollback:** 10-30 minutes
+**Data Loss Risk:** Medium (depends on migration)
+
+---
+
+#### Option 3: Full Rollback to Azure (Slow, 1-2 weeks)
+
+⚠️ **Only use if Render is completely unsuitable and cannot be fixed.**
+
+This is a complex rollback that requires:
+
+1. **Prerequisites:**
+   - Azure infrastructure files still in git history
+   - Azure account still active
+   - Team still has Azure expertise
+
+2. **Steps:**
+   - Restore infrastructure/terraform/ from git
+   - Restore infrastructure/kubernetes/ from git
+   - Deploy Azure infrastructure (6-8 weeks normally)
+   - Export data from Render database
+   - Import data to Azure database
+   - Update DNS to point to Azure
+   - Monitor Azure deployment
+
+3. **Considerations:**
+   - Cost: Will incur both Render and Azure costs during transition
+   - Time: 1-2 weeks minimum
+   - Risk: High complexity, many failure points
+   - Recommendation: Exhaust all other options first
+
+**Time to Rollback:** 1-2 weeks
+**Data Loss Risk:** High (complex data migration)
+**Cost Impact:** High (dual infrastructure costs)
 
 ---
 
 ## Emergency Contacts
 
-**Render Support:**
-
-- Email: support@render.com
-- Dashboard: https://dashboard.render.com/support
-- Status Page: https://status.render.com
-
-**Team Contacts:**
-
-- **Platform Operator:** [Name] - [Phone] - [Email]
-- **Team Lead:** [Name] - [Phone] - [Email]
-- **On-Call Engineer:** [Name] - [Phone] - [Email]
-
-**Escalation Path:**
-
-1. On-Call Engineer (first 15 minutes)
-2. Team Lead (after 15 minutes)
-3. Platform Operator (after 30 minutes)
-4. Render Support (if platform issue)
+| Role             | Name       | Contact            | Availability      |
+| ---------------- | ---------- | ------------------ | ----------------- |
+| Platform Lead    | [TBD]      | [email/phone]      | 24/7              |
+| DevOps Engineer  | [TBD]      | [email/phone]      | Business hours    |
+| On-Call Engineer | [Rotation] | [PagerDuty/phone]  | 24/7              |
+| Render Support   | Render.com | support@render.com | 24/7 (Enterprise) |
+| Database Admin   | [TBD]      | [email/phone]      | Business hours    |
 
 ---
 
-## Success Criteria
+## Migration Risk Assessment
 
-Migration is considered successful when:
-
-- ✅ All 7 services deployed and healthy
-- ✅ Database migrations completed successfully
-- ✅ All smoke tests passing
-- ✅ All integration tests passing
-- ✅ Production accessible via custom domain
-- ✅ HTTPS working correctly
-- ✅ Monitoring active and collecting data
-- ✅ 48 hours of stable operation
-- ✅ Costs within budget ($207/month ±10%)
-- ✅ Team trained and able to operate platform
-- ✅ No critical issues reported
-
-**Total Estimated Time:** 2-3 weeks (depending on team availability and issue resolution)
-
-**Cost During Migration:** ~$100 (staging + production for 2 weeks)
+| Risk                            | Likelihood | Impact   | Mitigation                                    |
+| ------------------------------- | ---------- | -------- | --------------------------------------------- |
+| Service deployment fails        | Medium     | High     | Test locally first, use staging environment   |
+| Database migration fails        | Low        | Critical | Test on staging, have rollback plan ready     |
+| Environment variables incorrect | Medium     | High     | Use template, validate before deploy          |
+| Cost exceeds budget             | Low        | Medium   | Monitor daily, set budget alerts              |
+| Performance degradation         | Low        | High     | Load test staging, monitor production closely |
+| Team not trained                | Medium     | Medium   | Mandatory training before migration           |
+| DNS propagation delays          | Medium     | Low      | Allow extra time, use temporary URLs          |
+| Third-party API issues          | Low        | Medium   | Test API keys before production deploy        |
 
 ---
 
-## Appendix
+## Success Metrics
 
-### Useful Commands
+Track these metrics to validate migration success:
+
+### Cost Metrics
+
+- **Monthly Infrastructure Cost:** Target $207/month (±10%)
+- **3-Year TCO:** Target $27,108 (vs. $114,804 on Azure)
+- **Cost per User:** Track as user base grows
+
+### Performance Metrics
+
+- **Service Uptime:** >99.9% (Render SLA is 99.95%)
+- **API Response Time:** <500ms (p95)
+- **Page Load Time:** <2s (p95)
+- **Error Rate:** <1%
+
+### Operational Metrics
+
+- **Deployment Frequency:** >10/week (vs. <1/week on Azure)
+- **Deployment Duration:** <5 minutes (vs. 30+ minutes on Azure)
+- **DevOps Time:** <5 hours/month (vs. 20 hours/month on Azure)
+- **Incident Response Time:** <15 minutes to rollback
+
+### Team Metrics
+
+- **Team Training Time:** <2 hours to proficiency
+- **Team Satisfaction:** Survey after 30 days
+- **Deployment Confidence:** Can all engineers deploy independently?
+
+---
+
+## Appendix: Useful Commands
+
+### Render CLI
 
 ```bash
-# Setup Render CLI
-./scripts/render/setup.sh
+# Installation
+npm install -g @render/cli
 
-# Deploy to staging
-npm run deploy:staging
+# Login
+render login
 
-# Deploy to production
-npm run deploy:production
+# List services
+render services
 
 # View logs
-npm run logs:web
-npm run logs:api
+render logs --service [service-name] --tail
 
-# Check status
-npm run render:status
+# Open shell in service
+render shell --service [service-name]
 
-# Database backup
-./scripts/render/db-backup.sh --env production
+# Trigger deployment
+render deploy --service [service-name]
 
-# Database restore
-./scripts/render/db-restore.sh [backup-id] --env production
+# Rollback deployment
+render rollback --service [service-name] --to-deploy [deploy-id]
+
+# Manage environment variables
+render env set KEY=value --service [service-name]
+render env get KEY --service [service-name]
+render env delete KEY --service [service-name]
+
+# Database operations
+render db backup --database [db-name]
+render db restore --database [db-name] --backup [backup-id]
+render db shell --database [db-name]
 ```
 
-### Related Documentation
+### Database Operations
 
-- **Deployment Guide:** `infrastructure/DEPLOYMENT_GUIDE.md`
-- **Operations Runbook:** `infrastructure/OPERATIONS_RUNBOOK.md`
-- **Environment Variables:** `infrastructure/ENVIRONMENT_VARIABLES.md`
-- **Cost Estimation:** `infrastructure/COST_ESTIMATION.md`
-- **Render Documentation:** https://render.com/docs
+```bash
+# Connect to database
+psql $DATABASE_URL
+
+# Run migrations
+npm run db:migrate
+
+# Rollback migration
+npm run db:migrate:undo
+
+# Seed database
+npm run db:seed
+
+# Database backup (manual)
+pg_dump $DATABASE_URL > backup.sql
+
+# Database restore
+psql $DATABASE_URL < backup.sql
+```
+
+### Health Checks
+
+```bash
+# Check all service health
+curl https://app.bojinlaw.com/health
+curl https://api.bojinlaw.com/api/health
+
+# Check service status
+render services --format json | jq '.[] | {name, status}'
+
+# Monitor logs for errors
+render logs --service bojin-law-web --tail | grep -i error
+```
 
 ---
 
-**Checklist Version:** 1.0
+**Document Version:** 1.0
 **Last Updated:** 2025-11-17
-**Author:** James (Developer)
-**Approved By:** [Pending]
+**Maintained By:** Platform Team
+**Review Frequency:** After each migration, update with lessons learned
