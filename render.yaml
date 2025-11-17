@@ -37,7 +37,7 @@ services:
       - key: NEXT_PUBLIC_API_URL
         sync: false # Set in Render dashboard - points to gateway service
     healthCheckPath: /health
-    autoDeploy: true # Auto-deploy on git push to main
+    autoDeployTrigger: commit # Auto-deploy on each commit to main
 
   ##############################################################################
   # Gateway Service - GraphQL API Gateway
@@ -62,7 +62,7 @@ services:
           name: legal-platform-db
           property: connectionString
       - fromService:
-          type: redis
+          type: keyvalue
           name: legal-platform-redis
           property: connectionString
       - key: JWT_SECRET
@@ -94,7 +94,7 @@ services:
           name: legal-platform-notification-service
           property: host
     healthCheckPath: /api/health
-    autoDeploy: true
+    autoDeployTrigger: commit
 
   ##############################################################################
   # Document Service - File Processing & Storage
@@ -125,7 +125,7 @@ services:
           name: legal-platform-db
           property: connectionString
       - fromService:
-          type: redis
+          type: keyvalue
           name: legal-platform-redis
           property: connectionString
       - key: STORAGE_PROVIDER
@@ -137,7 +137,7 @@ services:
       - key: STORAGE_SECRET_KEY
         sync: false # Set in Render dashboard (secret)
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: commit
 
   ##############################################################################
   # AI Service - OpenAI Integration & Semantic Search
@@ -168,7 +168,7 @@ services:
           name: legal-platform-db
           property: connectionString
       - fromService:
-          type: redis
+          type: keyvalue
           name: legal-platform-redis
           property: connectionString
       - key: OPENAI_API_KEY
@@ -178,7 +178,7 @@ services:
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: commit
 
   ##############################################################################
   # Task Service - Background Job Processing
@@ -209,11 +209,11 @@ services:
           name: legal-platform-db
           property: connectionString
       - fromService:
-          type: redis
+          type: keyvalue
           name: legal-platform-redis
           property: connectionString
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: commit
 
   ##############################################################################
   # Integration Service - Third-Party API Integrations
@@ -244,7 +244,7 @@ services:
           name: legal-platform-db
           property: connectionString
       - fromService:
-          type: redis
+          type: keyvalue
           name: legal-platform-redis
           property: connectionString
       # Third-party API keys (set in Render dashboard)
@@ -255,7 +255,7 @@ services:
       - key: CRM_API_KEY
         sync: false
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: commit
 
   ##############################################################################
   # Notification Service - Email, SMS, Push Notifications
@@ -286,7 +286,7 @@ services:
           name: legal-platform-db
           property: connectionString
       - fromService:
-          type: redis
+          type: keyvalue
           name: legal-platform-redis
           property: connectionString
       # SMTP Configuration
@@ -310,7 +310,17 @@ services:
       - key: TWILIO_PHONE_NUMBER
         sync: false
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: commit
+
+  ##############################################################################
+  # Redis - Cache & Session Store
+  ##############################################################################
+  - type: keyvalue
+    name: legal-platform-redis
+    plan: starter # 1GB RAM ($10/month)
+    region: oregon
+    maxmemoryPolicy: allkeys-lru # Evict least recently used keys when memory full
+    ipAllowList: [] # Empty = accessible from all Render services
 
 ##############################################################################
 # Databases
@@ -327,17 +337,6 @@ databases:
     ipAllowList: [] # Empty = accessible from all Render services
     # PostgreSQL 15+ with pgvector extension for vector similarity search
     # Extension installed via init SQL or migration
-
-  ##############################################################################
-  # Redis - Cache & Session Store
-  ##############################################################################
-  - type: redis
-    name: legal-platform-redis
-    plan: starter # 1GB RAM ($10/month)
-    region: oregon
-    maxmemoryPolicy: allkeys-lru # Evict least recently used keys when memory full
-    ipAllowList: [] # Empty = accessible from all Render services
-
 ##############################################################################
 # Environment Groups (for staging environment)
 ##############################################################################
