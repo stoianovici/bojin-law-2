@@ -5,6 +5,7 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@legal-platform/ui', '@legal-platform/shared-types'],
   // reactCompiler: true, // Temporarily disabled - requires babel-plugin-react-compiler setup
+  output: 'standalone', // Required for Docker deployment
   experimental: {
     optimizePackageImports: ['@legal-platform/ui'],
   },
@@ -34,7 +35,7 @@ const nextConfig = {
     }
 
     // Completely exclude stories files from webpack processing
-    config.module.rules.forEach(rule => {
+    config.module.rules.forEach((rule) => {
       if (rule.test && rule.test.toString().includes('tsx')) {
         if (rule.exclude) {
           rule.exclude = Array.isArray(rule.exclude) ? rule.exclude : [rule.exclude];
