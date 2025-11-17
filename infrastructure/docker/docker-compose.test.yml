@@ -61,9 +61,6 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_test
       REDIS_URL: redis://redis:6379
       JWT_SECRET: test-secret-key
-      AZURE_AD_CLIENT_ID: test-client-id
-      AZURE_AD_CLIENT_SECRET: test-client-secret
-      AZURE_AD_TENANT_ID: test-tenant-id
       DOCUMENT_SERVICE_URL: http://document-service:4001
       TASK_SERVICE_URL: http://task-service:4002
       AI_SERVICE_URL: http://ai-service:4003
@@ -87,8 +84,6 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.web
       args:
         NEXT_PUBLIC_API_URL: http://localhost:4020/graphql
-        NEXT_PUBLIC_AZURE_AD_CLIENT_ID: test-client-id
-        NEXT_PUBLIC_AZURE_AD_TENANT_ID: test-tenant-id
     image: legal-platform-web:test
     container_name: legal-platform-web-test
     depends_on:

@@ -4,6 +4,7 @@ name: legal-platform-prod
 
 # Production-like testing environment using production Docker images
 # This configuration mimics production deployment for local testing
+# NOTE: Actual production deployments are handled by Render.com (see infrastructure/DEPLOYMENT_GUIDE.md)
 
 services:
   # PostgreSQL Database with pgvector extension
@@ -233,8 +234,6 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.web
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4010/graphql}
-        NEXT_PUBLIC_AZURE_AD_CLIENT_ID: ${NEXT_PUBLIC_AZURE_AD_CLIENT_ID}
-        NEXT_PUBLIC_AZURE_AD_TENANT_ID: ${NEXT_PUBLIC_AZURE_AD_TENANT_ID}
     image: legal-platform-web:latest
     container_name: legal-platform-web-prod
     restart: unless-stopped
