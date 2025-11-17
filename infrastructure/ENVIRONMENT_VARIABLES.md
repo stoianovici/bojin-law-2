@@ -133,14 +133,62 @@ These variables have sensible defaults but can be customized.
 
 ### AI Service (services/ai-service)
 
-| Variable             | Description                      | Example                               | Required | Sensitive |
-| -------------------- | -------------------------------- | ------------------------------------- | -------- | --------- |
-| `OPENAI_API_KEY`     | OpenAI API key                   | `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | Yes      | Yes       |
-| `OPENAI_MODEL`       | Default OpenAI model             | `gpt-4`, `gpt-3.5-turbo`              | No       | No        |
-| `OPENAI_MAX_TOKENS`  | Max tokens per request           | `2000`                                | No       | No        |
-| `OPENAI_TEMPERATURE` | AI response randomness (0.0-1.0) | `0.7`                                 | No       | No        |
+#### AI Provider Configuration
 
-**Get OpenAI API Key:** https://platform.openai.com/api-keys
+| Variable              | Description                                     | Example     | Required | Sensitive |
+| --------------------- | ----------------------------------------------- | ----------- | -------- | --------- |
+| `AI_PROVIDER`         | Primary AI provider (anthropic or grok)         | `anthropic` | No       | No        |
+| `AI_FALLBACK_ENABLED` | Enable automatic fallback to secondary provider | `true`      | No       | No        |
+
+**AI Provider Strategy:**
+
+- **Primary:** Anthropic Claude (Haiku for simple, Sonnet for standard, Opus for complex tasks)
+- **Fallback:** xAI Grok (automatic fallback if Claude fails or is unavailable)
+
+#### Anthropic Claude Configuration (PRIMARY)
+
+| Variable                       | Description                                | Example                         | Required | Sensitive |
+| ------------------------------ | ------------------------------------------ | ------------------------------- | -------- | --------- |
+| `ANTHROPIC_API_KEY`            | Anthropic API key for Claude models        | `sk-ant-api03-xxxxxxxxxxxxx...` | Yes      | Yes       |
+| `ANTHROPIC_MODEL`              | Default Claude model                       | `claude-3-5-sonnet-20241022`    | No       | No        |
+| `ANTHROPIC_MAX_TOKENS`         | Max output tokens per request              | `4096`                          | No       | No        |
+| `ANTHROPIC_TEMPERATURE`        | Response randomness (0.0-1.0)              | `0.7`                           | No       | No        |
+| `ANTHROPIC_USE_PROMPT_CACHING` | Enable Prompt Caching (90% cost reduction) | `true`                          | No       | No        |
+| `ANTHROPIC_USE_BATCHING`       | Enable Batch API (50% cost reduction)      | `true`                          | No       | No        |
+
+**Get Anthropic API Key:** https://console.anthropic.com/settings/keys
+
+**Model Selection Guide:**
+
+- **Haiku** (`claude-3-5-haiku-20241022`): Simple tasks, $0.25/MTok input, $1.25/MTok output
+- **Sonnet** (`claude-3-5-sonnet-20241022`): Standard tasks, $3/MTok input, $15/MTok output
+- **Opus** (`claude-3-opus-20240229`): Complex reasoning, $15/MTok input, $75/MTok output
+
+**Cost Optimization Features:**
+
+1. **Prompt Caching** (`ANTHROPIC_USE_PROMPT_CACHING=true`)
+   - Caches frequently used prompts (system prompts, large contexts)
+   - **90% cost reduction** on cached tokens ($0.30 vs $3.00 per MTok for Sonnet)
+   - Cache persists for 5 minutes, auto-refreshes on use
+   - Ideal for: System prompts, legal templates, case law references
+
+2. **Batch API** (`ANTHROPIC_USE_BATCHING=true`)
+   - Processes requests asynchronously with 24hr completion window
+   - **50% cost reduction** ($1.50 vs $3.00 per MTok for Sonnet)
+   - Ideal for: Document analysis, bulk contract review, report generation
+
+#### xAI Grok Configuration (FALLBACK)
+
+| Variable           | Description                   | Example                             | Required | Sensitive |
+| ------------------ | ----------------------------- | ----------------------------------- | -------- | --------- |
+| `GROK_API_KEY`     | xAI Grok API key (fallback)   | `xai-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | No       | Yes       |
+| `GROK_MODEL`       | Default Grok model            | `grok-beta`                         | No       | No        |
+| `GROK_MAX_TOKENS`  | Max tokens per request        | `4096`                              | No       | No        |
+| `GROK_TEMPERATURE` | Response randomness (0.0-1.0) | `0.7`                               | No       | No        |
+
+**Get Grok API Key:** https://console.x.ai/api-keys
+
+**Note:** Grok API key is optional. System will fallback to Grok only if Claude fails and `AI_FALLBACK_ENABLED=true`.
 
 ### Integration Service (services/integration-service)
 

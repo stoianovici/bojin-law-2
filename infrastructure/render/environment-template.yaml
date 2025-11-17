@@ -247,33 +247,106 @@ ai-service:
     default_value: 'ai-service'
     example: 'ai-service'
 
-  # OpenAI Configuration
-  OPENAI_API_KEY:
-    description: 'OpenAI API key for GPT models'
+  # AI Provider Strategy
+  AI_PROVIDER:
+    description: 'Primary AI provider (anthropic or grok)'
+    required: false
+    sensitive: false
+    staging_value: 'anthropic'
+    production_value: 'anthropic'
+    default_value: 'anthropic'
+    example: 'anthropic'
+    options: ['anthropic', 'grok']
+    notes: 'Set to "anthropic" for Claude (primary) or "grok" for xAI Grok (fallback)'
+
+  AI_FALLBACK_ENABLED:
+    description: 'Enable automatic fallback to secondary provider on failure'
+    required: false
+    sensitive: false
+    default_value: 'true'
+    example: 'true'
+    notes: 'If Claude fails, automatically fallback to Grok'
+
+  # Anthropic Claude Configuration (PRIMARY)
+  ANTHROPIC_API_KEY:
+    description: 'Anthropic API key for Claude models (PRIMARY AI)'
     required: true
     sensitive: true
-    example: 'sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    example: 'sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
     rotation_frequency: 'When compromised or every 180 days'
-    notes: 'Get from https://platform.openai.com/api-keys'
+    notes: 'Get from https://console.anthropic.com/settings/keys'
 
-  OPENAI_MODEL:
-    description: 'Default OpenAI model to use'
+  ANTHROPIC_MODEL:
+    description: 'Default Claude model to use'
     required: false
     sensitive: false
-    staging_value: 'gpt-3.5-turbo'
-    production_value: 'gpt-4'
-    example: 'gpt-4'
-    options: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo']
+    staging_value: 'claude-3-5-haiku-20241022'
+    production_value: 'claude-3-5-sonnet-20241022'
+    example: 'claude-3-5-sonnet-20241022'
+    options: ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229']
+    notes: 'Haiku for simple tasks ($0.25/MTok), Sonnet for standard ($3/MTok), Opus for complex ($15/MTok)'
 
-  OPENAI_MAX_TOKENS:
-    description: 'Maximum tokens per AI request'
+  ANTHROPIC_MAX_TOKENS:
+    description: 'Maximum tokens per Claude request'
     required: false
     sensitive: false
-    default_value: '2000'
-    example: '2000'
+    default_value: '4096'
+    example: '4096'
+    notes: 'Claude supports up to 200K context, but limit output tokens for cost control'
 
-  OPENAI_TEMPERATURE:
-    description: 'AI response randomness (0.0 = deterministic, 1.0 = creative)'
+  ANTHROPIC_TEMPERATURE:
+    description: 'Claude response randomness (0.0 = deterministic, 1.0 = creative)'
+    required: false
+    sensitive: false
+    default_value: '0.7'
+    example: '0.7'
+
+  # Claude Cost Optimization Features
+  ANTHROPIC_USE_PROMPT_CACHING:
+    description: 'Enable Prompt Caching to reduce costs by 90% on repeated prompts'
+    required: false
+    sensitive: false
+    staging_value: 'true'
+    production_value: 'true'
+    default_value: 'true'
+    example: 'true'
+    notes: 'Cache system prompts and large contexts. Cached tokens cost 90% less ($0.30 vs $3.00 per MTok for Sonnet)'
+
+  ANTHROPIC_USE_BATCHING:
+    description: 'Enable Batch API for 50% cost reduction on non-real-time requests'
+    required: false
+    sensitive: false
+    default_value: 'true'
+    example: 'true'
+    notes: 'Use for document analysis, bulk processing. Batch API costs 50% less but has 24hr processing time'
+
+  # xAI Grok Configuration (FALLBACK)
+  GROK_API_KEY:
+    description: 'xAI Grok API key (FALLBACK AI when Claude unavailable)'
+    required: false
+    sensitive: true
+    example: 'xai-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    rotation_frequency: 'When compromised or every 180 days'
+    notes: 'Get from https://console.x.ai/api-keys (Optional fallback provider)'
+
+  GROK_MODEL:
+    description: 'Default Grok model to use'
+    required: false
+    sensitive: false
+    default_value: 'grok-beta'
+    example: 'grok-beta'
+    options: ['grok-beta', 'grok-vision-beta']
+    notes: 'Grok Beta for text ($5/MTok), Grok Vision for images'
+
+  GROK_MAX_TOKENS:
+    description: 'Maximum tokens per Grok request'
+    required: false
+    sensitive: false
+    default_value: '4096'
+    example: '4096'
+
+  GROK_TEMPERATURE:
+    description: 'Grok response randomness (0.0 = deterministic, 1.0 = creative)'
     required: false
     sensitive: false
     default_value: '0.7'
@@ -462,7 +535,8 @@ render_auto_injected:
 secret_rotation:
   policy:
     - JWT_SECRET: 'Rotate every 90 days. Update in Render dashboard and restart all services.'
-    - OPENAI_API_KEY: 'Rotate when compromised or every 180 days.'
+    - ANTHROPIC_API_KEY: 'Rotate when compromised or every 180 days.'
+    - GROK_API_KEY: 'Rotate when compromised or every 180 days.'
     - SMTP_PASSWORD: 'Rotate every 90 days. Coordinate with email provider.'
     - M365_CLIENT_SECRET: 'Rotate every 90 days or when Azure notifies of expiration.'
     - R2_SECRET_ACCESS_KEY: 'Rotate every 90 days. Update Cloudflare credentials.'
