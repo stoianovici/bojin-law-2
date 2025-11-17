@@ -1,0 +1,358 @@
+# Render.com Infrastructure Configuration
+# Legal Platform - Microservices Architecture
+#
+# Cost Breakdown (Production):
+#   Web: 2× 4GB @ $25/mo = $50/mo
+#   Gateway: 2× 4GB @ $25/mo = $50/mo
+#   Document Service: 1× 2GB @ $15/mo = $15/mo
+#   AI Service: 1× 2GB @ $15/mo = $15/mo
+#   Task Service: 1× 2GB @ $15/mo = $15/mo
+#   Integration Service: 1× 2GB @ $15/mo = $15/mo
+#   Notification Service: 1× 2GB @ $15/mo = $15/mo
+#   PostgreSQL: Standard 25GB = $25/mo
+#   Redis: 1GB = $10/mo
+#   Total: $207/month
+#
+# See infrastructure/COST_ESTIMATION.md for detailed analysis
+
+services:
+  ##############################################################################
+  # Web Service - Next.js Frontend
+  ##############################################################################
+  - type: web
+    name: legal-platform-web
+    runtime: docker
+    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    branch: main # Production deploys from main
+    dockerfilePath: ./infrastructure/docker/Dockerfile.web
+    dockerContext: .
+    plan: standard # 4GB RAM, 2 CPU
+    numInstances: 2 # High availability with 2 instances
+    region: oregon # US West
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://app.yourdomain.com # UPDATE THIS
+      - key: NEXT_PUBLIC_API_URL
+        sync: false # Set in Render dashboard - points to gateway service
+    healthCheckPath: /health
+    autoDeploy: true # Auto-deploy on git push to main
+
+  ##############################################################################
+  # Gateway Service - GraphQL API Gateway
+  ##############################################################################
+  - type: web
+    name: legal-platform-gateway
+    runtime: docker
+    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    branch: main
+    dockerfilePath: ./infrastructure/docker/Dockerfile.gateway
+    dockerContext: .
+    plan: standard # 4GB RAM, 2 CPU
+    numInstances: 2 # High availability
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      # Database and Redis URLs are auto-injected by Render
+      - fromDatabase:
+          name: legal-platform-db
+          property: connectionString
+      - fromService:
+          type: redis
+          name: legal-platform-redis
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false # Set in Render dashboard (secret)
+      # Service URLs for internal communication
+      - key: DOCUMENT_SERVICE_URL
+        fromService:
+          type: web
+          name: legal-platform-document-service
+          property: host
+      - key: AI_SERVICE_URL
+        fromService:
+          type: web
+          name: legal-platform-ai-service
+          property: host
+      - key: TASK_SERVICE_URL
+        fromService:
+          type: web
+          name: legal-platform-task-service
+          property: host
+      - key: INTEGRATION_SERVICE_URL
+        fromService:
+          type: web
+          name: legal-platform-integration-service
+          property: host
+      - key: NOTIFICATION_SERVICE_URL
+        fromService:
+          type: web
+          name: legal-platform-notification-service
+          property: host
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  ##############################################################################
+  # Document Service - File Processing & Storage
+  ##############################################################################
+  - type: web
+    name: legal-platform-document-service
+    runtime: docker
+    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    branch: main
+    dockerfilePath: ./infrastructure/docker/Dockerfile.service
+    dockerContext: .
+    buildFilter:
+      paths:
+        - services/document-service/**
+        - packages/**
+        - infrastructure/docker/Dockerfile.service
+    plan: starter # 2GB RAM, 1 CPU
+    numInstances: 1
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVICE_NAME
+        value: document-service
+      - key: PORT
+        value: 5001
+      - fromDatabase:
+          name: legal-platform-db
+          property: connectionString
+      - fromService:
+          type: redis
+          name: legal-platform-redis
+          property: connectionString
+      - key: STORAGE_PROVIDER
+        value: cloudflare-r2 # or 'render-disk' for simplicity
+      - key: STORAGE_BUCKET
+        sync: false # Set in Render dashboard
+      - key: STORAGE_ACCESS_KEY
+        sync: false # Set in Render dashboard (secret)
+      - key: STORAGE_SECRET_KEY
+        sync: false # Set in Render dashboard (secret)
+    healthCheckPath: /health
+    autoDeploy: true
+
+  ##############################################################################
+  # AI Service - OpenAI Integration & Semantic Search
+  ##############################################################################
+  - type: web
+    name: legal-platform-ai-service
+    runtime: docker
+    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    branch: main
+    dockerfilePath: ./infrastructure/docker/Dockerfile.service
+    dockerContext: .
+    buildFilter:
+      paths:
+        - services/ai-service/**
+        - packages/**
+        - infrastructure/docker/Dockerfile.service
+    plan: starter # 2GB RAM, 1 CPU
+    numInstances: 1
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVICE_NAME
+        value: ai-service
+      - key: PORT
+        value: 5002
+      - fromDatabase:
+          name: legal-platform-db
+          property: connectionString
+      - fromService:
+          type: redis
+          name: legal-platform-redis
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false # Set in Render dashboard (secret)
+      - key: AI_MODEL
+        value: gpt-4o-mini
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+    healthCheckPath: /health
+    autoDeploy: true
+
+  ##############################################################################
+  # Task Service - Background Job Processing
+  ##############################################################################
+  - type: web
+    name: legal-platform-task-service
+    runtime: docker
+    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    branch: main
+    dockerfilePath: ./infrastructure/docker/Dockerfile.service
+    dockerContext: .
+    buildFilter:
+      paths:
+        - services/task-service/**
+        - packages/**
+        - infrastructure/docker/Dockerfile.service
+    plan: starter # 2GB RAM, 1 CPU
+    numInstances: 1
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVICE_NAME
+        value: task-service
+      - key: PORT
+        value: 5003
+      - fromDatabase:
+          name: legal-platform-db
+          property: connectionString
+      - fromService:
+          type: redis
+          name: legal-platform-redis
+          property: connectionString
+    healthCheckPath: /health
+    autoDeploy: true
+
+  ##############################################################################
+  # Integration Service - Third-Party API Integrations
+  ##############################################################################
+  - type: web
+    name: legal-platform-integration-service
+    runtime: docker
+    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    branch: main
+    dockerfilePath: ./infrastructure/docker/Dockerfile.service
+    dockerContext: .
+    buildFilter:
+      paths:
+        - services/integration-service/**
+        - packages/**
+        - infrastructure/docker/Dockerfile.service
+    plan: starter # 2GB RAM, 1 CPU
+    numInstances: 1
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVICE_NAME
+        value: integration-service
+      - key: PORT
+        value: 5004
+      - fromDatabase:
+          name: legal-platform-db
+          property: connectionString
+      - fromService:
+          type: redis
+          name: legal-platform-redis
+          property: connectionString
+      # Third-party API keys (set in Render dashboard)
+      - key: CALENDAR_API_KEY
+        sync: false
+      - key: EMAIL_API_KEY
+        sync: false
+      - key: CRM_API_KEY
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
+
+  ##############################################################################
+  # Notification Service - Email, SMS, Push Notifications
+  ##############################################################################
+  - type: web
+    name: legal-platform-notification-service
+    runtime: docker
+    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    branch: main
+    dockerfilePath: ./infrastructure/docker/Dockerfile.service
+    dockerContext: .
+    buildFilter:
+      paths:
+        - services/notification-service/**
+        - packages/**
+        - infrastructure/docker/Dockerfile.service
+    plan: starter # 2GB RAM, 1 CPU
+    numInstances: 1
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVICE_NAME
+        value: notification-service
+      - key: PORT
+        value: 5005
+      - fromDatabase:
+          name: legal-platform-db
+          property: connectionString
+      - fromService:
+          type: redis
+          name: legal-platform-redis
+          property: connectionString
+      # SMTP Configuration
+      - key: SMTP_HOST
+        sync: false # Set in Render dashboard
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: Legal Platform
+      # SMS Provider (Twilio)
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
+
+##############################################################################
+# Databases
+##############################################################################
+databases:
+  ##############################################################################
+  # PostgreSQL - Primary Database with pgvector Extension
+  ##############################################################################
+  - name: legal-platform-db
+    plan: standard # 25GB storage, Standard plan ($25/month)
+    databaseName: legal_platform_prod
+    user: legal_platform_user
+    region: oregon
+    ipAllowList: [] # Empty = accessible from all Render services
+    # PostgreSQL 15+ with pgvector extension for vector similarity search
+    # Extension installed via init SQL or migration
+
+  ##############################################################################
+  # Redis - Cache & Session Store
+  ##############################################################################
+  - type: redis
+    name: legal-platform-redis
+    plan: starter # 1GB RAM ($10/month)
+    region: oregon
+    maxmemoryPolicy: allkeys-lru # Evict least recently used keys when memory full
+    ipAllowList: [] # Empty = accessible from all Render services
+
+##############################################################################
+# Environment Groups (for staging environment)
+##############################################################################
+# Note: The above configuration is for PRODUCTION (main branch).
+# To create STAGING environment:
+# 1. Duplicate all services in Render dashboard
+# 2. Change branch to 'develop'
+# 3. Use smaller plans (starter instead of standard)
+# 4. Use environment-specific domains
+# 5. Share staging database and Redis instances
+#
+# Estimated staging cost: $52/month
+# - Web: 1× starter (1GB) = $7/mo
+# - Gateway: 1× starter (1GB) = $7/mo
+# - Services: 5× starter (512MB each) = $25/mo (estimate)
+# - PostgreSQL: Starter 10GB = $7/mo
+# - Redis: shared with production or separate starter = $6/mo
+##############################################################################
