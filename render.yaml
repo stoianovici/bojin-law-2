@@ -368,7 +368,7 @@ databases:
   # PostgreSQL - Primary Database with pgvector Extension
   ##############################################################################
   - name: legal-platform-db
-    plan: starter # 1GB RAM, 10GB storage, Starter plan ($7/month) - can upgrade to 'pro' later
+    plan: pro # Pro plan with enhanced performance and storage
     databaseName: legal_platform_prod
     user: legal_platform_user
     region: oregon
