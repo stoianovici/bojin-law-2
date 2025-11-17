@@ -9,7 +9,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import type { Case, User, Task } from '@legal-platform/types';
+import type { Case, User } from '@legal-platform/types';
 import * as Avatar from '@radix-ui/react-avatar';
 import { Clock, FileText, ClipboardList } from 'lucide-react';
 
@@ -56,12 +56,7 @@ interface CardProps {
 
 function Card({ title, children, action, className }: CardProps) {
   return (
-    <div
-      className={clsx(
-        'bg-white rounded-lg border border-gray-200 shadow-sm',
-        className,
-      )}
-    >
+    <div className={clsx('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
       <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
         {action}
@@ -116,9 +111,7 @@ export function OverviewTab({
                 <div key="case-value">
                   <dt className="text-gray-600 mb-1">Valoare Caz</dt>
                   <dd className="text-gray-900">
-                    {caseData.value
-                      ? `${caseData.value.toLocaleString('ro-RO')} RON`
-                      : 'N/A'}
+                    {caseData.value ? `${caseData.value.toLocaleString('ro-RO')} RON` : 'N/A'}
                   </dd>
                 </div>
               </div>
@@ -133,7 +126,8 @@ export function OverviewTab({
           <Card title="Membrii Echipei">
             <div className="space-y-3">
               {teamMembers.map((member) => {
-                const initials = `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
+                const initials =
+                  `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
                 return (
                   <div key={member.id} className="flex items-center gap-3">
                     <Avatar.Root className="inline-flex h-10 w-10 rounded-full">
@@ -189,14 +183,9 @@ export function OverviewTab({
                   overdue: 'text-red-700 bg-red-50',
                 };
                 return (
-                  <div
-                    key={deadline.id}
-                    className="flex items-center justify-between gap-3"
-                  >
+                  <div key={deadline.id} className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {deadline.title}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{deadline.title}</p>
                       <p className="text-xs text-gray-600 mt-0.5">
                         {format(deadline.date, 'dd MMMM yyyy', { locale: ro })}
                       </p>
@@ -204,7 +193,7 @@ export function OverviewTab({
                     <div
                       className={clsx(
                         'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
-                        statusColors[deadline.status],
+                        statusColors[deadline.status]
                       )}
                     >
                       <Clock className="w-3 h-3" />
@@ -230,40 +219,34 @@ export function OverviewTab({
             <Card title="Statistici Rapide">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Total Documents */}
-                <div className="flex items-center gap-4">
+                <div key="total-documents" className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
                     <FileText className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.totalDocuments}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalDocuments}</p>
                     <p className="text-sm text-gray-600">Total Documente</p>
                   </div>
                 </div>
 
                 {/* Open Tasks */}
-                <div className="flex items-center gap-4">
+                <div key="open-tasks" className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
                     <ClipboardList className="w-6 h-6 text-yellow-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.openTasks}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.openTasks}</p>
                     <p className="text-sm text-gray-600">Sarcini Deschise</p>
                   </div>
                 </div>
 
                 {/* Billable Hours */}
-                <div className="flex items-center gap-4">
+                <div key="billable-hours" className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
                     <Clock className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.billableHours}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.billableHours}</p>
                     <p className="text-sm text-gray-600">Ore Facturabile Luna Aceasta</p>
                   </div>
                 </div>

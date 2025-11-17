@@ -20,7 +20,7 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     role user_role NOT NULL,
-    azure_ad_id VARCHAR(255) UNIQUE NOT NULL,
+    azure_ad_id VARCHAR(255) UNIQUE NOT NULL, -- Microsoft 365/Azure AD identity for SSO
     preferences JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_active TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -47,7 +47,7 @@ CREATE TABLE documents (
     type document_type NOT NULL,
     current_version INTEGER NOT NULL DEFAULT 1,
     status document_status NOT NULL DEFAULT 'Draft',
-    blob_storage_url TEXT NOT NULL,
+    storage_url TEXT NOT NULL, -- Cloudflare R2 or Render Disk URL
     ai_generated BOOLEAN DEFAULT false,
     created_by UUID NOT NULL REFERENCES users(id),
     content_embedding vector(1536),

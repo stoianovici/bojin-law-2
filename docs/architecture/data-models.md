@@ -1,21 +1,24 @@
 # Data Models
 
 ## User
+
 **Purpose:** Represents legal professionals using the system with role-based access control
 
 **Key Attributes:**
-- id: UUID - Unique identifier from Azure AD
+
+- id: UUID - Unique identifier (system-generated)
 - email: string - Primary email address
 - firstName: string - User's first name
 - lastName: string - User's last name
 - role: UserRole - Partner | Associate | Paralegal
 - firmId: UUID - Associated law firm
-- azureAdId: string - Microsoft 365 identity
+- azureAdId: string - Microsoft 365/Azure AD identity for SSO authentication
 - preferences: UserPreferences - AI behavior, UI settings
 - createdAt: DateTime - Account creation timestamp
 - lastActive: DateTime - Last activity timestamp
 
 ### TypeScript Interface
+
 ```typescript
 export interface User {
   id: string;
@@ -40,6 +43,7 @@ export interface UserPreferences {
 ```
 
 ### Relationships
+
 - Has many Cases (through CaseTeam)
 - Has many Tasks (as assignee)
 - Has many TimeEntries
@@ -47,9 +51,11 @@ export interface UserPreferences {
 - Belongs to one Firm
 
 ## Case
+
 **Purpose:** Core legal matter entity containing all related information and documents
 
 **Key Attributes:**
+
 - id: UUID - Unique case identifier
 - caseNumber: string - Human-readable case number
 - title: string - Case title/name
@@ -63,6 +69,7 @@ export interface UserPreferences {
 - metadata: JSONB - Flexible additional data
 
 ### TypeScript Interface
+
 ```typescript
 export interface Case {
   id: string;
@@ -85,6 +92,7 @@ export interface Case {
 ```
 
 ### Relationships
+
 - Belongs to one Client
 - Has many Users (through CaseTeam)
 - Has many Documents
@@ -93,9 +101,11 @@ export interface Case {
 - Has many TimeEntries
 
 ## Document
+
 **Purpose:** Legal documents with AI-powered versioning and semantic change tracking
 
 **Key Attributes:**
+
 - id: UUID - Unique document identifier
 - caseId: UUID - Associated case
 - title: string - Document title
@@ -103,13 +113,14 @@ export interface Case {
 - currentVersion: number - Latest version number
 - status: DocumentStatus - Draft | Review | Approved | Filed
 - oneDriveId: string? - Microsoft OneDrive file ID
-- blobStorageUrl: string - Azure Blob Storage URL
+- storageUrl: string - Document storage URL (Cloudflare R2 or Render Disk)
 - aiGenerated: boolean - Whether AI created initial draft
 - templateId: UUID? - Source template if applicable
 - createdBy: UUID - Author user ID
 - documentEmbedding: vector - Semantic search embedding
 
 ### TypeScript Interface
+
 ```typescript
 export interface Document {
   id: string;
@@ -119,7 +130,7 @@ export interface Document {
   currentVersion: number;
   status: 'Draft' | 'Review' | 'Approved' | 'Filed';
   oneDriveId?: string;
-  blobStorageUrl: string;
+  storageUrl: string;
   aiGenerated: boolean;
   templateId?: string;
   createdBy: string;
@@ -145,6 +156,7 @@ export interface DocumentVersion {
 ```
 
 ### Relationships
+
 - Belongs to one Case
 - Has many DocumentVersions
 - Belongs to one User (author)

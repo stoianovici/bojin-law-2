@@ -870,10 +870,10 @@ Render auto-rotates managed database passwords (no manual action required).
 **API Key Rotation:**
 
 ```bash
-# OpenAI API Key
-# 1. Generate new key in OpenAI dashboard
+# Anthropic API Key
+# 1. Generate new key in Anthropic Console
 # 2. Add new key to Render
-render env set --service ai-service --key OPENAI_API_KEY --value "sk-new..."
+render env set --service ai-service --key ANTHROPIC_API_KEY --value "sk-ant-new..."
 
 # 3. Verify new key works
 render logs --service ai-service --tail

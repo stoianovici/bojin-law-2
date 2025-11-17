@@ -163,10 +163,15 @@ STORAGE_PATH=./uploads  # Local filesystem path
 # STORAGE_ACCESS_KEY=  # R2 access key
 # STORAGE_SECRET_KEY=  # R2 secret key
 
-# OpenAI (required for AI features - use your own key)
-OPENAI_API_KEY=sk-...your-key-here...
-AI_MODEL=gpt-4-turbo-preview
-OPENAI_ORG_ID=
+# Claude AI (required for AI features - use your own key)
+AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...your-key-here...
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+ANTHROPIC_SKILLS_ENABLED=false  # Set to true when Skills API access is available
+
+# Grok AI (optional fallback provider)
+# XAI_API_KEY=xai-...your-key-here...
+# XAI_MODEL=grok-2-1212
 
 # Email/Notifications (SendGrid or local SMTP)
 SMTP_HOST=localhost

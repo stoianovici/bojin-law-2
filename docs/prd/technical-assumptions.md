@@ -46,8 +46,8 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 
 - PostgreSQL with pgvector extension for semantic search
 - Redis for session management and caching
-- Azure Blob Storage for document storage (aligns with Microsoft ecosystem)
-- Elasticsearch for full-text search (consider Algolia for faster MVP)
+- OneDrive for document storage (primary integration with Microsoft 365)
+- PostgreSQL full-text search (simpler deployment on Render)
 
 **AI Infrastructure:**
 
@@ -71,7 +71,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 **Integration Requirements:**
 
 - Microsoft Graph API for full Outlook/OneDrive/Calendar access
-- OAuth 2.0 with Azure AD for enterprise SSO
+- OAuth 2.0 with Azure AD for enterprise SSO (authentication only, not hosting)
 - Webhook support for real-time Microsoft 365 updates
 - Rate limiting with intelligent request queuing
 

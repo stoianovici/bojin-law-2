@@ -5,11 +5,9 @@ import type { ReportCategory, ReportMetadata } from '@legal-platform/types';
 import { getReportMetadata } from '../../lib/mock-reports-data';
 import { useReportsStore } from '../../stores/reports.store';
 import { useNavigationStore } from '../../stores/navigation.store';
+import { ReportBuilder } from './ReportBuilder';
 
-const CATEGORY_INFO: Record<
-  ReportCategory,
-  { nameRo: string; icon: string; color: string }
-> = {
+const CATEGORY_INFO: Record<ReportCategory, { nameRo: string; icon: string; color: string }> = {
   cases: {
     nameRo: 'Dosare',
     icon: '📁',
@@ -46,13 +44,10 @@ interface ReportCategoriesSidebarProps {
   className?: string;
 }
 
-export function ReportCategoriesSidebar({
-  className = '',
-}: ReportCategoriesSidebarProps) {
+export function ReportCategoriesSidebar({ className = '' }: ReportCategoriesSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState<
-    ReportCategory[]
-  >(['cases']); // Default expand cases category
+  const [expandedCategories, setExpandedCategories] = useState<ReportCategory[]>(['cases']); // Default expand cases category
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   const { selectedReportId, selectReport } = useReportsStore();
   const { currentRole } = useNavigationStore();
@@ -96,9 +91,7 @@ export function ReportCategoriesSidebar({
 
   const toggleCategory = (categoryId: ReportCategory) => {
     setExpandedCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
     );
   };
 
@@ -160,14 +153,10 @@ export function ReportCategoriesSidebar({
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{categoryInfo.icon}</span>
                   <div>
-                    <h3
-                      className={`text-sm font-semibold ${categoryInfo.color}`}
-                    >
+                    <h3 className={`text-sm font-semibold ${categoryInfo.color}`}>
                       {categoryInfo.nameRo}
                     </h3>
-                    <span className="text-xs text-gray-500">
-                      {reports.length} rapoarte
-                    </span>
+                    <span className="text-xs text-gray-500">{reports.length} rapoarte</span>
                   </div>
                 </div>
                 <svg
@@ -198,10 +187,7 @@ export function ReportCategoriesSidebar({
                       return (
                         <button
                           key={report.id}
-                          onClick={() =>
-                            !isRestricted &&
-                            handleReportSelect(category, report.id)
-                          }
+                          onClick={() => !isRestricted && handleReportSelect(category, report.id)}
                           disabled={isRestricted}
                           className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors ${
                             isSelected
@@ -213,9 +199,7 @@ export function ReportCategoriesSidebar({
                         >
                           <div className="flex-1">
                             <div className="font-medium">{report.nameRo}</div>
-                            <div className="text-xs text-gray-600">
-                              {report.description}
-                            </div>
+                            <div className="text-xs text-gray-600">{report.description}</div>
                           </div>
                           {isRestricted && (
                             <svg
@@ -236,9 +220,7 @@ export function ReportCategoriesSidebar({
                       );
                     })
                   ) : (
-                    <div className="px-4 py-3 text-sm text-gray-500">
-                      Niciun raport disponibil
-                    </div>
+                    <div className="px-4 py-3 text-sm text-gray-500">Niciun raport disponibil</div>
                   )}
                 </div>
               )}
@@ -247,12 +229,18 @@ export function ReportCategoriesSidebar({
         })}
       </div>
 
-      {/* Custom Reports Section (Placeholder for Task 11) */}
+      {/* Custom Reports Section */}
       <div className="border-t border-gray-200 p-4">
-        <button className="w-full rounded-md border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-600 hover:border-gray-400 hover:text-gray-700">
+        <button
+          onClick={() => setIsBuilderOpen(true)}
+          className="w-full rounded-md border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-600 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-700"
+        >
           + Raport Personalizat
         </button>
       </div>
+
+      {/* Report Builder Modal */}
+      <ReportBuilder isOpen={isBuilderOpen} onClose={() => setIsBuilderOpen(false)} />
     </div>
   );
 }

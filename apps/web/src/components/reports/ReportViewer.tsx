@@ -18,11 +18,12 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import type { ChartDataPoint } from '@legal-platform/types';
 import { getReportMetadata, getReportData } from '../../lib/mock-reports-data';
 import { useReportsStore } from '../../stores/reports.store';
 
 export function ReportViewer() {
-  const { selectedReportId, selectedCategoryId, dateRange } = useReportsStore();
+  const { selectedReportId, selectedCategoryId, dateRange, openDrillDown } = useReportsStore();
 
   // Get report metadata
   const allReports = useMemo(() => getReportMetadata(), []);
@@ -36,6 +37,32 @@ export function ReportViewer() {
     if (!selectedReportId || !selectedCategoryId) return null;
     return getReportData(selectedReportId, dateRange, selectedCategoryId);
   }, [selectedReportId, selectedCategoryId, dateRange]);
+
+  // Handle chart element click for drill-down
+  const handleChartClick = (dataPoint: ChartDataPoint) => {
+    if (!selectedReportId) return;
+
+    // Generate mock drill-down data
+    const mockDetailRows = Array.from({ length: 25 }, (_, i) => ({
+      id: `item-${i + 1}`,
+      name: `Element ${i + 1} - ${dataPoint.label}`,
+      value: Math.floor(Math.random() * 1000),
+      date: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
+      status: ['Activ', 'Închis', 'În așteptare'][Math.floor(Math.random() * 3)],
+    }));
+
+    openDrillDown({
+      reportId: selectedReportId,
+      dataPoint,
+      detailRows: mockDetailRows,
+      columns: [
+        { key: 'name', label: 'Name', labelRo: 'Nume', type: 'text' },
+        { key: 'value', label: 'Value', labelRo: 'Valoare', type: 'number' },
+        { key: 'date', label: 'Date', labelRo: 'Dată', type: 'date' },
+        { key: 'status', label: 'Status', labelRo: 'Status', type: 'text' },
+      ],
+    });
+  };
 
   if (!reportMetadata || !reportData) {
     return (
@@ -54,9 +81,7 @@ export function ReportViewer() {
               d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
             />
           </svg>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
-            Niciun raport selectat
-          </h3>
+          <h3 className="mt-4 text-lg font-medium text-gray-900">Niciun raport selectat</h3>
           <p className="mt-2 text-sm text-gray-500">
             Selectează un raport din meniul din stânga pentru a vizualiza datele
           </p>
@@ -85,6 +110,13 @@ export function ReportViewer() {
                 label={(entry) => `${entry.name}: ${entry.value}`}
                 outerRadius={120}
                 dataKey="value"
+                onClick={(data) => {
+                  if (data && reportData) {
+                    const dataPoint = reportData.data.find((d) => d.label === data.name);
+                    if (dataPoint) handleChartClick(dataPoint);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -105,7 +137,17 @@ export function ReportViewer() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="value" fill="#3B82F6">
+              <Bar
+                dataKey="value"
+                fill="#3B82F6"
+                onClick={(data) => {
+                  if (data && reportData) {
+                    const dataPoint = reportData.data.find((d) => d.label === data.name);
+                    if (dataPoint) handleChartClick(dataPoint);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
@@ -117,7 +159,18 @@ export function ReportViewer() {
       case 'line':
         return (
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData}>
+            <LineChart
+              data={chartData}
+              onClick={(data) => {
+                if (data && data.activePayload && reportData) {
+                  const payload = data.activePayload[0]?.payload;
+                  if (payload) {
+                    const dataPoint = reportData.data.find((d) => d.label === payload.name);
+                    if (dataPoint) handleChartClick(dataPoint);
+                  }
+                }
+              }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
@@ -128,6 +181,7 @@ export function ReportViewer() {
                 dataKey="value"
                 stroke="#3B82F6"
                 strokeWidth={2}
+                style={{ cursor: 'pointer' }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -136,7 +190,18 @@ export function ReportViewer() {
       case 'area':
         return (
           <ResponsiveContainer width="100%" height={400}>
-            <AreaChart data={chartData}>
+            <AreaChart
+              data={chartData}
+              onClick={(data) => {
+                if (data && data.activePayload && reportData) {
+                  const payload = data.activePayload[0]?.payload;
+                  if (payload) {
+                    const dataPoint = reportData.data.find((d) => d.label === payload.name);
+                    if (dataPoint) handleChartClick(dataPoint);
+                  }
+                }
+              }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
@@ -148,6 +213,7 @@ export function ReportViewer() {
                 stroke="#3B82F6"
                 fill="#3B82F6"
                 fillOpacity={0.6}
+                style={{ cursor: 'pointer' }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -193,9 +259,7 @@ export function ReportViewer() {
     <div className="h-full p-6">
       {/* Report Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {reportMetadata.nameRo}
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900">{reportMetadata.nameRo}</h1>
         <p className="mt-1 text-sm text-gray-600">{reportMetadata.description}</p>
       </div>
 
@@ -218,14 +282,10 @@ export function ReportViewer() {
           </div>
           {reportData.summary.changeFromPrevious !== undefined && (
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="text-sm font-medium text-gray-600">
-                Schimbare
-              </div>
+              <div className="text-sm font-medium text-gray-600">Schimbare</div>
               <div
                 className={`mt-2 flex items-center gap-1 text-2xl font-bold ${
-                  reportData.summary.changeFromPrevious > 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
+                  reportData.summary.changeFromPrevious > 0 ? 'text-green-600' : 'text-red-600'
                 }`}
               >
                 {reportData.summary.changeFromPrevious > 0 ? '↑' : '↓'}
@@ -238,9 +298,7 @@ export function ReportViewer() {
 
       {/* Chart */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          Vizualizare Date
-        </h2>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Vizualizare Date</h2>
         {renderChart()}
       </div>
     </div>

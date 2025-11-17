@@ -9,11 +9,12 @@
 **so that** all AI features have consistent, performant infrastructure.
 
 **Acceptance Criteria:**
+
 1. AI service created with LangChain for prompt management and chaining
 2. Multi-model routing: Haiku for simple, Sonnet for standard, Opus for complex tasks
 3. Token tracking implemented per user, case, and operation type
 4. Response caching with semantic similarity to reduce duplicate API calls
-5. Fallback from Claude to GPT-4 on service unavailability
+5. Fallback from Claude to Grok on service unavailability
 6. Monitoring dashboard shows token usage, costs, and response times
 
 **Rollback Plan:** Feature flags allow disabling AI features if issues arise.
@@ -25,6 +26,7 @@
 **so that** new documents match our firm's style and standards.
 
 **Acceptance Criteria:**
+
 1. Bulk import accepts documents via Outlook mailbox attachment scanning (select folders/date ranges)
 2. AI extracts and categorizes document sections and standard clauses
 3. Template patterns identified across similar documents (>80% similarity)
@@ -33,6 +35,7 @@
 6. Manual template refinement allows editing AI-identified patterns
 
 **Note:** This story is implemented through two sub-stories that were added after the original PRD:
+
 - **Story 3.2.5** handles the user-facing document import and categorization workflow
 - **Story 3.2.6** implements the backend AI training pipeline that processes categorized documents
 
@@ -43,6 +46,7 @@
 **so that** the AI can learn from our firm's historical documents to provide better suggestions.
 
 **Acceptance Criteria:**
+
 1. PST file upload (up to 10GB) with secure server-side processing via Azure Blob Storage (encrypted)
 2. Document extraction preserving original Outlook folder hierarchy (collapsible tree view)
 3. Categorization interface with document preview (PDF/DOCX viewer) and folder navigation
@@ -63,9 +67,10 @@
 **so that** I can learn firm-specific language patterns and templates to improve document generation.
 
 **Acceptance Criteria:**
+
 1. OneDrive discovery scans `/AI-Training/` folders and identifies unprocessed documents
 2. Text extraction from PDFs and DOCX files with language detection (Romanian vs English)
-3. Embedding generation using OpenAI text-embedding-3-small model, stored in PostgreSQL with pgvector
+3. Embedding generation using Claude embeddings API, stored in PostgreSQL with pgvector
 4. Pattern identification: repeated phrases (5+ words, 3+ docs), common document structures, standard clauses
 5. Template extraction from high-similarity documents (>85% similar) with structure analysis
 6. Knowledge base storage in PostgreSQL tables: TrainingDocuments, DocumentEmbeddings, DocumentPatterns, TemplateLibrary
@@ -83,6 +88,7 @@
 **so that** I can create accurate documents in less time.
 
 **Acceptance Criteria:**
+
 1. Natural language prompt generates complete first draft
 2. AI incorporates case facts, client information, and relevant dates
 3. Clause suggestions appear as user types with Tab to accept
@@ -97,6 +103,7 @@
 **so that** I can work in my familiar environment.
 
 **Acceptance Criteria:**
+
 1. "Edit in Word" opens document in desktop Word via OneDrive
 2. Changes in Word sync back to platform within 30 seconds
 3. AI suggestions panel accessible via Word add-in or web sidebar
@@ -111,6 +118,7 @@
 **so that** I can quickly identify substantive changes.
 
 **Acceptance Criteria:**
+
 1. Version comparison highlights legally significant changes in different color
 2. AI summarizes changes in plain language: "Payment terms extended from 30 to 60 days"
 3. Change impact assessment: "Low", "Medium", "High" risk rating
@@ -125,6 +133,7 @@
 **so that** I can ensure quality while maintaining speed.
 
 **Acceptance Criteria:**
+
 1. Review request notification sent to designated approver
 2. Review interface shows document with AI-flagged areas of concern
 3. Inline comments and suggestions tracked with author attribution
@@ -139,6 +148,7 @@
 **so that** I can identify efficiency opportunities.
 
 **Acceptance Criteria:**
+
 1. Dashboard shows document creation velocity by user and type
 2. AI assistance utilization rate per user with adoption trends
 3. Error detection rate showing problems caught before filing
@@ -153,6 +163,7 @@
 **so that** we can ensure reliability and performance.
 
 **Acceptance Criteria:**
+
 1. Load testing for concurrent document operations
 2. Performance benchmarks for generation, search, and version comparison
 3. Stress testing with large documents (100+ pages)

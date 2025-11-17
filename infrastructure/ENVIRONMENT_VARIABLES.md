@@ -102,13 +102,11 @@ openssl rand -base64 48
 
 These variables have sensible defaults but can be customized.
 
-| Variable            | Description               | Default   | Example         | Set Where   |
-| ------------------- | ------------------------- | --------- | --------------- | ----------- |
-| `LOG_LEVEL`         | Logging verbosity         | `info`    | `debug`         | render.yaml |
-| `API_HOST`          | Gateway bind address      | `0.0.0.0` | `0.0.0.0`       | render.yaml |
-| `OPENAI_MODEL`      | Default OpenAI model      | `gpt-4`   | `gpt-3.5-turbo` | render.yaml |
-| `OPENAI_MAX_TOKENS` | Max tokens per AI request | `2000`    | `4000`          | render.yaml |
-| `SMTP_PORT`         | SMTP server port          | `587`     | `465`           | render.yaml |
+| Variable    | Description          | Default   | Example   | Set Where   |
+| ----------- | -------------------- | --------- | --------- | ----------- |
+| `LOG_LEVEL` | Logging verbosity    | `info`    | `debug`   | render.yaml |
+| `API_HOST`  | Gateway bind address | `0.0.0.0` | `0.0.0.0` | render.yaml |
+| `SMTP_PORT` | SMTP server port     | `587`     | `465`     | render.yaml |
 
 ## Service-Specific Variables
 
@@ -155,6 +153,7 @@ These variables have sensible defaults but can be customized.
 | `ANTHROPIC_TEMPERATURE`        | Response randomness (0.0-1.0)              | `0.7`                           | No       | No        |
 | `ANTHROPIC_USE_PROMPT_CACHING` | Enable Prompt Caching (90% cost reduction) | `true`                          | No       | No        |
 | `ANTHROPIC_USE_BATCHING`       | Enable Batch API (50% cost reduction)      | `true`                          | No       | No        |
+| `ANTHROPIC_SKILLS_ENABLED`     | Enable Skills API (70% token reduction)    | `true`                          | No       | No        |
 
 **Get Anthropic API Key:** https://console.anthropic.com/settings/keys
 
@@ -176,6 +175,30 @@ These variables have sensible defaults but can be customized.
    - Processes requests asynchronously with 24hr completion window
    - **50% cost reduction** ($1.50 vs $3.00 per MTok for Sonnet)
    - Ideal for: Document analysis, bulk contract review, report generation
+
+3. **Skills API** (`ANTHROPIC_SKILLS_ENABLED=true`)
+   - Pre-built legal workflow tools for common tasks
+   - **70% token reduction** compared to standard prompts
+   - Reduces costs from $126/month to $80/month for 100 users
+
+#### Claude Skills Configuration (Story 2.11-2.14)
+
+| Variable                     | Description                           | Example               | Required | Sensitive |
+| ---------------------------- | ------------------------------------- | --------------------- | -------- | --------- |
+| `SKILLS_CONTRACT_ANALYSIS`   | Contract Analysis Skill ID            | `skill_contract_v1`   | No       | No        |
+| `SKILLS_DOCUMENT_DRAFTING`   | Document Drafting Skill ID            | `skill_drafting_v1`   | No       | No        |
+| `SKILLS_LEGAL_RESEARCH`      | Legal Research Skill ID               | `skill_research_v1`   | No       | No        |
+| `SKILLS_COMPLIANCE_CHECK`    | Compliance Check Skill ID             | `skill_compliance_v1` | No       | No        |
+| `SKILLS_CACHE_TTL`           | Skills cache time-to-live (seconds)   | `300`                 | No       | No        |
+| `SKILLS_BATCH_SIZE`          | Max skills to batch process           | `50`                  | No       | No        |
+| `SKILLS_A_B_TESTING_ENABLED` | Enable skills A/B testing experiments | `true`                | No       | No        |
+
+**Skills Available:**
+
+- **Contract Analysis**: Extract terms, identify risks, compare with templates
+- **Document Drafting**: Generate legal documents from 10+ templates
+- **Legal Research**: Search case law, statutes, and regulations
+- **Compliance Check**: Validate against GDPR, CCPA, HIPAA, SOX, AML
 
 #### xAI Grok Configuration (FALLBACK)
 
@@ -255,7 +278,11 @@ NEXT_PUBLIC_API_URL=https://gateway-staging.onrender.com/graphql
 NEXT_PUBLIC_APP_URL=https://web-staging.onrender.com
 LOG_LEVEL=debug
 JWT_SECRET=<generate-secure-secret>
-OPENAI_MODEL=gpt-3.5-turbo
+AI_PROVIDER=anthropic
+ANTHROPIC_MODEL=claude-3-haiku-20240307  # Use Haiku for cost-effective staging
+ANTHROPIC_USE_PROMPT_CACHING=true
+ANTHROPIC_SKILLS_ENABLED=false  # Test skills in staging first
+GROK_ENABLED=false  # Disable fallback in staging
 STORAGE_PROVIDER=render-disk
 SMTP_HOST=smtp.gmail.com
 ```
@@ -269,7 +296,12 @@ NEXT_PUBLIC_API_URL=https://api.legal-platform.com/graphql
 NEXT_PUBLIC_APP_URL=https://app.legal-platform.com
 LOG_LEVEL=info
 JWT_SECRET=<generate-secure-secret-different-from-staging>
-OPENAI_MODEL=gpt-4
+AI_PROVIDER=anthropic
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022  # Sonnet for production quality
+ANTHROPIC_USE_PROMPT_CACHING=true
+ANTHROPIC_USE_BATCHING=true
+ANTHROPIC_SKILLS_ENABLED=true
+GROK_ENABLED=true  # Enable fallback in production
 STORAGE_PROVIDER=cloudflare-r2
 SMTP_HOST=smtp.sendgrid.net
 ```
@@ -371,7 +403,7 @@ For certificates, private keys, or large configuration files:
 | Secret                 | Frequency      | Priority | Impact                 |
 | ---------------------- | -------------- | -------- | ---------------------- |
 | `JWT_SECRET`           | Every 90 days  | High     | All users logged out   |
-| `OPENAI_API_KEY`       | Every 180 days | Medium   | AI features disabled   |
+| `ANTHROPIC_API_KEY`    | Every 180 days | Medium   | AI features disabled   |
 | `SMTP_PASSWORD`        | Every 90 days  | Medium   | Email sending fails    |
 | `M365_CLIENT_SECRET`   | Every 90 days  | Medium   | M365 integration fails |
 | `R2_SECRET_ACCESS_KEY` | Every 90 days  | Medium   | File uploads fail      |
@@ -386,7 +418,7 @@ For certificates, private keys, or large configuration files:
 
    ```bash
    openssl rand -base64 48  # For JWT_SECRET
-   # OR generate from provider (OpenAI, SendGrid, etc.)
+   # OR generate from provider (Claude, Grok, SendGrid, etc.)
    ```
 
 2. **Update in Render Dashboard:**
@@ -407,7 +439,8 @@ For certificates, private keys, or large configuration files:
    ```
 
 4. **Revoke Old Secret:**
-   - OpenAI: Delete old API key from https://platform.openai.com/api-keys
+   - Claude: Delete old API key from https://console.anthropic.com/settings/keys
+   - Grok: Delete old API key from https://console.x.ai/api-keys
    - SendGrid: Revoke old API key from dashboard
    - M365: Expire old client secret in Azure Portal
 
@@ -634,23 +667,27 @@ jobs:
    - Use Render's internal URLs for private communication
    - Format: `https://<service-name>.onrender.com`
 
-### OpenAI API Errors
+### AI API Errors (Claude/Grok)
 
 **Symptom:** `Error: Invalid API key` or `Error: Rate limit exceeded`
 
 **Solution:**
 
-1. Verify `OPENAI_API_KEY` is set correctly:
-   - Service → Environment → Check `OPENAI_API_KEY` exists
-   - Get new key from https://platform.openai.com/api-keys
+1. Verify AI API keys are set correctly:
+   - Service → Environment → Check `ANTHROPIC_API_KEY` exists (and `GROK_API_KEY` for fallback)
+   - Claude: Get new key from https://console.anthropic.com/settings/keys
+   - Grok: Get new key from https://console.x.ai/api-keys
 2. Check API key format:
-   - Should start with `sk-`
+   - Claude: Should start with `sk-ant-`
+   - Grok: Should start with `xai-`
    - No spaces or quotes
 3. Verify API key has not been revoked:
-   - OpenAI Dashboard → API Keys → Check key status
+   - Claude Console → API Keys → Check key status
+   - xAI Console → API Keys → Check key status
 4. Check rate limits:
-   - OpenAI Dashboard → Usage → Check quota
-   - Consider upgrading plan or implementing rate limiting
+   - Claude Console → Usage → Check quota and limits
+   - xAI Console → Usage → Check rate limits
+   - Consider implementing fallback logic or rate limiting
 
 ### Email Sending Failures
 

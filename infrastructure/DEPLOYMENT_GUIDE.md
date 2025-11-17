@@ -493,8 +493,8 @@ Secrets must be added via:
 # Set single variable
 render env set \
   --service web \
-  --key OPENAI_API_KEY \
-  --value sk-xxxxx
+  --key ANTHROPIC_API_KEY \
+  --value sk-ant-xxxxx
 
 # Set from .env file
 cat .env.production | while read line; do
@@ -533,13 +533,13 @@ echo "✅ Environment variables updated"
 
 **Quarterly Rotation Schedule:**
 
-| Secret                      | Rotation Frequency | Method                                  |
-| --------------------------- | ------------------ | --------------------------------------- |
-| JWT_SECRET                  | 90 days            | Generate new → Update Render → Redeploy |
-| Database Password           | 90 days            | Render auto-rotates (managed DB)        |
-| API Keys (OpenAI, SendGrid) | 90 days            | Rotate in provider → Update Render      |
-| OAuth Credentials           | 180 days           | Rotate in provider → Update Render      |
-| SSL Certificates            | Auto               | Render auto-renews Let's Encrypt        |
+| Secret                            | Rotation Frequency | Method                                  |
+| --------------------------------- | ------------------ | --------------------------------------- |
+| JWT_SECRET                        | 90 days            | Generate new → Update Render → Redeploy |
+| Database Password                 | 90 days            | Render auto-rotates (managed DB)        |
+| API Keys (Claude, Grok, SendGrid) | 90 days            | Rotate in provider → Update Render      |
+| OAuth Credentials                 | 180 days           | Rotate in provider → Update Render      |
+| SSL Certificates                  | Auto               | Render auto-renews Let's Encrypt        |
 
 **Rotation Procedure:**
 

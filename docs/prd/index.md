@@ -60,7 +60,8 @@
     - [Story 1.10: Developer Onboarding Documentation](./epic-1-ui-foundation-interactive-prototype.md#story-110-developer-onboarding-documentation)
   - [Epic 2: Foundation & Microsoft 365 Integration with Basic Case Management](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md)
     - [Story 2.1: CI/CD Pipeline and Infrastructure as Code](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-21-cicd-pipeline-and-infrastructure-as-code)
-    - [Story 2.2: Azure Infrastructure and Database Setup](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-22-azure-infrastructure-and-database-setup)
+    - [Story 2.1.1: Migrate Infrastructure from Azure to Render.com](../stories/2.1.1.story.md) _(Supersedes Azure portions of 2.1 and 2.2)_
+    - [Story 2.2: Cloud Infrastructure and Database Setup](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-22-cloud-infrastructure-and-database-setup)
     - [Story 2.3: Data Migration and Seeding Strategy](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-23-data-migration-and-seeding-strategy)
     - [Story 2.4: Authentication with Azure AD](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-24-authentication-with-azure-ad)
     - [Story 2.5: Microsoft Graph API Integration Foundation](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-25-microsoft-graph-api-integration-foundation)
@@ -69,6 +70,10 @@
     - [Story 2.8: Case CRUD Operations UI](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-28-case-crud-operations-ui)
     - [Story 2.9: Document Storage with OneDrive Integration](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-29-document-storage-with-onedrive-integration)
     - [Story 2.10: Basic AI Search Implementation](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-210-basic-ai-search-implementation)
+    - [Story 2.11: Claude Skills Infrastructure and API Integration](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-211-claude-skills-infrastructure-and-api-integration) _(AI Cost Optimization)_
+    - [Story 2.12: Core Legal Skills Development](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-212-core-legal-skills-development) _(AI Cost Optimization)_
+    - [Story 2.13: Skills Integration with Model Routing](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-213-skills-integration-with-model-routing) _(AI Cost Optimization)_
+    - [Story 2.14: Skills Production Deployment and Monitoring](./epic-2-foundation-microsoft-365-integration-with-basic-case-management.md#story-214-skills-production-deployment-and-monitoring) _(AI Cost Optimization)_
   - [Epic 3: AI-Powered Document Management & Semantic Version Control](./epic-3-ai-powered-document-management-semantic-version-control.md)
     - [Story 3.1: AI Service Infrastructure](./epic-3-ai-powered-document-management-semantic-version-control.md#story-31-ai-service-infrastructure)
     - [Story 3.2: Document Template Learning System](./epic-3-ai-powered-document-management-semantic-version-control.md#story-32-document-template-learning-system)
