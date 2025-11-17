@@ -58,10 +58,12 @@ services:
       - key: PORT
         value: 4000
       # Database and Redis URLs are auto-injected by Render
-      - fromDatabase:
+      - key: DATABASE_URL
+        fromDatabase:
           name: legal-platform-db
           property: connectionString
-      - fromService:
+      - key: REDIS_URL
+        fromService:
           type: keyvalue
           name: legal-platform-redis
           property: connectionString
@@ -121,10 +123,12 @@ services:
         value: document-service
       - key: PORT
         value: 5001
-      - fromDatabase:
+      - key: DATABASE_URL
+        fromDatabase:
           name: legal-platform-db
           property: connectionString
-      - fromService:
+      - key: REDIS_URL
+        fromService:
           type: keyvalue
           name: legal-platform-redis
           property: connectionString
@@ -164,10 +168,12 @@ services:
         value: ai-service
       - key: PORT
         value: 5002
-      - fromDatabase:
+      - key: DATABASE_URL
+        fromDatabase:
           name: legal-platform-db
           property: connectionString
-      - fromService:
+      - key: REDIS_URL
+        fromService:
           type: keyvalue
           name: legal-platform-redis
           property: connectionString
@@ -226,10 +232,12 @@ services:
         value: task-service
       - key: PORT
         value: 5003
-      - fromDatabase:
+      - key: DATABASE_URL
+        fromDatabase:
           name: legal-platform-db
           property: connectionString
-      - fromService:
+      - key: REDIS_URL
+        fromService:
           type: keyvalue
           name: legal-platform-redis
           property: connectionString
@@ -261,10 +269,12 @@ services:
         value: integration-service
       - key: PORT
         value: 5004
-      - fromDatabase:
+      - key: DATABASE_URL
+        fromDatabase:
           name: legal-platform-db
           property: connectionString
-      - fromService:
+      - key: REDIS_URL
+        fromService:
           type: keyvalue
           name: legal-platform-redis
           property: connectionString
@@ -303,10 +313,12 @@ services:
         value: notification-service
       - key: PORT
         value: 5005
-      - fromDatabase:
+      - key: DATABASE_URL
+        fromDatabase:
           name: legal-platform-db
           property: connectionString
-      - fromService:
+      - key: REDIS_URL
+        fromService:
           type: keyvalue
           name: legal-platform-redis
           property: connectionString
