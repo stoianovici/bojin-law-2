@@ -71,10 +71,15 @@ STORAGE_BUCKET=legal-platform-documents
 STORAGE_ACCESS_KEY=<cloudflare-r2-access-key>
 STORAGE_SECRET_KEY=<cloudflare-r2-secret-key>
 
-# AI Service
-OPENAI_API_KEY=<openai-api-key>
-AI_MODEL=gpt-4-turbo-preview
-OPENAI_ORG_ID=<openai-org-id>
+# AI Service (Claude primary, Grok fallback)
+AI_PROVIDER=anthropic
+AI_FALLBACK_ENABLED=true
+ANTHROPIC_API_KEY=<anthropic-api-key>
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+ANTHROPIC_USE_PROMPT_CACHING=true
+ANTHROPIC_USE_BATCHING=true
+GROK_API_KEY=<grok-api-key>
+GROK_MODEL=grok-beta
 
 # Notification Service
 SMTP_HOST=smtp.sendgrid.net
@@ -119,7 +124,8 @@ Render provides free `.onrender.com` subdomain if no custom domain.
 **Required:**
 
 - ✅ Cloudflare R2 account (document storage) or AWS S3
-- ✅ OpenAI API key (AI service)
+- ✅ Anthropic API key (primary AI - Claude)
+- ✅ xAI API key (fallback AI - Grok) [Optional]
 - ✅ SendGrid account (email notifications) or SMTP credentials
 
 **Optional:**
@@ -405,12 +411,25 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 1. Navigate to service → **Environment**
 2. Click **"Add Environment Variable"**
-3. Enter:
-   - **Key:** `OPENAI_API_KEY`
-   - **Value:** `sk-...`
+3. Enter AI service keys:
+   - **Key:** `ANTHROPIC_API_KEY` (PRIMARY)
+   - **Value:** `sk-ant-api03-...`
    - **Secret:** ☑️ (check to encrypt)
+
+   - **Key:** `GROK_API_KEY` (FALLBACK - Optional)
+   - **Value:** `xai-...`
+   - **Secret:** ☑️ (check to encrypt)
+
+   - **Key:** `ANTHROPIC_USE_PROMPT_CACHING`
+   - **Value:** `true`
+   - **Secret:** ☐ (not sensitive)
+
+   - **Key:** `ANTHROPIC_USE_BATCHING`
+   - **Value:** `true`
+   - **Secret:** ☐ (not sensitive)
+
 4. Click **"Save Changes"**
-5. Service auto-redeploys with new variable
+5. Service auto-redeploys with new variables
 
 **Shared Variables (Environment Groups):**
 
