@@ -1,5 +1,3 @@
-version: '3.9'
-
 name: legal-platform-test
 
 # CI Testing Environment
@@ -61,11 +59,11 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_test
       REDIS_URL: redis://redis:6379
       JWT_SECRET: test-secret-key
-      DOCUMENT_SERVICE_URL: http://document-service:4001
-      TASK_SERVICE_URL: http://task-service:4002
-      AI_SERVICE_URL: http://ai-service:4003
-      INTEGRATION_SERVICE_URL: http://integration-service:4004
-      NOTIFICATION_SERVICE_URL: http://notification-service:4005
+      DOCUMENT_SERVICE_URL: http://document-service:5001
+      TASK_SERVICE_URL: http://task-service:5003
+      AI_SERVICE_URL: http://ai-service:5002
+      INTEGRATION_SERVICE_URL: http://integration-service:5004
+      NOTIFICATION_SERVICE_URL: http://notification-service:5005
       LOG_LEVEL: error # Reduce log noise in tests
     ports:
       - '4020:4000'

@@ -1,5 +1,3 @@
-version: '3.9'
-
 name: legal-platform-prod
 
 # Production-like testing environment using production Docker images
@@ -85,7 +83,7 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.service
       args:
         SERVICE_NAME: document-service
-        SERVICE_PORT: 4001
+        SERVICE_PORT: 5001
     image: legal-platform-document-service:latest
     container_name: legal-platform-document-service-prod
     restart: unless-stopped
@@ -96,13 +94,13 @@ services:
       - ../../.env.prod
     environment:
       NODE_ENV: production
-      PORT: 4001
+      PORT: 5001
     ports:
-      - '4011:4001'
+      - '5011:5001'
     networks:
       - legal-platform-prod
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4001/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5001/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -114,7 +112,7 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.service
       args:
         SERVICE_NAME: task-service
-        SERVICE_PORT: 4002
+        SERVICE_PORT: 5003
     image: legal-platform-task-service:latest
     container_name: legal-platform-task-service-prod
     restart: unless-stopped
@@ -127,13 +125,13 @@ services:
       - ../../.env.prod
     environment:
       NODE_ENV: production
-      PORT: 4002
+      PORT: 5003
     ports:
-      - '4012:4002'
+      - '5013:5003'
     networks:
       - legal-platform-prod
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4002/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5003/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -145,7 +143,7 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.service
       args:
         SERVICE_NAME: ai-service
-        SERVICE_PORT: 4003
+        SERVICE_PORT: 5002
     image: legal-platform-ai-service:latest
     container_name: legal-platform-ai-service-prod
     restart: unless-stopped
@@ -156,13 +154,13 @@ services:
       - ../../.env.prod
     environment:
       NODE_ENV: production
-      PORT: 4003
+      PORT: 5002
     ports:
-      - '4013:4003'
+      - '5012:5002'
     networks:
       - legal-platform-prod
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4003/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5002/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -174,7 +172,7 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.service
       args:
         SERVICE_NAME: integration-service
-        SERVICE_PORT: 4004
+        SERVICE_PORT: 5004
     image: legal-platform-integration-service:latest
     container_name: legal-platform-integration-service-prod
     restart: unless-stopped
@@ -185,13 +183,13 @@ services:
       - ../../.env.prod
     environment:
       NODE_ENV: production
-      PORT: 4004
+      PORT: 5004
     ports:
-      - '4014:4004'
+      - '5014:5004'
     networks:
       - legal-platform-prod
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4004/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5004/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -203,7 +201,7 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.service
       args:
         SERVICE_NAME: notification-service
-        SERVICE_PORT: 4005
+        SERVICE_PORT: 5005
     image: legal-platform-notification-service:latest
     container_name: legal-platform-notification-service-prod
     restart: unless-stopped
@@ -216,13 +214,13 @@ services:
       - ../../.env.prod
     environment:
       NODE_ENV: production
-      PORT: 4005
+      PORT: 5005
     ports:
-      - '4015:4005'
+      - '5015:5005'
     networks:
       - legal-platform-prod
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4005/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5005/health']
       interval: 30s
       timeout: 10s
       retries: 3

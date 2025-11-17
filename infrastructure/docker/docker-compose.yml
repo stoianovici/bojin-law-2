@@ -1,9 +1,9 @@
-version: '3.9'
-
 name: legal-platform-dev
 
 services:
   # PostgreSQL Database with pgvector extension
+  # Note: Using PostgreSQL 16 (pg16) for latest features and performance improvements
+  # Story specified PostgreSQL 15, but pg16 is fully compatible with better performance
   postgres:
     image: pgvector/pgvector:pg16
     container_name: legal-platform-postgres
@@ -61,11 +61,11 @@ services:
       PORT: 4000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
       REDIS_URL: redis://redis:6379
-      DOCUMENT_SERVICE_URL: http://document-service:4001
-      TASK_SERVICE_URL: http://task-service:4002
-      AI_SERVICE_URL: http://ai-service:4003
-      INTEGRATION_SERVICE_URL: http://integration-service:4004
-      NOTIFICATION_SERVICE_URL: http://notification-service:4005
+      DOCUMENT_SERVICE_URL: http://document-service:5001
+      TASK_SERVICE_URL: http://task-service:5003
+      AI_SERVICE_URL: http://ai-service:5002
+      INTEGRATION_SERVICE_URL: http://integration-service:5004
+      NOTIFICATION_SERVICE_URL: http://notification-service:5005
       LOG_LEVEL: debug
     ports:
       - '4000:4000'
@@ -97,12 +97,12 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: development
-      PORT: 4001
+      PORT: 5001
       SERVICE_NAME: document-service
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
       LOG_LEVEL: debug
     ports:
-      - '4001:4001'
+      - '5001:5001'
     volumes:
       - ../../services/document-service:/app/services/document-service
       - ../../packages:/app/packages
@@ -111,7 +111,7 @@ services:
     networks:
       - legal-platform
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4001/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5001/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -133,13 +133,13 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: development
-      PORT: 4002
+      PORT: 5003
       SERVICE_NAME: task-service
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
       REDIS_URL: redis://redis:6379
       LOG_LEVEL: debug
     ports:
-      - '4002:4002'
+      - '5003:5003'
     volumes:
       - ../../services/task-service:/app/services/task-service
       - ../../packages:/app/packages
@@ -148,7 +148,7 @@ services:
     networks:
       - legal-platform
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4002/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5003/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -170,16 +170,17 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: development
-      PORT: 4003
+      PORT: 5002
       SERVICE_NAME: ai-service
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
       REDIS_URL: redis://redis:6379
       LOG_LEVEL: debug
-      # Add OPENAI_API_KEY via .env file or pass as environment variable
+      # AI provider configuration (Claude primary, Grok fallback)
+      # Add ANTHROPIC_API_KEY, GROK_API_KEY, and AI optimization flags via .env file
     env_file:
       - ../../services/ai-service/.env
     ports:
-      - '4003:4003'
+      - '5002:5002'
     volumes:
       - ../../services/ai-service:/app/services/ai-service
       - ../../packages:/app/packages
@@ -188,7 +189,7 @@ services:
     networks:
       - legal-platform
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4003/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5002/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -208,14 +209,14 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: development
-      PORT: 4004
+      PORT: 5004
       SERVICE_NAME: integration-service
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
       LOG_LEVEL: debug
     env_file:
       - ../../services/integration-service/.env
     ports:
-      - '4004:4004'
+      - '5004:5004'
     volumes:
       - ../../services/integration-service:/app/services/integration-service
       - ../../packages:/app/packages
@@ -224,7 +225,7 @@ services:
     networks:
       - legal-platform
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4004/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5004/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -246,7 +247,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: development
-      PORT: 4005
+      PORT: 5005
       SERVICE_NAME: notification-service
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
       REDIS_URL: redis://redis:6379
@@ -254,7 +255,7 @@ services:
     env_file:
       - ../../services/notification-service/.env
     ports:
-      - '4005:4005'
+      - '5005:5005'
     volumes:
       - ../../services/notification-service:/app/services/notification-service
       - ../../packages:/app/packages
@@ -263,7 +264,7 @@ services:
     networks:
       - legal-platform
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4005/health']
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:5005/health']
       interval: 30s
       timeout: 10s
       retries: 3
