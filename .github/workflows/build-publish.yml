@@ -1,89 +1,201 @@
-name: Build and Publish Docker Images
+name: Deploy to Render
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
 
 env:
-  REGISTRY: ${{ secrets.ACR_NAME }}.azurecr.io
-  IMAGE_TAG: ${{ github.sha }}
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
 
 jobs:
-  build-and-push:
+  # Job 1: Run Tests Before Deployment
+  pre-deployment-checks:
+    name: Pre-Deployment Checks
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to ACR
-        uses: azure/docker-login@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          login-server: ${{ env.REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push web image
-        uses: docker/build-push-action@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
         with:
-          context: apps/web
-          file: infrastructure/docker/Dockerfile.web
-          push: true
-          tags: ${{ env.REGISTRY }}/legal-platform/web:${{ env.IMAGE_TAG }}, ${{ env.REGISTRY }}/legal-platform/web:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          version: ${{ env.PNPM_VERSION }}
 
-      - name: Build and push gateway image
-        uses: docker/build-push-action@v6
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
         with:
-          context: services/gateway
-          file: infrastructure/docker/Dockerfile.gateway
-          push: true
-          tags: ${{ env.REGISTRY }}/legal-platform/gateway:${{ env.IMAGE_TAG }}, ${{ env.REGISTRY }}/legal-platform/gateway:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
-      - name: Build and push document-service image
-        uses: docker/build-push-action@v6
-        with:
-          context: services/document-service
-          file: infrastructure/docker/Dockerfile.service
-          push: true
-          tags: ${{ env.REGISTRY }}/legal-platform/document-service:${{ env.IMAGE_TAG }}, ${{ env.REGISTRY }}/legal-platform/document-service:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Build and push task-service image
-        uses: docker/build-push-action@v6
-        with:
-          context: services/task-service
-          file: infrastructure/docker/Dockerfile.service
-          push: true
-          tags: ${{ env.REGISTRY }}/legal-platform/task-service:${{ env.IMAGE_TAG }}, ${{ env.REGISTRY }}/legal-platform/task-service:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Run TypeScript type checking
+        run: pnpm tsc --noEmit
 
-      # Add builds for other services: ai-service, integration-service, notification-service
+      - name: Run linting
+        run: pnpm lint
 
-  # Optional: Notify on success/failure
-  notify:
+      - name: Run unit tests
+        run: pnpm test:ci
+
+  # Job 2: Deploy to Staging (develop branch)
+  deploy-staging:
+    name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: build-and-push
-    if: always()
+    needs: pre-deployment-checks
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
     steps:
-      - name: Notify Teams/Slack
-        uses: 8398a7/action-slack@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trigger Render deployment (Staging)
+        run: |
+          echo "🚀 Triggering Render deployment for staging environment..."
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
+          echo "✅ Staging deployment triggered successfully"
+
+      - name: Wait for deployment
+        run: |
+          echo "⏳ Waiting for Render to complete deployment..."
+          sleep 30
+
+      - name: Post deployment summary
+        run: |
+          echo "### Deployment Summary 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Staging deployment triggered successfully**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Staging" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Render Dashboard](https://dashboard.render.com)" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Staging Environment](${{ vars.STAGING_URL }})" >> $GITHUB_STEP_SUMMARY
+
+  # Job 3: Deploy to Production (main branch)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trigger Render deployment (Production)
+        run: |
+          echo "🚀 Triggering Render deployment for production environment..."
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION }}"
+          echo "✅ Production deployment triggered successfully"
+
+      - name: Wait for deployment
+        run: |
+          echo "⏳ Waiting for Render to complete deployment..."
+          sleep 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          status: ${{ job.status }}
-          channel: '#deployments'
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          tag_name: v${{ github.run_number }}
+          name: Production Release v${{ github.run_number }}
+          body: |
+            ## Production Deployment
+
+            **Commit:** ${{ github.sha }}
+            **Branch:** ${{ github.ref_name }}
+            **Deployed by:** ${{ github.actor }}
+            **Timestamp:** ${{ github.event.head_commit.timestamp }}
+
+            ### Changes
+            ${{ github.event.head_commit.message }}
+
+            ### Deployment Info
+            - Environment: Production
+            - Platform: Render.com
+            - Status: Deployed
+          draft: false
+          prerelease: false
+
+      - name: Post deployment summary
+        run: |
+          echo "### Deployment Summary 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Production deployment triggered successfully**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Render Dashboard](https://dashboard.render.com)" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Production Environment](${{ vars.PRODUCTION_URL }})" >> $GITHUB_STEP_SUMMARY
+
+  # Job 4: Manual Deployment (workflow_dispatch)
+  deploy-manual:
+    name: Deploy to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trigger Render deployment
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "staging" ]; then
+            echo "🚀 Triggering manual deployment to staging..."
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
+          else
+            echo "🚀 Triggering manual deployment to production..."
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION }}"
+          fi
+          echo "✅ Deployment triggered successfully"
+
+      - name: Post deployment summary
+        run: |
+          echo "### Manual Deployment Summary 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Deployment triggered successfully**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Render Dashboard](https://dashboard.render.com)" >> $GITHUB_STEP_SUMMARY
