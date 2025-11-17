@@ -1,44 +1,98 @@
-# Multi-stage Dockerfile template for Legal Platform Microservices (Node.js/Express)
+# Production Dockerfile Template for Microservices
+# Multi-stage build for optimized image size
+#
+# Build Args:
+#   SERVICE_NAME: Name of the service (e.g., document-service, ai-service, task-service)
+#   SERVICE_PORT: Port the service listens on (e.g., 4001, 4002, 4003)
+#
+# Example build:
+#   docker build -f infrastructure/docker/Dockerfile.service \
+#     --build-arg SERVICE_NAME=document-service \
+#     --build-arg SERVICE_PORT=4001 \
+#     -t legal-platform-document-service:latest .
 
-# Stage 1: Install dependencies
+ARG SERVICE_NAME
+ARG SERVICE_PORT=4000
+
+# Stage 1: Dependencies
 FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile --only=production
 
-# Stage 2: Build the application
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+ARG SERVICE_NAME
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY services/${SERVICE_NAME}/package.json ./services/${SERVICE_NAME}/
+COPY packages/shared/types/package.json ./packages/shared/types/
+COPY packages/database/package.json ./packages/database/
+COPY packages/logger/package.json ./packages/logger/
+COPY packages/config/package.json ./packages/config/
+
+# Install dependencies (production only)
+RUN pnpm install --frozen-lockfile --prod
+
+# Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
-COPY --from=deps /app/node_modules ./node_modules
-COPY src/ ./
-# Copy other necessary files (e.g., config, types)
-COPY --from=builder /app/package.json ./
-RUN pnpm build  # Build TypeScript to dist/
 
-# Stage 3: Production runtime
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+ARG SERVICE_NAME
+
+# Copy dependencies and source
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/services ./services
+COPY --from=deps /app/packages ./packages
+
+# Copy source code
+COPY tsconfig.json ./
+COPY packages/shared ./packages/shared
+COPY packages/database ./packages/database
+COPY packages/logger ./packages/logger
+COPY packages/config ./packages/config
+COPY services/${SERVICE_NAME} ./services/${SERVICE_NAME}
+
+# Build TypeScript
+WORKDIR /app/services/${SERVICE_NAME}
+RUN if [ -f "tsconfig.json" ]; then pnpm build; else echo "No build needed"; fi
+
+# Stage 3: Production runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
+ARG SERVICE_NAME
+ARG SERVICE_PORT
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 service
+ENV NODE_ENV=production
+ENV SERVICE_NAME=${SERVICE_NAME}
+ENV PORT=${SERVICE_PORT}
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs
+
+# Copy production dependencies
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/services/${SERVICE_NAME}/node_modules ./services/${SERVICE_NAME}/node_modules
 
 # Copy built application
-COPY --from=builder --chown=service:nodejs /app/dist ./dist
-COPY --from=builder --chown=service:nodejs /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/services/${SERVICE_NAME}/dist ./services/${SERVICE_NAME}/dist
+COPY --from=builder --chown=nodejs:nodejs /app/services/${SERVICE_NAME}/package.json ./services/${SERVICE_NAME}/
+COPY --from=builder --chown=nodejs:nodejs /app/packages ./packages
 
-USER service
+USER nodejs
 
-EXPOSE 3001  # Default port for services, override in docker-compose
+EXPOSE ${SERVICE_PORT}
 
-ENV PORT=3001
+ENV SERVICE_HOST="0.0.0.0"
 
-# Health check (assume /health endpoint)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:${SERVICE_PORT}/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["node", "dist/index.js"]  # Adjust entry point as needed
+CMD node services/${SERVICE_NAME}/dist/index.js

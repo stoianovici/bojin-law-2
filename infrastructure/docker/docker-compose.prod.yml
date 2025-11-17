@@ -1,144 +1,266 @@
-version: '3.8'
+version: '3.9'
+
+name: legal-platform-prod
+
+# Production-like testing environment using production Docker images
+# This configuration mimics production deployment for local testing
 
 services:
+  # PostgreSQL Database with pgvector extension
   postgres:
     image: pgvector/pgvector:pg16
-    restart: always
+    container_name: legal-platform-postgres-prod
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: legal_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: legal_platform_prod
     ports:
-      - "5432:5432"
+      - '5433:5432' # Different port to avoid conflicts
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - legal-net
+      - legal-platform-prod
 
+  # Redis Cache
   redis:
-    image: redis:7-alpine
-    restart: always
+    image: redis:7.2-alpine
+    container_name: legal-platform-redis-prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
     ports:
-      - "6379:6379"
+      - '6380:6379' # Different port to avoid conflicts
     volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
+      - redis_prod_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', '--pass', '${REDIS_PASSWORD:-changeme}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - legal-net
+      - legal-platform-prod
 
-  web:
-    build:
-      context: ../../apps/web
-      dockerfile: ../../infrastructure/docker/Dockerfile.web
-    restart: always
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://redis:6379
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - legal-net
-
+  # API Gateway (GraphQL)
   gateway:
     build:
-      context: ../../services/gateway
-      dockerfile: ../../infrastructure/docker/Dockerfile.gateway
-    restart: always
-    ports:
-      - "4000:4000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://redis:6379
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.gateway
+    image: legal-platform-gateway:latest
+    container_name: legal-platform-gateway-prod
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    env_file:
+      - ../../.env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-changeme}@postgres:5432/legal_platform_prod
+      REDIS_URL: redis://default:${REDIS_PASSWORD:-changeme}@redis:6379
+    ports:
+      - '4010:4000' # Different port to avoid conflicts
+    networks:
+      - legal-platform-prod
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4000/health']
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - legal-net
+      start_period: 40s
 
+  # Document Service
   document-service:
     build:
-      context: ../../services/document-service
-      dockerfile: ../../infrastructure/docker/Dockerfile.service
-    restart: always
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://redis:6379
-      - AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT_NAME}
-      - AZURE_STORAGE_ACCOUNT_KEY=${AZURE_STORAGE_ACCOUNT_KEY}
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: document-service
+        SERVICE_PORT: 4001
+    image: legal-platform-document-service:latest
+    container_name: legal-platform-document-service-prod
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+    env_file:
+      - ../../.env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4001
+    ports:
+      - '4011:4001'
+    networks:
+      - legal-platform-prod
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4001/health']
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - legal-net
 
+  # Task Service
   task-service:
     build:
-      context: ../../services/task-service
-      dockerfile: ../../infrastructure/docker/Dockerfile.service
-    restart: always
-    ports:
-      - "3002:3002"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://redis:6379
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: task-service
+        SERVICE_PORT: 4002
+    image: legal-platform-task-service:latest
+    container_name: legal-platform-task-service-prod
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    env_file:
+      - ../../.env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4002
+    ports:
+      - '4012:4002'
+    networks:
+      - legal-platform-prod
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4002/health']
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # AI Service
+  ai-service:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: ai-service
+        SERVICE_PORT: 4003
+    image: legal-platform-ai-service:latest
+    container_name: legal-platform-ai-service-prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../../.env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4003
+    ports:
+      - '4013:4003'
     networks:
-      - legal-net
+      - legal-platform-prod
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4003/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Integration Service
+  integration-service:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: integration-service
+        SERVICE_PORT: 4004
+    image: legal-platform-integration-service:latest
+    container_name: legal-platform-integration-service-prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../../.env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4004
+    ports:
+      - '4014:4004'
+    networks:
+      - legal-platform-prod
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4004/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: notification-service
+        SERVICE_PORT: 4005
+    image: legal-platform-notification-service:latest
+    container_name: legal-platform-notification-service-prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../../.env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4005
+    ports:
+      - '4015:4005'
+    networks:
+      - legal-platform-prod
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4005/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Next.js Web Application
+  web:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4010/graphql}
+        NEXT_PUBLIC_AZURE_AD_CLIENT_ID: ${NEXT_PUBLIC_AZURE_AD_CLIENT_ID}
+        NEXT_PUBLIC_AZURE_AD_TENANT_ID: ${NEXT_PUBLIC_AZURE_AD_TENANT_ID}
+    image: legal-platform-web:latest
+    container_name: legal-platform-web-prod
+    restart: unless-stopped
+    depends_on:
+      gateway:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - '3001:3000' # Different port to avoid conflicts
+    networks:
+      - legal-platform-prod
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
-  postgres_data:
-  redis_data:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
 
 networks:
-  legal-net:
+  legal-platform-prod:
     driver: bridge

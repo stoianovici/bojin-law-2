@@ -1,136 +1,309 @@
-version: '3.8'
+version: '3.9'
+
+name: legal-platform-dev
 
 services:
+  # PostgreSQL Database with pgvector extension
   postgres:
     image: pgvector/pgvector:pg16
-    restart: always
+    container_name: legal-platform-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: legal_platform
+      POSTGRES_DB: legal_platform_dev
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts/postgres:/docker-entrypoint-initdb.d  # Initial schema
+      - ./init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - legal-platform
 
+  # Redis Cache
   redis:
-    image: redis:7-alpine
-    restart: always
+    image: redis:7.2-alpine
+    container_name: legal-platform-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
-    command: redis-server --appendonly yes
+    networks:
+      - legal-platform
 
-  web:
-    build:
-      context: ../../apps/web
-      dockerfile: ../../infrastructure/docker/Dockerfile.dev  # Use dev for hot-reload
-    restart: always
-    ports:
-      - "3000:3000"
-    volumes:
-      - ../../apps/web/src:/app/src  # Hot-reload
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/legal_platform
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
+  # API Gateway (GraphQL)
   gateway:
     build:
-      context: ../../services/gateway
-      dockerfile: ../../infrastructure/docker/Dockerfile.dev  # Assume dev exists, or use production
-    restart: always
-    ports:
-      - "4000:4000"
-    volumes:
-      - ../../services/gateway/src:/app/src  # Hot-reload if dev
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/legal_platform
-      - REDIS_URL=redis://redis:6379
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.dev
+      target: gateway
+    container_name: legal-platform-gateway
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
+      REDIS_URL: redis://redis:6379
+      DOCUMENT_SERVICE_URL: http://document-service:4001
+      TASK_SERVICE_URL: http://task-service:4002
+      AI_SERVICE_URL: http://ai-service:4003
+      INTEGRATION_SERVICE_URL: http://integration-service:4004
+      NOTIFICATION_SERVICE_URL: http://notification-service:4005
+      LOG_LEVEL: debug
+    ports:
+      - '4000:4000'
+    volumes:
+      - ../../services/gateway:/app/services/gateway
+      - ../../packages:/app/packages
+      - /app/node_modules
+      - /app/services/gateway/node_modules
+    networks:
+      - legal-platform
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4000/health']
       interval: 30s
       timeout: 10s
       retries: 3
 
+  # Document Service
   document-service:
     build:
-      context: ../../services/document-service
-      dockerfile: ../../infrastructure/docker/Dockerfile.service
-    restart: always
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/legal_platform
-      - REDIS_URL=redis://redis:6379
-      - AZURE_STORAGE_ACCOUNT_NAME=devstorage
-      - AZURE_STORAGE_ACCOUNT_KEY=devkey
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.dev
+      target: service
+      args:
+        SERVICE_NAME: document-service
+    container_name: legal-platform-document-service
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 4001
+      SERVICE_NAME: document-service
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
+      LOG_LEVEL: debug
+    ports:
+      - '4001:4001'
+    volumes:
+      - ../../services/document-service:/app/services/document-service
+      - ../../packages:/app/packages
+      - /app/node_modules
+      - /app/services/document-service/node_modules
+    networks:
+      - legal-platform
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4001/health']
       interval: 30s
       timeout: 10s
       retries: 3
 
+  # Task Service
   task-service:
     build:
-      context: ../../services/task-service
-      dockerfile: ../../infrastructure/docker/Dockerfile.service
-    restart: always
-    ports:
-      - "3002:3002"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/legal_platform
-      - REDIS_URL=redis://redis:6379
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.dev
+      target: service
+      args:
+        SERVICE_NAME: task-service
+    container_name: legal-platform-task-service
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 4002
+      SERVICE_NAME: task-service
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: debug
+    ports:
+      - '4002:4002'
+    volumes:
+      - ../../services/task-service:/app/services/task-service
+      - ../../packages:/app/packages
+      - /app/node_modules
+      - /app/services/task-service/node_modules
+    networks:
+      - legal-platform
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4002/health']
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Add other services: ai-service, integration-service, notification-service as needed
+  # AI Service
+  ai-service:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.dev
+      target: service
+      args:
+        SERVICE_NAME: ai-service
+    container_name: legal-platform-ai-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 4003
+      SERVICE_NAME: ai-service
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: debug
+      # Add OPENAI_API_KEY via .env file or pass as environment variable
+    env_file:
+      - ../../services/ai-service/.env
+    ports:
+      - '4003:4003'
+    volumes:
+      - ../../services/ai-service:/app/services/ai-service
+      - ../../packages:/app/packages
+      - /app/node_modules
+      - /app/services/ai-service/node_modules
+    networks:
+      - legal-platform
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4003/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Integration Service
+  integration-service:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.dev
+      target: service
+      args:
+        SERVICE_NAME: integration-service
+    container_name: legal-platform-integration-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 4004
+      SERVICE_NAME: integration-service
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
+      LOG_LEVEL: debug
+    env_file:
+      - ../../services/integration-service/.env
+    ports:
+      - '4004:4004'
+    volumes:
+      - ../../services/integration-service:/app/services/integration-service
+      - ../../packages:/app/packages
+      - /app/node_modules
+      - /app/services/integration-service/node_modules
+    networks:
+      - legal-platform
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4004/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.dev
+      target: service
+      args:
+        SERVICE_NAME: notification-service
+    container_name: legal-platform-notification-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 4005
+      SERVICE_NAME: notification-service
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_dev
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: debug
+    env_file:
+      - ../../services/notification-service/.env
+    ports:
+      - '4005:4005'
+    volumes:
+      - ../../services/notification-service:/app/services/notification-service
+      - ../../packages:/app/packages
+      - /app/node_modules
+      - /app/services/notification-service/node_modules
+    networks:
+      - legal-platform
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4005/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Next.js Web Application
+  web:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.dev
+      target: web
+    container_name: legal-platform-web
+    restart: unless-stopped
+    depends_on:
+      - gateway
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://localhost:4000/graphql
+    ports:
+      - '3000:3000'
+    volumes:
+      - ../../apps/web:/app/apps/web
+      - ../../packages:/app/packages
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    networks:
+      - legal-platform
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+
+networks:
+  legal-platform:
+    driver: bridge

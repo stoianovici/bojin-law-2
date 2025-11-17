@@ -1,54 +1,112 @@
-version: '3.8'
+version: '3.9'
+
+name: legal-platform-test
+
+# CI Testing Environment
+# Lightweight configuration for running automated tests in GitHub Actions
 
 services:
-  postgres-test:
+  # PostgreSQL Test Database
+  postgres:
     image: pgvector/pgvector:pg16
+    container_name: legal-platform-postgres-test
     environment:
-      POSTGRES_USER: testuser
-      POSTGRES_PASSWORD: testpass
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: legal_platform_test
     ports:
-      - "5433:5432"  # Different port to avoid conflict
+      - '5434:5432'
+    tmpfs:
+      - /var/lib/postgresql/data # Use tmpfs for faster tests
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U testuser"]
-      interval: 10s
-      timeout: 5s
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 3s
       retries: 5
     networks:
-      - test-net
+      - legal-platform-test
 
-  redis-test:
-    image: redis:7-alpine
+  # Redis Test Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: legal-platform-redis-test
+    command: redis-server --save "" # Disable persistence for tests
     ports:
-      - "6380:6379"
+      - '6381:6379'
+    tmpfs:
+      - /data # Use tmpfs for faster tests
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - legal-platform-test
+
+  # API Gateway (for integration tests)
+  gateway:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.gateway
+    image: legal-platform-gateway:test
+    container_name: legal-platform-gateway-test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/legal_platform_test
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: test-secret-key
+      AZURE_AD_CLIENT_ID: test-client-id
+      AZURE_AD_CLIENT_SECRET: test-client-secret
+      AZURE_AD_TENANT_ID: test-tenant-id
+      DOCUMENT_SERVICE_URL: http://document-service:4001
+      TASK_SERVICE_URL: http://task-service:4002
+      AI_SERVICE_URL: http://ai-service:4003
+      INTEGRATION_SERVICE_URL: http://integration-service:4004
+      NOTIFICATION_SERVICE_URL: http://notification-service:4005
+      LOG_LEVEL: error # Reduce log noise in tests
+    ports:
+      - '4020:4000'
+    networks:
+      - legal-platform-test
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:4000/health']
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - test-net
 
-  # Test runner (e.g., for Playwright E2E)
-  e2e-test:
-    image: mcr.microsoft.com/playwright:v1.41.0-jammy
+  # Web App (for E2E tests)
+  web:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4020/graphql
+        NEXT_PUBLIC_AZURE_AD_CLIENT_ID: test-client-id
+        NEXT_PUBLIC_AZURE_AD_TENANT_ID: test-tenant-id
+    image: legal-platform-web:test
+    container_name: legal-platform-web-test
     depends_on:
-      postgres-test:
+      gateway:
         condition: service_healthy
-      redis-test:
-        condition: service_healthy
-    volumes:
-      - ../../tests/e2e:/e2e
-      - /ms-playwright:/ms-playwright
-    working_dir: /e2e
-    command: npx playwright test
     environment:
-      - DATABASE_URL=postgresql://testuser:testpass@postgres-test:5432/legal_platform_test
-      - REDIS_URL=redis://redis-test:6379
-      - NODE_ENV=test
+      NODE_ENV: test
+      PORT: 3000
+    ports:
+      - '3002:3000'
     networks:
-      - test-net
+      - legal-platform-test
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
-  test-net:
+  legal-platform-test:
     driver: bridge

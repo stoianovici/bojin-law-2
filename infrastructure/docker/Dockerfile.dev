@@ -1,25 +1,78 @@
-FROM node:20-alpine
+# Development Dockerfile with hot-reload support
+# Multi-target build for different services
+
+FROM node:20-alpine AS base
+WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm@10
-
-# Set working directory
-WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY turbo.json ./
+
+# Target: Next.js Web App (Development)
+FROM base AS web
+WORKDIR /app
+
+# Copy all package.json files for workspace
+COPY apps/web/package.json ./apps/web/
 COPY packages/*/package.json ./packages/*/
-COPY apps/*/package.json ./apps/*/
-COPY services/*/package.json ./services/*/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy application code
-COPY . .
+# Copy source code (will be overridden by volume mounts)
+COPY apps/web ./apps/web
+COPY packages ./packages
 
-# Expose ports
-EXPOSE 3000 6006
+WORKDIR /app/apps/web
 
-# Default command
+EXPOSE 3000
+
+CMD ["pnpm", "dev"]
+
+# Target: API Gateway (Development)
+FROM base AS gateway
+WORKDIR /app
+
+# Copy package files
+COPY services/gateway/package.json ./services/gateway/
+COPY packages/*/package.json ./packages/*/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code (will be overridden by volume mounts)
+COPY services/gateway ./services/gateway
+COPY packages ./packages
+
+WORKDIR /app/services/gateway
+
+EXPOSE 4000
+
+CMD ["pnpm", "dev"]
+
+# Target: Generic Microservice (Development)
+FROM base AS service
+WORKDIR /app
+
+ARG SERVICE_NAME
+
+# Copy package files
+COPY services/${SERVICE_NAME}/package.json ./services/${SERVICE_NAME}/ || echo "No package.json for ${SERVICE_NAME}"
+COPY packages/*/package.json ./packages/*/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code (will be overridden by volume mounts)
+COPY services/${SERVICE_NAME} ./services/${SERVICE_NAME}
+COPY packages ./packages
+
+WORKDIR /app/services/${SERVICE_NAME}
+
+ARG SERVICE_PORT=4000
+EXPOSE ${SERVICE_PORT}
+
 CMD ["pnpm", "dev"]

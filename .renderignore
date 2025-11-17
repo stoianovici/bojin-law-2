@@ -1,0 +1,71 @@
+# .renderignore - Exclude files from Render deployments
+# This reduces deployment size and speeds up builds
+
+# Git and version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Documentation (except package READMEs)
+docs/
+*.md
+!apps/*/README.md
+!packages/*/README.md
+!services/*/README.md
+!README.md
+
+# Infrastructure archives and legacy files
+infrastructure/archive/
+infrastructure/terraform/
+infrastructure/kubernetes/
+azure-pipelines*.yml
+
+# Tests and coverage
+tests/
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+**/*.spec.ts
+**/*.spec.tsx
+**/*.spec.js
+coverage/
+.nyc_output/
+__tests__/
+**/__mocks__/
+
+# Environment files (these are set in Render dashboard)
+.env
+.env.*
+!.env.example
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build caches (Render builds from scratch)
+.next/cache/
+.turbo/
+.cache/
+.parcel-cache/
+node_modules/.cache/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Scripts not needed in deployment
+scripts/local/
+scripts/setup/
