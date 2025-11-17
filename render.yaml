@@ -22,7 +22,7 @@ services:
   - type: web
     name: legal-platform-web
     runtime: docker
-    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main # Production deploys from main
     dockerfilePath: ./infrastructure/docker/Dockerfile.web
     dockerContext: .
@@ -33,7 +33,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_APP_URL
-        value: https://app.yourdomain.com # UPDATE THIS
+        value: https://legal-platform-web.onrender.com # Will update with custom domain later
       - key: NEXT_PUBLIC_API_URL
         sync: false # Set in Render dashboard - points to gateway service
     healthCheckPath: /health
@@ -45,7 +45,7 @@ services:
   - type: web
     name: legal-platform-gateway
     runtime: docker
-    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
     dockerfilePath: ./infrastructure/docker/Dockerfile.gateway
     dockerContext: .
@@ -102,7 +102,7 @@ services:
   - type: web
     name: legal-platform-document-service
     runtime: docker
-    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
     dockerfilePath: ./infrastructure/docker/Dockerfile.service
     dockerContext: .
@@ -140,12 +140,12 @@ services:
     autoDeployTrigger: commit
 
   ##############################################################################
-  # AI Service - OpenAI Integration & Semantic Search
+  # AI Service - Claude Primary & Grok Fallback with Semantic Search
   ##############################################################################
   - type: web
     name: legal-platform-ai-service
     runtime: docker
-    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
     dockerfilePath: ./infrastructure/docker/Dockerfile.service
     dockerContext: .
@@ -171,12 +171,33 @@ services:
           type: keyvalue
           name: legal-platform-redis
           property: connectionString
-      - key: OPENAI_API_KEY
+      # Claude AI Configuration (Primary Provider)
+      - key: AI_PROVIDER
+        value: anthropic
+      - key: ANTHROPIC_API_KEY
         sync: false # Set in Render dashboard (secret)
-      - key: AI_MODEL
-        value: gpt-4o-mini
+      - key: ANTHROPIC_MODEL
+        value: claude-3-5-sonnet-20241022
+      - key: ANTHROPIC_SKILLS_ENABLED
+        value: true
+      - key: ANTHROPIC_USE_PROMPT_CACHING
+        value: true
+      - key: ANTHROPIC_USE_BATCHING
+        value: true
+      # Grok AI Configuration (Fallback Provider)
+      - key: GROK_API_KEY
+        sync: false # Set in Render dashboard (secret)
+      - key: GROK_MODEL
+        value: grok-beta
+      - key: GROK_ENABLED
+        value: true
+      # Embedding Model Configuration
+      - key: EMBEDDING_PROVIDER
+        value: voyageai
+      - key: VOYAGE_API_KEY
+        sync: false # Set in Render dashboard (secret)
       - key: EMBEDDING_MODEL
-        value: text-embedding-3-small
+        value: voyage-large-2
     healthCheckPath: /health
     autoDeployTrigger: commit
 
@@ -186,7 +207,7 @@ services:
   - type: web
     name: legal-platform-task-service
     runtime: docker
-    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
     dockerfilePath: ./infrastructure/docker/Dockerfile.service
     dockerContext: .
@@ -221,7 +242,7 @@ services:
   - type: web
     name: legal-platform-integration-service
     runtime: docker
-    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
     dockerfilePath: ./infrastructure/docker/Dockerfile.service
     dockerContext: .
@@ -263,7 +284,7 @@ services:
   - type: web
     name: legal-platform-notification-service
     runtime: docker
-    repo: https://github.com/YOUR_ORG/legal-platform # UPDATE THIS
+    repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
     dockerfilePath: ./infrastructure/docker/Dockerfile.service
     dockerContext: .
