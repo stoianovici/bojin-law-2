@@ -368,11 +368,11 @@ databases:
   # PostgreSQL - Primary Database with pgvector Extension
   ##############################################################################
   - name: legal-platform-db
-    plan: pro # Pro plan with enhanced performance and storage
     databaseName: legal_platform_prod
     user: legal_platform_user
     region: oregon
     ipAllowList: [] # Empty = accessible from all Render services
+    # Note: Plan will be selected during Blueprint deployment in Render dashboard
     # PostgreSQL 15+ with pgvector extension for vector similarity search
     # Extension installed via init SQL or migration
 ##############################################################################
