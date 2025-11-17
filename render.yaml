@@ -368,11 +368,10 @@ databases:
   # PostgreSQL - Primary Database with pgvector Extension
   ##############################################################################
   - name: legal-platform-db
-    plan: professional # Current Render PostgreSQL plan
     databaseName: legal_platform_prod
     user: legal_platform_user
     region: oregon
-    ipAllowList: [] # Empty = accessible from all Render services
+    ipAllowList: []
     # PostgreSQL 15+ with pgvector extension for vector similarity search
     # Extension installed via init SQL or migration
 ##############################################################################
