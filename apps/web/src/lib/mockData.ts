@@ -21,6 +21,8 @@ export function createMockCaseWorkspace() {
       jurisdiction: 'Tribunal București',
       opposingCounsel: 'Cabinet Avocatură XYZ',
     },
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date(),
   };
 
   const mockTeamMembers: User[] = [
@@ -30,9 +32,11 @@ export function createMockCaseWorkspace() {
       firstName: 'Maria',
       lastName: 'Popescu',
       role: 'Partner',
-      phoneNumber: '+40 722 123 456',
+      firmId: 'firm-001',
+      azureAdId: 'azure-001',
+      preferences: {},
       createdAt: new Date('2023-01-01'),
-      updatedAt: new Date('2024-01-01'),
+      lastActive: new Date('2024-01-01'),
     },
     {
       id: 'user-002',
@@ -40,9 +44,11 @@ export function createMockCaseWorkspace() {
       firstName: 'Ion',
       lastName: 'Ionescu',
       role: 'Associate',
-      phoneNumber: '+40 733 234 567',
+      firmId: 'firm-001',
+      azureAdId: 'azure-002',
+      preferences: {},
       createdAt: new Date('2023-06-01'),
-      updatedAt: new Date('2024-01-01'),
+      lastActive: new Date('2024-01-01'),
     },
   ];
 
@@ -59,7 +65,6 @@ export function createMockCaseWorkspace() {
       createdBy: 'user-001',
       createdAt: new Date('2024-01-15'),
       updatedAt: new Date('2024-01-15'),
-      metadata: {},
     },
     {
       id: 'doc-002',
@@ -73,12 +78,12 @@ export function createMockCaseWorkspace() {
       createdBy: 'user-002',
       createdAt: new Date('2024-02-01'),
       updatedAt: new Date('2024-02-15'),
-      metadata: {
-        filingDate: '2024-02-20',
-      },
     },
   ];
 
+  // TODO: Fix Task mock data to match current Task type definition
+  const mockTasks: Task[] = [];
+  /*
   const mockTasks: Task[] = [
     {
       id: 'task-001',
@@ -123,6 +128,7 @@ export function createMockCaseWorkspace() {
       metadata: {},
     },
   ];
+  */
 
   const mockDocumentTree: DocumentNode = {
     id: 'root',

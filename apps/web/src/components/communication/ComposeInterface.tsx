@@ -13,51 +13,58 @@ export function ComposeInterface() {
     threads,
     draftBody,
     updateDraft,
-    closeCompose
+    closeCompose,
   } = useCommunicationStore();
 
   const [to, setTo] = useState('');
   const [subject, setSubject] = useState('');
   const [includeOriginal, setIncludeOriginal] = useState(false);
-  const [selectedTone, setSelectedTone] = useState<'formal' | 'professional' | 'brief'>('professional');
+  const [selectedTone, setSelectedTone] = useState<'formal' | 'professional' | 'brief'>(
+    'professional'
+  );
   const [showAIDraft, setShowAIDraft] = useState(false);
 
   // Get the thread for reply mode
-  const thread = composeThreadId
-    ? threads.find(t => t.id === composeThreadId)
-    : null;
+  const thread = composeThreadId ? threads.find((t) => t.id === composeThreadId) : null;
 
   // Get the last message for reply context
   const originalMessage = thread?.messages[thread.messages.length - 1];
 
   // Mock AI draft based on tone (prototype only)
   const aiDrafts = {
-    formal: 'Stimate Domnule/Stimată Doamnă,\n\nVă mulțumesc pentru mesajul dumneavoastră. Am luat la cunoștință informațiile transmise și vă voi răspunde în cel mai scurt timp posibil.\n\nCu deosebită stimă,',
-    professional: 'Bună ziua,\n\nVă mulțumesc pentru mesaj. Am primit informațiile și voi reveni cu un răspuns în curând.\n\nCu stimă,',
-    brief: 'Mulțumesc pentru mesaj. Voi răspunde în curând.\n\nCu stimă,'
+    formal:
+      'Stimate Domnule/Stimată Doamnă,\n\nVă mulțumesc pentru mesajul dumneavoastră. Am luat la cunoștință informațiile transmise și vă voi răspunde în cel mai scurt timp posibil.\n\nCu deosebită stimă,',
+    professional:
+      'Bună ziua,\n\nVă mulțumesc pentru mesaj. Am primit informațiile și voi reveni cu un răspuns în curând.\n\nCu stimă,',
+    brief: 'Mulțumesc pentru mesaj. Voi răspunde în curând.\n\nCu stimă,',
   };
 
   // Auto-populate fields when in reply mode
   useEffect(() => {
     if (composeMode === 'reply' && originalMessage) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTo(originalMessage.senderEmail);
+
       setSubject(`Re: ${thread?.subject || originalMessage.subject}`);
+
       setShowAIDraft(true); // Show AI draft panel for replies
     } else {
       setTo('');
+
       setSubject('');
+
       setShowAIDraft(false);
     }
   }, [composeMode, originalMessage, thread]);
 
   // Build message body with optional quoted original
-  const getFullMessageBody = () => {
-    let body = draftBody;
-    if (includeOriginal && originalMessage) {
-      body += `\n\n---\nDe la: ${originalMessage.senderName} <${originalMessage.senderEmail}>\nData: ${originalMessage.sentDate.toLocaleString('ro-RO')}\nSubiect: ${originalMessage.subject}\n\n${originalMessage.body}`;
-    }
-    return body;
-  };
+  // const getFullMessageBody = () => {
+  //   let body = draftBody;
+  //   if (includeOriginal && originalMessage) {
+  //     body += `\n\n---\nDe la: ${originalMessage.senderName} <${originalMessage.senderEmail}>\nData: ${originalMessage.sentDate.toLocaleString('ro-RO')}\nSubiect: ${originalMessage.subject}\n\n${originalMessage.body}`;
+  //   }
+  //   return body;
+  // };
 
   const handleUseAIDraft = () => {
     updateDraft(aiDrafts[selectedTone]);
@@ -121,7 +128,9 @@ export function ComposeInterface() {
                   <label className="text-xs font-medium">Ton:</label>
                   <select
                     value={selectedTone}
-                    onChange={(e) => setSelectedTone(e.target.value as 'formal' | 'professional' | 'brief')}
+                    onChange={(e) =>
+                      setSelectedTone(e.target.value as 'formal' | 'professional' | 'brief')
+                    }
                     className="text-xs border rounded px-2 py-1"
                   >
                     <option value="formal">Formal</option>

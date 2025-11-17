@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { Calendar, dateFnsLocalizer, Event } from 'react-big-calendar';
+import { Calendar, dateFnsLocalizer, type Event } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, addWeeks, subWeeks } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import type { Task, TaskType } from '@legal-platform/types';
@@ -77,7 +77,7 @@ const CustomEvent: React.FC<{ event: CalendarEvent }> = ({ event }) => {
 /**
  * CalendarView Component
  */
-export function CalendarView({ tasks, onTaskClick, onTaskDrop }: CalendarViewProps) {
+export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   /**
@@ -92,7 +92,9 @@ export function CalendarView({ tasks, onTaskClick, onTaskDrop }: CalendarViewPro
       const duration = (task.metadata.duration as number) || 60; // minutes
       const end = new Date(start.getTime() + duration * 60 * 1000);
 
-      console.log(`[CalendarView] Event: ${task.title} | Start: ${start.toISOString()} | End: ${end.toISOString()}`);
+      console.log(
+        `[CalendarView] Event: ${task.title} | Start: ${start.toISOString()} | End: ${end.toISOString()}`
+      );
 
       return {
         id: task.id,
@@ -114,18 +116,6 @@ export function CalendarView({ tasks, onTaskClick, onTaskDrop }: CalendarViewPro
       onTaskClick(event.resource);
     },
     [onTaskClick]
-  );
-
-  /**
-   * Handle event drag and drop
-   */
-  const handleEventDrop = useCallback(
-    ({ event, start, end }: { event: CalendarEvent; start: Date; end: Date }) => {
-      if (onTaskDrop) {
-        onTaskDrop(event.resource.id, start, end);
-      }
-    },
-    [onTaskDrop]
   );
 
   /**
@@ -252,14 +242,11 @@ export function CalendarView({ tasks, onTaskClick, onTaskDrop }: CalendarViewPro
 
         {/* Current week range display */}
         <div className="text-lg font-semibold text-gray-800">
+          {format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'd MMM', { locale: ro })} -{' '}
           {format(
-            startOfWeek(currentDate, { weekStartsOn: 1 }),
-            'd MMM',
-            { locale: ro }
-          )}{' '}
-          -{' '}
-          {format(
-            new Date(startOfWeek(currentDate, { weekStartsOn: 1 }).getTime() + 6 * 24 * 60 * 60 * 1000),
+            new Date(
+              startOfWeek(currentDate, { weekStartsOn: 1 }).getTime() + 6 * 24 * 60 * 60 * 1000
+            ),
             'd MMM yyyy',
             { locale: ro }
           )}
@@ -267,12 +254,14 @@ export function CalendarView({ tasks, onTaskClick, onTaskDrop }: CalendarViewPro
 
         {/* Legend */}
         <div className="flex items-center gap-3 text-xs">
-          {(Object.entries(TASK_TYPE_COLORS) as [TaskType, string][]).slice(0, 3).map(([type, color]) => (
-            <div key={type} className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
-              <span className="text-gray-600">{type}</span>
-            </div>
-          ))}
+          {(Object.entries(TASK_TYPE_COLORS) as [TaskType, string][])
+            .slice(0, 3)
+            .map(([type, color]) => (
+              <div key={type} className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
+                <span className="text-gray-600">{type}</span>
+              </div>
+            ))}
         </div>
       </div>
 
@@ -288,7 +277,6 @@ export function CalendarView({ tasks, onTaskClick, onTaskDrop }: CalendarViewPro
           view="week"
           views={['week']}
           onSelectEvent={handleSelectEvent}
-          onEventDrop={handleEventDrop}
           eventPropGetter={eventStyleGetter}
           messages={messages}
           formats={formats}
@@ -298,8 +286,6 @@ export function CalendarView({ tasks, onTaskClick, onTaskDrop }: CalendarViewPro
           timeslots={2}
           min={new Date(2025, 0, 1, 8, 0, 0)} // 8:00 AM
           max={new Date(2025, 0, 1, 20, 0, 0)} // 8:00 PM
-          draggableAccessor={() => true}
-          resizable
           components={{
             event: CustomEvent,
           }}
@@ -308,6 +294,7 @@ export function CalendarView({ tasks, onTaskClick, onTaskDrop }: CalendarViewPro
       </div>
 
       {/* Custom styles for calendar */}
+      {/* eslint-disable-next-line react/no-unknown-property */}
       <style jsx global>{`
         .rbc-calendar {
           font-family: inherit;

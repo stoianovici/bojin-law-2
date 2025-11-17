@@ -37,15 +37,14 @@ function SummaryBadge({
   label: string;
   color: 'red' | 'gold' | 'blue';
 }) {
-  const colorClasses = {
-    red: 'bg-red-100 text-red-700 border-red-300',
-    gold: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-    blue: 'bg-blue-100 text-blue-700 border-blue-300',
-  };
-
   return (
     <div className="flex flex-col items-center p-3 border rounded-lg" title={label}>
-      <span className={clsx('text-2xl font-bold', color === 'red' ? 'text-red-600' : color === 'gold' ? 'text-yellow-600' : 'text-blue-600')}>
+      <span
+        className={clsx(
+          'text-2xl font-bold',
+          color === 'red' ? 'text-red-600' : color === 'gold' ? 'text-yellow-600' : 'text-blue-600'
+        )}
+      >
         {count}
       </span>
       <span className="text-xs text-gray-600 mt-1 text-center">{label}</span>
@@ -80,18 +79,17 @@ const AtRiskCaseItem = React.memo(function AtRiskCaseItem({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span
-              className="text-sm font-medium text-blue-600"
-            >
-              {caseItem.caseNumber}
-            </span>
+            <span className="text-sm font-medium text-blue-600">{caseItem.caseNumber}</span>
             {caseItem.daysUntilDeadline !== undefined && caseItem.daysUntilDeadline <= 3 && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                 {caseItem.daysUntilDeadline === 0 ? 'Astăzi' : `${caseItem.daysUntilDeadline} zile`}
               </span>
             )}
           </div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1" title={caseItem.title}>
+          <h4
+            className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1"
+            title={caseItem.title}
+          >
             {caseItem.title}
           </h4>
           <p className="text-xs text-red-600 mb-1">{caseItem.reason}</p>
@@ -147,16 +145,20 @@ const HighValueCaseItem = React.memo(function HighValueCaseItem({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-medium text-blue-600">{caseItem.caseNumber}</span>
             <span
-              className="text-sm font-medium text-blue-600"
+              className={clsx(
+                'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                config.className
+              )}
             >
-              {caseItem.caseNumber}
-            </span>
-            <span className={clsx('inline-flex items-center px-2 py-1 rounded-full text-xs font-medium', config.className)}>
               {config.label}
             </span>
           </div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1" title={caseItem.title}>
+          <h4
+            className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1"
+            title={caseItem.title}
+          >
             {caseItem.title}
           </h4>
           <p className="text-xs text-green-600 font-medium mb-1">
@@ -242,17 +244,16 @@ const AIInsightItem = React.memo(function AIInsightItem({
       aria-label={`Insight AI pentru caz ${insight.caseNumber}`}
     >
       <div className="flex items-start gap-3">
-        <div className={clsx('p-2 rounded', config.className)}>
-          {config.icon}
-        </div>
+        <div className={clsx('p-2 rounded', config.className)}>{config.icon}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-medium text-blue-600">{insight.caseNumber}</span>
             <span
-              className="text-sm font-medium text-blue-600"
+              className={clsx(
+                'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                config.className
+              )}
             >
-              {insight.caseNumber}
-            </span>
-            <span className={clsx('inline-flex items-center px-2 py-1 rounded-full text-xs font-medium', config.className)}>
               {config.label}
             </span>
           </div>
@@ -281,9 +282,6 @@ export function FirmCasesOverviewWidget({
 }: FirmCasesOverviewWidgetProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'atRisk' | 'highValue' | 'aiInsights'>('atRisk');
-
-  const totalActiveCases =
-    (widget.atRiskCases?.length || 0) + (widget.highValueCases?.length || 0);
 
   const handleCaseClick = (caseId: string) => {
     router.push(`/cases/${caseId}`);
@@ -314,21 +312,13 @@ export function FirmCasesOverviewWidget({
     >
       {/* Summary Metrics */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <SummaryBadge
-          count={widget.atRiskCases?.length || 0}
-          label="Cazuri cu Risc"
-          color="red"
-        />
+        <SummaryBadge count={widget.atRiskCases?.length || 0} label="Cazuri cu Risc" color="red" />
         <SummaryBadge
           count={widget.highValueCases?.length || 0}
           label="Valoare Mare"
           color="gold"
         />
-        <SummaryBadge
-          count={widget.aiInsights?.length || 0}
-          label="Insights AI"
-          color="blue"
-        />
+        <SummaryBadge count={widget.aiInsights?.length || 0} label="Insights AI" color="blue" />
       </div>
 
       {/* Tabbed Interface */}

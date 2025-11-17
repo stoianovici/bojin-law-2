@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { useTimeTrackingStore } from '../../stores/time-tracking.store';
-import type { TaskType } from '@legal-platform/types';
+import type { TimeTaskType } from '@legal-platform/types';
 
 const taskTypes: { value: TimeTaskType; label: string }[] = [
   { value: 'Research', label: 'Cercetare' },
@@ -34,7 +34,7 @@ export function TimeEntryForm() {
   const [formData, setFormData] = React.useState({
     date: new Date().toISOString().split('T')[0],
     caseId: '',
-    taskType: '' as TaskType | '',
+    taskType: '' as TimeTaskType | '',
     hours: '',
     minutes: '',
     description: '',
@@ -82,7 +82,7 @@ export function TimeEntryForm() {
       userName: 'Current User',
       caseId: formData.caseId,
       caseName: selectedCase?.name || 'Unknown Case',
-      taskType: formData.taskType as TaskType,
+      taskType: formData.taskType as TimeTaskType,
       date: new Date(formData.date),
       duration: totalMinutes,
       description: formData.description,
@@ -117,17 +117,12 @@ export function TimeEntryForm() {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        Adaugă Intrare Pontaj
-      </h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">Adaugă Intrare Pontaj</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Date */}
         <div>
-          <label
-            htmlFor="date"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
             Dată *
           </label>
           <input
@@ -137,17 +132,12 @@ export function TimeEntryForm() {
             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {errors.date && (
-            <p className="mt-1 text-sm text-red-600">{errors.date}</p>
-          )}
+          {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
         </div>
 
         {/* Case */}
         <div>
-          <label
-            htmlFor="case"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="case" className="block text-sm font-medium text-gray-700 mb-1">
             Dosar *
           </label>
           <select
@@ -163,25 +153,18 @@ export function TimeEntryForm() {
               </option>
             ))}
           </select>
-          {errors.caseId && (
-            <p className="mt-1 text-sm text-red-600">{errors.caseId}</p>
-          )}
+          {errors.caseId && <p className="mt-1 text-sm text-red-600">{errors.caseId}</p>}
         </div>
 
         {/* Task Type */}
         <div>
-          <label
-            htmlFor="taskType"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="taskType" className="block text-sm font-medium text-gray-700 mb-1">
             Tip Activitate *
           </label>
           <select
             id="taskType"
             value={formData.taskType}
-            onChange={(e) =>
-              setFormData({ ...formData, taskType: e.target.value as TaskType })
-            }
+            onChange={(e) => setFormData({ ...formData, taskType: e.target.value as TimeTaskType })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Selectează tipul</option>
@@ -191,16 +174,12 @@ export function TimeEntryForm() {
               </option>
             ))}
           </select>
-          {errors.taskType && (
-            <p className="mt-1 text-sm text-red-600">{errors.taskType}</p>
-          )}
+          {errors.taskType && <p className="mt-1 text-sm text-red-600">{errors.taskType}</p>}
         </div>
 
         {/* Duration */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Durată *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Durată *</label>
           <div className="flex gap-2">
             <div className="flex-1">
               <input
@@ -209,9 +188,7 @@ export function TimeEntryForm() {
                 max="23"
                 placeholder="Ore"
                 value={formData.hours}
-                onChange={(e) =>
-                  setFormData({ ...formData, hours: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -223,24 +200,17 @@ export function TimeEntryForm() {
                 max="59"
                 placeholder="Min"
                 value={formData.minutes}
-                onChange={(e) =>
-                  setFormData({ ...formData, minutes: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, minutes: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
-          {errors.duration && (
-            <p className="mt-1 text-sm text-red-600">{errors.duration}</p>
-          )}
+          {errors.duration && <p className="mt-1 text-sm text-red-600">{errors.duration}</p>}
         </div>
 
         {/* Description */}
         <div>
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
             Descriere
           </label>
           <textarea
@@ -248,9 +218,7 @@ export function TimeEntryForm() {
             rows={3}
             maxLength={200}
             value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             placeholder="Detalii despre activitate..."
           />
@@ -265,9 +233,7 @@ export function TimeEntryForm() {
             type="checkbox"
             id="billable"
             checked={formData.isBillable}
-            onChange={(e) =>
-              setFormData({ ...formData, isBillable: e.target.checked })
-            }
+            onChange={(e) => setFormData({ ...formData, isBillable: e.target.checked })}
             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
           />
           <label htmlFor="billable" className="ml-2 text-sm text-gray-700">

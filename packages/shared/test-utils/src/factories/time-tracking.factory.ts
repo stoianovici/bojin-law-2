@@ -5,14 +5,14 @@
 
 import type {
   TimeEntry,
-  TaskType,
+  TimeTaskType,
   ActiveTimer,
   TimeSummary,
   NaturalLanguageParseResult,
 } from '@legal-platform/types';
 
 // Romanian task descriptions by task type
-const taskDescriptions: Record<TaskType, string[]> = {
+const taskDescriptions: Record<TimeTaskType, string[]> = {
   Research: [
     'Cercetare jurisprudență pentru apărare',
     'Analiză legislație contracte comerciale',
@@ -109,8 +109,7 @@ export function createMockTimeEntry(overrides?: Partial<TimeEntry>): TimeEntry {
 
   const descriptions = taskDescriptions[taskType];
   const description =
-    overrides?.description ||
-    descriptions[Math.floor(Math.random() * descriptions.length)];
+    overrides?.description || descriptions[Math.floor(Math.random() * descriptions.length)];
 
   const isBillable = overrides?.isBillable ?? Math.random() < 0.7; // 70% billable
 
@@ -216,9 +215,7 @@ export function createMockActiveTimer(
 /**
  * Generates mock time summary metrics
  */
-export function createMockTimeSummary(
-  entries: TimeEntry[] = []
-): TimeSummary {
+export function createMockTimeSummary(entries: TimeEntry[] = []): TimeSummary {
   if (entries.length === 0) {
     entries = createMockTimeEntries(20);
   }
@@ -228,14 +225,12 @@ export function createMockTimeSummary(
     .filter((e) => e.isBillable)
     .reduce((sum, entry) => sum + entry.duration, 0);
   const nonBillableMinutes = totalMinutes - billableMinutes;
-  const billableRate =
-    totalMinutes > 0 ? (billableMinutes / totalMinutes) * 100 : 0;
+  const billableRate = totalMinutes > 0 ? (billableMinutes / totalMinutes) * 100 : 0;
 
   // Mock comparison to previous period
   const previousTotal = Math.floor(totalMinutes * (0.9 + Math.random() * 0.2)); // ±10%
   const totalDiff = totalMinutes - previousTotal;
-  const percentChange =
-    previousTotal > 0 ? (totalDiff / previousTotal) * 100 : 0;
+  const percentChange = previousTotal > 0 ? (totalDiff / previousTotal) * 100 : 0;
 
   return {
     totalMinutes,
@@ -252,17 +247,14 @@ export function createMockTimeSummary(
 /**
  * Parses natural language Romanian input (mock/prototype implementation)
  */
-export function mockParseNaturalLanguage(
-  input: string
-): NaturalLanguageParseResult {
+export function mockParseNaturalLanguage(input: string): NaturalLanguageParseResult {
   const errors: string[] = [];
   const parsedEntry: Partial<TimeEntry> = {};
 
   let matchedFields = 0;
 
   // Parse duration - Romanian units
-  const durationPatternRo =
-    /(\d+(?:\.\d+)?)\s*(ore|oră|hour|hours|min|minute|minutes|minut)/gi;
+  const durationPatternRo = /(\d+(?:\.\d+)?)\s*(ore|oră|hour|hours|min|minute|minutes|minut)/gi;
   const durationMatches = [...input.matchAll(durationPatternRo)];
 
   if (durationMatches.length > 0) {

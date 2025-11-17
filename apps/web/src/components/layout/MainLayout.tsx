@@ -9,7 +9,6 @@ import React, { type ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { CommandPalette } from './CommandPalette';
-import { RoleSwitcher } from './RoleSwitcher';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { UserProvider, useUser } from '../../contexts/UserContext';
 
@@ -35,9 +34,7 @@ function MainLayoutContent({ children }: MainLayoutContentProps) {
         />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
 
       {/* Command Palette Modal */}

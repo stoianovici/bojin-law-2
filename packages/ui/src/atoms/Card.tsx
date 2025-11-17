@@ -21,7 +21,7 @@
  */
 
 import { clsx } from 'clsx';
-import { CardProps } from '@legal-platform/types';
+import { type CardProps } from '@legal-platform/types';
 
 /**
  * Card component with multiple variants and composition support
@@ -47,8 +47,7 @@ export const Card = ({
   ...props
 }: CardProps) => {
   // Base card styles
-  const baseStyles =
-    'rounded-xl bg-white transition-all duration-150';
+  const baseStyles = 'rounded-xl bg-white transition-all duration-150';
 
   // Variant-specific styles
   const variantStyles = {
@@ -64,23 +63,13 @@ export const Card = ({
       {...props}
     >
       {header && (
-        <div
-          className={clsx(
-            'border-b border-neutral-200 px-6 py-4',
-            headerClassName
-          )}
-        >
+        <div className={clsx('border-b border-neutral-200 px-6 py-4', headerClassName)}>
           {header}
         </div>
       )}
       <div className={clsx('px-6 py-4', bodyClassName)}>{children}</div>
       {footer && (
-        <div
-          className={clsx(
-            'border-t border-neutral-200 px-6 py-4',
-            footerClassName
-          )}
-        >
+        <div className={clsx('border-t border-neutral-200 px-6 py-4', footerClassName)}>
           {footer}
         </div>
       )}

@@ -9,10 +9,10 @@ import type {
   ReportFilter,
   FilterOperator,
   CustomReport,
+  ChartType,
 } from '@legal-platform/types';
-import { ChartType } from '@legal-platform/types';
 import { useReportsStore } from '../../stores/reports.store';
-import { useNavigationStore } from '../../stores/navigation.store';
+import { useUser } from '../../contexts/UserContext';
 
 interface ReportBuilderProps {
   isOpen: boolean;
@@ -54,7 +54,7 @@ const CHART_TYPES: Array<{ value: ChartType; label: string }> = [
 
 export function ReportBuilder({ isOpen, onClose }: ReportBuilderProps) {
   const { saveCustomReport } = useReportsStore();
-  const { currentUser } = useNavigationStore();
+  const { user } = useUser();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [reportName, setReportName] = useState('');
@@ -88,7 +88,7 @@ export function ReportBuilder({ isOpen, onClose }: ReportBuilderProps) {
       groupBy,
       chartType,
       createdAt: new Date(),
-      createdBy: currentUser?.name || 'Utilizator',
+      createdBy: `${user.firstName} ${user.lastName}`,
     };
 
     saveCustomReport(newReport);

@@ -47,7 +47,12 @@ function MetricCard({
     <div className="flex flex-col p-3 bg-gray-50 rounded-lg">
       <span className="text-xs text-gray-600 mb-1">{label}</span>
       {badge ? (
-        <span className={clsx('inline-flex items-center self-start px-2 py-1 rounded-full text-lg font-bold', badgeClass)}>
+        <span
+          className={clsx(
+            'inline-flex items-center self-start px-2 py-1 rounded-full text-lg font-bold',
+            badgeClass
+          )}
+        >
           {value}
         </span>
       ) : (
@@ -104,7 +109,12 @@ function PriorityTaskItem({
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className={clsx('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium', config.className)}>
+            <span
+              className={clsx(
+                'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                config.className
+              )}
+            >
               {config.icon} {task.priority}
             </span>
             <span className="text-xs text-gray-500">{task.caseContext}</span>
@@ -204,7 +214,12 @@ export function FirmTasksOverviewWidget({
         <MetricCard label="Taskuri Active" value={taskMetrics.totalActiveTasks} />
         <MetricCard label="Întârziate" value={taskMetrics.overdueCount} badge color="red" />
         <MetricCard label="Astăzi" value={taskMetrics.dueTodayCount} badge color="orange" />
-        <MetricCard label="Săptămâna Asta" value={taskMetrics.dueThisWeekCount} badge color="blue" />
+        <MetricCard
+          label="Săptămâna Asta"
+          value={taskMetrics.dueThisWeekCount}
+          badge
+          color="blue"
+        />
       </div>
 
       {/* Completion Rate with Trend */}
@@ -218,8 +233,8 @@ export function FirmTasksOverviewWidget({
                 taskMetrics.avgCompletionRateTrend === 'up'
                   ? 'text-green-600'
                   : taskMetrics.avgCompletionRateTrend === 'down'
-                  ? 'text-red-600'
-                  : 'text-gray-600'
+                    ? 'text-red-600'
+                    : 'text-gray-600'
               )}
             >
               {taskMetrics.avgCompletionRateTrend === 'up' && '↑ În creștere'}
@@ -245,12 +260,7 @@ export function FirmTasksOverviewWidget({
           <h4 className="text-xs font-medium text-gray-700 mb-2">Distribuție pe Tip</h4>
           <ResponsiveContainer width="100%" height={120}>
             <BarChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
               <Tooltip
                 contentStyle={{
@@ -261,7 +271,7 @@ export function FirmTasksOverviewWidget({
                 }}
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, index) => (
+                {chartData.map((_entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Bar>

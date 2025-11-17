@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { useTimeTrackingStore } from '../../stores/time-tracking.store';
-import type { TaskType } from '@legal-platform/types';
+import type { TimeTaskType } from '@legal-platform/types';
 
 const taskTypes: { value: TimeTaskType; label: string }[] = [
   { value: 'Research', label: 'Cercetare' },
@@ -47,7 +47,7 @@ export function ActiveTimerWidget() {
   const [showStartDialog, setShowStartDialog] = React.useState(false);
   const [startFormData, setStartFormData] = React.useState({
     caseId: '',
-    taskType: '' as TaskType | '',
+    taskType: '' as TimeTaskType | '',
   });
 
   // Calculate elapsed time
@@ -88,7 +88,7 @@ export function ActiveTimerWidget() {
     const selectedCase = mockCases.find((c) => c.id === startFormData.caseId);
     if (!selectedCase) return;
 
-    startTimer(startFormData.caseId, selectedCase.name, startFormData.taskType as TaskType);
+    startTimer(startFormData.caseId, selectedCase.name, startFormData.taskType as TimeTaskType);
     setShowStartDialog(false);
     setStartFormData({ caseId: '', taskType: '' });
   };
@@ -105,9 +105,7 @@ export function ActiveTimerWidget() {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        Cronometru Activ
-      </h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">Cronometru Activ</h2>
 
       {!isTimerActive ? (
         <>
@@ -129,14 +127,10 @@ export function ActiveTimerWidget() {
             <div className="space-y-4">
               {/* Case Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Dosar *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dosar *</label>
                 <select
                   value={startFormData.caseId}
-                  onChange={(e) =>
-                    setStartFormData({ ...startFormData, caseId: e.target.value })
-                  }
+                  onChange={(e) => setStartFormData({ ...startFormData, caseId: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selectează dosarul</option>
@@ -158,7 +152,7 @@ export function ActiveTimerWidget() {
                   onChange={(e) =>
                     setStartFormData({
                       ...startFormData,
-                      taskType: e.target.value as TaskType,
+                      taskType: e.target.value as TimeTaskType,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -201,15 +195,15 @@ export function ActiveTimerWidget() {
               {activeTimer.isRunning && (
                 <span className="absolute w-3 h-3 bg-green-500 rounded-full animate-ping" />
               )}
-              <div className={`text-5xl font-mono font-bold ${
-                activeTimer.isRunning ? 'text-green-600' : 'text-gray-400'
-              }`}>
+              <div
+                className={`text-5xl font-mono font-bold ${
+                  activeTimer.isRunning ? 'text-green-600' : 'text-gray-400'
+                }`}
+              >
                 {formatElapsedTime(elapsedSeconds)}
               </div>
             </div>
-            <div className="mt-2 text-sm text-gray-600">
-              {activeTimer.caseName}
-            </div>
+            <div className="mt-2 text-sm text-gray-600">{activeTimer.caseName}</div>
             <div className="text-xs text-gray-500">
               {taskTypes.find((t) => t.value === activeTimer.taskType)?.label}
             </div>

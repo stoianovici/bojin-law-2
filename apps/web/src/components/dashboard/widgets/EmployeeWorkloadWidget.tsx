@@ -11,7 +11,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 // TODO: Fix react-window import for Next.js 16 + React 19 compatibility
 // import { FixedSizeList as List } from 'react-window';
 import { WidgetContainer } from '../WidgetContainer';
@@ -81,7 +81,13 @@ function StatusIcon({ status }: { status: 'over' | 'optimal' | 'under' }) {
 /**
  * Utilization Bar Component
  */
-function UtilizationBar({ utilization, status }: { utilization: number; status: 'over' | 'optimal' | 'under' }) {
+function UtilizationBar({
+  utilization,
+  status,
+}: {
+  utilization: number;
+  status: 'over' | 'optimal' | 'under';
+}) {
   const getBarColor = () => {
     if (status === 'over') return 'bg-red-500';
     if (status === 'optimal') return 'bg-green-500';
@@ -99,7 +105,16 @@ function UtilizationBar({ utilization, status }: { utilization: number; status: 
           style={{ width: `${(displayWidth / 150) * 100}%` }}
         />
       </div>
-      <span className={clsx('text-sm font-medium min-w-[3rem] text-right', status === 'over' ? 'text-red-600' : status === 'optimal' ? 'text-green-600' : 'text-yellow-600')}>
+      <span
+        className={clsx(
+          'text-sm font-medium min-w-[3rem] text-right',
+          status === 'over'
+            ? 'text-red-600'
+            : status === 'optimal'
+              ? 'text-green-600'
+              : 'text-yellow-600'
+        )}
+      >
         {utilization}%
       </span>
     </div>
@@ -157,7 +172,8 @@ const EmployeeRow = React.memo(function EmployeeRow({
               {employee.name}
             </div>
             <p className="text-xs text-gray-600">
-              {employee.taskCount} {employee.taskCount === 1 ? 'task' : 'taskuri'} • {employee.estimatedHours}h
+              {employee.taskCount} {employee.taskCount === 1 ? 'task' : 'taskuri'} •{' '}
+              {employee.estimatedHours}h
             </p>
           </div>
 
@@ -166,7 +182,10 @@ const EmployeeRow = React.memo(function EmployeeRow({
 
           {/* Expand/Collapse Icon */}
           <svg
-            className={clsx('w-5 h-5 text-gray-400 transition-transform', isExpanded && 'rotate-180')}
+            className={clsx(
+              'w-5 h-5 text-gray-400 transition-transform',
+              isExpanded && 'rotate-180'
+            )}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -199,7 +218,12 @@ const EmployeeRow = React.memo(function EmployeeRow({
             </div>
             <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between text-xs">
               <span className="text-gray-600">Capacitate disponibilă:</span>
-              <span className={clsx('font-medium', employee.status === 'over' ? 'text-red-600' : 'text-green-600')}>
+              <span
+                className={clsx(
+                  'font-medium',
+                  employee.status === 'over' ? 'text-red-600' : 'text-green-600'
+                )}
+              >
                 {employee.status === 'over'
                   ? `Supra-alocat cu ${employee.estimatedHours - (viewMode === 'daily' ? 8 : 40)}h`
                   : `${(viewMode === 'daily' ? 8 : 40) - employee.estimatedHours}h disponibile`}
@@ -268,27 +292,27 @@ export function EmployeeWorkloadWidget({
 
   // Virtualization threshold - use virtual list for 10+ employees
   // TODO: Re-enable after fixing react-window compatibility with Next.js 16 + React 19
-  const useVirtualization = false; // sortedEmployees.length >= 10;
-  const ITEM_HEIGHT = 80; // Estimated height per employee row
-  const MAX_HEIGHT = 400; // Max height for the list container
+  // const useVirtualization = false; // sortedEmployees.length >= 10;
+  // const ITEM_HEIGHT = 80; // Estimated height per employee row
+  // const MAX_HEIGHT = 400; // Max height for the list container
 
-  // Row renderer for react-window
-  const Row = useCallback(
-    ({ index, style }: { index: number; style: React.CSSProperties }) => {
-      const employee = sortedEmployees[index];
-      return (
-        <div style={style} key={employee.employeeId} data-testid="employee-row">
-          <EmployeeRow
-            employee={employee}
-            viewMode={debouncedViewMode}
-            isExpanded={expandedEmployees.has(employee.employeeId)}
-            onToggleExpand={() => handleToggleExpand(employee.employeeId)}
-          />
-        </div>
-      );
-    },
-    [sortedEmployees, debouncedViewMode, expandedEmployees]
-  );
+  // Row renderer for react-window - commented out due to React 19 compatibility issues
+  // const Row = useCallback(
+  //   ({ index, style }: { index: number; style: React.CSSProperties }) => {
+  //     const employee = sortedEmployees[index];
+  //     return (
+  //       <div style={style} key={employee.employeeId} data-testid="employee-row">
+  //         <EmployeeRow
+  //           employee={employee}
+  //           viewMode={debouncedViewMode}
+  //           isExpanded={expandedEmployees.has(employee.employeeId)}
+  //           onToggleExpand={() => handleToggleExpand(employee.employeeId)}
+  //         />
+  //       </div>
+  //     );
+  //   },
+  //   [sortedEmployees, debouncedViewMode, expandedEmployees]
+  // );
 
   // Icon for widget header
   const icon = (
@@ -367,8 +391,8 @@ export function EmployeeWorkloadWidget({
         </div>
       ) : (
         <>
-          {/* Employee List - with virtualization for 10+ employees */}
-          {useVirtualization ? (
+          {/* Employee List - virtualization disabled (react-window compatibility issue with React 19) */}
+          {/* {useVirtualization ? (
             <div className="border rounded-lg overflow-hidden">
               <List
                 height={Math.min(MAX_HEIGHT, sortedEmployees.length * ITEM_HEIGHT)}
@@ -379,19 +403,19 @@ export function EmployeeWorkloadWidget({
                 {Row}
               </List>
             </div>
-          ) : (
-            <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
-              {sortedEmployees.map((employee) => (
-                <EmployeeRow
-                  key={employee.employeeId}
-                  employee={employee}
-                  viewMode={debouncedViewMode}
-                  isExpanded={expandedEmployees.has(employee.employeeId)}
-                  onToggleExpand={() => handleToggleExpand(employee.employeeId)}
-                />
-              ))}
-            </div>
-          )}
+          ) : ( */}
+          <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+            {sortedEmployees.map((employee) => (
+              <EmployeeRow
+                key={employee.employeeId}
+                employee={employee}
+                viewMode={debouncedViewMode}
+                isExpanded={expandedEmployees.has(employee.employeeId)}
+                onToggleExpand={() => handleToggleExpand(employee.employeeId)}
+              />
+            ))}
+          </div>
+          {/* )} */}
 
           {/* Rebalance Workload Button */}
           <div className="mt-3 pt-3 border-t border-gray-200">

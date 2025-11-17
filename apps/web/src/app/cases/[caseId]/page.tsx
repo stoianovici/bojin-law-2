@@ -25,9 +25,9 @@ import { createMockCaseWorkspace } from '../../../lib/mockData';
 import type { Case, User, Document, Task, AISuggestion, DocumentNode } from '@legal-platform/types';
 
 interface CaseWorkspacePageProps {
-  params: {
+  params: Promise<{
     caseId: string;
-  };
+  }>;
 }
 
 /**
@@ -46,14 +46,16 @@ interface CaseWorkspaceData {
   folderTree: DocumentNode[];
   recentActivity: Array<{
     id: string;
-    type: 'document' | 'task' | 'deadline' | 'communication';
+    type: 'document' | 'task' | 'communication' | 'note';
     description: string;
     timestamp: Date;
     userId: string;
   }>;
   upcomingDeadlines: Array<{
+    id: string;
+    title: string;
     date: Date;
-    description: string;
+    status: 'upcoming' | 'today' | 'overdue';
   }>;
   stats: {
     totalDocuments: number;
@@ -87,7 +89,7 @@ function LoadingSkeleton() {
  */
 export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   const { caseId } = React.use(params);
-  const { activeTab, setActiveTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
+  const { activeTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
   const [loading, setLoading] = useState(true);
   const [caseData, setCaseData] = useState<CaseWorkspaceData | null>(null);
 
@@ -112,49 +114,55 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           ...mockWorkspace.case,
           id: caseId, // Use route caseId
           openedDate: new Date(mockWorkspace.case.openedDate),
-          closedDate: mockWorkspace.case.closedDate ? new Date(mockWorkspace.case.closedDate) : null,
+          closedDate: mockWorkspace.case.closedDate
+            ? new Date(mockWorkspace.case.closedDate)
+            : null,
         },
-        teamMembers: mockWorkspace.teamMembers.map(member => ({
+        teamMembers: mockWorkspace.teamMembers.map((member) => ({
           ...member,
           createdAt: new Date(member.createdAt),
-          updatedAt: new Date(member.updatedAt),
+          lastActive: new Date(member.lastActive),
         })),
         nextDeadline: {
           date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
           description: 'Depunere răspuns la cerere',
         },
-        documents: mockWorkspace.documents.map(doc => ({
+        documents: mockWorkspace.documents.map((doc) => ({
           ...doc,
           createdAt: new Date(doc.createdAt),
           updatedAt: new Date(doc.updatedAt),
         })),
-        tasks: mockWorkspace.tasks.map(task => ({
+        tasks: mockWorkspace.tasks.map((task) => ({
           ...task,
-          dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+          dueDate: new Date(task.dueDate),
           createdAt: new Date(task.createdAt),
           updatedAt: new Date(task.updatedAt),
         })),
         folderTree: [mockWorkspace.documentTree],
-        recentActivity: mockWorkspace.recentActivity.map(activity => ({
+        recentActivity: mockWorkspace.recentActivity.map((activity) => ({
           ...activity,
           timestamp: new Date(activity.timestamp),
         })),
         upcomingDeadlines: [
           {
+            id: 'deadline-1',
+            title: 'Depunere răspuns la cerere',
             date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            description: 'Depunere răspuns la cerere',
+            status: 'upcoming' as const,
           },
           {
+            id: 'deadline-2',
+            title: 'Ședință de judecată',
             date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-            description: 'Ședință de judecată',
+            status: 'upcoming' as const,
           },
         ],
         stats: {
           totalDocuments: mockWorkspace.documents.length,
-          openTasks: mockWorkspace.tasks.filter(t => t.status !== 'Completed').length,
+          openTasks: mockWorkspace.tasks.filter((t) => t.status !== 'Completed').length,
           billableHours: 24.5,
         },
-        aiSuggestions: mockWorkspace.aiSuggestions.map(suggestion => ({
+        aiSuggestions: mockWorkspace.aiSuggestions.map((suggestion) => ({
           ...suggestion,
           timestamp: new Date(suggestion.timestamp),
         })),
@@ -182,9 +190,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Cazul nu a fost găsit
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Cazul nu a fost găsit</h1>
           <p className="text-gray-600">
             Cazul cu ID-ul {caseId} nu există sau nu aveți acces la el.
           </p>
@@ -207,12 +213,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           />
         );
       case 'documents':
-        return (
-          <DocumentsTab
-            folderTree={caseData.folderTree}
-            documents={caseData.documents}
-          />
-        );
+        return <DocumentsTab folderTree={caseData.folderTree} documents={caseData.documents} />;
       case 'tasks':
         return <TasksTab tasks={caseData.tasks} users={caseData.teamMembers} />;
       case 'communications':
@@ -238,7 +239,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         />
 
         {/* Workspace Tabs */}
-        <WorkspaceTabs onTabChange={setActiveTab} />
+        <WorkspaceTabs />
 
         {/* Tab Content Area - Add right padding when AI panel is expanded, bottom padding for QuickActionsBar */}
         <div
@@ -252,10 +253,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         </div>
 
         {/* AI Insights Panel - Fixed position, starts below TopBar */}
-        <AIInsightsPanel
-          caseName={caseData.case.title}
-          suggestions={caseData.aiSuggestions}
-        />
+        <AIInsightsPanel caseName={caseData.case.title} suggestions={caseData.aiSuggestions} />
 
         {/* Quick Actions Bar - Fixed at bottom */}
         <QuickActionsBar />

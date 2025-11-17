@@ -7,14 +7,7 @@
 
 import React from 'react';
 import { WidgetContainer } from '../WidgetContainer';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import type { ChartWidget } from '@legal-platform/types';
 
 export interface CaseDistributionWidgetProps {
@@ -28,14 +21,7 @@ export interface CaseDistributionWidgetProps {
 /**
  * Custom Label for Pie Chart - Shows percentage
  */
-function renderCustomLabel({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  percent,
-}: any) {
+function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -115,7 +101,7 @@ export function CaseDistributionWidget({
   };
 
   // Calculate total for tooltip
-  const total = (widget.data || []).reduce((sum, item) => sum + (item.value || 0), 0);
+  const total = (widget.data || []).reduce((sum, item) => sum + (Number(item.value) || 0), 0);
   const chartData = (widget.data || []).map((item) => ({ ...item, total }));
 
   return (
@@ -143,11 +129,8 @@ export function CaseDistributionWidget({
               dataKey="value"
               nameKey="name"
             >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[entry.name as string] || '#6b7280'}
-                />
+              {chartData.map((entry: any, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[entry.name as string] || '#6b7280'} />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />

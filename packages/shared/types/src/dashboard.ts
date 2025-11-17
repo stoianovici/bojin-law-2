@@ -32,7 +32,8 @@ export type WidgetType =
   | 'supervisedCases'
   | 'firmCasesOverview'
   | 'firmTasksOverview'
-  | 'employeeWorkload';
+  | 'employeeWorkload'
+  | 'documentRequests';
 
 // Base Widget Interface
 export interface BaseWidget {
@@ -59,15 +60,7 @@ export interface KPIWidget extends BaseWidget {
 
 // Chart Widget (bar charts, pie charts, etc.)
 // Extended to support reports (radar, gauge, table, composed)
-export type ChartType =
-  | 'bar'
-  | 'pie'
-  | 'line'
-  | 'area'
-  | 'radar'
-  | 'gauge'
-  | 'table'
-  | 'composed';
+export type ChartType = 'bar' | 'pie' | 'line' | 'area' | 'radar' | 'gauge' | 'table' | 'composed';
 
 export interface ChartWidget extends BaseWidget {
   type: 'chart';

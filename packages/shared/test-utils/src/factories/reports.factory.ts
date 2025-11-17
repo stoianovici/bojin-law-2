@@ -2,7 +2,6 @@ import type {
   ReportMetadata,
   ReportData,
   ChartDataPoint,
-  ReportSummary,
   ComparisonData,
   CustomReport,
   DrillDownData,
@@ -287,10 +286,7 @@ export function createMockReportMetadata(): ReportMetadata[] {
 // CASES REPORT DATA FACTORIES
 // ============================================================================
 
-export function createMockCasesReportData(
-  reportId: string,
-  dateRange: DateRange
-): ReportData {
+export function createMockCasesReportData(reportId: string, dateRange: DateRange): ReportData {
   switch (reportId) {
     case 'cases-by-status':
       return {
@@ -373,10 +369,7 @@ export function createMockCasesReportData(
 // TIME TRACKING REPORT DATA FACTORIES
 // ============================================================================
 
-export function createMockTimeReportData(
-  reportId: string,
-  dateRange: DateRange
-): ReportData {
+export function createMockTimeReportData(reportId: string, dateRange: DateRange): ReportData {
   switch (reportId) {
     case 'billable-hours':
       return {
@@ -452,10 +445,7 @@ export function createMockTimeReportData(
 // FINANCIAL REPORT DATA FACTORIES
 // ============================================================================
 
-export function createMockFinancialReportData(
-  reportId: string,
-  dateRange: DateRange
-): ReportData {
+export function createMockFinancialReportData(reportId: string, dateRange: DateRange): ReportData {
   switch (reportId) {
     case 'revenue-trends':
       return {
@@ -546,10 +536,7 @@ export function createMockFinancialReportData(
 // TEAM PERFORMANCE REPORT DATA FACTORIES
 // ============================================================================
 
-export function createMockTeamReportData(
-  reportId: string,
-  dateRange: DateRange
-): ReportData {
+export function createMockTeamReportData(reportId: string, dateRange: DateRange): ReportData {
   switch (reportId) {
     case 'team-productivity':
       return {
@@ -634,10 +621,7 @@ export function createMockTeamReportData(
 // CLIENT REPORT DATA FACTORIES
 // ============================================================================
 
-export function createMockClientReportData(
-  reportId: string,
-  dateRange: DateRange
-): ReportData {
+export function createMockClientReportData(reportId: string, dateRange: DateRange): ReportData {
   switch (reportId) {
     case 'active-clients':
       return {
@@ -717,10 +701,7 @@ export function createMockClientReportData(
 // DOCUMENT REPORT DATA FACTORIES
 // ============================================================================
 
-export function createMockDocumentReportData(
-  reportId: string,
-  dateRange: DateRange
-): ReportData {
+export function createMockDocumentReportData(reportId: string, dateRange: DateRange): ReportData {
   switch (reportId) {
     case 'documents-by-type':
       return {
@@ -791,10 +772,7 @@ export function createMockDocumentReportData(
 // GENERIC HELPERS
 // ============================================================================
 
-function createDefaultReportData(
-  reportId: string,
-  dateRange: DateRange
-): ReportData {
+function createDefaultReportData(reportId: string, dateRange: DateRange): ReportData {
   return {
     reportId,
     dateRange,
@@ -888,9 +866,7 @@ export function createMockDrillDownData(
 // COMPARISON DATA FACTORY
 // ============================================================================
 
-export function createMockComparisonData(
-  currentData: ChartDataPoint[]
-): ComparisonData {
+export function createMockComparisonData(currentData: ChartDataPoint[]): ComparisonData {
   const previousPeriod = currentData.map((point) => ({
     ...point,
     value: Math.floor(point.value * (0.8 + Math.random() * 0.4)), // ±20% variation

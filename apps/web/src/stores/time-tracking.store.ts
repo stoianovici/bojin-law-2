@@ -18,9 +18,18 @@ import type {
 // Simple inline mock data generator (avoiding test-utils import for browser compatibility)
 function generateMockEntries(): TimeEntry[] {
   const entries: TimeEntry[] = [];
-  const cases = ['Dosar Popescu vs. SRL Construct', 'Contract Ionescu - Furnizare Servicii', 'Litigiu Georgescu - Proprietate'];
+  const cases = [
+    'Dosar Popescu vs. SRL Construct',
+    'Contract Ionescu - Furnizare Servicii',
+    'Litigiu Georgescu - Proprietate',
+  ];
   const taskTypes: TimeTaskType[] = ['Research', 'Drafting', 'ClientMeeting', 'Email'];
-  const descriptions = ['Cercetare jurisprudență', 'Redactare contract', 'Întâlnire client', 'Corespondență email'];
+  const descriptions = [
+    'Cercetare jurisprudență',
+    'Redactare contract',
+    'Întâlnire client',
+    'Corespondență email',
+  ];
 
   for (let i = 0; i < 20; i++) {
     const daysAgo = Math.floor(Math.random() * 30);
@@ -90,9 +99,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
       updateTimeEntry: (id, updates) =>
         set((state) => ({
           entries: state.entries.map((entry) =>
-            entry.id === id
-              ? { ...entry, ...updates, updatedAt: new Date() }
-              : entry
+            entry.id === id ? { ...entry, ...updates, updatedAt: new Date() } : entry
           ),
         })),
 
@@ -224,7 +231,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
       parseNaturalLanguage: (input) => {
         // Basic Romanian time parsing
         const durationMatch = input.match(/(\d+(?:\.\d+)?)\s*(ore|oră|min)/i);
-        const taskKeywords: Record<string, TaskType> = {
+        const taskKeywords: Record<string, TimeTaskType> = {
           cercetare: 'Research',
           redactare: 'Drafting',
           întâlnire: 'ClientMeeting',
@@ -232,7 +239,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
         };
 
         let duration = 0;
-        let taskType: TaskType | undefined;
+        let taskType: TimeTaskType | undefined;
         let caseName: string | undefined;
 
         if (durationMatch) {
@@ -251,7 +258,12 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
 
         const result: NaturalLanguageParseResult = {
           success: duration > 0 && !!taskType,
-          confidence: duration > 0 && taskType && caseName ? 'High' : duration > 0 && taskType ? 'Medium' : 'Low',
+          confidence:
+            duration > 0 && taskType && caseName
+              ? 'High'
+              : duration > 0 && taskType
+                ? 'Medium'
+                : 'Low',
           parsedEntry: {
             duration,
             taskType,
@@ -319,14 +331,12 @@ export const selectTimeSummary = (state: TimeTrackingStore): TimeSummary => {
     .filter((e) => e.isBillable)
     .reduce((sum, entry) => sum + entry.duration, 0);
   const nonBillableMinutes = totalMinutes - billableMinutes;
-  const billableRate =
-    totalMinutes > 0 ? (billableMinutes / totalMinutes) * 100 : 0;
+  const billableRate = totalMinutes > 0 ? (billableMinutes / totalMinutes) * 100 : 0;
 
   // Mock comparison (in real app, would compare to previous period)
   const previousTotal = Math.floor(totalMinutes * 0.95); // 5% less
   const totalDiff = totalMinutes - previousTotal;
-  const percentChange =
-    previousTotal > 0 ? (totalDiff / previousTotal) * 100 : 0;
+  const percentChange = previousTotal > 0 ? (totalDiff / previousTotal) * 100 : 0;
 
   return {
     totalMinutes,
@@ -346,9 +356,7 @@ export const selectActiveTimerElapsed = (state: TimeTrackingStore): number => {
   }
 
   const now = new Date();
-  const elapsed = Math.floor(
-    (now.getTime() - state.activeTimer.startTime.getTime()) / 1000 / 60
-  );
+  const elapsed = Math.floor((now.getTime() - state.activeTimer.startTime.getTime()) / 1000 / 60);
 
   return state.activeTimer.pausedTime + elapsed;
 };

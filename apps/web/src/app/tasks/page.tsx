@@ -179,7 +179,7 @@ export default function TasksPage() {
   /**
    * Handle task creation from natural language bar
    */
-  const handleCreateTaskFromNL = (parsedText: string) => {
+  const handleCreateTaskFromNL = (_parsedText: string) => {
     // Open modal with empty task (create mode)
     openTaskDetailModal();
     // Close the creation bar modal
@@ -209,8 +209,8 @@ export default function TasksPage() {
   /**
    * Handle calendar task drag-and-drop
    */
-  const handleCalendarTaskDrop = (taskId: string, start: Date, end: Date) => {
-    updateTask(taskId, { dueDate: start });
+  const handleCalendarTaskDrop = (taskId: string, newDate: Date) => {
+    updateTask(taskId, { dueDate: newDate });
   };
 
   /**
@@ -316,16 +316,18 @@ export default function TasksPage() {
           </Tabs.List>
 
           {/* Filter Bar */}
-          <TaskFilterBar filters={filters} onFiltersChange={setFilters} onClearFilters={clearFilters} />
+          <TaskFilterBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            onClearFilters={clearFilters}
+          />
 
           {/* Tab Panels */}
           <div className="flex-1 overflow-auto bg-gray-50">
             <Tabs.Content value="calendar" className="h-full p-6">
               {/* Prototype Toggle */}
               <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <span className="text-sm font-medium text-blue-900">
-                  📊 Vizualizare Calendar:
-                </span>
+                <span className="text-sm font-medium text-blue-900">📊 Vizualizare Calendar:</span>
                 <button
                   onClick={() => setUseNewCalendar(false)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${

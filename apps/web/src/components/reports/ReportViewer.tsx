@@ -162,8 +162,9 @@ export function ReportViewer() {
             <LineChart
               data={chartData}
               onClick={(data) => {
-                if (data && data.activePayload && reportData) {
-                  const payload = data.activePayload[0]?.payload;
+                const chartData = data as any;
+                if (chartData && chartData.activePayload && reportData) {
+                  const payload = chartData.activePayload[0]?.payload;
                   if (payload) {
                     const dataPoint = reportData.data.find((d) => d.label === payload.name);
                     if (dataPoint) handleChartClick(dataPoint);
@@ -193,8 +194,9 @@ export function ReportViewer() {
             <AreaChart
               data={chartData}
               onClick={(data) => {
-                if (data && data.activePayload && reportData) {
-                  const payload = data.activePayload[0]?.payload;
+                const chartData = data as any;
+                if (chartData && chartData.activePayload && reportData) {
+                  const payload = chartData.activePayload[0]?.payload;
                   if (payload) {
                     const dataPoint = reportData.data.find((d) => d.label === payload.name);
                     if (dataPoint) handleChartClick(dataPoint);

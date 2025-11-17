@@ -10,7 +10,7 @@ import type { CommunicationThread } from '@legal-platform/types';
 /**
  * Generate mock communication threads for prototype
  */
-export function generateMockCommunicationThreads(count: number = 25): CommunicationThread[] {
+export function generateMockCommunicationThreads(_count: number = 25): CommunicationThread[] {
   // For now, return empty array - mock data will be populated by test-utils in test/story files
   // In a real implementation, this would call an API endpoint
   return [];

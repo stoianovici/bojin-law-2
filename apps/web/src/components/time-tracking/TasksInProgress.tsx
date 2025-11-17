@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { useTimeTrackingStore } from '../../stores/time-tracking.store';
-import type { TaskType } from '@legal-platform/types';
+import type { TimeTaskType } from '@legal-platform/types';
 
 // Mock tasks data (in Epic 1, this would come from task management store)
 const mockTasksInProgress = [
@@ -19,7 +19,7 @@ const mockTasksInProgress = [
     priority: 'high' as const,
     dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
     assignee: 'Mihai Bojin',
-    suggestedTaskType: 'Drafting' as TaskType,
+    suggestedTimeTaskType: 'Drafting' as TimeTaskType,
   },
   {
     id: 'task-2',
@@ -29,7 +29,7 @@ const mockTasksInProgress = [
     priority: 'medium' as const,
     dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
     assignee: 'Mihai Bojin',
-    suggestedTaskType: 'Research' as TaskType,
+    suggestedTimeTaskType: 'Research' as TimeTaskType,
   },
   {
     id: 'task-3',
@@ -39,7 +39,7 @@ const mockTasksInProgress = [
     priority: 'high' as const,
     dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // Tomorrow
     assignee: 'Mihai Bojin',
-    suggestedTaskType: 'ClientMeeting' as TaskType,
+    suggestedTimeTaskType: 'ClientMeeting' as TimeTaskType,
   },
   {
     id: 'task-4',
@@ -49,7 +49,7 @@ const mockTasksInProgress = [
     priority: 'medium' as const,
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
     assignee: 'Mihai Bojin',
-    suggestedTaskType: 'Email' as TaskType,
+    suggestedTimeTaskType: 'Email' as TimeTaskType,
   },
   {
     id: 'task-5',
@@ -59,11 +59,11 @@ const mockTasksInProgress = [
     priority: 'high' as const,
     dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days from now
     assignee: 'Mihai Bojin',
-    suggestedTaskType: 'CourtAppearance' as TaskType,
+    suggestedTimeTaskType: 'CourtAppearance' as TimeTaskType,
   },
 ];
 
-const taskTypeLabels: Record<TaskType, string> = {
+const taskTypeLabels: Record<TimeTaskType, string> = {
   Research: 'Cercetare',
   Drafting: 'Redactare',
   ClientMeeting: 'Întâlnire Client',
@@ -107,11 +107,7 @@ export function TasksInProgress() {
     for (let i = 15; i <= 480; i += 15) {
       const hours = Math.floor(i / 60);
       const mins = i % 60;
-      const label = hours > 0
-        ? mins > 0
-          ? `${hours}h ${mins}min`
-          : `${hours}h`
-        : `${mins}min`;
+      const label = hours > 0 ? (mins > 0 ? `${hours}h ${mins}min` : `${hours}h`) : `${mins}min`;
       options.push({ value: i, label });
     }
     return options;
@@ -120,7 +116,7 @@ export function TasksInProgress() {
   // Auto-scroll to selected item when picker opens
   React.useEffect(() => {
     if (showQuickEntry && pickerRef.current) {
-      const selectedIndex = durationOptions.findIndex(opt => opt.value === selectedDuration);
+      const selectedIndex = durationOptions.findIndex((opt) => opt.value === selectedDuration);
       if (selectedIndex >= 0) {
         const scrollTop = selectedIndex * 40 - 80; // 40px per item, center it
         pickerRef.current.scrollTop = Math.max(0, scrollTop);
@@ -128,13 +124,13 @@ export function TasksInProgress() {
     }
   }, [showQuickEntry, selectedDuration, durationOptions]);
 
-  const handleCompleteTask = (task: typeof mockTasksInProgress[0], durationMinutes: number) => {
+  const handleCompleteTask = (task: (typeof mockTasksInProgress)[0], durationMinutes: number) => {
     addTimeEntry({
       userId: 'user-001',
       userName: 'Mihai Bojin',
       caseId: task.caseId,
       caseName: task.caseName,
-      taskType: task.suggestedTaskType,
+      taskType: task.suggestedTimeTaskType,
       date: new Date(),
       duration: durationMinutes,
       description: task.title,
@@ -150,9 +146,7 @@ export function TasksInProgress() {
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">Sarcini în Lucru</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Adaugă pontaj rapid pentru sarcinile active
-        </p>
+        <p className="text-sm text-gray-500 mt-1">Adaugă pontaj rapid pentru sarcinile active</p>
       </div>
 
       {/* Tasks List */}
@@ -168,9 +162,7 @@ export function TasksInProgress() {
               <div className="mb-3">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-900 mb-1">
-                      {task.title}
-                    </h3>
+                    <h3 className="text-sm font-medium text-gray-900 mb-1">{task.title}</h3>
                     <p className="text-xs text-gray-600">{task.caseName}</p>
                   </div>
                   <span
@@ -203,7 +195,7 @@ export function TasksInProgress() {
                         d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                       />
                     </svg>
-                    {taskTypeLabels[task.suggestedTaskType]}
+                    {taskTypeLabels[task.suggestedTimeTaskType]}
                   </span>
                 </div>
               </div>
@@ -220,7 +212,8 @@ export function TasksInProgress() {
                     {/* Selected value display */}
                     <div className="text-center mb-3">
                       <span className="text-3xl font-semibold text-gray-900">
-                        {durationOptions.find(opt => opt.value === selectedDuration)?.label || '1h'}
+                        {durationOptions.find((opt) => opt.value === selectedDuration)?.label ||
+                          '1h'}
                       </span>
                     </div>
 
@@ -235,7 +228,7 @@ export function TasksInProgress() {
                         className="relative z-10 h-full overflow-y-auto px-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-gray-400"
                         style={{
                           scrollbarWidth: 'thin',
-                          scrollbarColor: '#cbd5e1 transparent'
+                          scrollbarColor: '#cbd5e1 transparent',
                         }}
                       >
                         <div className="py-16">

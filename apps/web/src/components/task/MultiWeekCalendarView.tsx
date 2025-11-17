@@ -249,17 +249,12 @@ const TaskCard: React.FC<{
             {format(new Date(task.dueDate), 'HH:mm')}
           </span>
         )}
-        <span className="text-sm font-medium text-gray-800 line-clamp-2">
-          {task.title}
-        </span>
+        <span className="text-sm font-medium text-gray-800 line-clamp-2">{task.title}</span>
       </div>
 
       {/* Task type badge */}
       <div className="flex items-center gap-1 mt-1">
-        <div
-          className="w-2 h-2 rounded-full"
-          style={{ backgroundColor }}
-        />
+        <div className="w-2 h-2 rounded-full" style={{ backgroundColor }} />
         <span className="text-[10px] text-gray-600">{task.type}</span>
       </div>
     </div>
@@ -358,9 +353,7 @@ const DayColumn: React.FC<{
           {format(date, 'd')}
         </div>
         {isToday && (
-          <div className="text-[9px] text-blue-600 font-medium leading-tight">
-            Astăzi
-          </div>
+          <div className="text-[9px] text-blue-600 font-medium leading-tight">Astăzi</div>
         )}
       </div>
 
@@ -372,11 +365,7 @@ const DayColumn: React.FC<{
           </div>
         ) : (
           tasks.map((task) => (
-            <DraggableTaskCard
-              key={task.id}
-              task={task}
-              onClick={() => onTaskClick(task)}
-            />
+            <DraggableTaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
           ))
         )}
       </div>
@@ -484,7 +473,7 @@ export function MultiWeekCalendarView({
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [draggedTaskId, _setDraggedTaskId] = useState<string | null>(null);
 
   /**
    * Generate array of week start dates
@@ -517,15 +506,6 @@ export function MultiWeekCalendarView({
 
     return grouped;
   }, [tasks, weekStarts]);
-
-  /**
-   * Handle task drop
-   */
-  const handleDrop = (date: Date, taskId: string) => {
-    if (onTaskDrop) {
-      onTaskDrop(taskId, date);
-    }
-  };
 
   /**
    * Navigation handlers
@@ -604,9 +584,7 @@ export function MultiWeekCalendarView({
 
         {/* Legend */}
         <div className="flex items-center gap-3 text-xs">
-          {(
-            Object.entries(TASK_TYPE_COLORS) as [TaskType, string][]
-          )
+          {(Object.entries(TASK_TYPE_COLORS) as [TaskType, string][])
             .slice(0, 4)
             .map(([type, color]) => (
               <div key={type} className="flex items-center gap-1">
@@ -620,7 +598,7 @@ export function MultiWeekCalendarView({
       {/* Scrollable Calendar Grid */}
       <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-y-auto">
         <div className="flex flex-col">
-          {weekStarts.map((weekStart, index) => {
+          {weekStarts.map((weekStart, _index) => {
             const weekKey = format(weekStart, 'yyyy-MM-dd');
             const weekTasks = tasksByWeek.get(weekKey) || [];
             const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -637,7 +615,8 @@ export function MultiWeekCalendarView({
                   className="sticky top-0 z-10 bg-gray-100 border-b border-gray-300 px-3 py-1"
                 >
                   <div className="text-xs font-semibold text-gray-700">
-                    {format(weekStart, 'd MMM', { locale: ro })} - {format(weekEnd, 'd MMM yyyy', { locale: ro })}
+                    {format(weekStart, 'd MMM', { locale: ro })} -{' '}
+                    {format(weekEnd, 'd MMM yyyy', { locale: ro })}
                     <span className="ml-2 text-[10px] font-normal text-gray-500">
                       ({weekTasks.length} {weekTasks.length === 1 ? 'sarcină' : 'sarcini'})
                     </span>

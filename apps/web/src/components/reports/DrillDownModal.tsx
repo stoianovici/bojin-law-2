@@ -42,15 +42,19 @@ export function DrillDownModal() {
 
     switch (type) {
       case 'number':
-        return typeof value === 'number' ? value.toLocaleString('ro-RO') : value;
+        return typeof value === 'number' ? value.toLocaleString('ro-RO') : String(value);
       case 'date':
-        return value instanceof Date
-          ? value.toLocaleDateString('ro-RO')
-          : new Date(value).toLocaleDateString('ro-RO');
+        if (value instanceof Date) {
+          return value.toLocaleDateString('ro-RO');
+        }
+        if (typeof value === 'string' || typeof value === 'number') {
+          return new Date(value).toLocaleDateString('ro-RO');
+        }
+        return String(value);
       case 'currency':
         return typeof value === 'number'
           ? `${value.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} RON`
-          : value;
+          : String(value);
       default:
         return String(value);
     }

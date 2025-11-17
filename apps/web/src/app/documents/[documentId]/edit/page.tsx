@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { clsx } from 'clsx';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useDocumentEditorStore } from '../../../../stores/document-editor.store';
@@ -18,9 +18,9 @@ import { VersionComparison } from '../../../../components/document/VersionCompar
 import { CommandBar } from '../../../../components/document/CommandBar';
 
 interface DocumentEditorPageProps {
-  params: {
+  params: Promise<{
     documentId: string;
-  };
+  }>;
 }
 
 /**
@@ -56,6 +56,17 @@ export default function DocumentEditorPage({ params }: DocumentEditorPageProps) 
   const [alignment, setAlignment] = useState<'left' | 'center' | 'right' | 'justify'>('left');
   const [heading, setHeading] = useState<'h1' | 'h2' | 'h3' | 'normal'>('normal');
 
+  // Memoize version dates to avoid calling Date functions during render
+  const versionDates = useMemo(
+    () => ({
+      // eslint-disable-next-line react-hooks/purity
+      previous: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+
+      current: new Date().toISOString(),
+    }),
+    []
+  );
+
   // Load document metadata
   useEffect(() => {
     setCurrentDocument({
@@ -70,7 +81,7 @@ export default function DocumentEditorPage({ params }: DocumentEditorPageProps) 
 
   // Toolbar handlers
   const handleFormatClick = (format: 'bold' | 'italic' | 'underline' | 'strikethrough') => {
-    setFormatting(prev => ({
+    setFormatting((prev) => ({
       ...prev,
       [format]: !prev[format],
     }));
@@ -115,18 +126,21 @@ export default function DocumentEditorPage({ params }: DocumentEditorPageProps) 
         <div className="flex-1 overflow-hidden">
           <VersionComparison
             previousVersion={{
-              number: 1,
-              date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-              author: 'Elena Popescu',
+              info: {
+                versionNumber: 1,
+                date: versionDates.previous,
+                author: 'Elena Popescu',
+              },
               content: documentContent,
             }}
             currentVersion={{
-              number: 2,
-              date: new Date(),
-              author: 'Mihai Bojin',
+              info: {
+                versionNumber: 2,
+                date: versionDates.current,
+                author: 'Mihai Bojin',
+              },
               content: documentContent,
             }}
-            onClose={() => setActiveView('editor')}
           />
         </div>
       </div>
@@ -175,20 +189,14 @@ export default function DocumentEditorPage({ params }: DocumentEditorPageProps) 
         {/* Right Side - AI Assistant Panel */}
         {!isAIPanelCollapsed && (
           <div className="w-[40%] border-l border-gray-200 bg-gray-50">
-            <AIAssistantPanel
-              isCollapsed={isAIPanelCollapsed}
-              onToggleCollapse={toggleAIPanel}
-            />
+            <AIAssistantPanel isCollapsed={isAIPanelCollapsed} onToggleCollapse={toggleAIPanel} />
           </div>
         )}
 
         {/* Comments Sidebar - Overlays from right */}
         {isCommentsSidebarOpen && (
           <div className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-200 shadow-lg z-20">
-            <CommentsSidebar
-              isOpen={isCommentsSidebarOpen}
-              onToggle={toggleCommentsSidebar}
-            />
+            <CommentsSidebar isOpen={isCommentsSidebarOpen} onToggle={toggleCommentsSidebar} />
           </div>
         )}
 
@@ -201,12 +209,7 @@ export default function DocumentEditorPage({ params }: DocumentEditorPageProps) 
             aria-label={isAIPanelCollapsed ? 'Arată panoul AI' : 'Ascunde panoul AI'}
             title={isAIPanelCollapsed ? 'Arată panoul AI' : 'Ascunde panoul AI'}
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {isAIPanelCollapsed ? (
                 <path
                   strokeLinecap="round"
@@ -237,12 +240,7 @@ export default function DocumentEditorPage({ params }: DocumentEditorPageProps) 
             aria-label={isCommentsSidebarOpen ? 'Ascunde comentariile' : 'Arată comentariile'}
             title={isCommentsSidebarOpen ? 'Ascunde comentariile' : 'Arată comentariile'}
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

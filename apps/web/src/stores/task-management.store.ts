@@ -60,7 +60,7 @@ const initialSortConfig: TaskSortConfig = {
  */
 export const useTaskManagementStore = create<TaskManagementState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // Initial state
       activeView: 'calendar',
       tasks: [],
@@ -196,9 +196,7 @@ export const useFilteredTasks = (): Task[] => {
   }
 
   if (filters.assignedTo && filters.assignedTo.length > 0) {
-    filteredTasks = filteredTasks.filter((task) =>
-      filters.assignedTo!.includes(task.assignedTo)
-    );
+    filteredTasks = filteredTasks.filter((task) => filters.assignedTo!.includes(task.assignedTo));
   }
 
   if (filters.dateRange) {
@@ -212,8 +210,7 @@ export const useFilteredTasks = (): Task[] => {
     const query = filters.searchQuery.toLowerCase();
     filteredTasks = filteredTasks.filter(
       (task) =>
-        task.title.toLowerCase().includes(query) ||
-        task.description.toLowerCase().includes(query)
+        task.title.toLowerCase().includes(query) || task.description.toLowerCase().includes(query)
     );
   }
 

@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { useTimeTrackingStore } from '../../stores/time-tracking.store';
-import type { TaskType } from '@legal-platform/types';
+import type { TimeTaskType } from '@legal-platform/types';
 
 const taskTypes: { value: TimeTaskType; label: string }[] = [
   { value: 'Research', label: 'Cercetare' },
@@ -70,9 +70,7 @@ export function FilterBar() {
             <input
               type="checkbox"
               checked={filters.billableOnly}
-              onChange={(e) =>
-                setFilters({ billableOnly: e.target.checked })
-              }
+              onChange={(e) => setFilters({ billableOnly: e.target.checked })}
               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2"
             />
             <span className="text-sm text-gray-700">Doar Facturabile</span>
@@ -89,7 +87,9 @@ export function FilterBar() {
               setFilters({ dateRange: { start, end } });
             }}
             className={`px-3 py-1.5 border rounded-md text-sm ${
-              filters.dateRange ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              filters.dateRange
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
             Astăzi
@@ -106,7 +106,9 @@ export function FilterBar() {
               setFilters({ dateRange: { start, end } });
             }}
             className={`px-3 py-1.5 border rounded-md text-sm ${
-              filters.dateRange ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              filters.dateRange
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
             Ultima Săptămână
@@ -123,7 +125,9 @@ export function FilterBar() {
               setFilters({ dateRange: { start, end } });
             }}
             className={`px-3 py-1.5 border rounded-md text-sm ${
-              filters.dateRange ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              filters.dateRange
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
             Ultima Lună
@@ -135,14 +139,12 @@ export function FilterBar() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-gray-200">
             {/* Task Type Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tip Activitate
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tip Activitate</label>
               <select
                 value={filters.taskTypes[0] || ''}
                 onChange={(e) => {
                   if (e.target.value) {
-                    setFilters({ taskTypes: [e.target.value as TaskType] });
+                    setFilters({ taskTypes: [e.target.value as TimeTaskType] });
                   } else {
                     setFilters({ taskTypes: [] });
                   }

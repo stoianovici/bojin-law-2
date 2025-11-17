@@ -8,7 +8,6 @@
 
 import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import * as Select from '@radix-ui/react-select';
 import { format } from 'date-fns';
 import type { Task, TaskType } from '@legal-platform/types';
 
@@ -72,13 +71,7 @@ interface TaskDetailModalProps {
 /**
  * TaskDetailModal Component
  */
-export function TaskDetailModal({
-  isOpen,
-  onClose,
-  task,
-  onSave,
-  onDelete,
-}: TaskDetailModalProps) {
+export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: TaskDetailModalProps) {
   const isEditMode = Boolean(task);
 
   // Form state
@@ -101,6 +94,7 @@ export function TaskDetailModal({
    */
   useEffect(() => {
     if (task) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         type: task.type,
         title: task.title,
@@ -113,6 +107,7 @@ export function TaskDetailModal({
       });
     } else {
       // Reset form for new task
+
       setFormData({
         type: 'Research',
         title: '',
@@ -124,7 +119,9 @@ export function TaskDetailModal({
         metadata: {},
       });
     }
+
     setErrors({});
+
     setShowDeleteConfirm(false);
   }, [task, isOpen]);
 
@@ -243,9 +240,7 @@ export function TaskDetailModal({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tip Document
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tip Document</label>
               <input
                 type="text"
                 value={(formData.metadata.documentType as string) || ''}
@@ -255,9 +250,7 @@ export function TaskDetailModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nume Client
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nume Client</label>
               <input
                 type="text"
                 value={(formData.metadata.clientName as string) || ''}
@@ -273,9 +266,7 @@ export function TaskDetailModal({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nume Document
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nume Document</label>
               <input
                 type="text"
                 value={(formData.metadata.documentName as string) || ''}
@@ -285,9 +276,7 @@ export function TaskDetailModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Locație Sursă
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Locație Sursă</label>
               <input
                 type="text"
                 value={(formData.metadata.sourceLocation as string) || ''}
@@ -303,9 +292,7 @@ export function TaskDetailModal({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nume Instanță
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nume Instanță</label>
               <input
                 type="text"
                 value={(formData.metadata.courtName as string) || ''}
@@ -315,9 +302,7 @@ export function TaskDetailModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tip Ședință
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tip Ședință</label>
               <input
                 type="text"
                 value={(formData.metadata.hearingType as string) || ''}
@@ -327,9 +312,7 @@ export function TaskDetailModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Număr Dosar
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Număr Dosar</label>
               <input
                 type="text"
                 value={(formData.metadata.caseNumber as string) || ''}
@@ -355,9 +338,7 @@ export function TaskDetailModal({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tip Întâlnire
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tip Întâlnire</label>
               <input
                 type="text"
                 value={(formData.metadata.meetingType as string) || ''}
@@ -377,9 +358,7 @@ export function TaskDetailModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Participanți
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Participanți</label>
               <input
                 type="text"
                 value={(formData.metadata.attendees as string) || ''}
@@ -395,9 +374,7 @@ export function TaskDetailModal({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Destinație
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Destinație</label>
               <input
                 type="text"
                 value={(formData.metadata.destination as string) || ''}
@@ -508,10 +485,7 @@ export function TaskDetailModal({
 
             {/* Description */}
             <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                 Descriere <span className="text-red-500">*</span>
               </label>
               <textarea

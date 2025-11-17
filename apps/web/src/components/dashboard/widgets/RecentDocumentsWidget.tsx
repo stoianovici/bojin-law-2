@@ -8,7 +8,6 @@
 import React, { useState } from 'react';
 import { WidgetContainer } from '../WidgetContainer';
 import type { DocumentListWidget as DocumentListWidgetType } from '@legal-platform/types';
-import { clsx } from 'clsx';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
 export interface RecentDocumentsWidgetProps {
@@ -142,7 +141,9 @@ function DocumentListItem({ document }: { document: DocumentListWidgetType['docu
                 <DocumentTypeIcon type={document.type} />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-gray-900 mb-1 truncate">{document.title}</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-1 truncate">
+                  {document.title}
+                </h4>
                 <div className="flex items-center gap-3 text-xs text-gray-600">
                   <div className="flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

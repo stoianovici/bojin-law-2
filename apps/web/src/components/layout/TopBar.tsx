@@ -71,12 +71,10 @@ export interface TopBarProps {
 export function TopBar({
   userName = 'Maria Popescu',
   userRole = 'Partener',
-  unreadCount = 0,
   className = '',
   onLogout,
   onProfile,
   onSettings,
-  onNotificationsClick,
 }: TopBarProps) {
   const { toggleSidebar, openCommandPalette, currentRole } = useNavigationStore();
   const { currentTimeDisplay } = useCurrentTimeDisplay();
@@ -87,7 +85,7 @@ export function TopBar({
     const roleTitles = {
       Partner: 'Dashboard - Partener',
       Associate: 'Dashboard - Asociat',
-      Paralegal: 'Dashboard - Asistent Juridic'
+      Paralegal: 'Dashboard - Asistent Juridic',
     };
 
     if (pathname === '/') {
@@ -155,9 +153,7 @@ export function TopBar({
           </svg>
         </button>
 
-        <h1 className="text-xl font-semibold text-gray-900 hidden sm:block">
-          {getPageTitle()}
-        </h1>
+        <h1 className="text-xl font-semibold text-gray-900 hidden sm:block">{getPageTitle()}</h1>
       </div>
 
       {/* Center section: Current time */}
@@ -269,9 +265,7 @@ export function TopBar({
                 </span>
               </div>
               <div className="hidden md:block text-left">
-                <div className="text-sm font-medium text-gray-900">
-                  {userName}
-                </div>
+                <div className="text-sm font-medium text-gray-900">{userName}</div>
                 <div className="text-xs text-gray-500">{userRole}</div>
               </div>
               <svg

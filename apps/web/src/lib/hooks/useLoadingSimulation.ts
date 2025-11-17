@@ -1,7 +1,7 @@
 // useLoadingSimulation Hook
 // Provides artificial loading delays for demo purposes
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export interface UseLoadingSimulationOptions {
   /**
@@ -76,7 +76,7 @@ export function useLoadingSimulation({
 
     try {
       // Wait for random delay
-      await new Promise(resolve => setTimeout(resolve, getRandomDelay()));
+      await new Promise((resolve) => setTimeout(resolve, getRandomDelay()));
 
       // Execute action if provided
       const result = action?.();

@@ -7,7 +7,6 @@
 
 import React from 'react';
 import { useTimeTrackingStore, selectFilteredEntries } from '../../stores/time-tracking.store';
-import type { TimeEntry } from '@legal-platform/types';
 
 function formatMinutesToHours(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -74,9 +73,7 @@ export function TimeEntriesList({ className = '' }: TimeEntriesListProps) {
       <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">
           Intrări Pontaj
-          <span className="ml-2 text-sm font-normal text-gray-500">
-            ({entries.length})
-          </span>
+          <span className="ml-2 text-sm font-normal text-gray-500">({entries.length})</span>
         </h2>
         <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
           Exportă CSV
@@ -138,7 +135,9 @@ export function TimeEntriesList({ className = '' }: TimeEntriesListProps) {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
                     <div className={`${isExpanded ? '' : 'truncate max-w-[300px]'}`}>
-                      {entry.description || <span className="text-gray-400 italic">Fără descriere</span>}
+                      {entry.description || (
+                        <span className="text-gray-400 italic">Fără descriere</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">

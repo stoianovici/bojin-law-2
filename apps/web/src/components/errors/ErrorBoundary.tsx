@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -91,7 +91,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               A apărut o eroare
             </h2>
             <p className="text-gray-600 text-center mb-4">
-              Ne pare rău, dar ceva nu a mers bine. Vă rugăm să reîncărcați pagina sau să încercați din nou mai târziu.
+              Ne pare rău, dar ceva nu a mers bine. Vă rugăm să reîncărcați pagina sau să încercați
+              din nou mai târziu.
             </p>
             {this.state.error && (
               <details className="mb-4">

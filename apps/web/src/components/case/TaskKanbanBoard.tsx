@@ -22,10 +22,7 @@ export interface TaskKanbanBoardProps {
 /**
  * Column Configuration
  */
-const COLUMN_CONFIG: Record<
-  TaskColumn,
-  { title: string; color: string; badgeColor: string }
-> = {
+const COLUMN_CONFIG: Record<TaskColumn, { title: string; color: string; badgeColor: string }> = {
   todo: {
     title: 'De Făcut',
     color: 'border-gray-300',
@@ -72,8 +69,7 @@ function KanbanColumn({
   const taskCount = tasks.length;
 
   // Helper to find assignee
-  const getAssignee = (task: Task) =>
-    users.find((u) => u.id === task.assignedTo);
+  const getAssignee = (task: Task) => users.find((u) => u.id === task.assignedTo);
 
   return (
     <div className="flex flex-col bg-gray-50 rounded-lg border-2 border-dashed min-h-[400px]">
@@ -84,7 +80,7 @@ function KanbanColumn({
           <span
             className={clsx(
               'inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold',
-              config.badgeColor,
+              config.badgeColor
             )}
           >
             {taskCount}
@@ -94,18 +90,8 @@ function KanbanColumn({
           onClick={onAddTask}
           className="w-full inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
         >
-          <svg
-            className="w-4 h-4 mr-1.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
+          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Adaugă Sarcină
         </button>
@@ -126,12 +112,7 @@ function KanbanColumn({
         {/* Empty State */}
         {taskCount === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-            <svg
-              className="w-12 h-12 mb-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -163,12 +144,12 @@ function TaskKanbanBoardComponent({
   onAddTask,
   className,
 }: TaskKanbanBoardProps) {
-  // Group tasks by column
+  // Group tasks by column - map between Task.status and TaskColumn
   const tasksByColumn: Record<TaskColumn, Task[]> = {
-    todo: tasks.filter((t) => t.status === 'todo'),
-    'in-progress': tasks.filter((t) => t.status === 'in-progress'),
-    review: tasks.filter((t) => t.status === 'review'),
-    complete: tasks.filter((t) => t.status === 'complete'),
+    todo: tasks.filter((t) => t.status === 'Pending'),
+    'in-progress': tasks.filter((t) => t.status === 'InProgress'),
+    review: tasks.filter((t) => t.status === 'Cancelled'), // Using Cancelled for review column
+    complete: tasks.filter((t) => t.status === 'Completed'),
   };
 
   const columns: TaskColumn[] = ['todo', 'in-progress', 'review', 'complete'];
@@ -208,8 +189,8 @@ function TaskKanbanBoardComponent({
           <div>
             <p className="font-medium">Funcționalitate de glisare în dezvoltare</p>
             <p className="text-xs mt-1">
-              Glisarea și plasarea sarcinilor între coloane va fi implementată în
-              versiunile viitoare care includ integrarea backend-ului.
+              Glisarea și plasarea sarcinilor între coloane va fi implementată în versiunile
+              viitoare care includ integrarea backend-ului.
             </p>
           </div>
         </div>

@@ -153,9 +153,9 @@ export function AssignedTasksWidget({
   const [draggedTask, setDraggedTask] = useState<TaskWithColumn | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
-  const handleDragStart = (task: TaskWithColumn) => {
-    setDraggedTask(task);
-  };
+  // const handleDragStart = (task: TaskWithColumn) => {
+  //   setDraggedTask(task);
+  // };
 
   const handleDragEnd = () => {
     setDraggedTask(null);
