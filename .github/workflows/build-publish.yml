@@ -199,3 +199,119 @@ jobs:
           echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🔗 [View Render Dashboard](https://dashboard.render.com)" >> $GITHUB_STEP_SUMMARY
+
+  # Job 5: Integration Tests - Staging
+  test-staging:
+    name: Integration Tests (Staging)
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for Render deployment to complete
+        run: |
+          echo "⏳ Waiting for Render to complete deployment and services to be ready..."
+          sleep 60
+
+      - name: Run integration tests against staging
+        env:
+          RENDER_ENV: staging
+          RENDER_BASE_URL: ${{ vars.STAGING_URL }}
+        run: pnpm test:render:staging
+        continue-on-error: true
+
+      - name: Post test summary
+        run: |
+          echo "### Integration Test Results (Staging) ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Staging" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Suite:** Render Deployment Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Staging Environment](${{ vars.STAGING_URL }})" >> $GITHUB_STEP_SUMMARY
+
+  # Job 6: Integration Tests - Production
+  test-production:
+    name: Integration Tests (Production)
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for Render deployment to complete
+        run: |
+          echo "⏳ Waiting for Render to complete deployment and services to be ready..."
+          sleep 60
+
+      - name: Run integration tests against production
+        env:
+          RENDER_ENV: production
+          RENDER_BASE_URL: ${{ vars.PRODUCTION_URL }}
+        run: pnpm test:render:production
+        continue-on-error: false
+
+      - name: Post test summary
+        run: |
+          echo "### Integration Test Results (Production) ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Suite:** Render Deployment Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Production Environment](${{ vars.PRODUCTION_URL }})" >> $GITHUB_STEP_SUMMARY
