@@ -285,7 +285,7 @@ export function mockParseNaturalLanguage(
   }
 
   // Parse task type - Romanian keywords
-  const taskKeywords: Record<string, TaskType> = {
+  const taskKeywords: Record<string, TimeTaskType> = {
     cercetare: 'Research',
     research: 'Research',
     redactare: 'Drafting',
