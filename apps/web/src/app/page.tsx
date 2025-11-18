@@ -21,20 +21,6 @@ export default function DashboardPage() {
     updateLayout(currentRole, layout);
   };
 
-  // Determine page title based on role
-  const getPageTitle = () => {
-    switch (currentRole) {
-      case 'Partner':
-        return 'Dashboard - Partner';
-      case 'Associate':
-        return 'Dashboard - Avocat';
-      case 'Paralegal':
-        return 'Dashboard - Paralegal';
-      default:
-        return 'Dashboard';
-    }
-  };
-
   // Render role-specific dashboard
   const renderDashboard = () => {
     switch (currentRole) {
@@ -47,9 +33,7 @@ export default function DashboardPage() {
       default:
         return (
           <div className="flex items-center justify-center h-screen">
-            <p className="text-gray-500">
-              Selectează un rol pentru a vedea dashboard-ul.
-            </p>
+            <p className="text-gray-500">Selectează un rol pentru a vedea dashboard-ul.</p>
           </div>
         );
     }
@@ -57,9 +41,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
-        {renderDashboard()}
-      </div>
+      <div className="container mx-auto px-4 py-6">{renderDashboard()}</div>
     </main>
   );
 }
