@@ -41,7 +41,7 @@ services:
         value: https://legal-platform-web.onrender.com # Will update with custom domain later
       - key: NEXT_PUBLIC_API_URL
         sync: false # Set in Render dashboard - points to gateway service
-    healthCheckPath: /health
+    healthCheckPath: /api/health
     autoDeployTrigger: commit # Auto-deploy on each commit to main
 
   ##############################################################################
