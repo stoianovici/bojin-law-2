@@ -49,7 +49,9 @@ export function DateRangeFilter() {
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('ro-RO', {
+    // Ensure date is a Date object (handle deserialized strings)
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return dateObj.toLocaleDateString('ro-RO', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

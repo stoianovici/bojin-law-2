@@ -190,6 +190,28 @@ export const useReportsStore = create<ReportsState>()(
         dateRange: state.dateRange,
         customReports: state.customReports,
       }),
+      // Custom storage to handle Date serialization/deserialization
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name);
+          if (!str) return null;
+          const { state } = JSON.parse(str);
+
+          // Convert date strings back to Date objects
+          if (state.dateRange) {
+            state.dateRange.start = new Date(state.dateRange.start);
+            state.dateRange.end = new Date(state.dateRange.end);
+          }
+
+          return { state };
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => {
+          localStorage.removeItem(name);
+        },
+      },
     }
   )
 );
