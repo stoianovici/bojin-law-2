@@ -1,95 +1,90 @@
 /**
  * DashboardGrid Component
- * Wrapper for react-grid-layout with drag-and-drop functionality
+ * CSS Grid-based dashboard with content-aware widget sizing
  */
 
 'use client';
 
 import React, { type ReactNode } from 'react';
-import GridLayout, { type Layout, WidthProvider } from 'react-grid-layout';
 import type { WidgetPosition } from '@legal-platform/types';
-import 'react-grid-layout/css/styles.css';
 import './DashboardGrid.css';
-
-const ResponsiveGridLayout = WidthProvider(GridLayout);
 
 interface DashboardGridProps {
   layout: WidgetPosition[];
-  onLayoutChange: (layout: WidgetPosition[]) => void;
+  onLayoutChange?: (layout: WidgetPosition[]) => void;
   children: ReactNode;
   isEditing?: boolean;
 }
 
-// Convert WidgetPosition to react-grid-layout Layout format
-const convertToGridLayout = (positions: WidgetPosition[]): Layout[] => {
-  return positions.map((pos) => ({
-    i: pos.i,
-    x: pos.x,
-    y: pos.y,
-    w: pos.w,
-    h: pos.h,
-    minW: pos.minW,
-    minH: pos.minH,
-    maxW: pos.maxW,
-    maxH: pos.maxH,
-    static: pos.static || false,
-  }));
-};
+/**
+ * Calculate grid-column span based on width value from 12-column layout
+ * Maps 12-column grid (w) to 6-column CSS Grid at large screens
+ *
+ * @param w - Width in 12-column grid (1-12)
+ * @returns CSS grid-column value
+ */
+function calculateGridColumn(w: number): string {
+  // Map 12-column layout to 6-column CSS Grid
+  // w=12 → span 6 (full width, 100%)
+  // w=8 → span 4 (2/3 width, 66.67%)
+  // w=6 → span 3 (1/2 width, 50%)
+  // w=4 → span 2 (1/3 width, 33.33%)
 
-// Convert react-grid-layout Layout to WidgetPosition format
-const convertFromGridLayout = (layouts: Layout[]): WidgetPosition[] => {
-  return layouts.map((layout) => ({
-    i: layout.i,
-    x: layout.x,
-    y: layout.y,
-    w: layout.w,
-    h: layout.h,
-    minW: layout.minW,
-    minH: layout.minH,
-    maxW: layout.maxW,
-    maxH: layout.maxH,
-    static: layout.static,
-  }));
-};
+  // Calculate proportional span: w * 6/12 = w/2
+  const span = Math.round(w / 2);
+
+  if (span >= 6) {
+    return '1 / -1'; // Full width
+  }
+  return `span ${span}`;
+}
 
 /**
- * DashboardGrid - Drag-and-drop dashboard grid layout
+ * DashboardGrid - Content-aware dashboard grid layout
  *
- * @param layout - Array of widget positions
- * @param onLayoutChange - Callback when layout changes
+ * Uses CSS Grid with auto-rows for dynamic, content-driven widget heights.
+ * Reads layout data and applies appropriate grid-column spans automatically.
+ *
+ * @param layout - Array of widget positions (defines column placement and spans)
+ * @param onLayoutChange - Callback when layout changes (optional, for future drag-and-drop)
  * @param children - Widget components to render
- * @param isEditing - Whether drag-and-drop is enabled (default: true)
+ * @param isEditing - Reserved for future drag-and-drop functionality
  */
 export function DashboardGrid({
   layout,
-  onLayoutChange,
+  onLayoutChange: _onLayoutChange,
   children,
-  isEditing = true,
+  isEditing = false,
 }: DashboardGridProps) {
-  const handleLayoutChange = (newLayout: Layout[]) => {
-    const convertedLayout = convertFromGridLayout(newLayout);
-    onLayoutChange(convertedLayout);
-  };
+  // Map layout positions by widget key for quick lookup
+  const layoutMap = new Map(layout.map(pos => [pos.i, pos]));
+
+  // Apply grid-column styles based on layout data
+  const childrenWithStyles = React.Children.map(children, (child) => {
+    if (!React.isValidElement(child)) return child;
+
+    const key = child.key?.toString();
+    if (!key) return child;
+
+    // Find layout data for this widget
+    const layoutData = layoutMap.get(key);
+    if (!layoutData) return child;
+
+    // Calculate grid-column span
+    const gridColumn = calculateGridColumn(layoutData.w);
+
+    // Clone child with grid-column style
+    return React.cloneElement(child, {
+      style: {
+        ...((child.props as Record<string, unknown>).style || {}),
+        gridColumn,
+      },
+    });
+  });
 
   return (
-    <div className="dashboard-grid-container">
-      <ResponsiveGridLayout
-        className="layout"
-        layout={convertToGridLayout(layout)}
-        onLayoutChange={handleLayoutChange}
-        cols={12}
-        rowHeight={100}
-        isDraggable={isEditing}
-        isResizable={isEditing}
-        compactType="vertical"
-        preventCollision={false}
-        margin={[20, 40]}
-        containerPadding={[20, 20]}
-        // Drag handle selector - only drag from widget header
-        draggableHandle=".widget-drag-handle"
-      >
-        {children}
-      </ResponsiveGridLayout>
+    <div className="dashboard-grid-container" data-editing={isEditing}>
+      {childrenWithStyles}
     </div>
   );
 }

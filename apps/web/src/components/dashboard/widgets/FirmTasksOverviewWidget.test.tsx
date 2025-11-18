@@ -239,7 +239,7 @@ describe('FirmTasksOverviewWidget', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/tasks');
   });
 
-  it('limits priority tasks display to 5', () => {
+  it('limits priority tasks display to 3 initially with expansion option', () => {
     const widgetWithManyTasks: FirmTasksOverviewWidgetType = {
       ...mockWidget,
       priorityTasks: [
@@ -276,9 +276,12 @@ describe('FirmTasksOverviewWidget', () => {
     // Should display heading with total count
     expect(screen.getByText('Taskuri Prioritare (6)')).toBeInTheDocument();
 
-    // But only render 5 task items
+    // But only render 3 task items initially
     const taskItems = container.querySelectorAll('[role="button"][tabindex="0"]');
-    expect(taskItems).toHaveLength(5);
+    expect(taskItems).toHaveLength(3);
+
+    // Should show "Show More" button
+    expect(screen.getByRole('button', { name: /arată mai multe/i })).toBeInTheDocument();
   });
 
   it('renders without task breakdown chart when empty', () => {
@@ -386,5 +389,116 @@ describe('FirmTasksOverviewWidget', () => {
     const content = container.textContent || '';
     expect(content).toMatch(/🔥/); // Urgent emoji
     expect(content).toMatch(/⬆/); // High emoji
+  });
+
+  describe('Expansion/Collapse Behavior', () => {
+    const widgetWithManyPriorityTasks: FirmTasksOverviewWidgetType = {
+      ...mockWidget,
+      priorityTasks: Array.from({ length: 8 }, (_, i) => ({
+        id: `task-${i + 1}`,
+        title: `Priority Task ${i + 1}`,
+        priority: i % 2 === 0 ? 'Urgent' : 'High',
+        dueDate: new Date(`2025-11-${14 + i}`),
+        assignee: `Assignee ${i + 1}`,
+        caseContext: `CASE-${String(i + 1).padStart(3, '0')}`,
+      })),
+    };
+
+    it('shows only first 3 priority tasks initially when there are more than 3', () => {
+      render(<FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />);
+
+      // First 3 tasks should be visible
+      expect(screen.getByText('Priority Task 1')).toBeInTheDocument();
+      expect(screen.getByText('Priority Task 2')).toBeInTheDocument();
+      expect(screen.getByText('Priority Task 3')).toBeInTheDocument();
+
+      // Tasks 4-8 should not be visible initially
+      expect(screen.queryByText('Priority Task 4')).not.toBeInTheDocument();
+      expect(screen.queryByText('Priority Task 8')).not.toBeInTheDocument();
+    });
+
+    it('shows "Show More" button when there are more than 3 priority tasks', () => {
+      render(<FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />);
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      expect(showMoreButton).toBeInTheDocument();
+      expect(showMoreButton).toHaveTextContent('Arată Mai Multe (5 taskuri)');
+    });
+
+    it('does not show "Show More" button when there are 3 or fewer priority tasks', () => {
+      render(<FirmTasksOverviewWidget widget={mockWidget} />);
+
+      const showMoreButton = screen.queryByRole('button', { name: /arată mai multe/i });
+      expect(showMoreButton).not.toBeInTheDocument();
+    });
+
+    it('expands to show all priority tasks when "Show More" is clicked', () => {
+      render(<FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />);
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      fireEvent.click(showMoreButton);
+
+      // All tasks should now be visible
+      expect(screen.getByText('Priority Task 1')).toBeInTheDocument();
+      expect(screen.getByText('Priority Task 4')).toBeInTheDocument();
+      expect(screen.getByText('Priority Task 8')).toBeInTheDocument();
+
+      // Button should now say "Show Less"
+      expect(screen.getByRole('button', { name: /arată mai puține/i })).toBeInTheDocument();
+    });
+
+    it('collapses back to 3 priority tasks when "Show Less" is clicked', () => {
+      render(<FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />);
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      fireEvent.click(showMoreButton);
+
+      // Now click "Show Less"
+      const showLessButton = screen.getByRole('button', { name: /arată mai puține/i });
+      fireEvent.click(showLessButton);
+
+      // Should be back to showing only 3 tasks
+      expect(screen.getByText('Priority Task 1')).toBeInTheDocument();
+      expect(screen.getByText('Priority Task 2')).toBeInTheDocument();
+      expect(screen.getByText('Priority Task 3')).toBeInTheDocument();
+      expect(screen.queryByText('Priority Task 4')).not.toBeInTheDocument();
+    });
+
+    it('has correct aria-expanded attribute', () => {
+      render(<FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />);
+
+      const button = screen.getByRole('button', { name: /arată mai multe/i });
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.click(button);
+
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('announces expansion state to screen readers', () => {
+      const { container } = render(<FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />);
+
+      const liveRegion = container.querySelector('[role="status"][aria-live="polite"]');
+      expect(liveRegion).toBeInTheDocument();
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      fireEvent.click(showMoreButton);
+
+      // Live region should contain announcement
+      expect(liveRegion).toHaveTextContent(/afișare extinsă/i);
+    });
+
+    it('maintains focus on expansion button after toggle', async () => {
+      render(<FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />);
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      showMoreButton.focus();
+
+      fireEvent.click(showMoreButton);
+
+      // Button should maintain focus (now showing "Show Less")
+      const showLessButton = screen.getByRole('button', { name: /arată mai puține/i });
+      expect(document.activeElement).toBe(showLessButton);
+    });
   });
 });

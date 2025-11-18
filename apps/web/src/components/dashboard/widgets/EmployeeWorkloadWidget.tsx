@@ -11,7 +11,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // TODO: Fix react-window import for Next.js 16 + React 19 compatibility
 // import { FixedSizeList as List } from 'react-window';
 import { WidgetContainer } from '../WidgetContainer';
@@ -25,6 +25,7 @@ export interface EmployeeWorkloadWidgetProps {
   onRefresh?: () => void;
   onConfigure?: () => void;
   onRemove?: () => void;
+  onHeightChange?: (newHeight: number) => void;
 }
 
 /**
@@ -250,6 +251,7 @@ export function EmployeeWorkloadWidget({
   onRefresh,
   onConfigure,
   onRemove,
+  onHeightChange,
 }: EmployeeWorkloadWidgetProps) {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>(widget.viewMode || 'weekly');
@@ -257,6 +259,40 @@ export function EmployeeWorkloadWidget({
 
   // Debounce view mode changes to prevent rapid re-renders (300ms delay)
   const debouncedViewMode = useDebounce(viewMode, 300);
+
+  // Track previous height to avoid unnecessary updates
+  const previousHeightRef = useRef<number>(5);
+
+  // Calculate required height based on expanded state
+  useEffect(() => {
+    if (!onHeightChange) return;
+
+    // Base height: 1 unit for controls, ~0.8 units per employee row, 0.5 for button
+    // Expanded row adds ~1.5 units per employee with tasks
+    const baseUnits = 1.5; // Controls and padding
+    const employeeRowHeight = 0.8; // Per collapsed employee
+    const expandedRowHeight = 2.5; // Per expanded employee with tasks
+    const buttonUnits = 0.8; // Rebalance button
+
+    let totalUnits = baseUnits;
+    widget.employeeUtilization.forEach((emp) => {
+      if (expandedEmployees.has(emp.employeeId) && emp.tasks && emp.tasks.length > 0) {
+        totalUnits += expandedRowHeight;
+      } else {
+        totalUnits += employeeRowHeight;
+      }
+    });
+    totalUnits += buttonUnits;
+
+    // Round up and ensure minimum of 5 units
+    const requiredHeight = Math.max(5, Math.ceil(totalUnits));
+
+    // Only call onHeightChange if height actually changed
+    if (requiredHeight !== previousHeightRef.current) {
+      previousHeightRef.current = requiredHeight;
+      onHeightChange(requiredHeight);
+    }
+  }, [expandedEmployees, widget.employeeUtilization, onHeightChange]);
 
   // Sort employees by utilization (descending) - over-utilized first
   // Uses debounced view mode for performance
@@ -404,7 +440,7 @@ export function EmployeeWorkloadWidget({
               </List>
             </div>
           ) : ( */}
-          <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+          <div className="border rounded-lg overflow-hidden">
             {sortedEmployees.map((employee) => (
               <EmployeeRow
                 key={employee.employeeId}

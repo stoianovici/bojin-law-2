@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { WidgetContainer } from '../WidgetContainer';
 import type { KanbanWidget as KanbanWidgetType } from '@legal-platform/types';
 import { clsx } from 'clsx';
@@ -83,11 +83,19 @@ function KanbanColumn({
   onDrop,
   onDragOver,
   isDragOver,
+  isExpanded,
+  onToggleExpansion,
+  buttonRef,
+  initialDisplayCount = 3,
 }: {
   column: KanbanWidgetType['columns'][0];
   onDrop: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
   isDragOver: boolean;
+  isExpanded: boolean;
+  onToggleExpansion: () => void;
+  buttonRef?: React.RefObject<HTMLButtonElement> | ((el: HTMLButtonElement | null) => void);
+  initialDisplayCount?: number;
 }) {
   const columnColors = {
     'To Do': 'bg-gray-50 border-gray-200',
@@ -105,6 +113,11 @@ function KanbanColumn({
     columnColors[column.title as keyof typeof columnColors] || columnColors['To Do'];
   const headerColor =
     headerColors[column.title as keyof typeof headerColors] || headerColors['To Do'];
+
+  const displayedTasks = isExpanded
+    ? column.tasks
+    : column.tasks.slice(0, initialDisplayCount);
+  const hasMoreTasks = column.tasks.length > initialDisplayCount;
 
   return (
     <div
@@ -126,9 +139,36 @@ function KanbanColumn({
         {column.tasks.length === 0 ? (
           <div className="text-center py-4 text-xs text-gray-400">Nicio sarcină</div>
         ) : (
-          column.tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onDragStart={() => {}} onDragEnd={() => {}} />
-          ))
+          <>
+            {displayedTasks.map((task) => (
+              <TaskCard key={task.id} task={task} onDragStart={() => {}} onDragEnd={() => {}} />
+            ))}
+            {hasMoreTasks && (
+              <button
+                ref={buttonRef as React.RefObject<HTMLButtonElement>}
+                className="w-full text-center text-xs text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded py-1.5 transition-colors bg-white border border-gray-200"
+                onClick={onToggleExpansion}
+                aria-expanded={isExpanded}
+                aria-label={isExpanded ? 'Arată mai puține taskuri' : 'Arată mai multe taskuri'}
+              >
+                {isExpanded ? (
+                  <span className="flex items-center justify-center gap-0.5">
+                    <span>Mai Puține</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-0.5">
+                    <span>+{column.tasks.length - initialDisplayCount} mai multe</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -152,6 +192,9 @@ export function AssignedTasksWidget({
   const [columns, setColumns] = useState(widget.columns);
   const [draggedTask, setDraggedTask] = useState<TaskWithColumn | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({});
+  const [announceMessage, setAnnounceMessage] = useState('');
+  const expandButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   // const handleDragStart = (task: TaskWithColumn) => {
   //   setDraggedTask(task);
@@ -201,6 +244,32 @@ export function AssignedTasksWidget({
     handleDragEnd();
   };
 
+  const toggleColumnExpansion = (columnId: string, columnTitle: string, totalTasks: number, initialCount: number) => {
+    const newState = !expandedColumns[columnId];
+    setExpandedColumns((prev) => ({
+      ...prev,
+      [columnId]: newState,
+    }));
+
+    // Announce state change for screen readers
+    if (newState) {
+      setAnnounceMessage(`${columnTitle}: Afișare extinsă. Se afișează toate cele ${totalTasks} taskuri.`);
+    } else {
+      setAnnounceMessage(`${columnTitle}: Afișare redusă. Se afișează primele ${initialCount} taskuri.`);
+    }
+
+    // Clear announcement after 1 second
+    setTimeout(() => setAnnounceMessage(''), 1000);
+
+    // Focus management
+    setTimeout(() => {
+      const buttonRef = expandButtonRefs.current[columnId];
+      if (buttonRef) {
+        buttonRef.focus();
+      }
+    }, 50);
+  };
+
   // Icon for widget header
   const icon = (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,6 +302,10 @@ export function AssignedTasksWidget({
       onRemove={onRemove}
       collapsed={widget.collapsed}
     >
+      {/* Screen reader announcements */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {announceMessage}
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-2">
         {enhancedColumns.map((column) => (
           <div
@@ -245,6 +318,9 @@ export function AssignedTasksWidget({
               onDrop={(e) => handleDrop(e, column.id)}
               onDragOver={(e) => handleDragOver(e, column.id)}
               isDragOver={dragOverColumn === column.id}
+              isExpanded={expandedColumns[column.id] || false}
+              onToggleExpansion={() => toggleColumnExpansion(column.id, column.title, column.tasks.length, 3)}
+              buttonRef={(el) => { expandButtonRefs.current[column.id] = el; }}
             />
           </div>
         ))}

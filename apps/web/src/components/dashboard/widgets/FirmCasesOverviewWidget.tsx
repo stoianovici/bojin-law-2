@@ -26,33 +26,6 @@ export interface FirmCasesOverviewWidgetProps {
 }
 
 /**
- * Summary Badge Component
- */
-function SummaryBadge({
-  count,
-  label,
-  color,
-}: {
-  count: number;
-  label: string;
-  color: 'red' | 'gold' | 'blue';
-}) {
-  return (
-    <div className="flex flex-col items-center p-3 border rounded-lg" title={label}>
-      <span
-        className={clsx(
-          'text-2xl font-bold',
-          color === 'red' ? 'text-red-600' : color === 'gold' ? 'text-yellow-600' : 'text-blue-600'
-        )}
-      >
-        {count}
-      </span>
-      <span className="text-xs text-gray-600 mt-1 text-center">{label}</span>
-    </div>
-  );
-}
-
-/**
  * At-Risk Case Item Component (Memoized for performance)
  */
 const AtRiskCaseItem = React.memo(function AtRiskCaseItem({
@@ -310,19 +283,8 @@ export function FirmCasesOverviewWidget({
       onRemove={onRemove}
       collapsed={widget.collapsed}
     >
-      {/* Summary Metrics */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <SummaryBadge count={widget.atRiskCases?.length || 0} label="Cazuri cu Risc" color="red" />
-        <SummaryBadge
-          count={widget.highValueCases?.length || 0}
-          label="Valoare Mare"
-          color="gold"
-        />
-        <SummaryBadge count={widget.aiInsights?.length || 0} label="Insights AI" color="blue" />
-      </div>
-
       {/* Tabbed Interface */}
-      <Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+      <Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as 'atRisk' | 'highValue' | 'aiInsights')}>
         <Tabs.List className="flex border-b border-gray-200 mb-3">
           <Tabs.Trigger
             value="atRisk"

@@ -5,10 +5,34 @@
 
 'use client';
 
-import React, { type ReactNode, useState } from 'react';
+import React, { type ReactNode, useState, useRef, useEffect, createContext, useContext } from 'react';
 import { Card } from '@legal-platform/ui';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { clsx } from 'clsx';
+
+/**
+ * Context for widget expansion control
+ * Allows child components to trigger expansion/collapse
+ */
+interface WidgetExpansionContextType {
+  isExpanded: boolean;
+  toggleExpansion: () => void;
+  isAnimating: boolean;
+}
+
+const WidgetExpansionContext = createContext<WidgetExpansionContextType | null>(null);
+
+/**
+ * Hook to access widget expansion controls from child components
+ * Usage: const { isExpanded, toggleExpansion } = useWidgetExpansion();
+ */
+export function useWidgetExpansion() {
+  const context = useContext(WidgetExpansionContext);
+  if (!context) {
+    throw new Error('useWidgetExpansion must be used within a WidgetContainer with enableExpansion=true');
+  }
+  return context;
+}
 
 export interface WidgetContainerProps {
   id: string;
@@ -22,6 +46,12 @@ export interface WidgetContainerProps {
   className?: string;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  /** Enable smooth expansion/collapse for widget content */
+  enableExpansion?: boolean;
+  /** Current expansion state (for controlled expansion) */
+  isExpanded?: boolean;
+  /** Callback when expansion state changes (for controlled expansion) */
+  onExpansionChange?: (expanded: boolean) => void;
 }
 
 /**
@@ -156,6 +186,9 @@ function WidgetActionMenu({
  * @param className - Additional CSS classes
  * @param collapsed - Whether widget is collapsed
  * @param onToggleCollapse - Toggle collapse handler
+ * @param enableExpansion - Enable smooth expansion/collapse for widget content
+ * @param isExpanded - Current expansion state (for controlled expansion)
+ * @param onExpansionChange - Callback when expansion state changes
  */
 export function WidgetContainer({
   id,
@@ -169,9 +202,46 @@ export function WidgetContainer({
   className,
   collapsed = false,
   onToggleCollapse,
+  enableExpansion = false,
+  isExpanded: controlledExpanded,
+  onExpansionChange,
 }: WidgetContainerProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Use controlled expansion if provided, otherwise use internal state
+  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
+
+  // Handle expansion toggle with animation
+  const handleExpansionToggle = () => {
+    if (isAnimating) return; // Prevent rapid clicks during animation
+
+    setIsAnimating(true);
+    const newExpanded = !isExpanded;
+
+    if (onExpansionChange) {
+      onExpansionChange(newExpanded);
+    } else {
+      setInternalExpanded(newExpanded);
+    }
+
+    // Reset animating state after animation completes (300ms)
+    setTimeout(() => setIsAnimating(false), 300);
+  };
+
+  // Apply smooth transition class during expansion
+  useEffect(() => {
+    if (enableExpansion && contentRef.current) {
+      if (isAnimating) {
+        contentRef.current.classList.add('expanding');
+      } else {
+        contentRef.current.classList.remove('expanding');
+      }
+    }
+  }, [isAnimating, enableExpansion]);
 
   const handleClick = () => {
     setIsClicked(true);
@@ -219,8 +289,29 @@ export function WidgetContainer({
     </div>
   );
 
+  const content = (
+    <div ref={contentRef} className={clsx(enableExpansion && 'transition-all duration-300 ease-in-out')}>
+      {isLoading ? <WidgetSkeleton /> : children}
+    </div>
+  );
+
+  const wrappedContent = enableExpansion ? (
+    <WidgetExpansionContext.Provider
+      value={{ isExpanded, toggleExpansion: handleExpansionToggle, isAnimating }}
+    >
+      {content}
+    </WidgetExpansionContext.Provider>
+  ) : (
+    content
+  );
+
   return (
-    <div key={id} data-widget-id={id} className={clsx('widget-container', className)}>
+    <div
+      key={id}
+      data-widget-id={id}
+      className={clsx('widget-container', className)}
+      data-expanded={enableExpansion ? isExpanded : undefined}
+    >
       <Card
         variant="elevated"
         header={widgetHeader}
@@ -235,7 +326,7 @@ export function WidgetContainer({
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleClick}
       >
-        {isLoading ? <WidgetSkeleton /> : children}
+        {wrappedContent}
       </Card>
     </div>
   );

@@ -162,7 +162,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
       {/* Backdrop overlay when sidebar is expanded */}
       {!isSidebarCollapsed && (
         <div
-          className="fixed inset-0 bg-black/20 z-40 transition-opacity duration-300"
+          className="fixed inset-0 bg-black/20 z-[55] transition-opacity duration-300"
           onClick={toggleSidebar}
           aria-hidden="true"
         />
@@ -175,7 +175,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
           bg-white border-r border-gray-200
           transition-all duration-300 ease-in-out
           ${isSidebarCollapsed ? 'w-16' : 'w-64'}
-          h-screen fixed top-0 left-0 z-50
+          h-screen fixed top-0 left-0 z-[60]
           overflow-y-auto
         `}
         aria-label="Main navigation"

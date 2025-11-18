@@ -19,13 +19,15 @@ export interface AssociateDashboardProps {
   onLayoutChange?: (layout: WidgetPosition[]) => void;
 }
 
-// Default layout for Associate Dashboard
+// Default layout for Associate Dashboard (12-column grid)
 const defaultLayout: WidgetPosition[] = [
+  // Row 1: 2 equal widgets (6 cols each = 50% each)
   { i: 'active-cases', x: 0, y: 0, w: 6, h: 5 },
   { i: 'today-tasks', x: 6, y: 0, w: 6, h: 5 },
+  // Row 2: 3 equal widgets (4 cols each = 33.33% each)
   { i: 'deadlines', x: 0, y: 5, w: 4, h: 5 },
-  { i: 'recent-documents', x: 4, y: 5, w: 8, h: 5 },
-  { i: 'ai-suggestions', x: 0, y: 10, w: 12, h: 4 },
+  { i: 'recent-documents', x: 4, y: 5, w: 4, h: 5 },
+  { i: 'ai-suggestions', x: 8, y: 5, w: 4, h: 4 },
 ];
 
 // Mock data for Associate widgets
@@ -278,11 +280,9 @@ const mockAISuggestionsWidget: AISuggestionWidgetType = {
  * - AI suggestions (recommendations and alerts)
  */
 export function AssociateDashboard({ isEditing = false, onLayoutChange }: AssociateDashboardProps) {
-  const [layout, setLayout] = useState<WidgetPosition[]>(defaultLayout);
   const [isLoading] = useState(false);
 
   const handleLayoutChange = (newLayout: WidgetPosition[]) => {
-    setLayout(newLayout);
     onLayoutChange?.(newLayout);
   };
 
@@ -299,24 +299,26 @@ export function AssociateDashboard({ isEditing = false, onLayoutChange }: Associ
 
   return (
     <div>
-      <DashboardGrid layout={layout} onLayoutChange={handleLayoutChange} isEditing={isEditing}>
-        <div key="active-cases" data-grid={{ i: 'active-cases', x: 0, y: 0, w: 6, h: 5 }}>
+      <DashboardGrid layout={defaultLayout} onLayoutChange={handleLayoutChange} isEditing={isEditing}>
+        {/* Row 1: Active Cases + Today's Tasks (50/50) */}
+        <div key="active-cases">
           <ActiveCasesWidget widget={mockActiveCasesWidget} />
         </div>
 
-        <div key="today-tasks" data-grid={{ i: 'today-tasks', x: 6, y: 0, w: 6, h: 5 }}>
+        <div key="today-tasks">
           <TodayTasksWidget widget={mockTodayTasksWidget} />
         </div>
 
-        <div key="deadlines" data-grid={{ i: 'deadlines', x: 0, y: 5, w: 4, h: 5 }}>
+        {/* Row 2: 3 equal widgets (1/3 each) */}
+        <div key="deadlines">
           <DeadlinesWidget widget={mockDeadlinesWidget} />
         </div>
 
-        <div key="recent-documents" data-grid={{ i: 'recent-documents', x: 4, y: 5, w: 8, h: 5 }}>
+        <div key="recent-documents">
           <RecentDocumentsWidget widget={mockRecentDocumentsWidget} />
         </div>
 
-        <div key="ai-suggestions" data-grid={{ i: 'ai-suggestions', x: 0, y: 10, w: 12, h: 4 }}>
+        <div key="ai-suggestions">
           <AISuggestionWidget widget={mockAISuggestionsWidget} />
         </div>
       </DashboardGrid>

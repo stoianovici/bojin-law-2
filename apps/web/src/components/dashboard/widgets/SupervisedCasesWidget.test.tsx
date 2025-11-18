@@ -344,4 +344,117 @@ describe('SupervisedCasesWidget', () => {
 
     expect(screen.getByText('Depășit')).toBeInTheDocument();
   });
+
+  describe('Expansion/Collapse Behavior', () => {
+    const widgetWithManyCases: SupervisedCasesWidgetType = {
+      ...mockWidget,
+      cases: Array.from({ length: 8 }, (_, i) => ({
+        id: `case-${i + 1}`,
+        caseNumber: `CIV-${String(i + 1).padStart(3, '0')}`,
+        title: `Case ${i + 1}`,
+        clientName: `Client ${i + 1}`,
+        status: 'Active' as const,
+        riskLevel: 'medium' as const,
+        teamSize: 2,
+        nextDeadline: new Date('2025-12-01'),
+      })),
+    };
+
+    it('shows only first 3 cases initially when there are more than 3', () => {
+      render(<SupervisedCasesWidget widget={widgetWithManyCases} />);
+
+      // First 3 cases should be visible
+      expect(screen.getByText('CIV-001')).toBeInTheDocument();
+      expect(screen.getByText('CIV-002')).toBeInTheDocument();
+      expect(screen.getByText('CIV-003')).toBeInTheDocument();
+
+      // Cases 4-8 should not be visible initially
+      expect(screen.queryByText('CIV-004')).not.toBeInTheDocument();
+      expect(screen.queryByText('CIV-008')).not.toBeInTheDocument();
+    });
+
+    it('shows "Show More" button when there are more than 3 cases', () => {
+      render(<SupervisedCasesWidget widget={widgetWithManyCases} />);
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      expect(showMoreButton).toBeInTheDocument();
+      expect(showMoreButton).toHaveTextContent('Arată Mai Multe (5 cazuri)');
+    });
+
+    it('does not show "Show More" button when there are 3 or fewer cases', () => {
+      render(<SupervisedCasesWidget widget={mockWidget} />);
+
+      const showMoreButton = screen.queryByRole('button', { name: /arată mai multe/i });
+      expect(showMoreButton).not.toBeInTheDocument();
+    });
+
+    it('expands to show all cases when "Show More" is clicked', () => {
+      render(<SupervisedCasesWidget widget={widgetWithManyCases} />);
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      fireEvent.click(showMoreButton);
+
+      // All cases should now be visible
+      expect(screen.getByText('CIV-001')).toBeInTheDocument();
+      expect(screen.getByText('CIV-004')).toBeInTheDocument();
+      expect(screen.getByText('CIV-008')).toBeInTheDocument();
+
+      // Button should now say "Show Less"
+      expect(screen.getByRole('button', { name: /arată mai puține/i })).toBeInTheDocument();
+    });
+
+    it('collapses back to 3 cases when "Show Less" is clicked', () => {
+      render(<SupervisedCasesWidget widget={widgetWithManyCases} />);
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      fireEvent.click(showMoreButton);
+
+      // Now click "Show Less"
+      const showLessButton = screen.getByRole('button', { name: /arată mai puține/i });
+      fireEvent.click(showLessButton);
+
+      // Should be back to showing only 3 cases
+      expect(screen.getByText('CIV-001')).toBeInTheDocument();
+      expect(screen.getByText('CIV-002')).toBeInTheDocument();
+      expect(screen.getByText('CIV-003')).toBeInTheDocument();
+      expect(screen.queryByText('CIV-004')).not.toBeInTheDocument();
+    });
+
+    it('has correct aria-expanded attribute', () => {
+      render(<SupervisedCasesWidget widget={widgetWithManyCases} />);
+
+      const button = screen.getByRole('button', { name: /arată mai multe/i });
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.click(button);
+
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('announces expansion state to screen readers', () => {
+      const { container } = render(<SupervisedCasesWidget widget={widgetWithManyCases} />);
+
+      const liveRegion = container.querySelector('[role="status"][aria-live="polite"]');
+      expect(liveRegion).toBeInTheDocument();
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      fireEvent.click(showMoreButton);
+
+      // Live region should contain announcement
+      expect(liveRegion).toHaveTextContent(/afișare extinsă/i);
+    });
+
+    it('maintains focus on expansion button after toggle', async () => {
+      render(<SupervisedCasesWidget widget={widgetWithManyCases} />);
+
+      const showMoreButton = screen.getByRole('button', { name: /arată mai multe/i });
+      showMoreButton.focus();
+
+      fireEvent.click(showMoreButton);
+
+      // Button should maintain focus (now showing "Show Less")
+      const showLessButton = screen.getByRole('button', { name: /arată mai puține/i });
+      expect(document.activeElement).toBe(showLessButton);
+    });
+  });
 });

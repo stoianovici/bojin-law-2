@@ -31,6 +31,17 @@ export interface PartnerDashboardProps {
   onLayoutChange?: (layout: WidgetPosition[]) => void;
 }
 
+// Default layout for Partner Dashboard (12-column grid)
+const defaultLayout: WidgetPosition[] = [
+  // Row 1: 3 equal widgets (4 cols each)
+  { i: 'supervised-cases', x: 0, y: 0, w: 4, h: 5 },
+  { i: 'my-tasks', x: 4, y: 0, w: 4, h: 5 },
+  { i: 'ai-suggestions', x: 8, y: 0, w: 4, h: 4 },
+  // Row 2: Firm Tasks (1/3) + Stack Container (2/3)
+  { i: 'firm-tasks-overview', x: 0, y: 5, w: 4, h: 8 },
+  { i: 'row2-right-stack', x: 4, y: 5, w: 8, h: 8 },
+];
+
 // Mock data for new operational widgets
 const mockSupervisedCasesWidget: SupervisedCasesWidgetType = {
   id: 'supervised-cases',
@@ -308,7 +319,7 @@ const mockAISuggestionsWidget: AISuggestionWidgetType = {
  * - AI Suggestions (insights and recommendations)
  */
 export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerDashboardProps) {
-  const { partnerLayout, updateLayout } = useDashboardStore();
+  const { updateLayout } = useDashboardStore();
 
   const handleLayoutChange = (newLayout: WidgetPosition[]) => {
     updateLayout('Partner', newLayout);
@@ -317,7 +328,8 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
 
   return (
     <div>
-      <DashboardGrid layout={partnerLayout} onLayoutChange={handleLayoutChange} isEditing={isEditing}>
+      <DashboardGrid layout={defaultLayout} onLayoutChange={handleLayoutChange} isEditing={isEditing}>
+        {/* Row 1: Equal-width widgets */}
         <div key="supervised-cases">
           <SupervisedCasesWidget widget={mockSupervisedCasesWidget} />
         </div>
@@ -326,20 +338,24 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
           <TodayTasksWidget widget={mockMyTasksWidget} />
         </div>
 
-        <div key="firm-cases-overview">
-          <FirmCasesOverviewWidget widget={mockFirmCasesOverviewWidget} />
+        <div key="ai-suggestions">
+          <AISuggestionWidget widget={mockAISuggestionsWidget} />
         </div>
 
+        {/* Row 2: Firm Tasks Overview (left, tall) */}
         <div key="firm-tasks-overview">
           <FirmTasksOverviewWidget widget={mockFirmTasksOverviewWidget} />
         </div>
 
-        <div key="employee-workload">
-          <EmployeeWorkloadWidget widget={mockEmployeeWorkloadWidget} />
-        </div>
+        {/* Row 2: Right side container (stacked widgets) */}
+        <div key="row2-right-stack" className="grid-stack-container">
+          <div key="firm-cases-overview">
+            <FirmCasesOverviewWidget widget={mockFirmCasesOverviewWidget} />
+          </div>
 
-        <div key="ai-suggestions">
-          <AISuggestionWidget widget={mockAISuggestionsWidget} />
+          <div key="employee-workload">
+            <EmployeeWorkloadWidget widget={mockEmployeeWorkloadWidget} />
+          </div>
         </div>
       </DashboardGrid>
     </div>

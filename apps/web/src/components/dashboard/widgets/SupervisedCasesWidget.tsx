@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { WidgetContainer } from '../WidgetContainer';
 import type { SupervisedCasesWidget as SupervisedCasesWidgetType } from '@legal-platform/types';
 import { clsx } from 'clsx';
@@ -222,6 +222,10 @@ export function SupervisedCasesWidget({
   onRemove,
 }: SupervisedCasesWidgetProps) {
   const router = useRouter();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [announceMessage, setAnnounceMessage] = useState('');
+  const expandButtonRef = useRef<HTMLButtonElement>(null);
+  const INITIAL_DISPLAY_COUNT = 3;
 
   // Sort cases by risk level (high -> medium -> low) and then by deadline
   const sortedCases = useMemo(() => {
@@ -242,6 +246,29 @@ export function SupervisedCasesWidget({
       return 0;
     });
   }, [widget.cases]);
+
+  // Focus management and screen reader announcements
+  useEffect(() => {
+    if (isExpanded && expandButtonRef.current) {
+      // Keep focus on button after expansion for better UX
+      expandButtonRef.current.focus();
+      // Announce expansion state to screen readers
+      setAnnounceMessage(`Afișare extinsă. Se afișează toate cele ${sortedCases.length} cazuri.`);
+    } else if (!isExpanded && expandButtonRef.current) {
+      // Announce collapse to screen readers
+      setAnnounceMessage(`Afișare redusă. Se afișează primele ${INITIAL_DISPLAY_COUNT} cazuri.`);
+    }
+    // Clear announcement after screen readers have time to read it
+    const timer = setTimeout(() => setAnnounceMessage(''), 1000);
+    return () => clearTimeout(timer);
+  }, [isExpanded, sortedCases.length]);
+
+  // Determine which cases to display based on expansion state
+  const displayedCases = isExpanded
+    ? sortedCases
+    : sortedCases.slice(0, INITIAL_DISPLAY_COUNT);
+
+  const hasMoreCases = sortedCases.length > INITIAL_DISPLAY_COUNT;
 
   // Icon for widget header
   const icon = (
@@ -290,8 +317,12 @@ export function SupervisedCasesWidget({
         </div>
       ) : (
         <>
+          {/* Screen reader announcements */}
+          <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+            {announceMessage}
+          </div>
           <div className="divide-y divide-gray-100">
-            {sortedCases.map((caseItem) => (
+            {displayedCases.map((caseItem) => (
               <CaseListItem
                 key={caseItem.id}
                 caseItem={caseItem}
@@ -299,9 +330,36 @@ export function SupervisedCasesWidget({
               />
             ))}
           </div>
+          {hasMoreCases && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <button
+                ref={expandButtonRef}
+                className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded py-1 transition-colors"
+                onClick={() => setIsExpanded(!isExpanded)}
+                aria-expanded={isExpanded}
+                aria-label={isExpanded ? 'Arată mai puține cazuri' : 'Arată mai multe cazuri'}
+              >
+                {isExpanded ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <span>Arată Mai Puține</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-1">
+                    <span>Arată Mai Multe ({sortedCases.length - INITIAL_DISPLAY_COUNT} cazuri)</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
           <div className="mt-3 pt-3 border-t border-gray-200">
             <button
-              className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded py-1"
+              className="w-full text-center text-sm text-gray-600 hover:text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded py-1"
               onClick={() => router.push('/cases?filter=supervised')}
             >
               Vezi Toate Cazurile Supravegheate ({widget.cases.length})

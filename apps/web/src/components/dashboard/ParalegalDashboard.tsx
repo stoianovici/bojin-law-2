@@ -18,11 +18,13 @@ export interface ParalegalDashboardProps {
   onLayoutChange?: (layout: WidgetPosition[]) => void;
 }
 
-// Default layout for Paralegal Dashboard
+// Default layout for Paralegal Dashboard (12-column grid)
 const defaultLayout: WidgetPosition[] = [
+  // Row 1: Assigned Tasks (2/3) + Deadline Calendar (1/3)
   { i: 'assigned-tasks', x: 0, y: 0, w: 8, h: 6 },
-  { i: 'document-requests', x: 8, y: 0, w: 4, h: 6 },
-  { i: 'deadline-calendar', x: 0, y: 6, w: 6, h: 4 },
+  { i: 'deadline-calendar', x: 8, y: 0, w: 4, h: 6 },
+  // Row 2: Document Requests + AI Recommendations (50/50)
+  { i: 'document-requests', x: 0, y: 6, w: 6, h: 6 },
   { i: 'ai-suggestions', x: 6, y: 6, w: 6, h: 4 },
 ];
 
@@ -247,11 +249,9 @@ const mockAISuggestionsWidget: AISuggestionWidgetType = {
  * - AI suggestions (alerts and recommendations)
  */
 export function ParalegalDashboard({ isEditing = false, onLayoutChange }: ParalegalDashboardProps) {
-  const [layout, setLayout] = useState<WidgetPosition[]>(defaultLayout);
   const [isLoading] = useState(false);
 
   const handleLayoutChange = (newLayout: WidgetPosition[]) => {
-    setLayout(newLayout);
     onLayoutChange?.(newLayout);
   };
 
@@ -268,20 +268,22 @@ export function ParalegalDashboard({ isEditing = false, onLayoutChange }: Parale
 
   return (
     <div>
-      <DashboardGrid layout={layout} onLayoutChange={handleLayoutChange} isEditing={isEditing}>
-        <div key="assigned-tasks" data-grid={{ i: 'assigned-tasks', x: 0, y: 0, w: 8, h: 6 }}>
+      <DashboardGrid layout={defaultLayout} onLayoutChange={handleLayoutChange} isEditing={isEditing}>
+        {/* Row 1: Assigned Tasks (2/3) + Deadline Calendar (1/3) */}
+        <div key="assigned-tasks">
           <AssignedTasksWidget widget={mockAssignedTasksWidget} />
         </div>
 
-        <div key="document-requests" data-grid={{ i: 'document-requests', x: 8, y: 0, w: 4, h: 6 }}>
-          <DocumentRequestsWidget widget={mockDocumentRequestsWidget} />
-        </div>
-
-        <div key="deadline-calendar" data-grid={{ i: 'deadline-calendar', x: 0, y: 6, w: 6, h: 4 }}>
+        <div key="deadline-calendar">
           <DeadlineCalendarWidget widget={mockDeadlineCalendarWidget} />
         </div>
 
-        <div key="ai-suggestions" data-grid={{ i: 'ai-suggestions', x: 6, y: 6, w: 6, h: 4 }}>
+        {/* Row 2: Document Requests + AI Recommendations (50/50) */}
+        <div key="document-requests">
+          <DocumentRequestsWidget widget={mockDocumentRequestsWidget} />
+        </div>
+
+        <div key="ai-suggestions">
           <AISuggestionWidget widget={mockAISuggestionsWidget} />
         </div>
       </DashboardGrid>
