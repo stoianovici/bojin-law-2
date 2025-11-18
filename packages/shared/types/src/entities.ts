@@ -5,8 +5,18 @@
 
 // Enums
 export type UserRole = 'Partner' | 'Associate' | 'Paralegal';
-export type CaseStatus = 'Active' | 'OnHold' | 'Closed' | 'Archived';
-export type CaseType = 'Litigation' | 'Contract' | 'Advisory' | 'Criminal' | 'Other';
+export type CaseStatus = 'Active' | 'Pending' | 'OnHold' | 'Closed' | 'Archived';
+export type CaseType =
+  | 'Civil'
+  | 'Criminal'
+  | 'Corporate'
+  | 'Family'
+  | 'RealEstate'
+  | 'Litigation'
+  | 'Contract'
+  | 'Advisory'
+  | 'Other';
+export type CasePriority = 'Low' | 'Medium' | 'High';
 export type DocumentType = 'Contract' | 'Motion' | 'Letter' | 'Memo' | 'Pleading' | 'Other';
 export type DocumentStatus = 'Draft' | 'Review' | 'Approved' | 'Filed';
 export type TaskType =
@@ -67,6 +77,30 @@ export interface Case {
   updatedAt: Date;
 }
 
+// Attorney/User reference for case overview
+export interface Attorney {
+  id: string;
+  name: string;
+  initials: string;
+}
+
+// Case Overview (for cases list/grid view with enriched information)
+export interface CaseOverview {
+  id: string;
+  caseNumber: string;
+  title: string;
+  clientName: string;
+  caseType: CaseType;
+  status: CaseStatus;
+  assignedAttorneys: Attorney[];
+  lastActivityDate: Date;
+  nextDeadline?: Date;
+  priority: CasePriority;
+  // Hover stats
+  documentCount?: number;
+  taskCount?: number;
+}
+
 // Document Entity
 export interface Document {
   id: string; // UUID
@@ -80,6 +114,27 @@ export interface Document {
   createdBy: string; // UUID (User ID)
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Document Overview (for documents list view with enriched information for filtering/sorting)
+export type FileType = 'PDF' | 'DOCX' | 'XLSX' | 'TXT' | 'Other';
+
+export interface DocumentOverview {
+  id: string;
+  title: string;
+  caseId: string;
+  caseName: string; // Denormalized for display and filtering
+  type: DocumentType;
+  fileType: FileType;
+  fileSizeBytes: number;
+  pageCount?: number;
+  uploadedDate: Date;
+  lastModifiedDate: Date;
+  uploadedBy: string; // Attorney name
+  uploadedById: string; // Attorney ID for filtering
+  status?: DocumentStatus;
+  isReviewed?: boolean;
+  isSigned?: boolean;
 }
 
 // Document Version

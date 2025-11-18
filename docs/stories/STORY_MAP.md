@@ -4,7 +4,7 @@
 
 This document provides a complete map of all stories across epics, their current status, dependencies, and recommended implementation order for the Legal Practice Management System.
 
-Last Updated: 2025-11-17
+Last Updated: 2025-11-18
 
 ## Story Status Legend
 
@@ -42,6 +42,9 @@ Create comprehensive UI design system, component library, testing infrastructure
 | **1.8.5** | Natural Language Command Processing | ✅ Done                | 1.8          | AI-powered command interpretation                |
 | **1.11**  | Time Tracking Interface             | 🔄 Ready for Review    | 1.7.5        | Complete time tracking implementation            |
 | **1.12**  | Reports & Analytics Interface       | 🔄 Ready for Review    | 1.4, 1.11    | Comprehensive reporting dashboard                |
+| **1.13**  | Layout & Spacing Fixes              | 🚀 Ready               | 1.4, 1.5.5, 1.7.5, 1.11, 1.12 | Remove duplicate titles, fix spacing, remove cronometru |
+| **1.14**  | Dashboard Widget Behavior           | 🚀 Ready               | 1.4, 1.5.5, 1.13 | Content-aware sizing, expandable widgets with push |
+| **1.15**  | Content Views Enrichment            | 🚀 Ready               | 1.5, 1.6, 1.7 | Rich case cards, document filtering, calendar cleanup |
 
 ### Epic 1 Implementation Order
 

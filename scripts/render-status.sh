@@ -7,7 +7,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 if [ -f "$PROJECT_ROOT/.env.render" ]; then
+    set -a  # automatically export all variables
     source "$PROJECT_ROOT/.env.render"
+    set +a
 else
     echo "❌ Error: .env.render not found"
     echo "Please create .env.render with your Render API key"

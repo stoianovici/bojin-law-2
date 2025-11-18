@@ -6,7 +6,7 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
-import { CalendarView } from './CalendarView';
+import { MultiWeekCalendarView } from './MultiWeekCalendarView';
 import { KanbanBoard } from './KanbanBoard';
 import { ListView } from './ListView';
 import { TaskCreationBar } from './TaskCreationBar';
@@ -16,12 +16,17 @@ import { createMockTasks, createMockTask } from '@legal-platform/test-utils';
 expect.extend(toHaveNoViolations);
 
 describe('Task Management Accessibility', () => {
-  describe('CalendarView', () => {
+  describe('MultiWeekCalendarView', () => {
     const mockTasks = createMockTasks(10);
 
     it('should not have any accessibility violations', async () => {
       const { container } = render(
-        <CalendarView tasks={mockTasks} onTaskClick={jest.fn()} onTaskDrop={jest.fn()} />
+        <MultiWeekCalendarView
+          tasks={mockTasks}
+          onTaskClick={jest.fn()}
+          onTaskDrop={jest.fn()}
+          weeksToShow={4}
+        />
       );
 
       const results = await axe(container);
@@ -30,7 +35,12 @@ describe('Task Management Accessibility', () => {
 
     it('should have proper ARIA labels for navigation buttons', async () => {
       const { container } = render(
-        <CalendarView tasks={mockTasks} onTaskClick={jest.fn()} onTaskDrop={jest.fn()} />
+        <MultiWeekCalendarView
+          tasks={mockTasks}
+          onTaskClick={jest.fn()}
+          onTaskDrop={jest.fn()}
+          weeksToShow={4}
+        />
       );
 
       const results = await axe(container, {
@@ -45,7 +55,12 @@ describe('Task Management Accessibility', () => {
 
     it('should have proper color contrast for task type badges', async () => {
       const { container } = render(
-        <CalendarView tasks={mockTasks} onTaskClick={jest.fn()} onTaskDrop={jest.fn()} />
+        <MultiWeekCalendarView
+          tasks={mockTasks}
+          onTaskClick={jest.fn()}
+          onTaskDrop={jest.fn()}
+          weeksToShow={4}
+        />
       );
 
       const results = await axe(container, {
@@ -59,7 +74,12 @@ describe('Task Management Accessibility', () => {
 
     it('should support keyboard navigation', async () => {
       const { container } = render(
-        <CalendarView tasks={mockTasks} onTaskClick={jest.fn()} onTaskDrop={jest.fn()} />
+        <MultiWeekCalendarView
+          tasks={mockTasks}
+          onTaskClick={jest.fn()}
+          onTaskDrop={jest.fn()}
+          weeksToShow={4}
+        />
       );
 
       const results = await axe(container, {
@@ -74,7 +94,12 @@ describe('Task Management Accessibility', () => {
 
     it('should not have accessibility violations when empty', async () => {
       const { container } = render(
-        <CalendarView tasks={[]} onTaskClick={jest.fn()} onTaskDrop={jest.fn()} />
+        <MultiWeekCalendarView
+          tasks={[]}
+          onTaskClick={jest.fn()}
+          onTaskDrop={jest.fn()}
+          weeksToShow={4}
+        />
       );
 
       const results = await axe(container);
@@ -420,9 +445,14 @@ describe('Task Management Accessibility', () => {
   });
 
   describe('Romanian Diacritics Rendering', () => {
-    it('should render Romanian diacritics correctly in CalendarView', async () => {
+    it('should render Romanian diacritics correctly in MultiWeekCalendarView', async () => {
       const { container } = render(
-        <CalendarView tasks={createMockTasks(5)} onTaskClick={jest.fn()} onTaskDrop={jest.fn()} />
+        <MultiWeekCalendarView
+          tasks={createMockTasks(5)}
+          onTaskClick={jest.fn()}
+          onTaskDrop={jest.fn()}
+          weeksToShow={4}
+        />
       );
 
       const results = await axe(container);
@@ -578,9 +608,14 @@ describe('Task Management Accessibility', () => {
   });
 
   describe('Screen Reader Compatibility', () => {
-    it('should have proper ARIA roles and labels in CalendarView', async () => {
+    it('should have proper ARIA roles and labels in MultiWeekCalendarView', async () => {
       const { container } = render(
-        <CalendarView tasks={createMockTasks(10)} onTaskClick={jest.fn()} onTaskDrop={jest.fn()} />
+        <MultiWeekCalendarView
+          tasks={createMockTasks(10)}
+          onTaskClick={jest.fn()}
+          onTaskDrop={jest.fn()}
+          weeksToShow={4}
+        />
       );
 
       const results = await axe(container, {

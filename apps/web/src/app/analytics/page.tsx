@@ -139,45 +139,37 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Page Header */}
+      {/* Page Header - Controls only, title now in TopBar */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Analytics & KPIs</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Vizualizare KPI-uri și metrici firmă pentru parteneri
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Date Range Selector (mockup) */}
-              <select
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                defaultValue="30d"
-              >
-                <option value="7d">Ultimele 7 zile</option>
-                <option value="30d">Ultimele 30 zile</option>
-                <option value="90d">Ultimele 90 zile</option>
-                <option value="1y">Ultimul an</option>
-              </select>
-              <button
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                onClick={() => {
-                  // Export analytics data
-                  alert('Export Analytics - To be implemented');
-                }}
-              >
-                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Export
-              </button>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-end gap-3">
+            {/* Date Range Selector (mockup) */}
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              defaultValue="30d"
+            >
+              <option value="7d">Ultimele 7 zile</option>
+              <option value="30d">Ultimele 30 zile</option>
+              <option value="90d">Ultimele 90 zile</option>
+              <option value="1y">Ultimul an</option>
+            </select>
+            <button
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              onClick={() => {
+                // Export analytics data
+                alert('Export Analytics - To be implemented');
+              }}
+            >
+              <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Export
+            </button>
           </div>
         </div>
       </div>

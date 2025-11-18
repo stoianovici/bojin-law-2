@@ -15,9 +15,8 @@ export default function CommunicationsPage() {
 
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-gray-50">
-      {/* Page Header */}
-      <div className="border-b bg-white px-6 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Comunicări</h1>
+      {/* Page Header - Controls only, title now in TopBar */}
+      <div className="border-b bg-white px-6 py-4 flex items-center justify-end">
         <button
           onClick={() => openCompose('new')}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center gap-2"

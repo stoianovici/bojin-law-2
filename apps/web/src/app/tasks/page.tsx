@@ -9,7 +9,6 @@ import React, { useEffect } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { clsx } from 'clsx';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
-import { CalendarView } from '../../components/task/CalendarView';
 import { MultiWeekCalendarView } from '../../components/task/MultiWeekCalendarView';
 import { KanbanBoard } from '../../components/task/KanbanBoard';
 import { ListView } from '../../components/task/ListView';
@@ -141,7 +140,6 @@ export default function TasksPage() {
   const filteredTasks = useFilteredTasks();
 
   const [isCreationBarOpen, setIsCreationBarOpen] = React.useState(false);
-  const [useNewCalendar, setUseNewCalendar] = React.useState(true); // Toggle for prototype
 
   /**
    * Set document title
@@ -325,45 +323,12 @@ export default function TasksPage() {
           {/* Tab Panels */}
           <div className="flex-1 overflow-auto bg-gray-50">
             <Tabs.Content value="calendar" className="h-full p-6">
-              {/* Prototype Toggle */}
-              <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <span className="text-sm font-medium text-blue-900">📊 Vizualizare Calendar:</span>
-                <button
-                  onClick={() => setUseNewCalendar(false)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    !useNewCalendar
-                      ? 'bg-blue-600 text-white font-medium'
-                      : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Săptămână (Vechi)
-                </button>
-                <button
-                  onClick={() => setUseNewCalendar(true)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    useNewCalendar
-                      ? 'bg-blue-600 text-white font-medium'
-                      : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Multi-Săptămână (PROTOTIP V2)
-                </button>
-              </div>
-
-              {useNewCalendar ? (
-                <MultiWeekCalendarView
-                  tasks={filteredTasks}
-                  onTaskClick={handleTaskClick}
-                  onTaskDrop={handleCalendarTaskDrop}
-                  weeksToShow={4}
-                />
-              ) : (
-                <CalendarView
-                  tasks={filteredTasks}
-                  onTaskClick={handleTaskClick}
-                  onTaskDrop={handleCalendarTaskDrop}
-                />
-              )}
+              <MultiWeekCalendarView
+                tasks={filteredTasks}
+                onTaskClick={handleTaskClick}
+                onTaskDrop={handleCalendarTaskDrop}
+                weeksToShow={4}
+              />
             </Tabs.Content>
 
             <Tabs.Content value="kanban" className="h-full p-6">

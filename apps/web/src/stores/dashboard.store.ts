@@ -17,9 +17,9 @@ const defaultLayouts = {
     { i: 'supervised-cases', x: 0, y: 0, w: 6, h: 5 },
     { i: 'my-tasks', x: 6, y: 0, w: 6, h: 5 },
     { i: 'firm-cases-overview', x: 0, y: 5, w: 8, h: 5 },
-    { i: 'firm-tasks-overview', x: 8, y: 5, w: 4, h: 5 },
-    { i: 'employee-workload', x: 0, y: 10, w: 12, h: 6 },
-    { i: 'ai-suggestions', x: 0, y: 16, w: 12, h: 4 },
+    { i: 'firm-tasks-overview', x: 8, y: 5, w: 4, h: 10 },
+    { i: 'employee-workload', x: 0, y: 10, w: 8, h: 5 },
+    { i: 'ai-suggestions', x: 0, y: 15, w: 12, h: 4 },
   ] as WidgetPosition[],
   Associate: [
     { i: 'active-cases', x: 0, y: 0, w: 6, h: 4 },

@@ -58,12 +58,6 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">{getPageTitle()}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Rol curent: {currentRole}
-          </p>
-        </div>
         {renderDashboard()}
       </div>
     </main>
