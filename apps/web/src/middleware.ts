@@ -18,6 +18,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Skip auth for health check endpoints (Render, Docker, etc.)
+  const pathname = request.nextUrl.pathname;
+  if (pathname === '/api/health' || pathname === '/health' || pathname === '/_health') {
+    return NextResponse.next();
+  }
+
   // Skip auth if credentials not configured
   const basicAuthUser = process.env.BASIC_AUTH_USER;
   const basicAuthPassword = process.env.BASIC_AUTH_PASSWORD;
