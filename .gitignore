@@ -21,6 +21,7 @@ out/
 .env.development
 .env.test
 .env.production
+.env.render
 
 # Logs
 *.log

@@ -284,9 +284,24 @@ npm run deploy:production
 - **Staging:** $52/month • 7 services • Preview environments for PRs
 - **Local:** Free • Docker Compose
 
+### Monitoring Deployments
+
+Check deployment status programmatically via Render API:
+
+```bash
+# Quick status check
+./scripts/render-status.sh
+
+# Or use the API directly (requires .env.render)
+source .env.render
+curl -H "Authorization: Bearer $RENDER_API_KEY" \
+  "https://api.render.com/v1/services/$RENDER_WEB_SERVICE_ID/deploys?limit=1"
+```
+
 **Complete Guides:**
 
 - [Deployment Guide](infrastructure/DEPLOYMENT_GUIDE.md) - Step-by-step deployment procedures
+- [Render API Integration](infrastructure/RENDER_API.md) - API access and automation
 - [Operations Runbook](infrastructure/OPERATIONS_RUNBOOK.md) - Daily operations and incident response
 - [Cost Estimation](infrastructure/COST_ESTIMATION.md) - Detailed cost breakdown and projections
 - [Local Development](infrastructure/LOCAL_DEVELOPMENT.md) - Set up local environment
