@@ -82,12 +82,7 @@ function WidgetActionMenu({
               className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none transition-colors"
               onSelect={onRefresh}
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -104,12 +99,7 @@ function WidgetActionMenu({
               className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none transition-colors"
               onSelect={onConfigure}
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -134,12 +124,7 @@ function WidgetActionMenu({
                 className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer outline-none transition-colors"
                 onSelect={onRemove}
               >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -228,25 +213,21 @@ export function WidgetContainer({
           </button>
         )}
         {(onRefresh || onConfigure || onRemove) && (
-          <WidgetActionMenu
-            onRefresh={onRefresh}
-            onConfigure={onConfigure}
-            onRemove={onRemove}
-          />
+          <WidgetActionMenu onRefresh={onRefresh} onConfigure={onConfigure} onRemove={onRemove} />
         )}
       </div>
     </div>
   );
 
   return (
-    <div key={id} data-widget-id={id} className={clsx('widget-container h-full', className)}>
+    <div key={id} data-widget-id={id} className={clsx('widget-container', className)}>
       <Card
         variant="elevated"
         header={widgetHeader}
         headerClassName="bg-gray-50"
-        bodyClassName={collapsed ? 'hidden' : 'flex-1 overflow-auto'}
+        bodyClassName={collapsed ? 'hidden' : ''}
         className={clsx(
-          'h-full flex flex-col transition-all duration-200',
+          'flex flex-col transition-all duration-200',
           isHovered && 'shadow-lg',
           isClicked && 'scale-[0.98]'
         )}
