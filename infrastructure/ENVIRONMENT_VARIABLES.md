@@ -183,15 +183,25 @@ These variables have sensible defaults but can be customized.
 
 #### Claude Skills Configuration (Story 2.11-2.14)
 
-| Variable                     | Description                           | Example               | Required | Sensitive |
-| ---------------------------- | ------------------------------------- | --------------------- | -------- | --------- |
-| `SKILLS_CONTRACT_ANALYSIS`   | Contract Analysis Skill ID            | `skill_contract_v1`   | No       | No        |
-| `SKILLS_DOCUMENT_DRAFTING`   | Document Drafting Skill ID            | `skill_drafting_v1`   | No       | No        |
-| `SKILLS_LEGAL_RESEARCH`      | Legal Research Skill ID               | `skill_research_v1`   | No       | No        |
-| `SKILLS_COMPLIANCE_CHECK`    | Compliance Check Skill ID             | `skill_compliance_v1` | No       | No        |
-| `SKILLS_CACHE_TTL`           | Skills cache time-to-live (seconds)   | `300`                 | No       | No        |
-| `SKILLS_BATCH_SIZE`          | Max skills to batch process           | `50`                  | No       | No        |
-| `SKILLS_A_B_TESTING_ENABLED` | Enable skills A/B testing experiments | `true`                | No       | No        |
+**Core Skills Settings:**
+
+| Variable                                | Description                            | Example                     | Required | Sensitive |
+| --------------------------------------- | -------------------------------------- | --------------------------- | -------- | --------- |
+| `ANTHROPIC_CODE_EXECUTION_ENABLED`      | Enable code execution in skills        | `true`                      | No       | No        |
+| `ANTHROPIC_SKILLS_BETA_VERSION`         | Skills API beta version header         | `skills-2025-10-02`         | No       | No        |
+| `ANTHROPIC_CODE_EXECUTION_BETA_VERSION` | Code execution API beta version header | `code-execution-2025-08-25` | No       | No        |
+| `SKILLS_UPLOAD_MAX_SIZE_MB`             | Max upload size for skill files (MB)   | `10`                        | No       | No        |
+| `SKILLS_MAX_PER_WORKSPACE`              | Max number of skills per workspace     | `50`                        | No       | No        |
+| `SKILLS_CACHE_TTL_SECONDS`              | Skills cache time-to-live (seconds)    | `3600`                      | No       | No        |
+
+**Pre-configured Skills (Optional - for specific use cases):**
+
+| Variable                   | Description                | Example               | Required | Sensitive |
+| -------------------------- | -------------------------- | --------------------- | -------- | --------- |
+| `SKILLS_CONTRACT_ANALYSIS` | Contract Analysis Skill ID | `skill_contract_v1`   | No       | No        |
+| `SKILLS_DOCUMENT_DRAFTING` | Document Drafting Skill ID | `skill_drafting_v1`   | No       | No        |
+| `SKILLS_LEGAL_RESEARCH`    | Legal Research Skill ID    | `skill_research_v1`   | No       | No        |
+| `SKILLS_COMPLIANCE_CHECK`  | Compliance Check Skill ID  | `skill_compliance_v1` | No       | No        |
 
 **Skills Available:**
 

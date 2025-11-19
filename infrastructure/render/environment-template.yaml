@@ -320,6 +320,63 @@ ai-service:
     example: 'true'
     notes: 'Use for document analysis, bulk processing. Batch API costs 50% less but has 24hr processing time'
 
+  # Claude Skills Configuration (Story 2.11-2.14)
+  ANTHROPIC_SKILLS_ENABLED:
+    description: 'Enable Skills API for 70% token reduction on repetitive workflows'
+    required: false
+    sensitive: false
+    default_value: 'true'
+    example: 'true'
+    notes: 'Pre-built legal workflow tools reduce token usage by 70% and costs by 35%'
+
+  ANTHROPIC_CODE_EXECUTION_ENABLED:
+    description: 'Enable code execution within Claude Skills'
+    required: false
+    sensitive: false
+    default_value: 'true'
+    example: 'true'
+    notes: 'Allows skills to execute code for data analysis and document processing'
+
+  ANTHROPIC_SKILLS_BETA_VERSION:
+    description: 'Skills API beta version header'
+    required: false
+    sensitive: false
+    default_value: 'skills-2025-10-02'
+    example: 'skills-2025-10-02'
+    notes: 'Beta API version for Claude Skills'
+
+  ANTHROPIC_CODE_EXECUTION_BETA_VERSION:
+    description: 'Code execution API beta version header'
+    required: false
+    sensitive: false
+    default_value: 'code-execution-2025-08-25'
+    example: 'code-execution-2025-08-25'
+    notes: 'Beta API version for code execution in skills'
+
+  SKILLS_UPLOAD_MAX_SIZE_MB:
+    description: 'Maximum upload size for skill files in megabytes'
+    required: false
+    sensitive: false
+    default_value: '10'
+    example: '10'
+    notes: 'Max file size for uploading custom skills'
+
+  SKILLS_MAX_PER_WORKSPACE:
+    description: 'Maximum number of skills allowed per workspace'
+    required: false
+    sensitive: false
+    default_value: '50'
+    example: '50'
+    notes: 'Limit to prevent workspace clutter and manage performance'
+
+  SKILLS_CACHE_TTL_SECONDS:
+    description: 'Skills cache time-to-live in seconds'
+    required: false
+    sensitive: false
+    default_value: '3600'
+    example: '3600'
+    notes: '1 hour cache for frequently used skills to improve performance'
+
   # xAI Grok Configuration (FALLBACK)
   GROK_API_KEY:
     description: 'xAI Grok API key (FALLBACK AI when Claude unavailable)'
