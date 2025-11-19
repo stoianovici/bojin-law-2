@@ -32,7 +32,8 @@ export interface CaseHeaderProps {
 function StatusBadge({ status }: { status: CaseStatus }) {
   const statusConfig: Record<CaseStatus, { label: string; className: string }> = {
     Active: { label: 'Activ', className: 'bg-green-100 text-green-800 border-green-200' },
-    OnHold: { label: 'În Așteptare', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+    Pending: { label: 'În Așteptare', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+    OnHold: { label: 'Suspendat', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
     Closed: { label: 'Închis', className: 'bg-gray-100 text-gray-800 border-gray-200' },
     Archived: { label: 'Arhivat', className: 'bg-slate-100 text-slate-800 border-slate-200' },
   };
@@ -56,10 +57,14 @@ function StatusBadge({ status }: { status: CaseStatus }) {
  */
 function CaseTypeLabel({ type }: { type: CaseType }) {
   const typeLabels: Record<CaseType, string> = {
+    Civil: 'Civil',
+    Criminal: 'Penal',
+    Corporate: 'Corporativ',
+    Family: 'Familie',
+    RealEstate: 'Imobiliar',
     Litigation: 'Litigiu',
     Contract: 'Contract',
     Advisory: 'Consultanță',
-    Criminal: 'Penal',
     Other: 'Altele',
   };
 

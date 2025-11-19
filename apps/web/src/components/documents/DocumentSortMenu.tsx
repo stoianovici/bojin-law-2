@@ -44,6 +44,7 @@ export function DocumentSortMenu() {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [isOpen]);
 
   const handleSort = (option: SortOption) => {
@@ -51,11 +52,7 @@ export function DocumentSortMenu() {
 
     // Determine order based on label
     let order: 'asc' | 'desc' = 'asc';
-    if (
-      label.includes('mai noi') ||
-      label.includes('Z-A') ||
-      label.includes('mai mari')
-    ) {
+    if (label.includes('mai noi') || label.includes('Z-A') || label.includes('mai mari')) {
       order = 'desc';
     }
 
@@ -64,16 +61,21 @@ export function DocumentSortMenu() {
   };
 
   // Get current sort label
-  const currentSortLabel = SORT_OPTIONS.find(
-    (opt) => {
+  const currentSortLabel =
+    SORT_OPTIONS.find((opt) => {
       const matchesField = opt.field === sortBy;
       const matchesOrder =
-        (sortOrder === 'desc' && (opt.label.includes('mai noi') || opt.label.includes('Z-A') || opt.label.includes('mai mari'))) ||
-        (sortOrder === 'asc' && (opt.label.includes('mai vechi') || opt.label.includes('A-Z') || opt.label.includes('mai mici')));
+        (sortOrder === 'desc' &&
+          (opt.label.includes('mai noi') ||
+            opt.label.includes('Z-A') ||
+            opt.label.includes('mai mari'))) ||
+        (sortOrder === 'asc' &&
+          (opt.label.includes('mai vechi') ||
+            opt.label.includes('A-Z') ||
+            opt.label.includes('mai mici')));
 
       return matchesField && (matchesOrder || (opt.field === 'type' && sortOrder === 'asc'));
-    }
-  )?.label || 'Data Încărcării (Cele mai noi)';
+    })?.label || 'Data Încărcării (Cele mai noi)';
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -97,11 +99,7 @@ export function DocumentSortMenu() {
           />
         </svg>
         Sortează: {currentSortLabel}
-        <svg
-          className="ml-2 -mr-1 h-5 w-5 text-gray-400"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
+        <svg className="ml-2 -mr-1 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
           <path
             fillRule="evenodd"
             d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"

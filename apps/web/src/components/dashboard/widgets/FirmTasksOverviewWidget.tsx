@@ -178,13 +178,19 @@ export function FirmTasksOverviewWidget({
     if (priorityTasks && priorityTasks.length > INITIAL_DISPLAY_COUNT) {
       if (isExpanded && expandButtonRef.current) {
         expandButtonRef.current.focus();
-        setAnnounceMessage(`Afișare extinsă. Se afișează toate cele ${priorityTasks.length} taskuri prioritare.`);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: accessibility announcement for screen readers
+        setAnnounceMessage(
+          `Afișare extinsă. Se afișează toate cele ${priorityTasks.length} taskuri prioritare.`
+        );
       } else if (!isExpanded && expandButtonRef.current) {
-        setAnnounceMessage(`Afișare redusă. Se afișează primele ${INITIAL_DISPLAY_COUNT} taskuri prioritare.`);
+        setAnnounceMessage(
+          `Afișare redusă. Se afișează primele ${INITIAL_DISPLAY_COUNT} taskuri prioritare.`
+        );
       }
       const timer = setTimeout(() => setAnnounceMessage(''), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isExpanded, priorityTasks]);
 
   // Format task breakdown data for chart
@@ -309,13 +315,15 @@ export function FirmTasksOverviewWidget({
             Taskuri Prioritare ({priorityTasks.length})
           </h4>
           <div className="divide-y divide-gray-100 border rounded-lg overflow-hidden">
-            {(isExpanded ? priorityTasks : priorityTasks.slice(0, INITIAL_DISPLAY_COUNT)).map((task) => (
-              <PriorityTaskItem
-                key={task.id}
-                task={task}
-                onClick={() => handleTaskClick(task.id)}
-              />
-            ))}
+            {(isExpanded ? priorityTasks : priorityTasks.slice(0, INITIAL_DISPLAY_COUNT)).map(
+              (task) => (
+                <PriorityTaskItem
+                  key={task.id}
+                  task={task}
+                  onClick={() => handleTaskClick(task.id)}
+                />
+              )
+            )}
           </div>
           {priorityTasks.length > INITIAL_DISPLAY_COUNT && (
             <div className="mt-2">
@@ -330,14 +338,26 @@ export function FirmTasksOverviewWidget({
                   <span className="flex items-center justify-center gap-1">
                     <span>Arată Mai Puține</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
                     </svg>
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-1">
-                    <span>Arată Mai Multe ({priorityTasks.length - INITIAL_DISPLAY_COUNT} taskuri)</span>
+                    <span>
+                      Arată Mai Multe ({priorityTasks.length - INITIAL_DISPLAY_COUNT} taskuri)
+                    </span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </span>
                 )}
