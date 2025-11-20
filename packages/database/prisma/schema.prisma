@@ -1,0 +1,33 @@
+// Prisma Schema for Legal Platform
+// Generated for Story 2.2: Cloud Infrastructure and Database Setup
+// Database: PostgreSQL 16 with pgvector extension
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector, uuid_ossp(map: "uuid-ossp"), pg_trgm]
+}
+
+// This is a minimal schema for Story 2.2 (infrastructure setup)
+// Full schema will be added in later stories when implementing:
+// - Story 2.4: Authentication (users, sessions)
+// - Story 2.6: Case Management (cases, parties, court_info)
+// - Story 2.7: Document Management (documents, document_versions)
+// - Story 2.8: Task Management (tasks, time_entries)
+
+// Placeholder model to validate Prisma setup
+// This will be replaced with actual models in future stories
+model DatabaseHealth {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  timestamp  DateTime @default(now())
+  status     String   @default("healthy")
+  message    String?
+  metadata   Json?
+
+  @@map("database_health")
+}
