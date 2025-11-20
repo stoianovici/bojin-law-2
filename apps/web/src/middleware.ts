@@ -2,67 +2,112 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * HTTP Basic Auth Middleware
- * Protects the application with username/password on non-localhost environments
+ * Combined Middleware: Basic Auth + OAuth Protected Routes
+ * 1. Basic Auth for non-localhost environments (staging protection)
+ * 2. OAuth session-based authentication for protected routes
  *
- * Environment Variables Required:
- * - BASIC_AUTH_USER: Username for authentication
- * - BASIC_AUTH_PASSWORD: Password for authentication
+ * Environment Variables:
+ * - BASIC_AUTH_USER: Username for Basic Auth
+ * - BASIC_AUTH_PASSWORD: Password for Basic Auth
  *
- * To disable: Don't set the environment variables
+ * Story 2.4: Authentication with Azure AD
  */
+
+// Routes that require OAuth authentication
+const protectedRoutes = [
+  '/dashboard',
+  '/cases',
+  '/documents',
+  '/tasks',
+  '/admin',
+  '/settings',
+];
+
+// Public routes that don't require OAuth authentication
+const publicRoutes = [
+  '/login',
+  '/auth/callback',
+  '/auth/login',
+  '/auth/logout',
+  '/auth/refresh',
+];
+
 export function middleware(request: NextRequest) {
-  // Skip auth on localhost/development
+  const pathname = request.nextUrl.pathname;
   const hostname = request.headers.get('host') || '';
+
+  // 1. Skip all auth on localhost/development
   if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
     return NextResponse.next();
   }
 
-  // Skip auth for health check endpoints (Render, Docker, etc.)
-  const pathname = request.nextUrl.pathname;
+  // 2. Skip auth for health check endpoints (Render, Docker, etc.)
   if (pathname === '/api/health' || pathname === '/health' || pathname === '/_health') {
     return NextResponse.next();
   }
 
-  // Skip auth if credentials not configured
+  // 3. Basic Auth (staging protection)
   const basicAuthUser = process.env.BASIC_AUTH_USER;
   const basicAuthPassword = process.env.BASIC_AUTH_PASSWORD;
 
-  if (!basicAuthUser || !basicAuthPassword) {
-    // No auth configured, allow through
+  if (basicAuthUser && basicAuthPassword) {
+    // Get authorization header
+    const authHeader = request.headers.get('authorization');
+
+    // If no auth header, challenge for credentials
+    if (!authHeader) {
+      return new NextResponse('Authentication required', {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': 'Basic realm="Secure Area"',
+        },
+      });
+    }
+
+    // Parse Basic Auth credentials
+    const auth = authHeader.split(' ')[1];
+    const [user, password] = Buffer.from(auth, 'base64').toString().split(':');
+
+    // Verify credentials
+    if (user !== basicAuthUser || password !== basicAuthPassword) {
+      // Invalid credentials
+      return new NextResponse('Invalid credentials', {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': 'Basic realm="Secure Area"',
+        },
+      });
+    }
+    // Valid Basic Auth credentials, continue to OAuth check
+  }
+
+  // 4. OAuth Session Check for Protected Routes
+  // Check if route is public (no OAuth required)
+  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+  if (isPublicRoute) {
     return NextResponse.next();
   }
 
-  // Get authorization header
-  const authHeader = request.headers.get('authorization');
-
-  // If no auth header, challenge for credentials
-  if (!authHeader) {
-    return new NextResponse('Authentication required', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Secure Area"',
-      },
-    });
-  }
-
-  // Parse Basic Auth credentials
-  const auth = authHeader.split(' ')[1];
-  const [user, password] = Buffer.from(auth, 'base64').toString().split(':');
-
-  // Verify credentials
-  if (user === basicAuthUser && password === basicAuthPassword) {
-    // Valid credentials, allow through
+  // Check if route is protected (OAuth required)
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+  if (!isProtectedRoute) {
+    // Not a protected route, allow through
     return NextResponse.next();
   }
 
-  // Invalid credentials
-  return new NextResponse('Invalid credentials', {
-    status: 401,
-    headers: {
-      'WWW-Authenticate': 'Basic realm="Secure Area"',
-    },
-  });
+  // Check for session cookie (OAuth session)
+  const sessionCookie = request.cookies.get('sid');
+
+  if (!sessionCookie) {
+    // No session cookie - redirect to login
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('returnUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Session cookie exists - allow request to proceed
+  // JWT validation happens on the server-side API routes
+  return NextResponse.next();
 }
 
 // Configure which routes to apply middleware to

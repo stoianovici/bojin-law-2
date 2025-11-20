@@ -34,6 +34,7 @@ export function UserProvider({ children }: UserProviderProps) {
     firstName: 'Alexandru',
     lastName: 'Popescu',
     role: currentRole,
+    status: 'Active',
     firmId: '550e8400-e29b-41d4-a716-446655440001',
     azureAdId: 'azure-ad-id-12345',
     preferences: {},

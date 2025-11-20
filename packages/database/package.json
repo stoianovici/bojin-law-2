@@ -13,7 +13,18 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
     "db:push": "prisma db push --schema=./prisma/schema.prisma",
-    "db:seed": "ts-node scripts/seed.ts",
+    "db:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
+    "db:migrate:status": "prisma migrate status --schema=./prisma/schema.prisma",
+    "db:migrate:undo": "./scripts/rollback-migration.sh",
+    "db:migrate:history": "./scripts/migration-history.sh",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:anonymize": "ts-node scripts/anonymize-data.ts",
+    "db:export": "./scripts/export-production.sh",
+    "db:import:anonymized": "./scripts/import-anonymized.sh",
+    "db:backup": "./scripts/backup-database.sh",
+    "db:restore": "./scripts/restore-database.sh",
+    "db:validate": "ts-node scripts/validate-data-integrity.ts",
     "migration:run": "./scripts/run-migration.sh",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -37,9 +48,11 @@
     "@types/node": "^20.10.0",
     "@types/ioredis": "^5.0.0",
     "prisma": "^5.8.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "prisma": {
-    "schema": "./prisma/schema.prisma"
+    "schema": "./prisma/schema.prisma",
+    "seed": "ts-node prisma/seed.ts"
   }
 }

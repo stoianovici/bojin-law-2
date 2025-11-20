@@ -565,26 +565,66 @@ render db delete --database postgres-test
 **Trigger manual backup before major changes:**
 
 ```bash
-# Create manual backup
-./scripts/render/db-backup.sh
+# Using new backup script (recommended)
+cd packages/database
+pnpm db:backup
 
-# Or via Render CLI
-render db backup --database postgres
+# This script:
+# - Detects Render vs local database
+# - Creates timestamped backup
+# - Compresses backup file
+# - Provides safety reminders
+
+# Alternative: Render CLI
+render db backup --database bojin-law-db
 
 # Verify backup created
-render db list-backups --database postgres | head -1
+render db backups --database bojin-law-db | head -5
 
-# Export backup to external storage (recommended)
-render db export --database postgres --output postgres-backup-$(date +%Y-%m-%d).sql
-
-# Upload to S3/R2
-aws s3 cp postgres-backup-$(date +%Y-%m-%d).sql \
-  s3://legal-platform-backups/database/
-
-# Or Cloudflare R2
-rclone copy postgres-backup-$(date +%Y-%m-%d).sql \
-  r2:legal-platform-backups/database/
+# Export production data for development (with anonymization)
+pnpm db:export  # Export to backups/ directory
 ```
+
+**Backup Storage:**
+- Local backups stored in: `packages/database/backups/`
+- Render backups managed automatically
+- External storage recommended for critical backups
+
+**See also:**
+- [Database Quick Start Guide](../docs/runbooks/database-quick-start.md)
+- [Database Migration Runbook](../docs/runbooks/database-migration-runbook.md)
+
+### Database Restore
+
+**Restore from backup using the restore script:**
+
+```bash
+# Using new restore script (recommended)
+cd packages/database
+pnpm db:restore
+
+# This script:
+# - Prompts for backup file or Render backup ID
+# - Creates safety backup before restore
+# - Provides production safety checks
+# - Verifies restore completion
+
+# Alternative: Manual Render restore
+render db backups --database bojin-law-db  # List backups
+render db restore --database bojin-law-db --backup [backup-id]
+```
+
+**Restore Workflow:**
+1. Stop all application services
+2. Create safety backup of current state
+3. Restore from backup file/Render backup
+4. Verify data integrity
+5. Restart application services
+6. Monitor for issues
+
+**See also:**
+- [Database Restore Script](../packages/database/scripts/restore-database.sh)
+- [Database Migration Runbook](../docs/runbooks/database-migration-runbook.md) (Rollback section)
 
 ---
 

@@ -5,6 +5,7 @@
 
 // Enums
 export type UserRole = 'Partner' | 'Associate' | 'Paralegal';
+export type UserStatus = 'Pending' | 'Active' | 'Inactive';
 export type CaseStatus = 'Active' | 'Pending' | 'OnHold' | 'Closed' | 'Archived';
 export type CaseType =
   | 'Civil'
@@ -34,7 +35,8 @@ export interface User {
   firstName: string;
   lastName: string;
   role: UserRole;
-  firmId: string; // UUID
+  status: UserStatus;
+  firmId: string | null; // UUID (nullable for pending users)
   azureAdId: string;
   preferences: Record<string, unknown>;
   createdAt: Date;

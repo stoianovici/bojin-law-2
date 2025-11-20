@@ -23,6 +23,7 @@ import {
   Mail,
   Clock,
   BarChart3,
+  Users,
   type LucideIcon
 } from 'lucide-react';
 
@@ -38,6 +39,7 @@ const iconMap: Record<string, LucideIcon> = {
   communications: Mail,
   'time-tracking': Clock,
   reports: BarChart3,
+  'user-management': Users,
 };
 
 /**

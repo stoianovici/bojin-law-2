@@ -11,6 +11,7 @@ import { TopBar } from './TopBar';
 import { CommandPalette } from './CommandPalette';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { UserProvider, useUser } from '../../contexts/UserContext';
+import { useAuth } from '../../lib/hooks/useAuth';
 
 interface MainLayoutContentProps {
   children: ReactNode;
@@ -18,6 +19,16 @@ interface MainLayoutContentProps {
 
 function MainLayoutContent({ children }: MainLayoutContentProps) {
   const { user } = useUser();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    // Clear local storage and session storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Call logout from auth context (this will call the backend and redirect)
+    await logout();
+  };
 
   return (
     <div className="h-screen overflow-hidden bg-gray-50">
@@ -31,6 +42,7 @@ function MainLayoutContent({ children }: MainLayoutContentProps) {
           userName={`${user.firstName} ${user.lastName}`}
           userRole={user.role}
           unreadCount={3}
+          onLogout={handleLogout}
         />
 
         {/* Page Content */}

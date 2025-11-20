@@ -60,6 +60,7 @@ export function createUser(overrides: UserOverrides = {}): User {
     firstName,
     lastName,
     role,
+    status: 'Active',
     firmId: faker.string.uuid(),
     azureAdId: faker.string.uuid(),
     preferences: {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { MainLayout } from '../components/layout/MainLayout';
+import { AuthProvider } from '../contexts/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Legal Platform',
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="ro">
       <body>
-        <MainLayout>{children}</MainLayout>
+        <AuthProvider>
+          <MainLayout>{children}</MainLayout>
+        </AuthProvider>
       </body>
     </html>
   );

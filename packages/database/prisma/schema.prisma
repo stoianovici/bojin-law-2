@@ -15,7 +15,7 @@ datasource db {
 
 // This is a minimal schema for Story 2.2 (infrastructure setup)
 // Full schema will be added in later stories when implementing:
-// - Story 2.4: Authentication (users, sessions)
+// - Story 2.4: Authentication (users, sessions) - IN PROGRESS
 // - Story 2.6: Case Management (cases, parties, court_info)
 // - Story 2.7: Document Management (documents, document_versions)
 // - Story 2.8: Task Management (tasks, time_entries)
@@ -30,4 +30,82 @@ model DatabaseHealth {
   metadata   Json?
 
   @@map("database_health")
+}
+
+// ============================================================================
+// Story 2.4: Authentication with Azure AD
+// ============================================================================
+
+// User model for authentication and authorization
+// Azure AD integration with automatic user provisioning
+model User {
+  id            String      @id @default(uuid())
+  firmId        String?     @map("firm_id")
+  email         String      @unique @db.VarChar(255)
+  firstName     String      @map("first_name") @db.VarChar(100)
+  lastName      String      @map("last_name") @db.VarChar(100)
+  role          UserRole    @default(Paralegal)
+  status        UserStatus  @default(Pending)
+  azureAdId     String      @unique @map("azure_ad_id") @db.VarChar(255)
+  preferences   Json        @default("{}")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  lastActive    DateTime    @default(now()) @map("last_active") @db.Timestamptz
+
+  // Relations (Story 2.4.1)
+  auditLogsAsUser  UserAuditLog[] @relation("AuditLogUser")
+  auditLogsAsAdmin UserAuditLog[] @relation("AuditLogAdmin")
+
+  // Future relations (to be added in later stories)
+  // firm          Firm?           @relation(fields: [firmId], references: [id])
+  // cases         CaseTeam[]
+  // tasks         Task[]
+  // documents     Document[]
+  // timeEntries   TimeEntry[]
+
+  @@map("users")
+}
+
+// User roles within the law firm
+enum UserRole {
+  Partner
+  Associate
+  Paralegal
+}
+
+// User account status
+// Pending: New user awaiting partner activation (Story 2.4.1)
+// Active: User can access the system
+// Inactive: User account disabled
+enum UserStatus {
+  Pending
+  Active
+  Inactive
+}
+
+// ============================================================================
+// Story 2.4.1: Partner User Management
+// ============================================================================
+
+// Audit log for user management operations
+// Tracks all user activation, deactivation, and role changes
+model UserAuditLog {
+  id          String          @id @default(uuid())
+  userId      String          @map("user_id")
+  action      UserAuditAction
+  adminUserId String          @map("admin_user_id")
+  oldValue    String?         @map("old_value") @db.VarChar(255)
+  newValue    String?         @map("new_value") @db.VarChar(255)
+  timestamp   DateTime        @default(now()) @db.Timestamptz
+
+  user        User            @relation("AuditLogUser", fields: [userId], references: [id])
+  admin       User            @relation("AuditLogAdmin", fields: [adminUserId], references: [id])
+
+  @@map("user_audit_logs")
+}
+
+// User audit actions for tracking management operations
+enum UserAuditAction {
+  Activated
+  Deactivated
+  RoleChanged
 }
