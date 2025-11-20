@@ -254,6 +254,7 @@ export const a11yTestScenarios = {
  * Jest matcher type for toHaveNoViolations
  */
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace jest {
     interface Matchers<R> {
       toHaveNoViolations(): R;

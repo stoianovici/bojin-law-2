@@ -1,0 +1,113 @@
+compliance_id: gdpr-001
+compliance_type: gdpr_compliance
+target: e-commerce_website
+
+scenario:
+  company: EuroShop Online Ltd.
+  location: Dublin, Ireland (EU)
+  business_model: B2C e-commerce platform
+  users: EU residents
+  data_collected:
+    - Email addresses (marketing)
+    - Shipping addresses
+    - Payment information (via Stripe)
+    - Browsing behavior (Google Analytics)
+    - Cookie data (advertising, analytics, essential)
+
+current_state:
+  privacy_policy: Yes (outdated, last updated 2019)
+  cookie_banner: Yes (basic, no granular consent)
+  data_processing_agreements: Stripe DPA in place, no DPA with Google
+  data_retention: Undefined policy
+  user_rights: No self-service portal
+  data_breaches: No incident response plan
+
+gdpr_requirements:
+  lawful_basis:
+    - Consent: Marketing emails, non-essential cookies
+    - Contract: Order processing, shipping
+    - Legitimate_interest: Fraud prevention, analytics
+  user_rights:
+    - Access
+    - Rectification
+    - Erasure
+    - Portability
+    - Object
+    - Restrict processing
+  obligations:
+    - Privacy by design
+    - Data minimization
+    - Transparency (clear privacy notice)
+    - DPAs with all processors
+    - Breach notification (72 hours)
+    - Records of processing activities
+
+expected_output:
+  format: compliance_report
+  sections:
+    executive_summary:
+      overall_status: NON-COMPLIANT (multiple gaps)
+      risk_level: HIGH
+      priority_fixes: 8 critical items
+
+    gap_analysis:
+      - gap_id: GDPR-001
+        area: Cookie Consent
+        finding: Cookie banner lacks granular consent for analytics and advertising
+        requirement: Article 6(1)(a) - Consent must be freely given, specific, informed
+        severity: HIGH
+        remediation: Implement cookie management platform with granular controls
+
+      - gap_id: GDPR-002
+        area: Data Processing Agreements
+        finding: No DPA with Google Analytics
+        requirement: Article 28 - Controller-processor contracts
+        severity: HIGH
+        remediation: Execute Google DPA, review all third-party processors
+
+      - gap_id: GDPR-003
+        area: Privacy Policy
+        finding: Privacy policy outdated, missing required disclosures
+        requirement: Articles 13-14 - Transparency
+        severity: MEDIUM
+        remediation: Update policy with lawful basis, retention, user rights
+
+      - gap_id: GDPR-004
+        area: User Rights
+        finding: No mechanism for users to exercise rights
+        requirement: Articles 15-22 - Data subject rights
+        severity: HIGH
+        remediation: Implement self-service portal or documented request process
+
+      - gap_id: GDPR-005
+        area: Data Retention
+        finding: No defined retention schedule
+        requirement: Article 5(1)(e) - Storage limitation
+        severity: MEDIUM
+        remediation: Define retention policy, implement automated deletion
+
+    recommendations:
+      immediate:
+        - Update cookie consent mechanism (1-2 weeks)
+        - Execute Google DPA (1 week)
+        - Draft incident response plan (2 weeks)
+      short_term:
+        - Rewrite privacy policy (4 weeks)
+        - Implement data subject request workflow (6 weeks)
+        - Create Records of Processing Activities (4 weeks)
+      ongoing:
+        - Annual privacy policy review
+        - Quarterly processor audit
+        - Data protection impact assessments for new features
+
+success_criteria:
+  - Identifies all 5 critical gaps
+  - Correctly cites GDPR articles
+  - Prioritizes remediation by risk
+  - Provides actionable recommendations
+  - Estimates realistic timelines
+
+performance_targets:
+  token_usage: <2000 tokens
+  execution_time: <6 seconds
+  accuracy: 95%+ gap identification

@@ -1,0 +1,43 @@
+# ASSET PURCHASE AGREEMENT - SUMMARY
+
+Buyer: MegaCorp Holdings Inc.
+Seller: StartupCo Technologies LLC
+Purchase Price: $25,000,000 ($15M cash + $10M earnout)
+Closing Date: Q2 2024
+
+PURCHASED ASSETS:
+- All technology and IP (patents, trademarks, source code)
+- Customer contracts and relationships
+- Equipment and inventory ($2M value)
+- Employee roster (45 employees)
+
+EARNOUT STRUCTURE:
+- $5M if Year 1 revenue exceeds $20M
+- $5M if Year 2 revenue exceeds $30M
+
+REPRESENTATIONS & WARRANTIES:
+- Seller warrants clean title, no IP infringement, financial statements accurate
+- Survival period: 24 months (general), 36 months (IP), 5 years (taxes)
+
+INDEMNIFICATION:
+- Basket: $250,000
+- Cap: $5,000,000 (general), $25M (fundamental reps and fraud)
+
+CLOSING CONDITIONS:
+- Regulatory approval (HSR clearance required)
+- No material adverse change
+- Key customer consents obtained
+- Minimum $3M working capital at closing
+
+IDENTIFIED ISSUES FOR TESTING:
+- Earnout metrics lack dispute resolution mechanism
+- Working capital adjustment formula not specified
+- Key employee retention not addressed (risk of talent loss)
+- Escrow amount not specified for indemnity claims
+- MAC definition absent (creates litigation risk)
+- Treatment of unvested employee equity unclear
+- Tax allocation schedule missing
+- Transition services agreement referenced but not attached
+
+RISK LEVEL: HIGH
+COMPLEXITY: Very High - multi-million dollar transaction with earnout, regulatory, and integration risks

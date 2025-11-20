@@ -1,0 +1,44 @@
+scenario_id: saas-terms-001
+scenario_type: document_drafting
+template_needed: ["terms_of_service_template.md", "privacy_policy_template.md"]
+
+context:
+  situation: New SaaS platform launching B2B project management software, needs customer-facing legal documents
+  company:
+    name: TaskFlow Pro Inc.
+    type: Delaware C-Corporation
+    address: 555 Startup Way, Seattle, WA 98101
+    website: www.taskflowpro.com
+  service_description: "Cloud-based project management and team collaboration platform with file storage"
+
+requirements:
+  subscription_model: "Freemium (free tier + paid plans $19-$99/month)"
+  data_processing: "Processes company names, user names, emails, project data, uploaded files"
+  geographic_scope: "US and EU customers"
+  compliance_needs: ["GDPR", "CCPA", "SOC 2"]
+  key_provisions:
+    - Monthly and annual billing options
+    - 30-day money-back guarantee
+    - Acceptable use policy (no illegal content, no spam)
+    - Data retention: 90 days post-termination
+    - SLA: 99.9% uptime commitment
+    - Disclaimer of warranties
+    - Limitation of liability (capped at 12 months' fees)
+
+expected_output:
+  format: Markdown (2 separate documents)
+  tos_word_count: 2500-3500
+  privacy_word_count: 1500-2000
+
+success_criteria:
+  - ToS includes subscription terms, acceptable use, IP ownership, termination, limitation of liability
+  - Privacy Policy includes data collection types, usage purposes, sharing practices, user rights, cookies
+  - GDPR compliance: legal basis, data subject rights (access, deletion, portability), DPO contact
+  - CCPA compliance: data sale opt-out, categories of personal information
+  - SaaS-specific clauses: uptime SLA, data security, backup frequency
+  - Cross-references between ToS and Privacy Policy
+
+performance_targets:
+  token_usage: <4000 tokens (both documents combined)
+  execution_time: <8 seconds total
+  baseline_comparison: 65% token reduction (more complex requirement)

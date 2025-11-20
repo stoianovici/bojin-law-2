@@ -1,0 +1,24 @@
+NON-DISCLOSURE AGREEMENT (Test Sample)
+
+This NDA is between TechCorp Inc. and InnoSoft Solutions, effective March 1, 2024.
+
+1. CONFIDENTIAL INFORMATION: Business plans, source code, customer lists, financial data.
+
+2. OBLIGATIONS: Both parties shall maintain confidentiality, not disclose to third parties, use only for business discussions regarding potential partnership.
+
+3. TERM: This agreement shall remain in effect for two (2) years.
+
+4. EXCLUSIONS: Information already public, independently developed, or received from third parties without confidentiality obligations.
+
+5. RETURN OF MATERIALS: Upon termination, all materials must be returned or destroyed.
+
+6. REMEDIES: Breach may result in injunctive relief in addition to other remedies.
+
+7. GOVERNING LAW: State of California
+
+---
+TEST CRITERIA:
+- Expected clauses identified: confidentiality, term, exclusions, remedies, governing law, return
+- Risk level: LOW (standard terms)
+- Missing: Indemnification clause, dispute resolution
+- Quality: ⭐⭐⭐ (basic but functional)

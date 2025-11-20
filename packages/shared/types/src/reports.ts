@@ -1,5 +1,5 @@
-import { UserRole } from './entities';
-import { ChartType } from './dashboard';
+import type { UserRole } from './entities';
+import type { ChartType } from './dashboard';
 
 export type ReportCategory =
   | 'cases'

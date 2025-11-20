@@ -1,0 +1,30 @@
+# RESIDENTIAL LEASE AGREEMENT
+
+Landlord: John Property Owner
+Tenant: Mary Renter
+Property: 123 Oak Street, Apt 2B, San Francisco, CA 94102
+
+TERM: 12 months (January 1, 2024 - December 31, 2024)
+RENT: $3,000/month, due on the 1st of each month
+SECURITY DEPOSIT: $6,000 (2 months' rent)
+
+UTILITIES: Tenant pays gas and electric. Landlord pays water and trash.
+
+MAINTENANCE: Tenant responsible for minor repairs under $100. Landlord handles major repairs and structural issues.
+
+PETS: One small dog permitted with additional $500 deposit.
+
+PARKING: One assigned space included.
+
+TERMINATION: 30 days' written notice required for non-renewal.
+
+IDENTIFIED ISSUES FOR TESTING:
+- Security deposit exceeds California limit (max 2 months for unfurnished per CA Civil Code § 1950.5) - COMPLIANT
+- Pet deposit may not be legally separate from security deposit under CA law
+- No mention of habitability warranties (implied by CA law)
+- Missing disclosure requirements (mold, lead paint if pre-1978, earthquake safety)
+- Rent increase limitations not addressed (CA AB 1482 statewide rent cap)
+- Late fee terms not specified
+
+RISK LEVEL: LOW
+COMPLEXITY: Low - standard residential lease with minor disclosure gaps but no major enforceability issues

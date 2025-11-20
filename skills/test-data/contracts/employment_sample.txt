@@ -1,0 +1,38 @@
+# EMPLOYMENT AGREEMENT
+
+Employee: Jane Smith
+Employer: Innovation Labs Inc., a California corporation
+Position: Senior Software Engineer
+Start Date: March 1, 2024
+
+COMPENSATION:
+Base Salary: $160,000/year
+Equity: 10,000 stock options (4-year vesting with 1-year cliff)
+Benefits: Health insurance, 401(k) matching, 15 days PTO
+
+DUTIES:
+- Lead backend development team
+- Architect scalable microservices
+- Mentor junior engineers
+
+AT-WILL EMPLOYMENT:
+Employment is at-will and may be terminated by either party at any time.
+
+NON-COMPETE:
+Employee agrees not to work for direct competitors within 50 miles of company offices for 12 months following termination.
+
+INTELLECTUAL PROPERTY:
+All inventions, discoveries, and works created during employment belong to Employer.
+
+CONFIDENTIALITY:
+Employee shall not disclose trade secrets or confidential information. Obligation survives termination.
+
+IDENTIFIED ISSUES FOR TESTING:
+- Non-compete clause likely UNENFORCEABLE in California (Bus. & Prof. Code § 16600)
+- 12-month restriction and 50-mile radius both problematic under CA law
+- Missing severance provisions
+- No definition of "direct competitors"
+- IP assignment too broad (may conflict with CA Labor Code § 2870 for personal projects)
+
+RISK LEVEL: HIGH (due to California non-compete invalidity)
+COMPLEXITY: High - multiple enforceability issues requiring jurisdiction-specific analysis

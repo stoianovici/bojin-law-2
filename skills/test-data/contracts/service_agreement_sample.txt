@@ -1,0 +1,41 @@
+# PROFESSIONAL SERVICES AGREEMENT
+
+Effective Date: January 15, 2024
+
+PARTIES:
+Client: Acme Corporation, a Delaware corporation
+Provider: TechConsult LLC, a California limited liability company
+
+1. SERVICES
+Provider agrees to provide software development consulting services for Client's mobile application project.
+
+2. TERM
+This Agreement commences January 15, 2024 and continues through June 30, 2024.
+
+3. COMPENSATION
+$150/hour, invoiced bi-weekly. Payment due within 15 days.
+
+4. INTELLECTUAL PROPERTY
+All work product shall be owned by Client upon full payment. Provider retains rights to pre-existing materials and may use generic techniques and know-how.
+
+5. CONFIDENTIALITY
+Both parties agree to maintain confidential information for 3 years. Standard exclusions apply.
+
+6. TERMINATION
+Either party may terminate with 30 days' written notice. Client pays for work completed through termination date.
+
+7. LIMITATION OF LIABILITY
+Provider's liability shall not exceed fees paid in the 6 months preceding the claim.
+
+8. GOVERNING LAW
+State of Delaware
+
+IDENTIFIED ISSUES FOR TESTING:
+- Hourly rate structure needs expense reimbursement clause
+- IP ownership clear but missing warranty provisions
+- Confidentiality period shorter than industry standard (typically 5 years)
+- No indemnification clause for IP infringement
+- Missing dispute resolution mechanism
+
+RISK LEVEL: MEDIUM
+COMPLEXITY: Moderate - standard service agreement with minor gaps

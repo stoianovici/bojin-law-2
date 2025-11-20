@@ -1,0 +1,48 @@
+research_id: research-employment-005
+research_type: legal_research
+topic: "Exceptions to At-Will Employment Doctrine"
+
+query:
+  question: "What are the recognized exceptions to at-will employment that could prevent an employer from terminating an employee without cause?"
+  jurisdiction: "California"
+  practice_area: "Employment Law"
+  context: "Tech company wants to ensure employment agreements don't inadvertently create implied contract or other exceptions to at-will status"
+
+research_requirements:
+  - Public policy exception
+  - Implied contract exception
+  - Covenant of good faith and fair dealing
+  - Statutory protections (discrimination, whistleblower, etc.)
+  - Best practices to preserve at-will status
+
+expected_output:
+  format: "Legal research memo"
+  sections:
+    - Issue
+    - Brief answer
+    - Overview of at-will employment in California
+    - Exception 1: Public Policy (Tameny v. Atlantic Richfield)
+    - Exception 2: Implied Contract (Foley v. Interactive Data Corp.)
+    - Exception 3: Covenant of Good Faith (limited application)
+    - Statutory exceptions (wrongful termination)
+    - Drafting recommendations
+  word_count: 1100-1500
+
+key_points_to_cover:
+  - Public policy exception: Firing for refusing to violate law, whistleblowing, exercising statutory rights
+  - Implied contract exception: Employee handbooks, verbal promises, course of conduct creating reasonable expectation
+  - Good faith covenant: California rejects this as employment exception (unlike some states)
+  - Protected categories: Race, gender, age, disability, religion, pregnancy, whistleblower status, etc.
+  - Drafting tips: Strong at-will disclaimer in offer letters, acknowledgment in handbooks, avoid "permanent" or "career" language
+  - Progressive discipline policies may create implied contract - include disclaimer
+
+success_criteria:
+  - Cites Tameny v. Atlantic Richfield (public policy)
+  - Cites Foley v. Interactive Data (implied contract)
+  - Distinguishes California from states recognizing good faith covenant
+  - Lists key protected categories under FEHA
+  - Provides 5+ specific contract drafting recommendations
+
+performance_targets:
+  token_usage: <2000 tokens
+  execution_time: <6 seconds

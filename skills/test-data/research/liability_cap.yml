@@ -1,0 +1,45 @@
+research_id: research-liability-002
+research_type: legal_research
+topic: "Limitation of Liability Clauses in Professional Services Agreements"
+
+query:
+  question: "Are limitation of liability clauses enforceable in professional services contracts, and what are the limits on capping liability?"
+  jurisdiction: "New York"
+  practice_area: "Contract Law"
+  context: "IT consulting firm wants to cap liability at fees paid in last 12 months"
+
+research_requirements:
+  - Enforceability of liability caps in NY
+  - Exceptions where caps don't apply (gross negligence, willful misconduct, fraud)
+  - Industry standards for liability limits in IT services
+  - Relevant case law on unreasonable limitations
+  - Requirements for conspicuous notice
+
+expected_output:
+  format: "Legal research memo"
+  sections:
+    - Issue statement
+    - Brief answer
+    - Applicable law (statutes and case law)
+    - Analysis of enforceability factors
+    - Exceptions to limitation clauses
+    - Practical recommendations
+  word_count: 800-1200
+
+key_points_to_cover:
+  - NY courts generally enforce reasonable liability limitations (Kalisch-Jarcho v. City of New York)
+  - Cannot cap liability for gross negligence or willful misconduct
+  - Caps must be conspicuous and negotiated between sophisticated parties
+  - Industry standard: 1-2x annual fees for professional services
+  - Specific carve-outs for IP infringement, confidentiality breaches typically required
+
+success_criteria:
+  - Cites relevant NY case law
+  - Distinguishes between simple negligence (cappable) and gross negligence (not cappable)
+  - Provides practical guidance on cap amount
+  - Addresses conspicuousness requirement
+  - Recommends specific carve-outs
+
+performance_targets:
+  token_usage: <1800 tokens
+  execution_time: <6 seconds

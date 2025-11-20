@@ -1,0 +1,98 @@
+compliance_id: compliance-hipaa-003
+compliance_type: healthcare_compliance
+regulation: "HIPAA Privacy and Security Rules"
+entity_type: "Healthcare SaaS platform"
+
+scenario:
+  company: "MedConnect Platform Inc."
+  product: "Telemedicine scheduling and patient communication platform"
+  clients: "200 medical practices (covered entities)"
+  role: "Business Associate under HIPAA"
+  patient_count: "Approximately 100,000 patients"
+  data_processed:
+    - Patient demographics: Name, DOB, SSN, address, phone, email
+    - Medical record numbers
+    - Appointment scheduling data
+    - Clinical notes (stored encrypted)
+    - Insurance information
+    - Payment and billing records
+    - Communication logs (secure messaging between patients and providers)
+
+technical_infrastructure:
+  - Cloud hosting: AWS (US-East-1 region)
+  - Database: PostgreSQL with encryption at rest
+  - Transmission: TLS 1.3 for all data in transit
+  - Access controls: Role-based access, MFA for admin accounts
+  - Audit logs: 90-day retention
+  - Backup: Daily encrypted backups, 30-day retention
+
+compliance_check_requirements:
+  - Business Associate Agreement (BAA) adequacy
+  - Technical safeguards (45 CFR § 164.312)
+  - Administrative safeguards (45 CFR § 164.308)
+  - Physical safeguards (45 CFR § 164.310)
+  - Breach notification procedures (45 CFR § 164.410)
+  - Minimum necessary standard
+  - Patient rights implementation (access, amendment)
+  - Subcontractor management (AWS, payment processor)
+
+expected_output:
+  format: "HIPAA Compliance Assessment"
+  sections:
+    - Executive summary with risk level
+    - BAA and business associate status
+    - Technical safeguards analysis
+    - Administrative safeguards analysis
+    - Physical safeguards analysis
+    - Breach response readiness
+    - Subcontractor chain compliance
+    - Remediation plan with timeline
+  risk_level: "HIGH / MEDIUM / LOW"
+
+known_compliance_gaps:
+  CRITICAL:
+    - Audit logs only retained 90 days (HIPAA requires 6 years)
+    - No documented risk assessment conducted in last 12 months
+    - No evidence of Business Associate Agreements with AWS or payment processor
+    - Encryption algorithm not specified (must be FIPS 140-2 compliant)
+  HIGH:
+    - No formal breach notification policy/procedure
+    - Access logs don't capture patient-specific access (minimum necessary auditing)
+    - No workforce training documentation
+    - Disaster recovery plan not tested in last 12 months
+  MEDIUM:
+    - MFA only for admin, not all workforce members accessing ePHI
+    - No documented policies for granting/revoking access
+    - Physical security for backup media not documented
+  LOW:
+    - Privacy notice not prominently displayed in application
+    - Patient rights request process not clearly documented
+
+expected_recommendations:
+  IMMEDIATE (0-30 days):
+    - Execute BAAs with AWS and payment processor
+    - Extend audit log retention to 6 years
+    - Document and implement breach notification procedures (60-day notification requirement)
+    - Conduct comprehensive risk assessment per 45 CFR § 164.308(a)(1)(ii)(A)
+  SHORT-TERM (30-90 days):
+    - Implement annual HIPAA training program with completion tracking
+    - Expand MFA requirement to all workforce members
+    - Create and test disaster recovery/business continuity plan
+    - Document all policies and procedures (required by 45 CFR § 164.316)
+  ONGOING:
+    - Annual risk assessments
+    - Quarterly policy reviews
+    - Penetration testing (annual minimum)
+    - Incident response drills
+
+success_criteria:
+  - Identifies 6-year audit log retention requirement
+  - Flags missing BAAs as critical compliance gap
+  - Addresses both Security Rule and Privacy Rule requirements
+  - Recommends risk assessment as foundational requirement
+  - Provides timeline-based remediation plan
+  - Notes encryption must be NIST/FIPS compliant
+
+performance_targets:
+  token_usage: <3000 tokens
+  execution_time: <8 seconds

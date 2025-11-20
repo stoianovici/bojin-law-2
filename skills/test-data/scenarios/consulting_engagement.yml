@@ -1,0 +1,54 @@
+scenario_id: consulting-001
+scenario_type: document_drafting
+template_needed: consultancy_agreement_template.md
+
+context:
+  situation: Established fintech company hiring independent consultant for 6-month blockchain integration project
+  parties:
+    client:
+      name: PaymentFlow Systems Inc.
+      type: Delaware C-Corporation
+      address: 789 Financial Plaza, New York, NY 10004
+    consultant:
+      name: Dr. Alex Blockchain
+      type: Sole Proprietor
+      address: 321 Tech Lane, Austin, TX 78701
+  project: "Integrate Ethereum smart contracts for automated payment settlements"
+
+requirements:
+  compensation: $200/hour, 20 hours/week minimum, paid bi-weekly
+  term: "6 months with option to extend"
+  ip_ownership: "Client owns deliverables, consultant retains pre-existing IP and general methodologies"
+  jurisdiction: "State of New York"
+  special_clauses:
+    - Include non-solicitation of client employees (12 months)
+    - Consultant may work for non-competing clients
+    - Include audit rights for blockchain code quality
+    - Specify acceptance testing procedures
+
+expected_output:
+  format: Markdown
+  word_count: 2000-2500
+  sections:
+    - Parties and recitals
+    - Scope of services and deliverables
+    - Compensation and expenses
+    - Term and termination
+    - IP ownership and licenses
+    - Confidentiality
+    - Non-solicitation
+    - Independent contractor status
+    - Warranties and liability
+    - Governing law
+
+success_criteria:
+  - Hourly rate and minimum hours clearly stated
+  - IP split properly documented
+  - Independent contractor classification emphasized (IRS Form 1099)
+  - Non-solicitation limited to employees (not customers)
+  - Acceptance testing procedures included
+
+performance_targets:
+  token_usage: <2500 tokens
+  execution_time: <5 seconds
+  baseline_comparison: 70% token reduction

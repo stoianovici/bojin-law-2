@@ -21,7 +21,7 @@
  * ```
  */
 
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { clsx } from 'clsx';
 import { TextareaProps } from '@legal-platform/types';
 
@@ -56,7 +56,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     ref
   ) => {
     // Generate unique ID if not provided
-    const textareaId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const textareaId = id || generatedId;
     const helperId = `${textareaId}-helper`;
 
     // Determine which message to show

@@ -1,0 +1,46 @@
+research_id: research-databreach-004
+research_type: legal_research
+topic: "Data Breach Notification Requirements"
+
+query:
+  question: "What are the data breach notification timelines and requirements for a company experiencing a security breach affecting customers in California, New York, and Texas?"
+  jurisdiction: "Multi-state (CA, NY, TX)"
+  practice_area: "Privacy and Data Security"
+  context: "SaaS company with 50,000 US customers experienced breach exposing names, emails, and passwords"
+
+research_requirements:
+  - State-specific notification deadlines
+  - Threshold for notification (what constitutes breach requiring notice)
+  - Content requirements for notifications
+  - Attorney General notification requirements
+  - Credit monitoring offer requirements
+
+expected_output:
+  format: "Comparative legal memo"
+  sections:
+    - Issue
+    - Brief answer with state comparison table
+    - California requirements (Cal. Civ. Code § 1798.82)
+    - New York requirements (NY Gen. Bus. Law § 899-aa)
+    - Texas requirements (Tex. Bus. & Com. Code § 521.053)
+    - Multi-state compliance strategy
+  word_count: 1000-1400
+
+key_points_to_cover:
+  - 'California: "Without unreasonable delay" (interpreted as immediately), AG notice if >500 residents'
+  - 'New York: "Most expedient time possible and without unreasonable delay", AG notice required'
+  - 'Texas: "Without unreasonable delay", AG notice if >250 residents'
+  - All three require written, electronic, or substitute notice
+  - 'Content must include: date/timeframe of breach, types of info, contact info, remedial steps'
+  - Passwords = high-risk data potentially requiring credit monitoring offers
+
+success_criteria:
+  - Provides state-by-state comparison table
+  - Cites specific statutes for each state
+  - Addresses AG notification thresholds
+  - Recommends most conservative timeline (California standard)
+  - Provides sample notification language outline
+
+performance_targets:
+  token_usage: <2200 tokens
+  execution_time: <7 seconds

@@ -76,6 +76,60 @@ These variables **must** be set for the platform to function. They are not auto-
 openssl rand -base64 48
 ```
 
+### Database Configuration
+
+PostgreSQL database connection is auto-injected by Render via `DATABASE_URL`, but you can customize connection behavior with these variables:
+
+| Variable                        | Description                           | Example  | Required | Sensitive | Set Where   |
+| ------------------------------- | ------------------------------------- | -------- | -------- | --------- | ----------- |
+| `DATABASE_MAX_CONNECTIONS`      | Max database connections              | `20`     | No       | No        | render.yaml |
+| `DATABASE_POOL_SIZE`            | Connection pool size (per service)    | `10`     | No       | No        | render.yaml |
+| `DATABASE_CONNECTION_TIMEOUT`   | Connection timeout in milliseconds    | `30000`  | No       | No        | render.yaml |
+| `DATABASE_STATEMENT_TIMEOUT`    | Query statement timeout in ms         | `60000`  | No       | No        | render.yaml |
+| `DATABASE_IDLE_TIMEOUT`         | Idle connection timeout in ms         | `10000`  | No       | No        | render.yaml |
+| `DATABASE_SSL_MODE`             | SSL mode for database connection      | `require`| No       | No        | render.yaml |
+
+**Database Details (Configured in render.yaml):**
+
+- **Name:** `legal-platform-db`
+- **Database:** `legal_platform_prod`
+- **User:** `legal_platform_user`
+- **Plan:** Standard (25GB storage)
+- **Backups:** Daily automatic with 7-day retention
+- **Region:** Oregon (US-West)
+- **Extensions:** pgvector, uuid-ossp, pg_trgm
+
+**Connection String Format:**
+
+```
+postgresql://legal_platform_user:<password>@dpg-xxxxx.oregon-postgres.render.com:5432/legal_platform_prod?ssl=true
+```
+
+### Redis Configuration
+
+Redis cache connection is auto-injected by Render via `REDIS_URL`, but you can customize Redis client behavior:
+
+| Variable                   | Description                      | Example | Required | Sensitive | Set Where   |
+| -------------------------- | -------------------------------- | ------- | -------- | --------- | ----------- |
+| `REDIS_MAX_RETRIES`        | Max reconnection attempts        | `3`     | No       | No        | render.yaml |
+| `REDIS_CONNECT_TIMEOUT`    | Connection timeout in ms         | `5000`  | No       | No        | render.yaml |
+| `REDIS_SESSION_TTL`        | Session expiration in seconds    | `86400` | No       | No        | render.yaml |
+| `REDIS_CACHE_DEFAULT_TTL`  | Default cache TTL in seconds     | `300`   | No       | No        | render.yaml |
+
+**Redis Details (Configured in render.yaml):**
+
+- **Name:** `legal-platform-redis`
+- **Plan:** Pro (1GB memory)
+- **Region:** Oregon (US-West)
+- **Eviction Policy:** allkeys-lru (Least Recently Used)
+- **Persistence:** Yes (AOF with fsync every second)
+
+**Connection String Format:**
+
+```
+redis://red-xxxxx:6379
+```
+
 ### Frontend (apps/web)
 
 | Variable                        | Description                            | Example                                  | Required | Sensitive | Set Where        |
@@ -112,22 +166,76 @@ These variables have sensible defaults but can be customized.
 
 ### Document Service (services/document-service)
 
-| Variable               | Description                | Example                                    | Required | Sensitive |
-| ---------------------- | -------------------------- | ------------------------------------------ | -------- | --------- |
-| `STORAGE_PROVIDER`     | File storage provider      | `cloudflare-r2`, `s3`, `render-disk`       | Yes      | No        |
-| `STORAGE_BUCKET`       | Storage bucket name        | `legal-platform-prod-documents`            | Yes      | No        |
-| `R2_ACCOUNT_ID`        | Cloudflare R2 account ID   | `your-account-id`                          | No\*     | No        |
-| `R2_ACCESS_KEY_ID`     | Cloudflare R2 access key   | `your-access-key-id`                       | No\*     | Yes       |
-| `R2_SECRET_ACCESS_KEY` | Cloudflare R2 secret key   | `your-secret-key`                          | No\*     | Yes       |
-| `R2_BUCKET_ENDPOINT`   | Cloudflare R2 endpoint URL | `https://account.r2.cloudflarestorage.com` | No\*     | No        |
+#### Storage Configuration (Story 2.2)
 
-**\*Required if `STORAGE_PROVIDER=cloudflare-r2`**
+The platform uses a hybrid storage strategy with OneDrive as primary storage and Cloudflare R2 as fallback.
 
-**Storage Options:**
+| Variable                        | Description                           | Example                                    | Required | Sensitive |
+| ------------------------------- | ------------------------------------- | ------------------------------------------ | -------- | --------- |
+| `STORAGE_PROVIDER`              | Primary storage provider              | `onedrive`, `r2`, `local`                  | Yes      | No        |
+| `STORAGE_BACKUP_ENABLED`        | Enable backup to R2                   | `true`, `false`                            | No       | No        |
+| `STORAGE_BUCKET`                | Storage bucket name (for R2)          | `legal-platform-prod-documents`            | Yes\*    | No        |
 
-- **`render-disk`**: Use Render persistent disks (good for staging, limited to 100GB)
-- **`cloudflare-r2`**: Use Cloudflare R2 (recommended for production, cost-effective, S3-compatible)
-- **`s3`**: Use AWS S3 (more expensive, widely supported)
+**\*Required if `STORAGE_PROVIDER=r2` or `STORAGE_BACKUP_ENABLED=true`**
+
+#### OneDrive Configuration (Microsoft Graph API)
+
+| Variable                 | Description                       | Example                                | Required | Sensitive |
+| ------------------------ | --------------------------------- | -------------------------------------- | -------- | --------- |
+| `ONEDRIVE_CLIENT_ID`     | Azure App Client ID               | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | Yes\*    | No        |
+| `ONEDRIVE_CLIENT_SECRET` | Azure App Client Secret           | `xxxxx~xxxxxxxxxxxxxxxxxxxxxxxxx`      | Yes\*    | Yes       |
+| `ONEDRIVE_TENANT_ID`     | Azure Tenant ID                   | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | Yes\*    | No        |
+| `ONEDRIVE_DRIVE_ID`      | OneDrive Drive ID (optional)      | `b!xxxxxxxxxxxxxxxxxxxxxxxxxxxxx`      | No       | No        |
+
+**\*Required if `STORAGE_PROVIDER=onedrive`**
+
+**Setup Instructions:**
+
+1. Go to https://portal.azure.com → App registrations
+2. Create new app registration or use existing
+3. Copy Application (client) ID → `ONEDRIVE_CLIENT_ID`
+4. Copy Directory (tenant) ID → `ONEDRIVE_TENANT_ID`
+5. Create new client secret → `ONEDRIVE_CLIENT_SECRET`
+6. Add Microsoft Graph API permissions:
+   - `Files.ReadWrite.All` (Application permission)
+   - `Sites.ReadWrite.All` (Application permission)
+7. Grant admin consent for the permissions
+
+#### Cloudflare R2 Configuration
+
+| Variable                        | Description                       | Example                                    | Required | Sensitive |
+| ------------------------------- | --------------------------------- | ------------------------------------------ | -------- | --------- |
+| `CLOUDFLARE_R2_ACCOUNT_ID`      | Cloudflare R2 Account ID          | `your-account-id`                          | Yes\*    | No        |
+| `CLOUDFLARE_R2_ACCESS_KEY_ID`   | Cloudflare R2 Access Key          | `your-access-key-id`                       | Yes\*    | Yes       |
+| `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Cloudflare R2 Secret Access Key | `your-secret-key`                          | Yes\*    | Yes       |
+| `CLOUDFLARE_R2_BUCKET_ENDPOINT` | Custom R2 endpoint (optional)     | `https://account.r2.cloudflarestorage.com` | No       | No        |
+
+**\*Required if `STORAGE_PROVIDER=r2` or `STORAGE_BACKUP_ENABLED=true`**
+
+**Setup Instructions:**
+
+1. Go to https://dash.cloudflare.com → R2
+2. Create R2 bucket: `legal-platform-prod-documents`
+3. Generate API tokens → Create API token
+4. Copy Account ID → `CLOUDFLARE_R2_ACCOUNT_ID`
+5. Copy Access Key ID → `CLOUDFLARE_R2_ACCESS_KEY_ID`
+6. Copy Secret Access Key → `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
+
+**Storage Provider Decision Matrix:**
+
+| Scenario                              | Provider | Rationale                                        |
+| ------------------------------------- | -------- | ------------------------------------------------ |
+| User uploads document via web app     | OneDrive | Microsoft 365 integration, collaboration         |
+| AI generates document from template   | OneDrive | User can edit in Office apps                     |
+| Large files >100MB                    | R2       | OneDrive throttles, R2 has no egress fees        |
+| Public documents (filed pleadings)    | R2       | Global CDN, no auth required, fast delivery      |
+| Archived cases (>2 years old)         | R2       | Cost-effective long-term storage                 |
+
+**Cost Comparison:**
+
+- **OneDrive:** Included in Microsoft 365 license (no additional cost)
+- **Cloudflare R2:** $0.015/GB storage + **$0/GB egress** (zero bandwidth charges)
+- **AWS S3:** $0.023/GB storage + $0.09/GB egress (not recommended)
 
 ### AI Service (services/ai-service)
 

@@ -3,7 +3,7 @@
  * Shared TypeScript interfaces for UI components
  */
 
-import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 /**
  * Common variant types

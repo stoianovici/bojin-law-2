@@ -1,5 +1,10 @@
 // Jest setup file
 import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
+
+// Polyfill TextEncoder/TextDecoder for pg database client
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 // Mock localStorage
 const localStorageMock = {

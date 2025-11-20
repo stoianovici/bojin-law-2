@@ -21,9 +21,10 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "-platform/types": ["../../packages/shared/types/src"]
+      "@legal-platform/types": ["../../packages/shared/types/src"],
+      "@legal-platform/romanian-templates": ["../../packages/romanian-templates/src"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "**/*.stories.tsx"]
+  "exclude": ["node_modules", "**/*.stories.tsx", "**/*.test.ts", "**/*.test.tsx", "**/testing/**"]
 }

@@ -29,7 +29,7 @@
  * ```
  */
 
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { clsx } from 'clsx';
 import { InputProps } from '@legal-platform/types';
 
@@ -66,7 +66,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     ref
   ) => {
     // Generate unique ID if not provided
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const inputId = id || generatedId;
     const helperId = `${inputId}-helper`;
 
     // Determine which message to show

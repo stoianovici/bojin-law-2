@@ -1,0 +1,55 @@
+query_id: research-001
+query_type: legal_research
+category: contract_law
+subcategory: non_compete_agreements
+
+query:
+  question: "Are non-compete agreements enforceable in California for software engineers?"
+  context: |
+    Client is a software company in San Francisco that wants to include a 12-month
+    non-compete clause in employment contracts for senior engineers. They are concerned
+    about employees joining competitors after leaving.
+  jurisdiction: California
+  specific_concerns:
+    - Enforceability under California Business & Professions Code § 16600
+    - Exceptions for trade secret protection
+    - Alternative approaches (non-solicitation, confidentiality)
+    - Recent case law developments
+
+expected_output:
+  format: research_memo
+  sections:
+    issue: Clear statement of legal question
+    short_answer: Direct answer with key limitation
+    relevant_law:
+      - California Business & Professions Code § 16600
+      - Edwards v. Arthur Andersen LLP (2008)
+      - AMN Healthcare, Inc. v. Aya Healthcare Services, Inc. (2018)
+    analysis: |
+      Detailed discussion of:
+      - General rule: non-competes are void in California
+      - Limited exceptions (sale of business, partnership dissolution)
+      - Trade secret protection as alternative
+      - Non-solicitation enforceability (limited)
+      - Narrow restraints doctrine
+    recommendations:
+      - Use strong confidentiality and trade secret protection
+      - Consider limited non-solicitation (customers/employees)
+      - Focus on IP assignment clauses
+      - Avoid geographic or industry-based restrictions
+    cases_cited:
+      - Edwards v. Arthur Andersen LLP, 44 Cal. 4th 937 (2008)
+      - AMN Healthcare, Inc. v. Aya Healthcare Services, Inc., 28 Cal. App. 5th 923 (2018)
+      - Dowell v. Biosense Webster, Inc., 179 Cal. App. 4th 564 (2009)
+
+success_criteria:
+  - Correctly identifies Cal. B&P Code § 16600 as controlling
+  - Cites Edwards v. Arthur Andersen
+  - Explains void nature of non-competes in California
+  - Provides alternative protective measures
+  - Distinguishes from trade secret protection
+
+performance_targets:
+  token_usage: <1500 tokens
+  execution_time: <5 seconds
+  accuracy: 95%+ (vs. manual legal research)

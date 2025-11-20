@@ -13,6 +13,7 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '@legal-platform/types': '<rootDir>/../../packages/shared/types/src',
     '@legal-platform/ui': '<rootDir>/../../packages/ui/src',
+    '@legal-platform/romanian-templates': '<rootDir>/../../packages/romanian-templates/src',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   testMatch: [

@@ -1,0 +1,46 @@
+research_id: research-ip-003
+research_type: legal_research
+topic: "Work-for-Hire Doctrine vs. Assignment of Copyright"
+
+query:
+  question: "When does the work-for-hire doctrine automatically vest copyright ownership in the hiring party, and when is an explicit assignment required?"
+  jurisdiction: "Federal (Copyright Act)"
+  practice_area: "Intellectual Property"
+  context: "Software company hiring contractors to develop mobile app"
+
+research_requirements:
+  - Two categories of work-for-hire under 17 U.S.C. § 101
+  - Employee vs. independent contractor determination
+  - Specially ordered or commissioned works (9 categories)
+  - Effect of written agreements on work-for-hire status
+  - When assignment agreements necessary even with WFH language
+
+expected_output:
+  format: "Legal research memo"
+  sections:
+    - Issue
+    - Brief answer
+    - Statutory framework (17 U.S.C. § 101, § 201)
+    - Employee works-for-hire analysis
+    - Commissioned works analysis (9 categories)
+    - Best practices and recommendations
+  word_count: 900-1300
+
+key_points_to_cover:
+  - Category 1: Employee-created works (automatically WFH during scope of employment)
+  - Category 2: Commissioned works (only 9 specific categories including software if "specially ordered")
+  - CCNV v. Reid factors for determining employee vs. contractor status
+  - Written agreement required for commissioned works to be WFH
+  - Software CAN be work-for-hire if specially commissioned with written agreement
+  - Recommendation: Always include both WFH language AND explicit assignment clause for redundancy
+
+success_criteria:
+  - Explains both categories of work-for-hire
+  - Cites 17 U.S.C. § 101 and § 201
+  - References CCNV v. Reid Supreme Court case
+  - Provides practical contract drafting guidance
+  - Addresses software specifically
+
+performance_targets:
+  token_usage: <2000 tokens
+  execution_time: <6 seconds

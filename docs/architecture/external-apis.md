@@ -91,4 +91,198 @@
 - **Documentation:** https://platform.openai.com/docs/api-reference
 - **Note:** 40% more expensive than Claude for comparable performance
 
+## Document Storage Architecture (Story 2.2)
+
+The Legal Platform uses a hybrid storage strategy with Microsoft OneDrive as the primary storage and Cloudflare R2 as fallback/backup storage.
+
+### Storage Providers
+
+#### Microsoft OneDrive (PRIMARY)
+
+- **Purpose:** Primary document storage with native Microsoft 365 integration
+- **API:** Microsoft Graph API `/drives` endpoints
+- **Authentication:** OAuth 2.0 with delegated permissions
+- **Advantages:**
+  - Native integration with Office 365 apps (Word, Excel, Outlook)
+  - Built-in versioning and change tracking
+  - Collaboration features (co-authoring, comments, sharing)
+  - Included in Microsoft 365 license (no additional storage cost)
+  - Users can access documents via Office 365 web/mobile apps
+- **Limitations:**
+  - Requires Microsoft Graph API authentication
+  - Rate limits: 10,000 requests per 10 minutes
+  - Dependent on Microsoft 365 availability
+  - Large file uploads (>100MB) may be throttled
+
+**OneDrive Folder Structure:**
+
+```
+/Cases/{CaseID}/
+├── Documents/
+│   ├── Pleadings/
+│   ├── Correspondence/
+│   ├── Evidence/
+│   └── Templates/
+├── Discovery/
+└── Court_Filings/
+```
+
+**Key Endpoints:**
+
+- `GET /drives/{drive-id}/root/children` - List root folder contents
+- `POST /drives/{drive-id}/root:/Cases/{CaseID}/Documents:/children` - Create folder
+- `PUT /drives/{drive-id}/items/{item-id}/content` - Upload document
+- `GET /drives/{drive-id}/items/{item-id}/content` - Download document
+- `GET /drives/{drive-id}/items/{item-id}/versions` - Get version history
+- `POST /drives/{drive-id}/items/{item-id}/createLink` - Create sharing link
+
+#### Cloudflare R2 (FALLBACK/BACKUP)
+
+- **Purpose:** Cost-effective fallback storage and public document hosting
+- **API:** S3-compatible API (use AWS SDK with custom endpoint)
+- **Authentication:** Access Key ID + Secret Access Key
+- **Cost:** $0.015/GB storage, **$0/GB egress** (zero bandwidth charges)
+- **Advantages:**
+  - Zero egress fees (major cost savings vs S3)
+  - S3-compatible API (easy migration)
+  - Global CDN for fast delivery
+  - Suitable for large files (>100MB)
+  - Public document hosting (filed court documents)
+  - Backup of OneDrive documents
+- **Limitations:**
+  - No built-in collaboration features
+  - Requires separate access management
+  - No native Office integration
+
+**R2 Folder Structure:**
+
+```
+legal-platform-documents/
+├── cases/
+│   └── {CaseID}/
+│       ├── documents/
+│       ├── evidence/
+│       └── court-filings/
+├── templates/
+└── public/
+    └── court-filings/ (publicly accessible)
+```
+
+**Configuration:**
+
+```typescript
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+const r2Client = new S3Client({
+  region: 'auto',
+  endpoint: `https://${process.env.CLOUDFLARE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+  },
+});
+```
+
+### Document Storage Decision Matrix
+
+| Scenario                              | Primary Storage | Fallback Storage | Rationale                                        |
+| ------------------------------------- | --------------- | ---------------- | ------------------------------------------------ |
+| User uploads document via web app     | OneDrive        | R2 (backup)      | Microsoft 365 integration, collaboration         |
+| AI generates document from template   | OneDrive        | R2 (backup)      | User can edit in Office apps                     |
+| Large files >100MB                    | R2              | OneDrive         | OneDrive throttles, R2 has no egress fees        |
+| Public documents (filed pleadings)    | R2 Public       | OneDrive         | Global CDN, no auth required, fast delivery      |
+| Document thumbnails/previews          | Local Cache     | R2               | Fast access, auto-generated                      |
+| Archived cases (>2 years old)         | R2              | OneDrive         | Cost-effective long-term storage                 |
+| Users without Microsoft 365 access    | R2              | N/A              | Alternative for non-M365 users                   |
+
+### Storage Selection Logic
+
+```typescript
+async function getStorageProvider(context: StorageContext): Promise<'onedrive' | 'r2'> {
+  // Large files > 100MB go to R2
+  if (context.fileSize > 100 * 1024 * 1024) {
+    return 'r2';
+  }
+
+  // Public documents go to R2
+  if (context.isPublic) {
+    return 'r2';
+  }
+
+  // Archived cases go to R2
+  if (context.caseArchived) {
+    return 'r2';
+  }
+
+  // Users without M365 access go to R2
+  if (!context.userHasM365) {
+    return 'r2';
+  }
+
+  // Default: OneDrive for collaboration
+  return 'onedrive';
+}
+```
+
+### Document Upload Workflow
+
+```mermaid
+graph TD
+    A[User Uploads Document] --> B{File Size Check}
+    B -->|< 100MB| C[OneDrive Upload]
+    B -->|≥ 100MB| D[R2 Upload]
+    C --> E[Store Metadata in Database]
+    D --> E
+    E --> F[Background: Backup to R2]
+    F --> G[Background: Generate Thumbnail]
+    G --> H[Cache Thumbnail Locally]
+    H --> I[Document Available]
+```
+
+### Environment Variables
+
+```bash
+# OneDrive (Microsoft Graph)
+ONEDRIVE_CLIENT_ID=<azure-app-client-id>
+ONEDRIVE_CLIENT_SECRET=<azure-app-secret>
+ONEDRIVE_TENANT_ID=<azure-tenant-id>
+
+# Cloudflare R2
+CLOUDFLARE_R2_ACCOUNT_ID=<account-id>
+CLOUDFLARE_R2_ACCESS_KEY_ID=<access-key>
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=<secret-key>
+STORAGE_BUCKET=legal-platform-documents
+
+# Storage Provider Selection
+STORAGE_PROVIDER=onedrive  # onedrive | r2 | local (for development)
+STORAGE_BACKUP_ENABLED=true # Backup to R2 when using OneDrive
+```
+
+### Rate Limits and Performance
+
+| Provider  | Upload Rate Limit | Download Rate Limit | Latency (p95) | Bandwidth Cost |
+| --------- | ----------------- | ------------------- | ------------- | -------------- |
+| OneDrive  | 10K req/10min     | 10K req/10min       | 200-500ms     | Included       |
+| R2        | Unlimited\*       | Unlimited\*         | 50-150ms      | $0/GB          |
+
+\*Subject to Cloudflare account limits
+
+### Security Considerations
+
+1. **Authentication:**
+   - OneDrive: OAuth 2.0 with user consent
+   - R2: Pre-signed URLs with time-limited access
+
+2. **Encryption:**
+   - OneDrive: At-rest encryption (Microsoft-managed keys)
+   - R2: At-rest encryption (AES-256)
+
+3. **Access Control:**
+   - OneDrive: Per-file sharing permissions
+   - R2: Bucket policies + pre-signed URLs
+
+4. **Audit Logging:**
+   - All uploads/downloads logged to database
+   - User, timestamp, document ID tracked
+
 [Additional external APIs continue...]

@@ -32,3 +32,10 @@ export * from './time-tracking';
 
 // Reports & Analytics Types
 export * from './reports';
+
+// Document & Discovery Types
+export * from './document';
+export * from './discovery';
+
+// Database Types
+export * from './database';

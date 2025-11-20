@@ -34,14 +34,16 @@ const nextConfig = {
       };
     }
 
-    // Completely exclude stories files from webpack processing
+    // Completely exclude stories and test files from webpack processing
     config.module.rules.forEach((rule) => {
       if (rule.test && rule.test.toString().includes('tsx')) {
         if (rule.exclude) {
           rule.exclude = Array.isArray(rule.exclude) ? rule.exclude : [rule.exclude];
           rule.exclude.push(/\.stories\.tsx?$/);
+          rule.exclude.push(/\.test\.tsx?$/);
+          rule.exclude.push(/\/testing\//);
         } else {
-          rule.exclude = /\.stories\.tsx?$/;
+          rule.exclude = [/\.stories\.tsx?$/, /\.test\.tsx?$/, /\/testing\//];
         }
       }
     });

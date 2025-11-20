@@ -1,0 +1,52 @@
+scenario_id: startup-nda-001
+scenario_type: document_drafting
+template_needed: nda_mutual_template.md
+
+context:
+  situation: Early-stage SaaS startup seeking seed funding
+  parties:
+    party_a:
+      name: CloudMetrics Inc.
+      type: Delaware C-Corporation
+      address: 123 Tech Drive, San Francisco, CA 94102
+    party_b:
+      name: Venture Growth Partners
+      type: Limited Partnership
+      address: 456 Investment Plaza, Palo Alto, CA 94301
+  purpose: Discussions regarding potential seed investment
+
+requirements:
+  confidentiality_period: Three (3) years
+  term: Two (2) years
+  jurisdiction: State of California
+  special_clauses:
+    - Add clause prohibiting reverse engineering
+    - Include provision for return of materials upon request
+    - Specify that no investment commitment is created
+
+expected_output:
+  format: Markdown
+  word_count: 1500-2000
+  sections:
+    - Parties identification
+    - Recitals
+    - Definition of Confidential Information
+    - Exclusions
+    - Obligations
+    - Term and termination
+    - Return of materials
+    - Remedies
+    - Governing law and jurisdiction
+    - Signatures
+
+success_criteria:
+  - All {{VARIABLES}} properly substituted
+  - No placeholder text remains
+  - Legal structure follows standard NDA format
+  - California law specified
+  - Investment non-commitment language included
+
+performance_targets:
+  token_usage: <2000 tokens
+  execution_time: <4 seconds
+  baseline_comparison: 70% token reduction vs. raw prompt

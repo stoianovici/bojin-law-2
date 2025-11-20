@@ -1,0 +1,76 @@
+compliance_id: compliance-ccpa-002
+compliance_type: privacy_compliance
+regulation: "CCPA/CPRA"
+entity_type: "Mobile app (iOS/Android)"
+
+scenario:
+  company: "FitTracker Health Inc."
+  product: "Fitness tracking mobile app with social features"
+  users: "500,000 California residents"
+  data_collected:
+    - Personal identifiers: Name, email, phone, user ID
+    - Location data: GPS coordinates for running routes
+    - Health data: Steps, heart rate, sleep patterns, weight
+    - Device info: Device ID, IP address, app usage analytics
+    - Social data: Friend connections, shared workout data
+    - Payment info: Credit card (via Stripe), subscription status
+
+business_model:
+  - Freemium (free tier + $9.99/month premium)
+  - Advertising in free tier (Google AdMob, Facebook Audience Network)
+  - Data sharing with fitness equipment manufacturers (Peloton, Fitbit integration)
+
+compliance_check_requirements:
+  - Consumer rights implementation (access, deletion, opt-out)
+  - Notice at collection requirements
+  - Privacy policy adequacy
+  - Do Not Sell My Personal Information link
+  - Sensitive personal information handling (health data)
+  - Third-party data sharing disclosures
+  - Age verification (16+ required for account creation)
+
+expected_output:
+  format: "CCPA Compliance Assessment"
+  sections:
+    - Executive summary with compliance score
+    - Consumer rights implementation analysis
+    - Notice and disclosure findings
+    - Data sale and sharing assessment
+    - Sensitive data handling (CPRA provisions)
+    - Gap analysis and remediation plan
+  compliance_score_range: "0-100%"
+
+known_compliance_gaps:
+  HIGH_PRIORITY:
+    - Health data is "sensitive personal information" under CPRA - requires opt-in consent and separate notice
+    - Advertising partners likely constitute "sale" - must implement Do Not Sell/Share link
+    - Location data sharing with equipment manufacturers may require separate consent
+    - No evidence of "Right to Delete" implementation in technical architecture
+  MEDIUM_PRIORITY:
+    - Privacy policy must itemize all third parties (currently generic "partners")
+    - Notice at collection timing unclear (must be at/before data collection)
+    - Authorized agent process not documented
+  LOW_PRIORITY:
+    - Privacy policy should include CPRA-specific updates (retention periods, sensitive PI)
+    - Consumer request verification procedures need documentation
+
+expected_recommendations:
+  - Implement prominent "Limit the Use of My Sensitive Personal Information" toggle
+  - Add Do Not Sell/Share link to app settings
+  - Create consumer request portal for access/deletion
+  - Update privacy policy with all third-party data recipients listed by name
+  - Implement technical delete functionality (anonymize or purge within 45 days)
+  - Add notice at collection when health data first synced
+  - Conduct data inventory and mapping exercise
+  - Execute Data Processing Agreements with all third parties
+
+success_criteria:
+  - Identifies health data as sensitive PI requiring special treatment
+  - Flags ad networks as potential "sale" of data
+  - Recommends Do Not Sell implementation
+  - Addresses CPRA-specific requirements (vs. original CCPA)
+  - Provides actionable remediation steps with priority levels
+
+performance_targets:
+  token_usage: <2500 tokens
+  execution_time: <7 seconds
