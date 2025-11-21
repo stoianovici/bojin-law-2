@@ -8,6 +8,7 @@ import type { Case, User, Document, Task, AISuggestion, DocumentNode } from '@le
 export function createMockCaseWorkspace() {
   const mockCase: Case = {
     id: 'case-001',
+    firmId: 'firm-001',
     caseNumber: '2024/001',
     title: 'Litigiu comercial - Contract furnizare',
     clientId: 'client-001',

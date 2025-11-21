@@ -5,7 +5,14 @@
  */
 
 import { faker } from '@faker-js/faker';
-import type { Case, CaseStatus, CaseType, CaseOverrides, CaseTeamMember, CaseTeamMemberOverrides } from '@legal-platform/types';
+import type {
+  Case,
+  CaseStatus,
+  CaseType,
+  CaseOverrides,
+  CaseTeamMember,
+  CaseTeamMemberOverrides,
+} from '@legal-platform/types';
 
 /**
  * Generate a case number in format: YYYY-XXX-NNNN
@@ -24,8 +31,18 @@ function generateCaseNumber(): string {
  * @returns Case entity
  */
 export function createCase(overrides: CaseOverrides = {}): Case {
-  const status = overrides.status || faker.helpers.arrayElement<CaseStatus>(['Active', 'OnHold', 'Closed', 'Archived']);
-  const type = overrides.type || faker.helpers.arrayElement<CaseType>(['Litigation', 'Contract', 'Advisory', 'Criminal', 'Other']);
+  const status =
+    overrides.status ||
+    faker.helpers.arrayElement<CaseStatus>(['Active', 'OnHold', 'Closed', 'Archived']);
+  const type =
+    overrides.type ||
+    faker.helpers.arrayElement<CaseType>([
+      'Litigation',
+      'Contract',
+      'Advisory',
+      'Criminal',
+      'Other',
+    ]);
 
   const openedDate = faker.date.past({ years: 2 });
   const isClosedOrArchived = status === 'Closed' || status === 'Archived';
@@ -35,6 +52,7 @@ export function createCase(overrides: CaseOverrides = {}): Case {
 
   return {
     id: faker.string.uuid(),
+    firmId: faker.string.uuid(),
     caseNumber: generateCaseNumber(),
     title: faker.helpers.arrayElement([
       `${faker.company.name()} vs. ${faker.company.name()}`,
@@ -119,7 +137,13 @@ export function createCases(count: number, overrides: CaseOverrides = {}): Case[
  * @returns CaseTeamMember entity
  */
 export function createCaseTeamMember(overrides: CaseTeamMemberOverrides = {}): CaseTeamMember {
-  const roles = ['Lead Attorney', 'Associate Attorney', 'Paralegal', 'Legal Assistant', 'Expert Witness'];
+  const roles = [
+    'Lead Attorney',
+    'Associate Attorney',
+    'Paralegal',
+    'Legal Assistant',
+    'Expert Witness',
+  ];
 
   return {
     userId: faker.string.uuid(),
@@ -135,6 +159,9 @@ export function createCaseTeamMember(overrides: CaseTeamMemberOverrides = {}): C
  * @param overrides - Partial CaseTeamMember object to override default values
  * @returns Array of CaseTeamMember entities
  */
-export function createCaseTeamMembers(count: number, overrides: CaseTeamMemberOverrides = {}): CaseTeamMember[] {
+export function createCaseTeamMembers(
+  count: number,
+  overrides: CaseTeamMemberOverrides = {}
+): CaseTeamMember[] {
   return Array.from({ length: count }, () => createCaseTeamMember(overrides));
 }

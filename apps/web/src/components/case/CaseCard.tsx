@@ -21,7 +21,6 @@ interface CaseCardProps {
  */
 const STATUS_COLORS: Record<CaseStatus, string> = {
   Active: 'bg-green-100 text-green-800 border-green-200',
-  Pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   OnHold: 'bg-gray-100 text-gray-800 border-gray-200',
   Closed: 'bg-gray-100 text-gray-600 border-gray-200',
   Archived: 'bg-gray-50 text-gray-500 border-gray-100',
@@ -68,7 +67,12 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
           className="p-1 rounded-md hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
           aria-label="Quick actions"
         >
-          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-5 h-5 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -135,7 +139,12 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${PRIORITY_COLORS[caseItem.priority]}`}
           >
-            Prioritate {caseItem.priority === 'High' ? 'Înaltă' : caseItem.priority === 'Medium' ? 'Medie' : 'Scăzută'}
+            Prioritate{' '}
+            {caseItem.priority === 'High'
+              ? 'Înaltă'
+              : caseItem.priority === 'Medium'
+                ? 'Medie'
+                : 'Scăzută'}
           </span>
         </div>
 
@@ -164,61 +173,48 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
           {caseItem.nextDeadline && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Termen Limită:</span>
-              <span
-                className={`font-medium ${urgentDeadline ? 'text-red-600' : 'text-gray-900'}`}
-              >
+              <span className={`font-medium ${urgentDeadline ? 'text-red-600' : 'text-gray-900'}`}>
                 {format(caseItem.nextDeadline, 'dd MMM yyyy', { locale: ro })}
-                {urgentDeadline && (
-                  <span className="ml-1 text-xs font-semibold">⚠️ URGENT</span>
-                )}
+                {urgentDeadline && <span className="ml-1 text-xs font-semibold">⚠️ URGENT</span>}
               </span>
             </div>
           )}
         </div>
 
         {/* Hover Stats - Quick Document/Task Counts */}
-        {showHoverStats && (caseItem.documentCount !== undefined || caseItem.taskCount !== undefined) && (
-          <div className="border-t border-gray-200 pt-3 mt-3">
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              {caseItem.documentCount !== undefined && (
-                <div className="flex items-center gap-1">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <span>{caseItem.documentCount} documente</span>
-                </div>
-              )}
-              {caseItem.taskCount !== undefined && (
-                <div className="flex items-center gap-1">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                    />
-                  </svg>
-                  <span>{caseItem.taskCount} sarcini</span>
-                </div>
-              )}
+        {showHoverStats &&
+          (caseItem.documentCount !== undefined || caseItem.taskCount !== undefined) && (
+            <div className="border-t border-gray-200 pt-3 mt-3">
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                {caseItem.documentCount !== undefined && (
+                  <div className="flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>{caseItem.documentCount} documente</span>
+                  </div>
+                )}
+                {caseItem.taskCount !== undefined && (
+                  <div className="flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
+                    </svg>
+                    <span>{caseItem.taskCount} sarcini</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </Link>
     </div>
   );
