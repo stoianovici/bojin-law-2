@@ -1,0 +1,440 @@
+/**
+ * Microsoft Graph API Service
+ * Story 2.5: Microsoft Graph API Integration Foundation
+ *
+ * Service layer for Microsoft Graph API operations with authentication provider integration.
+ * Supports both user-delegated and application-level API calls.
+ *
+ * Ref: Microsoft Graph SDK - https://github.com/microsoftgraph/msgraph-sdk-javascript
+ * Ref: Graph API documentation - https://learn.microsoft.com/en-us/graph/api/overview
+ */
+
+import { Client, ClientOptions, AuthenticationProvider } from '@microsoft/microsoft-graph-client';
+import type { User, Message, DriveItem, Event } from '@microsoft/microsoft-graph-types';
+import { ConfidentialClientApplication } from '@azure/msal-node';
+import { azureAdConfig, msalConfig } from '../config/auth.config';
+import { graphConfig, graphEndpoints, graphScopes } from '../config/graph.config';
+import { retryWithBackoff } from '../utils/retry.util';
+import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
+
+/**
+ * Simple authentication provider that uses a static access token
+ */
+class TokenAuthenticationProvider implements AuthenticationProvider {
+  private accessToken: string;
+
+  constructor(accessToken: string) {
+    this.accessToken = accessToken;
+  }
+
+  async getAccessToken(): Promise<string> {
+    return this.accessToken;
+  }
+}
+
+/**
+ * Microsoft Graph API Service
+ * Handles all interactions with Microsoft Graph API
+ */
+export class GraphService {
+  private msalClient: ConfidentialClientApplication;
+
+  /**
+   * Create GraphService instance
+   *
+   * @param msalClient - Optional MSAL client (for testing)
+   */
+  constructor(msalClient?: ConfidentialClientApplication) {
+    this.msalClient = msalClient || new ConfidentialClientApplication(msalConfig);
+  }
+
+  /**
+   * Get authenticated Graph client for user-delegated scenarios
+   *
+   * Uses the provided access token to make Graph API calls on behalf of a user.
+   * The access token must have the necessary delegated permissions.
+   *
+   * @param accessToken - OAuth access token with Graph API delegated permissions
+   * @returns Configured Microsoft Graph client instance
+   */
+  getAuthenticatedClient(accessToken: string): Client {
+    const authProvider = new TokenAuthenticationProvider(accessToken);
+
+    return Client.init({
+      defaultVersion: 'v1.0',
+      debugLogging: process.env.NODE_ENV === 'development',
+      authProvider: authProvider as any,
+      // Note: Timeout handled by retry utility (30s default)
+    });
+  }
+
+  /**
+   * Get Graph client for application-level scenarios
+   *
+   * Uses client credentials flow to obtain an app-only access token.
+   * Requires application permissions configured in Azure AD.
+   * Ideal for background tasks that don't run in a user context.
+   *
+   * @returns Configured Microsoft Graph client instance with app-only auth
+   * @throws Error if client credentials flow fails
+   */
+  async getAppClient(): Promise<Client> {
+    try {
+      // Acquire token using client credentials flow
+      const result = await this.msalClient.acquireTokenByClientCredential({
+        scopes: graphScopes.default, // https://graph.microsoft.com/.default
+      });
+
+      if (!result?.accessToken) {
+        throw new Error('Failed to acquire app-only access token from Azure AD');
+      }
+
+      const authProvider = new TokenAuthenticationProvider(result.accessToken);
+
+      return Client.init({
+        defaultVersion: 'v1.0',
+        debugLogging: process.env.NODE_ENV === 'development',
+        authProvider: authProvider as any,
+        // Note: Timeout handled by retry utility (30s default)
+      });
+    } catch (error: any) {
+      throw new Error(`Failed to initialize app-only Graph client: ${error.message}`);
+    }
+  }
+
+  /**
+   * Refresh access token using refresh token
+   *
+   * Uses the refresh token to obtain a new access token without requiring
+   * user interaction. This is called automatically when a 401 Unauthorized
+   * error is received from Graph API.
+   *
+   * @param refreshToken - Refresh token from initial authentication
+   * @returns New access token and expiration
+   * @throws Error if token refresh fails
+   */
+  async refreshAccessToken(refreshToken: string): Promise<{
+    accessToken: string;
+    expiresOn: Date;
+  }> {
+    try {
+      const result = await this.msalClient.acquireTokenByRefreshToken({
+        refreshToken,
+        scopes: graphScopes.delegated.all,
+      });
+
+      if (!result?.accessToken) {
+        throw new Error('Failed to refresh access token - no token returned');
+      }
+
+      return {
+        accessToken: result.accessToken,
+        expiresOn: result.expiresOn || new Date(Date.now() + 3600 * 1000), // Default 1 hour
+      };
+    } catch (error: any) {
+      throw new Error(`Token refresh failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get current user profile (delegated)
+   *
+   * Retrieves the profile of the authenticated user.
+   * Requires User.Read delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @returns User profile from Microsoft Graph
+   * @throws Error if Graph API call fails
+   */
+  async getUserProfile(accessToken: string): Promise<User> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          const user = await client.api(graphEndpoints.me).get();
+
+          return user as User;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-user-profile'
+    );
+  }
+
+  /**
+   * Get user by ID (application or delegated)
+   *
+   * Retrieves a specific user's profile by their ID.
+   * Requires User.Read.All application permission or User.ReadBasic.All delegated permission.
+   *
+   * @param userId - Azure AD user ID
+   * @param accessToken - Access token (delegated) or undefined for app-only
+   * @returns User profile from Microsoft Graph
+   * @throws Error if Graph API call fails
+   */
+  async getUserById(userId: string, accessToken?: string): Promise<User> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = accessToken
+            ? this.getAuthenticatedClient(accessToken)
+            : await this.getAppClient();
+
+          const user = await client.api(graphEndpoints.userById(userId)).get();
+
+          return user as User;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-user-by-id'
+    );
+  }
+
+  /**
+   * List user messages (delegated)
+   *
+   * Retrieves a list of messages in the user's mailbox.
+   * Requires Mail.Read delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param top - Number of messages to retrieve (default: 10, max: 999)
+   * @returns Array of email messages
+   * @throws Error if Graph API call fails
+   */
+  async listMessages(accessToken: string, top: number = 10): Promise<Message[]> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          const response = await client
+            .api(graphEndpoints.messages)
+            .top(top)
+            .orderby('receivedDateTime DESC')
+            .get();
+
+          return response.value as Message[];
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-list-messages'
+    );
+  }
+
+  /**
+   * Get message by ID (delegated)
+   *
+   * Retrieves a specific email message by its ID.
+   * Requires Mail.Read delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param messageId - Message ID
+   * @returns Email message
+   * @throws Error if Graph API call fails
+   */
+  async getMessageById(accessToken: string, messageId: string): Promise<Message> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          const message = await client.api(graphEndpoints.messageById(messageId)).get();
+
+          return message as Message;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-message-by-id'
+    );
+  }
+
+  /**
+   * Send email (delegated)
+   *
+   * Sends an email on behalf of the authenticated user.
+   * Requires Mail.Send delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param message - Message to send
+   * @returns void
+   * @throws Error if Graph API call fails
+   */
+  async sendMail(
+    accessToken: string,
+    message: {
+      subject: string;
+      body: {
+        contentType: 'Text' | 'HTML';
+        content: string;
+      };
+      toRecipients: Array<{
+        emailAddress: {
+          address: string;
+        };
+      }>;
+    }
+  ): Promise<void> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          await client.api(graphEndpoints.sendMail).post({
+            message,
+            saveToSentItems: true,
+          });
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-send-mail'
+    );
+  }
+
+  /**
+   * Get user's OneDrive root (delegated)
+   *
+   * Retrieves the root folder of the user's OneDrive.
+   * Requires Files.Read or Files.ReadWrite delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @returns Drive root metadata
+   * @throws Error if Graph API call fails
+   */
+  async getDriveRoot(accessToken: string): Promise<DriveItem> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          const driveRoot = await client.api(graphEndpoints.driveRoot).get();
+
+          return driveRoot as DriveItem;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-drive-root'
+    );
+  }
+
+  /**
+   * Get drive item by ID (delegated)
+   *
+   * Retrieves metadata for a specific file or folder in OneDrive.
+   * Requires Files.Read or Files.ReadWrite delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param itemId - Drive item ID
+   * @returns Drive item metadata
+   * @throws Error if Graph API call fails
+   */
+  async getDriveItem(accessToken: string, itemId: string): Promise<DriveItem> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          const driveItem = await client.api(graphEndpoints.driveItem(itemId)).get();
+
+          return driveItem as DriveItem;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-drive-item'
+    );
+  }
+
+  /**
+   * List calendar events (delegated)
+   *
+   * Retrieves a list of events from the user's calendar.
+   * Requires Calendars.Read delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param top - Number of events to retrieve (default: 10, max: 999)
+   * @returns Array of calendar events
+   * @throws Error if Graph API call fails
+   */
+  async listCalendarEvents(accessToken: string, top: number = 10): Promise<Event[]> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          const response = await client
+            .api(graphEndpoints.events)
+            .top(top)
+            .orderby('start/dateTime')
+            .get();
+
+          return response.value as Event[];
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-calendar-events'
+    );
+  }
+
+  /**
+   * Get calendar event by ID (delegated)
+   *
+   * Retrieves a specific calendar event by its ID.
+   * Requires Calendars.Read delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param eventId - Event ID
+   * @returns Calendar event
+   * @throws Error if Graph API call fails
+   */
+  async getCalendarEventById(accessToken: string, eventId: string): Promise<Event> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          const event = await client.api(graphEndpoints.eventById(eventId)).get();
+
+          return event as Event;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-calendar-event'
+    );
+  }
+}

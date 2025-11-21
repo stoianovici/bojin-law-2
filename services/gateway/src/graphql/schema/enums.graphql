@@ -1,0 +1,60 @@
+# Enum types for Case Management API
+# Story 2.6: Case Management Data Model and API
+
+"""
+Case status lifecycle enum
+- ACTIVE: Case is currently being worked on
+- ON_HOLD: Case is temporarily paused
+- CLOSED: Case has been concluded
+- ARCHIVED: Case is closed and archived for long-term storage
+"""
+enum CaseStatus {
+  ACTIVE
+  ON_HOLD
+  CLOSED
+  ARCHIVED
+}
+
+"""
+Case type categorization enum
+- LITIGATION: Court litigation cases
+- CONTRACT: Contract review and drafting
+- ADVISORY: Legal advisory and consulting
+- CRIMINAL: Criminal defense cases
+- OTHER: Other types of legal matters
+"""
+enum CaseType {
+  LITIGATION
+  CONTRACT
+  ADVISORY
+  CRIMINAL
+  OTHER
+}
+
+"""
+External party roles in a case (Romanian legal context)
+- CLIENT: The client in this specific case
+- OPPOSING_PARTY: The opposing party (partea adversă)
+- OPPOSING_COUNSEL: Opposing counsel/lawyer (avocatul părții adverse)
+- WITNESS: Witness to be called (martor)
+- EXPERT: Expert witness or consultant (expert)
+"""
+enum CaseActorRole {
+  CLIENT
+  OPPOSING_PARTY
+  OPPOSING_COUNSEL
+  WITNESS
+  EXPERT
+}
+
+"""
+User roles within the law firm
+- PARTNER: Firm partner with full access
+- ASSOCIATE: Associate lawyer with limited access
+- PARALEGAL: Paralegal with task-specific access
+"""
+enum UserRole {
+  PARTNER
+  ASSOCIATE
+  PARALEGAL
+}

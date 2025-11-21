@@ -23,11 +23,11 @@ datasource db {
 // Placeholder model to validate Prisma setup
 // This will be replaced with actual models in future stories
 model DatabaseHealth {
-  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  timestamp  DateTime @default(now())
-  status     String   @default("healthy")
-  message    String?
-  metadata   Json?
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  timestamp DateTime @default(now())
+  status    String   @default("healthy")
+  message   String?
+  metadata  Json?
 
   @@map("database_health")
 }
@@ -39,25 +39,30 @@ model DatabaseHealth {
 // User model for authentication and authorization
 // Azure AD integration with automatic user provisioning
 model User {
-  id            String      @id @default(uuid())
-  firmId        String?     @map("firm_id")
-  email         String      @unique @db.VarChar(255)
-  firstName     String      @map("first_name") @db.VarChar(100)
-  lastName      String      @map("last_name") @db.VarChar(100)
-  role          UserRole    @default(Paralegal)
-  status        UserStatus  @default(Pending)
-  azureAdId     String      @unique @map("azure_ad_id") @db.VarChar(255)
-  preferences   Json        @default("{}")
-  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  lastActive    DateTime    @default(now()) @map("last_active") @db.Timestamptz
+  id          String     @id @default(uuid())
+  firmId      String?    @map("firm_id")
+  email       String     @unique @db.VarChar(255)
+  firstName   String     @map("first_name") @db.VarChar(100)
+  lastName    String     @map("last_name") @db.VarChar(100)
+  role        UserRole   @default(Paralegal)
+  status      UserStatus @default(Pending)
+  azureAdId   String     @unique @map("azure_ad_id") @db.VarChar(255)
+  preferences Json       @default("{}")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  lastActive  DateTime   @default(now()) @map("last_active") @db.Timestamptz
 
   // Relations (Story 2.4.1)
   auditLogsAsUser  UserAuditLog[] @relation("AuditLogUser")
   auditLogsAsAdmin UserAuditLog[] @relation("AuditLogAdmin")
 
+  // Relations (Story 2.6)
+  cases             CaseTeam[]
+  assignedCases     CaseTeam[]     @relation("AssignedBy")
+  caseAuditLogs     CaseAuditLog[]
+  createdCaseActors CaseActor[]
+
   // Future relations (to be added in later stories)
   // firm          Firm?           @relation(fields: [firmId], references: [id])
-  // cases         CaseTeam[]
   // tasks         Task[]
   // documents     Document[]
   // timeEntries   TimeEntry[]
@@ -97,8 +102,8 @@ model UserAuditLog {
   newValue    String?         @map("new_value") @db.VarChar(255)
   timestamp   DateTime        @default(now()) @db.Timestamptz
 
-  user        User            @relation("AuditLogUser", fields: [userId], references: [id])
-  admin       User            @relation("AuditLogAdmin", fields: [adminUserId], references: [id])
+  user  User @relation("AuditLogUser", fields: [userId], references: [id])
+  admin User @relation("AuditLogAdmin", fields: [adminUserId], references: [id])
 
   @@map("user_audit_logs")
 }
@@ -108,4 +113,169 @@ enum UserAuditAction {
   Activated
   Deactivated
   RoleChanged
+}
+
+// ============================================================================
+// Story 2.5: Microsoft Graph API Integration Foundation
+// ============================================================================
+
+// Graph API webhook subscriptions for email and file notifications
+// Subscriptions expire every 3 days and require renewal
+model GraphSubscription {
+  id                 String    @id @default(uuid())
+  subscriptionId     String    @unique @map("subscription_id") @db.VarChar(255)
+  resource           String    @db.VarChar(500)
+  changeTypes        String    @map("change_types") @db.VarChar(255)
+  notificationUrl    String    @map("notification_url") @db.Text
+  clientState        String?   @map("client_state") @db.VarChar(255)
+  expirationDateTime DateTime  @map("expiration_datetime") @db.Timestamptz
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  lastRenewedAt      DateTime? @map("last_renewed_at") @db.Timestamptz
+  isActive           Boolean   @default(true) @map("is_active")
+
+  @@index([expirationDateTime])
+  @@index([isActive])
+  @@map("graph_subscriptions")
+}
+
+// ============================================================================
+// Story 2.6: Case Management Data Model and API
+// ============================================================================
+
+// Case status lifecycle
+enum CaseStatus {
+  Active
+  OnHold
+  Closed
+  Archived
+}
+
+// Case type categorization
+enum CaseType {
+  Litigation
+  Contract
+  Advisory
+  Criminal
+  Other
+}
+
+// External party roles in a case
+enum CaseActorRole {
+  Client
+  OpposingParty
+  OpposingCounsel
+  Witness
+  Expert
+}
+
+// Client entity - firm's client relationships
+model Client {
+  id          String   @id @default(uuid())
+  firmId      String   @map("firm_id")
+  name        String   @db.VarChar(200)
+  contactInfo Json     @default("{}") @map("contact_info")
+  address     String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  cases Case[]
+
+  @@unique([firmId, name])
+  @@index([firmId])
+  @@map("clients")
+}
+
+// Case entity - legal cases managed by the firm
+model Case {
+  id          String     @id @default(uuid())
+  firmId      String     @map("firm_id")
+  caseNumber  String     @map("case_number") @db.VarChar(100)
+  title       String     @db.VarChar(500)
+  clientId    String     @map("client_id")
+  status      CaseStatus @default(Active)
+  type        CaseType
+  description String     @db.Text
+  openedDate  DateTime   @map("opened_date") @db.Date
+  closedDate  DateTime?  @map("closed_date") @db.Date
+  value       Decimal?   @db.Decimal(15, 2)
+  metadata    Json       @default("{}")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  client      Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  teamMembers CaseTeam[]
+  auditLogs   CaseAuditLog[]
+  actors      CaseActor[]
+
+  @@unique([firmId, caseNumber])
+  @@index([firmId])
+  @@index([clientId])
+  @@index([status])
+  @@index([openedDate])
+  @@map("cases")
+}
+
+// Case team assignments - many-to-many between Case and User
+model CaseTeam {
+  id         String   @id @default(uuid())
+  caseId     String   @map("case_id")
+  userId     String   @map("user_id")
+  role       String   @db.VarChar(50)
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz
+  assignedBy String?  @map("assigned_by")
+
+  // Relations
+  case     Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assigner User? @relation("AssignedBy", fields: [assignedBy], references: [id], onDelete: SetNull)
+
+  @@unique([caseId, userId])
+  @@index([caseId])
+  @@index([userId])
+  @@map("case_team")
+}
+
+// Case audit log - tracks all case modifications
+model CaseAuditLog {
+  id        String   @id @default(uuid())
+  caseId    String   @map("case_id")
+  userId    String?  @map("user_id")
+  action    String   @db.VarChar(100)
+  fieldName String?  @map("field_name") @db.VarChar(100)
+  oldValue  String?  @map("old_value") @db.Text
+  newValue  String?  @map("new_value") @db.Text
+  timestamp DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  case Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([timestamp])
+  @@map("case_audit_logs")
+}
+
+// Case actors - external parties involved in the case
+model CaseActor {
+  id           String        @id @default(uuid())
+  caseId       String        @map("case_id")
+  role         CaseActorRole
+  name         String        @db.VarChar(200)
+  organization String?       @db.VarChar(200)
+  email        String?       @db.VarChar(255)
+  phone        String?       @db.VarChar(50)
+  address      String?       @db.Text
+  notes        String?       @db.Text
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  createdBy    String?       @map("created_by")
+
+  // Relations
+  case    Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  creator User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@map("case_actors")
 }

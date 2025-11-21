@@ -6,17 +6,9 @@
 // Enums
 export type UserRole = 'Partner' | 'Associate' | 'Paralegal';
 export type UserStatus = 'Pending' | 'Active' | 'Inactive';
-export type CaseStatus = 'Active' | 'Pending' | 'OnHold' | 'Closed' | 'Archived';
-export type CaseType =
-  | 'Civil'
-  | 'Criminal'
-  | 'Corporate'
-  | 'Family'
-  | 'RealEstate'
-  | 'Litigation'
-  | 'Contract'
-  | 'Advisory'
-  | 'Other';
+export type CaseStatus = 'Active' | 'OnHold' | 'Closed' | 'Archived';
+export type CaseType = 'Litigation' | 'Contract' | 'Advisory' | 'Criminal' | 'Other';
+export type CaseActorRole = 'Client' | 'OpposingParty' | 'OpposingCounsel' | 'Witness' | 'Expert';
 export type CasePriority = 'Low' | 'Medium' | 'High';
 export type DocumentType = 'Contract' | 'Motion' | 'Letter' | 'Memo' | 'Pleading' | 'Other';
 export type DocumentStatus = 'Draft' | 'Review' | 'Approved' | 'Filed';
@@ -46,11 +38,10 @@ export interface User {
 // Client Entity (referenced by Case)
 export interface Client {
   id: string; // UUID
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
   firmId: string; // UUID
+  name: string;
+  contactInfo: Record<string, unknown>; // JSON - email, phone, etc.
+  address: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +56,7 @@ export interface CaseTeamMember {
 // Case Entity
 export interface Case {
   id: string; // UUID
+  firmId: string; // UUID
   caseNumber: string;
   title: string;
   clientId: string; // UUID
@@ -77,6 +69,44 @@ export interface Case {
   metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Case Team (join table between Case and User)
+export interface CaseTeam {
+  id: string; // UUID
+  caseId: string; // UUID
+  userId: string; // UUID
+  role: string; // "Lead", "Support", "Observer", etc.
+  assignedAt: Date;
+  assignedBy: string | null; // UUID (User ID)
+}
+
+// Case Audit Log (tracks all case modifications)
+export interface CaseAuditLog {
+  id: string; // UUID
+  caseId: string; // UUID
+  userId: string | null; // UUID (User ID who made the change)
+  action: string; // "CREATED", "UPDATED", "ARCHIVED", "TEAM_ASSIGNED", etc.
+  fieldName: string | null; // Which field was changed
+  oldValue: string | null;
+  newValue: string | null;
+  timestamp: Date;
+}
+
+// Case Actor (external parties involved in the case)
+export interface CaseActor {
+  id: string; // UUID
+  caseId: string; // UUID
+  role: CaseActorRole;
+  name: string;
+  organization: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string | null; // UUID (User ID)
 }
 
 // Attorney/User reference for case overview
@@ -178,7 +208,10 @@ export interface Task {
 export type UserOverrides = Partial<User>;
 export type ClientOverrides = Partial<Client>;
 export type CaseOverrides = Partial<Case>;
+export type CaseTeamOverrides = Partial<CaseTeam>;
 export type CaseTeamMemberOverrides = Partial<CaseTeamMember>;
+export type CaseAuditLogOverrides = Partial<CaseAuditLog>;
+export type CaseActorOverrides = Partial<CaseActor>;
 export type DocumentOverrides = Partial<Document>;
 export type DocumentVersionOverrides = Partial<DocumentVersion>;
 export type TaskOverrides = Partial<Task>;

@@ -1,0 +1,20 @@
+# Scalar types for Case Management API
+# Story 2.6: Case Management Data Model and API
+
+"""
+Date and time scalar type conforming to ISO 8601 format
+Example: 2025-01-15T10:30:00Z
+"""
+scalar DateTime
+
+"""
+UUID scalar type conforming to RFC 4122
+Example: 550e8400-e29b-41d4-a716-446655440000
+"""
+scalar UUID
+
+"""
+Arbitrary JSON data scalar type
+Example: {"key": "value", "nested": {"data": 123}}
+"""
+scalar JSON
