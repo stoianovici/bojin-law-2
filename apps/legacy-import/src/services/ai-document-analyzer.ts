@@ -14,7 +14,7 @@ import { documentTypeDiscovery } from './document-type-discovery.service';
 
 const BATCH_SIZE = 25; // Optimal for token usage
 const MAX_TOKENS_PER_REQUEST = 4000;
-const MAX_COST_PER_SESSION = 10.00; // €10 limit
+const MAX_COST_PER_SESSION = 10.0; // €10 limit
 const HAIKU_COST_PER_1K_TOKENS = 0.00025; // Claude Haiku pricing
 
 interface DocumentAnalysisJob {
@@ -77,9 +77,7 @@ export class AIDocumentAnalyzer {
   /**
    * Process documents with Claude API
    */
-  private async analyzeWithClaude(
-    documents: ExtractedDocument[]
-  ): Promise<AIAnalysisResult[]> {
+  private async analyzeWithClaude(documents: ExtractedDocument[]): Promise<AIAnalysisResult[]> {
     const prompt = this.buildAnalysisPrompt(documents);
     const startTime = Date.now();
 
@@ -202,9 +200,7 @@ ${textPreview}
   /**
    * Fallback analysis using franc library
    */
-  private async fallbackAnalysis(
-    documents: ExtractedDocument[]
-  ): Promise<AIAnalysisResult[]> {
+  private async fallbackAnalysis(documents: ExtractedDocument[]): Promise<AIAnalysisResult[]> {
     return documents.map((doc) => {
       const text = doc.extractedText || '';
       const detectedLang = franc(text);
@@ -319,9 +315,7 @@ ${textPreview}
         await this.saveAnalysisResults(results);
 
         // Update job progress
-        await job.progress(
-          Math.round((allResults.length / documentIds.length) * 100)
-        );
+        await job.progress(Math.round((allResults.length / documentIds.length) * 100));
       }
 
       return {
@@ -462,5 +456,17 @@ ${textPreview}
   }
 }
 
-// Export singleton instance
-export const documentAnalyzer = new AIDocumentAnalyzer();
+// Export lazy singleton to avoid initialization during build
+let _documentAnalyzer: AIDocumentAnalyzer | null = null;
+
+export const documentAnalyzer = {
+  get instance(): AIDocumentAnalyzer {
+    if (!_documentAnalyzer) {
+      _documentAnalyzer = new AIDocumentAnalyzer();
+    }
+    return _documentAnalyzer;
+  },
+  analyzeDocuments: (sessionId: string, documentIds: string[]) =>
+    documentAnalyzer.instance.analyzeDocuments(sessionId, documentIds),
+  getAnalysisStatus: (sessionId: string) => documentAnalyzer.instance.getAnalysisStatus(sessionId),
+};
