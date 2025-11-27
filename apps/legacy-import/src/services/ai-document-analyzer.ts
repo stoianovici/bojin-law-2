@@ -4,13 +4,13 @@
  * Part of Story 3.2.5 - Legacy Document Import & AI Analysis
  */
 
-import { Anthropic } from '@anthropic-ai/sdk';
-import Bull, { type Job } from 'bull';
-const Queue = Bull;
+// Type imports only - no side effects
+import type { Job, Queue as BullQueue } from 'bull';
+
+// These imports are safe - no Redis connection
 import { franc } from 'franc-min';
 import { prisma } from '@/lib/prisma';
 import { ExtractedDocument, AIAnalysisResult } from '@shared/types';
-import { documentTypeDiscovery } from './document-type-discovery.service';
 
 const BATCH_SIZE = 25; // Optimal for token usage
 const MAX_TOKENS_PER_REQUEST = 4000;
@@ -24,14 +24,29 @@ interface DocumentAnalysisJob {
 }
 
 export class AIDocumentAnalyzer {
-  private anthropic: Anthropic;
-  private analysisQueue: Queue<DocumentAnalysisJob>;
+  private anthropic: any; // Dynamically imported
+  private analysisQueue!: BullQueue<DocumentAnalysisJob>;
   private readonly model = 'claude-3-haiku-20240307';
+  private initialized = false;
 
-  constructor() {
+  /**
+   * Initialize connections lazily - only called at runtime, never during build
+   */
+  private async initialize() {
+    if (this.initialized) return;
+
+    // Dynamic imports to avoid loading at build time
+    const [{ Anthropic }, BullModule] = await Promise.all([
+      import('@anthropic-ai/sdk'),
+      import('bull'),
+    ]);
+
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY!,
     });
+
+    // Bull exports as CommonJS module, handle both ESM and CJS import
+    const Queue = (BullModule as any).default || BullModule;
 
     // Initialize Bull queue for async processing
     this.analysisQueue = new Queue('document-analysis', {
@@ -43,6 +58,7 @@ export class AIDocumentAnalyzer {
     });
 
     this.setupQueueProcessors();
+    this.initialized = true;
   }
 
   /**
@@ -52,6 +68,9 @@ export class AIDocumentAnalyzer {
     sessionId: string,
     documentIds: string[]
   ): Promise<{ jobId: string; estimatedCost: number }> {
+    // Initialize connections on first use
+    await this.initialize();
+
     // Check cost limit before processing
     const canProceed = await this.checkCostLimit(sessionId);
     if (!canProceed) {
@@ -371,6 +390,9 @@ ${textPreview}
     );
 
     await prisma.$transaction(updates);
+
+    // Dynamically import discovery service to avoid load-time issues
+    const { documentTypeDiscovery } = await import('./document-type-discovery.service');
 
     // Trigger document type discovery for each analyzed document
     const discoveryPromises = results.map(async (result) => {
