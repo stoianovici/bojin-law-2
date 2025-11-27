@@ -57,6 +57,71 @@ databases:
     region: oregon # US West
     ipAllowList: [] # Empty = allow all Render services (recommended)
 
+  ##############################################################################
+  # Legacy Document Import App (Story 3.2.5)
+  # Standalone app for PST import and document categorization
+  ##############################################################################
+  - type: web
+    name: bojin-legacy-import
+    runtime: node
+    repo: https://github.com/stoianovici/bojin-law-2.git
+    branch: main
+    rootDir: apps/legacy-import
+    buildCommand: pnpm install && pnpm build
+    startCommand: pnpm start
+    plan: starter # 512MB RAM - upgrade for large PST processing
+    numInstances: 1
+    region: oregon # Same region as other services
+    envVars:
+      # Node Environment
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+
+      # App URL - Update after first deploy with actual URL
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://bojin-legacy-import.onrender.com
+
+      # Database (same as main app)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: legal-platform-db
+          property: connectionString
+
+      # Redis
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: legal-platform-redis
+          property: connectionString
+
+      # Azure AD Authentication (set in Render dashboard)
+      - key: NEXT_PUBLIC_AZURE_AD_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_AZURE_AD_TENANT_ID
+        sync: false
+      - key: AZURE_AD_CLIENT_SECRET
+        sync: false
+
+      # Cloudflare R2 Storage (set in Render dashboard)
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: legacy-import
+      - key: R2_ENDPOINT
+        sync: false
+
+      # Anthropic AI for document analysis (set in Render dashboard)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+    healthCheckPath: /api/health
+
 ##############################################################################
 # Future Services (uncomment when implemented)
 ##############################################################################

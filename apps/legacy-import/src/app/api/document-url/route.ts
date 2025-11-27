@@ -1,0 +1,57 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getPresignedUrl } from '@/lib/r2-storage';
+
+export async function GET(request: NextRequest) {
+  try {
+    const documentId = request.nextUrl.searchParams.get('documentId');
+
+    if (!documentId) {
+      return NextResponse.json(
+        { error: 'Missing documentId parameter' },
+        { status: 400 }
+      );
+    }
+
+    // Fetch the document to get its storage path
+    const document = await prisma.extractedDocument.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        storagePath: true,
+        fileName: true,
+        fileExtension: true,
+      },
+    });
+
+    if (!document) {
+      return NextResponse.json(
+        { error: 'Document not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!document.storagePath) {
+      return NextResponse.json(
+        { error: 'Document has no storage path' },
+        { status: 404 }
+      );
+    }
+
+    // Generate presigned URL with 1 hour expiration
+    const url = await getPresignedUrl(document.storagePath, 3600);
+
+    return NextResponse.json({
+      url,
+      fileName: document.fileName,
+      fileExtension: document.fileExtension,
+      expiresIn: 3600,
+    });
+  } catch (error) {
+    console.error('Failed to get document URL:', error);
+    return NextResponse.json(
+      { error: 'Failed to get document URL' },
+      { status: 500 }
+    );
+  }
+}
