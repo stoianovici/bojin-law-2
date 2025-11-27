@@ -9,12 +9,25 @@
 User type represents a lawyer or staff member at the firm
 """
 type User {
+  """Unique identifier for the user"""
   id: UUID!
+
+  """Firm the user belongs to (null for system users)"""
   firmId: UUID
+
+  """User's email address (used for authentication)"""
   email: String!
+
+  """User's first name"""
   firstName: String!
+
+  """User's last name"""
   lastName: String!
+
+  """User's role within the firm"""
   role: UserRole!
+
+  """Timestamp when the user was created"""
   createdAt: DateTime!
 }
 
@@ -22,12 +35,25 @@ type User {
 Client entity - represents the firm's client relationships
 """
 type Client {
+  """Unique identifier for the client"""
   id: UUID!
+
+  """Firm that manages this client"""
   firmId: UUID!
+
+  """Client's full name or organization name"""
   name: String!
+
+  """Contact information as JSON (phone, email, etc.)"""
   contactInfo: JSON
+
+  """Physical address of the client"""
   address: String
+
+  """Timestamp when the client record was created"""
   createdAt: DateTime!
+
+  """Timestamp when the client record was last updated"""
   updatedAt: DateTime!
 }
 
@@ -35,34 +61,151 @@ type Client {
 Case entity - represents legal cases managed by the firm
 """
 type Case {
+  """Unique identifier for the case"""
   id: UUID!
+
+  """Firm that manages this case"""
   firmId: UUID!
+
+  """Unique case number for tracking (auto-generated)"""
   caseNumber: String!
+
+  """Title or name of the case"""
   title: String!
+
+  """Client associated with this case"""
   client: Client!
+
+  """Current status of the case"""
   status: CaseStatus!
+
+  """Type of legal case"""
   type: CaseType!
+
+  """Detailed description of the case"""
   description: String!
+
+  """Date when the case was opened"""
   openedDate: DateTime!
+
+  """Date when the case was closed (null if still open)"""
   closedDate: DateTime
-  value: Float
+
+  """Monetary value of the case (optional) - Partners only"""
+  value: Float @requiresFinancialAccess
+
+  """Additional case metadata as JSON (optional)"""
   metadata: JSON
-  teamMembers: [User!]!
+
+  """Billing type for this case (Hourly or Fixed) - Partners only (Story 2.8.1)"""
+  billingType: BillingType! @requiresFinancialAccess
+
+  """Fixed fee amount in USD cents (required if billingType=FIXED) - Partners only (Story 2.8.1)"""
+  fixedAmount: Float @requiresFinancialAccess
+
+  """Custom hourly rates for this case (null = inherit from firm defaults) - Partners only (Story 2.8.1)"""
+  customRates: CustomRates @requiresFinancialAccess
+
+  """Rate change history for this case - Partners only (Story 2.8.1)"""
+  rateHistory: [RateHistoryEntry!]! @requiresFinancialAccess
+
+  """Retainer amount per billing period in USD cents (Story 2.11.2)"""
+  retainerAmount: Float @requiresFinancialAccess
+
+  """Retainer billing period (Story 2.11.2)"""
+  retainerPeriod: RetainerPeriod @requiresFinancialAccess
+
+  """Whether unused retainer hours roll over to next period (Story 2.11.2)"""
+  retainerRollover: Boolean @requiresFinancialAccess
+
+  """Whether retainer auto-renews each period (Story 2.11.2)"""
+  retainerAutoRenew: Boolean @requiresFinancialAccess
+
+  """Current retainer usage for this billing period (Story 2.11.2)"""
+  currentRetainerUsage: RetainerUsage @requiresFinancialAccess
+
+  """Approval information for cases requiring Partner approval (Story 2.8.2)"""
+  approval: CaseApproval
+
+  """List of team members assigned to this case"""
+  teamMembers: [CaseTeam!]!
+
+  """List of external actors involved in this case"""
   actors: [CaseActor!]!
+
+  """Timestamp when the case was created"""
   createdAt: DateTime!
+
+  """Timestamp when the case was last updated"""
   updatedAt: DateTime!
+}
+
+"""
+Custom hourly rates for a case (Story 2.8.1)
+All rates are in USD cents. If null, inherits from firm defaults.
+All fields optional - can override only specific roles.
+"""
+type CustomRates {
+  """Partner hourly rate in USD cents (null = use firm default)"""
+  partnerRate: Float
+
+  """Associate hourly rate in USD cents (null = use firm default)"""
+  associateRate: Float
+
+  """Paralegal hourly rate in USD cents (null = use firm default)"""
+  paralegalRate: Float
+}
+
+"""
+Rate history entry (Story 2.8.1)
+Tracks all changes to case billing rates for audit trail
+"""
+type RateHistoryEntry {
+  """Unique identifier for this history entry"""
+  id: UUID!
+
+  """Case this history entry belongs to"""
+  caseId: UUID!
+
+  """Timestamp when the rate was changed"""
+  changedAt: DateTime!
+
+  """User who changed the rate"""
+  changedBy: User!
+
+  """Type of rate that was changed"""
+  rateType: RateType!
+
+  """Previous rate value in USD cents"""
+  oldRate: Float!
+
+  """New rate value in USD cents"""
+  newRate: Float!
 }
 
 """
 Case team assignment - represents user assignments to cases
 """
 type CaseTeam {
+  """Unique identifier for the case team assignment"""
   id: UUID!
+
+  """Case this assignment belongs to"""
   caseId: UUID!
+
+  """User assigned to the case"""
   userId: UUID!
+
+  """User object for the assigned user"""
   user: User!
+
+  """Role of the user on the case team (e.g., Lead, Support, Observer)"""
   role: String!
+
+  """Timestamp when the user was assigned to the case"""
   assignedAt: DateTime!
+
+  """ID of the user who created this assignment (optional)"""
   assignedBy: UUID
 }
 
@@ -71,23 +214,88 @@ Case actor - represents external parties involved in a case
 These are people/entities external to the firm (clients, opposing parties, witnesses, etc.)
 """
 type CaseActor {
+  """Unique identifier for the case actor"""
   id: UUID!
+
+  """Case this actor is involved in"""
   caseId: UUID!
+
+  """Role of the actor in the case"""
   role: CaseActorRole!
+
+  """Full name of the actor"""
   name: String!
+
+  """Organization or company the actor represents (optional)"""
   organization: String
+
+  """Email address of the actor (optional)"""
   email: String
+
+  """Phone number of the actor (optional)"""
   phone: String
+
+  """Physical address of the actor (optional)"""
   address: String
+
+  """Additional notes about this actor (optional)"""
   notes: String
+
+  """Timestamp when the actor was added to the case"""
   createdAt: DateTime!
+
+  """Timestamp when the actor information was last updated"""
   updatedAt: DateTime!
+
+  """ID of the user who added this actor"""
   createdBy: UUID!
+}
+
+"""
+Retainer usage for a billing period (Story 2.11.2)
+Shows usage, included hours, rollover, and remaining balance
+"""
+type RetainerUsage {
+  """Start date of the billing period"""
+  periodStart: DateTime!
+
+  """End date of the billing period"""
+  periodEnd: DateTime!
+
+  """Hours used in this period"""
+  hoursUsed: Float!
+
+  """Hours included in the retainer"""
+  hoursIncluded: Float!
+
+  """Hours rolled over from previous period"""
+  rolledOver: Float!
+
+  """Remaining hours available (included + rolledOver - used)"""
+  remaining: Float!
+
+  """Utilization percentage (hoursUsed / (hoursIncluded + rolledOver) * 100)"""
+  utilizationPercent: Float!
 }
 
 # ============================================================================
 # Input Types
 # ============================================================================
+
+"""
+Custom rates input for case creation/updates (Story 2.8.1)
+All rates are in USD cents. All fields optional.
+"""
+input CustomRatesInput {
+  """Partner hourly rate in USD cents"""
+  partnerRate: Float
+
+  """Associate hourly rate in USD cents"""
+  associateRate: Float
+
+  """Paralegal hourly rate in USD cents"""
+  paralegalRate: Float
+}
 
 """
 Input for creating a new case
@@ -110,6 +318,18 @@ input CreateCaseInput {
 
   """Additional metadata as JSON (optional)"""
   metadata: JSON
+
+  """Billing type for this case (default: HOURLY) - Story 2.8.1"""
+  billingType: BillingType
+
+  """Fixed fee amount in USD cents (required if billingType=FIXED) - Story 2.8.1"""
+  fixedAmount: Float
+
+  """Custom hourly rates (optional, overrides firm defaults) - Story 2.8.1"""
+  customRates: CustomRatesInput
+
+  """Whether to submit case for approval (default: true for Associates, false for Partners) - Story 2.8.2"""
+  submitForApproval: Boolean
 }
 
 """
@@ -137,6 +357,15 @@ input UpdateCaseInput {
 
   """Updated metadata"""
   metadata: JSON
+
+  """Updated billing type - Story 2.8.1"""
+  billingType: BillingType
+
+  """Updated fixed fee amount in USD cents - Story 2.8.1"""
+  fixedAmount: Float
+
+  """Updated custom rates (use null to revert to firm defaults) - Story 2.8.1"""
+  customRates: CustomRatesInput
 }
 
 """
@@ -260,6 +489,32 @@ type Query {
     caseId: UUID!
     role: CaseActorRole!
   ): [CaseActor!]!
+
+  """
+  Get retainer usage for a specific period (Story 2.11.2)
+  Returns null if case is not a retainer billing type
+  Authorization: Requires financial access (Partner or BusinessOwner)
+  """
+  retainerUsage(
+    """Case ID"""
+    caseId: UUID!
+
+    """Start of period to query (optional, defaults to current period)"""
+    periodStart: DateTime
+  ): RetainerUsage
+
+  """
+  Get retainer usage history for a case (Story 2.11.2)
+  Returns historical periods in reverse chronological order
+  Authorization: Requires financial access (Partner or BusinessOwner)
+  """
+  retainerUsageHistory(
+    """Case ID"""
+    caseId: UUID!
+
+    """Maximum number of periods to return (default 12)"""
+    limit: Int
+  ): [RetainerUsage!]!
 }
 
 # ============================================================================

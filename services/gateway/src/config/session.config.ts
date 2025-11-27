@@ -1,6 +1,7 @@
 /**
  * Session Configuration with Redis Store
  * Story 2.4: Authentication with Azure AD
+ * Story 2.11.1: Business Owner Role
  *
  * Configures Express session middleware with Redis backend for authentication.
  *
@@ -46,8 +47,11 @@ if (process.env.SESSION_SECRET.length < 32) {
   throw new Error('SESSION_SECRET must be at least 32 characters long');
 }
 
-// Redis session store configuration
-const redisStore = new RedisStore({
+// Check if Redis is available (development fallback to memory store)
+const useMemoryStore = process.env.NODE_ENV !== 'production' && process.env.USE_MEMORY_SESSION === 'true';
+
+// Redis session store configuration (only if not using memory store)
+const redisStore = useMemoryStore ? undefined : new RedisStore({
   client: redis,
   prefix: 'sess:', // Session key prefix in Redis
   ttl: SESSION_TTL_SECONDS, // 7 days in seconds
@@ -55,9 +59,13 @@ const redisStore = new RedisStore({
   disableTTL: false, // Enable TTL expiration
 });
 
+if (useMemoryStore) {
+  console.warn('⚠️  Using in-memory session store (sessions will not persist across restarts)');
+}
+
 // Express session configuration
 export const sessionConfig: session.SessionOptions = {
-  store: redisStore,
+  ...(redisStore && { store: redisStore }),
   secret: process.env.SESSION_SECRET,
   resave: false, // Don't save session if unmodified
   saveUninitialized: false, // Don't create session until something stored
@@ -66,7 +74,7 @@ export const sessionConfig: session.SessionOptions = {
     secure: process.env.NODE_ENV === 'production', // HTTPS-only in production
     httpOnly: true, // Prevent JavaScript access (XSS protection)
     maxAge: SESSION_MAX_AGE_MS, // 7 days in milliseconds
-    sameSite: 'strict', // CSRF protection (strict = same-site only)
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // 'lax' in dev to allow localhost:3000 -> localhost:4000
     domain: process.env.COOKIE_DOMAIN, // Optional: restrict to domain
     path: '/', // Cookie available for entire site
   },
@@ -78,10 +86,11 @@ export const sessionConfig: session.SessionOptions = {
 };
 
 // User session data type definition
+// Story 2.11.1: Added BusinessOwner role
 export interface UserSessionData {
   userId: string;
   email: string;
-  role: 'Partner' | 'Associate' | 'Paralegal';
+  role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
   status: 'Active' | 'Pending' | 'Inactive';
   firmId: string | null;
   azureAdId: string;

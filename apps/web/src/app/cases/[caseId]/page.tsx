@@ -8,7 +8,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
-// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useCaseWorkspaceStore } from '../../../stores/case-workspace.store';
 import { CaseHeader } from '../../../components/case/CaseHeader';
 import { WorkspaceTabs } from '../../../components/case/WorkspaceTabs';
@@ -22,6 +21,7 @@ import { AIInsightsPanel } from '../../../components/case/AIInsightsPanel';
 import { QuickActionsBar } from '../../../components/case/QuickActionsBar';
 import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
 import { createMockCaseWorkspace } from '../../../lib/mockData';
+import { useCase } from '../../../hooks/useCase';
 import type { Case, User, Document, Task, AISuggestion, DocumentNode } from '@legal-platform/types';
 
 interface CaseWorkspacePageProps {
@@ -32,7 +32,6 @@ interface CaseWorkspacePageProps {
 
 /**
  * Type-safe workspace data structure
- * Replaces `any` type for better type safety
  */
 interface CaseWorkspaceData {
   case: Case;
@@ -90,42 +89,40 @@ function LoadingSkeleton() {
 export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   const { caseId } = React.use(params);
   const { activeTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
-  const [loading, setLoading] = useState(true);
   const [caseData, setCaseData] = useState<CaseWorkspaceData | null>(null);
 
-  // Load case data on mount (using mock data for prototype)
+  // Use the real useCase hook to get actual case data
+  const { case: realCaseData, loading, error } = useCase(caseId);
+
+  // Load case data on mount
   useEffect(() => {
     // Set the selected case in store
     setSelectedCase(caseId);
 
-    // Simulate data loading
-    const loadCaseData = async () => {
-      // In a real app, this would fetch from API
-      // For prototype, use factory to generate comprehensive mock data
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Generate mock workspace data using factory (Task 12)
+    // Load workspace data when real case data is available
+    if (realCaseData && !loading) {
+      // Generate mock workspace data using factory
       const mockWorkspace = createMockCaseWorkspace();
 
-      // Structure data for component consumption
-      // Ensure all dates are Date objects (not strings)
+      // Merge real case data with mock workspace features
       const workspaceData: CaseWorkspaceData = {
         case: {
-          ...mockWorkspace.case,
-          id: caseId, // Use route caseId
-          openedDate: new Date(mockWorkspace.case.openedDate),
-          closedDate: mockWorkspace.case.closedDate
-            ? new Date(mockWorkspace.case.closedDate)
-            : null,
+          ...realCaseData,
+          openedDate: new Date(realCaseData.openedDate),
+          closedDate: realCaseData.closedDate ? new Date(realCaseData.closedDate) : null,
         },
-        teamMembers: mockWorkspace.teamMembers.map((member) => ({
-          ...member,
-          createdAt: new Date(member.createdAt),
-          lastActive: new Date(member.lastActive),
-        })),
+        teamMembers: (realCaseData.teamMembers || []).map((member: any) => {
+          // Handle case where member has a nested user object
+          const user = member.user || member;
+          return {
+            ...user,
+            createdAt: new Date(user.createdAt || Date.now()),
+            lastActive: new Date(user.lastActive || Date.now()),
+          };
+        }),
         nextDeadline: {
           date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-          description: 'Depunere răspuns la cerere',
+          description: 'Next deadline',
         },
         documents: mockWorkspace.documents.map((doc) => ({
           ...doc,
@@ -146,13 +143,13 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         upcomingDeadlines: [
           {
             id: 'deadline-1',
-            title: 'Depunere răspuns la cerere',
+            title: 'Filing response',
             date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             status: 'upcoming' as const,
           },
           {
             id: 'deadline-2',
-            title: 'Ședință de judecată',
+            title: 'Court hearing',
             date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
             status: 'upcoming' as const,
           },
@@ -169,11 +166,8 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
       };
 
       setCaseData(workspaceData);
-      setLoading(false);
-    };
-
-    loadCaseData();
-  }, [caseId, setSelectedCase]);
+    }
+  }, [caseId, setSelectedCase, realCaseData, loading]);
 
   // Set page title
   useEffect(() => {
@@ -186,13 +180,24 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
     return <LoadingSkeleton />;
   }
 
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Case</h1>
+          <p className="text-gray-600">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!caseData) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Cazul nu a fost găsit</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Case Not Found</h1>
           <p className="text-gray-600">
-            Cazul cu ID-ul {caseId} nu există sau nu aveți acces la el.
+            The case with ID {caseId} does not exist or you don&apos;t have access to it.
           </p>
         </div>
       </div>

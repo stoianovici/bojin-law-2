@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 import * as NavigationMenu from '@radix-ui/react-navigation-menu';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useNavigationStore } from '../../stores/navigation.store';
+import { usePendingCases } from '../../hooks/usePendingCases';
 import { QuickActions } from './QuickActions';
 import type { NavigationItem, NavigationSection } from '@legal-platform/types';
 import {
@@ -24,6 +25,8 @@ import {
   Clock,
   BarChart3,
   Users,
+  ClipboardCheck,
+  Briefcase,
   type LucideIcon
 } from 'lucide-react';
 
@@ -34,6 +37,8 @@ const iconMap: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
   analytics: TrendingUp,
   cases: Scale,
+  'pending-approvals': ClipboardCheck,
+  'my-cases': Briefcase,
   documents: FileText,
   tasks: CheckSquare,
   communications: Mail,
@@ -60,7 +65,7 @@ const navigationItems: NavigationItem[] = [
     icon: 'analytics',
     href: '/analytics',
     section: 'analytics',
-    roles: ['Partner'], // Partner only
+    roles: ['Partner', 'BusinessOwner'], // Partners and BusinessOwners - Story 2.11.4
   },
   {
     id: 'cases',
@@ -69,6 +74,22 @@ const navigationItems: NavigationItem[] = [
     href: '/cases',
     section: 'cases',
     roles: ['Partner', 'Associate', 'Paralegal'],
+  },
+  {
+    id: 'pending-approvals',
+    label: 'Pending Approvals',
+    icon: 'pending-approvals',
+    href: '/cases/pending-approvals',
+    section: 'cases',
+    roles: ['Partner'], // Partners only - Story 2.8.2 Task 22
+  },
+  {
+    id: 'my-cases',
+    label: 'My Cases',
+    icon: 'my-cases',
+    href: '/cases/my-cases',
+    section: 'cases',
+    roles: ['Associate'], // Associates only - Story 2.8.2 Task 22
   },
   {
     id: 'documents',
@@ -137,6 +158,12 @@ export function Sidebar({ className = '' }: SidebarProps) {
     setCurrentSection,
     toggleSidebar,
   } = useNavigationStore();
+
+  // Story 2.8.2 Task 22: Fetch pending cases count for badge (Partners only)
+  // Always call hook (hooks must be unconditional), but skip query for non-Partners
+  const skipPendingQuery = currentRole !== 'Partner';
+  const { cases: pendingCases = [] } = usePendingCases(skipPendingQuery);
+  const pendingCount = pendingCases.length;
 
   // Filter navigation items by current role
   const visibleItems = navigationItems.filter((item) =>
@@ -219,7 +246,13 @@ export function Sidebar({ className = '' }: SidebarProps) {
                         />
                       )}
                       {!isSidebarCollapsed && (
-                        <span className="truncate">{item.label}</span>
+                        <span className="truncate flex-1">{item.label}</span>
+                      )}
+                      {/* Story 2.8.2 Task 22: Show badge count for pending approvals */}
+                      {item.id === 'pending-approvals' && pendingCount > 0 && !isSidebarCollapsed && (
+                        <span className="ml-auto bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {pendingCount}
+                        </span>
                       )}
                     </Link>
                   </NavigationMenu.Link>

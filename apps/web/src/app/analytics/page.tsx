@@ -1,203 +1,210 @@
 /**
- * Analytics Page - Partner-only KPI Dashboard
- * Displays firm-wide KPIs, billable hours, case distribution, and pending approvals
+ * Analytics Page - Financial Dashboard
+ * Story 2.11.4: Financial Dashboard UI
+ *
+ * Comprehensive financial dashboard for Partners and Business Owners.
+ * Displays revenue, utilization, profitability, and retainer metrics.
  */
 
 'use client';
 
 import React from 'react';
-// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
-import { useNavigationStore } from '../../stores/navigation.store';
 import { useRouter } from 'next/navigation';
+import { RefreshCw } from 'lucide-react';
 
-// Import KPI widgets that were moved from Partner dashboard
-import { FirmKPIsWidget } from '../../components/dashboard/widgets/FirmKPIsWidget';
-import { BillableHoursChartWidget } from '../../components/dashboard/widgets/BillableHoursChartWidget';
-import { CaseDistributionWidget } from '../../components/dashboard/widgets/CaseDistributionWidget';
-import { PendingApprovalsWidget } from '../../components/dashboard/widgets/PendingApprovalsWidget';
+// Components
+import { FinancialData } from '../../components/auth/FinancialData';
+import { DashboardHeader } from '../../components/analytics/DashboardHeader';
+import { DateRangePicker } from '../../components/analytics/DateRangePicker';
+import { PeriodComparisonToggle } from '../../components/analytics/PeriodComparisonToggle';
+import {
+  RevenueOverviewWidget,
+  RevenueTrendWidget,
+  UtilizationWidget,
+  ProfitabilityWidget,
+  RetainerStatusWidget,
+} from '../../components/analytics/widgets';
 
-import type { KPIWidget, ChartWidget, ApprovalListWidget } from '@legal-platform/types';
+// Hooks and store
+import { useAnalyticsFiltersStore } from '../../stores/analyticsFiltersStore';
+import { useFinancialKPIsComparison } from '../../hooks/useFinancialKPIsComparison';
 
 /**
- * Analytics Page Component
- * Role-based access: Partner only
+ * Access Denied component for unauthorized users
  */
-export default function AnalyticsPage() {
-  const currentRole = useNavigationStore((state) => state.currentRole);
+function AccessDenied() {
   const router = useRouter();
 
-  // Set document title
-  React.useEffect(() => {
-    document.title = 'Analytics';
-  }, []);
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center">
+      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+        <svg
+          className="w-8 h-8 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+      </div>
+      <h2 className="text-xl font-semibold text-gray-900 mb-2">Acces restricționat</h2>
+      <p className="text-gray-500 max-w-sm mb-6">
+        Analizele financiare sunt disponibile doar pentru Parteneri și Administratori.
+      </p>
+      <button
+        onClick={() => router.push('/')}
+        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Mergi la Panou
+      </button>
+    </div>
+  );
+}
 
-  // Redirect non-Partners to dashboard
-  React.useEffect(() => {
-    if (currentRole !== 'Partner') {
-      console.warn('[Analytics] Non-Partner user attempted to access Analytics. Redirecting to dashboard.');
-      router.push('/');
-    }
-  }, [currentRole, router]);
+/**
+ * Dashboard content component
+ */
+function DashboardContent() {
+  const { dateRange, comparisonEnabled, getPreviousPeriod } =
+    useAnalyticsFiltersStore();
 
-  // Return null while redirecting
-  if (currentRole !== 'Partner') {
-    return null;
-  }
-
-  // Mock KPI widget data (will be replaced with real data from backend)
-  const firmKPIsWidget: KPIWidget = {
-    id: 'firm-kpis',
-    type: 'kpi',
-    title: 'KPI-uri Firmă',
-    position: { i: 'firm-kpis', x: 0, y: 0, w: 12, h: 3 },
-    metrics: [
-      {
-        label: 'Venituri Luna Curentă',
-        value: '€125,000',
-        trend: { direction: 'up', percentage: 12, comparison: 'vs luna trecută' },
-      },
-      {
-        label: 'Ore Facturabile',
-        value: '1,240',
-        trend: { direction: 'up', percentage: 8, comparison: 'vs săptămâna trecută' },
-      },
-      {
-        label: 'Cazuri Active',
-        value: '48',
-        trend: { direction: 'neutral', percentage: 0, comparison: 'vs luna trecută' },
-      },
-      {
-        label: 'Rata Finalizare',
-        value: '92%',
-        trend: { direction: 'up', percentage: 5, comparison: 'vs media anuală' },
-      },
-    ],
-  };
-
-  const billableHoursWidget: ChartWidget = {
-    id: 'billable-hours-chart',
-    type: 'chart',
-    chartType: 'bar',
-    title: 'Ore Facturabile - Ultimele 4 Săptămâni',
-    position: { i: 'billable-hours-chart', x: 0, y: 3, w: 8, h: 5 },
-    data: [
-      { week: 'S1', hours: 280 },
-      { week: 'S2', hours: 310 },
-      { week: 'S3', hours: 295 },
-      { week: 'S4', hours: 345 },
-    ],
-    xAxisKey: 'week',
-    yAxisKey: 'hours',
-    legend: true,
-  };
-
-  const caseDistributionWidget: ChartWidget = {
-    id: 'case-distribution',
-    type: 'chart',
-    chartType: 'pie',
-    title: 'Distribuție Cazuri pe Tip',
-    position: { i: 'case-distribution', x: 8, y: 3, w: 4, h: 5 },
-    data: [
-      { type: 'Civil', count: 18 },
-      { type: 'Comercial', count: 15 },
-      { type: 'Penal', count: 8 },
-      { type: 'Administrativ', count: 7 },
-    ],
-    dataKey: 'count',
-    legend: true,
-  };
-
-  const pendingApprovalsWidget: ApprovalListWidget = {
-    id: 'pending-approvals',
-    type: 'approvalList',
-    title: 'Aprobări în Așteptare',
-    position: { i: 'pending-approvals', x: 0, y: 8, w: 12, h: 4 },
-    approvals: [
-      {
-        id: '1',
-        itemName: 'Contract Parteneriat - ClientCorp SRL',
-        requester: 'Ion Popescu',
-        submittedDate: new Date('2025-11-12'),
-        type: 'document',
-      },
-      {
-        id: '2',
-        itemName: 'Înregistrare Timp - 15 ore',
-        requester: 'Maria Ionescu',
-        submittedDate: new Date('2025-11-11'),
-        type: 'timeEntry',
-      },
-      {
-        id: '3',
-        itemName: 'Cheltuieli Deplasare București',
-        requester: 'Andrei Gheorghe',
-        submittedDate: new Date('2025-11-10'),
-        type: 'expense',
-      },
-    ],
-  };
+  // Get financial KPIs with comparison
+  const { current, previous, deltas, isLoading, error, refetch } =
+    useFinancialKPIsComparison({
+      dateRange,
+      previousDateRange: getPreviousPeriod(),
+      comparisonEnabled,
+    });
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Page Header - Controls only, title now in TopBar */}
+      {/* Page Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-end gap-3">
-            {/* Date Range Selector (mockup) */}
-            <select
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              defaultValue="30d"
-            >
-              <option value="7d">Ultimele 7 zile</option>
-              <option value="30d">Ultimele 30 zile</option>
-              <option value="90d">Ultimele 90 zile</option>
-              <option value="1y">Ultimul an</option>
-            </select>
-            <button
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              onClick={() => {
-                // Export analytics data
-                alert('Export Analytics - To be implemented');
-              }}
-            >
-              <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <DashboardHeader />
+
+            <div className="flex flex-wrap items-center gap-3">
+              <DateRangePicker />
+              <PeriodComparisonToggle />
+
+              {/* Refresh button */}
+              <button
+                onClick={refetch}
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                title="Refresh data"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
                 />
-              </svg>
-              Export
-            </button>
+                <span className="sr-only">Refresh</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Analytics Widgets */}
+      {/* Dashboard Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Firm KPIs Widget */}
-          <div>
-            <FirmKPIsWidget widget={firmKPIsWidget} />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Revenue Overview - 1 column */}
+          <RevenueOverviewWidget
+            totalRevenue={current?.totalRevenue ?? 0}
+            revenueByBillingType={
+              current?.revenueByBillingType ?? {
+                hourly: 0,
+                fixed: 0,
+                retainer: 0,
+              }
+            }
+            isLoading={isLoading}
+            error={error}
+            onRetry={refetch}
+            delta={deltas?.totalRevenue}
+            className="lg:col-span-1"
+          />
 
-          {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8">
-              <BillableHoursChartWidget widget={billableHoursWidget} />
-            </div>
-            <div className="lg:col-span-4">
-              <CaseDistributionWidget widget={caseDistributionWidget} />
-            </div>
-          </div>
+          {/* Revenue Trend - 2 columns */}
+          <RevenueTrendWidget
+            revenueTrend={current?.revenueTrend ?? []}
+            previousTrend={previous?.revenueTrend}
+            comparisonEnabled={comparisonEnabled}
+            isLoading={isLoading}
+            error={error}
+            onRetry={refetch}
+            className="lg:col-span-2"
+          />
 
-          {/* Pending Approvals Widget */}
-          <div>
-            <PendingApprovalsWidget widget={pendingApprovalsWidget} />
-          </div>
+          {/* Utilization - 1 column */}
+          <UtilizationWidget
+            utilizationRate={current?.utilizationRate ?? 0}
+            totalBillableHours={current?.totalBillableHours ?? 0}
+            totalNonBillableHours={current?.totalNonBillableHours ?? 0}
+            utilizationByRole={current?.utilizationByRole ?? []}
+            isLoading={isLoading}
+            error={error}
+            onRetry={refetch}
+            delta={deltas?.utilizationRate}
+          />
+
+          {/* Profitability - 2 columns */}
+          <ProfitabilityWidget
+            effectiveHourlyRate={current?.effectiveHourlyRate ?? 0}
+            profitabilityByCase={current?.profitabilityByCase ?? []}
+            isLoading={isLoading}
+            error={error}
+            onRetry={refetch}
+            delta={deltas?.effectiveHourlyRate}
+            className="lg:col-span-2"
+          />
+
+          {/* Retainer Status - 1 column */}
+          <RetainerStatusWidget
+            retainerUtilizationAverage={current?.retainerUtilizationAverage ?? null}
+            retainerCasesCount={current?.retainerCasesCount ?? 0}
+            isLoading={isLoading}
+            error={error}
+            onRetry={refetch}
+            delta={deltas?.retainerUtilizationAverage}
+          />
         </div>
+
+        {/* Metadata footer */}
+        {current && (
+          <div className="mt-8 text-center text-xs text-gray-400">
+            <p>
+              Date calculate la{' '}
+              {new Date(current.calculatedAt).toLocaleString('ro-RO')} •{' '}
+              {current.caseCount} dosare în analiză
+            </p>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Analytics Page Component
+ * Wrapped with FinancialData to enforce authorization
+ */
+export default function AnalyticsPage() {
+  // useFinancialDataScope is available via FinancialData component
+
+  // Set document title
+  React.useEffect(() => {
+    document.title = 'Analize Financiare';
+  }, []);
+
+  return (
+    <FinancialData fallback={<AccessDenied />}>
+      <DashboardContent />
+    </FinancialData>
   );
 }

@@ -5,7 +5,8 @@
  */
 
 import { Anthropic } from '@anthropic-ai/sdk';
-import { Queue, Job } from 'bull';
+import Bull, { type Job } from 'bull';
+const Queue = Bull;
 import { franc } from 'franc-min';
 import { prisma } from '@/lib/prisma';
 import { ExtractedDocument, AIAnalysisResult } from '@shared/types';

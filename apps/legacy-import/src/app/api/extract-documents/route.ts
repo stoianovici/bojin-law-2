@@ -11,8 +11,6 @@ import {
   extractFromPST,
   groupByMonth,
   getExtractionSummary,
-  type ExtractedAttachment,
-  type ExtractionProgress,
 } from '@/services/pst-parser.service';
 
 /**
@@ -130,7 +128,7 @@ export async function POST(request: NextRequest) {
           status: 'InProgress',
           totalDocuments: extractionResult.attachments.length,
           extractionErrors: extractionResult.progress.errors.length > 0
-            ? extractionResult.progress.errors
+            ? JSON.parse(JSON.stringify(extractionResult.progress.errors))
             : undefined,
         },
       });

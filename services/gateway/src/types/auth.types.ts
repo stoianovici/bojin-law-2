@@ -1,6 +1,7 @@
 /**
  * Authentication Types
  * Story 2.4: Authentication with Azure AD
+ * Story 2.11.1: Business Owner Role
  *
  * TypeScript interfaces for authentication flow
  */
@@ -29,7 +30,7 @@ export interface JWTAccessTokenPayload {
   iat: number; // Issued at (Unix timestamp in seconds)
   userId: string;
   email: string;
-  role: 'Partner' | 'Associate' | 'Paralegal';
+  role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
   status: 'Pending' | 'Active' | 'Inactive';
   firmId: string | null;
   azureAdId: string;
@@ -59,7 +60,7 @@ export interface LoginResponse {
     email: string;
     firstName: string;
     lastName: string;
-    role: 'Partner' | 'Associate' | 'Paralegal';
+    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     status: 'Pending' | 'Active' | 'Inactive';
     firmId: string | null;
   };

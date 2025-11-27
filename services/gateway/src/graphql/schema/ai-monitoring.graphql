@@ -1,0 +1,139 @@
+# AI Monitoring GraphQL Schema
+# Story 3.1: AI Service Infrastructure
+
+"""
+AI usage statistics for a firm within a date range
+"""
+type AIUsageStats {
+  """Total tokens consumed"""
+  totalTokens: Int!
+
+  """Total cost in cents"""
+  totalCostCents: Int!
+
+  """Total number of requests"""
+  requestCount: Int!
+
+  """Average latency in milliseconds"""
+  avgLatencyMs: Float!
+
+  """Cache hit rate (0-1)"""
+  cacheHitRate: Float!
+
+  """Usage breakdown by model"""
+  byModel: [ModelUsage!]!
+
+  """Usage breakdown by operation type"""
+  byOperation: [OperationUsage!]!
+}
+
+"""
+Token usage for a specific model
+"""
+type ModelUsage {
+  """Model identifier"""
+  model: String!
+
+  """Total tokens consumed"""
+  tokens: Int!
+
+  """Cost in cents"""
+  costCents: Int!
+
+  """Number of requests"""
+  requestCount: Int!
+}
+
+"""
+Token usage for a specific operation type
+"""
+type OperationUsage {
+  """Operation type"""
+  operation: String!
+
+  """Total tokens consumed"""
+  tokens: Int!
+
+  """Cost in cents"""
+  costCents: Int!
+
+  """Number of requests"""
+  requestCount: Int!
+}
+
+"""
+Health status of an AI provider
+"""
+type ProviderHealth {
+  """Provider name (claude, grok)"""
+  provider: String!
+
+  """Current status"""
+  status: ProviderStatus!
+
+  """Last recorded latency in milliseconds"""
+  latencyMs: Int!
+
+  """When the health check was last performed"""
+  lastChecked: DateTime!
+
+  """Number of consecutive failures (if any)"""
+  consecutiveFailures: Int
+}
+
+"""
+Provider availability status
+"""
+enum ProviderStatus {
+  HEALTHY
+  DEGRADED
+  UNAVAILABLE
+}
+
+"""
+Daily usage trend data point
+"""
+type DailyUsage {
+  """Date (YYYY-MM-DD)"""
+  date: String!
+
+  """Total tokens for the day"""
+  tokens: Int!
+
+  """Total cost in cents for the day"""
+  costCents: Int!
+
+  """Number of requests for the day"""
+  requests: Int!
+}
+
+"""
+Input for date range filtering
+"""
+input DateRangeInput {
+  """Start date (inclusive)"""
+  start: DateTime!
+
+  """End date (inclusive)"""
+  end: DateTime!
+}
+
+extend type Query {
+  """
+  Get AI usage statistics for a firm.
+  Requires Partner or BusinessOwner role.
+  """
+  aiUsageStats(dateRange: DateRangeInput!, firmId: ID!): AIUsageStats!
+
+  """
+  Get health status of all AI providers.
+  Requires Partner or BusinessOwner role.
+  """
+  aiProviderHealth: [ProviderHealth!]!
+
+  """
+  Get daily usage trend for charts.
+  Requires Partner or BusinessOwner role.
+  """
+  aiDailyUsageTrend(dateRange: DateRangeInput!, firmId: ID!): [DailyUsage!]!
+}

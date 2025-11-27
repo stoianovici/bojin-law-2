@@ -99,23 +99,23 @@ describe('CaseCard', () => {
 
     it('should display priority', () => {
       render(<CaseCard case={baseMockCase} />);
-      expect(screen.getByText('High Priority')).toBeInTheDocument();
+      expect(screen.getByText('Prioritate Înaltă')).toBeInTheDocument();
     });
 
     it('should display last activity date', () => {
       render(<CaseCard case={baseMockCase} />);
-      expect(screen.getByText('Last Activity:')).toBeInTheDocument();
+      expect(screen.getByText('Ultima Activitate:')).toBeInTheDocument();
     });
 
     it('should display next deadline when present', () => {
       render(<CaseCard case={baseMockCase} />);
-      expect(screen.getByText('Next Deadline:')).toBeInTheDocument();
+      expect(screen.getByText('Termen Limită:')).toBeInTheDocument();
     });
 
     it('should not display next deadline when absent', () => {
       const caseWithoutDeadline = { ...baseMockCase, nextDeadline: undefined };
       render(<CaseCard case={caseWithoutDeadline} />);
-      expect(screen.queryByText('Next Deadline:')).not.toBeInTheDocument();
+      expect(screen.queryByText('Termen Limită:')).not.toBeInTheDocument();
     });
 
     it('should display all 8 required fields together', () => {
@@ -131,11 +131,11 @@ describe('CaseCard', () => {
       expect(screen.getByText('Active')).toBeInTheDocument();
       // 5. Assigned attorneys (tested separately below)
       // 6. Last activity
-      expect(screen.getByText('Last Activity:')).toBeInTheDocument();
+      expect(screen.getByText('Ultima Activitate:')).toBeInTheDocument();
       // 7. Deadline
-      expect(screen.getByText('Next Deadline:')).toBeInTheDocument();
+      expect(screen.getByText('Termen Limită:')).toBeInTheDocument();
       // 8. Priority
-      expect(screen.getByText('High Priority')).toBeInTheDocument();
+      expect(screen.getByText('Prioritate Înaltă')).toBeInTheDocument();
     });
   });
 
@@ -145,13 +145,6 @@ describe('CaseCard', () => {
       const { container } = render(<CaseCard case={activeCase} />);
       const statusBadge = screen.getByText('Active');
       expect(statusBadge).toHaveClass('bg-green-100', 'text-green-800', 'border-green-200');
-    });
-
-    it('should apply yellow color for Pending status', () => {
-      const pendingCase = { ...baseMockCase, status: 'Pending' as const };
-      render(<CaseCard case={pendingCase} />);
-      const statusBadge = screen.getByText('Pending');
-      expect(statusBadge).toHaveClass('bg-yellow-100', 'text-yellow-800', 'border-yellow-200');
     });
 
     it('should apply gray color for OnHold status', () => {
@@ -173,21 +166,21 @@ describe('CaseCard', () => {
     it('should apply red color for High priority', () => {
       const highPriorityCase = { ...baseMockCase, priority: 'High' as const };
       render(<CaseCard case={highPriorityCase} />);
-      const priorityBadge = screen.getByText('High Priority');
+      const priorityBadge = screen.getByText('Prioritate Înaltă');
       expect(priorityBadge).toHaveClass('bg-red-100', 'text-red-800');
     });
 
     it('should apply amber color for Medium priority', () => {
       const mediumPriorityCase = { ...baseMockCase, priority: 'Medium' as const };
       render(<CaseCard case={mediumPriorityCase} />);
-      const priorityBadge = screen.getByText('Medium Priority');
+      const priorityBadge = screen.getByText('Prioritate Medie');
       expect(priorityBadge).toHaveClass('bg-amber-100', 'text-amber-800');
     });
 
     it('should apply blue color for Low priority', () => {
       const lowPriorityCase = { ...baseMockCase, priority: 'Low' as const };
       render(<CaseCard case={lowPriorityCase} />);
-      const priorityBadge = screen.getByText('Low Priority');
+      const priorityBadge = screen.getByText('Prioritate Scăzută');
       expect(priorityBadge).toHaveClass('bg-blue-100', 'text-blue-800');
     });
   });
@@ -201,7 +194,7 @@ describe('CaseCard', () => {
       const { container } = render(<CaseCard case={urgentCase} />);
 
       // Find the deadline row specifically
-      const deadlineRow = screen.getByText('Next Deadline:').closest('div');
+      const deadlineRow = screen.getByText('Termen Limită:').closest('div');
       const deadlineText = deadlineRow?.querySelector('.text-red-600');
       expect(deadlineText).toBeInTheDocument();
       expect(deadlineText).toHaveClass('text-red-600');
@@ -224,7 +217,7 @@ describe('CaseCard', () => {
       const { container } = render(<CaseCard case={nonUrgentCase} />);
 
       // Find the deadline row specifically
-      const deadlineRow = screen.getByText('Next Deadline:').closest('div');
+      const deadlineRow = screen.getByText('Termen Limită:').closest('div');
       const redText = deadlineRow?.querySelector('.text-red-600');
       expect(redText).not.toBeInTheDocument();
       expect(screen.queryByText(/⚠️ URGENT/)).not.toBeInTheDocument();
@@ -270,14 +263,14 @@ describe('CaseCard', () => {
       const card = container.querySelector('.group');
 
       // Initially hidden
-      expect(screen.queryByText(/12 documents/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/12 documente/)).not.toBeInTheDocument();
 
       // Trigger hover
       fireEvent.mouseEnter(card!);
 
       // Should show stats
       await waitFor(() => {
-        expect(screen.getByText(/12 documents/)).toBeInTheDocument();
+        expect(screen.getByText(/12 documente/)).toBeInTheDocument();
       });
     });
 
@@ -286,14 +279,14 @@ describe('CaseCard', () => {
       const card = container.querySelector('.group');
 
       // Initially hidden
-      expect(screen.queryByText(/5 tasks/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/5 sarcini/)).not.toBeInTheDocument();
 
       // Trigger hover
       fireEvent.mouseEnter(card!);
 
       // Should show stats
       await waitFor(() => {
-        expect(screen.getByText(/5 tasks/)).toBeInTheDocument();
+        expect(screen.getByText(/5 sarcini/)).toBeInTheDocument();
       });
     });
 
@@ -304,13 +297,13 @@ describe('CaseCard', () => {
       // Trigger hover
       fireEvent.mouseEnter(card!);
       await waitFor(() => {
-        expect(screen.getByText(/12 documents/)).toBeInTheDocument();
+        expect(screen.getByText(/12 documente/)).toBeInTheDocument();
       });
 
       // Trigger leave
       fireEvent.mouseLeave(card!);
       await waitFor(() => {
-        expect(screen.queryByText(/12 documents/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/12 documente/)).not.toBeInTheDocument();
       });
     });
 
@@ -339,15 +332,15 @@ describe('CaseCard', () => {
 
       const quickActionsButton = screen.getByLabelText('Quick actions');
 
-      // Initially hidden
-      expect(screen.queryByText('Add Task')).not.toBeInTheDocument();
+      // Initially hidden (Romanian translation)
+      expect(screen.queryByText('Adaugă Sarcină')).not.toBeInTheDocument();
 
       // Click to show
       fireEvent.click(quickActionsButton);
 
-      expect(screen.getByText('Add Task')).toBeInTheDocument();
-      expect(screen.getByText('Upload Document')).toBeInTheDocument();
-      expect(screen.getByText('Mark Complete')).toBeInTheDocument();
+      expect(screen.getByText('Adaugă Sarcină')).toBeInTheDocument();
+      expect(screen.getByText('Încarcă Document')).toBeInTheDocument();
+      expect(screen.getByText('Marchează Complet')).toBeInTheDocument();
     });
 
     it('should call onQuickAction with "addTask" when Add Task is clicked', () => {
@@ -357,7 +350,7 @@ describe('CaseCard', () => {
       const quickActionsButton = screen.getByLabelText('Quick actions');
       fireEvent.click(quickActionsButton);
 
-      const addTaskButton = screen.getByText('Add Task');
+      const addTaskButton = screen.getByText('Adaugă Sarcină');
       fireEvent.click(addTaskButton);
 
       expect(mockOnQuickAction).toHaveBeenCalledWith('addTask', 'case-123');
@@ -370,7 +363,7 @@ describe('CaseCard', () => {
       const quickActionsButton = screen.getByLabelText('Quick actions');
       fireEvent.click(quickActionsButton);
 
-      const uploadButton = screen.getByText('Upload Document');
+      const uploadButton = screen.getByText('Încarcă Document');
       fireEvent.click(uploadButton);
 
       expect(mockOnQuickAction).toHaveBeenCalledWith('uploadDocument', 'case-123');
@@ -383,7 +376,7 @@ describe('CaseCard', () => {
       const quickActionsButton = screen.getByLabelText('Quick actions');
       fireEvent.click(quickActionsButton);
 
-      const markCompleteButton = screen.getByText('Mark Complete');
+      const markCompleteButton = screen.getByText('Marchează Complet');
       fireEvent.click(markCompleteButton);
 
       expect(mockOnQuickAction).toHaveBeenCalledWith('markComplete', 'case-123');
@@ -396,10 +389,10 @@ describe('CaseCard', () => {
       const quickActionsButton = screen.getByLabelText('Quick actions');
       fireEvent.click(quickActionsButton);
 
-      const addTaskButton = screen.getByText('Add Task');
+      const addTaskButton = screen.getByText('Adaugă Sarcină');
       fireEvent.click(addTaskButton);
 
-      expect(screen.queryByText('Add Task')).not.toBeInTheDocument();
+      expect(screen.queryByText('Adaugă Sarcină')).not.toBeInTheDocument();
     });
 
     it('should toggle menu when clicking button multiple times', () => {
@@ -409,15 +402,15 @@ describe('CaseCard', () => {
 
       // Open
       fireEvent.click(quickActionsButton);
-      expect(screen.getByText('Add Task')).toBeInTheDocument();
+      expect(screen.getByText('Adaugă Sarcină')).toBeInTheDocument();
 
       // Close
       fireEvent.click(quickActionsButton);
-      expect(screen.queryByText('Add Task')).not.toBeInTheDocument();
+      expect(screen.queryByText('Adaugă Sarcină')).not.toBeInTheDocument();
 
       // Open again
       fireEvent.click(quickActionsButton);
-      expect(screen.getByText('Add Task')).toBeInTheDocument();
+      expect(screen.getByText('Adaugă Sarcină')).toBeInTheDocument();
     });
   });
 

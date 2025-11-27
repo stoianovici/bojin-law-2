@@ -125,7 +125,7 @@ describe('CaseHeader', () => {
   it('renders different status badges correctly', () => {
     const statusCases: Array<{ status: Case['status']; label: string }> = [
       { status: 'Active', label: 'Activ' },
-      { status: 'OnHold', label: 'În Așteptare' },
+      { status: 'OnHold', label: 'Suspendat' },
       { status: 'Closed', label: 'Închis' },
       { status: 'Archived', label: 'Arhivat' },
     ];

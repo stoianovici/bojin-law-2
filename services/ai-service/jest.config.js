@@ -16,10 +16,16 @@ module.exports = {
       statements: 80,
     },
   },
+  moduleNameMapper: {
+    '^@legal-platform/types$': '<rootDir>/../../packages/shared/types/src/index.ts',
+    '^@legal-platform/database$': '<rootDir>/../../packages/database/src/index.ts',
+    '^@prisma/client$': '<rootDir>/../../packages/database/node_modules/@prisma/client',
+  },
   transform: {
     '^.+\\.ts$': [
       'ts-jest',
       {
+        isolatedModules: true,
         tsconfig: {
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,

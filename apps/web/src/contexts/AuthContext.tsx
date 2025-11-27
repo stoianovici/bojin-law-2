@@ -25,8 +25,8 @@ export interface AuthContextType extends AuthState {
   clearError: () => void;
 }
 
-// Create context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create context - exported for testing purposes
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Provider props
 export interface AuthProviderProps {
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const initializeAuth = async () => {
       try {
         // Check if user has active session by calling a protected endpoint
-        const response = await fetch('/auth/me', {
+        const response = await fetch('/api/auth/me', {
           credentials: 'include', // Include session cookie
         });
 
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const login = useCallback(() => {
     // Redirect to backend login endpoint which initiates OAuth flow
-    window.location.href = '/auth/login';
+    window.location.href = 'http://localhost:4000/auth/login';
   }, []);
 
   /**
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = useCallback(async () => {
     try {
       // Call backend logout endpoint
-      const response = await fetch('/auth/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include', // Include session cookie
       });
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const refreshToken = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch('/auth/refresh', {
+      const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         credentials: 'include', // Include session cookie with refresh token
       });

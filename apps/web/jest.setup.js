@@ -1,17 +1,38 @@
-// Jest setup file
+// Jest setup file (ESM mode)
 import '@testing-library/jest-dom';
-import { TextEncoder, TextDecoder } from 'util';
 
-// Polyfill TextEncoder/TextDecoder for pg database client
+// Fetch API polyfill for MSW integration tests
+import 'whatwg-fetch';
+
+import { TextEncoder, TextDecoder } from 'util';
+import { ReadableStream, WritableStream, TransformStream } from 'stream/web';
+
+// Polyfill for Node.js environment
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
+// Stream API polyfills (required by MSW)
+global.ReadableStream = ReadableStream;
+global.WritableStream = WritableStream;
+global.TransformStream = TransformStream;
+
+// BroadcastChannel polyfill for MSW v2.x
+global.BroadcastChannel = class BroadcastChannel {
+  constructor(name) {
+    this.name = name;
+  }
+  postMessage() {}
+  close() {}
+  addEventListener() {}
+  removeEventListener() {}
+};
+
 // Mock localStorage
 const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+  clear: () => {},
 };
 
 global.localStorage = localStorageMock;
@@ -30,3 +51,18 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {}
   disconnect() {}
 };
+
+// Mock window.matchMedia for responsive design tests
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => {},
+  }),
+});

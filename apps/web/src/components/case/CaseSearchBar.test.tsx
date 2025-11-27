@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { CaseSearchBar } from './CaseSearchBar';
 import { useCaseSearch } from '../../hooks/useCaseSearch';
 import { useRouter } from 'next/navigation';
@@ -110,11 +110,13 @@ describe('CaseSearchBar', () => {
     const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
-    await waitFor(() => {
-      jest.advanceTimersByTime(300);
-    });
+    // Advance timers first
+    jest.advanceTimersByTime(300);
 
-    expect(screen.getByText('Searching...')).toBeInTheDocument();
+    // Wait for the component to re-render with the dropdown
+    await waitFor(() => {
+      expect(screen.getByText('Searching...')).toBeInTheDocument();
+    });
   });
 
   it('displays "no results" message when search returns empty', async () => {
@@ -129,11 +131,13 @@ describe('CaseSearchBar', () => {
     const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
-    await waitFor(() => {
-      jest.advanceTimersByTime(300);
-    });
+    // Advance timers first
+    jest.advanceTimersByTime(300);
 
-    expect(screen.getByText(/No cases found for "test"/)).toBeInTheDocument();
+    // Wait for the component to re-render with the dropdown
+    await waitFor(() => {
+      expect(screen.getByText(/No cases found for "test"/)).toBeInTheDocument();
+    });
   });
 
   it('displays search results', async () => {
@@ -154,6 +158,7 @@ describe('CaseSearchBar', () => {
       },
     ];
 
+    // Set up mock with results before rendering
     (useCaseSearch as jest.Mock).mockReturnValue({
       search: mockSearch,
       results: mockResults,
@@ -165,14 +170,21 @@ describe('CaseSearchBar', () => {
     const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
-    await waitFor(() => {
+    // Advance timers to trigger the debounced search
+    act(() => {
       jest.advanceTimersByTime(300);
     });
 
-    expect(screen.getByText(/CASE-001/)).toBeInTheDocument();
-    expect(screen.getByText(/Test Case 1/)).toBeInTheDocument();
+    // Wait for the component to re-render with the dropdown
+    await waitFor(() => {
+      expect(screen.getByText(/CASE-001/)).toBeInTheDocument();
+    });
+
+    // Verify both cases are displayed (text may be split by highlight marks)
+    expect(screen.getByText(/Case 1/)).toBeInTheDocument();
     expect(screen.getByText(/Client A/)).toBeInTheDocument();
     expect(screen.getByText(/CASE-002/)).toBeInTheDocument();
+    expect(screen.getByText(/Case 2/)).toBeInTheDocument();
   });
 
   it('highlights matching text in results', async () => {
@@ -197,13 +209,14 @@ describe('CaseSearchBar', () => {
     const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
     fireEvent.change(input, { target: { value: 'Test' } });
 
-    await waitFor(() => {
-      jest.advanceTimersByTime(300);
-    });
+    // Advance timers first
+    jest.advanceTimersByTime(300);
 
-    // Check that mark elements exist (highlighted text)
-    const highlighted = document.querySelectorAll('mark');
-    expect(highlighted.length).toBeGreaterThan(0);
+    // Wait for the component to re-render with the dropdown
+    await waitFor(() => {
+      const highlighted = document.querySelectorAll('mark');
+      expect(highlighted.length).toBeGreaterThan(0);
+    });
   });
 
   it('navigates to case detail when result is clicked', async () => {
@@ -228,8 +241,12 @@ describe('CaseSearchBar', () => {
     const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
+    // Advance timers first
+    jest.advanceTimersByTime(300);
+
+    // Wait for the component to re-render with results
     await waitFor(() => {
-      jest.advanceTimersByTime(300);
+      expect(screen.getByText(/CASE-001/)).toBeInTheDocument();
     });
 
     const resultButton = screen.getByText(/CASE-001/).closest('button');
@@ -262,8 +279,12 @@ describe('CaseSearchBar', () => {
     ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'test' } });
 
+    // Advance timers first
+    jest.advanceTimersByTime(300);
+
+    // Wait for the component to re-render with results
     await waitFor(() => {
-      jest.advanceTimersByTime(300);
+      expect(screen.getByText(/CASE-001/)).toBeInTheDocument();
     });
 
     const resultButton = screen.getByText(/CASE-001/).closest('button');

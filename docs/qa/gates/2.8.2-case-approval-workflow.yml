@@ -1,0 +1,218 @@
+# Quality Gate Decision - Story 2.8.2
+# Case Approval Workflow
+# Powered by BMAD™ Core
+# Fourth Review - Regression Identified - 2025-11-25
+
+schema: 1
+story: "2.8.2"
+story_title: "Case Approval Workflow"
+gate: FAIL
+status_reason: "Critical regression from previous PASS review. Backend unit tests (67) fail with TypeScript compilation errors. Frontend integration tests (10) fail due to missing Apollo provider. Implementation code appears intact but test infrastructure is broken, blocking verification of all acceptance criteria."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-11-25T12:00:00Z"
+
+waiver:
+  active: false
+
+top_issues:
+  - id: "TEST-004"
+    severity: high
+    finding: "All 67 backend approval tests fail with TypeScript compilation errors - Prisma mock types don't match imported types from @legal-platform/database"
+    suggested_action: "Fix mock type declarations in services/gateway/__mocks__/@legal-platform/database.ts to satisfy TypeScript type checking during ts-jest compilation"
+    suggested_owner: dev
+    refs:
+      - "services/gateway/__mocks__/@legal-platform/database.ts"
+      - "services/gateway/__tests__/resolvers/approval.resolvers.test.ts"
+      - "services/gateway/__tests__/integration/case-approval-authorization.integration.test.ts"
+      - "services/gateway/__tests__/integration/case-approval-workflows.integration.test.ts"
+
+  - id: "TEST-005"
+    severity: high
+    finding: "All 10 pending-approvals page integration tests fail with 'Invariant Violation' - Apollo Client provider not configured in test setup"
+    suggested_action: "Wrap test components with MockedProvider from @apollo/client/testing or configure test wrapper properly"
+    suggested_owner: dev
+    refs:
+      - "apps/web/src/app/cases/pending-approvals/page.test.tsx"
+      - "apps/web/src/hooks/useCaseApproval.ts:190"
+
+  - id: "TEST-006"
+    severity: medium
+    finding: "ReviewCaseModal test 'should call onApprove when Approve button is clicked' fails - test expects onClose to be called after onApprove but component doesn't auto-close"
+    suggested_action: "Fix test to match actual component behavior or update component to call onClose after successful approval"
+    suggested_owner: dev
+    refs:
+      - "apps/web/src/components/case/ReviewCaseModal.test.tsx:218"
+      - "apps/web/src/components/case/ReviewCaseModal.tsx:47-49"
+
+quality_score: 35
+expires: "2025-12-09T00:00:00Z"
+
+evidence:
+  tests_reviewed: 100
+  tests_passing: 12
+  tests_failing: 78
+  tests_unrunnable: 67
+  test_execution_time: "N/A - compilation failures"
+  code_coverage:
+    statements: "Unable to measure - tests don't compile"
+    branches: "Unable to measure"
+    functions: "Unable to measure"
+    lines: "Unable to measure"
+  risks_identified: 3
+  trace:
+    ac_covered: []
+    ac_gaps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ac_total: 10
+    coverage_percent: 0
+    note: "Cannot verify any ACs due to test infrastructure failures"
+
+nfr_validation:
+  security:
+    status: CONCERNS
+    notes: "22 security tests exist but cannot be executed due to TypeScript compilation errors. Authorization logic unverified."
+  performance:
+    status: PASS
+    notes: "Implementation code unchanged. Database indexes and query patterns still valid."
+  reliability:
+    status: CONCERNS
+    notes: "Error handling implementation exists but cannot be verified with tests."
+  maintainability:
+    status: FAIL
+    notes: "Test infrastructure is broken. Mock types have drifted from actual types, indicating technical debt in test setup."
+
+test_breakdown:
+  backend_tests:
+    expected: 67
+    passing: 0
+    failing: 67
+    reason: "TypeScript compilation errors - mock types incompatible with Prisma client types"
+    files_affected:
+      - "approval.resolvers.test.ts (39 tests)"
+      - "case-approval-authorization.integration.test.ts (22 tests)"
+      - "case-approval-workflows.integration.test.ts (6 tests)"
+
+  frontend_tests:
+    reviewCaseModal:
+      expected: 16
+      passing: 15
+      failing: 1
+      reason: "Test expectation mismatch - expects onClose called after onApprove"
+    pendingApprovalsPage:
+      expected: 10
+      passing: 0
+      failing: 10
+      reason: "Apollo Client provider missing in test setup"
+    myCasesPage:
+      expected: 12
+      passing: 12
+      failing: 0
+      reason: "All tests pass"
+
+implementation_status:
+  note: "Implementation code appears intact from previous PASS review"
+  backend_resolvers: "Present and unchanged"
+  notification_service: "Present and unchanged"
+  frontend_components: "Present and unchanged"
+  database_migrations: "Present and unchanged"
+
+regression_analysis:
+  from_review: "Third Review (PASS - 100/100)"
+  to_review: "Fourth Review (FAIL - 35/100)"
+  score_change: -65
+  likely_causes:
+    - "Prisma client type changes after regeneration that weren't reflected in mock types"
+    - "Apollo Client version upgrade breaking test provider configuration"
+    - "Missing module synchronization between packages/database and services/gateway"
+  affected_areas:
+    - "Backend test infrastructure"
+    - "Frontend integration test infrastructure"
+
+recommendations:
+  immediate:
+    - action: "Fix Prisma mock types to match current @legal-platform/database exports"
+      priority: "critical"
+      effort: "1-2 hours"
+      refs: ["services/gateway/__mocks__/@legal-platform/database.ts"]
+      details: "Add proper type casting (as jest.Mock) or use jest.mocked() helper. Ensure mock structure matches actual Prisma client interface."
+
+    - action: "Fix pending-approvals page test to include Apollo MockedProvider"
+      priority: "critical"
+      effort: "30 minutes"
+      refs: ["apps/web/src/app/cases/pending-approvals/page.test.tsx"]
+      details: "Wrap component render with MockedProvider from @apollo/client/testing, providing mock responses for all GraphQL queries/mutations used"
+
+    - action: "Fix ReviewCaseModal test expectation or component behavior"
+      priority: "high"
+      effort: "15 minutes"
+      refs: ["apps/web/src/components/case/ReviewCaseModal.test.tsx"]
+      details: "Either remove onClose assertion from test (component doesn't auto-close) or add onClose() call after onApprove() in component"
+
+  future: []
+
+risk_summary:
+  totals:
+    critical: 0
+    high: 2
+    medium: 1
+    low: 0
+  highest: high
+  recommendations:
+    must_fix:
+      - "TEST-004: Backend test TypeScript compilation"
+      - "TEST-005: Frontend Apollo provider in tests"
+    monitor: []
+
+history:
+  - at: "2025-11-22T00:00:00Z"
+    gate: FAIL
+    score: 40
+    note: "Initial review - critical test coverage gaps, zero backend tests, authorization untested, notifications not implemented"
+  - at: "2025-11-22T12:00:00Z"
+    gate: CONCERNS
+    score: 85
+    note: "Second review - all test gaps addressed with 67 comprehensive tests, only notification system deferral remains"
+  - at: "2025-11-22T18:00:00Z"
+    gate: PASS
+    score: 100
+    note: "Third review - notification system fully implemented, all 10 ACs verified, production-ready"
+  - at: "2025-11-25T12:00:00Z"
+    gate: FAIL
+    score: 35
+    note: "Fourth review - REGRESSION: Backend tests fail with TypeScript errors, frontend integration tests fail with Apollo provider issues. Implementation code intact but test infrastructure broken."
+
+next_steps:
+  - "1. Fix backend mock types (services/gateway/__mocks__/@legal-platform/database.ts)"
+  - "2. Fix frontend test Apollo provider configuration"
+  - "3. Fix ReviewCaseModal test expectation"
+  - "4. Re-run full test suite to verify all 89+ tests pass"
+  - "5. Submit for re-review"
+
+compliance:
+  coding_standards: PASS
+  project_structure: PASS
+  testing_strategy: FAIL
+  acceptance_criteria: "0/10 verifiable (test infrastructure broken)"
+
+deployment_readiness:
+  database_migrations: READY
+  backend_api: READY
+  frontend_ui: READY
+  security: UNVERIFIED
+  testing: NOT_READY
+  documentation: READY
+  notifications: READY
+  overall: NOT_READY
+
+production_readiness_checklist:
+  - check: "All acceptance criteria verifiable"
+    status: FAIL
+    details: "Cannot verify any ACs - test infrastructure is broken"
+  - check: "Test suite passes"
+    status: FAIL
+    details: "12/89+ tests passing (13%)"
+  - check: "Security controls verified"
+    status: FAIL
+    details: "22 security tests cannot execute"
+  - check: "Implementation code intact"
+    status: PASS
+    details: "Code appears unchanged from previous PASS review"

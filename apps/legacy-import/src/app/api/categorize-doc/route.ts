@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const wasSkipped = document.status === 'Skipped';
 
     // Update the document
-    const updatedDocument = await prisma.$transaction(async (tx: typeof prisma) => {
+    const updatedDocument = await prisma.$transaction(async (tx) => {
       // Update document status
       const updated = await tx.extractedDocument.update({
         where: { id: documentId },

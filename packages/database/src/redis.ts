@@ -24,14 +24,23 @@
 
 import Redis, { RedisOptions } from 'ioredis';
 
+// Check if we're in development without Redis
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 // Redis configuration from environment variables
 const redisConfig: RedisOptions = {
   // Connection string from Render auto-injection
   ...(process.env.REDIS_URL && { url: process.env.REDIS_URL }),
 
-  // Retry strategy
-  maxRetriesPerRequest: parseInt(process.env.REDIS_MAX_RETRIES || '3', 10),
+  // Retry strategy - in development, use null to prevent max retries error
+  // This allows the app to continue working without Redis (with degraded functionality)
+  maxRetriesPerRequest: isDevelopment ? null : parseInt(process.env.REDIS_MAX_RETRIES || '3', 10),
   retryStrategy(times: number) {
+    if (isDevelopment && times > 3) {
+      // In development, stop retrying after 3 attempts and just log
+      console.warn('Redis unavailable in development - some features may not work');
+      return null; // Stop retrying
+    }
     const delay = Math.min(times * 50, 2000); // Exponential backoff up to 2 seconds
     return delay;
   },
@@ -41,9 +50,9 @@ const redisConfig: RedisOptions = {
   commandTimeout: 5000, // 5 seconds for command execution
 
   // Connection options
-  lazyConnect: false, // Connect immediately
+  lazyConnect: isDevelopment, // Lazy connect in development to not block startup
   enableReadyCheck: true,
-  enableOfflineQueue: true,
+  enableOfflineQueue: !isDevelopment, // Disable offline queue in dev to fail fast
 
   // TLS for production
   // Render Redis provides valid TLS certificates signed by trusted CAs

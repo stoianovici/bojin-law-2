@@ -1,6 +1,7 @@
 /**
  * Unit tests for Case Mutation Resolvers
  * Story 2.6: Case Management Data Model and API
+ * Story 2.11.1: Business Owner Role
  *
  * Tests authorization, validation, and mutation logic for:
  * - createCase
@@ -29,7 +30,7 @@ interface MockContext {
   user?: {
     id: string;
     firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal';
+    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     email: string;
   };
 }

@@ -5,17 +5,28 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import type { Case, User } from '@legal-platform/types';
+import type { Case } from '@legal-platform/types';
 import * as Avatar from '@radix-ui/react-avatar';
 import { Clock, FileText, ClipboardList } from 'lucide-react';
+import { BillingInfoSection } from '../BillingInfoSection';
+import { CaseRevenueKPIWidget } from '../CaseRevenueKPIWidget';
+import { EditRatesModal } from '../EditRatesModal';
+
+interface CaseTeamMember {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: string;
+}
 
 export interface OverviewTabProps {
   case: Case;
-  teamMembers?: User[];
+  teamMembers?: CaseTeamMember[];
   recentActivity?: ActivityItem[];
   upcomingDeadlines?: DeadlineItem[];
   stats?: CaseStats;
@@ -80,6 +91,8 @@ export function OverviewTab({
   onEditDetails,
   className,
 }: OverviewTabProps) {
+  const [showEditRatesModal, setShowEditRatesModal] = useState(false);
+
   return (
     <div className={clsx('h-full overflow-y-auto bg-gray-50 p-6', className)}>
       <div className="max-w-7xl mx-auto">
@@ -126,8 +139,9 @@ export function OverviewTab({
           <Card title="Membrii Echipei">
             <div className="space-y-3">
               {teamMembers.map((member) => {
-                const initials =
-                  `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
+                const firstName = member.firstName || 'U';
+                const lastName = member.lastName || 'U';
+                const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
                 return (
                   <div key={member.id} className="flex items-center gap-3">
                     <Avatar.Root className="inline-flex h-10 w-10 rounded-full">
@@ -137,11 +151,11 @@ export function OverviewTab({
                     </Avatar.Root>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">
-                        {member.firstName} {member.lastName}
+                        {firstName} {lastName}
                       </p>
-                      <p className="text-xs text-gray-600">{member.role}</p>
+                      <p className="text-xs text-gray-600">{member.role || 'Team Member'}</p>
                     </div>
-                    <div className="text-xs text-gray-500">{member.email}</div>
+                    <div className="text-xs text-gray-500">{member.email || ''}</div>
                   </div>
                 );
               })}
@@ -253,8 +267,41 @@ export function OverviewTab({
               </div>
             </Card>
           </div>
+
+          {/* Billing Information Section - Full Width */}
+          <div className="lg:col-span-2">
+            <Card title="Billing Information">
+              <BillingInfoSection
+                caseId={caseData.id}
+                billingType={caseData.billingType}
+                fixedAmount={caseData.fixedAmount}
+                customRates={caseData.customRates}
+                onEdit={() => setShowEditRatesModal(true)}
+              />
+            </Card>
+          </div>
+
+          {/* Revenue KPI Widget - Full Width (Partners only, Fixed cases only) */}
+          <div className="lg:col-span-2">
+            <Card title="Revenue Metrics">
+              <CaseRevenueKPIWidget
+                caseId={caseData.id}
+                billingType={caseData.billingType}
+              />
+            </Card>
+          </div>
         </div>
       </div>
+
+      {/* Edit Rates Modal */}
+      <EditRatesModal
+        caseId={caseData.id}
+        isOpen={showEditRatesModal}
+        onClose={() => setShowEditRatesModal(false)}
+        currentBillingType={caseData.billingType}
+        currentFixedAmount={caseData.fixedAmount}
+        currentCustomRates={caseData.customRates}
+      />
     </div>
   );
 }

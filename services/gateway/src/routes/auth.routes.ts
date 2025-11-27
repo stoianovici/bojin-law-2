@@ -419,3 +419,114 @@ authRouter.post('/logout', async (req: Request, res: Response) => {
     });
   }
 });
+
+/**
+ * GET /auth/me
+ * Get current authenticated user from session
+ *
+ * @returns Current user data if authenticated
+ */
+authRouter.get('/me', async (req: Request, res: Response) => {
+  try {
+    // Check if session exists
+    if (!req.session || !req.session.user) {
+      return res.status(401).json({
+        error: 'unauthorized',
+        message: 'No active session found',
+      });
+    }
+
+    const sessionUser = req.session.user;
+
+    // Return user data
+    res.json({
+      id: sessionUser.userId,
+      email: sessionUser.email,
+      role: sessionUser.role,
+      status: sessionUser.status,
+      firmId: sessionUser.firmId,
+      azureAdId: sessionUser.azureAdId,
+    });
+  } catch (error: any) {
+    console.error('Error getting current user:', error);
+    res.status(500).json({
+      error: 'internal_error',
+      message: error.message || 'Failed to get user',
+    });
+  }
+});
+
+/**
+ * POST /auth/dev-login
+ * Development-only endpoint to create mock session
+ * ONLY available in development mode
+ */
+authRouter.post('/dev-login', async (req: Request, res: Response) => {
+  // Only allow in development
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(403).json({
+      error: 'forbidden',
+      message: 'Not available in production',
+    });
+  }
+
+  try {
+    // Query database for a real Partner user to use for dev login
+    const { prisma } = await import('@legal-platform/database');
+
+    const partner = await prisma.user.findFirst({
+      where: {
+        role: 'Partner',
+        status: 'Active',
+      },
+      include: {
+        firm: true,
+      },
+    });
+
+    if (!partner) {
+      return res.status(500).json({
+        error: 'no_partner_found',
+        message: 'No Partner user found in database. Please run seed script.',
+      });
+    }
+
+    // Create session with real user data
+    const mockUser = {
+      userId: partner.id,
+      email: partner.email,
+      role: partner.role,
+      status: partner.status,
+      firmId: partner.firmId,
+      azureAdId: partner.azureAdId,
+      accessToken: 'dev-token',
+      refreshToken: 'dev-refresh-token',
+      accessTokenExpiry: Math.floor(Date.now() / 1000) + 3600,
+      createdAt: Math.floor(Date.now() / 1000),
+      lastActivity: Math.floor(Date.now() / 1000),
+    };
+
+    // Store user in session
+    if (req.session) {
+      req.session.user = mockUser;
+    }
+
+    res.json({
+      user: {
+        id: partner.id,
+        email: partner.email,
+        firstName: partner.firstName,
+        lastName: partner.lastName,
+        role: partner.role,
+        firmId: partner.firmId,
+      },
+      message: 'Development session created with real Partner user',
+    });
+  } catch (error: any) {
+    console.error('Dev login error:', error);
+    res.status(500).json({
+      error: 'dev_login_failed',
+      message: error.message || 'Failed to create dev session',
+    });
+  }
+});

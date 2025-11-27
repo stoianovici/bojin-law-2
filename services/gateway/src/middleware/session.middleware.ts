@@ -1,6 +1,7 @@
 /**
  * Session Validation Middleware
  * Story 2.4: Authentication with Azure AD - Task 11
+ * Story 2.11.1: Business Owner Role
  *
  * Middleware to validate user session from Redis for protected routes.
  */
@@ -98,7 +99,7 @@ export const optionalSession = (
  *     // Only Partners can access
  *   });
  */
-export const requireRole = (allowedRoles: Array<'Partner' | 'Associate' | 'Paralegal'>) => {
+export const requireRole = (allowedRoles: Array<'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner'>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({

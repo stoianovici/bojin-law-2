@@ -12,13 +12,13 @@
  * - Circuit breaker pattern
  */
 
+import { ErrorCategory, parseGraphError } from '../../src/utils/graph-error-handler';
 import {
-  retryWithBackoff,
-  resetCircuitBreakers,
-  getCircuitBreakerState,
-  CircuitState,
+    CircuitState,
+    getCircuitBreakerState,
+    resetCircuitBreakers,
+    retryWithBackoff,
 } from '../../src/utils/retry.util';
-import { parseGraphError, ErrorCategory } from '../../src/utils/graph-error-handler';
 
 // Set test environment
 process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD = '3';

@@ -1,0 +1,205 @@
+# Search GraphQL Schema
+# Story 2.10: Basic AI Search Implementation - Tasks 13-14
+#
+# Provides AI-powered search capabilities across cases and documents
+# with full-text, semantic, and hybrid search modes.
+
+# ==============================================================================
+# Enums
+# ==============================================================================
+
+"""
+Search mode determines the algorithm used for searching.
+"""
+enum SearchMode {
+  """Full-text search using PostgreSQL tsvector/tsquery"""
+  FULL_TEXT
+  """Semantic search using vector similarity (pgvector)"""
+  SEMANTIC
+  """Combined search using Reciprocal Rank Fusion (recommended)"""
+  HYBRID
+}
+
+"""
+Match type indicates how a result was found.
+"""
+enum SearchMatchType {
+  """Result found via full-text keyword match"""
+  FULL_TEXT
+  """Result found via semantic similarity"""
+  SEMANTIC
+  """Result found by both methods"""
+  HYBRID
+}
+
+# ==============================================================================
+# Search Result Types
+# ==============================================================================
+
+"""
+Case search result with relevance scoring and highlighting.
+"""
+type CaseSearchResult {
+  """The matched case"""
+  case: Case!
+  """Relevance score (0-1)"""
+  score: Float!
+  """Highlighted snippet with matched terms wrapped in <mark> tags"""
+  highlight: String
+  """How this result was matched"""
+  matchType: SearchMatchType!
+}
+
+"""
+Document search result with relevance scoring and highlighting.
+"""
+type DocumentSearchResult {
+  """The matched document"""
+  document: Document!
+  """Relevance score (0-1)"""
+  score: Float!
+  """Highlighted snippet with matched terms wrapped in <mark> tags"""
+  highlight: String
+  """How this result was matched"""
+  matchType: SearchMatchType!
+}
+
+"""
+Client search result with relevance scoring and highlighting.
+"""
+type ClientSearchResult {
+  """The matched client"""
+  client: Client!
+  """Relevance score (0-1)"""
+  score: Float!
+  """Highlighted snippet with matched terms wrapped in <mark> tags"""
+  highlight: String
+  """How this result was matched"""
+  matchType: SearchMatchType!
+}
+
+"""
+Union type for search results - can be case, document, or client.
+Use __typename to determine the type in the client.
+"""
+union SearchResult = CaseSearchResult | DocumentSearchResult | ClientSearchResult
+
+"""
+Search response containing results and metadata.
+"""
+type SearchResponse {
+  """Array of search results (cases and/or documents)"""
+  results: [SearchResult!]!
+  """Total number of results found"""
+  totalCount: Int!
+  """Search execution time in milliseconds"""
+  searchTime: Float!
+  """The query that was searched"""
+  query: String!
+  """The search mode that was used"""
+  searchMode: SearchMode!
+}
+
+"""
+Search history entry for recent searches.
+"""
+type SearchHistory {
+  id: UUID!
+  """The search query text"""
+  query: String!
+  """Search mode used"""
+  searchMode: SearchMode!
+  """Filters applied (JSON)"""
+  filters: JSON
+  """Number of results returned"""
+  resultCount: Int!
+  """When the search was performed"""
+  createdAt: DateTime!
+}
+
+# ==============================================================================
+# Input Types
+# ==============================================================================
+
+"""
+Date range filter for searches.
+"""
+input DateRangeInput {
+  """Start date (inclusive)"""
+  start: DateTime!
+  """End date (inclusive)"""
+  end: DateTime!
+}
+
+"""
+Search filters to narrow down results.
+"""
+input SearchFiltersInput {
+  """Filter by date range (case opened date or document upload date)"""
+  dateRange: DateRangeInput
+  """Filter by specific case IDs"""
+  caseIds: [UUID!]
+  """Filter by case types"""
+  caseTypes: [CaseType!]
+  """Filter by case statuses"""
+  caseStatuses: [CaseStatus!]
+  """Filter by document MIME types (e.g., "application/pdf")"""
+  documentTypes: [String!]
+  """Filter by client IDs"""
+  clientIds: [UUID!]
+}
+
+"""
+Search input parameters.
+"""
+input SearchInput {
+  """Search query string (required, min 1 character)"""
+  query: String!
+  """Search mode (default: HYBRID for best results)"""
+  searchMode: SearchMode = HYBRID
+  """Optional filters to narrow results"""
+  filters: SearchFiltersInput
+  """Maximum results to return (default: 20, max: 100)"""
+  limit: Int = 20
+  """Pagination offset (default: 0)"""
+  offset: Int = 0
+}
+
+# ==============================================================================
+# Queries
+# ==============================================================================
+
+extend type Query {
+  """
+  Search across all cases and documents.
+
+  Supports three search modes:
+  - FULL_TEXT: Traditional keyword search using PostgreSQL full-text search
+  - SEMANTIC: AI-powered semantic search using vector embeddings
+  - HYBRID: Combines both methods using Reciprocal Rank Fusion (recommended)
+
+  Results include relevance scores and highlighted snippets.
+  Requires authentication. Results are scoped to the user's firm.
+  """
+  search(input: SearchInput!): SearchResponse!
+
+  """
+  Get recent searches for the current user.
+  Returns unique queries, deduplicated and sorted by most recent.
+  Requires authentication.
+  """
+  recentSearches(
+    """Maximum number of recent searches to return (default: 10, max: 50)"""
+    limit: Int = 10
+  ): [SearchHistory!]!
+}
+
+# ==============================================================================
+# Mutations (Optional - for search preferences/analytics)
+# ==============================================================================
+
+# Future: Add mutations for saving search preferences, clearing history, etc.
+# extend type Mutation {
+#   clearSearchHistory: Boolean!
+#   saveSearchPreferences(input: SearchPreferencesInput!): SearchPreferences!
+# }

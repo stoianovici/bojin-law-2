@@ -14,6 +14,9 @@ const customJestConfig = {
     '@legal-platform/types': '<rootDir>/../../packages/shared/types/src',
     '@legal-platform/ui': '<rootDir>/../../packages/ui/src',
     '@legal-platform/romanian-templates': '<rootDir>/../../packages/romanian-templates/src',
+    '@legal-platform/test-utils': '<rootDir>/../../packages/shared/test-utils/dist/index.js',
+    // Force rxjs to use CommonJS build instead of ESM
+    '^rxjs(/.*)?$': '<rootDir>/../../node_modules/rxjs/dist/cjs$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   testMatch: [
@@ -34,7 +37,43 @@ const customJestConfig = {
       statements: 80,
     },
   },
+  transform: {
+    // Use SWC for TypeScript/JavaScript with ES6 modules
+    '^.+\\.(t|j)sx?$': [
+      '@swc/jest',
+      {
+        jsc: {
+          parser: {
+            syntax: 'typescript',
+            tsx: true,
+            dynamicImport: true,
+          },
+          transform: {
+            react: {
+              runtime: 'automatic',
+            },
+          },
+        },
+        module: {
+          type: 'es6',
+        },
+      },
+    ],
+  },
+  transformIgnorePatterns: [
+    // Transform ESM modules including MSW, rxjs, and Apollo Client dependencies
+    'node_modules/(?!(msw|@mswjs|@bundled-es-modules|@open-draft|is-node-process|outvariant|strict-event-emitter|rxjs|@apollo|graphql-tag|ts-invariant|optimism|@wry|zen-observable-ts)/)',
+  ],
 };
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig);
+// Export async config
+module.exports = async () => {
+  const nextJestConfig = await createJestConfig(customJestConfig)();
+
+  return {
+    ...nextJestConfig,
+    // Preserve our custom transform and transformIgnorePatterns
+    transform: customJestConfig.transform,
+    transformIgnorePatterns: customJestConfig.transformIgnorePatterns,
+  };
+};

@@ -79,6 +79,10 @@ export function createCase(overrides: CaseOverrides = {}): Case {
       judge: faker.person.fullName(),
       urgency: faker.helpers.arrayElement(['low', 'medium', 'high']),
     },
+    // Billing fields (Story 2.8.1)
+    billingType: faker.helpers.arrayElement(['Hourly', 'Fixed'] as const),
+    fixedAmount: null,
+    customRates: null,
     createdAt: openedDate,
     updatedAt: closedDate || faker.date.recent({ days: 30 }),
     ...overrides,

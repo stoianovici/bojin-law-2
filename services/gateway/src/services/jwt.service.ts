@@ -1,6 +1,7 @@
 /**
  * JWT Token Service
  * Story 2.4: Authentication with Azure AD
+ * Story 2.11.1: Business Owner Role
  *
  * Handles JWT token generation and validation for API authentication.
  *
@@ -57,7 +58,7 @@ export class JWTService {
   generateAccessToken(userInfo: {
     userId: string;
     email: string;
-    role: 'Partner' | 'Associate' | 'Paralegal';
+    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     status: 'Pending' | 'Active' | 'Inactive';
     firmId: string | null;
     azureAdId: string;

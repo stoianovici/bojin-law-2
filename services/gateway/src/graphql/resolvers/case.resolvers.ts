@@ -1,21 +1,30 @@
 /**
  * Case Management GraphQL Resolvers
  * Story 2.6: Case Management Data Model and API
+ * Story 2.8.1: Billing & Rate Management
+ * Story 2.8.2: Case Approval Workflow (notifications)
+ * Story 2.11.2: Retainer Billing Support
  *
  * Implements all queries, mutations, and field resolvers for case management
  */
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
+import { Decimal } from '@prisma/client/runtime/library';
+import { notificationService } from '../../services/notification.service';
+import { retainerService } from '../../services/retainer.service';
 
 // Types for GraphQL context
+// Story 2.11.1: Added BusinessOwner role and financialDataScope
 export interface Context {
   user?: {
     id: string;
     firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal';
+    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     email: string;
   };
+  // Story 2.11.1: Financial data scope for Partners and BusinessOwners
+  financialDataScope?: 'own' | 'firm' | null;
 }
 
 // Helper function to check authorization
@@ -29,6 +38,7 @@ function requireAuth(context: Context) {
 }
 
 // Helper function to check if user can access case
+// Story 2.11.1: Added BusinessOwner role support
 async function canAccessCase(caseId: string, user: Context['user']): Promise<boolean> {
   if (!user) return false;
 
@@ -41,8 +51,8 @@ async function canAccessCase(caseId: string, user: Context['user']): Promise<boo
   // Case must exist AND belong to user's firm
   if (!caseData || caseData.firmId !== user.firmId) return false;
 
-  // Partners can access all cases in their firm
-  if (user.role === 'Partner') return true;
+  // Partners and BusinessOwners can access all cases in their firm
+  if (user.role === 'Partner' || user.role === 'BusinessOwner') return true;
 
   // Non-partners must be assigned to the case
   const assignment = await prisma.caseTeam.findUnique({
@@ -107,6 +117,153 @@ async function createAuditLog(data: {
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+// ============================================================================
+// Story 2.8.1: Billing & Rate Management Helpers
+// ============================================================================
+
+// Helper to get firm default rates
+async function getFirmDefaultRates(firmId: string) {
+  const firm = await prisma.firm.findUnique({
+    where: { id: firmId },
+    select: { defaultRates: true },
+  });
+
+  if (!firm || !firm.defaultRates) {
+    return null;
+  }
+
+  return firm.defaultRates as any;
+}
+
+// Validate billing input for case creation/update
+function validateBillingInput(input: any) {
+  // If billing type is Fixed, fixedAmount is required
+  if (input.billingType === 'Fixed') {
+    if (input.fixedAmount === null || input.fixedAmount === undefined) {
+      throw new GraphQLError(
+        'Fixed amount is required when billing type is Fixed',
+        {
+          extensions: { code: 'BAD_USER_INPUT' },
+        }
+      );
+    }
+
+    if (input.fixedAmount <= 0) {
+      throw new GraphQLError('Fixed amount must be a positive number', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+  }
+
+  // Validate custom rates if provided
+  if (input.customRates) {
+    const { partnerRate, associateRate, paralegalRate } = input.customRates;
+
+    // Check all provided rates are positive
+    if (partnerRate !== undefined && partnerRate <= 0) {
+      throw new GraphQLError('Partner rate must be positive', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+    if (associateRate !== undefined && associateRate <= 0) {
+      throw new GraphQLError('Associate rate must be positive', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+    if (paralegalRate !== undefined && paralegalRate <= 0) {
+      throw new GraphQLError('Paralegal rate must be positive', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+  }
+}
+
+// Create rate history entries when rates change
+async function trackRateChanges(
+  tx: any,
+  caseId: string,
+  firmId: string,
+  userId: string,
+  oldRates: any,
+  newRates: any,
+  oldBillingType?: string,
+  newBillingType?: string
+) {
+  const changes: Array<{
+    caseId: string;
+    firmId: string;
+    changedBy: string;
+    rateType: 'partner' | 'associate' | 'paralegal' | 'fixed';
+    oldRate: Decimal;
+    newRate: Decimal;
+  }> = [];
+
+  // Track billing type change to Fixed with fixed amount
+  if (
+    oldBillingType !== newBillingType &&
+    newBillingType === 'Fixed' &&
+    newRates.fixedAmount
+  ) {
+    changes.push({
+      caseId,
+      firmId,
+      changedBy: userId,
+      rateType: 'fixed',
+      oldRate: new Decimal(oldRates?.fixedAmount || 0),
+      newRate: new Decimal(newRates.fixedAmount),
+    });
+  }
+
+  // Track custom rate changes
+  if (oldRates?.customRates || newRates?.customRates) {
+    const oldCustom = oldRates?.customRates || {};
+    const newCustom = newRates?.customRates || {};
+
+    if (oldCustom.partnerRate !== newCustom.partnerRate && newCustom.partnerRate) {
+      changes.push({
+        caseId,
+        firmId,
+        changedBy: userId,
+        rateType: 'partner',
+        oldRate: new Decimal(oldCustom.partnerRate || 0),
+        newRate: new Decimal(newCustom.partnerRate),
+      });
+    }
+
+    if (oldCustom.associateRate !== newCustom.associateRate && newCustom.associateRate) {
+      changes.push({
+        caseId,
+        firmId,
+        changedBy: userId,
+        rateType: 'associate',
+        oldRate: new Decimal(oldCustom.associateRate || 0),
+        newRate: new Decimal(newCustom.associateRate),
+      });
+    }
+
+    if (
+      oldCustom.paralegalRate !== newCustom.paralegalRate &&
+      newCustom.paralegalRate
+    ) {
+      changes.push({
+        caseId,
+        firmId,
+        changedBy: userId,
+        rateType: 'paralegal',
+        oldRate: new Decimal(oldCustom.paralegalRate || 0),
+        newRate: new Decimal(newCustom.paralegalRate),
+      });
+    }
+  }
+
+  // Create all history entries
+  for (const change of changes) {
+    await tx.caseRateHistory.create({
+      data: change,
+    });
+  }
 }
 
 export const caseResolvers = {
@@ -292,6 +449,80 @@ export const caseResolvers = {
         orderBy: { name: 'asc' },
       });
     },
+
+    // ============================================================================
+    // Story 2.11.2: Retainer Billing Support Queries
+    // ============================================================================
+
+    // Get retainer usage for a specific period
+    retainerUsage: async (
+      _: any,
+      args: { caseId: string; periodStart?: Date },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Check financial access (Partner or BusinessOwner only)
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Financial access required', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify case belongs to user's firm
+      const caseData = await prisma.case.findFirst({
+        where: {
+          id: args.caseId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!caseData) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Get usage for the specified period (or current period)
+      return retainerService.getUsageForPeriod(
+        args.caseId,
+        user.firmId,
+        args.periodStart
+      );
+    },
+
+    // Get retainer usage history for a case
+    retainerUsageHistory: async (
+      _: any,
+      args: { caseId: string; limit?: number },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Check financial access (Partner or BusinessOwner only)
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Financial access required', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify case belongs to user's firm
+      const caseData = await prisma.case.findFirst({
+        where: {
+          id: args.caseId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!caseData) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      const limit = Math.min(args.limit || 12, 100);
+      return retainerService.getUsageHistory(args.caseId, user.firmId, limit);
+    },
   },
 
   Mutation: {
@@ -323,8 +554,33 @@ export const caseResolvers = {
         });
       }
 
+      // Story 2.8.1: Validate billing input
+      if (args.input.billingType || args.input.fixedAmount || args.input.customRates) {
+        validateBillingInput(args.input);
+      }
+
+      // Story 2.8.1: Get firm default rates to populate customRates if not provided
+      let customRates = args.input.customRates;
+      if (!customRates) {
+        const firmRates = await getFirmDefaultRates(user.firmId);
+        if (firmRates) {
+          customRates = firmRates;
+        }
+      }
+
       // Generate unique case number
       const caseNumber = await generateCaseNumber(user.firmId);
+
+      // Story 2.8.2: Determine if case requires approval
+      // Partners create cases directly as Active (no approval needed)
+      // Associates create cases as PendingApproval (requires approval) unless explicitly bypassed
+      const submitForApproval =
+        args.input.submitForApproval !== undefined
+          ? args.input.submitForApproval
+          : user.role === 'Associate'; // Default: true for Associates, false for Partners
+
+      const caseStatus =
+        user.role === 'Partner' || !submitForApproval ? 'Active' : 'PendingApproval';
 
       // Create case in transaction
       const newCase = await prisma.$transaction(async (tx) => {
@@ -336,10 +592,14 @@ export const caseResolvers = {
             clientId: args.input.clientId,
             type: args.input.type,
             description: args.input.description,
-            status: 'Active',
+            status: caseStatus,
             openedDate: new Date(),
             value: args.input.value,
             metadata: args.input.metadata || {},
+            // Story 2.8.1: Billing fields
+            billingType: args.input.billingType || 'Hourly',
+            fixedAmount: args.input.fixedAmount,
+            customRates: customRates as any,
           },
           include: {
             client: true,
@@ -349,6 +609,7 @@ export const caseResolvers = {
               },
             },
             actors: true,
+            approval: true,
           },
         });
 
@@ -362,15 +623,46 @@ export const caseResolvers = {
           },
         });
 
-        // Create audit log
-        await tx.caseAuditLog.create({
-          data: {
+        // Story 2.8.2: Create approval record if case requires approval
+        if (caseStatus === 'PendingApproval') {
+          await tx.caseApproval.create({
+            data: {
+              caseId: createdCase.id,
+              submittedBy: user.id,
+              submittedAt: new Date(),
+              status: 'Pending',
+              revisionCount: 0,
+              firmId: user.firmId,
+            },
+          });
+
+          // Create audit log for submission
+          await tx.caseAuditLog.create({
+            data: {
+              caseId: createdCase.id,
+              userId: user.id,
+              action: 'CASE_SUBMITTED_FOR_APPROVAL',
+              timestamp: new Date(),
+            },
+          });
+
+          // Task 11 - Send notification to Partners (AC2)
+          await notificationService.notifyCasePendingApproval(user.firmId, {
             caseId: createdCase.id,
-            userId: user.id,
-            action: 'CREATED',
-            timestamp: new Date(),
-          },
-        });
+            caseTitle: createdCase.title,
+            actorName: `${user.id}`, // Will be enriched to full name in notification
+          });
+        } else {
+          // Standard creation audit log
+          await tx.caseAuditLog.create({
+            data: {
+              caseId: createdCase.id,
+              userId: user.id,
+              action: 'CREATED',
+              timestamp: new Date(),
+            },
+          });
+        }
 
         return createdCase;
       });
@@ -399,6 +691,19 @@ export const caseResolvers = {
         });
       }
 
+      // Story 2.8.1: Only Partners can modify rates
+      if (
+        (args.input.billingType && args.input.billingType !== existingCase.billingType) ||
+        args.input.fixedAmount !== undefined ||
+        args.input.customRates !== undefined
+      ) {
+        if (user.role !== 'Partner') {
+          throw new GraphQLError('Only Partners can modify billing rates', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+      }
+
       // Validate title length if provided
       if (args.input.title && (args.input.title.length < 3 || args.input.title.length > 500)) {
         throw new GraphQLError('Title must be 3-500 characters', {
@@ -410,6 +715,15 @@ export const caseResolvers = {
       if (args.input.status === 'Active' && existingCase.status === 'Archived') {
         throw new GraphQLError('Cannot reopen archived case', {
           extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      // Story 2.8.1: Validate billing input if being updated
+      if (args.input.billingType || args.input.fixedAmount || args.input.customRates) {
+        validateBillingInput({
+          billingType: args.input.billingType || existingCase.billingType,
+          fixedAmount: args.input.fixedAmount !== undefined ? args.input.fixedAmount : existingCase.fixedAmount,
+          customRates: args.input.customRates,
         });
       }
 
@@ -445,6 +759,31 @@ export const caseResolvers = {
               },
             });
           }
+        }
+
+        // Story 2.8.1: Track rate changes in rate history
+        const ratesChanged =
+          args.input.billingType !== undefined ||
+          args.input.fixedAmount !== undefined ||
+          args.input.customRates !== undefined;
+
+        if (ratesChanged) {
+          await trackRateChanges(
+            tx,
+            args.id,
+            user.firmId,
+            user.id,
+            {
+              fixedAmount: existingCase.fixedAmount,
+              customRates: existingCase.customRates,
+            },
+            {
+              fixedAmount: args.input.fixedAmount !== undefined ? args.input.fixedAmount : existingCase.fixedAmount,
+              customRates: args.input.customRates !== undefined ? args.input.customRates : existingCase.customRates,
+            },
+            existingCase.billingType,
+            args.input.billingType || existingCase.billingType
+          );
         }
 
         return updated;
@@ -782,7 +1121,48 @@ export const caseResolvers = {
         where: { caseId: parent.id },
         include: { user: true },
       });
-      return members.map((m) => m.user);
+      return members;
+    },
+
+    // Story 2.8.1: Rate history resolver
+    rateHistory: async (parent: any, _: any, context: Context) => {
+      // Authorization is handled by @requiresFinancialAccess directive
+      // This ensures only Partners can view rate history
+
+      const history = await prisma.caseRateHistory.findMany({
+        where: { caseId: parent.id },
+        include: {
+          changer: true,
+        },
+        orderBy: { changedAt: 'desc' },
+        take: 50, // Pagination: limit to 50 most recent entries
+      });
+
+      return history.map((entry) => ({
+        id: entry.id,
+        caseId: entry.caseId,
+        changedAt: entry.changedAt,
+        changedBy: entry.changer,
+        rateType: entry.rateType.toUpperCase(), // Convert to GraphQL enum format
+        oldRate: entry.oldRate,
+        newRate: entry.newRate,
+      }));
+    },
+
+    // Story 2.11.2: Current retainer usage resolver
+    currentRetainerUsage: async (parent: any, _: any, context: Context) => {
+      // Authorization is handled by @requiresFinancialAccess directive
+      // This ensures only Partners/BusinessOwners can view retainer usage
+
+      const user = context.user;
+      if (!user) return null;
+
+      // Only calculate for Retainer billing type cases
+      if (parent.billingType !== 'Retainer') {
+        return null;
+      }
+
+      return retainerService.calculateCurrentUsage(parent.id, user.firmId);
     },
   },
 };

@@ -45,17 +45,26 @@ describe('CaseListTable', () => {
   it('renders cases in table on desktop', () => {
     render(<CaseListTable cases={mockCases} />);
 
-    // Check case numbers are displayed
-    expect(screen.getByText('CASE-001')).toBeInTheDocument();
-    expect(screen.getByText('CASE-002')).toBeInTheDocument();
+    // Check case numbers are displayed (both desktop table and mobile cards render)
+    const caseNumbers = screen.getAllByText('CASE-001');
+    expect(caseNumbers.length).toBeGreaterThanOrEqual(1);
+
+    const caseNumbers2 = screen.getAllByText('CASE-002');
+    expect(caseNumbers2.length).toBeGreaterThanOrEqual(1);
 
     // Check case titles are displayed
-    expect(screen.getByText('Test Case 1')).toBeInTheDocument();
-    expect(screen.getByText('Test Case 2')).toBeInTheDocument();
+    const titles1 = screen.getAllByText('Test Case 1');
+    expect(titles1.length).toBeGreaterThanOrEqual(1);
+
+    const titles2 = screen.getAllByText('Test Case 2');
+    expect(titles2.length).toBeGreaterThanOrEqual(1);
 
     // Check client names are displayed
-    expect(screen.getByText('Client A')).toBeInTheDocument();
-    expect(screen.getByText('Client B')).toBeInTheDocument();
+    const clients1 = screen.getAllByText('Client A');
+    expect(clients1.length).toBeGreaterThanOrEqual(1);
+
+    const clients2 = screen.getAllByText('Client B');
+    expect(clients2.length).toBeGreaterThanOrEqual(1);
   });
 
   it('displays correct status badges', () => {
@@ -68,8 +77,12 @@ describe('CaseListTable', () => {
   it('renders case types correctly', () => {
     render(<CaseListTable cases={mockCases} />);
 
-    expect(screen.getByText('Litigation')).toBeInTheDocument();
-    expect(screen.getByText('Contract')).toBeInTheDocument();
+    // Both desktop and mobile views render
+    const litigationElements = screen.getAllByText('Litigation');
+    expect(litigationElements.length).toBeGreaterThanOrEqual(1);
+
+    const contractElements = screen.getAllByText('Contract');
+    expect(contractElements.length).toBeGreaterThanOrEqual(1);
   });
 
   // Note: Additional tests should be added for:

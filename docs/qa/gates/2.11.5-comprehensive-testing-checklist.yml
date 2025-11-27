@@ -1,0 +1,317 @@
+# Story 2.11.5: Comprehensive Testing - Manual Test Checklist
+# QA Gate for Financial Dashboard End-to-End Validation
+#
+# Purpose: Verify all financial dashboard features work correctly
+# for different user roles and billing scenarios.
+
+name: Story 2.11.5 Manual Testing Checklist
+story: 2.11.5
+prerequisite_stories:
+  - 2.11.1 (Business Owner Role & Financial Data Scope)
+  - 2.11.2 (Retainer Billing Support)
+  - 2.11.3 (Financial KPIs Backend Service)
+  - 2.11.4 (Financial Dashboard UI)
+
+test_environment:
+  required_users:
+    - Partner (financial access to own cases)
+    - BusinessOwner (financial access to all firm cases)
+    - Associate (no financial access)
+  required_data:
+    - At least 2 cases with Hourly billing type and time entries
+    - At least 1 case with Fixed billing type (closed)
+    - At least 1 case with Retainer billing type
+    - Time entries spanning multiple months
+
+manual_test_cases:
+  # ============================================================================
+  # Partner Role Tests (AC: 1-3)
+  # ============================================================================
+  partner_access:
+    - id: MT-P1
+      title: Partner can access Analytics page
+      steps:
+        - Login as Partner user
+        - Navigate to /analytics
+      expected_results:
+        - Analytics page loads successfully
+        - Revenue Overview widget displays data
+        - Utilization widget displays data
+        - No error states shown
+      pass: [ ]
+
+    - id: MT-P2
+      title: Partner sees only managed cases in KPIs
+      steps:
+        - Login as Partner user
+        - Go to Analytics page
+        - Note the total case count in metrics
+        - Compare with cases in Cases page (filtered to Lead role)
+      expected_results:
+        - Case count matches number of cases where Partner is Lead
+        - Revenue figures only include managed cases
+      pass: [ ]
+
+    - id: MT-P3
+      title: Partner can use date range filters
+      steps:
+        - Login as Partner user
+        - Go to Analytics page
+        - Select "Last 7 Days" preset
+        - Observe data refresh
+        - Select "Custom" and enter date range
+      expected_results:
+        - Data refreshes when preset changes
+        - Custom date range updates calculations
+        - All widgets respond to filter changes
+      pass: [ ]
+
+  # ============================================================================
+  # BusinessOwner Role Tests (AC: 1-3)
+  # ============================================================================
+  business_owner_access:
+    - id: MT-BO1
+      title: BusinessOwner can access firm-wide Analytics
+      steps:
+        - Login as BusinessOwner user
+        - Navigate to /analytics
+      expected_results:
+        - Analytics page loads successfully
+        - All widgets display firm-wide data
+        - "Firm" scope indicator shown
+      pass: [ ]
+
+    - id: MT-BO2
+      title: BusinessOwner sees all firm cases in KPIs
+      steps:
+        - Login as BusinessOwner user
+        - Go to Analytics page
+        - Note the total case count
+        - Compare with total cases in Cases page
+      expected_results:
+        - Case count matches total active firm cases
+        - Revenue includes all billing types
+      pass: [ ]
+
+    - id: MT-BO3
+      title: BusinessOwner comparison mode works
+      steps:
+        - Login as BusinessOwner user
+        - Go to Analytics page
+        - Enable "Compare to previous period"
+        - Select "Last Month" preset
+      expected_results:
+        - Delta badges appear on KPI cards
+        - Up/down arrows indicate change direction
+        - Percentage changes are displayed
+      pass: [ ]
+
+  # ============================================================================
+  # Authorization Tests (AC: 3)
+  # ============================================================================
+  authorization:
+    - id: MT-A1
+      title: Associate cannot access Analytics page
+      steps:
+        - Login as Associate user
+        - Navigate to /analytics
+      expected_results:
+        - Redirected to dashboard or access denied
+        - No financial data visible
+        - Appropriate error message shown
+      pass: [ ]
+
+    - id: MT-A2
+      title: Paralegal cannot access Analytics page
+      steps:
+        - Login as Paralegal user
+        - Navigate to /analytics
+      expected_results:
+        - Redirected or access denied
+        - No financial data exposure
+      pass: [ ]
+
+    - id: MT-A3
+      title: Financial data hidden from non-financial roles
+      steps:
+        - Login as Associate user
+        - Go to Case detail page for any case
+      expected_results:
+        - Billing information is hidden
+        - Rate cards not visible
+        - Revenue metrics not displayed
+      pass: [ ]
+
+  # ============================================================================
+  # Revenue Calculations (AC: 4)
+  # ============================================================================
+  revenue_calculations:
+    - id: MT-R1
+      title: Hourly revenue calculated correctly
+      steps:
+        - Login as Partner/BusinessOwner
+        - Go to Analytics page
+        - Manually calculate: sum(hours × rate) for hourly cases
+        - Compare with dashboard "Hourly" revenue
+      expected_results:
+        - Hourly revenue matches manual calculation
+        - Only billable hours included
+      pass: [ ]
+
+    - id: MT-R2
+      title: Fixed fee revenue shown for closed cases
+      steps:
+        - Ensure at least one Fixed billing case is Closed
+        - Login as Partner/BusinessOwner
+        - Go to Analytics page
+        - Check "Fixed Fee" revenue breakdown
+      expected_results:
+        - Fixed fee shows only for closed cases
+        - Open fixed cases not counted in revenue
+      pass: [ ]
+
+    - id: MT-R3
+      title: Retainer revenue calculated correctly
+      steps:
+        - Login as BusinessOwner
+        - Go to Analytics page
+        - Check "Retainer" revenue breakdown
+        - Compare with sum of retainer amounts
+      expected_results:
+        - Retainer revenue matches expected total
+        - Per-period amounts correctly aggregated
+      pass: [ ]
+
+  # ============================================================================
+  # Utilization Metrics (AC: 5)
+  # ============================================================================
+  utilization:
+    - id: MT-U1
+      title: Utilization rate calculation
+      steps:
+        - Login as Partner/BusinessOwner
+        - Go to Analytics page
+        - Note utilization rate percentage
+        - Calculate: (billable hours / total hours) × 100
+      expected_results:
+        - Utilization percentage matches calculation
+        - Rate is between 0-100% (typically)
+      pass: [ ]
+
+    - id: MT-U2
+      title: Utilization by role breakdown
+      steps:
+        - Login as BusinessOwner
+        - Go to Analytics page
+        - Find role breakdown in Utilization widget
+      expected_results:
+        - Shows breakdown by Partner, Associate, Paralegal
+        - Each role has hours and rate
+      pass: [ ]
+
+  # ============================================================================
+  # Retainer Features (AC: 6)
+  # ============================================================================
+  retainer_features:
+    - id: MT-RT1
+      title: Retainer utilization display
+      steps:
+        - Login as Partner/BusinessOwner
+        - Go to Analytics page or Case detail
+        - Find retainer case metrics
+      expected_results:
+        - Shows hours used vs included
+        - Utilization percentage displayed
+        - Remaining hours shown
+      pass: [ ]
+
+    - id: MT-RT2
+      title: Retainer period boundaries
+      steps:
+        - Navigate to a Monthly retainer case
+        - Check period dates shown
+      expected_results:
+        - Period starts on 1st of month
+        - Period ends on last day of month
+      pass: [ ]
+
+  # ============================================================================
+  # UI Components (AC: 7)
+  # ============================================================================
+  ui_components:
+    - id: MT-UI1
+      title: Widget loading states
+      steps:
+        - Login as Partner/BusinessOwner
+        - Navigate to Analytics page
+        - Observe initial load
+      expected_results:
+        - Loading skeletons shown while fetching
+        - Smooth transition to data
+        - No layout shifts
+      pass: [ ]
+
+    - id: MT-UI2
+      title: Widget error handling
+      steps:
+        - Simulate network error (offline mode)
+        - Navigate to Analytics page
+      expected_results:
+        - Error state displayed in widgets
+        - Retry button available
+        - No app crash
+      pass: [ ]
+
+    - id: MT-UI3
+      title: Responsive layout
+      steps:
+        - Open Analytics page
+        - Resize browser to mobile width
+        - Check tablet width
+      expected_results:
+        - Widgets stack vertically on mobile
+        - All data remains visible
+        - No horizontal scroll needed
+      pass: [ ]
+
+  # ============================================================================
+  # Performance (AC: 8-9)
+  # ============================================================================
+  performance:
+    - id: MT-PF1
+      title: Initial load time
+      steps:
+        - Clear browser cache
+        - Login as BusinessOwner
+        - Navigate to Analytics page
+        - Measure time to first meaningful paint
+      expected_results:
+        - Page loads in under 3 seconds
+        - Core metrics visible quickly
+        - No excessive loading
+      pass: [ ]
+
+    - id: MT-PF2
+      title: Cache effectiveness
+      steps:
+        - Load Analytics page
+        - Note load time
+        - Refresh page (without cache clear)
+        - Note second load time
+      expected_results:
+        - Second load is faster
+        - Data persists between refreshes
+        - No duplicate API calls
+      pass: [ ]
+
+# ============================================================================
+# Sign-off Section
+# ============================================================================
+sign_off:
+  tester_name: ""
+  test_date: ""
+  environment: "Development | Staging | Production"
+  overall_result: "PASS | FAIL | BLOCKED"
+  notes: ""
+  blockers: []
+  deferred_issues: []

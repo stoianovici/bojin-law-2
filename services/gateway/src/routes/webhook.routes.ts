@@ -1,6 +1,7 @@
 /**
  * Webhook Routes for Microsoft Graph API Notifications
  * Story 2.5 - Task 8: Create Webhook Infrastructure
+ * Story 2.9 - Task 7: OneDrive Document Sync Handler
  *
  * Handles webhook validation and notification processing from Graph API
  */
@@ -8,6 +9,8 @@
 import express, { Request, Response } from 'express';
 import type { Router as ExpressRouter } from 'express';
 import { webhookService } from '../services/webhook.service';
+import { oneDriveService } from '../services/onedrive.service';
+import { prisma } from '@legal-platform/database';
 import logger from '../utils/logger';
 
 const router: ExpressRouter = express.Router();
@@ -90,6 +93,7 @@ async function processEmailNotification(notification: WebhookNotification): Prom
 /**
  * Process file change notification
  * Story 2.5 - Task 10: Implement File Change Notifications
+ * Story 2.9 - Task 7: OneDrive Document Sync Handler
  *
  * @param notification - Webhook notification for file changes
  */
@@ -106,27 +110,110 @@ async function processFileNotification(notification: WebhookNotification): Promi
       subscriptionId: notification.subscriptionId,
     });
 
-    // Extract file details from notification
-    const fileTask: FileProcessingTask = {
-      itemId,
-      changeType,
-      resource,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Queue file processing task (placeholder for future stories)
-    // Future implementation will:
-    // - Push to proper queue system (e.g., Bull, BullMQ)
-    // - Fetch full file metadata from Graph API
-    // - Sync file changes to local storage
-    // - Trigger document analysis workflows
-    fileProcessingQueue.push(fileTask);
-
-    logger.info('File processing task queued', {
-      itemId,
-      changeType,
-      queueSize: fileProcessingQueue.length,
+    // Story 2.9: Sync document changes from OneDrive
+    // Find document by OneDrive ID
+    const document = await prisma.document.findFirst({
+      where: { oneDriveId: itemId },
+      include: {
+        caseLinks: {
+          include: { case: true },
+        },
+      },
     });
+
+    if (!document) {
+      // Document not tracked in system, add to queue for potential future processing
+      const fileTask: FileProcessingTask = {
+        itemId,
+        changeType,
+        resource,
+        timestamp: new Date().toISOString(),
+      };
+      fileProcessingQueue.push(fileTask);
+
+      logger.info('File not tracked in system, queued for reference', {
+        itemId,
+        changeType,
+      });
+      return;
+    }
+
+    logger.info('Found tracked document for OneDrive file', {
+      documentId: document.id,
+      fileName: document.fileName,
+      oneDriveId: itemId,
+      changeType,
+    });
+
+    switch (changeType) {
+      case 'updated':
+        // Document was modified in OneDrive
+        // Note: Actual sync requires user's access token
+        // This creates an audit log entry; sync will happen on next user access
+        await prisma.documentAuditLog.create({
+          data: {
+            documentId: document.id,
+            userId: document.uploadedBy,
+            action: 'MetadataUpdated',
+            caseId: document.caseLinks[0]?.caseId || null,
+            details: {
+              source: 'OneDriveWebhook',
+              changeType: 'updated',
+              timestamp: new Date().toISOString(),
+              syncPending: true,
+            },
+            firmId: document.firmId,
+          },
+        });
+
+        logger.info('OneDrive update notification recorded', {
+          documentId: document.id,
+          oneDriveId: itemId,
+        });
+        break;
+
+      case 'deleted':
+        // Document was deleted in OneDrive
+        // Mark document status as archived
+        await prisma.$transaction(async (tx) => {
+          await tx.document.update({
+            where: { id: document.id },
+            data: {
+              status: 'ARCHIVED',
+              oneDriveId: null, // Clear OneDrive reference
+            },
+          });
+
+          await tx.documentAuditLog.create({
+            data: {
+              documentId: document.id,
+              userId: document.uploadedBy,
+              action: 'MetadataUpdated',
+              caseId: document.caseLinks[0]?.caseId || null,
+              details: {
+                source: 'OneDriveWebhook',
+                changeType: 'deleted',
+                timestamp: new Date().toISOString(),
+                previousOneDriveId: itemId,
+                statusChangedTo: 'ARCHIVED',
+              },
+              firmId: document.firmId,
+            },
+          });
+        });
+
+        logger.info('Document archived due to OneDrive deletion', {
+          documentId: document.id,
+          oneDriveId: itemId,
+        });
+        break;
+
+      default:
+        logger.warn('Unknown changeType for file notification', {
+          changeType,
+          itemId,
+        });
+    }
   } catch (error) {
     logger.error('Error processing file notification', {
       error,

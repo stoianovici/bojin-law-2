@@ -1,0 +1,85 @@
+# Case Approval Workflow Schema (Story 2.8.2)
+
+"""
+Approval status for case review workflow
+- Pending: Case awaiting Partner review
+- Approved: Case has been approved by Partner
+- Rejected: Case rejected, requires revision
+"""
+enum ApprovalStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+"""
+Case approval tracking - one record per case requiring approval
+Associates submit cases for approval, Partners review and approve/reject
+"""
+type CaseApproval {
+  id: UUID!
+  caseId: UUID!
+  case: Case!
+  submittedBy: User!
+  submittedAt: DateTime!
+  reviewedBy: User
+  reviewedAt: DateTime
+  status: ApprovalStatus!
+  rejectionReason: String
+  revisionCount: Int!
+}
+
+"""
+Input for rejecting a case with feedback
+"""
+input RejectCaseInput {
+  caseId: UUID!
+  reason: String! # Minimum 10 characters
+}
+
+extend type Query {
+  """
+  Get all pending cases for Partner approval (Partners only)
+  Returns cases with status=PENDING_APPROVAL in user's firm
+  Sorted by submittedAt ascending (FIFO queue)
+  """
+  pendingCases: [Case!]!
+
+  """
+  Get cases submitted or assigned to current user
+  For Associates: returns cases they created/submitted
+  For Partners: returns all firm cases (existing behavior)
+  Optional status filter
+  """
+  myCases(status: CaseStatus): [Case!]!
+}
+
+extend type Mutation {
+  """
+  Approve a pending case (Partners only)
+  Changes case status from PENDING_APPROVAL to ACTIVE
+  Updates approval record with reviewer and timestamp
+  Creates audit log entry
+  Sends notification to submitting Associate
+  """
+  approveCase(caseId: UUID!): Case!
+
+  """
+  Reject a pending case with feedback (Partners only)
+  Keeps case in PENDING_APPROVAL status for revision
+  Updates approval record with rejection reason
+  Creates audit log entry
+  Sends notification to submitting Associate
+  """
+  rejectCase(input: RejectCaseInput!): Case!
+
+  """
+  Resubmit a rejected case for review (Original submitter only)
+  Resets approval status to PENDING
+  Increments revision count
+  Clears previous review details
+  Creates audit log entry
+  Sends notification to Partners
+  """
+  resubmitCase(caseId: UUID!): Case!
+}

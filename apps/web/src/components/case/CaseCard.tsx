@@ -20,6 +20,7 @@ interface CaseCardProps {
  * Status color mapping
  */
 const STATUS_COLORS: Record<CaseStatus, string> = {
+  PendingApproval: 'bg-orange-100 text-orange-800 border-orange-200', // Story 2.8.2
   Active: 'bg-green-100 text-green-800 border-green-200',
   OnHold: 'bg-gray-100 text-gray-800 border-gray-200',
   Closed: 'bg-gray-100 text-gray-600 border-gray-200',

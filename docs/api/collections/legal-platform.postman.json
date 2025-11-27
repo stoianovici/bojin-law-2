@@ -1,0 +1,381 @@
+{
+  "info": {
+    "name": "Legal Platform API",
+    "_postman_id": "legal-platform-api-v1",
+    "description": "GraphQL API collection for Legal Platform Case Management.\n\n## Authentication\nThis collection uses session-based authentication with Azure AD OAuth 2.0.\n\n## Environment Variables\nConfigure these variables in your Postman environment:\n- `API_URL`: GraphQL endpoint (e.g., http://localhost:4000/graphql)\n- `SESSION_COOKIE`: Your session cookie value\n\n## Usage\n1. Import this collection into Postman\n2. Create an environment with API_URL variable\n3. Authenticate via the web app to get a session cookie\n4. Copy the session cookie and set it in your environment\n5. Run requests\n\n## Story\n2.7 - API Documentation and Developer Portal",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Queries",
+      "item": [
+        {
+          "name": "Get All Cases",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetAllCases {\n  cases {\n    id\n    caseNumber\n    title\n    status\n    type\n    client {\n      id\n      name\n    }\n    teamMembers {\n      id\n      firstName\n      lastName\n      role\n    }\n    openedDate\n    closedDate\n    value\n    createdAt\n    updatedAt\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            },
+            "description": "Retrieves all cases accessible to the current user.\n\nAuthorization:\n- Partners: See all firm cases\n- Associates/Paralegals: See only assigned cases"
+          }
+        },
+        {
+          "name": "Get Active Cases",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetActiveCases($status: CaseStatus!) {\n  cases(status: $status) {\n    id\n    caseNumber\n    title\n    status\n    type\n    description\n    openedDate\n    value\n  }\n}",
+                "variables": "{\n  \"status\": \"ACTIVE\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Cases Assigned to Me",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetMyCases {\n  cases(assignedToMe: true) {\n    id\n    caseNumber\n    title\n    status\n    type\n    client {\n      name\n      contactInfo\n    }\n    teamMembers {\n      firstName\n      lastName\n      role\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Single Case",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetCase($id: UUID!) {\n  case(id: $id) {\n    id\n    caseNumber\n    title\n    description\n    status\n    type\n    client {\n      id\n      name\n      contactInfo\n      address\n    }\n    teamMembers {\n      id\n      firstName\n      lastName\n      email\n      role\n    }\n    actors {\n      id\n      role\n      name\n      organization\n      email\n      phone\n      address\n    }\n    openedDate\n    closedDate\n    value\n    metadata\n    createdAt\n    updatedAt\n  }\n}",
+                "variables": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            },
+            "description": "Get detailed information about a specific case.\n\nReplace the UUID in variables with an actual case ID."
+          }
+        },
+        {
+          "name": "Search Cases",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query SearchCases($query: String!, $limit: Int) {\n  searchCases(query: $query, limit: $limit) {\n    id\n    caseNumber\n    title\n    description\n    status\n    type\n    client {\n      name\n    }\n    openedDate\n  }\n}",
+                "variables": "{\n  \"query\": \"contract\",\n  \"limit\": 10\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            },
+            "description": "Full-text search across case titles, descriptions, and client names."
+          }
+        },
+        {
+          "name": "Get Case Actors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetCaseActors($caseId: UUID!) {\n  caseActors(caseId: $caseId) {\n    id\n    role\n    name\n    organization\n    email\n    phone\n    address\n    notes\n    createdAt\n    updatedAt\n  }\n}",
+                "variables": "{\n  \"caseId\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Case Actors by Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetWitnesses($caseId: UUID!, $role: CaseActorRole!) {\n  caseActorsByRole(caseId: $caseId, role: $role) {\n    id\n    name\n    email\n    phone\n    notes\n  }\n}",
+                "variables": "{\n  \"caseId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"role\": \"WITNESS\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mutations",
+      "item": [
+        {
+          "name": "Create Case",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation CreateCase($input: CreateCaseInput!) {\n  createCase(input: $input) {\n    id\n    caseNumber\n    title\n    status\n    type\n    description\n    client {\n      id\n      name\n    }\n    teamMembers {\n      id\n      firstName\n      lastName\n      role\n    }\n    openedDate\n    value\n    metadata\n    createdAt\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"title\": \"Contract Review - Acme Corp\",\n    \"clientId\": \"660e8400-e29b-41d4-a716-446655440111\",\n    \"type\": \"CONTRACT\",\n    \"description\": \"Annual contract review for vendor agreements with Acme Corporation\",\n    \"value\": 50000.00,\n    \"metadata\": {\n      \"priority\": \"high\",\n      \"estimatedHours\": 40\n    }\n  }\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            },
+            "description": "Creates a new case and automatically assigns the creator as Lead."
+          }
+        },
+        {
+          "name": "Update Case",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation UpdateCase($id: UUID!, $input: UpdateCaseInput!) {\n  updateCase(id: $id, input: $input) {\n    id\n    title\n    status\n    description\n    value\n    closedDate\n    updatedAt\n  }\n}",
+                "variables": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"input\": {\n    \"status\": \"ON_HOLD\",\n    \"description\": \"Awaiting client documentation\",\n    \"value\": 75000.00\n  }\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        },
+        {
+          "name": "Archive Case",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation ArchiveCase($id: UUID!) {\n  archiveCase(id: $id) {\n    id\n    status\n    closedDate\n    updatedAt\n  }\n}",
+                "variables": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            },
+            "description": "Archives a case. Requires Partner role."
+          }
+        },
+        {
+          "name": "Assign Team Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation AssignTeamMember($input: AssignTeamInput!) {\n  assignTeam(input: $input) {\n    id\n    user {\n      id\n      firstName\n      lastName\n      email\n      role\n    }\n    role\n    assignedAt\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"caseId\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"userId\": \"770e8400-e29b-41d4-a716-446655440222\",\n    \"role\": \"Support\"\n  }\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        },
+        {
+          "name": "Remove Team Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation RemoveTeamMember($caseId: UUID!, $userId: UUID!) {\n  removeTeamMember(caseId: $caseId, userId: $userId)\n}",
+                "variables": "{\n  \"caseId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"userId\": \"770e8400-e29b-41d4-a716-446655440222\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Case Actor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation AddCaseActor($input: AddCaseActorInput!) {\n  addCaseActor(input: $input) {\n    id\n    role\n    name\n    organization\n    email\n    phone\n    address\n    notes\n    createdAt\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"caseId\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"role\": \"OPPOSING_COUNSEL\",\n    \"name\": \"Jane Smith\",\n    \"organization\": \"Smith & Associates Law Firm\",\n    \"email\": \"jsmith@smithlaw.com\",\n    \"phone\": \"+40-21-123-4567\",\n    \"address\": \"123 Legal St, Bucharest, Romania\",\n    \"notes\": \"Senior partner specializing in contract law\"\n  }\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Case Actor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation UpdateCaseActor($id: UUID!, $input: UpdateCaseActorInput!) {\n  updateCaseActor(id: $id, input: $input) {\n    id\n    name\n    email\n    phone\n    notes\n    updatedAt\n  }\n}",
+                "variables": "{\n  \"id\": \"880e8400-e29b-41d4-a716-446655440333\",\n  \"input\": {\n    \"phone\": \"+40-21-999-8888\",\n    \"notes\": \"Updated contact information\"\n  }\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        },
+        {
+          "name": "Remove Case Actor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation RemoveCaseActor($id: UUID!) {\n  removeCaseActor(id: $id)\n}",
+                "variables": "{\n  \"id\": \"880e8400-e29b-41d4-a716-446655440333\"\n}"
+              }
+            },
+            "url": {
+              "raw": "{{API_URL}}",
+              "host": ["{{API_URL}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    {
+      "key": "API_URL",
+      "value": "http://localhost:4000/graphql",
+      "type": "string"
+    }
+  ]
+}

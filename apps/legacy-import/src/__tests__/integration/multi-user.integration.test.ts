@@ -443,7 +443,7 @@ describe('Multi-User Integration Tests', () => {
           return {};
         });
 
-        await prisma.$transaction(async (tx: typeof prisma) => {
+        await prisma.$transaction(async (tx) => {
           // Multiple operations in transaction
           await tx.extractedDocument.update({ where: { id: '1' }, data: {} });
           await tx.importCategory.update({ where: { id: '1' }, data: {} });
@@ -474,7 +474,7 @@ describe('Multi-User Integration Tests', () => {
         );
 
         try {
-          await prisma.$transaction(async (tx: typeof prisma) => {
+          await prisma.$transaction(async (tx) => {
             await tx.extractedDocument.update({ where: { id: '1' }, data: {} });
           });
         } catch {

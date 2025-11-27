@@ -1,0 +1,51 @@
+# Story 2.8.2: Case Approval Workflow - Notifications
+# GraphQL schema for in-app notifications
+
+enum NotificationType {
+  CasePendingApproval
+  CaseApproved
+  CaseRejected
+}
+
+type Notification {
+  id: UUID!
+  userId: UUID!
+  user: User!
+  type: NotificationType!
+  title: String!
+  message: String!
+  link: String
+  read: Boolean!
+  caseId: UUID
+  createdAt: DateTime!
+  readAt: DateTime
+}
+
+extend type Query {
+  """
+  Get notifications for current user
+  Ordered by createdAt descending (newest first)
+  Optional filter by read status
+  """
+  notifications(read: Boolean, limit: Int): [Notification!]!
+
+  """
+  Get count of unread notifications for current user
+  Used for notification badge
+  """
+  unreadNotificationCount: Int!
+}
+
+extend type Mutation {
+  """
+  Mark a notification as read
+  Returns the updated notification
+  """
+  markNotificationAsRead(id: UUID!): Notification!
+
+  """
+  Mark all notifications as read for current user
+  Returns count of notifications marked as read
+  """
+  markAllNotificationsAsRead: Int!
+}

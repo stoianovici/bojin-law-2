@@ -1,47 +1,34 @@
 /**
- * Dashboard Home Page
- * Renders role-specific dashboard based on current user role
+ * Home Page - Role-Based Dashboard
+ * Displays the appropriate dashboard based on user role
  */
 
 'use client';
 
-import { useNavigationStore } from '../stores/navigation.store';
-import { useDashboardStore } from '../stores/dashboard.store';
 import { PartnerDashboard } from '../components/dashboard/PartnerDashboard';
 import { AssociateDashboard } from '../components/dashboard/AssociateDashboard';
 import { ParalegalDashboard } from '../components/dashboard/ParalegalDashboard';
-import type { WidgetPosition } from '@legal-platform/types';
+// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
+import { useNavigationStore } from '../stores/navigation.store';
 
-export default function DashboardPage() {
+export default function HomePage() {
   const { currentRole } = useNavigationStore();
-  const { updateLayout } = useDashboardStore();
 
-  // Handle layout changes for the current role
-  const handleLayoutChange = (layout: WidgetPosition[]) => {
-    updateLayout(currentRole, layout);
-  };
-
-  // Render role-specific dashboard
-  const renderDashboard = () => {
-    switch (currentRole) {
-      case 'Partner':
-        return <PartnerDashboard onLayoutChange={handleLayoutChange} />;
-      case 'Associate':
-        return <AssociateDashboard onLayoutChange={handleLayoutChange} />;
-      case 'Paralegal':
-        return <ParalegalDashboard onLayoutChange={handleLayoutChange} />;
-      default:
-        return (
-          <div className="flex items-center justify-center h-screen">
-            <p className="text-gray-500">Selectează un rol pentru a vedea dashboard-ul.</p>
+  // Render appropriate dashboard based on role
+  switch (currentRole) {
+    case 'Partner':
+      return <PartnerDashboard />;
+    case 'Associate':
+      return <AssociateDashboard />;
+    case 'Paralegal':
+      return <ParalegalDashboard />;
+    default:
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <p className="text-gray-600">Invalid role configuration</p>
           </div>
-        );
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">{renderDashboard()}</div>
-    </main>
-  );
+        </div>
+      );
+  }
 }

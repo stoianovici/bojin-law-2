@@ -2,6 +2,7 @@
  * Authorization Hook
  * Provides role-based access control for UI components
  * Story 2.4.1: Partner User Management
+ * Story 2.11.1: Business Owner Role & Financial Data Scope
  */
 
 'use client';
@@ -54,4 +55,27 @@ export function useHasRole(role: UserRole): boolean {
 export function useHasAnyRole(roles: UserRole[]): boolean {
   const { user } = useAuth();
   return user ? roles.includes(user.role) : false;
+}
+
+/**
+ * Hook for simple role-based authorization checks
+ * Story 2.8.2: Case Approval Workflow
+ * Story 2.11.1: Added BusinessOwner role support
+ *
+ * @returns Object with role flags and financial access flag
+ */
+export function useAuthorization() {
+  const { user } = useAuth();
+
+  const isBusinessOwner = user?.role === 'BusinessOwner';
+  const isPartner = user?.role === 'Partner';
+
+  return {
+    isBusinessOwner, // Story 2.11.1
+    isPartner,
+    isAssociate: user?.role === 'Associate',
+    isParalegal: user?.role === 'Paralegal',
+    // Story 2.11.1: BusinessOwners also have financial access
+    canAccessFinancials: isPartner || isBusinessOwner,
+  };
 }

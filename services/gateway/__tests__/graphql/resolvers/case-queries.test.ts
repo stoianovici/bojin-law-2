@@ -1,6 +1,7 @@
 /**
  * Unit tests for Case Query Resolvers
  * Story 2.6: Case Management Data Model and API
+ * Story 2.11.1: Business Owner Role
  *
  * Tests authorization, firm isolation, and query logic for:
  * - cases query (with filters)
@@ -26,7 +27,7 @@ interface MockContext {
   user?: {
     id: string;
     firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal';
+    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     email: string;
   };
 }

@@ -68,32 +68,32 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    error: 'not_found',
-    message: 'Route not found',
-    path: req.path,
-  });
-});
-
-// Global error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'internal_server_error',
-    message: process.env.NODE_ENV === 'production' ? 'An error occurred' : err.message,
-  });
-});
-
 // Initialize Apollo Server and GraphQL endpoint
 async function startServer() {
   // Create Apollo Server
   const apolloServer = await createApolloServer(httpServer);
   const graphqlMiddleware = createGraphQLMiddleware(apolloServer);
 
-  // Mount GraphQL endpoint
+  // Mount GraphQL endpoint (must be before 404 handler)
   app.use('/graphql', graphqlMiddleware);
+
+  // 404 handler (must be after all routes)
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({
+      error: 'not_found',
+      message: 'Route not found',
+      path: req.path,
+    });
+  });
+
+  // Global error handler
+  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+      error: 'internal_server_error',
+      message: process.env.NODE_ENV === 'production' ? 'An error occurred' : err.message,
+    });
+  });
 
   // Start server
   if (process.env.NODE_ENV !== 'test') {

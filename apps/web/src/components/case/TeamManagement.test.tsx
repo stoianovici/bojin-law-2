@@ -135,20 +135,27 @@ describe('TeamManagement', () => {
     const addButton = screen.getByText(/Add Team Member/i);
     fireEvent.click(addButton);
 
+    // Wait for modal to appear and find form fields
+    const userIdInput = await screen.findByLabelText(/User ID/i);
+    const roleSelect = await screen.findByLabelText(/Role/i);
+
+    // Fill form
+    fireEvent.change(userIdInput, {
+      target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+    });
+    fireEvent.change(roleSelect, { target: { value: 'Support' } });
+
+    // Submit form
+    const submitButton = screen.getByRole('button', { name: /Add Team Member/i });
+    fireEvent.click(submitButton);
+
+    // Verify assignTeam was called
     await waitFor(() => {
-      // Fill form (simplified - actual implementation may vary)
-      const userIdInput = screen.queryByLabelText(/User ID/i);
-      const roleSelect = screen.queryByLabelText(/Role/i);
-
-      if (userIdInput && roleSelect) {
-        fireEvent.change(userIdInput, {
-          target: { value: '123e4567-e89b-12d3-a456-426614174000' },
-        });
-        fireEvent.change(roleSelect, { target: { value: 'Support' } });
-
-        const submitButton = screen.getByText(/Add/i);
-        fireEvent.click(submitButton);
-      }
+      expect(mockAssignTeam).toHaveBeenCalledWith({
+        caseId: 'case-1',
+        userId: '123e4567-e89b-12d3-a456-426614174000',
+        role: 'Support',
+      });
     });
   });
 
@@ -160,12 +167,17 @@ describe('TeamManagement', () => {
     const removeButtons = screen.getAllByTitle(/Remove/i);
     fireEvent.click(removeButtons[1]); // Click remove for second member
 
-    expect(global.confirm).toHaveBeenCalled();
+    // Check that the confirmation dialog appears
+    await waitFor(() => {
+      expect(screen.getByText(/Remove Team Member/i)).toBeInTheDocument();
+      expect(screen.getByText(/Are you sure you want to remove/i)).toBeInTheDocument();
+      // Jane Smith appears twice (in list and dialog), so verify there are multiple instances
+      const janeSmithElements = screen.getAllByText(/Jane Smith/i);
+      expect(janeSmithElements.length).toBeGreaterThan(0);
+    });
   });
 
   it('does not remove if confirmation is cancelled', async () => {
-    global.confirm = jest.fn(() => false);
-
     render(
       <TeamManagement caseId="case-1" teamMembers={mockTeamMembers} currentUserRole="Partner" />
     );
@@ -173,6 +185,16 @@ describe('TeamManagement', () => {
     const removeButtons = screen.getAllByTitle(/Remove/i);
     fireEvent.click(removeButtons[1]);
 
+    // Wait for confirmation dialog
+    await waitFor(() => {
+      expect(screen.getByText(/Remove Team Member/i)).toBeInTheDocument();
+    });
+
+    // Click Cancel button
+    const cancelButton = screen.getByRole('button', { name: /Cancel/i });
+    fireEvent.click(cancelButton);
+
+    // Verify removeTeam was not called
     expect(mockRemoveTeam).not.toHaveBeenCalled();
   });
 

@@ -1,0 +1,553 @@
+# Document Management GraphQL Schema
+# Story 2.8.4: Cross-Case Document Linking
+# Story 2.9: Document Storage with OneDrive Integration
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Document entity - owned by Client (not Case) for cross-case sharing
+Documents can be linked to multiple cases without file duplication
+Story 2.9: Extended with OneDrive integration and versioning
+"""
+type Document {
+  """Unique identifier for the document"""
+  id: UUID!
+
+  """Client that owns this document"""
+  clientId: UUID!
+
+  """Client object for this document"""
+  client: Client!
+
+  """Firm that owns this document (for isolation)"""
+  firmId: UUID!
+
+  """Original file name"""
+  fileName: String!
+
+  """File MIME type or extension"""
+  fileType: String!
+
+  """File size in bytes"""
+  fileSize: Int!
+
+  """Storage path in cloud storage"""
+  storagePath: String!
+
+  """User who originally uploaded this document"""
+  uploadedBy: User!
+
+  """Timestamp when document was uploaded"""
+  uploadedAt: DateTime!
+
+  """Additional metadata (tags, description, etc.)"""
+  metadata: JSON
+
+  """Cases where this document is linked"""
+  linkedCases: [CaseDocumentLink!]!
+
+  """Original case where document was first uploaded (null if uploaded to client directly)"""
+  originalCase: Case
+
+  """Timestamp when the document was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the document was last updated"""
+  updatedAt: DateTime!
+
+  # Story 2.9: OneDrive integration fields
+
+  """OneDrive item ID (null if not synced to OneDrive)"""
+  oneDriveId: String
+
+  """Full OneDrive path"""
+  oneDrivePath: String
+
+  """Document status (DRAFT, FINAL, ARCHIVED)"""
+  status: DocumentStatus!
+
+  """Temporary download URL (computed field, expires in ~1 hour)"""
+  downloadUrl: String
+
+  """Thumbnail URL (computed field, for preview)"""
+  thumbnailUrl: String
+
+  """Version history for the document"""
+  versions: [DocumentVersion!]!
+}
+
+"""
+Document version for tracking changes from OneDrive sync
+Story 2.9: Version tracking for bidirectional sync
+"""
+type DocumentVersion {
+  """Unique identifier"""
+  id: UUID!
+
+  """Parent document ID"""
+  documentId: UUID!
+
+  """Version number (1, 2, 3, etc.)"""
+  versionNumber: Int!
+
+  """OneDrive version ID (if synced from OneDrive)"""
+  oneDriveVersionId: String
+
+  """Summary of changes in this version"""
+  changesSummary: String
+
+  """User who created this version"""
+  createdBy: User!
+
+  """Timestamp when version was created"""
+  createdAt: DateTime!
+}
+
+"""
+Document status enum
+Story 2.9: Document lifecycle status
+"""
+enum DocumentStatus {
+  """Work in progress"""
+  DRAFT
+
+  """Finalized document"""
+  FINAL
+
+  """Archived (deleted from OneDrive or manually archived)"""
+  ARCHIVED
+}
+
+"""
+Case-Document link information
+Shows details about how a document is linked to a specific case
+"""
+type CaseDocumentLink {
+  """Case ID this document is linked to"""
+  caseId: UUID!
+
+  """Case object"""
+  case: Case!
+
+  """User who linked this document to the case"""
+  linkedBy: User!
+
+  """When the document was linked to this case"""
+  linkedAt: DateTime!
+
+  """True if document was originally uploaded to this case, false if imported"""
+  isOriginal: Boolean!
+}
+
+"""
+Document in case context
+Includes document details plus case-specific linking information
+"""
+type CaseDocumentWithContext {
+  """The document"""
+  document: Document!
+
+  """User who linked this document to the case"""
+  linkedBy: User!
+
+  """When the document was linked to this case"""
+  linkedAt: DateTime!
+
+  """True if document was uploaded to this case, false if imported from another case"""
+  isOriginal: Boolean!
+
+  """Source case if document was imported (null if original upload)"""
+  sourceCase: Case
+}
+
+"""
+Documents grouped by source case
+Used in document browser modal
+"""
+type DocumentsByCase {
+  """The case these documents came from"""
+  case: Case!
+
+  """Documents from this case"""
+  documents: [Document!]!
+
+  """Number of documents in this case"""
+  documentCount: Int!
+}
+
+"""
+Document audit log entry
+Tracks all document operations for compliance
+"""
+type DocumentAuditLog {
+  """Unique identifier"""
+  id: UUID!
+
+  """Document ID (null if permanently deleted)"""
+  documentId: UUID
+
+  """User who performed the action"""
+  user: User!
+
+  """Action performed"""
+  action: DocumentAuditAction!
+
+  """Related case (for link/unlink operations)"""
+  caseId: UUID
+
+  """Additional details about the action"""
+  details: JSON
+
+  """When the action occurred"""
+  timestamp: DateTime!
+}
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+"""
+Document audit action types
+"""
+enum DocumentAuditAction {
+  """Document was uploaded"""
+  UPLOADED
+
+  """Document was linked to a case"""
+  LINKED_TO_CASE
+
+  """Document was unlinked from a case"""
+  UNLINKED_FROM_CASE
+
+  """Document was permanently deleted (Partners only)"""
+  PERMANENTLY_DELETED
+
+  """Document metadata was updated"""
+  METADATA_UPDATED
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for uploading a new document
+Story 2.9: Extended with OneDrive integration fields
+"""
+input UploadDocumentInput {
+  """Case ID where document is being uploaded (required for initial upload)"""
+  caseId: UUID!
+
+  """Original file name"""
+  fileName: String!
+
+  """File MIME type"""
+  fileType: String!
+
+  """File size in bytes"""
+  fileSize: Int!
+
+  """Storage path after file upload (optional if uploading to OneDrive)"""
+  storagePath: String
+
+  """Optional metadata (tags, description)"""
+  metadata: JSON
+
+  """Optional title for the document"""
+  title: String
+
+  """Optional description"""
+  description: String
+
+  """Upload to OneDrive (default: true)"""
+  uploadToOneDrive: Boolean
+}
+
+"""
+Input for uploading a document with file data (Story 2.9)
+Used when uploading directly via GraphQL with base64 file content
+"""
+input UploadDocumentWithFileInput {
+  """Case ID where document is being uploaded"""
+  caseId: UUID!
+
+  """Original file name"""
+  fileName: String!
+
+  """File MIME type"""
+  fileType: String!
+
+  """Base64 encoded file content"""
+  fileContent: String!
+
+  """Optional title for the document"""
+  title: String
+
+  """Optional description"""
+  description: String
+}
+
+"""
+Input for updating document status
+Story 2.9: Allow changing document status
+"""
+input UpdateDocumentStatusInput {
+  """New document status"""
+  status: DocumentStatus!
+}
+
+"""
+Input for linking existing documents to a case
+"""
+input LinkDocumentsInput {
+  """Target case ID"""
+  caseId: UUID!
+
+  """Document IDs to link (can link multiple at once)"""
+  documentIds: [UUID!]!
+}
+
+"""
+Input for updating document metadata
+"""
+input UpdateDocumentMetadataInput {
+  """Optional new tags"""
+  tags: [String!]
+
+  """Optional description"""
+  description: String
+
+  """Any additional metadata"""
+  custom: JSON
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get all documents for a client
+  Used in document browser modal to show available documents for import
+
+  Authorization: User must have access to at least one of the client's cases
+  """
+  clientDocuments(
+    """Client ID to get documents for"""
+    clientId: UUID!
+
+    """Optional: Exclude documents already linked to this case"""
+    excludeCaseId: UUID
+
+    """Optional: Search filter (filename, description)"""
+    search: String
+
+    """Optional: Filter by file types"""
+    fileTypes: [String!]
+  ): [Document!]!
+
+  """
+  Get documents for a client grouped by source case
+  Organized view for document browser modal
+
+  Authorization: User must have access to at least one of the client's cases
+  """
+  clientDocumentsGroupedByCase(
+    """Client ID to get documents for"""
+    clientId: UUID!
+
+    """Optional: Exclude documents from this case"""
+    excludeCaseId: UUID
+
+    """Optional: Search filter"""
+    search: String
+  ): [DocumentsByCase!]!
+
+  """
+  Get all documents linked to a specific case
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  caseDocuments(
+    """Case ID"""
+    caseId: UUID!
+  ): [CaseDocumentWithContext!]!
+
+  """
+  Get a single document by ID
+
+  Authorization: User must have access to at least one case the document is linked to
+  """
+  document(id: UUID!): Document
+
+  """
+  Get audit history for a document
+
+  Authorization: User must have access to the document
+  """
+  documentAuditHistory(
+    """Document ID"""
+    documentId: UUID!
+
+    """Maximum number of entries to return"""
+    limit: Int
+  ): [DocumentAuditLog!]!
+
+  """
+  Get document thumbnail (Story 2.9 AC5)
+  Returns thumbnail URL for document preview
+
+  Authorization: User must have access to the document
+  """
+  getDocumentThumbnail(
+    """Document ID"""
+    documentId: UUID!
+  ): ThumbnailResponse
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Upload a new document to a case
+  Creates document owned by case's client and links it to the case
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  uploadDocument(input: UploadDocumentInput!): Document!
+
+  """
+  Link existing documents to a case (import from other cases)
+
+  Authorization: User must be assigned to target case OR be a Partner
+  All documents must belong to the same client as the case
+  """
+  linkDocumentsToCase(input: LinkDocumentsInput!): [Document!]!
+
+  """
+  Unlink a document from a case (soft delete)
+  Document remains in storage and other cases
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  unlinkDocumentFromCase(
+    """Case ID to unlink from"""
+    caseId: UUID!
+
+    """Document ID to unlink"""
+    documentId: UUID!
+  ): Boolean!
+
+  """
+  Permanently delete a document (Partners only)
+  Removes from all cases and deletes from storage
+
+  Authorization: Partner role required
+  """
+  permanentlyDeleteDocument(
+    """Document ID to delete"""
+    documentId: UUID!
+  ): Boolean!
+
+  """
+  Update document metadata
+
+  Authorization: User must have access to the document
+  """
+  updateDocumentMetadata(
+    """Document ID"""
+    documentId: UUID!
+
+    """Updated metadata"""
+    input: UpdateDocumentMetadataInput!
+  ): Document!
+
+  # Story 2.9: OneDrive integration mutations
+
+  """
+  Upload document with file content to OneDrive
+  Creates document in OneDrive, syncs metadata to database
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  uploadDocumentToOneDrive(input: UploadDocumentWithFileInput!): Document!
+
+  """
+  Get temporary download URL for a document
+  Returns a pre-signed URL that expires in 1 hour
+
+  Authorization: User must have access to the document
+  """
+  getDocumentDownloadUrl(
+    """Document ID"""
+    documentId: UUID!
+  ): DownloadUrlResponse!
+
+  """
+  Sync document from OneDrive
+  Fetches latest metadata and creates new version if changed
+
+  Authorization: User must have access to the document
+  """
+  syncDocumentFromOneDrive(
+    """Document ID"""
+    documentId: UUID!
+  ): SyncResult!
+
+  """
+  Update document status
+
+  Authorization: User must have access to the document
+  """
+  updateDocumentStatus(
+    """Document ID"""
+    documentId: UUID!
+
+    """New status"""
+    input: UpdateDocumentStatusInput!
+  ): Document!
+}
+
+# ============================================================================
+# Response Types (Story 2.9)
+# ============================================================================
+
+"""
+Response for download URL request
+"""
+type DownloadUrlResponse {
+  """Pre-signed download URL"""
+  url: String!
+
+  """Expiration time for the URL"""
+  expirationDateTime: DateTime!
+}
+
+"""
+Result of document sync operation
+"""
+type SyncResult {
+  """Whether the document was updated"""
+  updated: Boolean!
+
+  """New version number if updated"""
+  newVersionNumber: Int
+
+  """The synced document"""
+  document: Document!
+}
+
+"""
+Thumbnail response for document preview (Story 2.9 AC5)
+"""
+type ThumbnailResponse {
+  """Thumbnail URL (either base64 data URI or OneDrive URL)"""
+  url: String!
+
+  """Source of the thumbnail (local, onedrive, or cache)"""
+  source: String!
+}

@@ -39,3 +39,12 @@ export * from './discovery';
 
 // Database Types
 export * from './database';
+
+// Financial Types
+export * from './financial';
+
+// AI Service Types
+export * from './ai';
+
+// Training Pipeline Types
+export * from './training-pipeline';

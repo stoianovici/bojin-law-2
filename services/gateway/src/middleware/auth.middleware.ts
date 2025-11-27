@@ -1,6 +1,7 @@
 /**
  * Authentication Middleware
  * Story 2.4: Authentication with Azure AD
+ * Story 2.11.1: Business Owner Role
  *
  * Validates JWT tokens for protected routes
  */
@@ -141,7 +142,7 @@ export function optionalAuthenticateJWT(
  * @param roles - Array of allowed roles
  * @returns Express middleware function
  */
-export function requireRole(roles: Array<'Partner' | 'Associate' | 'Paralegal'>) {
+export function requireRole(roles: Array<'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner'>) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({

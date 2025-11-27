@@ -6,10 +6,11 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { DashboardGrid } from './DashboardGrid';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useDashboardStore } from '../../stores/dashboard.store';
+import { usePartnerDashboard } from '../../hooks/usePartnerDashboard';
 import { SupervisedCasesWidget } from './widgets/SupervisedCasesWidget';
 import { FirmCasesOverviewWidget } from './widgets/FirmCasesOverviewWidget';
 import { FirmTasksOverviewWidget } from './widgets/FirmTasksOverviewWidget';
@@ -42,108 +43,7 @@ const defaultLayout: WidgetPosition[] = [
   { i: 'row2-right-stack', x: 4, y: 5, w: 8, h: 8 },
 ];
 
-// Mock data for new operational widgets
-const mockSupervisedCasesWidget: SupervisedCasesWidgetType = {
-  id: 'supervised-cases',
-  type: 'supervisedCases',
-  title: 'Cazuri Supravegheate',
-  position: { i: 'supervised-cases', x: 0, y: 0, w: 6, h: 5 },
-  cases: [
-    {
-      id: 'case-001',
-      caseNumber: 'DOC-2025-1234',
-      title: 'Litigiu comercial - Societatea ABC vs XYZ',
-      clientName: 'SC ABC Solutions SRL',
-      status: 'Active',
-      supervisorId: 'partner-1',
-      teamSize: 4,
-      riskLevel: 'high',
-      nextDeadline: new Date('2025-11-16'),
-    },
-    {
-      id: 'case-002',
-      caseNumber: 'DOC-2025-1567',
-      title: 'Contract parteneriat - Mega Corp',
-      clientName: 'Mega Corp International',
-      status: 'Active',
-      supervisorId: 'partner-1',
-      teamSize: 3,
-      riskLevel: 'medium',
-      nextDeadline: new Date('2025-11-20'),
-    },
-    {
-      id: 'case-003',
-      caseNumber: 'DOC-2025-1890',
-      title: 'Dosar penal - Apărare client Popescu',
-      clientName: 'Ion Popescu',
-      status: 'Active',
-      supervisorId: 'partner-1',
-      teamSize: 2,
-      riskLevel: 'low',
-      nextDeadline: new Date('2025-11-25'),
-    },
-  ],
-};
-
-const mockFirmCasesOverviewWidget: FirmCasesOverviewWidgetType = {
-  id: 'firm-cases-overview',
-  type: 'firmCasesOverview',
-  title: 'Prezentare Cazuri Firmă',
-  position: { i: 'firm-cases-overview', x: 0, y: 5, w: 8, h: 5 },
-  atRiskCases: [
-    {
-      id: 'case-004',
-      caseNumber: 'DOC-2025-2345',
-      title: 'Urgență: Recurs instanță supremă',
-      reason: 'Termen depunere în 2 zile',
-      assignedPartner: 'Maria Ionescu',
-      daysUntilDeadline: 2,
-    },
-    {
-      id: 'case-005',
-      caseNumber: 'DOC-2025-2678',
-      title: 'Lipsă activitate - Caz civil Mureș',
-      reason: 'Lipsă activitate de 15 zile',
-      assignedPartner: 'Andrei Constantin',
-    },
-  ],
-  highValueCases: [
-    {
-      id: 'case-006',
-      caseNumber: 'DOC-2025-3456',
-      title: 'Fuziune corporativă - Deal €2M',
-      value: 2000000,
-      assignedPartner: 'Elena Dumitrescu',
-      priority: 'strategic',
-    },
-    {
-      id: 'case-007',
-      caseNumber: 'DOC-2025-3789',
-      title: 'Client VIP - Consultanță juridică complexă',
-      value: 150000,
-      assignedPartner: 'Alexandru Popescu',
-      priority: 'vip',
-    },
-  ],
-  aiInsights: [
-    {
-      id: 'insight-001',
-      caseId: 'case-008',
-      caseNumber: 'DOC-2025-4567',
-      message: 'Pattern detectat: Întârzieri repetate în documentație pentru cazuri similare',
-      type: 'pattern',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'insight-002',
-      caseId: 'case-009',
-      caseNumber: 'DOC-2025-4890',
-      message: 'Oportunitate: Consolidare 3 cazuri similare pentru eficiență',
-      type: 'opportunity',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-    },
-  ],
-};
+// Static widget configurations (data will be dynamic)
 
 const mockFirmTasksOverviewWidget: FirmTasksOverviewWidgetType = {
   id: 'firm-tasks-overview',
@@ -151,43 +51,43 @@ const mockFirmTasksOverviewWidget: FirmTasksOverviewWidgetType = {
   title: 'Prezentare Sarcini Firmă',
   position: { i: 'firm-tasks-overview', x: 8, y: 5, w: 4, h: 5 },
   taskMetrics: {
-    totalActiveTasks: 127,
-    overdueCount: 8,
-    dueTodayCount: 15,
-    dueThisWeekCount: 43,
-    completionRate: 87,
+    totalActiveTasks: 85,
+    overdueCount: 3,
+    dueTodayCount: 12,
+    dueThisWeekCount: 28,
+    completionRate: 92,
     avgCompletionRateTrend: 'up',
   },
   taskBreakdown: [
-    { type: 'Cercetare', count: 32 },
-    { type: 'Documentare', count: 45 },
-    { type: 'Revizuire', count: 28 },
-    { type: 'Întâlniri', count: 22 },
+    { type: 'Cercetare', count: 18 },
+    { type: 'Documentare', count: 32 },
+    { type: 'Revizuire', count: 22 },
+    { type: 'Întâlniri', count: 13 },
   ],
   priorityTasks: [
     {
       id: 'task-001',
-      title: 'Pregătire memoriu apărare - Caz urgent',
-      caseContext: 'DOC-2025-2345',
+      title: 'Redactare memoriu aparare - Litigiu ABC Industries',
+      caseContext: 'Dosar 2025-001',
       priority: 'Urgent',
       assignee: 'Maria Ionescu',
-      dueDate: new Date('2025-11-14'),
+      dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
     },
     {
       id: 'task-002',
-      title: 'Revizuire contract fuziune corporativă',
-      caseContext: 'DOC-2025-3456',
+      title: 'Finalizare due diligence - M&A Tech Innovations',
+      caseContext: 'Dosar 2025-008',
       priority: 'High',
-      assignee: 'Elena Dumitrescu',
-      dueDate: new Date('2025-11-15'),
+      assignee: 'Ion Georgescu',
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     },
     {
       id: 'task-003',
-      title: 'Cercetare jurisprudență instanță europeană',
-      caseContext: 'DOC-2025-1234',
+      title: 'Cercetare jurisprudenta ICCJ - Drept comercial',
+      caseContext: 'Dosar 2025-001',
       priority: 'High',
-      assignee: 'Alexandru Popescu',
-      dueDate: new Date('2025-11-16'),
+      assignee: 'Elena Popa',
+      dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
     },
   ],
 };
@@ -200,48 +100,48 @@ const mockEmployeeWorkloadWidget: EmployeeWorkloadWidgetType = {
   viewMode: 'weekly',
   employeeUtilization: [
     {
-      employeeId: 'emp-001',
+      employeeId: 'associate1',
       name: 'Maria Ionescu',
-      dailyUtilization: 125,
-      weeklyUtilization: 110,
-      taskCount: 12,
-      estimatedHours: 44,
+      dailyUtilization: 115,
+      weeklyUtilization: 105,
+      taskCount: 10,
+      estimatedHours: 42,
       status: 'over',
       tasks: [
-        { id: 't1', title: 'Memoriu apărare urgent', estimate: 8, type: 'Documentare' },
-        { id: 't2', title: 'Cercetare jurisprudență', estimate: 6, type: 'Cercetare' },
-        { id: 't3', title: 'Revizuire contract', estimate: 4, type: 'Revizuire' },
+        { id: 't1', title: 'Memoriu aparare - ABC Industries', estimate: 8, type: 'Documentare' },
+        { id: 't2', title: 'Cercetare ICCJ drept comercial', estimate: 6, type: 'Cercetare' },
+        { id: 't3', title: 'Revizuire contract cesiune', estimate: 4, type: 'Revizuire' },
       ],
     },
     {
-      employeeId: 'emp-002',
-      name: 'Alexandru Popescu',
-      dailyUtilization: 100,
-      weeklyUtilization: 95,
-      taskCount: 10,
-      estimatedHours: 38,
+      employeeId: 'associate2',
+      name: 'Ion Georgescu',
+      dailyUtilization: 95,
+      weeklyUtilization: 90,
+      taskCount: 8,
+      estimatedHours: 36,
       status: 'optimal',
       tasks: [
-        { id: 't4', title: 'Cercetare CJUE', estimate: 7, type: 'Cercetare' },
-        { id: 't5', title: 'Întâlnire client', estimate: 2, type: 'Întâlnire' },
+        { id: 't4', title: 'Due diligence M&A', estimate: 7, type: 'Cercetare' },
+        { id: 't5', title: 'Intalnire client Tech Innovations', estimate: 2, type: 'Întâlnire' },
       ],
     },
     {
-      employeeId: 'emp-003',
-      name: 'Elena Dumitrescu',
-      dailyUtilization: 87,
+      employeeId: 'paralegal1',
+      name: 'Elena Popa',
+      dailyUtilization: 88,
       weeklyUtilization: 85,
-      taskCount: 8,
+      taskCount: 7,
       estimatedHours: 34,
       status: 'optimal',
     },
     {
-      employeeId: 'emp-004',
-      name: 'Andrei Constantin',
-      dailyUtilization: 37,
-      weeklyUtilization: 40,
-      taskCount: 4,
-      estimatedHours: 16,
+      employeeId: 'paralegal2',
+      name: 'Mihai Dumitrescu',
+      dailyUtilization: 45,
+      weeklyUtilization: 50,
+      taskCount: 5,
+      estimatedHours: 20,
       status: 'under',
     },
   ],
@@ -255,25 +155,25 @@ const mockMyTasksWidget: TaskListWidget = {
   tasks: [
     {
       id: 'task-p1',
-      title: 'Revizuire strategie caz DOC-2025-1234',
-      caseContext: 'DOC-2025-1234',
+      title: 'Revizuire strategie litigiu ABC Industries',
+      caseContext: 'Dosar 2025-001',
       priority: 'High',
-      dueDate: new Date('2025-11-14'),
+      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       timeEstimate: '2h',
     },
     {
       id: 'task-p2',
-      title: 'Aprobare contract parteneriat',
-      caseContext: 'DOC-2025-1567',
+      title: 'Aprobare contract cesiune parti sociale',
+      caseContext: 'M&A Tech Innovations',
       priority: 'Medium',
-      dueDate: new Date('2025-11-15'),
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       timeEstimate: '1h',
     },
     {
       id: 'task-p3',
-      title: 'Întâlnire echipă - planificare trimestru',
+      title: 'Intalnire echipa - planificare Q1 2025',
       priority: 'Medium',
-      dueDate: new Date('2025-11-16'),
+      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
       timeEstimate: '1.5h',
     },
   ],
@@ -287,20 +187,20 @@ const mockAISuggestionsWidget: AISuggestionWidgetType = {
   suggestions: [
     {
       id: 'sug-1',
-      text: 'Echipa ta are utilizare medie de 95% - excelent! Maria Ionescu ar putea avea nevoie de suport.',
+      text: 'Echipa are utilizare medie de 85% - optim! Maria Ionescu (115%) ar putea avea nevoie de redistribuire sarcini.',
       timestamp: '1 oră în urmă',
       type: 'insight',
     },
     {
       id: 'sug-2',
-      text: 'Cazul DOC-2025-2345 necesită atenție urgentă - termen în 2 zile',
+      text: 'Dosarul 2025-001 (ABC Industries) necesita atentie - termen instanta in 3 zile',
       timestamp: '2 ore în urmă',
       type: 'alert',
-      actionLink: '/cases/case-004',
+      actionLink: '/cases/case-001',
     },
     {
       id: 'sug-3',
-      text: 'Consolidarea cazurilor DOC-2025-4567, 4890, 5123 ar putea economisi 15h echipă',
+      text: 'Mihai Dumitrescu (50% utilizare) poate prelua sarcini de la Maria Ionescu',
       timestamp: '3 ore în urmă',
       type: 'recommendation',
     },
@@ -320,18 +220,84 @@ const mockAISuggestionsWidget: AISuggestionWidgetType = {
  */
 export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerDashboardProps) {
   const { updateLayout } = useDashboardStore();
+  const { supervisedCases, highValueCases, atRiskCases, loading } = usePartnerDashboard();
 
   const handleLayoutChange = (newLayout: WidgetPosition[]) => {
     updateLayout('Partner', newLayout);
     onLayoutChange?.(newLayout);
   };
 
+  // Build dynamic widget data from real API data
+  const supervisedCasesWidget: SupervisedCasesWidgetType = useMemo(
+    () => ({
+      id: 'supervised-cases',
+      type: 'supervisedCases',
+      title: 'Cazuri Supravegheate',
+      position: { i: 'supervised-cases', x: 0, y: 0, w: 6, h: 5 },
+      cases: supervisedCases.map((c) => ({
+        id: c.id,
+        caseNumber: c.caseNumber,
+        title: c.title,
+        clientName: c.clientName,
+        status: c.status,
+        supervisorId: '22222222-2222-2222-2222-222222222222', // Partner ID from seed
+        teamSize: c.teamSize,
+        riskLevel: c.riskLevel,
+        nextDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      })),
+    }),
+    [supervisedCases]
+  );
+
+  const firmCasesOverviewWidget: FirmCasesOverviewWidgetType = useMemo(
+    () => ({
+      id: 'firm-cases-overview',
+      type: 'firmCasesOverview',
+      title: 'Prezentare Cazuri Firmă',
+      position: { i: 'firm-cases-overview', x: 0, y: 5, w: 8, h: 5 },
+      atRiskCases: atRiskCases.map((c) => ({
+        id: c.id,
+        caseNumber: c.caseNumber,
+        title: c.title,
+        reason: c.reason,
+        assignedPartner: c.assignedPartner,
+      })),
+      highValueCases: highValueCases.map((c) => ({
+        id: c.id,
+        caseNumber: c.caseNumber,
+        title: c.title,
+        value: c.value,
+        assignedPartner: c.assignedPartner,
+        priority: c.priority,
+      })),
+      aiInsights: [
+        {
+          id: 'insight-001',
+          caseId: highValueCases[0]?.id || '',
+          caseNumber: highValueCases[0]?.caseNumber || '',
+          message: 'High-value cases requiring attention this week',
+          type: 'pattern',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    }),
+    [atRiskCases, highValueCases]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <DashboardGrid layout={defaultLayout} onLayoutChange={handleLayoutChange} isEditing={isEditing}>
         {/* Row 1: Equal-width widgets */}
         <div key="supervised-cases">
-          <SupervisedCasesWidget widget={mockSupervisedCasesWidget} />
+          <SupervisedCasesWidget widget={supervisedCasesWidget} />
         </div>
 
         <div key="my-tasks">
@@ -350,7 +316,7 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
         {/* Row 2: Right side container (stacked widgets) */}
         <div key="row2-right-stack" className="grid-stack-container">
           <div key="firm-cases-overview">
-            <FirmCasesOverviewWidget widget={mockFirmCasesOverviewWidget} />
+            <FirmCasesOverviewWidget widget={firmCasesOverviewWidget} />
           </div>
 
           <div key="employee-workload">

@@ -135,23 +135,35 @@ describe('ActorsManagement', () => {
     expect(removeButtons.length).toBe(mockActors.length);
   });
 
-  it('shows confirmation before removing actor', () => {
+  it('shows confirmation before removing actor', async () => {
     render(<ActorsManagement caseId="case-1" actors={mockActors} />);
 
     const removeButtons = screen.getAllByTitle(/Remove/i);
     fireEvent.click(removeButtons[0]);
 
-    expect(global.confirm).toHaveBeenCalled();
+    // Check that the confirmation dialog appears
+    await waitFor(() => {
+      expect(screen.getByText(/Remove Case Actor/i)).toBeInTheDocument();
+      expect(screen.getByText(/Are you sure you want to remove/i)).toBeInTheDocument();
+    });
   });
 
-  it('does not remove if confirmation is cancelled', () => {
-    global.confirm = jest.fn(() => false);
-
+  it('does not remove if confirmation is cancelled', async () => {
     render(<ActorsManagement caseId="case-1" actors={mockActors} />);
 
     const removeButtons = screen.getAllByTitle(/Remove/i);
     fireEvent.click(removeButtons[0]);
 
+    // Wait for confirmation dialog
+    await waitFor(() => {
+      expect(screen.getByText(/Remove Case Actor/i)).toBeInTheDocument();
+    });
+
+    // Click Cancel button
+    const cancelButton = screen.getByRole('button', { name: /Cancel/i });
+    fireEvent.click(cancelButton);
+
+    // Verify removeActor was not called
     expect(mockRemoveActor).not.toHaveBeenCalled();
   });
 

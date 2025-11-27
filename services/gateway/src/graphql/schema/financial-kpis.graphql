@@ -1,0 +1,232 @@
+# Financial KPIs GraphQL Schema
+# Story 2.11.3: Financial KPIs Backend Service
+#
+# Provides comprehensive financial KPI data for Partners and Business Owners.
+# All queries respect data scope (Partner: managed cases, BusinessOwner: all firm cases).
+
+"""
+Financial data scope enum
+- OWN: Partner sees only their managed cases
+- FIRM: BusinessOwner sees all firm cases
+"""
+enum FinancialDataScope {
+  OWN
+  FIRM
+}
+
+"""
+Date range input for filtering KPIs
+"""
+input DateRangeInput {
+  start: DateTime!
+  end: DateTime!
+}
+
+"""
+Date range type for response
+"""
+type DateRange {
+  start: DateTime!
+  end: DateTime!
+}
+
+"""
+Revenue breakdown by billing type (Hourly, Fixed, Retainer)
+Values are in dollars (converted from cents in storage)
+"""
+type RevenueByBillingType {
+  """Revenue from hourly billing cases"""
+  hourly: Float!
+  """Revenue from fixed fee cases"""
+  fixed: Float!
+  """Revenue from retainer cases"""
+  retainer: Float!
+}
+
+"""
+Single point in the revenue trend chart
+"""
+type RevenueTrendPoint {
+  """Date for this data point"""
+  date: DateTime!
+  """Total revenue for this period"""
+  revenue: Float!
+  """Number of cases contributing to this revenue"""
+  caseCount: Int!
+}
+
+"""
+Utilization metrics grouped by user role
+"""
+type UtilizationByRole {
+  """User role (Partner, Associate, Paralegal)"""
+  role: UserRole!
+  """Total billable hours for this role"""
+  billableHours: Float!
+  """Total hours (billable + non-billable) for this role"""
+  totalHours: Float!
+  """Utilization rate as percentage (0-100)"""
+  utilizationRate: Float!
+}
+
+"""
+Profitability metrics for individual cases
+"""
+type CaseProfitability {
+  """Case unique identifier"""
+  caseId: UUID!
+  """Case name/title"""
+  caseName: String!
+  """Billing type for this case"""
+  billingType: BillingType!
+  """Total revenue generated from this case"""
+  revenue: Float!
+  """Total cost (hours × cost rate) for this case"""
+  cost: Float!
+  """Profit margin (revenue - cost)"""
+  margin: Float!
+  """Profit margin percentage ((revenue - cost) / revenue × 100)"""
+  marginPercent: Float!
+}
+
+"""
+Comprehensive financial KPIs response type
+Contains all financial metrics for dashboard display
+"""
+type FinancialKPIs {
+  # Revenue Metrics (AC: 4)
+  """Total revenue across all cases in scope"""
+  totalRevenue: Float!
+  """Revenue breakdown by billing type"""
+  revenueByBillingType: RevenueByBillingType!
+  """Revenue trend over time for chart display"""
+  revenueTrend: [RevenueTrendPoint!]!
+
+  # Utilization Metrics (AC: 5)
+  """Total billable hours in the period"""
+  totalBillableHours: Float!
+  """Total non-billable hours in the period"""
+  totalNonBillableHours: Float!
+  """Overall utilization rate as percentage (0-100)"""
+  utilizationRate: Float!
+  """Utilization breakdown by user role"""
+  utilizationByRole: [UtilizationByRole!]!
+
+  # Realization Metrics (AC: 6)
+  """Realization rate: (billed amount / expected amount) × 100"""
+  realizationRate: Float!
+  """Total hours that have been billed"""
+  billedHours: Float!
+  """Total hours worked (billable entries)"""
+  workedHours: Float!
+
+  # Profitability Metrics (AC: 7)
+  """Effective hourly rate (total revenue / total billable hours)"""
+  effectiveHourlyRate: Float!
+  """Top cases by profitability"""
+  profitabilityByCase: [CaseProfitability!]!
+
+  # Retainer Metrics
+  """Average utilization across retainer cases (0-100)"""
+  retainerUtilizationAverage: Float
+  """Number of active retainer cases"""
+  retainerCasesCount: Int!
+
+  # Metadata
+  """Data scope for this response (OWN or FIRM)"""
+  dataScope: FinancialDataScope!
+  """Timestamp when KPIs were calculated"""
+  calculatedAt: DateTime!
+  """Total number of cases included in calculations"""
+  caseCount: Int!
+  """Date range for the KPI calculations"""
+  dateRange: DateRange!
+}
+
+"""
+Revenue comparison data for a single case
+Used for case-level KPI widgets and firm-wide comparisons
+"""
+type RevenueComparison {
+  """Case unique identifier"""
+  caseId: UUID!
+  """Case title/name"""
+  caseTitle: String!
+  """Billing type (Hourly or Fixed)"""
+  billingType: String!
+  """Actual revenue (fixed amount for Fixed, billed amount for Hourly)"""
+  actualRevenue: Float!
+  """Projected revenue based on time entries × rates"""
+  projectedRevenue: Float!
+  """Variance (actual - projected)"""
+  variance: Float!
+  """Variance as percentage"""
+  variancePercent: Float!
+  """Number of time entries for this case"""
+  timeEntriesCount: Int!
+  """Total billable hours"""
+  totalHours: Float!
+}
+
+"""
+Firm-wide revenue KPIs aggregation
+Used for financial dashboard overview
+"""
+type FirmRevenueKPIs {
+  """Total number of cases included"""
+  totalCases: Int!
+  """Count of hourly billing cases"""
+  hourlyCount: Int!
+  """Count of fixed fee cases"""
+  fixedCount: Int!
+  """Average variance across all cases (in cents)"""
+  avgVariance: Float!
+  """Average variance percentage across all cases"""
+  avgVariancePercent: Float!
+  """Top performing cases (positive variance)"""
+  topPerformingCases: [RevenueComparison!]!
+  """Underperforming cases (negative variance)"""
+  underperformingCases: [RevenueComparison!]!
+}
+
+extend type Query {
+  """
+  Get comprehensive financial KPIs for the authenticated user.
+
+  - Partner: Returns KPIs for cases they manage (Lead role)
+  - BusinessOwner: Returns KPIs for all firm cases
+  - Associate/Paralegal: Access denied
+
+  Results are cached for 5 minutes to optimize performance.
+  """
+  financialKPIs(
+    """Date range for filtering KPIs. Defaults to last 30 days if not provided."""
+    dateRange: DateRangeInput
+  ): FinancialKPIs @requiresFinancialAccess
+
+  """
+  Get revenue KPI for a specific case.
+  Returns comparison between actual and projected revenue.
+
+  - For Fixed cases: compares fixed amount vs projected hourly revenue
+  - For Hourly cases: shows actual billed revenue
+
+  Returns null if case not found or KPI cannot be calculated.
+  Authorization: Requires financial access (Partner or BusinessOwner)
+  """
+  caseRevenueKPI(
+    """Case ID to get KPI for"""
+    caseId: UUID!
+  ): RevenueComparison @requiresFinancialAccess
+
+  """
+  Get firm-wide revenue KPIs aggregation.
+  Shows overall performance metrics and top/underperforming cases.
+
+  Authorization: Requires financial access (Partner or BusinessOwner)
+  """
+  firmRevenueKPIs(
+    """Date range for filtering. Defaults to last 30 days if not provided."""
+    dateRange: DateRangeInput
+  ): FirmRevenueKPIs @requiresFinancialAccess
+}

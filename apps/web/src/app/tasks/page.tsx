@@ -19,18 +19,37 @@ import { useTaskManagementStore, useFilteredTasks } from '../../stores/task-mana
 import type { Task, TaskType } from '@legal-platform/types';
 
 /**
- * Mock users for task assignment
+ * Mock users for task assignment - realistic Romanian law firm team
  */
 export const MOCK_USERS = [
-  { id: 'user-1', name: 'Ion Popescu', initials: 'IP' },
-  { id: 'user-2', name: 'Maria Ionescu', initials: 'MI' },
-  { id: 'user-3', name: 'Andrei Georgescu', initials: 'AG' },
-  { id: 'user-4', name: 'Elena Dumitrescu', initials: 'ED' },
-  { id: 'user-5', name: 'Victor Popa', initials: 'VP' },
+  { id: 'partner', name: 'Alex Popescu', initials: 'AP' },
+  { id: 'associate1', name: 'Maria Ionescu', initials: 'MI' },
+  { id: 'associate2', name: 'Ion Georgescu', initials: 'IG' },
+  { id: 'paralegal1', name: 'Elena Popa', initials: 'EP' },
+  { id: 'paralegal2', name: 'Mihai Dumitrescu', initials: 'MD' },
 ];
 
 /**
- * Generate mock tasks for prototype
+ * Realistic Romanian legal case contexts
+ */
+const CASE_CONTEXTS = [
+  { id: 'case-001', name: 'Litigiu Contract - ABC Industries vs XYZ Logistics' },
+  { id: 'case-002', name: 'Contract Review - ABC Industries' },
+  { id: 'case-003', name: 'Consultanta Restructurare - ABC Industries' },
+  { id: 'case-006', name: 'Tranzactie Imobiliara - Familia Popescu' },
+  { id: 'case-007', name: 'Planificare Succesorala - Familia Popescu' },
+  { id: 'case-008', name: 'Aparare Penala - Frauda' },
+  { id: 'case-009', name: 'Disputa Proprietate Intelectuala' },
+  { id: 'case-010', name: 'Conformitate GDPR - ABC Industries' },
+  { id: 'case-012', name: 'M&A Advisory - Tech Innovations' },
+  { id: 'case-013', name: 'Divort - Familia Ionescu' },
+  { id: 'case-014', name: 'Infiintare SRL - Tech Innovations' },
+  { id: 'case-018', name: 'Licenta Software - Tech Innovations' },
+  { id: 'case-019', name: 'Dizolvare Parteneriat - Familia Ionescu' },
+];
+
+/**
+ * Generate mock tasks for prototype with realistic Romanian legal tasks
  * TODO: Replace with real API call when backend is ready
  */
 function generateMockTasks(count: number): Task[] {
@@ -44,27 +63,43 @@ function generateMockTasks(count: number): Task[] {
     'Meeting',
     'BusinessTrip',
   ];
+  // Realistic Romanian legal task titles
   const titles = [
-    'Review contract amendments',
-    'Prepare court documents',
-    'Client meeting preparation',
-    'Research case precedents',
-    'Draft legal memorandum',
-    'File motion with court',
-    'Update case management system',
-    'Respond to discovery requests',
-    'Schedule deposition',
-    'Review witness statements',
-    'Analyze settlement proposal',
-    'Prepare trial brief',
-    'Review discovery materials',
-    'Draft interrogatories',
-    'Client status update call',
-    'Witness interview',
-    'Expert consultation',
-    'File court appearance',
-    'Review opposing counsel submission',
-    'Prepare mediation documents',
+    'Redactare cerere chemare in judecata',
+    'Pregatire dosar instanta',
+    'Intalnire client - discutie strategie',
+    'Cercetare jurisprudenta ICCJ',
+    'Redactare memoriu aparare',
+    'Depunere intampinare la tribunal',
+    'Actualizare registru dosare',
+    'Raspuns cerere probatoriu',
+    'Programare audienta martori',
+    'Analiza declaratii martori',
+    'Evaluare propunere tranzactie',
+    'Pregatire concluzii scrise',
+    'Revizuire probe administrate',
+    'Redactare interogatoriu',
+    'Apel status client',
+    'Interviu martor',
+    'Consultatie expert contabil',
+    'Termen instanta - Tribunalul Bucuresti',
+    'Analiza pozitie parte adversa',
+    'Pregatire documente mediere',
+    'Verificare CF si extras carte funciara',
+    'Redactare contract vanzare-cumparare',
+    'Analiza due diligence financiar',
+    'Pregatire hotarare AGA',
+    'Revizuire act constitutiv SRL',
+    'Negociere clauze NDA',
+    'Analiza conformitate GDPR',
+    'Redactare politica protectie date',
+    'Pregatire documentatie fuziune',
+    'Analiza contract licenta software',
+    'Redactare conventie custodie',
+    'Inventariere bunuri comune divort',
+    'Pregatire cerere divort',
+    'Consultatie expert evaluator',
+    'Depunere documentatie ONRC',
   ];
 
   const tasks: Task[] = [];
@@ -97,18 +132,22 @@ function generateMockTasks(count: number): Task[] {
       dueDate.setHours(0, 0, 0, 0);
     }
 
+    const caseContext = CASE_CONTEXTS[Math.floor(Math.random() * CASE_CONTEXTS.length)];
+    const taskTitle = titles[tasks.length % titles.length];
+
     tasks.push({
       id: `task-${tasks.length + 1}`,
-      title: titles[tasks.length % titles.length],
-      description: `Mock task description for ${titles[tasks.length % titles.length]}`,
+      title: taskTitle,
+      description: `${taskTitle} - ${caseContext.name}`,
       type,
       status: statuses[Math.floor(Math.random() * statuses.length)],
       priority: priorities[Math.floor(Math.random() * priorities.length)],
       dueDate,
       assignedTo: MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)].id,
-      caseId: `case-${Math.floor(Math.random() * 5) + 1}`,
+      caseId: caseContext.id,
       metadata: {
         duration: hasSpecificTime ? 30 + Math.floor(Math.random() * 90) : undefined, // 30-120 minutes
+        caseName: caseContext.name,
       },
       createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(),

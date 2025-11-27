@@ -11,6 +11,7 @@ import type { UserRole } from './entities';
 export type NavigationSection =
   | 'dashboard'
   | 'analytics'
+  | 'kpis'
   | 'cases'
   | 'documents'
   | 'tasks'

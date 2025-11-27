@@ -1,0 +1,83 @@
+name: Generate GraphQL Documentation
+
+# Story 2.7: API Documentation and Developer Portal
+# Auto-generates GraphQL schema documentation on every push
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'services/gateway/src/graphql/schema/**/*.graphql'
+      - 'services/gateway/scripts/generate-docs.js'
+  pull_request:
+    paths:
+      - 'services/gateway/src/graphql/schema/**/*.graphql'
+      - 'services/gateway/scripts/generate-docs.js'
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    name: Generate GraphQL Schema Docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate GraphQL documentation
+        run: cd services/gateway && pnpm docs:generate
+
+      - name: Check for documentation changes
+        id: docs-check
+        run: |
+          if git diff --quiet docs/api/schema/schema.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit updated documentation
+        if: steps.docs-check.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/api/schema/schema.md
+          git commit -m "docs: auto-update GraphQL schema documentation [skip ci]"
+          git push
+
+      - name: Upload documentation artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphql-schema-docs
+          path: docs/api/schema/schema.md
+          retention-days: 7
+
+      - name: Comment on PR with documentation link
+        if: github.event_name == 'pull_request' && steps.docs-check.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '📚 GraphQL schema documentation has been updated. Please review the changes in `docs/api/schema/schema.md`.'
+            })

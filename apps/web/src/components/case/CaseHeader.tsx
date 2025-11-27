@@ -31,6 +31,7 @@ export interface CaseHeaderProps {
  */
 function StatusBadge({ status }: { status: CaseStatus }) {
   const statusConfig: Record<CaseStatus, { label: string; className: string }> = {
+    PendingApproval: { label: 'Pending Approval', className: 'bg-orange-100 text-orange-800 border-orange-200' }, // Story 2.8.2
     Active: { label: 'Activ', className: 'bg-green-100 text-green-800 border-green-200' },
     OnHold: { label: 'Suspendat', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
     Closed: { label: 'Închis', className: 'bg-gray-100 text-gray-800 border-gray-200' },
@@ -74,13 +75,15 @@ function CaseTypeLabel({ type }: { type: CaseType }) {
  * Team Member Avatar Component
  */
 function TeamMemberAvatar({ user }: { user: User }) {
-  const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+  const firstName = user.firstName || 'U';
+  const lastName = user.lastName || 'U';
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 
   return (
     <Avatar.Root className="relative inline-flex h-9 w-9 rounded-full hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 transition-all">
       <Avatar.Fallback
         className="flex h-full w-full items-center justify-center rounded-full bg-blue-600 text-white text-sm font-medium"
-        title={`${user.firstName} ${user.lastName} - ${user.role}`}
+        title={`${firstName} ${lastName} - ${user.role || 'User'}`}
       >
         {initials}
       </Avatar.Fallback>

@@ -1,5 +1,5 @@
 -- Enable pg_trgm extension if not already enabled (should already be enabled from Story 2.2)
--- CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Create GIN indexes for full-text search using pg_trgm
 -- These indexes enable fast similarity searching on text fields

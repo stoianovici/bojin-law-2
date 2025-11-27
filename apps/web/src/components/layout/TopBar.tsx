@@ -1,19 +1,22 @@
 /**
  * TopBar Component
- * Top navigation bar with command palette trigger, notifications, and user menu
- * Includes keyboard shortcut (Cmd+K / Ctrl+K) for command palette
+ * Top navigation bar with global search, notifications, and user menu
+ * Includes keyboard shortcut (Cmd+K / Ctrl+K) for search
  * Enhanced with role switcher for demo mode
+ * Story 2.10: Added GlobalSearchBar for AI-powered search
  */
 
 'use client';
 
-import React, { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useNavigationStore } from '../../stores/navigation.store';
 import { RoleSwitcher } from './RoleSwitcher';
+import { NotificationCenter } from './NotificationCenter';
 import { useCurrentTimeDisplay } from '../../lib/hooks/useTimeSimulation';
+import { GlobalSearchBar, type GlobalSearchBarRef } from '../search/GlobalSearchBar';
 import Link from 'next/link';
 
 export interface TopBarProps {
@@ -48,11 +51,6 @@ export interface TopBarProps {
   onProfile?: () => void;
 
   /**
-   * Callback for settings navigation
-   */
-  onSettings?: () => void;
-
-  /**
    * Callback for notifications click
    */
   onNotificationsClick?: () => void;
@@ -75,11 +73,12 @@ export function TopBar({
   className = '',
   onLogout,
   onProfile,
-  onSettings,
 }: TopBarProps) {
-  const { toggleSidebar, openCommandPalette, currentRole } = useNavigationStore();
+  const { toggleSidebar, currentRole } = useNavigationStore();
   const { currentTimeDisplay } = useCurrentTimeDisplay();
   const pathname = usePathname();
+  const router = useRouter();
+  const searchBarRef = useRef<GlobalSearchBarRef>(null);
 
   // Get page title based on current route and role
   const getPageTitle = () => {
@@ -99,21 +98,11 @@ export function TopBar({
     if (pathname?.startsWith('/analytics')) return 'Analytics';
     if (pathname?.startsWith('/reports')) return 'Rapoarte';
     if (pathname?.startsWith('/time-tracking')) return 'Time Tracking';
+    if (pathname?.startsWith('/settings')) return 'Setări';
     return 'Platforma Juridică';
   };
 
-  // Handle keyboard shortcut for command palette (Cmd+K / Ctrl+K)
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-        event.preventDefault();
-        openCommandPalette();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [openCommandPalette]);
+  // Cmd+K is now handled by GlobalSearchBar directly
 
   return (
     <header
@@ -157,23 +146,13 @@ export function TopBar({
         <h1 className="text-xl font-semibold text-gray-900 hidden sm:block">{getPageTitle()}</h1>
       </div>
 
-      {/* Center section: Current time */}
-      <div className="hidden md:flex items-center text-sm text-gray-600">
-        <svg
-          className="w-4 h-4 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        {currentTimeDisplay}
+      {/* Center section: Global Search Bar */}
+      <div className="hidden md:flex flex-1 justify-center max-w-xl mx-4">
+        <GlobalSearchBar
+          ref={searchBarRef}
+          className="w-full"
+          placeholder="Search cases, documents, clients, tasks... (⌘K)"
+        />
       </div>
 
       {/* Right section: Role switcher, Command palette, Notifications, User menu */}
@@ -181,43 +160,9 @@ export function TopBar({
         {/* Role Switcher */}
         <RoleSwitcher />
 
-        {/* Command Palette Trigger Button */}
+        {/* Mobile search button - navigates to search page */}
         <button
-          onClick={openCommandPalette}
-          className="
-            flex items-center gap-2
-            px-3 py-2 rounded-lg
-            bg-gray-100 hover:bg-gray-200
-            text-gray-700 text-sm
-            focus:outline-none focus:ring-2 focus:ring-blue-500
-            transition-colors
-            hidden md:flex
-          "
-          aria-label="Open command palette (Cmd+K)"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <span className="hidden lg:inline">Caută</span>
-          <kbd className="hidden lg:inline px-2 py-0.5 text-xs bg-white border border-gray-300 rounded">
-            ⌘K
-          </kbd>
-        </button>
-
-        {/* Mobile command palette button */}
-        <button
-          onClick={openCommandPalette}
+          onClick={() => router.push('/search')}
           className="
             md:hidden
             p-2 rounded-lg
@@ -225,7 +170,7 @@ export function TopBar({
             focus:outline-none focus:ring-2 focus:ring-blue-500
             transition-colors
           "
-          aria-label="Open command palette"
+          aria-label="Open search"
         >
           <svg
             className="w-5 h-5 text-gray-700"
@@ -242,6 +187,28 @@ export function TopBar({
             />
           </svg>
         </button>
+
+        {/* Current time indicator */}
+        <div className="hidden lg:flex items-center text-sm text-gray-500">
+          <svg
+            className="w-4 h-4 mr-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          {currentTimeDisplay}
+        </div>
+
+        {/* Notification Center */}
+        <NotificationCenter />
 
         {/* User Menu */}
         <DropdownMenu.Root>
@@ -326,39 +293,41 @@ export function TopBar({
                 Profil
               </DropdownMenu.Item>
 
-              <DropdownMenu.Item
-                className="
-                  flex items-center gap-3 px-3 py-2
-                  text-sm text-gray-700
-                  rounded-md
-                  cursor-pointer
-                  hover:bg-gray-100
-                  focus:bg-gray-100 focus:outline-none
-                  transition-colors
-                "
-                onSelect={onSettings}
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
+              <DropdownMenu.Item asChild>
+                <Link
+                  href="/settings/billing"
+                  className="
+                    flex items-center gap-3 px-3 py-2
+                    text-sm text-gray-700
+                    rounded-md
+                    cursor-pointer
+                    hover:bg-gray-100
+                    focus:bg-gray-100 focus:outline-none
+                    transition-colors
+                  "
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                Setări
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  Setări
+                </Link>
               </DropdownMenu.Item>
 
               {/* User Management - Partner only */}

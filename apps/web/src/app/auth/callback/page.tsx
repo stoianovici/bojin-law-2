@@ -55,12 +55,12 @@ function AuthCallbackContent() {
         // We just need to verify the user is authenticated
         if (isAuthenticated) {
           // Redirect to dashboard on successful authentication
-          router.push('/dashboard');
+          router.push('/');
         } else {
           // Wait a moment for the auth context to update
           setTimeout(() => {
             if (isAuthenticated) {
-              router.push('/dashboard');
+              router.push('/');
             } else {
               setError('Authentication failed. Please try again.');
               setIsProcessing(false);

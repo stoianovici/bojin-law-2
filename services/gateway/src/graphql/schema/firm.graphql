@@ -1,0 +1,93 @@
+# Firm Settings GraphQL Schema
+# Story 2.8.1: Billing & Rate Management
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Default billing rates for the firm (Story 2.8.1)
+All rates are in USD cents (e.g., 50000 = $500.00/hour) for precision
+"""
+type DefaultRates {
+  """Partner hourly rate in USD cents"""
+  partnerRate: Float!
+
+  """Associate hourly rate in USD cents"""
+  associateRate: Float!
+
+  """Paralegal hourly rate in USD cents"""
+  paralegalRate: Float!
+}
+
+"""
+Firm entity - represents a law firm
+"""
+type Firm {
+  """Unique identifier for the firm"""
+  id: UUID!
+
+  """Firm name"""
+  name: String!
+
+  """Default billing rates for the firm (null if not set) - Partners only"""
+  defaultRates: DefaultRates @requiresFinancialAccess
+
+  """Timestamp when the firm was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the firm was last updated"""
+  updatedAt: DateTime!
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for updating default billing rates
+All rates are in USD cents (e.g., 50000 = $500.00/hour)
+"""
+input DefaultRatesInput {
+  """Partner hourly rate in USD cents (must be positive)"""
+  partnerRate: Float!
+
+  """Associate hourly rate in USD cents (must be positive)"""
+  associateRate: Float!
+
+  """Paralegal hourly rate in USD cents (must be positive)"""
+  paralegalRate: Float!
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get the current firm's default billing rates
+  Returns null if rates haven't been set yet
+  Authorization: Partner role required (financial data)
+  """
+  defaultRates: DefaultRates
+
+  """
+  Get the current firm information
+  Authorization: Authenticated users can view their firm
+  """
+  firm: Firm
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Update the firm's default billing rates
+  Side effects: Updates firm settings, creates audit log entry
+  Authorization: Partner role required
+  Validation: All rates must be positive numbers
+  """
+  updateDefaultRates(input: DefaultRatesInput!): DefaultRates!
+}
