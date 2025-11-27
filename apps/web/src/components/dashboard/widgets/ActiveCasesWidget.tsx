@@ -22,8 +22,16 @@ export interface ActiveCasesWidgetProps {
 /**
  * Case Status Badge Component
  */
-function CaseStatusBadge({ status }: { status: 'Active' | 'OnHold' | 'Closed' | 'Archived' }) {
+function CaseStatusBadge({
+  status,
+}: {
+  status: 'PendingApproval' | 'Active' | 'OnHold' | 'Closed' | 'Archived';
+}) {
   const statusConfig = {
+    PendingApproval: {
+      label: 'În Aprobare',
+      className: 'bg-orange-100 text-orange-700',
+    },
     Active: {
       label: 'Activ',
       className: 'bg-blue-100 text-blue-700',

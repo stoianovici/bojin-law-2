@@ -14,7 +14,8 @@ export function createMockCaseWorkspace() {
     clientId: 'client-abc-industries',
     status: 'Active',
     type: 'Litigation',
-    description: 'Disputa comerciala privind neindeplinirea obligatiilor contractuale de livrare si plata.',
+    description:
+      'Disputa comerciala privind neindeplinirea obligatiilor contractuale de livrare si plata.',
     openedDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
     closedDate: null,
     value: 150000,
@@ -29,6 +30,10 @@ export function createMockCaseWorkspace() {
     billingType: 'Hourly',
     fixedAmount: null,
     customRates: { partnerRate: 500, associateRate: 350, paralegalRate: 175 },
+    retainerAmount: null,
+    retainerPeriod: null,
+    retainerRollover: false,
+    retainerAutoRenew: false,
   };
 
   const mockTeamMembers: User[] = [

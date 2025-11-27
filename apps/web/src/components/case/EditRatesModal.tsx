@@ -31,7 +31,7 @@ interface EditRatesModalProps {
  */
 const editRatesSchema = z
   .object({
-    billingType: z.enum(['Hourly', 'Fixed'] as const),
+    billingType: z.enum(['Hourly', 'Fixed', 'Retainer'] as const),
     fixedAmount: z.string().optional(),
     useCustomRates: z.boolean(),
     partnerRate: z.string().optional(),
@@ -270,7 +270,10 @@ export function EditRatesModal({
   return (
     <>
       {/* Modal Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40" onClick={onClose}>
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40"
+        onClick={onClose}
+      >
         {/* Modal Content */}
         <div
           className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
@@ -313,7 +316,10 @@ export function EditRatesModal({
             {/* Fixed Amount (if Fixed billing) */}
             {billingType === 'Fixed' && (
               <div>
-                <label htmlFor="fixedAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="fixedAmount"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Fixed Amount ($) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -347,11 +353,7 @@ export function EditRatesModal({
 
               {/* Use Custom Rates Toggle */}
               <label className="flex items-center mb-4">
-                <input
-                  type="checkbox"
-                  {...register('useCustomRates')}
-                  className="mr-2"
-                />
+                <input type="checkbox" {...register('useCustomRates')} className="mr-2" />
                 <span className="text-sm text-gray-700">Use custom rates for this case</span>
               </label>
 

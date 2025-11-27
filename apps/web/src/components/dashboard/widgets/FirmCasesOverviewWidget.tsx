@@ -96,7 +96,7 @@ const HighValueCaseItem = React.memo(function HighValueCaseItem({
   const priorityConfig = {
     strategic: { label: 'Strategic', className: 'bg-purple-100 text-purple-700' },
     vip: { label: 'VIP', className: 'bg-yellow-100 text-yellow-700' },
-    highValue: { label: 'Valoare Mare', className: 'bg-green-100 text-green-700' },
+    normal: { label: 'Normal', className: 'bg-gray-100 text-gray-700' },
   };
 
   const config = priorityConfig[caseItem.priority];
@@ -284,7 +284,10 @@ export function FirmCasesOverviewWidget({
       collapsed={widget.collapsed}
     >
       {/* Tabbed Interface */}
-      <Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as 'atRisk' | 'highValue' | 'aiInsights')}>
+      <Tabs.Root
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as 'atRisk' | 'highValue' | 'aiInsights')}
+      >
         <Tabs.List className="flex border-b border-gray-200 mb-3">
           <Tabs.Trigger
             value="atRisk"

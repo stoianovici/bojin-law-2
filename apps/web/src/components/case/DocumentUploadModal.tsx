@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
-import { useDocumentUpload, UploadProgress } from '@/hooks/useDocumentUpload';
+import { useDocumentUpload, type UploadProgress } from '@/hooks/useDocumentUpload';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -186,9 +186,7 @@ export function DocumentUploadModal({
           {/* Header */}
           <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Upload Documents
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Upload Documents</h3>
               <button
                 onClick={handleClose}
                 disabled={uploading}
@@ -196,7 +194,12 @@ export function DocumentUploadModal({
               >
                 <span className="sr-only">Close</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -215,9 +218,7 @@ export function DocumentUploadModal({
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={`relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                dragActive
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
               }`}
             >
               <input
@@ -280,20 +281,26 @@ export function DocumentUploadModal({
                       <div className="flex items-center space-x-3">
                         <span className="text-lg">{getFileIcon(file.type)}</span>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {file.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatFileSize(file.size)}
-                          </p>
+                          <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                          <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => removeFile(idx)}
                         className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-500"
                       >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -305,19 +312,12 @@ export function DocumentUploadModal({
             {/* Upload progress */}
             {uploading && progress.length > 0 && (
               <div className="mt-4 space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">
-                  Uploading to OneDrive...
-                </h4>
+                <h4 className="text-sm font-medium text-gray-700">Uploading to OneDrive...</h4>
                 <div className="max-h-48 overflow-y-auto rounded-md border border-gray-200">
                   {progress.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="border-b border-gray-100 px-4 py-3 last:border-b-0"
-                    >
+                    <div key={idx} className="border-b border-gray-100 px-4 py-3 last:border-b-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900">
-                          {item.fileName}
-                        </p>
+                        <p className="text-sm font-medium text-gray-900">{item.fileName}</p>
                         <span className={`text-xs font-medium ${getStatusColor(item.status)}`}>
                           {item.status === 'complete' && 'Uploaded'}
                           {item.status === 'error' && 'Failed'}
@@ -331,15 +331,13 @@ export function DocumentUploadModal({
                             item.status === 'error'
                               ? 'bg-red-500'
                               : item.status === 'complete'
-                              ? 'bg-green-500'
-                              : 'bg-blue-500'
+                                ? 'bg-green-500'
+                                : 'bg-blue-500'
                           }`}
                           style={{ width: `${item.progress}%` }}
                         />
                       </div>
-                      {item.error && (
-                        <p className="mt-1 text-xs text-red-600">{item.error}</p>
-                      )}
+                      {item.error && <p className="mt-1 text-xs text-red-600">{item.error}</p>}
                     </div>
                   ))}
                 </div>
@@ -369,7 +367,9 @@ export function DocumentUploadModal({
                 disabled={uploading || selectedFiles.length === 0}
                 className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {uploading ? 'Uploading...' : `Upload ${selectedFiles.length} File${selectedFiles.length !== 1 ? 's' : ''}`}
+                {uploading
+                  ? 'Uploading...'
+                  : `Upload ${selectedFiles.length} File${selectedFiles.length !== 1 ? 's' : ''}`}
               </button>
             </div>
           </div>

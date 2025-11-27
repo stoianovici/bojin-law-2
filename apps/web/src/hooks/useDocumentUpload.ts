@@ -5,7 +5,8 @@
  * Provides mutations for uploading documents to OneDrive
  */
 
-import { gql, useMutation } from '@apollo/client';
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { useCallback, useState } from 'react';
 
 // GraphQL mutation for uploading document to OneDrive
@@ -139,6 +140,23 @@ interface UseDocumentUploadResult {
   error?: Error;
 }
 
+// Mutation response types
+interface UploadDocumentMutationData {
+  uploadDocumentToOneDrive: UploadedDocument;
+}
+
+interface GetDownloadUrlMutationData {
+  getDocumentDownloadUrl: DownloadUrlResponse;
+}
+
+interface SyncDocumentMutationData {
+  syncDocumentFromOneDrive: SyncResult;
+}
+
+interface UpdateDocumentStatusMutationData {
+  updateDocumentStatus: { success: boolean };
+}
+
 /**
  * Hook for document upload operations with OneDrive integration
  */
@@ -147,10 +165,12 @@ export function useDocumentUpload(): UseDocumentUploadResult {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<Error | undefined>();
 
-  const [uploadMutation] = useMutation(UPLOAD_DOCUMENT_TO_ONEDRIVE);
-  const [getDownloadUrlMutation] = useMutation(GET_DOCUMENT_DOWNLOAD_URL);
-  const [syncDocumentMutation] = useMutation(SYNC_DOCUMENT_FROM_ONEDRIVE);
-  const [updateStatusMutation] = useMutation(UPDATE_DOCUMENT_STATUS);
+  const [uploadMutation] = useMutation<UploadDocumentMutationData>(UPLOAD_DOCUMENT_TO_ONEDRIVE);
+  const [getDownloadUrlMutation] =
+    useMutation<GetDownloadUrlMutationData>(GET_DOCUMENT_DOWNLOAD_URL);
+  const [syncDocumentMutation] = useMutation<SyncDocumentMutationData>(SYNC_DOCUMENT_FROM_ONEDRIVE);
+  const [updateStatusMutation] =
+    useMutation<UpdateDocumentStatusMutationData>(UPDATE_DOCUMENT_STATUS);
 
   // Convert File to base64
   const fileToBase64 = useCallback((file: File): Promise<string> => {
@@ -205,9 +225,7 @@ export function useDocumentUpload(): UseDocumentUploadResult {
 
         // Update progress to uploading
         setProgress((prev) =>
-          prev.map((p, idx) =>
-            idx === i ? { ...p, status: 'uploading', progress: 10 } : p
-          )
+          prev.map((p, idx) => (idx === i ? { ...p, status: 'uploading', progress: 10 } : p))
         );
 
         try {
@@ -215,11 +233,7 @@ export function useDocumentUpload(): UseDocumentUploadResult {
           const fileContent = await fileToBase64(file);
 
           // Update progress
-          setProgress((prev) =>
-            prev.map((p, idx) =>
-              idx === i ? { ...p, progress: 50 } : p
-            )
-          );
+          setProgress((prev) => prev.map((p, idx) => (idx === i ? { ...p, progress: 50 } : p)));
 
           // Upload to OneDrive
           const result = await uploadDocument({
@@ -232,25 +246,19 @@ export function useDocumentUpload(): UseDocumentUploadResult {
           if (result) {
             uploadedDocuments.push(result);
             setProgress((prev) =>
-              prev.map((p, idx) =>
-                idx === i ? { ...p, status: 'complete', progress: 100 } : p
-              )
+              prev.map((p, idx) => (idx === i ? { ...p, status: 'complete', progress: 100 } : p))
             );
           } else {
             setProgress((prev) =>
               prev.map((p, idx) =>
-                idx === i
-                  ? { ...p, status: 'error', error: 'Upload failed' }
-                  : p
+                idx === i ? { ...p, status: 'error', error: 'Upload failed' } : p
               )
             );
           }
         } catch (err) {
           setProgress((prev) =>
             prev.map((p, idx) =>
-              idx === i
-                ? { ...p, status: 'error', error: (err as Error).message }
-                : p
+              idx === i ? { ...p, status: 'error', error: (err as Error).message } : p
             )
           );
         }

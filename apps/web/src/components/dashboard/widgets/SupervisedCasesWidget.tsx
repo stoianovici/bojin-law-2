@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { WidgetContainer } from '../WidgetContainer';
 import type { SupervisedCasesWidget as SupervisedCasesWidgetType } from '@legal-platform/types';
 import { clsx } from 'clsx';
@@ -22,8 +22,16 @@ export interface SupervisedCasesWidgetProps {
 /**
  * Case Status Badge Component
  */
-function CaseStatusBadge({ status }: { status: 'Active' | 'OnHold' | 'Closed' | 'Archived' }) {
+function CaseStatusBadge({
+  status,
+}: {
+  status: 'PendingApproval' | 'Active' | 'OnHold' | 'Closed' | 'Archived';
+}) {
   const statusConfig = {
+    PendingApproval: {
+      label: 'În Aprobare',
+      className: 'bg-orange-100 text-orange-700',
+    },
     Active: {
       label: 'Activ',
       className: 'bg-blue-100 text-blue-700',
@@ -153,13 +161,14 @@ function CaseListItem({
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-sm font-medium text-blue-600">
-              {caseItem.caseNumber}
-            </span>
+            <span className="text-sm font-medium text-blue-600">{caseItem.caseNumber}</span>
             <CaseStatusBadge status={caseItem.status} />
             <RiskLevelIndicator level={caseItem.riskLevel} />
           </div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1" title={caseItem.title}>
+          <h4
+            className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1"
+            title={caseItem.title}
+          >
             {caseItem.title}
           </h4>
         </div>
@@ -191,7 +200,12 @@ function CaseListItem({
         </div>
         {deadlineInfo && (
           <div className="flex items-center gap-1">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -247,26 +261,24 @@ export function SupervisedCasesWidget({
     });
   }, [widget.cases]);
 
-  // Focus management and screen reader announcements
-  useEffect(() => {
-    if (isExpanded && expandButtonRef.current) {
-      // Keep focus on button after expansion for better UX
-      expandButtonRef.current.focus();
-      // Announce expansion state to screen readers
+  // Handle expansion toggle with announcements
+  const handleToggleExpand = useCallback(() => {
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
+
+    // Announce expansion state to screen readers
+    if (newExpanded) {
       setAnnounceMessage(`Afișare extinsă. Se afișează toate cele ${sortedCases.length} cazuri.`);
-    } else if (!isExpanded && expandButtonRef.current) {
-      // Announce collapse to screen readers
+    } else {
       setAnnounceMessage(`Afișare redusă. Se afișează primele ${INITIAL_DISPLAY_COUNT} cazuri.`);
     }
+
     // Clear announcement after screen readers have time to read it
-    const timer = setTimeout(() => setAnnounceMessage(''), 1000);
-    return () => clearTimeout(timer);
+    setTimeout(() => setAnnounceMessage(''), 1000);
   }, [isExpanded, sortedCases.length]);
 
   // Determine which cases to display based on expansion state
-  const displayedCases = isExpanded
-    ? sortedCases
-    : sortedCases.slice(0, INITIAL_DISPLAY_COUNT);
+  const displayedCases = isExpanded ? sortedCases : sortedCases.slice(0, INITIAL_DISPLAY_COUNT);
 
   const hasMoreCases = sortedCases.length > INITIAL_DISPLAY_COUNT;
 
@@ -335,7 +347,7 @@ export function SupervisedCasesWidget({
               <button
                 ref={expandButtonRef}
                 className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded py-1 transition-colors"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={handleToggleExpand}
                 aria-expanded={isExpanded}
                 aria-label={isExpanded ? 'Arată mai puține cazuri' : 'Arată mai multe cazuri'}
               >
@@ -343,14 +355,26 @@ export function SupervisedCasesWidget({
                   <span className="flex items-center justify-center gap-1">
                     <span>Arată Mai Puține</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
                     </svg>
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-1">
-                    <span>Arată Mai Multe ({sortedCases.length - INITIAL_DISPLAY_COUNT} cazuri)</span>
+                    <span>
+                      Arată Mai Multe ({sortedCases.length - INITIAL_DISPLAY_COUNT} cazuri)
+                    </span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </span>
                 )}

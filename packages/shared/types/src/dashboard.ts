@@ -3,6 +3,8 @@
  * Supports Partner, Associate, and Paralegal dashboard layouts
  */
 
+import type { CaseStatus } from './entities';
+
 // Grid Layout Types
 export interface WidgetPosition {
   i: string; // Widget ID
@@ -187,7 +189,7 @@ export interface SupervisedCasesWidget extends BaseWidget {
     caseNumber: string;
     title: string;
     clientName: string;
-    status: 'Active' | 'OnHold' | 'Closed' | 'Archived';
+    status: CaseStatus;
     supervisorId: string;
     teamSize: number;
     riskLevel: 'high' | 'medium' | 'low';
@@ -212,7 +214,7 @@ export interface FirmCasesOverviewWidget extends BaseWidget {
     title: string;
     value: number;
     assignedPartner: string;
-    priority: 'strategic' | 'vip' | 'highValue';
+    priority: 'strategic' | 'vip' | 'normal';
   }>;
   aiInsights: Array<{
     id: string;

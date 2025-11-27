@@ -11,15 +11,11 @@
 
 import { useState } from 'react';
 import { FinancialData } from '@/components/auth/FinancialData';
-import {
-  useCaseRevenueKPI,
-  formatCurrency,
-  formatPercentage,
-} from '@/hooks/useRevenueKPIs';
+import { useCaseRevenueKPI, formatCurrency, formatPercentage } from '@/hooks/useRevenueKPIs';
 
 interface CaseRevenueKPIWidgetProps {
   caseId: string;
-  billingType: 'Hourly' | 'Fixed';
+  billingType: 'Hourly' | 'Fixed' | 'Retainer';
 }
 
 export function CaseRevenueKPIWidget({ caseId, billingType }: CaseRevenueKPIWidgetProps) {
@@ -81,12 +77,7 @@ function CaseRevenueKPIWidgetContent({
     return (
       <div className="bg-white rounded-lg border border-red-200 p-6">
         <div className="flex items-center gap-2 text-red-600 mb-2">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -129,12 +120,7 @@ function CaseRevenueKPIWidgetContent({
             className="text-blue-600 hover:text-blue-700 p-1.5 rounded hover:bg-blue-100 transition-colors"
             title="Refresh KPI"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -153,9 +139,7 @@ function CaseRevenueKPIWidgetContent({
         <div className="mt-4 pt-4 border-t border-blue-200">
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-600">Fixed Amount:</span>
-            <span className="font-semibold text-gray-900">
-              {formatCurrency(kpi.actualRevenue)}
-            </span>
+            <span className="font-semibold text-gray-900">{formatCurrency(kpi.actualRevenue)}</span>
           </div>
         </div>
       </div>
@@ -207,12 +191,7 @@ function CaseRevenueKPIWidgetContent({
           className="text-gray-600 hover:text-gray-700 p-1.5 rounded hover:bg-gray-100 transition-colors"
           title="Refresh KPI"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -249,9 +228,7 @@ function CaseRevenueKPIWidgetContent({
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="text-sm font-medium mb-1">Variance</div>
-              <div className="text-2xl font-bold">
-                {formatCurrency(Math.abs(kpi.variance))}
-              </div>
+              <div className="text-2xl font-bold">{formatCurrency(Math.abs(kpi.variance))}</div>
               <div className="text-sm mt-1">{formatPercentage(kpi.variancePercent)}</div>
             </div>
             <div className="ml-4">{getVarianceIcon(kpi.variance)}</div>
@@ -261,9 +238,7 @@ function CaseRevenueKPIWidgetContent({
 
       {/* Footer */}
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <span className="text-xs text-gray-500">
-          Updated {formatTimestamp(lastUpdated)}
-        </span>
+        <span className="text-xs text-gray-500">Updated {formatTimestamp(lastUpdated)}</span>
       </div>
     </div>
   );
