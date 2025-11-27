@@ -1,10 +1,12 @@
 {
   "name": "@legal-platform/ai-service",
   "version": "1.0.0",
-  "description": "AI Service for Legal Platform with Claude Skills integration",
+  "description": "AI Service for Legal Platform with Claude Skills integration and LangChain",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -17,20 +19,48 @@
     "claude",
     "skills",
     "anthropic",
-    "legal"
+    "legal",
+    "langchain"
   ],
   "author": "Legal Platform Team",
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
-    "ioredis": "^5.8.2"
+    "@langchain/anthropic": "^0.3.0",
+    "@langchain/core": "^0.3.0",
+    "@legal-platform/database": "workspace:*",
+    "@legal-platform/types": "workspace:*",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@microsoft/microsoft-graph-types": "^2.43.1",
+    "bullmq": "^5.65.0",
+    "express": "^4.19.0",
+    "franc": "^6.2.0",
+    "ioredis": "^5.8.2",
+    "langchain": "^0.3.0",
+    "mammoth": "^1.11.0",
+    "natural": "^8.1.0",
+    "node-cron": "^4.2.1",
+    "openai": "^4.20.0",
+    "pdf-parse": "^2.4.5",
+    "tiktoken": "^1.0.15",
+    "uuid": "^9.0.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
+    "@prisma/client": "^5.8.0",
+    "@types/express": "^4.17.21",
     "@types/ioredis": "^5.0.0",
     "@types/jest": "^29.5.0",
+    "@types/natural": "^6.0.1",
     "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/supertest": "^6.0.2",
+    "@types/uuid": "^9.0.0",
     "jest": "^29.5.0",
+    "supertest": "^6.3.4",
     "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.0",
     "typescript": "^5.3.0"
   }
 }

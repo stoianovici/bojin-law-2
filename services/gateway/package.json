@@ -12,7 +12,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint src __tests__",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "docs:generate": "node scripts/generate-docs.js"
   },
   "keywords": [
     "api",
@@ -27,6 +28,7 @@
   "dependencies": {
     "@apollo/server": "^4.12.2",
     "@azure/msal-node": "^2.0.0",
+    "@graphql-tools/utils": "^10.10.3",
     "@legal-platform/database": "workspace:*",
     "@legal-platform/types": "workspace:*",
     "@microsoft/microsoft-graph-client": "^3.0.7",
@@ -47,6 +49,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@graphql-tools/load-files": "^7.0.1",
+    "@graphql-tools/schema": "^10.0.29",
     "@microsoft/microsoft-graph-types": "^2.43.1",
     "@types/axios": "^0.14.4",
     "@types/connect-redis": "^0.0.23",
@@ -58,6 +62,7 @@
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.0",
     "@types/uuid": "^11.0.0",
+    "graphql-markdown": "^7.3.0",
     "jest": "^30.2.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.0",
