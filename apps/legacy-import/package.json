@@ -19,6 +19,7 @@
     "@azure/msal-node": "^2.15.0",
     "@hookform/resolvers": "^3.9.1",
     "@legal-platform/database": "workspace:*",
+    "@prisma/client": "^5.22.0",
     "@legal-platform/types": "workspace:*",
     "@legal-platform/ui": "workspace:*",
     "@microsoft/microsoft-graph-client": "^3.0.7",
@@ -54,6 +55,7 @@
   },
   "devDependencies": {
     "@types/uuid": "^10.0.0",
+    "prisma": "^5.22.0",
     "@swc/core": "^1.15.3",
     "@swc/jest": "^0.2.39",
     "@testing-library/jest-dom": "^6.0.0",

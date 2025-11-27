@@ -132,6 +132,9 @@ importers:
       '@microsoft/microsoft-graph-client':
         specifier: ^3.0.7
         version: 3.0.7(@azure/msal-browser@3.30.0)
+      '@prisma/client':
+        specifier: ^5.22.0
+        version: 5.22.0(prisma@5.22.0)
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@18.3.7(@types/react@18.3.26))(@types/react@18.3.26)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -256,6 +259,9 @@ importers:
       postcss:
         specifier: ^8.4.0
         version: 8.5.6
+      prisma:
+        specifier: ^5.22.0
+        version: 5.22.0
       tailwindcss:
         specifier: ^3.4.0
         version: 3.4.18(tsx@4.20.6)(yaml@2.8.1)
