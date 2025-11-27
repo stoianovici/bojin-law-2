@@ -42,9 +42,11 @@ ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
-# Build Next.js app with memory limits for Render starter tier
+# Build Next.js app
+# Note: Render starter tier has 512MB RAM, but build can use more
+# Using 2GB for build, production runtime uses less
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=460"
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN pnpm build --filter=@legal-platform/web
 
 # Stage 3: Production runner
