@@ -29,6 +29,9 @@ const config = {
   sslMode: process.env.DATABASE_SSL_MODE || 'require',
 };
 
+// Check if we're in a build context (no database needed)
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+
 // Construct connection string with pooling parameters
 const getDatabaseUrl = (): string => {
   const baseUrl = process.env.DATABASE_URL;
@@ -57,37 +60,65 @@ const getDatabaseUrl = (): string => {
 // Singleton pattern for Prisma Client
 // Prevents creating multiple instances in serverless/hot-reload environments
 declare global {
-  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 
-// Prisma Client instance with connection pooling
-export const prisma =
-  global.prisma ||
-  new PrismaClient({
-    datasources: {
-      db: {
-        url: getDatabaseUrl(),
-      },
-    },
-    log:
-      process.env.NODE_ENV === 'development'
-        ? ['query', 'info', 'warn', 'error']
-        : ['error'],
-    errorFormat: 'pretty',
-  });
+let _prisma: PrismaClient | undefined;
 
-// Store in global for hot-reload in development
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
-}
+// Lazy getter for Prisma instance
+const getPrismaInstance = (): PrismaClient => {
+  if (!_prisma) {
+    if (global.prisma) {
+      _prisma = global.prisma;
+    } else {
+      _prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: getDatabaseUrl(),
+          },
+        },
+        log:
+          process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+        errorFormat: 'pretty',
+      });
+
+      // Store in global for hot-reload in development
+      if (process.env.NODE_ENV !== 'production') {
+        global.prisma = _prisma;
+      }
+    }
+  }
+  return _prisma;
+};
+
+// Export a proxy that lazily initializes Prisma on first access
+// This prevents errors during Next.js build when DATABASE_URL is not set
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    // During build time, return a mock for type checking
+    if (isBuildTime && !process.env.DATABASE_URL) {
+      // Return a function that throws a helpful error
+      if (prop === '$connect' || prop === '$disconnect') {
+        return async () => {};
+      }
+      throw new Error(
+        `Cannot access prisma.${String(prop)} during build time without DATABASE_URL`
+      );
+    }
+    const instance = getPrismaInstance();
+    const value = (instance as any)[prop];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+});
 
 // Graceful shutdown handler
 // Ensures all database connections are properly closed before process exit
 const shutdown = async (signal: string) => {
-  console.log(`Received ${signal}, closing database connections...`);
-  await prisma.$disconnect();
-  console.log('Database connections closed.');
+  if (_prisma) {
+    console.log(`Received ${signal}, closing database connections...`);
+    await _prisma.$disconnect();
+    console.log('Database connections closed.');
+  }
   process.exit(0);
 };
 

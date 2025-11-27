@@ -27,6 +27,9 @@ import Redis, { RedisOptions } from 'ioredis';
 // Check if we're in development without Redis
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+// Check if we're in a build context (no Redis needed)
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || !process.env.REDIS_URL;
+
 // Redis configuration from environment variables
 const redisConfig: RedisOptions = {
   // Connection string from Render auto-injection
@@ -36,9 +39,9 @@ const redisConfig: RedisOptions = {
   // This allows the app to continue working without Redis (with degraded functionality)
   maxRetriesPerRequest: isDevelopment ? null : parseInt(process.env.REDIS_MAX_RETRIES || '3', 10),
   retryStrategy(times: number) {
-    if (isDevelopment && times > 3) {
-      // In development, stop retrying after 3 attempts and just log
-      console.warn('Redis unavailable in development - some features may not work');
+    if ((isDevelopment || isBuildTime) && times > 3) {
+      // In development/build, stop retrying after 3 attempts and just log
+      console.warn('Redis unavailable - some features may not work');
       return null; // Stop retrying
     }
     const delay = Math.min(times * 50, 2000); // Exponential backoff up to 2 seconds
@@ -49,10 +52,10 @@ const redisConfig: RedisOptions = {
   connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '5000', 10), // 5 seconds
   commandTimeout: 5000, // 5 seconds for command execution
 
-  // Connection options
-  lazyConnect: isDevelopment, // Lazy connect in development to not block startup
+  // Connection options - always lazy connect to avoid blocking during build
+  lazyConnect: true,
   enableReadyCheck: true,
-  enableOfflineQueue: !isDevelopment, // Disable offline queue in dev to fail fast
+  enableOfflineQueue: !isDevelopment && !isBuildTime, // Disable offline queue in dev/build to fail fast
 
   // TLS for production
   // Render Redis provides valid TLS certificates signed by trusted CAs
@@ -64,43 +67,63 @@ const redisConfig: RedisOptions = {
   }),
 };
 
-// Singleton Redis client
+// Singleton Redis client - lazy initialized
 declare global {
-   
   var redis: Redis | undefined;
 }
 
-export const redis =
-  global.redis ||
-  new Redis(redisConfig);
+let _redis: Redis | undefined;
 
-// Store in global for hot-reload in development
-if (process.env.NODE_ENV !== 'production') {
-  global.redis = redis;
-}
+// Lazy getter for Redis instance
+const getRedisInstance = (): Redis => {
+  if (!_redis) {
+    if (global.redis) {
+      _redis = global.redis;
+    } else {
+      _redis = new Redis(redisConfig);
 
-// Error handling
-redis.on('error', (error) => {
-  console.error('Redis connection error:', error);
+      // Store in global for hot-reload in development
+      if (process.env.NODE_ENV !== 'production') {
+        global.redis = _redis;
+      }
+
+      // Error handling
+      _redis.on('error', (error) => {
+        console.error('Redis connection error:', error);
+      });
+
+      _redis.on('connect', () => {
+        console.log('Redis connected successfully');
+      });
+
+      _redis.on('ready', () => {
+        console.log('Redis ready to accept commands');
+      });
+
+      _redis.on('reconnecting', () => {
+        console.warn('Redis reconnecting...');
+      });
+    }
+  }
+  return _redis;
+};
+
+// Export a proxy that lazily initializes Redis on first access
+export const redis = new Proxy({} as Redis, {
+  get(_, prop) {
+    const instance = getRedisInstance();
+    const value = (instance as any)[prop];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
 });
 
-redis.on('connect', () => {
-  console.log('Redis connected successfully');
-});
-
-redis.on('ready', () => {
-  console.log('Redis ready to accept commands');
-});
-
-redis.on('reconnecting', () => {
-  console.warn('Redis reconnecting...');
-});
-
-// Graceful shutdown
+// Graceful shutdown - only if Redis was initialized
 const shutdownRedis = async (signal: string) => {
-  console.log(`Received ${signal}, closing Redis connection...`);
-  await redis.quit();
-  console.log('Redis connection closed.');
+  if (_redis) {
+    console.log(`Received ${signal}, closing Redis connection...`);
+    await _redis.quit();
+    console.log('Redis connection closed.');
+  }
   process.exit(0);
 };
 
@@ -257,10 +280,7 @@ export const sessionManager = {
 
 // Cache Management
 const CACHE_PREFIX = 'cache';
-const CACHE_DEFAULT_TTL = parseInt(
-  process.env.REDIS_CACHE_DEFAULT_TTL || '300',
-  10
-); // 5 minutes in seconds
+const CACHE_DEFAULT_TTL = parseInt(process.env.REDIS_CACHE_DEFAULT_TTL || '300', 10); // 5 minutes in seconds
 
 export const cacheManager = {
   /**
@@ -269,11 +289,7 @@ export const cacheManager = {
    * @param data - Data to cache
    * @param ttl - Time to live in seconds (default: 5 minutes)
    */
-  async set(
-    key: string,
-    data: any,
-    ttl: number = CACHE_DEFAULT_TTL
-  ): Promise<void> {
+  async set(key: string, data: any, ttl: number = CACHE_DEFAULT_TTL): Promise<void> {
     const cacheKey = `${CACHE_PREFIX}:${key}`;
     await redis.setex(cacheKey, ttl, JSON.stringify(data));
   },
