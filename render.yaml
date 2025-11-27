@@ -117,7 +117,7 @@ databases:
   - name: legal-platform-db
     databaseName: legal_platform_prod
     user: legal_platform_user
-    plan: basic # New Render plan - 1GB storage
+    plan: basic-1gb # 1GB RAM, pay-per-GB storage
     region: oregon # US West
     ipAllowList: [] # Empty = allow all Render services (recommended)
 
