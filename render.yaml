@@ -117,7 +117,7 @@ databases:
   - name: legal-platform-db
     databaseName: legal_platform_prod
     user: legal_platform_user
-    plan: standard # 25GB storage, daily backups with 7-day retention
+    plan: basic # New Render plan - 1GB storage
     region: oregon # US West
     ipAllowList: [] # Empty = allow all Render services (recommended)
 
