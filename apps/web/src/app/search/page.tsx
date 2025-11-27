@@ -9,7 +9,7 @@
 
 import { useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useSearch, SearchFilters } from '@/hooks/useSearch';
+import { useSearch, type SearchFilters } from '@/hooks/useSearch';
 import { SearchFiltersPanel, SearchResults } from '@/components/search';
 import type { CaseType, CaseStatus } from '@legal-platform/types';
 
@@ -38,7 +38,10 @@ export default function SearchPage() {
     const q = searchParams.get('q');
     const mode = searchParams.get('mode') as any;
     const caseTypes = searchParams.get('caseTypes')?.split(',').filter(Boolean) as CaseType[];
-    const caseStatuses = searchParams.get('caseStatuses')?.split(',').filter(Boolean) as CaseStatus[];
+    const caseStatuses = searchParams
+      .get('caseStatuses')
+      ?.split(',')
+      .filter(Boolean) as CaseStatus[];
     const documentTypes = searchParams.get('documentTypes')?.split(',').filter(Boolean);
     const dateStart = searchParams.get('dateStart');
     const dateEnd = searchParams.get('dateEnd');
@@ -78,8 +81,10 @@ export default function SearchPage() {
       if (newQuery) params.set('q', newQuery);
       if (searchMode !== 'HYBRID') params.set('mode', searchMode);
       if (newFilters.caseTypes?.length) params.set('caseTypes', newFilters.caseTypes.join(','));
-      if (newFilters.caseStatuses?.length) params.set('caseStatuses', newFilters.caseStatuses.join(','));
-      if (newFilters.documentTypes?.length) params.set('documentTypes', newFilters.documentTypes.join(','));
+      if (newFilters.caseStatuses?.length)
+        params.set('caseStatuses', newFilters.caseStatuses.join(','));
+      if (newFilters.documentTypes?.length)
+        params.set('documentTypes', newFilters.documentTypes.join(','));
       if (newFilters.dateRange) {
         params.set('dateStart', newFilters.dateRange.start.toISOString().split('T')[0]);
         params.set('dateEnd', newFilters.dateRange.end.toISOString().split('T')[0]);
@@ -144,9 +149,7 @@ export default function SearchPage() {
                 <p className="text-red-700 dark:text-red-400">
                   A apărut o eroare în timpul căutării. Vă rugăm să încercați din nou.
                 </p>
-                <p className="text-sm text-red-600 dark:text-red-500 mt-1">
-                  {error.message}
-                </p>
+                <p className="text-sm text-red-600 dark:text-red-500 mt-1">{error.message}</p>
               </div>
             ) : (
               <SearchResults
