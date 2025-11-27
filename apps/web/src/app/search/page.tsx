@@ -94,15 +94,6 @@ export default function SearchPage() {
     [router, searchMode]
   );
 
-  // Handle search submission
-  const handleSearch = useCallback(
-    (searchQuery: string) => {
-      search(searchQuery, filters);
-      updateURL(searchQuery, filters);
-    },
-    [search, filters, updateURL]
-  );
-
   // Handle filter changes
   const handleFiltersChange = useCallback(
     (newFilters: SearchFilters) => {
