@@ -163,9 +163,7 @@ export default function AIUsagePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500">Total Tokens</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {formatNumber(usageStats.totalTokens)}
-          </p>
+          <p className="text-2xl font-bold text-gray-900">{formatNumber(usageStats.totalTokens)}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500">Total Cost</p>
@@ -181,9 +179,7 @@ export default function AIUsagePage() {
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500">Avg Latency</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {usageStats.avgLatencyMs.toFixed(0)}ms
-          </p>
+          <p className="text-2xl font-bold text-gray-900">{usageStats.avgLatencyMs.toFixed(0)}ms</p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500">Cache Hit Rate</p>
@@ -197,17 +193,11 @@ export default function AIUsagePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Token Usage Over Time */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Token Usage Over Time
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Token Usage Over Time</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={dailyTrend}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                tickFormatter={(value) => value.slice(5)}
-                fontSize={12}
-              />
+              <XAxis dataKey="date" tickFormatter={(value) => value.slice(5)} fontSize={12} />
               <YAxis tickFormatter={(value) => formatNumber(value)} fontSize={12} />
               <Tooltip
                 formatter={(value: number) => formatNumber(value)}
@@ -227,9 +217,7 @@ export default function AIUsagePage() {
 
         {/* Cost by Model */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Cost by Model
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Cost by Model</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -240,15 +228,10 @@ export default function AIUsagePage() {
                 outerRadius={100}
                 paddingAngle={5}
                 dataKey="value"
-                label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
+                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
               >
                 {modelPieData.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip formatter={(value: number) => formatCurrency(value)} />
@@ -259,9 +242,7 @@ export default function AIUsagePage() {
 
       {/* Operation Types Chart */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Usage by Operation Type
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Usage by Operation Type</h2>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={usageStats.byOperation}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -288,9 +269,7 @@ export default function AIUsagePage() {
 
       {/* Provider Health */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Provider Health Status
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Provider Health Status</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
