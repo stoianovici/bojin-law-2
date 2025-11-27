@@ -30,7 +30,6 @@ export default function SearchPage() {
     setQuery,
     filters,
     setFilters,
-    clearSearch,
   } = useSearch();
 
   // Parse URL params on mount
