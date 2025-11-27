@@ -46,17 +46,6 @@ services:
     maxmemoryPolicy: allkeys-lru # LRU eviction when memory limit reached
     ipAllowList: [] # Empty = allow all Render services
 
-##############################################################################
-# Database - PostgreSQL with pgvector
-##############################################################################
-databases:
-  - name: legal-platform-db
-    databaseName: legal_platform_prod
-    user: legal_platform_user
-    plan: standard # 25GB storage, daily backups with 7-day retention
-    region: oregon # US West
-    ipAllowList: [] # Empty = allow all Render services (recommended)
-
   ##############################################################################
   # Legacy Document Import App (Story 3.2.5)
   # Standalone app for PST import and document categorization
@@ -66,9 +55,8 @@ databases:
     runtime: node
     repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
-    rootDir: apps/legacy-import
-    buildCommand: pnpm install && pnpm build
-    startCommand: pnpm start
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @legal-platform/legacy-import build
+    startCommand: pnpm --filter @legal-platform/legacy-import start -- -p $PORT
     plan: starter # 512MB RAM - upgrade for large PST processing
     numInstances: 1
     region: oregon # Same region as other services
@@ -77,7 +65,7 @@ databases:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
-        value: "20"
+        value: '20'
 
       # App URL - Update after first deploy with actual URL
       - key: NEXT_PUBLIC_APP_URL
@@ -121,6 +109,17 @@ databases:
         sync: false
 
     healthCheckPath: /api/health
+
+##############################################################################
+# Database - PostgreSQL with pgvector
+##############################################################################
+databases:
+  - name: legal-platform-db
+    databaseName: legal_platform_prod
+    user: legal_platform_user
+    plan: standard # 25GB storage, daily backups with 7-day retention
+    region: oregon # US West
+    ipAllowList: [] # Empty = allow all Render services (recommended)
 
 ##############################################################################
 # Future Services (uncomment when implemented)
