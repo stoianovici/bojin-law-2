@@ -65,7 +65,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
-        value: '20'
+        value: '22'
 
       # App URL - Update after first deploy with actual URL
       - key: NEXT_PUBLIC_APP_URL
