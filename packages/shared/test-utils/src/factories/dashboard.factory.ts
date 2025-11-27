@@ -89,8 +89,13 @@ function generateComparisonText(useRomanian: boolean): string {
  * @param useRomanian - Whether to use Romanian labels (default: 50% chance)
  * @returns KPIMetric entity
  */
-export function createKPIMetric(overrides: KPIMetricOverrides = {}, useRomanian: boolean = faker.datatype.boolean()): KPIMetric {
-  const trend = overrides.trend || faker.helpers.arrayElement<'up' | 'down' | 'neutral'>(['up', 'down', 'neutral']);
+export function createKPIMetric(
+  overrides: KPIMetricOverrides = {},
+  useRomanian: boolean = faker.datatype.boolean()
+): KPIMetric {
+  const trend =
+    overrides.trend ||
+    faker.helpers.arrayElement<'up' | 'down' | 'neutral'>(['up', 'down', 'neutral']);
   const trendPercentage = overrides.trendPercentage ?? faker.number.int({ min: 1, max: 30 });
 
   return {
@@ -100,7 +105,15 @@ export function createKPIMetric(overrides: KPIMetricOverrides = {}, useRomanian:
     trend,
     trendPercentage,
     comparisonText: generateComparisonText(useRomanian),
-    icon: faker.helpers.arrayElement(['briefcase', 'clock', 'target', 'users', 'file', 'check', 'calendar']),
+    icon: faker.helpers.arrayElement([
+      'briefcase',
+      'clock',
+      'target',
+      'users',
+      'file',
+      'check',
+      'calendar',
+    ]),
     ...overrides,
   };
 }
@@ -112,15 +125,25 @@ export function createKPIMetric(overrides: KPIMetricOverrides = {}, useRomanian:
  * @param useRomanian - Whether to use Romanian labels
  * @returns Array of KPIMetric entities
  */
-export function createKPIMetrics(count: number, overrides: KPIMetricOverrides = {}, useRomanian: boolean = faker.datatype.boolean()): KPIMetric[] {
+export function createKPIMetrics(
+  count: number,
+  overrides: KPIMetricOverrides = {},
+  useRomanian: boolean = faker.datatype.boolean()
+): KPIMetric[] {
   return Array.from({ length: count }, () => createKPIMetric(overrides, useRomanian));
 }
 
 /**
  * Generate AI suggestion text based on role
  */
-function generateAISuggestionText(role: 'Partner' | 'Associate' | 'Paralegal', type: 'insight' | 'alert' | 'recommendation'): string {
-  const suggestions: Record<'Partner' | 'Associate' | 'Paralegal', Record<'insight' | 'alert' | 'recommendation', string[]>> = {
+function generateAISuggestionText(
+  role: 'Partner' | 'Associate' | 'Paralegal',
+  type: 'insight' | 'alert' | 'recommendation'
+): string {
+  const suggestions: Record<
+    'Partner' | 'Associate' | 'Paralegal',
+    Record<'insight' | 'alert' | 'recommendation', string[]>
+  > = {
     Partner: {
       insight: [
         'Revizuiește cazul #2345 - termen urgent în 3 zile',
@@ -186,7 +209,10 @@ function generateAISuggestionText(role: 'Partner' | 'Associate' | 'Paralegal', t
 /**
  * Generate action text based on type
  */
-function generateActionText(type: 'insight' | 'alert' | 'recommendation', useRomanian: boolean): string | undefined {
+function generateActionText(
+  type: 'insight' | 'alert' | 'recommendation',
+  useRomanian: boolean
+): string | undefined {
   if (!faker.datatype.boolean({ probability: 0.7 })) {
     return undefined;
   }
@@ -212,8 +238,20 @@ function generateActionText(type: 'insight' | 'alert' | 'recommendation', useRom
  * @returns AISuggestion entity
  */
 export function createAISuggestion(overrides: AISuggestionOverrides = {}): AISuggestion {
-  const type = overrides.type || faker.helpers.arrayElement<'insight' | 'alert' | 'recommendation'>(['insight', 'alert', 'recommendation']);
-  const role = overrides.role || faker.helpers.arrayElement<'Partner' | 'Associate' | 'Paralegal'>(['Partner', 'Associate', 'Paralegal']);
+  const type =
+    overrides.type ||
+    faker.helpers.arrayElement<'insight' | 'alert' | 'recommendation'>([
+      'insight',
+      'alert',
+      'recommendation',
+    ]);
+  const role =
+    overrides.role ||
+    faker.helpers.arrayElement<'Partner' | 'Associate' | 'Paralegal'>([
+      'Partner',
+      'Associate',
+      'Paralegal',
+    ]);
   const useRomanian = faker.datatype.boolean();
   const actionable = overrides.actionable ?? faker.datatype.boolean({ probability: 0.7 }); // 70% actionable
 
@@ -278,7 +316,10 @@ export function createAISuggestionsForRole(
  * @param overrides - Partial AISuggestion object to override default values
  * @returns Array of AISuggestion entities
  */
-export function createAISuggestions(count: number, overrides: AISuggestionOverrides = {}): AISuggestion[] {
+export function createAISuggestions(
+  count: number,
+  overrides: AISuggestionOverrides = {}
+): AISuggestion[] {
   return Array.from({ length: count }, () => createAISuggestion(overrides));
 }
 
@@ -290,19 +331,64 @@ export function createAISuggestions(count: number, overrides: AISuggestionOverri
  * Romanian first names for realistic test data
  */
 const ROMANIAN_FIRST_NAMES = [
-  'Alexandru', 'Andrei', 'Adrian', 'Bogdan', 'Cătălin', 'Cristian', 'Dan', 'Emil',
-  'Florin', 'Gabriel', 'Ion', 'Liviu', 'Marius', 'Mihai', 'Nicolae', 'Radu',
-  'Ștefan', 'Vasile', 'Victor', 'Vlad',
-  'Alexandra', 'Alina', 'Ana', 'Andreea', 'Cristina', 'Elena', 'Ioana', 'Larisa',
-  'Maria', 'Mihaela', 'Monica', 'Ramona', 'Roxana', 'Simona', 'Valentina', 'Viorica'
+  'Alexandru',
+  'Andrei',
+  'Adrian',
+  'Bogdan',
+  'Cătălin',
+  'Cristian',
+  'Dan',
+  'Emil',
+  'Florin',
+  'Gabriel',
+  'Ion',
+  'Liviu',
+  'Marius',
+  'Mihai',
+  'Nicolae',
+  'Radu',
+  'Ștefan',
+  'Vasile',
+  'Victor',
+  'Vlad',
+  'Alexandra',
+  'Alina',
+  'Ana',
+  'Andreea',
+  'Cristina',
+  'Elena',
+  'Ioana',
+  'Larisa',
+  'Maria',
+  'Mihaela',
+  'Monica',
+  'Ramona',
+  'Roxana',
+  'Simona',
+  'Valentina',
+  'Viorica',
 ];
 
 /**
  * Romanian last names for realistic test data
  */
 const ROMANIAN_LAST_NAMES = [
-  'Popescu', 'Ionescu', 'Popa', 'Pop', 'Radu', 'Georgescu', 'Stan', 'Dumitrescu',
-  'Munteanu', 'Constantin', 'Dima', 'Stoica', 'Nistor', 'Stanciu', 'Șerban', 'Țîrlea'
+  'Popescu',
+  'Ionescu',
+  'Popa',
+  'Pop',
+  'Radu',
+  'Georgescu',
+  'Stan',
+  'Dumitrescu',
+  'Munteanu',
+  'Constantin',
+  'Dima',
+  'Stoica',
+  'Nistor',
+  'Stanciu',
+  'Șerban',
+  'Țîrlea',
 ];
 
 /**
@@ -393,7 +479,13 @@ export function generateEmployeeUtilization(count: number) {
         'Client Meeting',
       ]),
       estimate: faker.number.int({ min: 1, max: 8 }),
-      type: faker.helpers.arrayElement(['Research', 'Document', 'Meeting', 'Court', 'Administrative']),
+      type: faker.helpers.arrayElement([
+        'Research',
+        'Document',
+        'Meeting',
+        'Court',
+        'Administrative',
+      ]),
     }));
 
     return {
@@ -460,7 +552,11 @@ export function generateHighValueCases(count: number) {
       title: generateCaseTitle(useRomanian),
       value,
       assignedPartner: generateRomanianName(),
-      priority: faker.helpers.arrayElement<'strategic' | 'vip' | 'highValue'>(['strategic', 'vip', 'highValue']),
+      priority: faker.helpers.arrayElement<'strategic' | 'vip' | 'normal'>([
+        'strategic',
+        'vip',
+        'normal',
+      ]),
     };
   });
 }
@@ -511,7 +607,11 @@ export function generateAIInsights(count: number) {
           ],
         };
 
-    const type = faker.helpers.arrayElement<'pattern' | 'bottleneck' | 'opportunity'>(['pattern', 'bottleneck', 'opportunity']);
+    const type = faker.helpers.arrayElement<'pattern' | 'bottleneck' | 'opportunity'>([
+      'pattern',
+      'bottleneck',
+      'opportunity',
+    ]);
 
     return {
       id: faker.string.uuid(),
@@ -527,7 +627,13 @@ export function generateAIInsights(count: number) {
 /**
  * Create a default widget position
  */
-function createWidgetPosition(id: string, x: number, y: number, w: number, h: number): WidgetPosition {
+function createWidgetPosition(
+  id: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): WidgetPosition {
   return {
     i: id,
     x,
@@ -554,7 +660,12 @@ export function createSupervisedCasesWidget(
     caseNumber: `C-${faker.number.int({ min: 1000, max: 9999 })}`,
     title: generateCaseTitle(useRomanian),
     clientName: generateRomanianClientName(),
-    status: faker.helpers.arrayElement<'Active' | 'OnHold' | 'Closed' | 'Archived'>(['Active', 'OnHold', 'Closed', 'Archived']),
+    status: faker.helpers.arrayElement<'Active' | 'OnHold' | 'Closed' | 'Archived'>([
+      'Active',
+      'OnHold',
+      'Closed',
+      'Archived',
+    ]),
     supervisorId,
     teamSize: faker.number.int({ min: 2, max: 8 }),
     riskLevel: faker.helpers.arrayElement<'high' | 'medium' | 'low'>(['high', 'medium', 'low']),
@@ -614,7 +725,7 @@ export function createFirmTasksOverviewWidget(
     ? ['Cercetare', 'Redactare Document', 'Întâlnire', 'Instanță', 'Administrativ', 'Revizuire']
     : ['Research', 'Document Creation', 'Meeting', 'Court', 'Administrative', 'Review'];
 
-  const taskBreakdown = taskTypes.map(type => ({
+  const taskBreakdown = taskTypes.map((type) => ({
     type,
     count: faker.number.int({ min: 5, max: 50 }),
   }));
@@ -646,7 +757,11 @@ export function createFirmTasksOverviewWidget(
       dueTodayCount,
       dueThisWeekCount,
       completionRate,
-      avgCompletionRateTrend: faker.helpers.arrayElement<'up' | 'down' | 'neutral'>(['up', 'down', 'neutral']),
+      avgCompletionRateTrend: faker.helpers.arrayElement<'up' | 'down' | 'neutral'>([
+        'up',
+        'down',
+        'neutral',
+      ]),
     },
     taskBreakdown,
     priorityTasks,

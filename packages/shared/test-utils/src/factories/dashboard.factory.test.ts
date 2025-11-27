@@ -45,7 +45,12 @@ describe('Dashboard Factory', () => {
     });
 
     it('should allow overriding default values', () => {
-      const kpi = createKPIMetric({ label: 'Custom KPI', value: 999, trend: 'up', trendPercentage: 42 });
+      const kpi = createKPIMetric({
+        label: 'Custom KPI',
+        value: 999,
+        trend: 'up',
+        trendPercentage: 42,
+      });
 
       expect(kpi.label).toBe('Custom KPI');
       expect(kpi.value).toBe(999);
@@ -118,7 +123,10 @@ describe('Dashboard Factory', () => {
 
       if (actionableSuggestion.actionable) {
         // actionText is optional even when actionable is true, but should be present in most cases
-        expect(typeof actionableSuggestion.actionText === 'string' || actionableSuggestion.actionText === undefined).toBe(true);
+        expect(
+          typeof actionableSuggestion.actionText === 'string' ||
+            actionableSuggestion.actionText === undefined
+        ).toBe(true);
       }
     });
 
@@ -430,7 +438,7 @@ describe('Dashboard Factory', () => {
           title: expect.any(String),
           value: expect.any(Number),
           assignedPartner: expect.any(String),
-          priority: expect.stringMatching(/^(strategic|vip|highValue)$/),
+          priority: expect.stringMatching(/^(strategic|vip|normal)$/),
         });
       });
     });
@@ -474,7 +482,9 @@ describe('Dashboard Factory', () => {
 
     it('should support Romanian insight messages', () => {
       const insights = generateAIInsights(20);
-      const hasRomanianText = insights.some((i) => i.message.includes('ă') || i.message.includes('ț') || i.message.includes('Ș'));
+      const hasRomanianText = insights.some(
+        (i) => i.message.includes('ă') || i.message.includes('ț') || i.message.includes('Ș')
+      );
 
       expect(hasRomanianText).toBe(true);
     });
@@ -538,7 +548,9 @@ describe('Dashboard Factory', () => {
       const hasRomanianContent = widgets.some(
         (w) =>
           w.title.includes('ă') ||
-          w.cases.some((c) => c.clientName.includes('ă') || c.clientName.includes('ș') || c.title.includes('ă'))
+          w.cases.some(
+            (c) => c.clientName.includes('ă') || c.clientName.includes('ș') || c.title.includes('ă')
+          )
       );
 
       expect(hasRomanianContent).toBe(true);
@@ -630,7 +642,9 @@ describe('Dashboard Factory', () => {
       expect(widget.taskMetrics.completionRate).toBeLessThanOrEqual(95);
 
       // Overdue count should be reasonable percentage of total
-      expect(widget.taskMetrics.overdueCount).toBeLessThanOrEqual(widget.taskMetrics.totalActiveTasks * 0.15);
+      expect(widget.taskMetrics.overdueCount).toBeLessThanOrEqual(
+        widget.taskMetrics.totalActiveTasks * 0.15
+      );
     });
 
     it('should generate task breakdown by type', () => {
