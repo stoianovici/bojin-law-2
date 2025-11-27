@@ -6,23 +6,17 @@
  * - prisma: Singleton Prisma Client instance with connection pooling
  * - checkDatabaseHealth: Health check function for monitoring
  * - databaseConfig: Current database configuration
- * - redis: Singleton Redis client instance
- * - sessionManager: Redis session management utilities
- * - cacheManager: Redis cache management utilities
- * - checkRedisHealth: Redis health check function
+ * - redis: Singleton Redis client instance (via separate import)
+ * - sessionManager: Redis session management utilities (via separate import)
+ * - cacheManager: Redis cache management utilities (via separate import)
+ * - checkRedisHealth: Redis health check function (via separate import)
+ *
+ * Note: Redis exports are in a separate file to avoid initialization during build.
+ * Import Redis separately: import { redis } from '@legal-platform/database/redis';
  */
 
 // PostgreSQL / Prisma exports
 export { prisma, checkDatabaseHealth, databaseConfig } from './client';
-
-// Redis exports
-export {
-  redis,
-  sessionManager,
-  cacheManager,
-  checkRedisHealth,
-  getRedisConfig,
-} from './redis';
 
 // Re-export Prisma Client types for convenience
 export type { PrismaClient } from '@prisma/client';

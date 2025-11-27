@@ -4,6 +4,18 @@
   "description": "Database schemas, migrations, and Prisma client for Legal Platform",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./redis": {
+      "types": "./dist/redis.d.ts",
+      "import": "./dist/redis.js",
+      "require": "./dist/redis.js"
+    }
+  },
   "scripts": {
     "build": "prisma generate --schema=./prisma/schema.prisma && tsc",
     "dev": "tsc --watch",
