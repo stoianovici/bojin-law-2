@@ -83,6 +83,11 @@ export function createCase(overrides: CaseOverrides = {}): Case {
     billingType: faker.helpers.arrayElement(['Hourly', 'Fixed'] as const),
     fixedAmount: null,
     customRates: null,
+    // Retainer fields (Story 2.11.2)
+    retainerAmount: null,
+    retainerPeriod: null,
+    retainerRollover: false,
+    retainerAutoRenew: false,
     createdAt: openedDate,
     updatedAt: closedDate || faker.date.recent({ days: 30 }),
     ...overrides,
