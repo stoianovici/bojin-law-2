@@ -1,0 +1,1114 @@
+// Prisma Schema for Legal Platform
+// Generated for Story 2.2: Cloud Infrastructure and Database Setup
+// Database: PostgreSQL 16 with pgvector extension
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector, uuid_ossp(map: "uuid-ossp"), pg_trgm]
+}
+
+// This is a minimal schema for Story 2.2 (infrastructure setup)
+// Full schema will be added in later stories when implementing:
+// - Story 2.4: Authentication (users, sessions) - IN PROGRESS
+// - Story 2.6: Case Management (cases, parties, court_info)
+// - Story 2.7: Document Management (documents, document_versions)
+// - Story 2.8: Task Management (tasks, time_entries)
+
+// Placeholder model to validate Prisma setup
+// This will be replaced with actual models in future stories
+model DatabaseHealth {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  timestamp DateTime @default(now())
+  status    String   @default("healthy")
+  message   String?
+  metadata  Json?
+
+  @@map("database_health")
+}
+
+// ============================================================================
+// Story 2.4: Authentication with Azure AD
+// ============================================================================
+
+// Firm model - law firm entity (Story 2.8.1)
+model Firm {
+  id           String   @id @default(uuid())
+  name         String   @db.VarChar(200)
+  defaultRates Json?    @map("default_rates") // { partnerRate: number, associateRate: number, paralegalRate: number }
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  users       User[]
+  clients     Client[]
+  cases       Case[]
+  rateHistory CaseRateHistory[]
+  approvals   CaseApproval[] // Story 2.8.2
+  timeEntries TimeEntry[]
+
+  // Relations (Story 2.8.4)
+  documents         Document[]
+  caseDocuments     CaseDocument[]
+  documentAuditLogs DocumentAuditLog[]
+
+  // Relations (Story 2.11.2)
+  retainerUsage RetainerPeriodUsage[]
+
+  @@map("firms")
+}
+
+// User model for authentication and authorization
+// Azure AD integration with automatic user provisioning
+model User {
+  id          String     @id @default(uuid())
+  firmId      String?    @map("firm_id")
+  email       String     @unique @db.VarChar(255)
+  firstName   String     @map("first_name") @db.VarChar(100)
+  lastName    String     @map("last_name") @db.VarChar(100)
+  role        UserRole   @default(Paralegal)
+  status      UserStatus @default(Pending)
+  azureAdId   String     @unique @map("azure_ad_id") @db.VarChar(255)
+  preferences Json       @default("{}")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  lastActive  DateTime   @default(now()) @map("last_active") @db.Timestamptz
+
+  // Relations (Story 2.4.1)
+  auditLogsAsUser  UserAuditLog[] @relation("AuditLogUser")
+  auditLogsAsAdmin UserAuditLog[] @relation("AuditLogAdmin")
+
+  // Relations (Story 2.6)
+  cases             CaseTeam[]
+  assignedCases     CaseTeam[]     @relation("AssignedBy")
+  caseAuditLogs     CaseAuditLog[]
+  createdCaseActors CaseActor[]
+
+  // Relations (Story 2.8.1)
+  firm        Firm?             @relation(fields: [firmId], references: [id])
+  rateChanges CaseRateHistory[]
+
+  // Relations (Story 2.8.2)
+  submittedApprovals CaseApproval[] @relation("CaseApprovalSubmitter")
+  reviewedApprovals  CaseApproval[] @relation("CaseApprovalReviewer")
+  notifications      Notification[]
+  timeEntries        TimeEntry[]
+
+  // Relations (Story 2.8.4)
+  uploadedDocuments Document[]         @relation("DocumentUploader")
+  linkedDocuments   CaseDocument[]     @relation("DocumentLinker")
+  documentAuditLogs DocumentAuditLog[] @relation("DocumentAuditUser")
+
+  // Relations (Story 2.9)
+  documentVersions DocumentVersion[] @relation("DocumentVersionCreator")
+
+  @@map("users")
+}
+
+// User roles within the law firm
+enum UserRole {
+  Partner
+  Associate
+  Paralegal
+  BusinessOwner // Story 2.11.1: Firm-wide financial data access
+}
+
+// User account status
+// Pending: New user awaiting partner activation (Story 2.4.1)
+// Active: User can access the system
+// Inactive: User account disabled
+enum UserStatus {
+  Pending
+  Active
+  Inactive
+}
+
+// ============================================================================
+// Story 2.4.1: Partner User Management
+// ============================================================================
+
+// Audit log for user management operations
+// Tracks all user activation, deactivation, and role changes
+model UserAuditLog {
+  id          String          @id @default(uuid())
+  userId      String          @map("user_id")
+  action      UserAuditAction
+  adminUserId String          @map("admin_user_id")
+  oldValue    String?         @map("old_value") @db.VarChar(255)
+  newValue    String?         @map("new_value") @db.VarChar(255)
+  timestamp   DateTime        @default(now()) @db.Timestamptz
+
+  user  User @relation("AuditLogUser", fields: [userId], references: [id])
+  admin User @relation("AuditLogAdmin", fields: [adminUserId], references: [id])
+
+  @@map("user_audit_logs")
+}
+
+// User audit actions for tracking management operations
+enum UserAuditAction {
+  Activated
+  Deactivated
+  RoleChanged
+}
+
+// ============================================================================
+// Story 2.5: Microsoft Graph API Integration Foundation
+// ============================================================================
+
+// Graph API webhook subscriptions for email and file notifications
+// Subscriptions expire every 3 days and require renewal
+model GraphSubscription {
+  id                 String    @id @default(uuid())
+  subscriptionId     String    @unique @map("subscription_id") @db.VarChar(255)
+  resource           String    @db.VarChar(500)
+  changeTypes        String    @map("change_types") @db.VarChar(255)
+  notificationUrl    String    @map("notification_url") @db.Text
+  clientState        String?   @map("client_state") @db.VarChar(255)
+  expirationDateTime DateTime  @map("expiration_datetime") @db.Timestamptz
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  lastRenewedAt      DateTime? @map("last_renewed_at") @db.Timestamptz
+  isActive           Boolean   @default(true) @map("is_active")
+
+  @@index([expirationDateTime])
+  @@index([isActive])
+  @@map("graph_subscriptions")
+}
+
+// ============================================================================
+// Story 2.6: Case Management Data Model and API
+// ============================================================================
+
+// Case status lifecycle
+enum CaseStatus {
+  PendingApproval
+  Active
+  OnHold
+  Closed
+  Archived
+}
+
+// Case type categorization
+enum CaseType {
+  Litigation
+  Contract
+  Advisory
+  Criminal
+  Other
+}
+
+// External party roles in a case
+enum CaseActorRole {
+  Client
+  OpposingParty
+  OpposingCounsel
+  Witness
+  Expert
+}
+
+// Client entity - firm's client relationships
+model Client {
+  id          String   @id @default(uuid())
+  firmId      String   @map("firm_id")
+  name        String   @db.VarChar(200)
+  contactInfo Json     @default("{}") @map("contact_info")
+  address     String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  firm      Firm       @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  cases     Case[]
+  documents Document[] // Story 2.8.4 - Documents owned by this client
+
+  @@unique([firmId, name])
+  @@index([firmId])
+  @@map("clients")
+}
+
+// Billing type enum (Story 2.8.1, 2.11.2)
+enum BillingType {
+  Hourly
+  Fixed
+  Retainer // Story 2.11.2: Retainer billing support
+}
+
+// Retainer period enum (Story 2.11.2)
+enum RetainerPeriod {
+  Monthly
+  Quarterly
+  Annually
+}
+
+// Case entity - legal cases managed by the firm
+model Case {
+  id          String     @id @default(uuid())
+  firmId      String     @map("firm_id")
+  caseNumber  String     @map("case_number") @db.VarChar(100)
+  title       String     @db.VarChar(500)
+  clientId    String     @map("client_id")
+  status      CaseStatus @default(Active)
+  type        CaseType
+  description String     @db.Text
+  openedDate  DateTime   @map("opened_date") @db.Date
+  closedDate  DateTime?  @map("closed_date") @db.Date
+  value       Decimal?   @db.Decimal(15, 2)
+  metadata    Json       @default("{}")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Billing fields (Story 2.8.1)
+  billingType BillingType @default(Hourly) @map("billing_type")
+  fixedAmount Decimal?    @map("fixed_amount") @db.Decimal(15, 2)
+  customRates Json?       @map("custom_rates") // { partnerRate?: number, associateRate?: number, paralegalRate?: number }
+
+  // Retainer fields (Story 2.11.2)
+  retainerAmount    Decimal?        @map("retainer_amount") @db.Decimal(15, 2)
+  retainerPeriod    RetainerPeriod? @map("retainer_period")
+  retainerRollover  Boolean         @default(false) @map("retainer_rollover")
+  retainerAutoRenew Boolean         @default(false) @map("retainer_auto_renew")
+
+  // Search fields (Story 2.10)
+  searchText       String?                              @map("search_text") @db.Text // Concatenated searchable text for full-text search
+  contentEmbedding Unsupported("vector(768)")?          @map("content_embedding") // multilingual-e5-base embedding for semantic search
+
+  // Relations
+  firm        Firm              @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  client      Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  teamMembers CaseTeam[]
+  auditLogs   CaseAuditLog[]
+  actors      CaseActor[]
+  rateHistory CaseRateHistory[]
+  approval    CaseApproval? // Story 2.8.2 - Only present for cases requiring approval
+  timeEntries TimeEntry[]
+  documents   CaseDocument[] // Story 2.8.4 - Documents linked to this case
+  retainerUsage RetainerPeriodUsage[] // Story 2.11.2 - Retainer usage tracking
+
+  @@unique([firmId, caseNumber])
+  @@index([firmId])
+  @@index([clientId])
+  @@index([status])
+  @@index([openedDate])
+  @@map("cases")
+}
+
+// Case team assignments - many-to-many between Case and User
+model CaseTeam {
+  id         String   @id @default(uuid())
+  caseId     String   @map("case_id")
+  userId     String   @map("user_id")
+  role       String   @db.VarChar(50)
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz
+  assignedBy String?  @map("assigned_by")
+
+  // Relations
+  case     Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assigner User? @relation("AssignedBy", fields: [assignedBy], references: [id], onDelete: SetNull)
+
+  @@unique([caseId, userId])
+  @@index([caseId])
+  @@index([userId])
+  @@map("case_team")
+}
+
+// Case audit log - tracks all case modifications
+model CaseAuditLog {
+  id        String   @id @default(uuid())
+  caseId    String   @map("case_id")
+  userId    String?  @map("user_id")
+  action    String   @db.VarChar(100)
+  fieldName String?  @map("field_name") @db.VarChar(100)
+  oldValue  String?  @map("old_value") @db.Text
+  newValue  String?  @map("new_value") @db.Text
+  timestamp DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  case Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([timestamp])
+  @@map("case_audit_logs")
+}
+
+// Case actors - external parties involved in the case
+model CaseActor {
+  id           String        @id @default(uuid())
+  caseId       String        @map("case_id")
+  role         CaseActorRole
+  name         String        @db.VarChar(200)
+  organization String?       @db.VarChar(200)
+  email        String?       @db.VarChar(255)
+  phone        String?       @db.VarChar(50)
+  address      String?       @db.Text
+  notes        String?       @db.Text
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  createdBy    String?       @map("created_by")
+
+  // Relations
+  case    Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  creator User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@map("case_actors")
+}
+
+// ============================================================================
+// Story 2.8.2: Case Approval Workflow
+// ============================================================================
+
+// Approval status for case review workflow
+enum ApprovalStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+// Case approval tracking - one record per case requiring approval
+model CaseApproval {
+  id              String         @id @default(uuid())
+  caseId          String         @unique @map("case_id")
+  submittedBy     String         @map("submitted_by")
+  submittedAt     DateTime       @default(now()) @map("submitted_at") @db.Timestamptz
+  reviewedBy      String?        @map("reviewed_by")
+  reviewedAt      DateTime?      @map("reviewed_at") @db.Timestamptz
+  status          ApprovalStatus @default(Pending)
+  rejectionReason String?        @map("rejection_reason") @db.Text
+  revisionCount   Int            @default(0) @map("revision_count")
+  firmId          String         @map("firm_id")
+
+  // Relations
+  case      Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  submitter User  @relation("CaseApprovalSubmitter", fields: [submittedBy], references: [id], onDelete: Restrict)
+  reviewer  User? @relation("CaseApprovalReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  firm      Firm  @relation(fields: [firmId], references: [id], onDelete: Restrict)
+
+  @@index([caseId])
+  @@index([status])
+  @@index([submittedBy])
+  @@index([firmId])
+  @@map("case_approvals")
+}
+
+// ============================================================================
+// Story 2.8.2: Case Approval Workflow - Notifications
+// ============================================================================
+
+// Notification types for approval workflow events
+enum NotificationType {
+  CasePendingApproval // Partner notification when case submitted for approval
+  CaseApproved // Associate notification when case approved
+  CaseRejected // Associate notification when case rejected
+}
+
+// In-app notifications for users
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  title     String           @db.VarChar(200)
+  message   String           @db.Text
+  link      String?          @db.VarChar(500) // Deep link to case detail page
+  read      Boolean          @default(false)
+  caseId    String?          @map("case_id") // Reference to related case
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  readAt    DateTime?        @map("read_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================================================
+// Story 2.8.1: Billing & Rate Management
+// ============================================================================
+
+// Rate type enum for rate history tracking
+enum RateType {
+  partner
+  associate
+  paralegal
+  fixed
+}
+
+// Case rate history - tracks all rate changes for audit trail
+model CaseRateHistory {
+  id        String   @id @default(uuid())
+  caseId    String   @map("case_id")
+  changedAt DateTime @default(now()) @map("changed_at") @db.Timestamptz
+  changedBy String   @map("changed_by")
+  rateType  RateType @map("rate_type")
+  oldRate   Decimal  @map("old_rate") @db.Decimal(15, 2)
+  newRate   Decimal  @map("new_rate") @db.Decimal(15, 2)
+  firmId    String   @map("firm_id")
+
+  // Relations
+  case    Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  changer User @relation(fields: [changedBy], references: [id], onDelete: Restrict)
+  firm    Firm @relation(fields: [firmId], references: [id], onDelete: Restrict)
+
+  @@index([caseId])
+  @@index([changedAt])
+  @@index([firmId])
+  @@map("case_rate_history")
+}
+
+// ============================================================================
+// Time Entry Model - for KPI calculations and billing
+// ============================================================================
+
+model TimeEntry {
+  id          String   @id @default(uuid())
+  caseId      String   @map("case_id")
+  userId      String   @map("user_id")
+  date        DateTime @db.Date
+  hours       Decimal  @db.Decimal(5, 2)
+  hourlyRate  Decimal  @map("hourly_rate") @db.Decimal(15, 2)
+  description String   @db.Text
+  billable    Boolean  @default(true)
+  firmId      String   @map("firm_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Restrict)
+
+  @@index([caseId])
+  @@index([userId])
+  @@index([date])
+  @@index([firmId])
+  @@map("time_entries")
+}
+
+// ============================================================================
+// Story 2.8.4: Cross-Case Document Linking
+// ============================================================================
+
+// Document status enum (Story 2.9)
+enum DocumentStatus {
+  DRAFT
+  FINAL
+  ARCHIVED
+}
+
+// Document entity - owned by Client (not Case) for cross-case sharing
+// Documents are stored at the client level and can be linked to multiple cases
+// Story 2.9: Extended with OneDrive integration fields
+model Document {
+  id          String   @id @default(uuid())
+  clientId    String   @map("client_id")
+  firmId      String   @map("firm_id")
+  fileName    String   @map("file_name") @db.VarChar(500)
+  fileType    String   @map("file_type") @db.VarChar(100)
+  fileSize    Int      @map("file_size") // Size in bytes
+  storagePath String   @map("storage_path") @db.Text // Path: /{firmId}/clients/{clientId}/documents/{documentId}-{fileName}
+  uploadedBy  String   @map("uploaded_by")
+  uploadedAt  DateTime @default(now()) @map("uploaded_at") @db.Timestamptz
+  metadata    Json     @default("{}") // Tags, description, etc.
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Story 2.9: OneDrive integration fields
+  oneDriveId   String?        @map("one_drive_id") @db.VarChar(255) // OneDrive item ID
+  oneDrivePath String?        @map("one_drive_path") @db.Text // Full OneDrive path
+  status       DocumentStatus @default(DRAFT) // Document status
+
+  // Search fields (Story 2.10)
+  metadataEmbedding Unsupported("vector(768)")? @map("metadata_embedding") // multilingual-e5-base embedding for semantic search
+
+  // Relations
+  client    Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  firm      Firm               @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  uploader  User               @relation("DocumentUploader", fields: [uploadedBy], references: [id], onDelete: Restrict)
+  caseLinks CaseDocument[] // Cases this document is linked to
+  auditLogs DocumentAuditLog[]
+  versions  DocumentVersion[] // Story 2.9: Version history
+
+  @@index([clientId])
+  @@index([firmId])
+  @@index([uploadedAt])
+  @@index([fileName])
+  @@index([oneDriveId])
+  @@map("documents")
+}
+
+// CaseDocument join table - many-to-many relationship between Case and Document
+// Allows same document to be linked to multiple cases without duplication
+model CaseDocument {
+  id         String   @id @default(uuid())
+  caseId     String   @map("case_id")
+  documentId String   @map("document_id")
+  linkedBy   String   @map("linked_by")
+  linkedAt   DateTime @default(now()) @map("linked_at") @db.Timestamptz
+  isOriginal Boolean  @default(false) @map("is_original") // True if document was uploaded to this case
+  firmId     String   @map("firm_id")
+
+  // Relations
+  case     Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  linker   User     @relation("DocumentLinker", fields: [linkedBy], references: [id], onDelete: Restrict)
+  firm     Firm     @relation(fields: [firmId], references: [id], onDelete: Restrict)
+
+  @@unique([caseId, documentId]) // Prevent duplicate links
+  @@index([caseId])
+  @@index([documentId])
+  @@index([firmId])
+  @@map("case_documents")
+}
+
+// Document audit action types
+enum DocumentAuditAction {
+  Uploaded // Document was uploaded
+  LinkedToCase // Document linked to a case
+  UnlinkedFromCase // Document unlinked from a case
+  PermanentlyDeleted // Document permanently deleted (Partners only)
+  MetadataUpdated // Document metadata was updated
+}
+
+// Document audit log - tracks all document operations
+model DocumentAuditLog {
+  id         String              @id @default(uuid())
+  documentId String?             @map("document_id") // Nullable for permanent delete (document no longer exists)
+  userId     String              @map("user_id")
+  action     DocumentAuditAction
+  caseId     String?             @map("case_id") // Related case for link/unlink operations
+  details    Json                @default("{}") // Additional details (fileName, affectedCaseCount, etc.)
+  timestamp  DateTime            @default(now()) @db.Timestamptz
+  firmId     String              @map("firm_id")
+
+  // Relations
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  user     User      @relation("DocumentAuditUser", fields: [userId], references: [id], onDelete: Restrict)
+  firm     Firm      @relation(fields: [firmId], references: [id], onDelete: Restrict)
+
+  @@index([documentId])
+  @@index([userId])
+  @@index([caseId])
+  @@index([timestamp])
+  @@index([firmId])
+  @@map("document_audit_logs")
+}
+
+// ============================================================================
+// Story 2.9: Document Version Tracking
+// ============================================================================
+
+// Document version for tracking changes from OneDrive sync
+model DocumentVersion {
+  id                String   @id @default(uuid())
+  documentId        String   @map("document_id")
+  versionNumber     Int      @map("version_number")
+  oneDriveVersionId String?  @map("one_drive_version_id") @db.VarChar(255)
+  changesSummary    String?  @map("changes_summary") @db.Text
+  createdBy         String   @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  creator  User     @relation("DocumentVersionCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+  @@map("document_versions")
+}
+
+// ============================================================================
+// Story 2.10: Basic AI Search Implementation
+// ============================================================================
+
+// Search type enum for categorizing search methods
+enum SearchType {
+  FullText
+  Semantic
+  Hybrid
+}
+
+// Search history for caching recent searches and analytics
+model SearchHistory {
+  id          String     @id @default(uuid())
+  userId      String     @map("user_id")
+  firmId      String     @map("firm_id")
+  query       String     @db.VarChar(500)
+  searchType  SearchType @map("search_type")
+  filters     Json?      @default("{}") // { dateRange?, caseTypes?, documentTypes?, etc. }
+  resultCount Int        @map("result_count")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId, createdAt])
+  @@index([firmId])
+  @@index([query])
+  @@map("search_history")
+}
+
+// ============================================================================
+// Story 2.11.2: Retainer Billing Support
+// ============================================================================
+
+// Retainer period usage - tracks usage per billing period for retainer cases
+model RetainerPeriodUsage {
+  id            String   @id @default(uuid())
+  caseId        String   @map("case_id")
+  firmId        String   @map("firm_id")
+  periodStart   DateTime @map("period_start") @db.Date
+  periodEnd     DateTime @map("period_end") @db.Date
+  hoursUsed     Decimal  @map("hours_used") @db.Decimal(10, 2) @default(0)
+  hoursIncluded Decimal  @map("hours_included") @db.Decimal(10, 2)
+  rolledOver    Decimal  @map("rolled_over") @db.Decimal(10, 2) @default(0)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Restrict)
+
+  @@unique([caseId, periodStart])
+  @@index([caseId])
+  @@index([firmId])
+  @@index([periodStart])
+  @@map("retainer_period_usage")
+}
+
+// ============================================================================
+// Story 3.1: AI Service Infrastructure
+// ============================================================================
+
+// AI Token Usage - tracks all AI API calls for cost monitoring and analysis
+model AITokenUsage {
+  id            String   @id @default(uuid())
+  userId        String?  @map("user_id")
+  caseId        String?  @map("case_id")
+  firmId        String   @map("firm_id")
+  operationType String   @map("operation_type") @db.VarChar(100)
+  modelUsed     String   @map("model_used") @db.VarChar(100)
+  inputTokens   Int      @map("input_tokens")
+  outputTokens  Int      @map("output_tokens")
+  totalTokens   Int      @map("total_tokens")
+  costCents     Int      @map("cost_cents")
+  latencyMs     Int      @map("latency_ms")
+  cached        Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId, createdAt])
+  @@index([caseId])
+  @@index([firmId, createdAt])
+  @@index([operationType])
+  @@map("ai_token_usage")
+}
+
+// AI Response Cache - semantic similarity cache for reducing duplicate API calls
+model AIResponseCache {
+  id              String                       @id @default(uuid())
+  promptHash      String                       @unique @map("prompt_hash") @db.VarChar(64)
+  promptEmbedding Unsupported("vector(768)")? @map("prompt_embedding") // multilingual-e5-base embedding
+  prompt          String                       @db.Text
+  response        String                       @db.Text
+  modelUsed       String                       @map("model_used") @db.VarChar(100)
+  operationType   String                       @map("operation_type") @db.VarChar(100)
+  firmId          String                       @map("firm_id")
+  hitCount        Int                          @default(0) @map("hit_count")
+  createdAt       DateTime                     @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt       DateTime                     @map("expires_at") @db.Timestamptz
+
+  @@index([firmId])
+  @@index([operationType])
+  @@index([expiresAt])
+  @@map("ai_response_cache")
+}
+
+// ============================================================================
+// Story 3.2.5: Legacy Document Import & Categorization for AI Training
+// ============================================================================
+
+// Import session status lifecycle
+enum ImportSessionStatus {
+  Uploading      // PST file being uploaded
+  Extracting     // PST being processed
+  InProgress     // Categorization in progress
+  Completed      // All documents categorized
+  Exported       // Exported to OneDrive
+}
+
+// Primary language detection results
+enum PrimaryLanguage {
+  Romanian
+  English
+  Italian
+  French
+  Mixed
+}
+
+// Template potential rating
+enum TemplatePotential {
+  High    // >80% standard structure
+  Medium  // 50-80% standard
+  Low     // <50% standard
+}
+
+// Document structure type
+enum StructureType {
+  structured
+  semi_structured @map("semi-structured")
+  unstructured
+}
+
+// Legacy import session - one per PST file upload
+model LegacyImportSession {
+  id                String              @id @default(uuid())
+  firmId            String              @map("firm_id")
+  pstFileName       String              @map("pst_file_name") @db.VarChar(500)
+  pstFileSize       BigInt              @map("pst_file_size") // Size in bytes
+  pstStoragePath    String?             @map("pst_storage_path") @db.Text // Cloudflare R2 path
+  uploadedBy        String              @map("uploaded_by") // User ID (Partner)
+  status            ImportSessionStatus @default(Uploading)
+  totalDocuments    Int                 @default(0) @map("total_documents")
+  categorizedCount  Int                 @default(0) @map("categorized_count")
+  skippedCount      Int                 @default(0) @map("skipped_count")
+  analyzedCount     Int                 @default(0) @map("analyzed_count") // AI analysis count
+  extractionErrors  Json?               @map("extraction_errors") // Error log from PST extraction
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+  exportedAt        DateTime?           @map("exported_at") @db.Timestamptz
+  cleanedUpAt       DateTime?           @map("cleaned_up_at") @db.Timestamptz // When R2 files deleted
+
+  // Relations
+  batches           DocumentBatch[]
+  documents         ExtractedDocument[]
+  categories        ImportCategory[]
+  processingLogs    AIProcessingLog[]
+
+  @@index([firmId])
+  @@index([uploadedBy])
+  @@index([status])
+  @@index([createdAt])
+  @@map("legacy_import_sessions")
+}
+
+// Document batch - groups documents by month for assistant allocation
+model DocumentBatch {
+  id              String   @id @default(uuid())
+  sessionId       String   @map("session_id")
+  monthYear       String   @map("month_year") @db.VarChar(7) // 'YYYY-MM' format
+  assignedTo      String?  @map("assigned_to") // User ID (Assistant)
+  documentCount   Int      @map("document_count")
+  categorizedCount Int     @default(0) @map("categorized_count")
+  skippedCount    Int      @default(0) @map("skipped_count")
+  assignedAt      DateTime? @map("assigned_at") @db.Timestamptz
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  session   LegacyImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  documents ExtractedDocument[]
+
+  @@unique([sessionId, monthYear])
+  @@index([sessionId])
+  @@index([assignedTo])
+  @@index([monthYear])
+  @@map("document_batches")
+}
+
+// Document categorization status
+enum DocumentCategorizationStatus {
+  Uncategorized
+  Categorized
+  Skipped
+}
+
+// Extracted document from PST file
+model ExtractedDocument {
+  id              String                       @id @default(uuid())
+  sessionId       String                       @map("session_id")
+  batchId         String?                      @map("batch_id")
+  fileName        String                       @map("file_name") @db.VarChar(500)
+  fileExtension   String                       @map("file_extension") @db.VarChar(10) // pdf, docx, doc
+  fileSizeBytes   Int                          @map("file_size_bytes")
+  storagePath     String                       @map("storage_path") @db.Text // Cloudflare R2 path
+  folderPath      String                       @map("folder_path") @db.Text // Original PST folder path
+  isSent          Boolean                      @default(false) @map("is_sent") // Determined from folder path
+  extractedText   String?                      @map("extracted_text") @db.Text // For AI analysis
+
+  // Email metadata
+  emailSubject    String?                      @map("email_subject") @db.VarChar(1000)
+  emailSender     String?                      @map("email_sender") @db.VarChar(500)
+  emailReceiver   String?                      @map("email_receiver") @db.VarChar(500)
+  emailDate       DateTime?                    @map("email_date") @db.Timestamptz
+
+  // Categorization
+  categoryId      String?                      @map("category_id")
+  status          DocumentCategorizationStatus @default(Uncategorized)
+  categorizedBy   String?                      @map("categorized_by") // User ID
+  categorizedAt   DateTime?                    @map("categorized_at") @db.Timestamptz
+
+  // AI Analysis Fields (Story 3.2.5 Enhancement)
+  primaryLanguage         PrimaryLanguage?   @map("primary_language")
+  secondaryLanguage       PrimaryLanguage?   @map("secondary_language")
+  languageRatio           Json?              @map("language_ratio") // { Romanian: 0.85, English: 0.15 }
+  languageConfidence      Float?             @map("language_confidence") // 0-1
+  documentType            String?            @map("document_type") @db.VarChar(200) // e.g., "Contract de Vanzare-Cumparare"
+  documentTypeConfidence  Float?             @map("document_type_confidence")
+  clauseCategories        String[]           @map("clause_categories") // ["payment_terms", "warranties"]
+  templatePotential       TemplatePotential? @map("template_potential")
+
+  // AI Metadata (extended analysis)
+  aiMetadata              Json?              @map("ai_metadata") // { complexityScore, structureType, keyTerms, clauseCount }
+  riskIndicators          Json?              @map("risk_indicators") // { hasUnclearTerms, hasMixedJurisdiction, complianceFlags }
+  aiAnalysisVersion       String?            @map("ai_analysis_version") @db.VarChar(100) // e.g., "claude-3-haiku-20240307"
+  analysisTimestamp       DateTime?          @map("analysis_timestamp") @db.Timestamptz
+  analysisTokensUsed      Int?               @map("analysis_tokens_used")
+
+  createdAt               DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  session  LegacyImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  batch    DocumentBatch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  category ImportCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([batchId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([emailDate])
+  @@index([primaryLanguage])
+  @@index([templatePotential])
+  @@map("extracted_documents")
+}
+
+// Import category - user-defined categories for document classification
+model ImportCategory {
+  id            String   @id @default(uuid())
+  sessionId     String   @map("session_id")
+  name          String   @db.VarChar(200) // e.g., "Contract", "Notificare Avocateasca"
+  documentCount Int      @default(0) @map("document_count") // Denormalized for performance
+  createdBy     String   @map("created_by") // User ID
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  mergedInto    String?  @map("merged_into") // If this category was merged, points to target
+
+  // Relations
+  session   LegacyImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  documents ExtractedDocument[]
+
+  @@unique([sessionId, name])
+  @@index([sessionId])
+  @@index([createdBy])
+  @@map("import_categories")
+}
+
+// AI Processing Log - tracks all AI API calls for cost monitoring
+model AIProcessingLog {
+  id               String   @id @default(uuid())
+  sessionId        String   @map("session_id")
+  documentId       String?  @map("document_id")
+  model            String   @db.VarChar(100) // e.g., "claude-3-haiku-20240307"
+  tokensUsed       Int      @map("tokens_used")
+  costUSD          Float    @map("cost_usd")
+  processingTimeMs Int      @map("processing_time_ms")
+  success          Boolean  @default(true)
+  errorMessage     String?  @map("error_message") @db.Text
+  metadata         Json?    // Additional details (documentCount, etc.)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  session LegacyImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([model])
+  @@map("ai_processing_logs")
+}
+
+// Legacy Import Audit Log - tracks all significant actions
+model LegacyImportAuditLog {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  userId      String   @map("user_id")
+  action      String   @db.VarChar(100) // e.g., "PST_UPLOADED", "EXPORT_COMPLETED", "PST_DELETED"
+  details     Json?    // Additional context
+  timestamp   DateTime @default(now()) @db.Timestamptz
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@map("legacy_import_audit_logs")
+}
+
+// ============================================================================
+// Story 3.2.6: AI Training Pipeline for Legacy Document Processing
+// ============================================================================
+
+// Training document - processed legacy documents for AI learning
+model TrainingDocument {
+  id                   String                       @id @default(uuid())
+  category             String                       @db.VarChar(255)
+  originalFilename     String                       @map("original_filename") @db.VarChar(500)
+  originalFolderPath   String?                      @map("original_folder_path") @db.Text
+  oneDriveFileId       String                       @unique @map("one_drive_file_id") @db.VarChar(255)
+  textContent          String                       @map("text_content") @db.Text
+  language             String                       @db.VarChar(10) // 'ro' or 'en'
+  wordCount            Int?                         @map("word_count")
+  metadata             Json?
+  processedAt          DateTime                     @default(now()) @map("processed_at") @db.Timestamptz
+  processingDurationMs Int?                         @map("processing_duration_ms")
+  createdAt            DateTime                     @default(now()) @map("created_at") @db.Timestamptz
+  textSearchVector     Unsupported("tsvector")?     @map("text_search_vector") // Full-text search vector
+
+  // Relations
+  embeddings      DocumentEmbedding[]
+  baseForTemplates TemplateLibrary[]
+
+  @@index([category])
+  @@index([oneDriveFileId])
+  @@index([processedAt])
+  @@map("training_documents")
+}
+
+// Document embedding chunk for semantic search
+model DocumentEmbedding {
+  id         String                       @id @default(uuid())
+  documentId String                       @map("document_id")
+  chunkIndex Int                          @map("chunk_index")
+  chunkText  String                       @map("chunk_text") @db.Text
+  embedding  Unsupported("vector(768)")  // pgvector type - multilingual-e5-base (768 dimensions)
+  tokenCount Int?                         @map("token_count")
+  createdAt  DateTime                     @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  document TrainingDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+  @@map("document_embeddings")
+}
+
+// Pattern type enum
+enum PatternType {
+  phrase
+  clause
+  structure
+}
+
+// Document pattern - identified common patterns across documents
+model DocumentPattern {
+  id              String      @id @default(uuid())
+  category        String      @db.VarChar(255)
+  patternType     PatternType @map("pattern_type")
+  patternText     String      @map("pattern_text") @db.Text
+  frequency       Int         @default(1)
+  documentIds     String[]    @map("document_ids") // Array of UUID strings
+  confidenceScore Decimal?    @map("confidence_score") @db.Decimal(3, 2)
+  metadata        Json?
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([category])
+  @@index([patternType])
+  @@index([frequency])
+  @@map("document_patterns")
+}
+
+// Template library - extracted document templates
+model TemplateLibrary {
+  id                  String   @id @default(uuid())
+  category            String   @db.VarChar(255)
+  name                String?  @db.VarChar(500)
+  baseDocumentId      String?  @map("base_document_id")
+  structure           Json // Sections, headings, clause order
+  similarDocumentIds  String[] @map("similar_document_ids") // Array of UUID strings
+  usageCount          Int      @default(0) @map("usage_count")
+  qualityScore        Decimal? @map("quality_score") @db.Decimal(3, 2)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  baseDocument TrainingDocument? @relation(fields: [baseDocumentId], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@index([usageCount])
+  @@index([qualityScore])
+  @@map("template_library")
+}
+
+// Pipeline run type enum
+enum PipelineRunType {
+  scheduled
+  manual
+}
+
+// Pipeline status enum
+enum PipelineStatus {
+  running
+  completed
+  failed
+}
+
+// Training pipeline run - tracks pipeline executions
+model TrainingPipelineRun {
+  id                  String           @id @default(uuid())
+  runType             PipelineRunType  @map("run_type")
+  status              PipelineStatus
+  startedAt           DateTime         @default(now()) @map("started_at") @db.Timestamptz
+  completedAt         DateTime?        @map("completed_at") @db.Timestamptz
+  documentsDiscovered Int              @default(0) @map("documents_discovered")
+  documentsProcessed  Int              @default(0) @map("documents_processed")
+  documentsFailed     Int              @default(0) @map("documents_failed")
+  patternsIdentified  Int              @default(0) @map("patterns_identified")
+  templatesCreated    Int              @default(0) @map("templates_created")
+  totalTokensUsed     Int              @default(0) @map("total_tokens_used")
+  errorLog            Json?            @map("error_log")
+  metadata            Json?
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([status])
+  @@index([startedAt])
+  @@map("training_pipeline_runs")
+}
+
+// ============================================================================
+// Story 3.3: Intelligent Document Drafting - Quality Metrics
+// ============================================================================
+
+// Document draft metrics - tracks AI-generated document quality
+model DocumentDraftMetrics {
+  id                    String   @id @default(uuid())
+  documentId            String   @unique @map("document_id")
+  firmId                String   @map("firm_id")
+  userId                String   @map("user_id")
+  documentType          String   @map("document_type") @db.VarChar(50)
+  initialWordCount      Int      @map("initial_word_count")
+  finalWordCount        Int?     @map("final_word_count")
+  charactersAdded       Int      @default(0) @map("characters_added")
+  charactersRemoved     Int      @default(0) @map("characters_removed")
+  editPercentage        Decimal  @map("edit_percentage") @db.Decimal(5, 2) // Target: < 30%
+  timeToFinalizeMinutes Int?     @map("time_to_finalize_minutes")
+  userRating            Int?     @map("user_rating") // 1-5 stars
+  generationTimeMs      Int?     @map("generation_time_ms")
+  tokensUsed            Int?     @map("tokens_used")
+  modelUsed             String?  @map("model_used") @db.VarChar(100)
+  templateId            String?  @map("template_id")
+  precedentIds          String[] @map("precedent_ids") // Array of referenced document IDs
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  finalizedAt           DateTime? @map("finalized_at") @db.Timestamptz
+
+  @@index([firmId])
+  @@index([userId])
+  @@index([documentType])
+  @@index([editPercentage])
+  @@index([createdAt])
+  @@index([userRating])
+  @@map("document_draft_metrics")
+}
