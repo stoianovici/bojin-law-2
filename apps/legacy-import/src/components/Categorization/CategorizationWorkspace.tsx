@@ -8,6 +8,7 @@ import { DocumentMetadataPanel } from './DocumentMetadataPanel';
 import { ProgressBar } from './ProgressBar';
 import { FilterBar } from './FilterBar';
 import { useDocumentStore } from '@/stores/documentStore';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Category } from '@/stores/documentStore';
 
 interface CategorizationWorkspaceProps {
@@ -15,6 +16,7 @@ interface CategorizationWorkspaceProps {
 }
 
 export function CategorizationWorkspace({ sessionId }: CategorizationWorkspaceProps) {
+  const { user } = useAuth();
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,12 +45,18 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
   // Initialize workspace data
   useEffect(() => {
     async function initialize() {
+      if (!user?.id) {
+        setInitError('User not authenticated');
+        setIsInitializing(false);
+        return;
+      }
+
       try {
         setIsInitializing(true);
         setInitError(null);
 
         // Fetch batch assignment
-        const batchRes = await fetch(`/api/get-batch?sessionId=${sessionId}`);
+        const batchRes = await fetch(`/api/get-batch?sessionId=${sessionId}&userId=${user.id}`);
         if (!batchRes.ok) throw new Error('Failed to get batch assignment');
         const batchData = await batchRes.json();
 
@@ -57,7 +65,6 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         setDocuments(batchData.documents);
         setCategories(batchData.categories);
         setSessionProgress(batchData.sessionProgress);
-
       } catch (err) {
         setInitError(err instanceof Error ? err.message : 'Failed to initialize');
       } finally {
@@ -66,7 +73,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
     }
 
     initialize();
-  }, [sessionId, setSession, setBatch, setDocuments, setCategories, setSessionProgress]);
+  }, [sessionId, user?.id, setSession, setBatch, setDocuments, setCategories, setSessionProgress]);
 
   // Fetch document URL when current document changes
   useEffect(() => {
@@ -136,32 +143,35 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
   }, [goToNextDocument, goToPreviousDocument, currentDocument]);
 
   // Handle category selection
-  const handleCategorySelect = useCallback(async (categoryId: string, categoryName: string) => {
-    if (!currentDocument || isSubmitting) return;
+  const handleCategorySelect = useCallback(
+    async (categoryId: string, categoryName: string) => {
+      if (!currentDocument || isSubmitting) return;
 
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/categorize-doc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          documentId: currentDocument.id,
-          categoryId,
-        }),
-      });
+      setIsSubmitting(true);
+      try {
+        const res = await fetch('/api/categorize-doc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: currentDocument.id,
+            categoryId,
+          }),
+        });
 
-      if (!res.ok) throw new Error('Failed to categorize document');
+        if (!res.ok) throw new Error('Failed to categorize document');
 
-      categorizeDocument(currentDocument.id, categoryId, categoryName);
+        categorizeDocument(currentDocument.id, categoryId, categoryName);
 
-      // Auto-advance to next uncategorized document
-      setTimeout(() => goToNextDocument(), 300);
-    } catch (err) {
-      console.error('Failed to categorize:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [currentDocument, isSubmitting, categorizeDocument, goToNextDocument]);
+        // Auto-advance to next uncategorized document
+        setTimeout(() => goToNextDocument(), 300);
+      } catch (err) {
+        console.error('Failed to categorize:', err);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [currentDocument, isSubmitting, categorizeDocument, goToNextDocument]
+  );
 
   // Handle skip
   const handleSkip = useCallback(async () => {
@@ -190,22 +200,25 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
   }, [currentDocument, isSubmitting, skipDocument, goToNextDocument]);
 
   // Handle new category creation
-  const handleCreateCategory = useCallback(async (name: string): Promise<Category> => {
-    const res = await fetch('/api/create-category', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, name }),
-    });
+  const handleCreateCategory = useCallback(
+    async (name: string): Promise<Category> => {
+      const res = await fetch('/api/create-category', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, name }),
+      });
 
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.message || 'Failed to create category');
-    }
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to create category');
+      }
 
-    const newCategory = await res.json();
-    addCategory(newCategory);
-    return newCategory;
-  }, [sessionId, addCategory]);
+      const newCategory = await res.json();
+      addCategory(newCategory);
+      return newCategory;
+    },
+    [sessionId, addCategory]
+  );
 
   if (isInitializing) {
     return (
@@ -261,9 +274,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         <div className="col-span-4 space-y-4">
           {/* Category Selection */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              Atribuie categorie
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Atribuie categorie</h3>
             <CategorySelector
               selectedCategoryId={currentDocument?.categoryId || null}
               onSelect={handleCategorySelect}
@@ -312,9 +323,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
           {/* Document Metadata */}
           {currentDocument && (
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                Detalii document
-              </h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Detalii document</h3>
               <DocumentMetadataPanel document={currentDocument} />
             </div>
           )}
@@ -325,10 +334,18 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
               Scurtături tastatură
             </h4>
             <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-              <div><kbd className="px-1.5 py-0.5 bg-white border rounded">←</kbd> Anterior</div>
-              <div><kbd className="px-1.5 py-0.5 bg-white border rounded">→</kbd> Următor</div>
-              <div><kbd className="px-1.5 py-0.5 bg-white border rounded">S</kbd> Sari</div>
-              <div><kbd className="px-1.5 py-0.5 bg-white border rounded">1-9</kbd> Atribuire rapidă</div>
+              <div>
+                <kbd className="px-1.5 py-0.5 bg-white border rounded">←</kbd> Anterior
+              </div>
+              <div>
+                <kbd className="px-1.5 py-0.5 bg-white border rounded">→</kbd> Următor
+              </div>
+              <div>
+                <kbd className="px-1.5 py-0.5 bg-white border rounded">S</kbd> Sari
+              </div>
+              <div>
+                <kbd className="px-1.5 py-0.5 bg-white border rounded">1-9</kbd> Atribuire rapidă
+              </div>
             </div>
           </div>
         </div>
