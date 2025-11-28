@@ -22,16 +22,6 @@ export function FilterBar() {
     skipped: documents.filter((d) => d.status === 'Skipped').length,
     sent: documents.filter((d) => d.isSent).length,
     received: documents.filter((d) => !d.isSent).length,
-    romanian: documents.filter((d) => d.primaryLanguage === 'Romanian').length,
-    english: documents.filter((d) => d.primaryLanguage === 'English').length,
-    italian: documents.filter((d) => d.primaryLanguage === 'Italian').length,
-    french: documents.filter((d) => d.primaryLanguage === 'French').length,
-    mixed: documents.filter((d) => d.primaryLanguage === 'Mixed').length,
-    bilingual: documents.filter(
-      (d) =>
-        d.secondaryLanguage &&
-        ['Romanian', 'English', 'Italian', 'French'].includes(d.secondaryLanguage)
-    ).length,
   };
 
   const statusFilters: FilterOption[] = [
@@ -44,15 +34,6 @@ export function FilterBar() {
   const directionFilters: FilterOption[] = [
     { value: 'sent', label: 'Doar trimise', count: counts.sent },
     { value: 'received', label: 'Doar primite', count: counts.received },
-  ];
-
-  const languageFilters: FilterOption[] = [
-    { value: 'romanian', label: 'Română', count: counts.romanian },
-    { value: 'english', label: 'Engleză', count: counts.english },
-    { value: 'italian', label: 'Italiană', count: counts.italian },
-    { value: 'french', label: 'Franceză', count: counts.french },
-    { value: 'mixed', label: 'Nedeterminat', count: counts.mixed },
-    { value: 'bilingual', label: 'Bilingv', count: counts.bilingual },
   ];
 
   const FilterButton = ({ filter }: { filter: FilterOption }) => (
@@ -101,19 +82,6 @@ export function FilterBar() {
           </span>
           <div className="flex items-center gap-1">
             {directionFilters.map((filter) => (
-              <FilterButton key={filter.value} filter={filter} />
-            ))}
-          </div>
-        </div>
-
-        {/* Separator */}
-        <div className="h-6 w-px bg-gray-200" />
-
-        {/* Language Filters */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Limbă:</span>
-          <div className="flex items-center gap-1">
-            {languageFilters.map((filter) => (
               <FilterButton key={filter.value} filter={filter} />
             ))}
           </div>

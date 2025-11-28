@@ -12,6 +12,7 @@ import {
   Folder,
   Shuffle,
   AlertCircle,
+  Download,
 } from 'lucide-react';
 
 interface BatchWithProgress {
@@ -92,6 +93,7 @@ export function PartnerDashboard({
   const [reassignmentInfo, setReassignmentInfo] = useState<ReassignmentInfo | null>(null);
   const [isReassigning, setIsReassigning] = useState(false);
   const [reassignmentMessage, setReassignmentMessage] = useState<string | null>(null);
+  const [isExportingContacts, setIsExportingContacts] = useState(false);
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -145,13 +147,45 @@ export function PartnerDashboard({
       // Refresh dashboard and reassignment info
       await Promise.all([fetchDashboard(), fetchReassignmentInfo()]);
     } catch (err) {
-      setReassignmentMessage(
-        err instanceof Error ? err.message : 'Failed to reassign batches'
-      );
+      setReassignmentMessage(err instanceof Error ? err.message : 'Failed to reassign batches');
     } finally {
       setIsReassigning(false);
     }
   }, [sessionId, isReassigning, fetchDashboard, fetchReassignmentInfo]);
+
+  const handleExportContacts = useCallback(async () => {
+    if (isExportingContacts) return;
+
+    try {
+      setIsExportingContacts(true);
+
+      const res = await fetch('/api/extract-contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to export contacts');
+      }
+
+      // Get the blob and create download
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contacts-${sessionId.slice(0, 8)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to export contacts');
+    } finally {
+      setIsExportingContacts(false);
+    }
+  }, [sessionId, isExportingContacts]);
 
   useEffect(() => {
     fetchDashboard();
@@ -200,8 +234,7 @@ export function PartnerDashboard({
       : 0;
 
   const isReadyForExport =
-    data.session.categorizedCount + data.session.skippedCount >=
-    data.session.totalDocuments;
+    data.session.categorizedCount + data.session.skippedCount >= data.session.totalDocuments;
 
   return (
     <div className="space-y-6">
@@ -209,12 +242,8 @@ export function PartnerDashboard({
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Panou de control partener
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {data.session.pstFileName}
-            </p>
+            <h2 className="text-xl font-semibold text-gray-900">Panou de control partener</h2>
+            <p className="text-sm text-gray-500 mt-1">{data.session.pstFileName}</p>
           </div>
           <button
             onClick={fetchDashboard}
@@ -232,27 +261,21 @@ export function PartnerDashboard({
               <FileText className="h-4 w-4" />
               <span className="text-sm font-medium">Total documente</span>
             </div>
-            <p className="text-2xl font-bold text-blue-900">
-              {data.session.totalDocuments}
-            </p>
+            <p className="text-2xl font-bold text-blue-900">{data.session.totalDocuments}</p>
           </div>
           <div className="bg-green-50 rounded-lg p-4">
             <div className="flex items-center gap-2 text-green-700 mb-1">
               <CheckCircle className="h-4 w-4" />
               <span className="text-sm font-medium">Categorizate</span>
             </div>
-            <p className="text-2xl font-bold text-green-900">
-              {data.session.categorizedCount}
-            </p>
+            <p className="text-2xl font-bold text-green-900">{data.session.categorizedCount}</p>
           </div>
           <div className="bg-amber-50 rounded-lg p-4">
             <div className="flex items-center gap-2 text-amber-700 mb-1">
               <Clock className="h-4 w-4" />
               <span className="text-sm font-medium">Sărite</span>
             </div>
-            <p className="text-2xl font-bold text-amber-900">
-              {data.session.skippedCount}
-            </p>
+            <p className="text-2xl font-bold text-amber-900">{data.session.skippedCount}</p>
           </div>
           <div className="bg-purple-50 rounded-lg p-4">
             <div className="flex items-center gap-2 text-purple-700 mb-1">
@@ -268,9 +291,7 @@ export function PartnerDashboard({
         {/* Overall Progress Bar */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Progres general
-            </span>
+            <span className="text-sm font-medium text-gray-700">Progres general</span>
             <span className="text-sm text-gray-600">{overallProgress}%</span>
           </div>
           <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -290,12 +311,10 @@ export function PartnerDashboard({
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-medium text-amber-800">
-                Categorii duplicate posibile detectate
-              </h3>
+              <h3 className="font-medium text-amber-800">Categorii duplicate posibile detectate</h3>
               <p className="text-sm text-amber-700 mt-1">
-                {data.categoryStats.potentialDuplicates.length} grupuri de categorii
-                similare găsite. Verifică și unește înainte de export.
+                {data.categoryStats.potentialDuplicates.length} grupuri de categorii similare
+                găsite. Verifică și unește înainte de export.
               </p>
               <button
                 onClick={onManageCategories}
@@ -314,12 +333,10 @@ export function PartnerDashboard({
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-medium text-red-800">
-                Loturi blocate detectate
-              </h3>
+              <h3 className="font-medium text-red-800">Loturi blocate detectate</h3>
               <p className="text-sm text-red-700 mt-1">
-                {reassignmentInfo.stalledBatches.length} lot(uri) nu au avut activitate
-                de peste 24 de ore. Consideră reatribuirea către asistenți activi.
+                {reassignmentInfo.stalledBatches.length} lot(uri) nu au avut activitate de peste 24
+                de ore. Consideră reatribuirea către asistenți activi.
               </p>
               <div className="mt-3 space-y-2">
                 {reassignmentInfo.stalledBatches.slice(0, 3).map((batch) => (
@@ -367,13 +384,10 @@ export function PartnerDashboard({
             <div className="flex items-start gap-3">
               <Shuffle className="h-5 w-5 text-blue-600 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-medium text-blue-800">
-                  Pregătit pentru mai multă muncă
-                </h3>
+                <h3 className="font-medium text-blue-800">Pregătit pentru mai multă muncă</h3>
                 <p className="text-sm text-blue-700 mt-1">
-                  {reassignmentInfo.finishedUsers.length} asistent(i) au
-                  finalizat loturile lor. {reassignmentInfo.unassignedCount}{' '}
-                  lot(uri) neatribuite disponibile.
+                  {reassignmentInfo.finishedUsers.length} asistent(i) au finalizat loturile lor.{' '}
+                  {reassignmentInfo.unassignedCount} lot(uri) neatribuite disponibile.
                 </p>
                 <button
                   onClick={handleAutoReassign}
@@ -406,10 +420,7 @@ export function PartnerDashboard({
         ) : (
           <div className="space-y-4">
             {data.assistantProgress.map((assistant) => (
-              <div
-                key={assistant.userId}
-                className="border border-gray-100 rounded-lg p-4"
-              >
+              <div key={assistant.userId} className="border border-gray-100 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <span className="font-medium text-gray-900">
@@ -421,9 +432,7 @@ export function PartnerDashboard({
                   </div>
                   <span
                     className={`text-sm font-medium ${
-                      assistant.progressPercent === 100
-                        ? 'text-green-600'
-                        : 'text-blue-600'
+                      assistant.progressPercent === 100 ? 'text-green-600' : 'text-blue-600'
                     }`}
                   >
                     {assistant.progressPercent}%
@@ -432,17 +441,13 @@ export function PartnerDashboard({
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
-                      assistant.progressPercent === 100
-                        ? 'bg-green-500'
-                        : 'bg-blue-500'
+                      assistant.progressPercent === 100 ? 'bg-green-500' : 'bg-blue-500'
                     }`}
                     style={{ width: `${assistant.progressPercent}%` }}
                   />
                 </div>
                 <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                  <span>
-                    {assistant.categorizedDocuments} categorizate
-                  </span>
+                  <span>{assistant.categorizedDocuments} categorizate</span>
                   <span>{assistant.skippedDocuments} sărite</span>
                   <span>
                     {assistant.totalDocuments -
@@ -468,21 +473,11 @@ export function PartnerDashboard({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-3 font-medium text-gray-600">
-                  Luna
-                </th>
-                <th className="text-left py-2 px-3 font-medium text-gray-600">
-                  Atribuit la
-                </th>
-                <th className="text-center py-2 px-3 font-medium text-gray-600">
-                  Documente
-                </th>
-                <th className="text-center py-2 px-3 font-medium text-gray-600">
-                  Progres
-                </th>
-                <th className="text-center py-2 px-3 font-medium text-gray-600">
-                  Status
-                </th>
+                <th className="text-left py-2 px-3 font-medium text-gray-600">Luna</th>
+                <th className="text-left py-2 px-3 font-medium text-gray-600">Atribuit la</th>
+                <th className="text-center py-2 px-3 font-medium text-gray-600">Documente</th>
+                <th className="text-center py-2 px-3 font-medium text-gray-600">Progres</th>
+                <th className="text-center py-2 px-3 font-medium text-gray-600">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -491,10 +486,7 @@ export function PartnerDashboard({
                 const isAssigned = batch.assignedTo !== null;
 
                 return (
-                  <tr
-                    key={batch.id}
-                    className="border-b border-gray-50 hover:bg-gray-50"
-                  >
+                  <tr key={batch.id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="py-3 px-3">
                       <span className="font-medium text-gray-900">
                         {formatMonthYear(batch.monthYear)}
@@ -554,6 +546,18 @@ export function PartnerDashboard({
 
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-4">
+        <button
+          onClick={handleExportContacts}
+          disabled={isExportingContacts}
+          className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center gap-2 disabled:opacity-50"
+        >
+          {isExportingContacts ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {isExportingContacts ? 'Se exportă...' : 'Exportă contacte (Excel)'}
+        </button>
         <button
           onClick={onManageCategories}
           className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"

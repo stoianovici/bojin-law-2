@@ -54,19 +54,7 @@ export interface SessionProgress {
   analyzedCount: number;
 }
 
-export type FilterType =
-  | 'all'
-  | 'categorized'
-  | 'uncategorized'
-  | 'skipped'
-  | 'sent'
-  | 'received'
-  | 'romanian'
-  | 'english'
-  | 'italian'
-  | 'french'
-  | 'mixed'
-  | 'bilingual';
+export type FilterType = 'all' | 'categorized' | 'uncategorized' | 'skipped' | 'sent' | 'received';
 
 interface DocumentState {
   // Session
@@ -226,23 +214,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         return documents.filter((d) => d.isSent);
       case 'received':
         return documents.filter((d) => !d.isSent);
-      case 'romanian':
-        return documents.filter((d) => d.primaryLanguage === 'Romanian');
-      case 'english':
-        return documents.filter((d) => d.primaryLanguage === 'English');
-      case 'italian':
-        return documents.filter((d) => d.primaryLanguage === 'Italian');
-      case 'french':
-        return documents.filter((d) => d.primaryLanguage === 'French');
-      case 'mixed':
-        return documents.filter((d) => d.primaryLanguage === 'Mixed');
-      case 'bilingual':
-        // Only show docs where secondaryLanguage is a valid language value
-        return documents.filter(
-          (d) =>
-            d.secondaryLanguage &&
-            ['Romanian', 'English', 'Italian', 'French'].includes(d.secondaryLanguage)
-        );
       default:
         return documents;
     }
