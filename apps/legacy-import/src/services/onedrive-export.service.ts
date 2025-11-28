@@ -2,10 +2,12 @@
  * OneDrive Export Service for Legacy Document Import
  * Story 3.2.5 - Exports categorized documents to OneDrive for AI training
  *
- * Folder structure: /AI-Training/{CategoryName}/
+ * Folder structure: /AI-Training/{Language}/{CategoryName}/
  * Each category folder contains:
  *   - Categorized document files
  *   - _metadata.json with document details
+ *
+ * Supported languages: Romanian, English, Italian, French, Mixed
  */
 
 import { Client } from '@microsoft/microsoft-graph-client';
@@ -100,20 +102,30 @@ export class OneDriveExportService {
 
   /**
    * Export all categorized documents to OneDrive
+   * Organizes by: /AI-Training/{Language}/{CategoryName}/
    */
-  async exportToOneDrive(
-    documents: DocumentToExport[],
-    sessionId: string
-  ): Promise<ExportResult> {
+  async exportToOneDrive(documents: DocumentToExport[], sessionId: string): Promise<ExportResult> {
     const errors: string[] = [];
     let uploadedCount = 0;
 
-    // Group documents by category
-    const categoryMap = new Map<string, DocumentToExport[]>();
+    // Group documents by language, then by category
+    // Structure: Map<language, Map<category, docs[]>>
+    const languageCategoryMap = new Map<string, Map<string, DocumentToExport[]>>();
+
     for (const doc of documents) {
-      const existing = categoryMap.get(doc.categoryName) || [];
-      existing.push(doc);
-      categoryMap.set(doc.categoryName, existing);
+      // Use primaryLanguage from AI analysis, default to 'Mixed' if not set
+      const language = doc.primaryLanguage || 'Mixed';
+      const category = doc.categoryName;
+
+      if (!languageCategoryMap.has(language)) {
+        languageCategoryMap.set(language, new Map());
+      }
+      const categoryMap = languageCategoryMap.get(language)!;
+
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, []);
+      }
+      categoryMap.get(category)!.push(doc);
     }
 
     this.updateProgress({
@@ -123,58 +135,80 @@ export class OneDriveExportService {
       status: 'preparing',
     });
 
+    // Count total categories across all languages
+    let totalCategories = 0;
+    for (const categoryMap of languageCategoryMap.values()) {
+      totalCategories += categoryMap.size;
+    }
+
     try {
       // Create AI-Training root folder
       const aiTrainingFolder = await this.createOrGetFolder('root', 'AI-Training');
 
-      // Process each category
-      for (const [categoryName, categoryDocs] of categoryMap.entries()) {
-        this.updateProgress({
-          totalDocuments: documents.length,
-          uploadedDocuments: uploadedCount,
-          currentCategory: categoryName,
-          status: 'uploading',
-        });
+      // Cache for language folders to avoid re-creating
+      const languageFolderCache = new Map<string, DriveItem>();
 
-        try {
-          // Create category folder
-          const sanitizedCategoryName = this.sanitizeFolderName(categoryName);
-          const categoryFolder = await this.createOrGetFolder(
-            aiTrainingFolder.id!,
-            sanitizedCategoryName
-          );
+      // Process each language
+      for (const [language, categoryMap] of languageCategoryMap.entries()) {
+        // Create or get language folder
+        const sanitizedLanguage = this.sanitizeFolderName(language);
+        let languageFolder = languageFolderCache.get(sanitizedLanguage);
 
-          // Upload documents in batches
-          const uploadResults = await this.uploadDocumentBatch(
-            categoryFolder.id!,
-            categoryDocs,
-            (uploaded) => {
-              uploadedCount += uploaded;
-              this.updateProgress({
-                totalDocuments: documents.length,
-                uploadedDocuments: uploadedCount,
-                currentCategory: categoryName,
-                status: 'uploading',
-              });
-            }
-          );
+        if (!languageFolder) {
+          languageFolder = await this.createOrGetFolder(aiTrainingFolder.id!, sanitizedLanguage);
+          languageFolderCache.set(sanitizedLanguage, languageFolder);
+        }
 
-          // Track any errors
-          errors.push(...uploadResults.errors);
+        // Process each category within this language
+        for (const [categoryName, categoryDocs] of categoryMap.entries()) {
+          this.updateProgress({
+            totalDocuments: documents.length,
+            uploadedDocuments: uploadedCount,
+            currentCategory: `${language}/${categoryName}`,
+            status: 'uploading',
+          });
 
-          // Generate and upload metadata JSON
-          const metadata = await this.generateCategoryMetadata(
-            categoryName,
-            categoryDocs,
-            uploadResults.uploadedDocs
-          );
+          try {
+            // Create category folder inside language folder
+            const sanitizedCategoryName = this.sanitizeFolderName(categoryName);
+            const categoryFolder = await this.createOrGetFolder(
+              languageFolder.id!,
+              sanitizedCategoryName
+            );
 
-          await this.uploadMetadataJson(categoryFolder.id!, metadata);
-        } catch (err) {
-          const errorMessage = `Failed to export category ${categoryName}: ${
-            err instanceof Error ? err.message : 'Unknown error'
-          }`;
-          errors.push(errorMessage);
+            // Upload documents in batches
+            const uploadResults = await this.uploadDocumentBatch(
+              categoryFolder.id!,
+              categoryDocs,
+              (uploaded) => {
+                uploadedCount += uploaded;
+                this.updateProgress({
+                  totalDocuments: documents.length,
+                  uploadedDocuments: uploadedCount,
+                  currentCategory: `${language}/${categoryName}`,
+                  status: 'uploading',
+                });
+              }
+            );
+
+            // Track any errors
+            errors.push(...uploadResults.errors);
+
+            // Generate and upload metadata JSON
+            const metadata = await this.generateCategoryMetadata(
+              categoryName,
+              categoryDocs,
+              uploadResults.uploadedDocs,
+              language
+            );
+
+            await this.uploadMetadataJson(categoryFolder.id!, metadata);
+          } catch (err) {
+            const errorMessage = `Failed to export ${language}/${categoryName}: ${
+              err instanceof Error ? err.message : 'Unknown error'
+            }`;
+            errors.push(errorMessage);
+          }
         }
       }
 
@@ -186,10 +220,10 @@ export class OneDriveExportService {
         status: 'finalizing',
       });
 
-      await this.uploadSessionSummary(
+      await this.uploadSessionSummaryByLanguage(
         aiTrainingFolder.id!,
         sessionId,
-        categoryMap,
+        languageCategoryMap,
         documents.length,
         uploadedCount
       );
@@ -203,7 +237,7 @@ export class OneDriveExportService {
 
       return {
         success: errors.length === 0,
-        categoriesExported: categoryMap.size,
+        categoriesExported: totalCategories,
         documentsExported: uploadedCount,
         oneDrivePath: '/AI-Training',
         errors,
@@ -381,10 +415,12 @@ export class OneDriveExportService {
   private async generateCategoryMetadata(
     categoryName: string,
     docs: DocumentToExport[],
-    uploadedDocs: Map<string, number>
-  ): Promise<CategoryMetadata> {
+    uploadedDocs: Map<string, number>,
+    language?: string
+  ): Promise<CategoryMetadata & { language?: string }> {
     return {
       category: categoryName,
+      language: language,
       documentCount: uploadedDocs.size,
       exportedAt: new Date().toISOString(),
       documents: docs
@@ -408,10 +444,7 @@ export class OneDriveExportService {
   /**
    * Upload metadata JSON to category folder
    */
-  private async uploadMetadataJson(
-    folderId: string,
-    metadata: CategoryMetadata
-  ): Promise<void> {
+  private async uploadMetadataJson(folderId: string, metadata: CategoryMetadata): Promise<void> {
     const content = Buffer.from(JSON.stringify(metadata, null, 2));
 
     await this.client
@@ -421,7 +454,7 @@ export class OneDriveExportService {
   }
 
   /**
-   * Upload session summary JSON
+   * Upload session summary JSON (legacy - flat structure)
    */
   private async uploadSessionSummary(
     aiTrainingFolderId: string,
@@ -451,14 +484,65 @@ export class OneDriveExportService {
   }
 
   /**
+   * Upload session summary JSON with language-based organization
+   */
+  private async uploadSessionSummaryByLanguage(
+    aiTrainingFolderId: string,
+    sessionId: string,
+    languageCategoryMap: Map<string, Map<string, DocumentToExport[]>>,
+    totalDocs: number,
+    uploadedDocs: number
+  ): Promise<void> {
+    // Build language-organized summary
+    const languages: {
+      language: string;
+      documentCount: number;
+      categories: { name: string; documentCount: number; folderPath: string }[];
+    }[] = [];
+
+    for (const [language, categoryMap] of languageCategoryMap.entries()) {
+      const sanitizedLanguage = this.sanitizeFolderName(language);
+      let languageDocCount = 0;
+      const categories: { name: string; documentCount: number; folderPath: string }[] = [];
+
+      for (const [categoryName, docs] of categoryMap.entries()) {
+        languageDocCount += docs.length;
+        categories.push({
+          name: categoryName,
+          documentCount: docs.length,
+          folderPath: `/AI-Training/${sanitizedLanguage}/${this.sanitizeFolderName(categoryName)}`,
+        });
+      }
+
+      languages.push({
+        language,
+        documentCount: languageDocCount,
+        categories,
+      });
+    }
+
+    const summary = {
+      sessionId,
+      exportedAt: new Date().toISOString(),
+      totalDocuments: totalDocs,
+      documentsExported: uploadedDocs,
+      folderStructure: '/AI-Training/{Language}/{Category}/',
+      languages,
+    };
+
+    const content = Buffer.from(JSON.stringify(summary, null, 2));
+
+    await this.client
+      .api(`/me/drive/items/${aiTrainingFolderId}:/_session_summary.json:/content`)
+      .header('Content-Type', 'application/json')
+      .put(content);
+  }
+
+  /**
    * Create or get existing folder
    */
-  private async createOrGetFolder(
-    parentId: string,
-    folderName: string
-  ): Promise<DriveItem> {
-    const parentPath =
-      parentId === 'root' ? '/me/drive/root' : `/me/drive/items/${parentId}`;
+  private async createOrGetFolder(parentId: string, folderName: string): Promise<DriveItem> {
+    const parentPath = parentId === 'root' ? '/me/drive/root' : `/me/drive/items/${parentId}`;
 
     try {
       // Try to create folder
