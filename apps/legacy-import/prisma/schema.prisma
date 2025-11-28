@@ -5,8 +5,8 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
-  // NOTE: No custom output - generates to pnpm hoisted location
-  // which is where @prisma/client symlink resolves to
+  // Generate to a local directory within the app to avoid pnpm hoisting issues
+  output          = "../src/generated/prisma"
   binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 

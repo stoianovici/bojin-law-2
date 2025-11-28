@@ -8,10 +8,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    // Skip ESLint during builds - lint is run separately in CI
-    ignoreDuringBuilds: true,
-  },
+  // Note: ESLint config removed - not supported in Next.js 16
+  // Lint is run separately in CI via pnpm lint
   experimental: {
     optimizePackageImports: ['@legal-platform/ui'],
   },

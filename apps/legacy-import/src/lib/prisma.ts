@@ -1,12 +1,12 @@
 /**
  * Prisma Client for Legacy Import App
  *
- * NOTE: In pnpm monorepos, @prisma/client is symlinked to the hoisted location.
- * The legacy-import build runs prisma generate AFTER packages/database build,
- * which overwrites the hoisted .prisma/client with our schema's models.
+ * IMPORTANT: We import from a local generated directory to avoid pnpm hoisting issues.
+ * The Prisma client is generated to src/generated/prisma/ during build.
+ * This ensures the client with all models is bundled correctly by Next.js.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@/generated/prisma';
 
 declare global {
   var prisma: PrismaClient | undefined;
