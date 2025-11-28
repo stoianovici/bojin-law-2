@@ -55,7 +55,7 @@ services:
     runtime: node
     repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
-    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @legal-platform/database build && cd apps/legacy-import && npx prisma generate --schema=../../packages/database/prisma/schema.prisma && cd ../.. && pnpm --filter @legal-platform/legacy-import build
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @legal-platform/database build && cd packages/database && npx prisma migrate deploy && cd ../.. && cd apps/legacy-import && npx prisma generate --schema=../../packages/database/prisma/schema.prisma && cd ../.. && pnpm --filter @legal-platform/legacy-import build
     startCommand: pnpm --filter @legal-platform/legacy-import start
     plan: starter # 512MB RAM - upgrade for large PST processing
     numInstances: 1
