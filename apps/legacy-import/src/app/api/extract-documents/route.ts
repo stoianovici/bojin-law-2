@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { downloadFromR2, uploadExtractedDocument } from '@/lib/r2-storage';
 import { extractFromPST, groupByMonth, getExtractionSummary } from '@/services/pst-parser.service';
+import { extractTextAndDetectLanguage } from '@/services/text-extraction.service';
+import type { SupportedLanguage } from '@/services/text-extraction.service';
 
 /**
  * POST - Start PST extraction for a session
@@ -53,11 +55,14 @@ export async function POST(request: NextRequest) {
     // Group by month for batch creation
     const byMonth = groupByMonth(extractionResult.attachments);
 
-    // Step 1: Upload all documents to R2 first (outside transaction)
+    // Step 1: Upload all documents to R2 and extract text for language detection
     // This is the slow part that was causing transaction timeouts
     const uploadedDocs: Array<{
       attachment: (typeof extractionResult.attachments)[0];
       storagePath: string;
+      extractedText: string;
+      primaryLanguage: SupportedLanguage;
+      languageConfidence: number;
     }> = [];
 
     for (const attachment of extractionResult.attachments) {
@@ -72,7 +77,37 @@ export async function POST(request: NextRequest) {
           emailSubject: attachment.emailMetadata.subject,
         }
       );
-      uploadedDocs.push({ attachment, storagePath: uploadResult.key });
+
+      // Extract text and detect language for supported file types
+      let extractedText = '';
+      let primaryLanguage: SupportedLanguage = 'Mixed';
+      let languageConfidence = 0;
+
+      const supportedExtensions = ['pdf', 'docx', 'doc'];
+      if (supportedExtensions.includes(attachment.fileExtension.toLowerCase())) {
+        try {
+          const textResult = await extractTextAndDetectLanguage(
+            attachment.content,
+            attachment.fileExtension
+          );
+          extractedText = textResult.text;
+          primaryLanguage = textResult.primaryLanguage;
+          languageConfidence = textResult.languageConfidence;
+        } catch (err) {
+          console.warn(
+            `Text extraction failed for ${attachment.fileName}:`,
+            err instanceof Error ? err.message : 'Unknown error'
+          );
+        }
+      }
+
+      uploadedDocs.push({
+        attachment,
+        storagePath: uploadResult.key,
+        extractedText,
+        primaryLanguage,
+        languageConfidence,
+      });
     }
 
     // Step 2: Create database records in a transaction (with extended timeout)
@@ -94,7 +129,13 @@ export async function POST(request: NextRequest) {
 
         // Create document records (R2 uploads already done)
         const documentRecords = [];
-        for (const { attachment, storagePath } of uploadedDocs) {
+        for (const {
+          attachment,
+          storagePath,
+          extractedText,
+          primaryLanguage,
+          languageConfidence,
+        } of uploadedDocs) {
           const batchId = batchIds.get(attachment.monthYear);
           const doc = await tx.extractedDocument.create({
             data: {
@@ -114,6 +155,10 @@ export async function POST(request: NextRequest) {
                 attachment.emailMetadata.receiverEmail || attachment.emailMetadata.receiverName,
               emailDate: attachment.emailMetadata.receivedDate,
               status: 'Uncategorized',
+              // Language detection fields
+              extractedText: extractedText || null,
+              primaryLanguage,
+              languageConfidence,
             },
           });
           documentRecords.push(doc);
