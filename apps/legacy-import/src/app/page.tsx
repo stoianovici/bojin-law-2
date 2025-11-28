@@ -1,7 +1,17 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { UploadCloud, FolderOpen, FileText, Settings, Loader2, CheckCircle, LayoutDashboard, Users } from 'lucide-react';
+import {
+  UploadCloud,
+  FolderOpen,
+  FileText,
+  Settings,
+  Loader2,
+  CheckCircle,
+  LayoutDashboard,
+  Users,
+  RefreshCw,
+} from 'lucide-react';
 import { PSTUploader } from '@/components/PSTUploader';
 import { CategorizationWorkspace } from '@/components/Categorization';
 import { PartnerDashboard, MergeCategoriesModal, ExportModal } from '@/components/Dashboard';
@@ -15,6 +25,24 @@ interface SessionState {
   sessionId: string | null;
   fileName: string | null;
   status: string;
+}
+
+interface ActiveSessionResponse {
+  hasActiveSession: boolean;
+  session: {
+    sessionId: string;
+    fileName: string;
+    status: string;
+    currentStep: ImportStep;
+    progress: {
+      totalDocuments: number;
+      categorizedCount: number;
+      skippedCount: number;
+      analyzedCount: number;
+    };
+    createdAt: string;
+    updatedAt: string;
+  } | null;
 }
 
 interface ExtractStepProps {
@@ -70,7 +98,10 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
             if (!isMounted) return;
 
             setProgress({
-              status: data.status === 'Extracted' || data.status === 'InProgress' ? 'complete' : 'extracting',
+              status:
+                data.status === 'Extracted' || data.status === 'InProgress'
+                  ? 'complete'
+                  : 'extracting',
               extractedCount: data.totalDocuments || 0,
               totalCount: data.totalDocuments || 0,
               analyzedCount: data.analyzedCount || 0,
@@ -108,9 +139,7 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
             <Settings className="h-6 w-6 text-red-600" />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-            Extragerea a eșuat
-          </h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Extragerea a eșuat</h2>
           <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -131,9 +160,7 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mb-4">
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-              Extragere finalizată!
-            </h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Extragere finalizată!</h2>
             <p className="text-gray-600">
               Am găsit {progress.extractedCount} documente pregătite pentru categorizare.
             </p>
@@ -141,9 +168,7 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
         ) : (
           <>
             <Loader2 className="h-10 w-10 animate-spin text-blue-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-              Se extrag documentele...
-            </h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Se extrag documentele...</h2>
             <p className="text-gray-600">
               Se procesează fișierul PST și se extrag atașamentele PDF, DOCX și DOC.
             </p>
@@ -192,8 +217,60 @@ function ImportPageContent() {
     skippedCount: 0,
     categoriesCount: 0,
   });
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [resumedSession, setResumedSession] = useState<ActiveSessionResponse['session'] | null>(
+    null
+  );
 
   const isPartnerOrAdmin = user?.role === 'Partner' || user?.role === 'Admin';
+
+  // Check for active session on mount
+  useEffect(() => {
+    async function checkActiveSession() {
+      if (!user?.id) {
+        setIsLoadingSession(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/active-session?userId=${user.id}`);
+        if (!res.ok) {
+          setIsLoadingSession(false);
+          return;
+        }
+
+        const data: ActiveSessionResponse = await res.json();
+
+        if (data.hasActiveSession && data.session) {
+          // Resume the active session
+          setSession({
+            sessionId: data.session.sessionId,
+            fileName: data.session.fileName,
+            status: data.session.status,
+          });
+          setCurrentStep(data.session.currentStep);
+          setResumedSession(data.session);
+        }
+      } catch (err) {
+        console.error('Error checking active session:', err);
+      } finally {
+        setIsLoadingSession(false);
+      }
+    }
+
+    checkActiveSession();
+  }, [user?.id]);
+
+  // Function to start a new session (abandon current)
+  const startNewSession = useCallback(() => {
+    setSession({
+      sessionId: null,
+      fileName: null,
+      status: 'idle',
+    });
+    setCurrentStep('upload');
+    setResumedSession(null);
+  }, []);
 
   const handleUploadComplete = useCallback((sessionId: string, fileName: string) => {
     setSession({
@@ -243,32 +320,66 @@ function ImportPageContent() {
     { id: 'export', label: 'Export', icon: Settings },
   ];
 
+  // Show loading state while checking for active session
+  if (isLoadingSession) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Se verifică sesiunea activă...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
+      {/* Session Resume Banner */}
+      {resumedSession && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <RefreshCw className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="font-medium text-blue-900">
+                  Sesiune reluată: {resumedSession.fileName}
+                </p>
+                <p className="text-sm text-blue-700">
+                  {resumedSession.progress.categorizedCount} din{' '}
+                  {resumedSession.progress.totalDocuments} documente categorizate
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={startNewSession}
+              className="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded-md transition-colors"
+            >
+              Începe sesiune nouă
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Progress Steps */}
       <nav className="flex items-center justify-center" aria-label="Progress">
         <ol className="flex items-center space-x-8">
           {steps.map((step, index) => {
             const Icon = step.icon;
             const isActive = step.id === currentStep;
-            const isPast = steps.findIndex(s => s.id === currentStep) > index;
+            const isPast = steps.findIndex((s) => s.id === currentStep) > index;
 
             return (
               <li key={step.id} className="flex items-center">
                 {index > 0 && (
-                  <div
-                    className={`h-0.5 w-16 mr-4 ${
-                      isPast ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}
-                  />
+                  <div className={`h-0.5 w-16 mr-4 ${isPast ? 'bg-blue-600' : 'bg-gray-200'}`} />
                 )}
                 <div
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                     isActive
                       ? 'bg-blue-600 text-white'
                       : isPast
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 text-gray-500'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -295,7 +406,9 @@ function ImportPageContent() {
                 }`}
               >
                 <Users className="h-4 w-4" />
-                {showUserManagement ? 'Ascunde administrare utilizatori' : 'Administrare utilizatori'}
+                {showUserManagement
+                  ? 'Ascunde administrare utilizatori'
+                  : 'Administrare utilizatori'}
               </button>
             </div>
           )}
@@ -307,24 +420,19 @@ function ImportPageContent() {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                Încarcă fișierul PST
-              </h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Încarcă fișierul PST</h2>
               <p className="text-gray-600">
-                Încarcă fișierul PST din Outlook pentru a începe importul documentelor pentru antrenament AI.
-                Sunt suportate fișiere de până la 60GB cu încărcare cu reluare.
+                Încarcă fișierul PST din Outlook pentru a începe importul documentelor pentru
+                antrenament AI. Sunt suportate fișiere de până la 60GB cu încărcare cu reluare.
               </p>
             </div>
 
-            <PSTUploader
-              onUploadComplete={handleUploadComplete}
-              onError={handleUploadError}
-            />
+            <PSTUploader onUploadComplete={handleUploadComplete} onError={handleUploadError} />
 
             <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm text-amber-800">
-                <strong>Notă de securitate:</strong> Fișierul PST va fi criptat în timpul încărcării și procesării.
-                Va fi șters automat după finalizarea exportului în OneDrive.
+                <strong>Notă de securitate:</strong> Fișierul PST va fi criptat în timpul încărcării
+                și procesării. Va fi șters automat după finalizarea exportului în OneDrive.
               </p>
             </div>
           </div>
@@ -370,7 +478,9 @@ function ImportPageContent() {
                 }`}
               >
                 <Users className="h-4 w-4" />
-                {showUserManagement ? 'Ascunde administrare utilizatori' : 'Administrare utilizatori'}
+                {showUserManagement
+                  ? 'Ascunde administrare utilizatori'
+                  : 'Administrare utilizatori'}
               </button>
             </div>
           )}
@@ -396,12 +506,10 @@ function ImportPageContent() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="text-center">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              Export finalizat!
-            </h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Export finalizat!</h2>
             <p className="text-gray-600 mb-6">
-              Documentele categorizate au fost exportate în OneDrive și fișierele
-              temporare au fost șterse.
+              Documentele categorizate au fost exportate în OneDrive și fișierele temporare au fost
+              șterse.
             </p>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg text-gray-700">
               <FolderOpen className="h-5 w-5" />
@@ -440,19 +548,29 @@ function ImportPageContent() {
         <h3 className="font-semibold text-gray-900 mb-4">Ghid de pornire rapidă</h3>
         <ol className="space-y-3 text-sm text-gray-600">
           <li className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">1</span>
+            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
+              1
+            </span>
             <span>Încarcă fișierul PST din Outlook care conține atașamentele email-urilor</span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">2</span>
+            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
+              2
+            </span>
             <span>Sistemul extrage atașamentele PDF, DOCX și DOC și analizează limba</span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">3</span>
-            <span>Tu și asistenții tăi categorizați documentele (munca este distribuită pe luni)</span>
+            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
+              3
+            </span>
+            <span>
+              Tu și asistenții tăi categorizați documentele (munca este distribuită pe luni)
+            </span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">4</span>
+            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
+              4
+            </span>
             <span>Unifică categoriile duplicate și exportă în OneDrive pentru antrenament AI</span>
           </li>
         </ol>
