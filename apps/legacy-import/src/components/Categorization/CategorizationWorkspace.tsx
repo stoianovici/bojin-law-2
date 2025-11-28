@@ -262,6 +262,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
               url={documentUrl}
               fileName={currentDocument.fileName}
               fileExtension={currentDocument.fileExtension}
+              extractedText={currentDocument.extractedText}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">

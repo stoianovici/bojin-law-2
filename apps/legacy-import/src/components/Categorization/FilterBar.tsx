@@ -27,7 +27,11 @@ export function FilterBar() {
     italian: documents.filter((d) => d.primaryLanguage === 'Italian').length,
     french: documents.filter((d) => d.primaryLanguage === 'French').length,
     mixed: documents.filter((d) => d.primaryLanguage === 'Mixed').length,
-    bilingual: documents.filter((d) => d.secondaryLanguage !== null).length,
+    bilingual: documents.filter(
+      (d) =>
+        d.secondaryLanguage &&
+        ['Romanian', 'English', 'Italian', 'French'].includes(d.secondaryLanguage)
+    ).length,
   };
 
   const statusFilters: FilterOption[] = [

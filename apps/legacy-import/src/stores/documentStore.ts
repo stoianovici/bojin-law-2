@@ -20,6 +20,7 @@ export interface DocumentMetadata {
   categorizedBy: string | null;
   categorizedAt: string | null;
   // AI Analysis fields
+  extractedText: string | null;
   primaryLanguage: string | null;
   secondaryLanguage: string | null;
   languageConfidence: number | null;
@@ -236,7 +237,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       case 'mixed':
         return documents.filter((d) => d.primaryLanguage === 'Mixed');
       case 'bilingual':
-        return documents.filter((d) => d.secondaryLanguage !== null);
+        // Only show docs where secondaryLanguage is a valid language value
+        return documents.filter(
+          (d) =>
+            d.secondaryLanguage &&
+            ['Romanian', 'English', 'Italian', 'French'].includes(d.secondaryLanguage)
+        );
       default:
         return documents;
     }

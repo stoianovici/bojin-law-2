@@ -71,8 +71,12 @@ export async function GET(request: NextRequest) {
         categoryId: true,
         storagePath: true,
         // AI analysis fields
+        extractedText: true,
         primaryLanguage: true,
+        secondaryLanguage: true,
+        languageConfidence: true,
         documentType: true,
+        documentTypeConfidence: true,
         templatePotential: true,
       },
       orderBy: [{ emailDate: 'asc' }, { fileName: 'asc' }],
