@@ -7,11 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { downloadFromR2, uploadExtractedDocument } from '@/lib/r2-storage';
-import {
-  extractFromPST,
-  groupByMonth,
-  getExtractionSummary,
-} from '@/services/pst-parser.service';
+import { extractFromPST, groupByMonth, getExtractionSummary } from '@/services/pst-parser.service';
 
 /**
  * POST - Start PST extraction for a session
@@ -22,10 +18,7 @@ export async function POST(request: NextRequest) {
     const { sessionId } = body;
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     // Get session
@@ -34,17 +27,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     if (!session.pstStoragePath) {
-      return NextResponse.json(
-        { error: 'PST file not uploaded yet' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'PST file not uploaded yet' }, { status: 400 });
     }
 
     if (session.status !== 'Extracting') {
@@ -66,96 +53,113 @@ export async function POST(request: NextRequest) {
     // Group by month for batch creation
     const byMonth = groupByMonth(extractionResult.attachments);
 
-    // Create batches and documents in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const batchIds = new Map<string, string>();
+    // Step 1: Upload all documents to R2 first (outside transaction)
+    // This is the slow part that was causing transaction timeouts
+    const uploadedDocs: Array<{
+      attachment: (typeof extractionResult.attachments)[0];
+      storagePath: string;
+    }> = [];
 
-      // Create batches for each month
-      for (const [monthYear, attachments] of byMonth) {
-        const batch = await tx.documentBatch.create({
+    for (const attachment of extractionResult.attachments) {
+      const uploadResult = await uploadExtractedDocument(
+        sessionId,
+        attachment.id,
+        attachment.content,
+        attachment.fileExtension,
+        {
+          originalFileName: attachment.fileName,
+          folderPath: attachment.folderPath,
+          emailSubject: attachment.emailMetadata.subject,
+        }
+      );
+      uploadedDocs.push({ attachment, storagePath: uploadResult.key });
+    }
+
+    // Step 2: Create database records in a transaction (with extended timeout)
+    const result = await prisma.$transaction(
+      async (tx) => {
+        const batchIds = new Map<string, string>();
+
+        // Create batches for each month
+        for (const [monthYear, attachments] of byMonth) {
+          const batch = await tx.documentBatch.create({
+            data: {
+              sessionId,
+              monthYear,
+              documentCount: attachments.length,
+            },
+          });
+          batchIds.set(monthYear, batch.id);
+        }
+
+        // Create document records (R2 uploads already done)
+        const documentRecords = [];
+        for (const { attachment, storagePath } of uploadedDocs) {
+          const batchId = batchIds.get(attachment.monthYear);
+          const doc = await tx.extractedDocument.create({
+            data: {
+              id: attachment.id,
+              sessionId,
+              batchId,
+              fileName: attachment.fileName,
+              fileExtension: attachment.fileExtension,
+              fileSizeBytes: attachment.fileSizeBytes,
+              storagePath,
+              folderPath: attachment.folderPath,
+              isSent: attachment.isSent,
+              emailSubject: attachment.emailMetadata.subject,
+              emailSender:
+                attachment.emailMetadata.senderEmail || attachment.emailMetadata.senderName,
+              emailReceiver:
+                attachment.emailMetadata.receiverEmail || attachment.emailMetadata.receiverName,
+              emailDate: attachment.emailMetadata.receivedDate,
+              status: 'Uncategorized',
+            },
+          });
+          documentRecords.push(doc);
+        }
+
+        // Update session status
+        await tx.legacyImportSession.update({
+          where: { id: sessionId },
           data: {
-            sessionId,
-            monthYear,
-            documentCount: attachments.length,
+            status: 'InProgress',
+            totalDocuments: extractionResult.attachments.length,
+            extractionErrors:
+              extractionResult.progress.errors.length > 0
+                ? JSON.parse(JSON.stringify(extractionResult.progress.errors))
+                : undefined,
           },
         });
-        batchIds.set(monthYear, batch.id);
-      }
 
-      // Upload documents to R2 and create database records
-      const documentRecords = [];
-      for (const attachment of extractionResult.attachments) {
-        // Upload to R2
-        const uploadResult = await uploadExtractedDocument(
-          sessionId,
-          attachment.id,
-          attachment.content,
-          attachment.fileExtension,
-          {
-            originalFileName: attachment.fileName,
-            folderPath: attachment.folderPath,
-            emailSubject: attachment.emailMetadata.subject,
-          }
-        );
-
-        // Create document record
-        const batchId = batchIds.get(attachment.monthYear);
-        const doc = await tx.extractedDocument.create({
+        // Create audit log
+        await tx.legacyImportAuditLog.create({
           data: {
-            id: attachment.id,
             sessionId,
-            batchId,
-            fileName: attachment.fileName,
-            fileExtension: attachment.fileExtension,
-            fileSizeBytes: attachment.fileSizeBytes,
-            storagePath: uploadResult.key,
-            folderPath: attachment.folderPath,
-            isSent: attachment.isSent,
-            emailSubject: attachment.emailMetadata.subject,
-            emailSender: attachment.emailMetadata.senderEmail || attachment.emailMetadata.senderName,
-            emailReceiver: attachment.emailMetadata.receiverEmail || attachment.emailMetadata.receiverName,
-            emailDate: attachment.emailMetadata.receivedDate,
-            status: 'Uncategorized',
+            userId: session.uploadedBy,
+            action: 'EXTRACTION_COMPLETED',
+            details: {
+              totalDocuments: summary.totalDocuments,
+              byExtension: summary.byExtension,
+              byMonth: summary.byMonth,
+              sentCount: summary.sentCount,
+              receivedCount: summary.receivedCount,
+              errorCount: summary.errorCount,
+              batchCount: byMonth.size,
+            },
           },
         });
-        documentRecords.push(doc);
+
+        return {
+          documents: documentRecords,
+          batchCount: byMonth.size,
+        };
+      },
+      {
+        maxWait: 60000, // 60 seconds max wait to acquire transaction
+        timeout: 120000, // 2 minutes timeout for transaction execution
       }
-
-      // Update session status
-      await tx.legacyImportSession.update({
-        where: { id: sessionId },
-        data: {
-          status: 'InProgress',
-          totalDocuments: extractionResult.attachments.length,
-          extractionErrors: extractionResult.progress.errors.length > 0
-            ? JSON.parse(JSON.stringify(extractionResult.progress.errors))
-            : undefined,
-        },
-      });
-
-      // Create audit log
-      await tx.legacyImportAuditLog.create({
-        data: {
-          sessionId,
-          userId: session.uploadedBy,
-          action: 'EXTRACTION_COMPLETED',
-          details: {
-            totalDocuments: summary.totalDocuments,
-            byExtension: summary.byExtension,
-            byMonth: summary.byMonth,
-            sentCount: summary.sentCount,
-            receivedCount: summary.receivedCount,
-            errorCount: summary.errorCount,
-            batchCount: byMonth.size,
-          },
-        },
-      });
-
-      return {
-        documents: documentRecords,
-        batchCount: byMonth.size,
-      };
-    });
+    );
 
     return NextResponse.json({
       success: true,
@@ -194,7 +198,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to extract documents', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to extract documents',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
@@ -209,10 +216,7 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     const session = await prisma.legacyImportSession.findUnique({
@@ -239,10 +243,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // Get document statistics
@@ -277,9 +278,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Get extraction status error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
