@@ -24,7 +24,10 @@ export function FilterBar() {
     received: documents.filter((d) => !d.isSent).length,
     romanian: documents.filter((d) => d.primaryLanguage === 'Romanian').length,
     english: documents.filter((d) => d.primaryLanguage === 'English').length,
-    mixed: documents.filter((d) => d.secondaryLanguage !== null).length,
+    italian: documents.filter((d) => d.primaryLanguage === 'Italian').length,
+    french: documents.filter((d) => d.primaryLanguage === 'French').length,
+    mixed: documents.filter((d) => d.primaryLanguage === 'Mixed').length,
+    bilingual: documents.filter((d) => d.secondaryLanguage !== null).length,
   };
 
   const statusFilters: FilterOption[] = [
@@ -42,7 +45,10 @@ export function FilterBar() {
   const languageFilters: FilterOption[] = [
     { value: 'romanian', label: 'Română', count: counts.romanian },
     { value: 'english', label: 'Engleză', count: counts.english },
-    { value: 'mixed', label: 'Mixt', count: counts.mixed },
+    { value: 'italian', label: 'Italiană', count: counts.italian },
+    { value: 'french', label: 'Franceză', count: counts.french },
+    { value: 'mixed', label: 'Nedeterminat', count: counts.mixed },
+    { value: 'bilingual', label: 'Bilingv', count: counts.bilingual },
   ];
 
   const FilterButton = ({ filter }: { filter: FilterOption }) => (
@@ -50,15 +56,18 @@ export function FilterBar() {
       onClick={() => setActiveFilter(filter.value)}
       className={`
         px-3 py-1.5 rounded-md text-sm font-medium transition-colors
-        ${activeFilter === filter.value
-          ? 'bg-blue-600 text-white'
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        ${
+          activeFilter === filter.value
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         }
       `}
     >
       {filter.label}
       {filter.count !== undefined && (
-        <span className={`ml-1.5 ${activeFilter === filter.value ? 'text-blue-200' : 'text-gray-400'}`}>
+        <span
+          className={`ml-1.5 ${activeFilter === filter.value ? 'text-blue-200' : 'text-gray-400'}`}
+        >
           ({filter.count})
         </span>
       )}
@@ -70,9 +79,7 @@ export function FilterBar() {
       <div className="flex flex-wrap items-center gap-4">
         {/* Status Filters */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Stare:
-          </span>
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Stare:</span>
           <div className="flex items-center gap-1">
             {statusFilters.map((filter) => (
               <FilterButton key={filter.value} filter={filter} />
@@ -100,9 +107,7 @@ export function FilterBar() {
 
         {/* Language Filters */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Limbă:
-          </span>
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Limbă:</span>
           <div className="flex items-center gap-1">
             {languageFilters.map((filter) => (
               <FilterButton key={filter.value} filter={filter} />

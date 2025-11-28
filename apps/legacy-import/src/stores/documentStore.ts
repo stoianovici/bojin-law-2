@@ -62,7 +62,10 @@ export type FilterType =
   | 'received'
   | 'romanian'
   | 'english'
-  | 'mixed';
+  | 'italian'
+  | 'french'
+  | 'mixed'
+  | 'bilingual';
 
 interface DocumentState {
   // Session
@@ -145,52 +148,52 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   setCategories: (categories) => set({ categories }),
 
-  addCategory: (category) => set((state) => ({
-    categories: [...state.categories, category]
-  })),
+  addCategory: (category) =>
+    set((state) => ({
+      categories: [...state.categories, category],
+    })),
 
   setCurrentDocumentIndex: (index) => set({ currentDocumentIndex: index }),
 
   setActiveFilter: (filter) => set({ activeFilter: filter, currentDocumentIndex: 0 }),
 
-  setDocumentUrl: (documentId, url) => set((state) => ({
-    documentUrls: { ...state.documentUrls, [documentId]: url }
-  })),
+  setDocumentUrl: (documentId, url) =>
+    set((state) => ({
+      documentUrls: { ...state.documentUrls, [documentId]: url },
+    })),
 
   setLoading: (isLoading) => set({ isLoading }),
 
   setError: (error) => set({ error }),
 
-  categorizeDocument: (documentId, categoryId, categoryName) => set((state) => {
-    const updatedDocuments = state.documents.map((doc) =>
-      doc.id === documentId
-        ? {
-            ...doc,
-            categoryId,
-            categoryName,
-            status: 'Categorized' as const,
-            categorizedAt: new Date().toISOString(),
-          }
-        : doc
-    );
+  categorizeDocument: (documentId, categoryId, categoryName) =>
+    set((state) => {
+      const updatedDocuments = state.documents.map((doc) =>
+        doc.id === documentId
+          ? {
+              ...doc,
+              categoryId,
+              categoryName,
+              status: 'Categorized' as const,
+              categorizedAt: new Date().toISOString(),
+            }
+          : doc
+      );
 
-    // Update category counts
-    const updatedCategories = state.categories.map((cat) =>
-      cat.id === categoryId
-        ? { ...cat, documentCount: cat.documentCount + 1 }
-        : cat
-    );
+      // Update category counts
+      const updatedCategories = state.categories.map((cat) =>
+        cat.id === categoryId ? { ...cat, documentCount: cat.documentCount + 1 } : cat
+      );
 
-    return { documents: updatedDocuments, categories: updatedCategories };
-  }),
+      return { documents: updatedDocuments, categories: updatedCategories };
+    }),
 
-  skipDocument: (documentId) => set((state) => ({
-    documents: state.documents.map((doc) =>
-      doc.id === documentId
-        ? { ...doc, status: 'Skipped' as const }
-        : doc
-    ),
-  })),
+  skipDocument: (documentId) =>
+    set((state) => ({
+      documents: state.documents.map((doc) =>
+        doc.id === documentId ? { ...doc, status: 'Skipped' as const } : doc
+      ),
+    })),
 
   goToNextDocument: () => {
     const state = get();
@@ -226,7 +229,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         return documents.filter((d) => d.primaryLanguage === 'Romanian');
       case 'english':
         return documents.filter((d) => d.primaryLanguage === 'English');
+      case 'italian':
+        return documents.filter((d) => d.primaryLanguage === 'Italian');
+      case 'french':
+        return documents.filter((d) => d.primaryLanguage === 'French');
       case 'mixed':
+        return documents.filter((d) => d.primaryLanguage === 'Mixed');
+      case 'bilingual':
         return documents.filter((d) => d.secondaryLanguage !== null);
       default:
         return documents;

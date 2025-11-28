@@ -8,9 +8,46 @@
 import type { Job, Queue as BullQueue } from 'bull';
 
 // These imports are safe - no Redis connection
-import { franc } from 'franc-min';
+import { francAll } from 'franc-min';
 import { prisma } from '@/lib/prisma';
 import { ExtractedDocument, AIAnalysisResult } from '@shared/types';
+
+// Language type matching Prisma enum
+type SupportedLanguage = 'Romanian' | 'English' | 'Italian' | 'French' | 'Mixed';
+
+// Map franc ISO 639-3 codes to our supported languages
+const FRANC_LANG_MAP: Record<string, SupportedLanguage> = {
+  ron: 'Romanian',
+  eng: 'English',
+  ita: 'Italian',
+  fra: 'French',
+};
+
+// Romanian-specific patterns for better detection
+const ROMANIAN_PATTERNS = [
+  /\b(și|sau|pentru|este|sunt|care|mai|acest|această|aceste|acestea)\b/gi,
+  /\b(contract|articol|obligații|părți|drepturile|executare|reziliere)\b/gi,
+  /[ăâîșț]/gi, // Romanian diacritics
+];
+
+// English-specific patterns
+const ENGLISH_PATTERNS = [
+  /\b(the|and|for|that|with|this|from|have|will|shall)\b/gi,
+  /\b(agreement|contract|party|parties|obligations|rights|termination)\b/gi,
+];
+
+// Italian-specific patterns
+const ITALIAN_PATTERNS = [
+  /\b(il|lo|la|gli|le|che|per|con|una|sono|della|questo)\b/gi,
+  /\b(contratto|articolo|obblighi|parti|diritti|esecuzione|risoluzione)\b/gi,
+];
+
+// French-specific patterns
+const FRENCH_PATTERNS = [
+  /\b(le|la|les|et|pour|que|qui|avec|dans|sont|cette|ces)\b/gi,
+  /\b(contrat|article|obligations|parties|droits|exécution|résiliation)\b/gi,
+  /[éèêëàâùûôîç]/gi, // French diacritics
+];
 
 const BATCH_SIZE = 25; // Optimal for token usage
 const MAX_TOKENS_PER_REQUEST = 4000;
@@ -139,39 +176,39 @@ export class AIDocumentAnalyzer {
    * Build the analysis prompt for Claude
    */
   private buildAnalysisPrompt(documents: ExtractedDocument[]): string {
-    return `You are a legal document analyst specializing in Romanian and English legal texts.
+    return `You are a legal document analyst specializing in Romanian, English, Italian, and French legal texts.
 Analyze these documents and extract structured metadata for AI training.
 
 For each document, determine:
-1. Primary language (Romanian/English/Mixed) - based on majority text
-2. Secondary language if mixed (>10% of content)
-3. Language ratio (percentages)
-4. Document type in the original language (e.g., "Contract de Vanzare-Cumparare")
+1. Primary language (Romanian/English/Italian/French/Mixed) - based on majority text
+2. Secondary language if mixed (>10% of content in another language)
+3. Language ratio (percentages for all detected languages)
+4. Document type in the original language (e.g., "Contract de Vanzare-Cumparare", "Contratto di Vendita", "Contrat de Vente")
 5. Standard legal clause categories present
 6. Template potential (High >80% standard, Medium 50-80%, Low <50%)
-7. Key legal terms in each language (max 10 each)
+7. Key legal terms in each detected language (max 10 each)
 8. Complexity score (0-1) based on structure and legal complexity
 9. Risk indicators (unclear terms, mixed jurisdiction, unusual clauses)
 
 Legal clause categories to identify:
-- payment_terms (termeni de plata)
-- delivery_conditions (conditii de livrare)
-- warranties (garantii)
-- liability (raspundere)
-- termination (reziliere)
-- confidentiality (confidentialitate)
-- dispute_resolution (solutionarea litigiilor)
-- force_majeure (forta majora)
-- intellectual_property (proprietate intelectuala)
-- compliance (conformitate)
+- payment_terms (termeni de plata / termini di pagamento / conditions de paiement)
+- delivery_conditions (conditii de livrare / condizioni di consegna / conditions de livraison)
+- warranties (garantii / garanzie / garanties)
+- liability (raspundere / responsabilità / responsabilité)
+- termination (reziliere / risoluzione / résiliation)
+- confidentiality (confidentialitate / riservatezza / confidentialité)
+- dispute_resolution (solutionarea litigiilor / risoluzione delle controversie / règlement des litiges)
+- force_majeure (forta majora / forza maggiore / force majeure)
+- intellectual_property (proprietate intelectuala / proprietà intellettuale / propriété intellectuelle)
+- compliance (conformitate / conformità / conformité)
 
 Return ONLY a valid JSON array with NO additional text:
 [
   {
     "id": "document_id",
-    "primaryLanguage": "Romanian|English|Mixed",
-    "secondaryLanguage": "Romanian|English|null",
-    "languageRatio": {"Romanian": 0.85, "English": 0.15},
+    "primaryLanguage": "Romanian|English|Italian|French|Mixed",
+    "secondaryLanguage": "Romanian|English|Italian|French|null",
+    "languageRatio": {"Romanian": 0.85, "English": 0.15, "Italian": 0, "French": 0},
     "languageConfidence": 0.95,
     "documentType": "Original language type name",
     "documentTypeConfidence": 0.89,
@@ -179,7 +216,9 @@ Return ONLY a valid JSON array with NO additional text:
     "templatePotential": "High|Medium|Low",
     "keyTerms": {
       "romanian": ["vanzator", "cumparator"],
-      "english": ["seller", "buyer"]
+      "english": ["seller", "buyer"],
+      "italian": ["venditore", "acquirente"],
+      "french": ["vendeur", "acheteur"]
     },
     "complexityScore": 0.65,
     "structureType": "structured|semi-structured|unstructured",
@@ -217,33 +256,134 @@ ${textPreview}
   }
 
   /**
-   * Fallback analysis using franc library
+   * Detect language using pattern matching as a supplement to franc
+   */
+  private detectLanguageWithPatterns(text: string): {
+    language: SupportedLanguage;
+    confidence: number;
+  } {
+    const scores: Record<SupportedLanguage, number> = {
+      Romanian: 0,
+      English: 0,
+      Italian: 0,
+      French: 0,
+      Mixed: 0,
+    };
+
+    // Count pattern matches for each language
+    for (const pattern of ROMANIAN_PATTERNS) {
+      const matches = text.match(pattern);
+      scores.Romanian += matches ? matches.length : 0;
+    }
+    for (const pattern of ENGLISH_PATTERNS) {
+      const matches = text.match(pattern);
+      scores.English += matches ? matches.length : 0;
+    }
+    for (const pattern of ITALIAN_PATTERNS) {
+      const matches = text.match(pattern);
+      scores.Italian += matches ? matches.length : 0;
+    }
+    for (const pattern of FRENCH_PATTERNS) {
+      const matches = text.match(pattern);
+      scores.French += matches ? matches.length : 0;
+    }
+
+    // Find the language with highest score
+    const entries = Object.entries(scores).filter(([lang]) => lang !== 'Mixed') as [
+      SupportedLanguage,
+      number,
+    ][];
+    const sorted = entries.sort((a, b) => b[1] - a[1]);
+    const [topLang, topScore] = sorted[0];
+    const [, secondScore] = sorted[1] || ['Mixed', 0];
+
+    // Calculate confidence based on score difference
+    const totalScore = sorted.reduce((sum, [, score]) => sum + score, 0);
+    if (totalScore === 0) {
+      return { language: 'Mixed', confidence: 0.3 };
+    }
+
+    const confidence = topScore / totalScore;
+
+    // If top two scores are close, it might be mixed
+    if (secondScore > 0 && topScore / secondScore < 2) {
+      return { language: topLang, confidence: confidence * 0.7 };
+    }
+
+    return { language: topLang, confidence: Math.min(confidence, 0.9) };
+  }
+
+  /**
+   * Fallback analysis using franc library + pattern matching
    */
   private async fallbackAnalysis(documents: ExtractedDocument[]): Promise<AIAnalysisResult[]> {
     return documents.map((doc) => {
       const text = doc.extractedText || '';
-      const detectedLang = franc(text);
 
-      // Map franc language codes
-      let primaryLanguage: 'Romanian' | 'English' | 'Mixed' = 'English';
-      if (detectedLang === 'ron') primaryLanguage = 'Romanian';
-      else if (detectedLang === 'eng') primaryLanguage = 'English';
-      else primaryLanguage = 'Mixed';
+      // Try franc first with multiple candidates
+      const francResults = francAll(text, { minLength: 10 });
+      const topFrancResult = francResults[0];
+
+      // Get franc's best guess if available
+      let francLang: SupportedLanguage | null = null;
+      let francConfidence = 0;
+
+      if (topFrancResult && topFrancResult[0] !== 'und') {
+        francLang = FRANC_LANG_MAP[topFrancResult[0]] || null;
+        francConfidence = topFrancResult[1];
+      }
+
+      // Also run pattern-based detection
+      const patternResult = this.detectLanguageWithPatterns(text);
+
+      // Combine results: prefer pattern detection for our target languages
+      let primaryLanguage: SupportedLanguage;
+      let confidence: number;
+
+      if (patternResult.confidence > 0.5) {
+        // Pattern detection is confident
+        primaryLanguage = patternResult.language;
+        confidence = patternResult.confidence;
+      } else if (francLang && francConfidence > 0.5) {
+        // Franc is confident and detected a supported language
+        primaryLanguage = francLang;
+        confidence = francConfidence;
+      } else if (patternResult.confidence > 0.3) {
+        // Low confidence pattern match is better than nothing
+        primaryLanguage = patternResult.language;
+        confidence = patternResult.confidence;
+      } else if (francLang) {
+        // Fall back to franc even with low confidence
+        primaryLanguage = francLang;
+        confidence = Math.max(francConfidence, 0.4);
+      } else {
+        // No detection worked - mark as Mixed (unknown)
+        primaryLanguage = 'Mixed';
+        confidence = 0.3;
+      }
+
+      // Build language ratio
+      const languageRatio: Record<string, number> = {
+        Romanian: 0,
+        English: 0,
+        Italian: 0,
+        French: 0,
+      };
+      if (primaryLanguage !== 'Mixed') {
+        languageRatio[primaryLanguage] = 1;
+      }
 
       return {
         id: doc.id,
         primaryLanguage,
         secondaryLanguage: null,
-        languageRatio: {
-          Romanian: primaryLanguage === 'Romanian' ? 1 : 0,
-          English: primaryLanguage === 'English' ? 1 : 0,
-        },
-        languageConfidence: detectedLang === 'und' ? 0.3 : 0.7,
+        languageRatio,
+        languageConfidence: confidence,
         documentType: 'Unknown',
         documentTypeConfidence: 0,
         clauseCategories: [],
         templatePotential: 'Low' as const,
-        keyTerms: { romanian: [], english: [] },
+        keyTerms: { romanian: [], english: [], italian: [], french: [] },
         complexityScore: 0.5,
         structureType: 'unstructured' as const,
         riskIndicators: {
