@@ -12,9 +12,8 @@ const nextConfig = {
     optimizePackageImports: ['@legal-platform/ui'],
   },
   serverExternalPackages: ['pst-extractor', 'bull', '@prisma/client', '.prisma/client'],
-  turbopack: {},
 
-  // Webpack config for backwards compatibility
+  // Webpack config
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
