@@ -2,7 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@legal-platform/ui', '@legal-platform/types', '@legal-platform/database'],
-  output: 'standalone',
+  // Note: Removed 'output: standalone' - it causes Prisma client issues in monorepo
+  // The standard Next.js server works better with external packages like @prisma/client
   // TODO: Remove after fixing TypeScript errors in document-type-discovery and decision-engine services
   typescript: {
     ignoreBuildErrors: true,
