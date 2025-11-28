@@ -4,6 +4,7 @@
  * Part of Story 3.2.5 - Legacy Document Import
  */
 
+// Import prisma instance - uses .prisma/client directly for monorepo compatibility
 import { prisma } from '@/lib/prisma';
 
 export interface BatchAllocation {
@@ -62,7 +63,7 @@ export async function allocateBatchesToUser(
 
     return {
       userId,
-      batches: existingBatches.map(b => ({
+      batches: existingBatches.map((b) => ({
         batchId: b.id,
         monthYear: b.monthYear,
         documentCount: b.documentCount,
@@ -85,16 +86,14 @@ export async function allocateBatchesToUser(
   });
 
   // Get unique assigned users
-  const assignedUsers = new Set(
-    allBatches.filter(b => b.assignedTo).map(b => b.assignedTo)
-  );
+  const assignedUsers = new Set(allBatches.filter((b) => b.assignedTo).map((b) => b.assignedTo));
   const totalUsers = assignedUsers.size + 1; // +1 for new user
 
   // Calculate fair share (batches per user)
   const batchesPerUser = Math.ceil(allBatches.length / totalUsers);
 
   // Get unassigned batches
-  const unassignedBatches = allBatches.filter(b => !b.assignedTo);
+  const unassignedBatches = allBatches.filter((b) => !b.assignedTo);
 
   // Assign batches to this user (oldest first)
   const batchesToAssign = unassignedBatches.slice(0, batchesPerUser);
@@ -108,7 +107,7 @@ export async function allocateBatchesToUser(
   }
 
   // Update batches with assignment
-  const assignedBatchIds = batchesToAssign.map(b => b.id);
+  const assignedBatchIds = batchesToAssign.map((b) => b.id);
   await prisma.documentBatch.updateMany({
     where: {
       id: { in: assignedBatchIds },
@@ -134,7 +133,7 @@ export async function allocateBatchesToUser(
 
   return {
     userId,
-    batches: assignedBatches.map(b => ({
+    batches: assignedBatches.map((b) => ({
       batchId: b.id,
       monthYear: b.monthYear,
       documentCount: b.documentCount,
@@ -201,7 +200,7 @@ export async function autoReassignBatches(sessionId: string): Promise<number> {
 
   for (const [userId, userBatchList] of userBatches) {
     const allComplete = userBatchList.every(
-      b => b.categorizedCount + b.skippedCount >= b.documentCount
+      (b) => b.categorizedCount + b.skippedCount >= b.documentCount
     );
     if (allComplete) {
       finishedUsers.push(userId);
@@ -211,7 +210,7 @@ export async function autoReassignBatches(sessionId: string): Promise<number> {
   }
 
   // If no active users or no unassigned batches, nothing to do
-  const unassignedBatches = batches.filter(b => !b.assignedTo);
+  const unassignedBatches = batches.filter((b) => !b.assignedTo);
   if (finishedUsers.length === 0 || unassignedBatches.length === 0) {
     return 0;
   }
@@ -256,9 +255,9 @@ export async function getSessionProgress(sessionId: string): Promise<SessionProg
   const skippedCount = session.skippedCount;
   const remainingCount = totalDocuments - categorizedCount - skippedCount;
 
-  const assignedBatchCount = session.batches.filter(b => b.assignedTo).length;
+  const assignedBatchCount = session.batches.filter((b) => b.assignedTo).length;
   const completedBatchCount = session.batches.filter(
-    b => b.categorizedCount + b.skippedCount >= b.documentCount
+    (b) => b.categorizedCount + b.skippedCount >= b.documentCount
   ).length;
 
   return {
@@ -267,7 +266,10 @@ export async function getSessionProgress(sessionId: string): Promise<SessionProg
     categorizedCount,
     skippedCount,
     remainingCount,
-    progress: totalDocuments > 0 ? Math.round(((categorizedCount + skippedCount) / totalDocuments) * 100) : 0,
+    progress:
+      totalDocuments > 0
+        ? Math.round(((categorizedCount + skippedCount) / totalDocuments) * 100)
+        : 0,
     batchCount: session.batches.length,
     assignedBatchCount,
     completedBatchCount,
@@ -299,7 +301,7 @@ export async function getAllBatchesStatus(sessionId: string): Promise<{
   }
 
   return {
-    batches: batches.map(b => ({
+    batches: batches.map((b) => ({
       batchId: b.id,
       monthYear: b.monthYear,
       documentCount: b.documentCount,

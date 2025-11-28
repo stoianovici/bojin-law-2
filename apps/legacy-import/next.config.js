@@ -8,15 +8,15 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   experimental: {
     optimizePackageImports: ['@legal-platform/ui'],
   },
   serverExternalPackages: ['pst-extractor', 'bull', '@prisma/client', '.prisma/client'],
 
-  // Webpack config
+  // Empty turbopack config to silence Next.js 16 warning while keeping webpack config for compatibility
+  turbopack: {},
+
+  // Webpack config (used when --webpack flag is passed)
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
