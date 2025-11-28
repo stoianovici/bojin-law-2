@@ -22,17 +22,11 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId'); // TODO: Get from auth context
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
     // Verify session exists and is in correct status
@@ -41,10 +35,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     if (session.status !== 'InProgress' && session.status !== 'Completed') {
@@ -64,7 +55,7 @@ export async function GET(request: NextRequest) {
     const documents = await prisma.extractedDocument.findMany({
       where: {
         sessionId,
-        batchId: { in: userBatchInfo.batches.map(b => b.batchId) },
+        batchId: { in: userBatchInfo.batches.map((b) => b.batchId) },
       },
       select: {
         id: true,
@@ -84,33 +75,48 @@ export async function GET(request: NextRequest) {
         documentType: true,
         templatePotential: true,
       },
-      orderBy: [
-        { emailDate: 'asc' },
-        { fileName: 'asc' },
-      ],
+      orderBy: [{ emailDate: 'asc' }, { fileName: 'asc' }],
+    });
+
+    // Get categories for this session
+    const categories = await prisma.documentCategory.findMany({
+      where: { sessionId },
+      select: {
+        id: true,
+        name: true,
+        documentCount: true,
+      },
+      orderBy: { name: 'asc' },
     });
 
     return NextResponse.json({
       userId,
       sessionId,
+      sessionStatus: session.status,
+      batch: userBatchInfo.batches[0] || null, // First batch for backward compat
       batches: userBatchInfo.batches,
       documents,
+      categories,
+      sessionProgress: {
+        totalDocuments: userBatchInfo.totalDocuments,
+        categorizedCount: userBatchInfo.categorizedCount,
+        skippedCount: userBatchInfo.skippedCount,
+        remainingCount: userBatchInfo.remainingCount,
+      },
       summary: {
         totalDocuments: userBatchInfo.totalDocuments,
         categorizedCount: userBatchInfo.categorizedCount,
         skippedCount: userBatchInfo.skippedCount,
         remainingCount: userBatchInfo.remainingCount,
       },
-      batchRange: userBatchInfo.batches.length > 0
-        ? `${userBatchInfo.batches[0].monthYear} - ${userBatchInfo.batches[userBatchInfo.batches.length - 1].monthYear}`
-        : null,
+      batchRange:
+        userBatchInfo.batches.length > 0
+          ? `${userBatchInfo.batches[0].monthYear} - ${userBatchInfo.batches[userBatchInfo.batches.length - 1].monthYear}`
+          : null,
     });
   } catch (error) {
     console.error('Get batch error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -123,18 +129,12 @@ export async function POST(request: NextRequest) {
     const { sessionId, isPartner } = body;
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     // TODO: Verify user is a Partner
     if (!isPartner) {
-      return NextResponse.json(
-        { error: 'Partner access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Partner access required' }, { status: 403 });
     }
 
     const status = await getAllBatchesStatus(sessionId);
@@ -145,9 +145,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Get all batches status error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
