@@ -34,7 +34,7 @@ services:
           name: legal-platform-redis
           property: connectionString
     healthCheckPath: /api/health
-    autoDeployTrigger: commit # Auto-deploy on each commit to main
+    autoDeploy: false # Disabled - only deploy legacy-import automatically
 
   ##############################################################################
   # Cache - Redis for Session Management
