@@ -7,7 +7,11 @@
 import mammoth from 'mammoth';
 // @ts-expect-error - pdf-parse has ESM issues with TypeScript
 import pdfParse from 'pdf-parse';
+import WordExtractor from 'word-extractor';
 import { francAll } from 'franc-min';
+
+// Create a singleton extractor instance
+const wordExtractor = new WordExtractor();
 
 // Language type matching Prisma enum
 export type SupportedLanguage = 'Romanian' | 'English' | 'Italian' | 'French' | 'Mixed';
@@ -27,10 +31,11 @@ const ROMANIAN_PATTERNS = [
   /[ăâîșț]/gi, // Romanian diacritics
 ];
 
-// English-specific patterns
+// English-specific patterns - expanded for better detection
 const ENGLISH_PATTERNS = [
-  /\b(the|and|for|that|with|this|from|have|will|shall|between|under)\b/gi,
-  /\b(agreement|contract|party|parties|obligations|rights|termination|company)\b/gi,
+  /\b(the|and|for|that|with|this|from|have|will|shall|between|under|of|to|in|is|are|be|by|or|as|at|an|any|all|such|may|upon)\b/gi,
+  /\b(agreement|contract|party|parties|obligations|rights|termination|company|whereas|hereby|herein|hereof|thereof|loan|borrower|lender|pursuant)\b/gi,
+  /\b(provided|including|without|limitation|accordance|accordance|respect|subject|notwithstanding|foregoing|execution|breach|default)\b/gi,
 ];
 
 // Italian-specific patterns
@@ -97,26 +102,32 @@ export async function extractTextFromDOCX(buffer: Buffer): Promise<TextExtractio
 
 /**
  * Extract text from a DOC buffer (legacy Word format)
- * Note: mammoth doesn't support .doc, so we try to extract what we can
+ * Uses word-extractor for proper binary DOC parsing
  */
 export async function extractTextFromDOC(buffer: Buffer): Promise<TextExtractionResult> {
   try {
-    // Try mammoth first (works for some .doc files that are actually .docx)
-    const result = await mammoth.extractRawText({ buffer });
-    if (result.value && result.value.length > 50) {
+    // First try word-extractor (proper DOC parser)
+    const document = await wordExtractor.extract(buffer);
+    const text = document.getBody();
+
+    if (text && text.trim().length > 20) {
       return {
-        text: result.value,
+        text: text.trim(),
         success: true,
       };
     }
 
-    // Fallback: try to extract readable ASCII text from the binary
-    const text = extractReadableText(buffer);
-    if (text.length > 50) {
-      return {
-        text,
-        success: true,
-      };
+    // Fallback: try mammoth (works for some .doc files that are actually .docx)
+    try {
+      const result = await mammoth.extractRawText({ buffer });
+      if (result.value && result.value.length > 50) {
+        return {
+          text: result.value,
+          success: true,
+        };
+      }
+    } catch {
+      // Mammoth failed, continue
     }
 
     return {
@@ -125,13 +136,17 @@ export async function extractTextFromDOC(buffer: Buffer): Promise<TextExtraction
       error: 'Could not extract text from legacy DOC format',
     };
   } catch (error) {
-    // Try raw text extraction as fallback
-    const text = extractReadableText(buffer);
-    if (text.length > 50) {
-      return {
-        text,
-        success: true,
-      };
+    // Try mammoth as last resort
+    try {
+      const result = await mammoth.extractRawText({ buffer });
+      if (result.value && result.value.length > 50) {
+        return {
+          text: result.value,
+          success: true,
+        };
+      }
+    } catch {
+      // Mammoth also failed
     }
 
     return {
@@ -140,20 +155,6 @@ export async function extractTextFromDOC(buffer: Buffer): Promise<TextExtraction
       error: error instanceof Error ? error.message : 'DOC extraction failed',
     };
   }
-}
-
-/**
- * Extract readable ASCII/UTF-8 text from a binary buffer
- * Used as fallback for legacy .doc files
- */
-function extractReadableText(buffer: Buffer): string {
-  const text = buffer.toString('utf-8');
-  // Filter to mostly printable characters and common whitespace
-  const readable = text.replace(/[^\x20-\x7E\xC0-\xFF\n\r\t]/g, ' ');
-  // Collapse multiple spaces
-  const collapsed = readable.replace(/\s+/g, ' ').trim();
-  // Only return if we have meaningful content
-  return collapsed.length > 100 ? collapsed : '';
 }
 
 /**
