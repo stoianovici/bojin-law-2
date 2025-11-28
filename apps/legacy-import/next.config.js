@@ -8,8 +8,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Note: ESLint config removed - not supported in Next.js 16
-  // Lint is run separately in CI via pnpm lint
+  // Skip ESLint during builds - lint is run separately in CI
+  // Note: This is for Next.js 15 compatibility (Render uses 15.x due to --no-frozen-lockfile)
+  // In Next.js 16+ this option is ignored with a warning
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   experimental: {
     optimizePackageImports: ['@legal-platform/ui'],
   },
