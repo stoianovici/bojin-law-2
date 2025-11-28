@@ -5,7 +5,9 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
-  output          = "../node_modules/.prisma/client"
+  // NOTE: No custom output - generates to pnpm hoisted location
+  // which is where @prisma/client symlink resolves to
+  binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {

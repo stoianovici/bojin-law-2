@@ -1,13 +1,12 @@
 /**
  * Prisma Client for Legacy Import App
- * Uses locally generated client from app's own prisma schema
  *
- * IMPORTANT: Import from .prisma/client (our custom output location)
- * to avoid pnpm monorepo hoisting issues where @prisma/client
- * resolves to a different package without our generated models.
+ * NOTE: In pnpm monorepos, @prisma/client is symlinked to the hoisted location.
+ * The legacy-import build runs prisma generate AFTER packages/database build,
+ * which overwrites the hoisted .prisma/client with our schema's models.
  */
 
-import { PrismaClient } from '.prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 declare global {
   var prisma: PrismaClient | undefined;
