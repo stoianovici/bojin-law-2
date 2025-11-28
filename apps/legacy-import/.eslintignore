@@ -1,0 +1,13 @@
+# Ignore test files during build
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Ignore template files (draft code with intentional flexibility)
+src/templates/**/*.ts
+
+# Ignore service files with known any types (to be fixed later)
+src/services/document-type-discovery.service.ts
+src/services/onedrive-export.service.ts
+src/services/pattern-extraction.service.ts
