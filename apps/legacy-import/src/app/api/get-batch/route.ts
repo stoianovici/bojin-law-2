@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get categories for this session
-    const categories = await prisma.documentCategory.findMany({
+    const categories = await prisma.importCategory.findMany({
       where: { sessionId },
       select: {
         id: true,
