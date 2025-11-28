@@ -110,3 +110,25 @@ enum ApprovalStatus {
   Approved
   Rejected
 }
+
+"""
+Document type categorization for AI document generation (Story 3.3)
+- Contract: Contract agreements
+- Motion: Court motions and filings
+- Brief: Legal briefs
+- Letter: Correspondence and letters
+- Memo: Internal memorandums
+- Agreement: Various agreements
+- Pleading: Court pleadings
+- Other: Other document types
+"""
+enum DocumentType {
+  Contract
+  Motion
+  Brief
+  Letter
+  Memo
+  Agreement
+  Pleading
+  Other
+}

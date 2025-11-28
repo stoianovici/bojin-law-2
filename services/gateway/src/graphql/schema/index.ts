@@ -7,6 +7,7 @@
  * Story 2.10: Basic AI Search Implementation (search schema)
  * Story 2.11.3: Financial KPIs Backend Service (financial-kpis schema)
  * Story 3.1: AI Service Infrastructure (ai-monitoring schema)
+ * Story 3.3: Intelligent Document Drafting (document-drafting schema)
  *
  * Loads and merges all GraphQL schema files and applies directives
  */
@@ -15,10 +16,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { GraphQLSchema } from 'graphql';
-import {
-  requiresFinancialAccessDirective,
-  requiresFinancialAccessTypeDefs,
-} from '../directives';
+import { requiresFinancialAccessDirective, requiresFinancialAccessTypeDefs } from '../directives';
 
 /**
  * Load GraphQL schema type definitions (string)
@@ -38,12 +36,29 @@ export function loadSchema(): string {
   const searchSchema = readFileSync(join(schemaDir, 'search.graphql'), 'utf-8');
   const financialKpisSchema = readFileSync(join(schemaDir, 'financial-kpis.graphql'), 'utf-8');
   const aiMonitoringSchema = readFileSync(join(schemaDir, 'ai-monitoring.graphql'), 'utf-8');
+  const documentDraftingSchema = readFileSync(
+    join(schemaDir, 'document-drafting.graphql'),
+    'utf-8'
+  );
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
 
   // Merge all schemas
-  return [scalars, enums, directives, firmSchema, caseSchema, approvalSchema, notificationSchema, documentSchema, searchSchema, financialKpisSchema, aiMonitoringSchema].join('\n\n');
+  return [
+    scalars,
+    enums,
+    directives,
+    firmSchema,
+    caseSchema,
+    approvalSchema,
+    notificationSchema,
+    documentSchema,
+    searchSchema,
+    financialKpisSchema,
+    aiMonitoringSchema,
+    documentDraftingSchema,
+  ].join('\n\n');
 }
 
 /**
@@ -54,10 +69,7 @@ export function loadSchema(): string {
  * @param resolvers - GraphQL resolvers
  * @returns Executable schema with directives applied
  */
-export function buildExecutableSchema(
-  typeDefs: string,
-  resolvers: any
-): GraphQLSchema {
+export function buildExecutableSchema(typeDefs: string, resolvers: any): GraphQLSchema {
   // Create base schema
   let schema = makeExecutableSchema({
     typeDefs,

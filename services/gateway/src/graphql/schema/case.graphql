@@ -578,3 +578,17 @@ type Mutation {
   """
   removeCaseActor(id: UUID!): Boolean!
 }
+
+# ============================================================================
+# Subscriptions
+# ============================================================================
+
+"""
+GraphQL Subscriptions for real-time updates
+"""
+type Subscription {
+  """
+  Placeholder subscription - real subscriptions defined in extensions
+  """
+  _placeholder: Boolean
+}

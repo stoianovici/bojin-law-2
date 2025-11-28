@@ -7,22 +7,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@/lib/prisma';
-import { getUploadPresignedUrl, uploadToR2 } from '@/lib/r2-storage';
+import { uploadToR2 } from '@/lib/r2-storage';
 
 // In-memory storage for upload metadata (in production, use Redis)
-const uploadStore = new Map<string, {
-  offset: number;
-  length: number;
-  metadata: Record<string, string>;
-  sessionId: string;
-  chunks: Buffer[];
-}>();
+const uploadStore = new Map<
+  string,
+  {
+    offset: number;
+    length: number;
+    metadata: Record<string, string>;
+    sessionId: string;
+    chunks: Buffer[];
+  }
+>();
 
 // TUS protocol headers
 const TUS_RESUMABLE = '1.0.0';
 const TUS_VERSION = '1.0.0';
 const TUS_EXTENSION = 'creation,termination,checksum';
-const TUS_MAX_SIZE = 10737418240; // 10GB
+const TUS_MAX_SIZE = 64424509440; // 60GB
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -34,8 +37,10 @@ export async function OPTIONS() {
       'Tus-Max-Size': TUS_MAX_SIZE.toString(),
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, HEAD, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Upload-Length, Upload-Offset, Upload-Metadata, Tus-Resumable',
-      'Access-Control-Expose-Headers': 'Upload-Offset, Location, Upload-Length, Tus-Version, Tus-Resumable, Tus-Max-Size, Tus-Extension',
+      'Access-Control-Allow-Headers':
+        'Content-Type, Upload-Length, Upload-Offset, Upload-Metadata, Tus-Resumable',
+      'Access-Control-Expose-Headers':
+        'Upload-Offset, Location, Upload-Length, Tus-Version, Tus-Resumable, Tus-Max-Size, Tus-Extension',
     },
   });
 }
@@ -103,7 +108,7 @@ export async function POST(request: NextRequest) {
       status: 201,
       headers: {
         'Tus-Resumable': TUS_RESUMABLE,
-        'Location': location,
+        Location: location,
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Expose-Headers': 'Location, Tus-Resumable',
       },
@@ -248,14 +253,16 @@ export async function DELETE(request: NextRequest) {
     uploadStore.delete(sessionId);
 
     // Update database status
-    await prisma.legacyImportSession.update({
-      where: { id: sessionId },
-      data: {
-        status: 'Uploading', // Reset status
-      },
-    }).catch(() => {
-      // Session might not exist yet, ignore
-    });
+    await prisma.legacyImportSession
+      .update({
+        where: { id: sessionId },
+        data: {
+          status: 'Uploading', // Reset status
+        },
+      })
+      .catch(() => {
+        // Session might not exist yet, ignore
+      });
 
     return new NextResponse(null, {
       status: 204,
