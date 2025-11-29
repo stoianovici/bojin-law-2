@@ -81,13 +81,17 @@ export async function POST(request: NextRequest) {
     // Create session ID
     const sessionId = uuidv4();
 
-    // Store upload metadata
+    // Store upload metadata (no chunks stored in memory - will stream to R2)
     uploadStore.set(sessionId, {
       offset: 0,
       length,
       metadata,
       sessionId,
-      chunks: [],
+      r2UploadId: null,
+      r2Key: null,
+      completedParts: [],
+      currentPartNumber: 1,
+      pendingBuffer: Buffer.alloc(0),
     });
 
     // Create database session record with actual user info

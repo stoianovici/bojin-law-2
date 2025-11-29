@@ -6,8 +6,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { uploadToR2 } from '@/lib/r2-storage';
-import { uploadStore } from '../store';
+import {
+  startMultipartUpload,
+  uploadPart,
+  completeMultipartUpload,
+  abortMultipartUpload,
+} from '@/lib/r2-storage';
+import { uploadStore, MIN_PART_SIZE } from '../store';
 
 // TUS protocol headers
 const TUS_RESUMABLE = '1.0.0';
@@ -17,7 +22,7 @@ interface RouteParams {
 }
 
 // HEAD - Get upload offset (for resume)
-export async function HEAD(request: NextRequest, { params }: RouteParams) {
+export async function HEAD(_request: NextRequest, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
 
@@ -47,7 +52,7 @@ export async function HEAD(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// PATCH - Upload chunk
+// PATCH - Upload chunk (streams directly to R2, no memory buffering)
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
@@ -77,22 +82,53 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.arrayBuffer();
     const chunk = Buffer.from(body);
 
-    // Store chunk
-    upload.chunks.push(chunk);
+    // Initialize R2 multipart upload on first chunk
+    const key = `pst/${sessionId}/${upload.metadata.filename || 'upload.pst'}`;
+    if (!upload.r2UploadId) {
+      const { uploadId } = await startMultipartUpload(key, 'application/vnd.ms-outlook', {
+        sessionId,
+        filename: upload.metadata.filename || 'upload.pst',
+        userId: upload.metadata.userId || 'unknown',
+      });
+      upload.r2UploadId = uploadId;
+      upload.r2Key = key;
+    }
+
+    // Add chunk to pending buffer
+    upload.pendingBuffer = Buffer.concat([upload.pendingBuffer, chunk]);
     upload.offset += chunk.length;
 
-    // Check if upload is complete
-    if (upload.offset >= upload.length) {
-      // Concatenate all chunks
-      const fullFile = Buffer.concat(upload.chunks);
+    // Upload parts when buffer reaches minimum size (5MB) or upload is complete
+    const isComplete = upload.offset >= upload.length;
 
-      // Upload to R2
-      const key = `pst/${sessionId}/${upload.metadata.filename || 'upload.pst'}`;
-      await uploadToR2(key, fullFile, {
-        contentType: 'application/vnd.ms-outlook',
-        sessionId,
-        metadata: upload.metadata,
-      });
+    while (
+      upload.pendingBuffer.length >= MIN_PART_SIZE ||
+      (isComplete && upload.pendingBuffer.length > 0)
+    ) {
+      // Take either MIN_PART_SIZE or whatever is left
+      const partSize = Math.min(upload.pendingBuffer.length, MIN_PART_SIZE);
+      const partBuffer = upload.pendingBuffer.subarray(0, partSize);
+      upload.pendingBuffer = upload.pendingBuffer.subarray(partSize);
+
+      // Upload this part to R2
+      const completedPart = await uploadPart(
+        upload.r2Key!,
+        upload.r2UploadId!,
+        upload.currentPartNumber,
+        Buffer.from(partBuffer) // Create new buffer to avoid subarray issues
+      );
+
+      upload.completedParts.push(completedPart);
+      upload.currentPartNumber++;
+
+      // If we've uploaded everything and buffer is empty, break
+      if (upload.pendingBuffer.length === 0) break;
+    }
+
+    // Complete upload when all data is received
+    if (isComplete && upload.pendingBuffer.length === 0) {
+      // Complete multipart upload
+      await completeMultipartUpload(upload.r2Key!, upload.r2UploadId!, upload.completedParts);
 
       // Update database
       await prisma.legacyImportSession.update({
@@ -113,11 +149,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             fileName: upload.metadata.filename,
             fileSize: upload.length,
             storagePath: key,
+            partsUploaded: upload.completedParts.length,
           },
         },
       });
 
-      // Clean up memory
+      // Clean up memory (only ~5MB max was ever in memory at once)
       uploadStore.delete(sessionId);
     }
 
@@ -132,17 +169,36 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error('TUS PATCH error:', error);
+    // Try to abort the multipart upload on error
+    const upload = uploadStore.get((await params).sessionId);
+    if (upload?.r2UploadId && upload?.r2Key) {
+      try {
+        await abortMultipartUpload(upload.r2Key, upload.r2UploadId);
+      } catch (abortError) {
+        console.error('Failed to abort multipart upload:', abortError);
+      }
+    }
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
 // DELETE - Cancel upload
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
 
     if (!sessionId) {
       return new NextResponse('Session ID required', { status: 400 });
+    }
+
+    // Abort multipart upload if in progress
+    const upload = uploadStore.get(sessionId);
+    if (upload?.r2UploadId && upload?.r2Key) {
+      try {
+        await abortMultipartUpload(upload.r2Key, upload.r2UploadId);
+      } catch (abortError) {
+        console.error('Failed to abort multipart upload:', abortError);
+      }
     }
 
     // Clean up memory

@@ -11,6 +11,11 @@ import {
   DeleteObjectCommand,
   ListObjectsV2Command,
   HeadObjectCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
+  type CompletedPart,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'stream';
@@ -29,7 +34,9 @@ const R2_ENDPOINT = R2_ACCOUNT_ID
 // Initialize S3 client for R2
 const getR2Client = () => {
   if (!R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_ENDPOINT) {
-    throw new Error('R2 configuration missing. Check R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_ACCOUNT_ID environment variables.');
+    throw new Error(
+      'R2 configuration missing. Check R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_ACCOUNT_ID environment variables.'
+    );
   }
 
   return new S3Client({
@@ -345,3 +352,122 @@ export async function getFileMetadata(key: string): Promise<{
 
 // Export the client getter for advanced usage
 export { getR2Client };
+
+// =============================================================================
+// Multipart Upload Support (for large files like 47GB PST)
+// =============================================================================
+
+export interface MultipartUploadSession {
+  uploadId: string;
+  key: string;
+  parts: CompletedPart[];
+  partNumber: number;
+}
+
+/**
+ * Start a multipart upload session for large files
+ * Returns uploadId needed for subsequent part uploads
+ */
+export async function startMultipartUpload(
+  key: string,
+  contentType: string = 'application/octet-stream',
+  metadata: Record<string, string> = {}
+): Promise<{ uploadId: string; key: string }> {
+  const client = getR2Client();
+
+  const command = new CreateMultipartUploadCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+    Metadata: {
+      ...metadata,
+      uploadedAt: new Date().toISOString(),
+    },
+  });
+
+  const response = await client.send(command);
+
+  if (!response.UploadId) {
+    throw new Error('Failed to initiate multipart upload - no uploadId returned');
+  }
+
+  return {
+    uploadId: response.UploadId,
+    key,
+  };
+}
+
+/**
+ * Upload a single part to an ongoing multipart upload
+ * Part numbers must be between 1 and 10000
+ * Minimum part size is 5MB (except for the last part)
+ */
+export async function uploadPart(
+  key: string,
+  uploadId: string,
+  partNumber: number,
+  body: Buffer
+): Promise<CompletedPart> {
+  const client = getR2Client();
+
+  const command = new UploadPartCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    UploadId: uploadId,
+    PartNumber: partNumber,
+    Body: body,
+  });
+
+  const response = await client.send(command);
+
+  return {
+    ETag: response.ETag,
+    PartNumber: partNumber,
+  };
+}
+
+/**
+ * Complete a multipart upload by combining all parts
+ * Parts must be provided in order
+ */
+export async function completeMultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: CompletedPart[]
+): Promise<{ key: string; etag: string }> {
+  const client = getR2Client();
+
+  // Sort parts by part number
+  const sortedParts = [...parts].sort((a, b) => (a.PartNumber || 0) - (b.PartNumber || 0));
+
+  const command = new CompleteMultipartUploadCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    UploadId: uploadId,
+    MultipartUpload: {
+      Parts: sortedParts,
+    },
+  });
+
+  const response = await client.send(command);
+
+  return {
+    key,
+    etag: response.ETag || '',
+  };
+}
+
+/**
+ * Abort a multipart upload (cleanup on error or cancellation)
+ */
+export async function abortMultipartUpload(key: string, uploadId: string): Promise<void> {
+  const client = getR2Client();
+
+  const command = new AbortMultipartUploadCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    UploadId: uploadId,
+  });
+
+  await client.send(command);
+}
