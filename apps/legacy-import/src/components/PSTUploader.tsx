@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { UploadCloud, Pause, Play, X, CheckCircle, AlertCircle, FileArchive } from 'lucide-react';
 import * as Progress from '@radix-ui/react-progress';
 import { usePSTUpload, formatBytes, formatTime } from '@/hooks/usePSTUpload';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PSTUploaderProps {
   onUploadComplete: (sessionId: string, fileName: string) => void;
@@ -12,19 +13,15 @@ interface PSTUploaderProps {
 }
 
 export function PSTUploader({ onUploadComplete, onError }: PSTUploaderProps) {
-  const {
-    status,
-    progress,
-    error,
-    startUpload,
-    pauseUpload,
-    resumeUpload,
-    cancelUpload,
-    reset,
-  } = usePSTUpload({
-    onComplete: onUploadComplete,
-    onError,
-  });
+  const { user } = useAuth();
+
+  const { status, progress, error, startUpload, pauseUpload, resumeUpload, cancelUpload, reset } =
+    usePSTUpload({
+      onComplete: onUploadComplete,
+      onError,
+      userId: user?.id,
+      firmId: user?.firmId,
+    });
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -52,9 +49,10 @@ export function PSTUploader({ onUploadComplete, onError }: PSTUploaderProps) {
         className={`
           border-2 border-dashed rounded-xl p-12 text-center cursor-pointer
           transition-all duration-200 ease-in-out
-          ${isDragActive
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+          ${
+            isDragActive
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
           }
         `}
       >
@@ -63,9 +61,7 @@ export function PSTUploader({ onUploadComplete, onError }: PSTUploaderProps) {
         <p className="text-lg font-medium text-gray-700 mb-2">
           {isDragActive ? 'Plasează fișierul PST aici' : 'Trage și plasează fișierul PST aici'}
         </p>
-        <p className="text-sm text-gray-500 mb-4">
-          sau click pentru a naviga (max 60GB)
-        </p>
+        <p className="text-sm text-gray-500 mb-4">sau click pentru a naviga (max 60GB)</p>
         <button
           type="button"
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -87,12 +83,8 @@ export function PSTUploader({ onUploadComplete, onError }: PSTUploaderProps) {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium text-gray-900 truncate">
-                Se încarcă fișierul PST...
-              </h3>
-              <span className="text-sm font-medium text-blue-600">
-                {progress.percentage}%
-              </span>
+              <h3 className="font-medium text-gray-900 truncate">Se încarcă fișierul PST...</h3>
+              <span className="text-sm font-medium text-blue-600">{progress.percentage}%</span>
             </div>
 
             <Progress.Root
@@ -116,7 +108,8 @@ export function PSTUploader({ onUploadComplete, onError }: PSTUploaderProps) {
                   <span className="text-amber-600 font-medium">Întrerupt</span>
                 ) : (
                   <>
-                    {formatBytes(progress.uploadSpeed)}/s · {formatTime(progress.timeRemaining)} rămas
+                    {formatBytes(progress.uploadSpeed)}/s · {formatTime(progress.timeRemaining)}{' '}
+                    rămas
                   </>
                 )}
               </span>
@@ -172,12 +165,10 @@ export function PSTUploader({ onUploadComplete, onError }: PSTUploaderProps) {
           </div>
 
           <div className="flex-1">
-            <h3 className="font-medium text-gray-900 mb-1">
-              Încărcare finalizată!
-            </h3>
+            <h3 className="font-medium text-gray-900 mb-1">Încărcare finalizată!</h3>
             <p className="text-sm text-gray-500">
-              {formatBytes(progress.bytesTotal)} încărcat cu succes.
-              Se începe extragerea documentelor...
+              {formatBytes(progress.bytesTotal)} încărcat cu succes. Se începe extragerea
+              documentelor...
             </p>
           </div>
 
@@ -202,12 +193,8 @@ export function PSTUploader({ onUploadComplete, onError }: PSTUploaderProps) {
           </div>
 
           <div className="flex-1">
-            <h3 className="font-medium text-red-900 mb-1">
-              Încărcare eșuată
-            </h3>
-            <p className="text-sm text-red-600">
-              {error || 'A apărut o eroare neașteptată'}
-            </p>
+            <h3 className="font-medium text-red-900 mb-1">Încărcare eșuată</h3>
+            <p className="text-sm text-red-600">{error || 'A apărut o eroare neașteptată'}</p>
           </div>
 
           <button

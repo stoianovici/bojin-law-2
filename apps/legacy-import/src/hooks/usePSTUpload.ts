@@ -22,6 +22,8 @@ export interface UsePSTUploadOptions {
   onComplete?: (sessionId: string, fileName: string) => void;
   onError?: (error: Error) => void;
   onProgress?: (progress: UploadProgress) => void;
+  userId?: string;
+  firmId?: string;
 }
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks for large file support
@@ -61,123 +63,128 @@ export function usePSTUpload(options: UsePSTUploadOptions = {}) {
     return 0;
   }, []);
 
-  const startUpload = useCallback(async (file: File) => {
-    // Validate file
-    if (!file.name.toLowerCase().endsWith('.pst')) {
-      setState((prev) => ({
-        ...prev,
-        status: 'error',
-        error: 'Only PST files are allowed',
-      }));
-      options.onError?.(new Error('Only PST files are allowed'));
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      setState((prev) => ({
-        ...prev,
-        status: 'error',
-        error: 'File size exceeds 60GB limit',
-      }));
-      options.onError?.(new Error('File size exceeds 60GB limit'));
-      return;
-    }
-
-    // Initialize timing
-    startTimeRef.current = Date.now();
-    lastTimeRef.current = Date.now();
-    lastBytesRef.current = 0;
-
-    // Create tus upload
-    const upload = new tus.Upload(file, {
-      endpoint: '/api/upload-pst/tus',
-      retryDelays: [0, 1000, 3000, 5000, 10000], // Retry delays in ms
-      chunkSize: CHUNK_SIZE,
-      metadata: {
-        filename: file.name,
-        filetype: 'application/vnd.ms-outlook',
-        filesize: file.size.toString(),
-      },
-
-      onError: (error) => {
-        console.error('Upload error:', error);
+  const startUpload = useCallback(
+    async (file: File) => {
+      // Validate file
+      if (!file.name.toLowerCase().endsWith('.pst')) {
         setState((prev) => ({
           ...prev,
           status: 'error',
-          error: error.message || 'Upload failed',
+          error: 'Only PST files are allowed',
         }));
-        options.onError?.(error instanceof Error ? error : new Error(String(error)));
-      },
+        options.onError?.(new Error('Only PST files are allowed'));
+        return;
+      }
 
-      onProgress: (bytesUploaded, bytesTotal) => {
-        const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
-        const speed = calculateSpeed(bytesUploaded);
-        const remaining = bytesTotal - bytesUploaded;
-        const timeRemaining = speed > 0 ? remaining / speed : 0;
-
-        const progress: UploadProgress = {
-          bytesUploaded,
-          bytesTotal,
-          percentage,
-          uploadSpeed: speed,
-          timeRemaining,
-        };
-
+      if (file.size > MAX_FILE_SIZE) {
         setState((prev) => ({
           ...prev,
-          status: 'uploading',
-          progress,
+          status: 'error',
+          error: 'File size exceeds 60GB limit',
         }));
+        options.onError?.(new Error('File size exceeds 60GB limit'));
+        return;
+      }
 
-        options.onProgress?.(progress);
-      },
+      // Initialize timing
+      startTimeRef.current = Date.now();
+      lastTimeRef.current = Date.now();
+      lastBytesRef.current = 0;
 
-      onSuccess: () => {
-        // Extract session ID from upload URL
-        const url = upload.url;
-        const sessionId = url?.split('/').pop() || null;
+      // Create tus upload
+      const upload = new tus.Upload(file, {
+        endpoint: '/api/upload-pst/tus',
+        retryDelays: [0, 1000, 3000, 5000, 10000], // Retry delays in ms
+        chunkSize: CHUNK_SIZE,
+        metadata: {
+          filename: file.name,
+          filetype: 'application/vnd.ms-outlook',
+          filesize: file.size.toString(),
+          userId: options.userId || '',
+          firmId: options.firmId || '',
+        },
 
-        setState((prev) => ({
-          ...prev,
-          status: 'completed',
-          sessionId,
-          progress: {
-            ...prev.progress,
-            percentage: 100,
-          },
-        }));
+        onError: (error) => {
+          console.error('Upload error:', error);
+          setState((prev) => ({
+            ...prev,
+            status: 'error',
+            error: error.message || 'Upload failed',
+          }));
+          options.onError?.(error instanceof Error ? error : new Error(String(error)));
+        },
 
-        if (sessionId) {
-          options.onComplete?.(sessionId, file.name);
-        }
-      },
-    });
+        onProgress: (bytesUploaded, bytesTotal) => {
+          const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
+          const speed = calculateSpeed(bytesUploaded);
+          const remaining = bytesTotal - bytesUploaded;
+          const timeRemaining = speed > 0 ? remaining / speed : 0;
 
-    uploadRef.current = upload;
+          const progress: UploadProgress = {
+            bytesUploaded,
+            bytesTotal,
+            percentage,
+            uploadSpeed: speed,
+            timeRemaining,
+          };
 
-    // Check for previous uploads
-    const previousUploads = await upload.findPreviousUploads();
-    if (previousUploads.length > 0) {
-      // Resume from previous upload
-      upload.resumeFromPreviousUpload(previousUploads[0]);
-    }
+          setState((prev) => ({
+            ...prev,
+            status: 'uploading',
+            progress,
+          }));
 
-    setState((prev) => ({
-      ...prev,
-      status: 'uploading',
-      error: null,
-      progress: {
-        bytesUploaded: 0,
-        bytesTotal: file.size,
-        percentage: 0,
-        uploadSpeed: 0,
-        timeRemaining: 0,
-      },
-    }));
+          options.onProgress?.(progress);
+        },
 
-    // Start upload
-    upload.start();
-  }, [options, calculateSpeed]);
+        onSuccess: () => {
+          // Extract session ID from upload URL
+          const url = upload.url;
+          const sessionId = url?.split('/').pop() || null;
+
+          setState((prev) => ({
+            ...prev,
+            status: 'completed',
+            sessionId,
+            progress: {
+              ...prev.progress,
+              percentage: 100,
+            },
+          }));
+
+          if (sessionId) {
+            options.onComplete?.(sessionId, file.name);
+          }
+        },
+      });
+
+      uploadRef.current = upload;
+
+      // Check for previous uploads
+      const previousUploads = await upload.findPreviousUploads();
+      if (previousUploads.length > 0) {
+        // Resume from previous upload
+        upload.resumeFromPreviousUpload(previousUploads[0]);
+      }
+
+      setState((prev) => ({
+        ...prev,
+        status: 'uploading',
+        error: null,
+        progress: {
+          bytesUploaded: 0,
+          bytesTotal: file.size,
+          percentage: 0,
+          uploadSpeed: 0,
+          timeRemaining: 0,
+        },
+      }));
+
+      // Start upload
+      upload.start();
+    },
+    [options, calculateSpeed]
+  );
 
   const pauseUpload = useCallback(() => {
     if (uploadRef.current) {

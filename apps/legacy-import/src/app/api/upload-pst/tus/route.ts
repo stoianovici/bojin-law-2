@@ -68,6 +68,16 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Only PST files are allowed', { status: 400 });
     }
 
+    // Get user info from metadata (passed from client)
+    const userId = metadata.userId;
+    const firmId = metadata.firmId;
+
+    if (!userId || !firmId) {
+      return new NextResponse('Authentication required: userId and firmId must be provided', {
+        status: 401,
+      });
+    }
+
     // Create session ID
     const sessionId = uuidv4();
 
@@ -80,15 +90,14 @@ export async function POST(request: NextRequest) {
       chunks: [],
     });
 
-    // Create database session record
-    // Note: In production, we'd get firmId and uploadedBy from auth
+    // Create database session record with actual user info
     await prisma.legacyImportSession.create({
       data: {
         id: sessionId,
-        firmId: 'demo-firm', // TODO: Get from auth context
+        firmId,
         pstFileName: filename,
         pstFileSize: BigInt(length),
-        uploadedBy: 'demo-user', // TODO: Get from auth context
+        uploadedBy: userId,
         status: 'Uploading',
       },
     });

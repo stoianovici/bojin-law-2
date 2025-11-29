@@ -103,11 +103,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         },
       });
 
-      // Create audit log
+      // Create audit log with actual user info from metadata
       await prisma.legacyImportAuditLog.create({
         data: {
           sessionId,
-          userId: 'demo-user', // TODO: Get from auth context
+          userId: upload.metadata.userId || 'unknown',
           action: 'PST_UPLOADED',
           details: {
             fileName: upload.metadata.filename,
