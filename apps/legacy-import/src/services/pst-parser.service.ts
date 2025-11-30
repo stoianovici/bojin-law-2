@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Supported file extensions for extraction
 const SUPPORTED_EXTENSIONS = ['pdf', 'docx', 'doc'] as const;
-type SupportedExtension = typeof SUPPORTED_EXTENSIONS[number];
+type SupportedExtension = (typeof SUPPORTED_EXTENSIONS)[number];
 
 export interface EmailMetadata {
   subject: string;
@@ -108,10 +108,7 @@ function formatMonthYear(date: Date | null | undefined): string {
 /**
  * Recursively extracts folder information from PST
  */
-function extractFolderInfo(
-  folder: pst.PSTFolder,
-  parentPath: string = ''
-): FolderInfo[] {
+function extractFolderInfo(folder: pst.PSTFolder, parentPath: string = ''): FolderInfo[] {
   const folders: FolderInfo[] = [];
   const currentPath = parentPath ? `${parentPath}/${folder.displayName}` : folder.displayName;
 
@@ -195,7 +192,8 @@ function processFolder(
                       const fileContent = Buffer.concat(chunks);
 
                       // Get email metadata
-                      const receivedDate = message.messageDeliveryTime || message.clientSubmitTime || new Date();
+                      const receivedDate =
+                        message.messageDeliveryTime || message.clientSubmitTime || new Date();
 
                       const emailMetadata: EmailMetadata = {
                         subject: message.subject || 'No Subject',
@@ -204,7 +202,10 @@ function processFolder(
                         receiverName: message.displayTo || 'Unknown',
                         receiverEmail: message.receivedByAddress || '',
                         receivedDate: receivedDate instanceof Date ? receivedDate : new Date(),
-                        sentDate: message.clientSubmitTime instanceof Date ? message.clientSubmitTime : null,
+                        sentDate:
+                          message.clientSubmitTime instanceof Date
+                            ? message.clientSubmitTime
+                            : null,
                       };
 
                       const extractedAttachment: ExtractedAttachment = {
@@ -229,7 +230,10 @@ function processFolder(
                   folderPath,
                   emailSubject: message.subject || 'Unknown',
                   attachmentName: `Attachment ${i}`,
-                  error: attachError instanceof Error ? attachError.message : 'Unknown error extracting attachment',
+                  error:
+                    attachError instanceof Error
+                      ? attachError.message
+                      : 'Unknown error extracting attachment',
                 });
               }
             }
@@ -237,7 +241,8 @@ function processFolder(
         } catch (emailError) {
           progress.errors.push({
             folderPath,
-            error: emailError instanceof Error ? emailError.message : 'Unknown error processing email',
+            error:
+              emailError instanceof Error ? emailError.message : 'Unknown error processing email',
           });
         }
       }
@@ -267,18 +272,17 @@ function processFolder(
 }
 
 /**
- * Extracts attachments from a PST file buffer
+ * Extracts attachments from a PST file path
+ * Uses file path directly for memory efficiency with large PST files
  */
-export async function extractFromPST(
-  pstBuffer: Buffer,
+export async function extractFromPSTFile(
+  pstFilePath: string,
   onProgress?: (progress: ExtractionProgress) => void
 ): Promise<ExtractionResult> {
   return new Promise((resolve, reject) => {
     try {
-      // Create a temporary file-like object for pst-extractor
-      // Note: pst-extractor works with file paths, so we need to handle this
-      // In production, we'd write to a temp file first
-      const pstFile = new pst.PSTFile(pstBuffer as unknown as string);
+      // pst-extractor works with file paths directly - memory efficient
+      const pstFile = new pst.PSTFile(pstFilePath);
 
       const progress: ExtractionProgress = {
         totalEmails: 0,
@@ -311,7 +315,7 @@ export async function extractFromPST(
         folderCounts.set(attachment.folderPath, count + 1);
       }
 
-      const updatedFolderStructure = folderStructure.map(folder => ({
+      const updatedFolderStructure = folderStructure.map((folder) => ({
         ...folder,
         documentCount: folderCounts.get(folder.path) || 0,
       }));
@@ -330,7 +334,9 @@ export async function extractFromPST(
 /**
  * Groups extracted attachments by month for batch allocation
  */
-export function groupByMonth(attachments: ExtractedAttachment[]): Map<string, ExtractedAttachment[]> {
+export function groupByMonth(
+  attachments: ExtractedAttachment[]
+): Map<string, ExtractedAttachment[]> {
   const groups = new Map<string, ExtractedAttachment[]>();
 
   for (const attachment of attachments) {
@@ -384,6 +390,6 @@ export function getExtractionSummary(result: ExtractionResult): {
     sentCount,
     receivedCount,
     errorCount: result.progress.errors.length,
-    uniqueFolders: result.folderStructure.filter(f => f.documentCount > 0).length,
+    uniqueFolders: result.folderStructure.filter((f) => f.documentCount > 0).length,
   };
 }

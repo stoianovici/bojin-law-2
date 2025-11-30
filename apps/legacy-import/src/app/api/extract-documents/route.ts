@@ -6,10 +6,18 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { downloadFromR2, uploadExtractedDocument } from '@/lib/r2-storage';
-import { extractFromPST, groupByMonth, getExtractionSummary } from '@/services/pst-parser.service';
+import { streamFromR2ToFile, uploadExtractedDocument } from '@/lib/r2-storage';
+import {
+  extractFromPSTFile,
+  groupByMonth,
+  getExtractionSummary,
+} from '@/services/pst-parser.service';
 import { extractTextAndDetectLanguage } from '@/services/text-extraction.service';
 import type { SupportedLanguage } from '@/services/text-extraction.service';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { unlink } from 'fs/promises';
+import { randomUUID } from 'crypto';
 
 /**
  * POST - Start PST extraction for a session
@@ -43,185 +51,199 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Download PST from R2
-    const pstBuffer = await downloadFromR2(session.pstStoragePath);
+    // Stream PST from R2 to temp file (memory-efficient for large files)
+    const tempPstPath = join(tmpdir(), `pst-${randomUUID()}.pst`);
 
-    // Extract attachments
-    const extractionResult = await extractFromPST(pstBuffer);
+    try {
+      console.log(`Streaming PST to temp file: ${tempPstPath}`);
+      await streamFromR2ToFile(session.pstStoragePath, tempPstPath);
+      console.log('PST download complete, starting extraction...');
 
-    // Get summary
-    const summary = getExtractionSummary(extractionResult);
+      // Extract attachments from file path (not buffer)
+      const extractionResult = await extractFromPSTFile(tempPstPath);
 
-    // Group by month for batch creation
-    const byMonth = groupByMonth(extractionResult.attachments);
+      // Get summary
+      const summary = getExtractionSummary(extractionResult);
 
-    // Step 1: Upload all documents to R2 and extract text for language detection
-    // This is the slow part that was causing transaction timeouts
-    const uploadedDocs: Array<{
-      attachment: (typeof extractionResult.attachments)[0];
-      storagePath: string;
-      extractedText: string;
-      primaryLanguage: SupportedLanguage;
-      languageConfidence: number;
-    }> = [];
+      // Group by month for batch creation
+      const byMonth = groupByMonth(extractionResult.attachments);
 
-    for (const attachment of extractionResult.attachments) {
-      const uploadResult = await uploadExtractedDocument(
-        sessionId,
-        attachment.id,
-        attachment.content,
-        attachment.fileExtension,
-        {
-          originalFileName: attachment.fileName,
-          folderPath: attachment.folderPath,
-          emailSubject: attachment.emailMetadata.subject,
-        }
-      );
+      // Step 1: Upload all documents to R2 and extract text for language detection
+      // This is the slow part that was causing transaction timeouts
+      const uploadedDocs: Array<{
+        attachment: (typeof extractionResult.attachments)[0];
+        storagePath: string;
+        extractedText: string;
+        primaryLanguage: SupportedLanguage;
+        languageConfidence: number;
+      }> = [];
 
-      // Extract text and detect language for supported file types
-      let extractedText = '';
-      let primaryLanguage: SupportedLanguage = 'Mixed';
-      let languageConfidence = 0;
+      for (const attachment of extractionResult.attachments) {
+        const uploadResult = await uploadExtractedDocument(
+          sessionId,
+          attachment.id,
+          attachment.content,
+          attachment.fileExtension,
+          {
+            originalFileName: attachment.fileName,
+            folderPath: attachment.folderPath,
+            emailSubject: attachment.emailMetadata.subject,
+          }
+        );
 
-      const supportedExtensions = ['pdf', 'docx', 'doc'];
-      if (supportedExtensions.includes(attachment.fileExtension.toLowerCase())) {
-        try {
-          const textResult = await extractTextAndDetectLanguage(
-            attachment.content,
-            attachment.fileExtension
-          );
-          extractedText = textResult.text;
-          primaryLanguage = textResult.primaryLanguage;
-          languageConfidence = textResult.languageConfidence;
-        } catch (err) {
-          console.warn(
-            `Text extraction failed for ${attachment.fileName}:`,
-            err instanceof Error ? err.message : 'Unknown error'
-          );
-        }
-      }
+        // Extract text and detect language for supported file types
+        let extractedText = '';
+        let primaryLanguage: SupportedLanguage = 'Mixed';
+        let languageConfidence = 0;
 
-      uploadedDocs.push({
-        attachment,
-        storagePath: uploadResult.key,
-        extractedText,
-        primaryLanguage,
-        languageConfidence,
-      });
-    }
-
-    // Step 2: Create database records in a transaction (with extended timeout)
-    const result = await prisma.$transaction(
-      async (tx) => {
-        const batchIds = new Map<string, string>();
-
-        // Create batches for each month
-        for (const [monthYear, attachments] of byMonth) {
-          const batch = await tx.documentBatch.create({
-            data: {
-              sessionId,
-              monthYear,
-              documentCount: attachments.length,
-            },
-          });
-          batchIds.set(monthYear, batch.id);
+        const supportedExtensions = ['pdf', 'docx', 'doc'];
+        if (supportedExtensions.includes(attachment.fileExtension.toLowerCase())) {
+          try {
+            const textResult = await extractTextAndDetectLanguage(
+              attachment.content,
+              attachment.fileExtension
+            );
+            extractedText = textResult.text;
+            primaryLanguage = textResult.primaryLanguage;
+            languageConfidence = textResult.languageConfidence;
+          } catch (err) {
+            console.warn(
+              `Text extraction failed for ${attachment.fileName}:`,
+              err instanceof Error ? err.message : 'Unknown error'
+            );
+          }
         }
 
-        // Create document records (R2 uploads already done)
-        const documentRecords = [];
-        for (const {
+        uploadedDocs.push({
           attachment,
-          storagePath,
+          storagePath: uploadResult.key,
           extractedText,
           primaryLanguage,
           languageConfidence,
-        } of uploadedDocs) {
-          const batchId = batchIds.get(attachment.monthYear);
-          const doc = await tx.extractedDocument.create({
+        });
+      }
+
+      // Step 2: Create database records in a transaction (with extended timeout)
+      const result = await prisma.$transaction(
+        async (tx) => {
+          const batchIds = new Map<string, string>();
+
+          // Create batches for each month
+          for (const [monthYear, attachments] of byMonth) {
+            const batch = await tx.documentBatch.create({
+              data: {
+                sessionId,
+                monthYear,
+                documentCount: attachments.length,
+              },
+            });
+            batchIds.set(monthYear, batch.id);
+          }
+
+          // Create document records (R2 uploads already done)
+          const documentRecords = [];
+          for (const {
+            attachment,
+            storagePath,
+            extractedText,
+            primaryLanguage,
+            languageConfidence,
+          } of uploadedDocs) {
+            const batchId = batchIds.get(attachment.monthYear);
+            const doc = await tx.extractedDocument.create({
+              data: {
+                id: attachment.id,
+                sessionId,
+                batchId,
+                fileName: attachment.fileName,
+                fileExtension: attachment.fileExtension,
+                fileSizeBytes: attachment.fileSizeBytes,
+                storagePath,
+                folderPath: attachment.folderPath,
+                isSent: attachment.isSent,
+                emailSubject: attachment.emailMetadata.subject,
+                emailSender:
+                  attachment.emailMetadata.senderEmail || attachment.emailMetadata.senderName,
+                emailReceiver:
+                  attachment.emailMetadata.receiverEmail || attachment.emailMetadata.receiverName,
+                emailDate: attachment.emailMetadata.receivedDate,
+                status: 'Uncategorized',
+                // Language detection fields
+                extractedText: extractedText || null,
+                primaryLanguage,
+                languageConfidence,
+              },
+            });
+            documentRecords.push(doc);
+          }
+
+          // Update session status
+          await tx.legacyImportSession.update({
+            where: { id: sessionId },
             data: {
-              id: attachment.id,
-              sessionId,
-              batchId,
-              fileName: attachment.fileName,
-              fileExtension: attachment.fileExtension,
-              fileSizeBytes: attachment.fileSizeBytes,
-              storagePath,
-              folderPath: attachment.folderPath,
-              isSent: attachment.isSent,
-              emailSubject: attachment.emailMetadata.subject,
-              emailSender:
-                attachment.emailMetadata.senderEmail || attachment.emailMetadata.senderName,
-              emailReceiver:
-                attachment.emailMetadata.receiverEmail || attachment.emailMetadata.receiverName,
-              emailDate: attachment.emailMetadata.receivedDate,
-              status: 'Uncategorized',
-              // Language detection fields
-              extractedText: extractedText || null,
-              primaryLanguage,
-              languageConfidence,
+              status: 'InProgress',
+              totalDocuments: extractionResult.attachments.length,
+              extractionErrors:
+                extractionResult.progress.errors.length > 0
+                  ? JSON.parse(JSON.stringify(extractionResult.progress.errors))
+                  : undefined,
             },
           });
-          documentRecords.push(doc);
-        }
 
-        // Update session status
-        await tx.legacyImportSession.update({
-          where: { id: sessionId },
-          data: {
-            status: 'InProgress',
-            totalDocuments: extractionResult.attachments.length,
-            extractionErrors:
-              extractionResult.progress.errors.length > 0
-                ? JSON.parse(JSON.stringify(extractionResult.progress.errors))
-                : undefined,
-          },
-        });
-
-        // Create audit log
-        await tx.legacyImportAuditLog.create({
-          data: {
-            sessionId,
-            userId: session.uploadedBy,
-            action: 'EXTRACTION_COMPLETED',
-            details: {
-              totalDocuments: summary.totalDocuments,
-              byExtension: summary.byExtension,
-              byMonth: summary.byMonth,
-              sentCount: summary.sentCount,
-              receivedCount: summary.receivedCount,
-              errorCount: summary.errorCount,
-              batchCount: byMonth.size,
+          // Create audit log
+          await tx.legacyImportAuditLog.create({
+            data: {
+              sessionId,
+              userId: session.uploadedBy,
+              action: 'EXTRACTION_COMPLETED',
+              details: {
+                totalDocuments: summary.totalDocuments,
+                byExtension: summary.byExtension,
+                byMonth: summary.byMonth,
+                sentCount: summary.sentCount,
+                receivedCount: summary.receivedCount,
+                errorCount: summary.errorCount,
+                batchCount: byMonth.size,
+              },
             },
-          },
-        });
+          });
 
-        return {
-          documents: documentRecords,
-          batchCount: byMonth.size,
-        };
-      },
-      {
-        maxWait: 60000, // 60 seconds max wait to acquire transaction
-        timeout: 120000, // 2 minutes timeout for transaction execution
+          return {
+            documents: documentRecords,
+            batchCount: byMonth.size,
+          };
+        },
+        {
+          maxWait: 60000, // 60 seconds max wait to acquire transaction
+          timeout: 120000, // 2 minutes timeout for transaction execution
+        }
+      );
+
+      return NextResponse.json({
+        success: true,
+        sessionId,
+        extraction: {
+          totalDocuments: summary.totalDocuments,
+          byExtension: summary.byExtension,
+          byMonth: summary.byMonth,
+          sentCount: summary.sentCount,
+          receivedCount: summary.receivedCount,
+          uniqueFolders: summary.uniqueFolders,
+          batchCount: result.batchCount,
+          errorCount: summary.errorCount,
+        },
+        folderStructure: extractionResult.folderStructure,
+        status: 'InProgress',
+      });
+    } finally {
+      // Always clean up temp file
+      try {
+        await unlink(tempPstPath);
+        console.log(`Cleaned up temp file: ${tempPstPath}`);
+      } catch {
+        // Ignore cleanup errors
       }
-    );
-
-    return NextResponse.json({
-      success: true,
-      sessionId,
-      extraction: {
-        totalDocuments: summary.totalDocuments,
-        byExtension: summary.byExtension,
-        byMonth: summary.byMonth,
-        sentCount: summary.sentCount,
-        receivedCount: summary.receivedCount,
-        uniqueFolders: summary.uniqueFolders,
-        batchCount: result.batchCount,
-        errorCount: summary.errorCount,
-      },
-      folderStructure: extractionResult.folderStructure,
-      status: 'InProgress',
-    });
+    }
   } catch (error) {
     console.error('Extract documents error:', error);
 

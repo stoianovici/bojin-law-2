@@ -187,6 +187,32 @@ export async function downloadFromR2(key: string): Promise<Buffer> {
 }
 
 /**
+ * Stream a file from R2 directly to a local file path
+ * Memory-efficient for large files like PST
+ */
+export async function streamFromR2ToFile(key: string, destPath: string): Promise<void> {
+  const fs = await import('fs');
+  const { pipeline } = await import('stream/promises');
+  const client = getR2Client();
+
+  const command = new GetObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+  });
+
+  const response = await client.send(command);
+
+  if (!response.Body) {
+    throw new Error(`Empty response body for key: ${key}`);
+  }
+
+  const writeStream = fs.createWriteStream(destPath);
+  const readStream = response.Body as Readable;
+
+  await pipeline(readStream, writeStream);
+}
+
+/**
  * Generate a pre-signed URL for temporary access
  * Default expiration: 1 hour
  */
