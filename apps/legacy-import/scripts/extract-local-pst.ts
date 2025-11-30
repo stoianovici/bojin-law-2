@@ -249,11 +249,31 @@ async function createDatabaseRecords(sessionId: string, documents: ExtractedDoc[
   }
 }
 
+async function createSession(fileName: string, fileSize: number): Promise<string> {
+  console.log('Creating session via API...');
+  const response = await fetch(`${API_BASE_URL}/api/create-local-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileName, fileSize }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to create session: ${error}`);
+  }
+
+  const data = await response.json();
+  console.log(`Session created: ${data.sessionId}`);
+  return data.sessionId;
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.length < 2) {
-    console.error('Usage: npx ts-node scripts/extract-local-pst.ts <pst-file-path> <session-id>');
+  if (args.length < 1) {
+    console.error('Usage: npx ts-node scripts/extract-local-pst.ts <pst-file-path> [session-id]');
+    console.error('');
+    console.error('If session-id is not provided, a new session will be created automatically.');
     console.error('');
     console.error('Environment variables required:');
     console.error('  R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY');
@@ -261,14 +281,23 @@ async function main() {
     process.exit(1);
   }
 
-  const [pstFilePath, sessionId] = args;
+  const pstFilePath = args[0];
+  let sessionId = args[1];
 
   if (!fs.existsSync(pstFilePath)) {
     console.error(`PST file not found: ${pstFilePath}`);
     process.exit(1);
   }
 
-  const fileSizeGB = fs.statSync(pstFilePath).size / (1024 * 1024 * 1024);
+  const fileStats = fs.statSync(pstFilePath);
+  const fileSizeBytes = fileStats.size;
+  const fileSizeGB = fileSizeBytes / (1024 * 1024 * 1024);
+  const fileName = path.basename(pstFilePath);
+
+  // Auto-create session if not provided
+  if (!sessionId) {
+    sessionId = await createSession(fileName, fileSizeBytes);
+  }
   console.log(`\n=== Local PST Extraction ===`);
   console.log(`PST File: ${pstFilePath}`);
   console.log(`File Size: ${fileSizeGB.toFixed(2)} GB`);
