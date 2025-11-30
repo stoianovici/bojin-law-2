@@ -227,15 +227,10 @@ function ImportPageContent() {
 
   const isPartnerOrAdmin = user?.role === 'Partner' || user?.role === 'Admin';
 
-  // Check for active session on mount (URL param takes priority)
+  // Check for active session on mount (URL param takes priority, doesn't require auth)
   useEffect(() => {
     async function checkActiveSession() {
-      if (!user?.id) {
-        setIsLoadingSession(false);
-        return;
-      }
-
-      // If sessionId is provided in URL, load that session directly
+      // If sessionId is provided in URL, load that session directly (no auth required)
       if (urlSessionId) {
         try {
           const res = await fetch(`/api/session-progress?sessionId=${urlSessionId}`);
@@ -246,8 +241,11 @@ function ImportPageContent() {
               fileName: data.pstFileName || 'Unknown',
               status: data.status,
             });
-            // Determine step based on status
-            if (data.status === 'InProgress' || data.status === 'Extracted') {
+            // Determine step based on status and document count
+            if (
+              (data.status === 'InProgress' || data.status === 'Extracted') &&
+              data.progress?.totalDocuments > 0
+            ) {
               setCurrentStep('categorize');
             } else if (data.status === 'Extracting') {
               setCurrentStep('extract');
@@ -274,6 +272,12 @@ function ImportPageContent() {
         } catch (err) {
           console.error('Error loading session from URL:', err);
         }
+      }
+
+      // Fall back to user's active session (requires auth)
+      if (!user?.id) {
+        setIsLoadingSession(false);
+        return;
       }
 
       try {
