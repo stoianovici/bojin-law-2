@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   UploadCloud,
   FolderOpen,
@@ -202,6 +203,8 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
 
 function ImportPageContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const urlSessionId = searchParams.get('sessionId');
   const [currentStep, setCurrentStep] = useState<ImportStep>('upload');
   const [session, setSession] = useState<SessionState>({
     sessionId: null,
@@ -224,12 +227,53 @@ function ImportPageContent() {
 
   const isPartnerOrAdmin = user?.role === 'Partner' || user?.role === 'Admin';
 
-  // Check for active session on mount
+  // Check for active session on mount (URL param takes priority)
   useEffect(() => {
     async function checkActiveSession() {
       if (!user?.id) {
         setIsLoadingSession(false);
         return;
+      }
+
+      // If sessionId is provided in URL, load that session directly
+      if (urlSessionId) {
+        try {
+          const res = await fetch(`/api/session-progress?sessionId=${urlSessionId}`);
+          if (res.ok) {
+            const data = await res.json();
+            setSession({
+              sessionId: urlSessionId,
+              fileName: data.pstFileName || 'Unknown',
+              status: data.status,
+            });
+            // Determine step based on status
+            if (data.status === 'InProgress' || data.status === 'Extracted') {
+              setCurrentStep('categorize');
+            } else if (data.status === 'Extracting') {
+              setCurrentStep('extract');
+            } else {
+              setCurrentStep('upload');
+            }
+            setResumedSession({
+              sessionId: urlSessionId,
+              fileName: data.pstFileName || 'Unknown',
+              status: data.status,
+              currentStep: 'categorize',
+              progress: {
+                totalDocuments: data.progress?.totalDocuments || 0,
+                categorizedCount: data.progress?.categorized || 0,
+                skippedCount: data.progress?.skipped || 0,
+                analyzedCount: 0,
+              },
+              createdAt: '',
+              updatedAt: '',
+            });
+            setIsLoadingSession(false);
+            return;
+          }
+        } catch (err) {
+          console.error('Error loading session from URL:', err);
+        }
       }
 
       try {
@@ -259,7 +303,7 @@ function ImportPageContent() {
     }
 
     checkActiveSession();
-  }, [user?.id]);
+  }, [user?.id, urlSessionId]);
 
   // Function to start a new session (abandon current)
   const startNewSession = useCallback(() => {
