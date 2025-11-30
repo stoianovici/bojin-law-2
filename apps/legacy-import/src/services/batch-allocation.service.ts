@@ -46,6 +46,48 @@ export async function allocateBatchesToUser(
   sessionId: string,
   userId: string
 ): Promise<UserBatchInfo> {
+  // Check if user is a Partner - Partners supervise, don't get batches assigned
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  if (user?.role === 'Partner') {
+    // Partners supervise - release any batches they may have been assigned
+    await prisma.documentBatch.updateMany({
+      where: {
+        sessionId,
+        assignedTo: userId,
+      },
+      data: {
+        assignedTo: null,
+        assignedAt: null,
+      },
+    });
+
+    // Partners see session progress but don't get work assigned
+    const sessionStats = await prisma.legacyImportSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        totalDocuments: true,
+        categorizedCount: true,
+        skippedCount: true,
+      },
+    });
+
+    return {
+      userId,
+      batches: [],
+      totalDocuments: sessionStats?.totalDocuments || 0,
+      categorizedCount: sessionStats?.categorizedCount || 0,
+      skippedCount: sessionStats?.skippedCount || 0,
+      remainingCount:
+        (sessionStats?.totalDocuments || 0) -
+        (sessionStats?.categorizedCount || 0) -
+        (sessionStats?.skippedCount || 0),
+    };
+  }
+
   // Get current user's assigned batches
   const existingBatches = await prisma.documentBatch.findMany({
     where: {
