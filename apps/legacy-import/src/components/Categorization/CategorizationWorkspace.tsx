@@ -61,7 +61,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         const batchData = await batchRes.json();
 
         setSession(sessionId, batchData.sessionStatus);
-        setBatch(batchData.batch);
+        setBatch(batchData.batch, batchData.batchRange);
         setDocuments(batchData.documents);
         setCategories(batchData.categories);
         setSessionProgress(batchData.sessionProgress);

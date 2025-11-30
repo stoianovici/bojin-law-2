@@ -63,6 +63,7 @@ interface DocumentState {
 
   // Batch info
   batch: BatchInfo | null;
+  batchRange: string | null;
   sessionProgress: SessionProgress | null;
 
   // Documents
@@ -82,7 +83,7 @@ interface DocumentState {
 
   // Actions
   setSession: (sessionId: string, status: string) => void;
-  setBatch: (batch: BatchInfo) => void;
+  setBatch: (batch: BatchInfo, batchRange?: string | null) => void;
   setSessionProgress: (progress: SessionProgress) => void;
   setDocuments: (documents: DocumentMetadata[]) => void;
   setCategories: (categories: Category[]) => void;
@@ -114,6 +115,7 @@ const initialState = {
   sessionId: null,
   sessionStatus: null,
   batch: null,
+  batchRange: null,
   sessionProgress: null,
   documents: [],
   currentDocumentIndex: 0,
@@ -129,7 +131,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   setSession: (sessionId, status) => set({ sessionId, sessionStatus: status }),
 
-  setBatch: (batch) => set({ batch }),
+  setBatch: (batch, batchRange) => set({ batch, batchRange: batchRange ?? null }),
 
   setSessionProgress: (progress) => set({ sessionProgress: progress }),
 

@@ -4,6 +4,7 @@ import { useDocumentStore } from '@/stores/documentStore';
 
 export function ProgressBar() {
   const batch = useDocumentStore((s) => s.batch);
+  const batchRange = useDocumentStore((s) => s.batchRange);
   const sessionProgress = useDocumentStore((s) => s.sessionProgress);
   const getBatchProgress = useDocumentStore((s) => s.getBatchProgress);
 
@@ -13,26 +14,27 @@ export function ProgressBar() {
     return null;
   }
 
-  const batchPercent = batchProgress.total > 0
-    ? Math.round((batchProgress.done / batchProgress.total) * 100)
-    : 0;
+  // Show range if multiple batches, otherwise single month
+  const batchLabel = batchRange || batch.monthYear;
 
-  const sessionPercent = sessionProgress.totalDocuments > 0
-    ? Math.round(
-        ((sessionProgress.categorizedCount + sessionProgress.skippedCount) /
-          sessionProgress.totalDocuments) *
-          100
-      )
-    : 0;
+  const batchPercent =
+    batchProgress.total > 0 ? Math.round((batchProgress.done / batchProgress.total) * 100) : 0;
+
+  const sessionPercent =
+    sessionProgress.totalDocuments > 0
+      ? Math.round(
+          ((sessionProgress.categorizedCount + sessionProgress.skippedCount) /
+            sessionProgress.totalDocuments) *
+            100
+        )
+      : 0;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
       {/* Batch Progress */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm font-medium text-gray-700">
-            Lotul tău: {batch.monthYear}
-          </span>
+          <span className="text-sm font-medium text-gray-700">Loturile tale: {batchLabel}</span>
           <span className="text-sm text-gray-500">
             {batchProgress.done} / {batchProgress.total} ({batchPercent}%)
           </span>
