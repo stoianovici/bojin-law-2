@@ -137,19 +137,25 @@ export async function allocateBatchesToUser(
   // Get unassigned batches
   const unassignedBatches = allBatches.filter((b) => !b.assignedTo);
 
-  // Assign batches to this user (oldest first)
-  const batchesToAssign = unassignedBatches.slice(0, batchesPerUser);
+  // Assign batches to this user (oldest first) - collect IDs only
+  const batchIdsToAssign: string[] = unassignedBatches.slice(0, batchesPerUser).map((b) => b.id);
 
-  if (batchesToAssign.length === 0) {
+  if (batchIdsToAssign.length === 0) {
     // All batches assigned, check if any can be reassigned
     const reassignableBatches = await findReassignableBatches(sessionId);
     if (reassignableBatches.length > 0) {
-      batchesToAssign.push(...reassignableBatches.slice(0, Math.max(1, batchesPerUser)));
+      batchIdsToAssign.push(
+        ...reassignableBatches.slice(0, Math.max(1, batchesPerUser)).map((b) => b.id)
+      );
+    } else {
+      // No stalled batches - rebalance from users with more than fair share
+      const rebalancedBatches = await rebalanceBatchesForNewUser(allBatches, batchesPerUser);
+      batchIdsToAssign.push(...rebalancedBatches.map((b) => b.id));
     }
   }
 
   // Update batches with assignment
-  const assignedBatchIds = batchesToAssign.map((b) => b.id);
+  const assignedBatchIds = batchIdsToAssign;
   await prisma.documentBatch.updateMany({
     where: {
       id: { in: assignedBatchIds },
@@ -216,6 +222,62 @@ async function findReassignableBatches(sessionId: string): Promise<{ id: string 
   return stalledBatches
     .filter((b) => b.categorizedCount + b.skippedCount < b.documentCount)
     .map((b) => ({ id: b.id }));
+}
+
+/**
+ * Rebalances batches when a new user joins and all batches are already assigned
+ * Takes unstarted batches from users who have more than their fair share
+ */
+function rebalanceBatchesForNewUser(
+  allBatches: {
+    id: string;
+    assignedTo: string | null;
+    categorizedCount: number;
+    skippedCount: number;
+    documentCount: number;
+  }[],
+  targetBatchCount: number
+): { id: string }[] {
+  // Group batches by assigned user
+  const userBatchMap = new Map<string, typeof allBatches>();
+  for (const batch of allBatches) {
+    if (batch.assignedTo) {
+      const existing = userBatchMap.get(batch.assignedTo) || [];
+      existing.push(batch);
+      userBatchMap.set(batch.assignedTo, existing);
+    }
+  }
+
+  // Find batches that can be taken (not started = 0 categorized and 0 skipped)
+  const batchesToTake: { id: string }[] = [];
+
+  for (const [, userBatches] of userBatchMap) {
+    // Find unstarted batches from this user
+    const unstartedBatches = userBatches.filter(
+      (b) => b.categorizedCount === 0 && b.skippedCount === 0
+    );
+
+    // Calculate how many batches this user should keep after rebalance
+    const totalUsersAfterRebalance = userBatchMap.size + 1;
+    const fairSharePerUser = Math.ceil(allBatches.length / totalUsersAfterRebalance);
+
+    // Only take if user has more than fair share AND has unstarted batches
+    const excessBatches = userBatches.length - fairSharePerUser;
+    if (excessBatches > 0 && unstartedBatches.length > 0) {
+      // Take up to excessBatches from unstarted ones
+      const toTake = unstartedBatches.slice(
+        0,
+        Math.min(excessBatches, targetBatchCount - batchesToTake.length)
+      );
+      batchesToTake.push(...toTake.map((b) => ({ id: b.id })));
+    }
+
+    // Stop if we have enough
+    if (batchesToTake.length >= targetBatchCount) break;
+  }
+
+  // Return batch IDs - the calling function handles the DB update
+  return batchesToTake;
 }
 
 /**
