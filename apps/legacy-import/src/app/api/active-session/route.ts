@@ -42,9 +42,7 @@ export async function GET(request: NextRequest) {
       // No userId - return most recent session with documents (for public access)
       activeSession = await prisma.legacyImportSession.findFirst({
         where: {
-          status: {
-            in: ['Extracted', 'InProgress'],
-          },
+          status: 'InProgress',
         },
         orderBy: [{ updatedAt: 'desc' }],
         select: {
@@ -77,7 +75,6 @@ export async function GET(request: NextRequest) {
       case 'Extracting':
         currentStep = 'extract';
         break;
-      case 'Extracted':
       case 'InProgress':
         currentStep = 'categorize';
         break;
