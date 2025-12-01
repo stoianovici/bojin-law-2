@@ -45,9 +45,6 @@ export async function GET(request: NextRequest) {
           status: {
             in: ['Extracted', 'InProgress'],
           },
-          totalDocuments: {
-            gt: 0,
-          },
         },
         orderBy: [{ updatedAt: 'desc' }],
         select: {
@@ -80,6 +77,7 @@ export async function GET(request: NextRequest) {
       case 'Extracting':
         currentStep = 'extract';
         break;
+      case 'Extracted':
       case 'InProgress':
         currentStep = 'categorize';
         break;
