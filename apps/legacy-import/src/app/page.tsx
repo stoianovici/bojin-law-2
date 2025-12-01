@@ -274,6 +274,27 @@ function ImportPageContent() {
         }
       }
 
+      // Try to load default session (most recent with documents) - no auth required
+      try {
+        const defaultRes = await fetch('/api/active-session');
+        if (defaultRes.ok) {
+          const defaultData: ActiveSessionResponse = await defaultRes.json();
+          if (defaultData.hasActiveSession && defaultData.session) {
+            setSession({
+              sessionId: defaultData.session.sessionId,
+              fileName: defaultData.session.fileName,
+              status: defaultData.session.status,
+            });
+            setCurrentStep(defaultData.session.currentStep);
+            setResumedSession(defaultData.session);
+            setIsLoadingSession(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error loading default session:', err);
+      }
+
       // Fall back to user's active session (requires auth)
       if (!user?.id) {
         setIsLoadingSession(false);

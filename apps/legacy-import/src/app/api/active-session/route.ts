@@ -1,6 +1,7 @@
 /**
  * Active Session API Route
  * GET /api/active-session?userId=xxx
+ * GET /api/active-session (without userId - returns most recent session with documents)
  * Returns user's most recent incomplete import session for auto-resume
  */
 
@@ -12,32 +13,56 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-    }
+    let activeSession;
 
-    // Find user's most recent incomplete session
-    // Status order of priority: InProgress > Extracting > Uploading
-    const activeSession = await prisma.legacyImportSession.findFirst({
-      where: {
-        uploadedBy: userId,
-        status: {
-          in: ['Uploading', 'Extracting', 'InProgress'],
+    if (userId) {
+      // Find user's most recent incomplete session
+      // Status order of priority: InProgress > Extracting > Uploading
+      activeSession = await prisma.legacyImportSession.findFirst({
+        where: {
+          uploadedBy: userId,
+          status: {
+            in: ['Uploading', 'Extracting', 'InProgress'],
+          },
         },
-      },
-      orderBy: [{ updatedAt: 'desc' }],
-      select: {
-        id: true,
-        pstFileName: true,
-        status: true,
-        totalDocuments: true,
-        categorizedCount: true,
-        skippedCount: true,
-        analyzedCount: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+        orderBy: [{ updatedAt: 'desc' }],
+        select: {
+          id: true,
+          pstFileName: true,
+          status: true,
+          totalDocuments: true,
+          categorizedCount: true,
+          skippedCount: true,
+          analyzedCount: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } else {
+      // No userId - return most recent session with documents (for public access)
+      activeSession = await prisma.legacyImportSession.findFirst({
+        where: {
+          status: {
+            in: ['Extracted', 'InProgress'],
+          },
+          totalDocuments: {
+            gt: 0,
+          },
+        },
+        orderBy: [{ updatedAt: 'desc' }],
+        select: {
+          id: true,
+          pstFileName: true,
+          status: true,
+          totalDocuments: true,
+          categorizedCount: true,
+          skippedCount: true,
+          analyzedCount: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    }
 
     if (!activeSession) {
       return NextResponse.json({
