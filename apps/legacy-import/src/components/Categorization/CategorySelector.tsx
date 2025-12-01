@@ -12,6 +12,21 @@ interface CategorySelectorProps {
   disabled?: boolean;
 }
 
+/**
+ * Normalizes Romanian diacritics to ASCII equivalents for search
+ * ă, â → a | î → i | ș, ş → s | ț, ţ → t
+ */
+function normalizeForSearch(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove combining diacritical marks
+    .replace(/[ăâ]/g, 'a')
+    .replace(/[î]/g, 'i')
+    .replace(/[șş]/g, 's')
+    .replace(/[țţ]/g, 't');
+}
+
 export function CategorySelector({
   selectedCategoryId,
   onSelect,
@@ -31,9 +46,9 @@ export function CategorySelector({
 
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
 
-  // Filter categories based on search
+  // Filter categories based on search (diacritic-insensitive)
   const filteredCategories = categories.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+    normalizeForSearch(c.name).includes(normalizeForSearch(searchQuery))
   );
 
   // Sort by document count (most used first)
@@ -78,11 +93,14 @@ export function CategorySelector({
     }
   }, [disabled]);
 
-  const handleSelect = useCallback((category: Category) => {
-    onSelect(category.id, category.name);
-    setIsOpen(false);
-    setSearchQuery('');
-  }, [onSelect]);
+  const handleSelect = useCallback(
+    (category: Category) => {
+      onSelect(category.id, category.name);
+      setIsOpen(false);
+      setSearchQuery('');
+    },
+    [onSelect]
+  );
 
   const handleCreateClick = useCallback(() => {
     setIsCreating(true);
@@ -96,9 +114,9 @@ export function CategorySelector({
       return;
     }
 
-    // Check for duplicate
-    if (categories.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
-      setError('Category already exists');
+    // Check for duplicate (diacritic-insensitive)
+    if (categories.some((c) => normalizeForSearch(c.name) === normalizeForSearch(name))) {
+      setError('Categoria există deja');
       return;
     }
 
@@ -145,16 +163,19 @@ export function CategorySelector({
         className={`
           w-full flex items-center justify-between px-4 py-2.5 rounded-lg border
           transition-colors
-          ${disabled
-            ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-            : 'bg-white border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+          ${
+            disabled
+              ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-white border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
           }
         `}
       >
         <span className={selectedCategory ? 'text-gray-900' : 'text-gray-500'}>
           {selectedCategory?.name || 'Selectează categoria...'}
         </span>
-        <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`h-5 w-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {/* Dropdown */}
@@ -209,7 +230,9 @@ export function CategorySelector({
           <div className="max-h-48 overflow-y-auto">
             {sortedCategories.length === 0 ? (
               <div className="p-4 text-center text-gray-500 text-sm">
-                {searchQuery ? 'Nu există categorii care să corespundă' : 'Nu există categorii încă'}
+                {searchQuery
+                  ? 'Nu există categorii care să corespundă'
+                  : 'Nu există categorii încă'}
               </div>
             ) : (
               sortedCategories.map((category, index) => (
@@ -231,9 +254,7 @@ export function CategorySelector({
                     <span className="text-gray-900">{category.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">
-                      {category.documentCount} doc.
-                    </span>
+                    <span className="text-xs text-gray-400">{category.documentCount} doc.</span>
                     {selectedCategoryId === category.id && (
                       <Check className="h-4 w-4 text-blue-600" />
                     )}
