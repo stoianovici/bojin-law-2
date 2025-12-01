@@ -1,8 +1,16 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, AlertCircle } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Loader2,
+  AlertCircle,
+  Maximize2,
+} from 'lucide-react';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -19,19 +27,42 @@ export function PDFViewer({ url, onLoadSuccess, onLoadError }: PDFViewerProps) {
   const [scale, setScale] = useState(1.0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [fitToWidth, setFitToWidth] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
-    setNumPages(numPages);
-    setIsLoading(false);
-    setError(null);
-    onLoadSuccess?.(numPages);
-  }, [onLoadSuccess]);
+  // Measure container width for fit-to-width mode
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        // Subtract padding (32px = 16px * 2)
+        setContainerWidth(containerRef.current.clientWidth - 32);
+      }
+    };
 
-  const handleDocumentLoadError = useCallback((err: Error) => {
-    setError('Failed to load PDF document');
-    setIsLoading(false);
-    onLoadError?.(err);
-  }, [onLoadError]);
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  const handleDocumentLoadSuccess = useCallback(
+    ({ numPages }: { numPages: number }) => {
+      setNumPages(numPages);
+      setIsLoading(false);
+      setError(null);
+      onLoadSuccess?.(numPages);
+    },
+    [onLoadSuccess]
+  );
+
+  const handleDocumentLoadError = useCallback(
+    (err: Error) => {
+      setError('Failed to load PDF document');
+      setIsLoading(false);
+      onLoadError?.(err);
+    },
+    [onLoadError]
+  );
 
   const goToPreviousPage = useCallback(() => {
     setPageNumber((prev) => Math.max(prev - 1, 1));
@@ -42,12 +73,21 @@ export function PDFViewer({ url, onLoadSuccess, onLoadError }: PDFViewerProps) {
   }, [numPages]);
 
   const zoomIn = useCallback(() => {
+    setFitToWidth(false);
     setScale((prev) => Math.min(prev + 0.25, 3.0));
   }, []);
 
   const zoomOut = useCallback(() => {
+    setFitToWidth(false);
     setScale((prev) => Math.max(prev - 0.25, 0.5));
   }, []);
+
+  const toggleFitToWidth = useCallback(() => {
+    setFitToWidth((prev) => !prev);
+    if (!fitToWidth) {
+      setScale(1.0);
+    }
+  }, [fitToWidth]);
 
   if (error) {
     return (
@@ -87,6 +127,15 @@ export function PDFViewer({ url, onLoadSuccess, onLoadError }: PDFViewerProps) {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={toggleFitToWidth}
+            className={`p-1.5 rounded hover:bg-gray-200 ${fitToWidth ? 'bg-blue-100 text-blue-600' : ''}`}
+            aria-label="Fit to width"
+            title="Fit to width"
+          >
+            <Maximize2 className="h-5 w-5" />
+          </button>
+          <div className="w-px h-5 bg-gray-300 mx-1" />
+          <button
             onClick={zoomOut}
             disabled={scale <= 0.5}
             className="p-1.5 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -95,7 +144,7 @@ export function PDFViewer({ url, onLoadSuccess, onLoadError }: PDFViewerProps) {
             <ZoomOut className="h-5 w-5" />
           </button>
           <span className="text-sm text-gray-600 min-w-[50px] text-center">
-            {Math.round(scale * 100)}%
+            {fitToWidth ? 'Fit' : `${Math.round(scale * 100)}%`}
           </span>
           <button
             onClick={zoomIn}
@@ -109,7 +158,7 @@ export function PDFViewer({ url, onLoadSuccess, onLoadError }: PDFViewerProps) {
       </div>
 
       {/* PDF Content */}
-      <div className="flex-1 overflow-auto bg-gray-200 p-4">
+      <div ref={containerRef} className="flex-1 overflow-auto bg-gray-200 p-4">
         {isLoading && (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -125,7 +174,8 @@ export function PDFViewer({ url, onLoadSuccess, onLoadError }: PDFViewerProps) {
           >
             <Page
               pageNumber={pageNumber}
-              scale={scale}
+              width={fitToWidth && containerWidth ? containerWidth : undefined}
+              scale={fitToWidth ? undefined : scale}
               renderTextLayer={true}
               renderAnnotationLayer={true}
               className="bg-white"
