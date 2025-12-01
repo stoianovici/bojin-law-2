@@ -36,9 +36,21 @@ interface UserManagementProps {
 }
 
 const ROLE_OPTIONS: { value: UserRole; label: string; description: string }[] = [
-  { value: 'Partner', label: 'Partener', description: 'Acces complet - încărcare PST, export, administrare' },
-  { value: 'Associate', label: 'Asociat', description: 'Categorizare documente în loturile atribuite' },
-  { value: 'Paralegal', label: 'Paralegal', description: 'Categorizare documente în loturile atribuite' },
+  {
+    value: 'Partner',
+    label: 'Partener',
+    description: 'Acces complet - încărcare PST, export, administrare',
+  },
+  {
+    value: 'Associate',
+    label: 'Asociat',
+    description: 'Categorizare documente în loturile atribuite',
+  },
+  {
+    value: 'Paralegal',
+    label: 'Paralegal',
+    description: 'Categorizare documente în loturile atribuite',
+  },
   { value: 'Admin', label: 'Administrator', description: 'Acces complet la administrare' },
 ];
 
@@ -100,9 +112,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
       }
 
       // Update local state
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
-      );
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
       setSuccessMessage('Rol actualizat cu succes');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -136,9 +146,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
       }
 
       // Update local state
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
-      );
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)));
       setSuccessMessage('Status actualizat cu succes');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -185,9 +193,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <UserCog className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">
-            Administrare utilizatori
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900">Administrare utilizatori</h3>
         </div>
         <button
           onClick={fetchUsers}
@@ -216,26 +222,16 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
 
       {/* Users Table */}
       {users.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">
-          Nu există utilizatori în firmă.
-        </p>
+        <p className="text-gray-500 text-center py-8">Nu există utilizatori în firmă.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-visible">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-3 font-medium text-gray-600">
-                  Utilizator
-                </th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">
-                  Rol
-                </th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">
-                  Status
-                </th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">
-                  Ultima activitate
-                </th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600">Utilizator</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600">Rol</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600">Status</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600">Ultima activitate</th>
               </tr>
             </thead>
             <tbody>
@@ -244,10 +240,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
                 const statusConfig = getStatusConfig(user.status);
 
                 return (
-                  <tr
-                    key={user.id}
-                    className="border-b border-gray-50 hover:bg-gray-50"
-                  >
+                  <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50">
                     {/* User Info */}
                     <td className="py-3 px-3">
                       <div>
@@ -267,9 +260,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
                         <button
                           onClick={() =>
                             setOpenDropdown(
-                              openDropdown === `role-${user.id}`
-                                ? null
-                                : `role-${user.id}`
+                              openDropdown === `role-${user.id}` ? null : `role-${user.id}`
                             )
                           }
                           disabled={updating === user.id}
@@ -285,7 +276,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
                         </button>
 
                         {openDropdown === `role-${user.id}` && (
-                          <div className="absolute z-10 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                          <div className="absolute z-50 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
                             {ROLE_OPTIONS.map((option) => (
                               <button
                                 key={option.value}
@@ -296,16 +287,12 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="font-medium text-gray-900">
-                                    {option.label}
-                                  </span>
+                                  <span className="font-medium text-gray-900">{option.label}</span>
                                   {user.role === option.value && (
                                     <Check className="h-4 w-4 text-blue-600" />
                                   )}
                                 </div>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {option.description}
-                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">{option.description}</p>
                               </button>
                             ))}
                           </div>
@@ -319,9 +306,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
                         <button
                           onClick={() =>
                             setOpenDropdown(
-                              openDropdown === `status-${user.id}`
-                                ? null
-                                : `status-${user.id}`
+                              openDropdown === `status-${user.id}` ? null : `status-${user.id}`
                             )
                           }
                           disabled={updating === user.id || isCurrentUser}
@@ -334,7 +319,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
                         </button>
 
                         {openDropdown === `status-${user.id}` && !isCurrentUser && (
-                          <div className="absolute z-10 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                          <div className="absolute z-50 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
                             {STATUS_OPTIONS.map((option) => (
                               <button
                                 key={option.value}
@@ -344,7 +329,9 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${option.color}`}>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${option.color}`}
+                                  >
                                     {option.label}
                                   </span>
                                   {user.status === option.value && (
@@ -377,9 +364,17 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
           <div>
             <h4 className="font-medium text-blue-800">Despre roluri</h4>
             <ul className="mt-2 text-sm text-blue-700 space-y-1">
-              <li><strong>Partener:</strong> Poate încărca PST-uri, administra categorii, exporta în OneDrive și administra utilizatori</li>
-              <li><strong>Asociat/Paralegal:</strong> Poate categoriza documentele din loturile atribuite</li>
-              <li><strong>Administrator:</strong> Acces complet la administrare (similar Partenerului)</li>
+              <li>
+                <strong>Partener:</strong> Poate încărca PST-uri, administra categorii, exporta în
+                OneDrive și administra utilizatori
+              </li>
+              <li>
+                <strong>Asociat/Paralegal:</strong> Poate categoriza documentele din loturile
+                atribuite
+              </li>
+              <li>
+                <strong>Administrator:</strong> Acces complet la administrare (similar Partenerului)
+              </li>
             </ul>
           </div>
         </div>
