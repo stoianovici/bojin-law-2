@@ -28,6 +28,8 @@
   "dependencies": {
     "@apollo/server": "^4.12.2",
     "@azure/msal-node": "^2.0.0",
+    "@graphql-tools/load-files": "^7.0.1",
+    "@graphql-tools/schema": "^10.0.29",
     "@graphql-tools/utils": "^10.10.3",
     "@legal-platform/database": "workspace:*",
     "@legal-platform/types": "workspace:*",
@@ -49,8 +51,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@graphql-tools/load-files": "^7.0.1",
-    "@graphql-tools/schema": "^10.0.29",
     "@microsoft/microsoft-graph-types": "^2.43.1",
     "@types/axios": "^0.14.4",
     "@types/connect-redis": "^0.0.23",

@@ -1,0 +1,17 @@
+# Document Drafting Schema (Story 3.3)
+# Placeholder for future document drafting functionality
+
+"""
+Document drafting status placeholder
+"""
+type DocumentDraftPlaceholder {
+  id: ID!
+  message: String!
+}
+
+extend type Query {
+  """
+  Document drafting feature placeholder
+  """
+  documentDraftingStatus: DocumentDraftPlaceholder!
+}

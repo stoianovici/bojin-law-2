@@ -42,6 +42,11 @@ RUN cd services/gateway && \
     pnpm exec tsc --noEmitOnError false || echo "TypeScript completed with warnings (ignored for Docker build)" && \
     ls -la dist/ || echo "dist not created"
 
+# 4. Copy GraphQL schema files to dist (TypeScript doesn't copy .graphql files)
+RUN cp -r services/gateway/src/graphql/schema/*.graphql services/gateway/dist/graphql/schema/ && \
+    echo "GraphQL schema files copied:" && \
+    ls -la services/gateway/dist/graphql/schema/
+
 # Stage 2: Production runner
 FROM node:22-alpine AS runner
 WORKDIR /app

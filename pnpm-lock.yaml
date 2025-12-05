@@ -859,6 +859,12 @@ importers:
       '@azure/msal-node':
         specifier: ^2.0.0
         version: 2.16.3
+      '@graphql-tools/load-files':
+        specifier: ^7.0.1
+        version: 7.0.1(graphql@16.12.0)
+      '@graphql-tools/schema':
+        specifier: ^10.0.29
+        version: 10.0.29(graphql@16.12.0)
       '@graphql-tools/utils':
         specifier: ^10.10.3
         version: 10.10.3(graphql@16.12.0)
@@ -917,12 +923,6 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@graphql-tools/load-files':
-        specifier: ^7.0.1
-        version: 7.0.1(graphql@16.12.0)
-      '@graphql-tools/schema':
-        specifier: ^10.0.29
-        version: 10.0.29(graphql@16.12.0)
       '@microsoft/microsoft-graph-types':
         specifier: ^2.43.1
         version: 2.43.1
