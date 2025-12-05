@@ -8,8 +8,7 @@
 import React from 'react';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import { CheckIcon } from '@radix-ui/react-icons';
-// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
-import { MOCK_USERS } from '../../app/tasks/page';
+import { MOCK_USERS } from '../../constants/mock-data';
 import type { TaskFilters } from '@legal-platform/types';
 
 /**

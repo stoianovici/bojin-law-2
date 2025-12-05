@@ -23,8 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import type { Task, TaskType } from '@legal-platform/types';
-// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
-import { MOCK_USERS } from '../../app/tasks/page';
+import { MOCK_USERS } from '../../constants/mock-data';
 
 /**
  * Task type color mapping (same as CalendarView)
@@ -221,9 +220,7 @@ function Column({ column, tasks, onTaskClick }: ColumnProps) {
     >
       {/* Column header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-          {column.title}
-        </h2>
+        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">{column.title}</h2>
         <span
           className="px-2 py-1 rounded-full text-xs font-semibold text-white"
           style={{ backgroundColor: column.color }}

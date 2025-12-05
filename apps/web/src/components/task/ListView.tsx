@@ -10,8 +10,7 @@ import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import type { Task, TaskType, TaskSortConfig } from '@legal-platform/types';
-// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
-import { MOCK_USERS } from '../../app/tasks/page';
+import { MOCK_USERS } from '../../constants/mock-data';
 
 /**
  * Task type color mapping (same as CalendarView and KanbanBoard)
@@ -80,6 +79,34 @@ interface ListViewProps {
  * Items per page for pagination
  */
 const ITEMS_PER_PAGE = 10;
+
+/**
+ * Sort icon component - moved outside ListView to avoid recreation during render
+ */
+function SortIcon({ field, sortConfig }: { field: keyof Task; sortConfig: TaskSortConfig }) {
+  if (sortConfig.field !== field) {
+    return (
+      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+        />
+      </svg>
+    );
+  }
+
+  return sortConfig.direction === 'asc' ? (
+    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+  ) : (
+    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
 
 /**
  * ListView Component
@@ -152,34 +179,6 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
 
-  /**
-   * Sort icon component
-   */
-  const SortIcon = ({ field }: { field: keyof Task }) => {
-    if (sortConfig.field !== field) {
-      return (
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-          />
-        </svg>
-      );
-    }
-
-    return sortConfig.direction === 'asc' ? (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    ) : (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    );
-  };
-
   return (
     <div className="list-view-container h-full flex flex-col">
       {/* Table container with horizontal scroll on mobile */}
@@ -195,7 +194,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Titlu</span>
-                  <SortIcon field="title" />
+                  <SortIcon field="title" sortConfig={sortConfig} />
                 </div>
               </th>
               <th
@@ -205,7 +204,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Tip</span>
-                  <SortIcon field="type" />
+                  <SortIcon field="type" sortConfig={sortConfig} />
                 </div>
               </th>
               <th
@@ -215,7 +214,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Asignat</span>
-                  <SortIcon field="assignedTo" />
+                  <SortIcon field="assignedTo" sortConfig={sortConfig} />
                 </div>
               </th>
               <th
@@ -225,7 +224,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Termen</span>
-                  <SortIcon field="dueDate" />
+                  <SortIcon field="dueDate" sortConfig={sortConfig} />
                 </div>
               </th>
               <th
@@ -235,7 +234,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Prioritate</span>
-                  <SortIcon field="priority" />
+                  <SortIcon field="priority" sortConfig={sortConfig} />
                 </div>
               </th>
               <th
@@ -245,7 +244,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Status</span>
-                  <SortIcon field="status" />
+                  <SortIcon field="status" sortConfig={sortConfig} />
                 </div>
               </th>
             </tr>
@@ -311,7 +310,9 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                             >
                               {user?.initials || 'U'}
                             </div>
-                            <span className="text-sm text-gray-700">{user?.name || task.assignedTo}</span>
+                            <span className="text-sm text-gray-700">
+                              {user?.name || task.assignedTo}
+                            </span>
                           </>
                         );
                       })()}
@@ -335,7 +336,9 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
                       />
-                      <span className="text-sm text-gray-700">{PRIORITY_LABELS[task.priority]}</span>
+                      <span className="text-sm text-gray-700">
+                        {PRIORITY_LABELS[task.priority]}
+                      </span>
                     </div>
                   </td>
 

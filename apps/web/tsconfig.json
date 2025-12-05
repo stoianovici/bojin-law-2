@@ -21,6 +21,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      "@legal-platform/database": ["../../packages/database/dist"],
       "@legal-platform/types": ["../../packages/shared/types/src"],
       "@legal-platform/romanian-templates": ["../../packages/romanian-templates/src"]
     }

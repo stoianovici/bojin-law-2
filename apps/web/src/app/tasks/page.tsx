@@ -17,17 +17,7 @@ import { TaskDetailModal } from '../../components/task/TaskDetailModal';
 import { TaskFilterBar } from '../../components/task/TaskFilterBar';
 import { useTaskManagementStore, useFilteredTasks } from '../../stores/task-management.store';
 import type { Task, TaskType } from '@legal-platform/types';
-
-/**
- * Mock users for task assignment - realistic Romanian law firm team
- */
-const MOCK_USERS = [
-  { id: 'partner', name: 'Alex Popescu', initials: 'AP' },
-  { id: 'associate1', name: 'Maria Ionescu', initials: 'MI' },
-  { id: 'associate2', name: 'Ion Georgescu', initials: 'IG' },
-  { id: 'paralegal1', name: 'Elena Popa', initials: 'EP' },
-  { id: 'paralegal2', name: 'Mihai Dumitrescu', initials: 'MD' },
-];
+import { MOCK_USERS } from '../../constants/mock-data';
 
 /**
  * Realistic Romanian legal case contexts
