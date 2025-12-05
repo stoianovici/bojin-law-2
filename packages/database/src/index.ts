@@ -18,6 +18,9 @@
 // PostgreSQL / Prisma exports
 export { prisma, checkDatabaseHealth, databaseConfig } from './client';
 
+// Redis exports
+export { redis, sessionManager, cacheManager, checkRedisHealth } from './redis';
+
 // Re-export Prisma Client types for convenience
 export type { PrismaClient } from '@prisma/client';
 export * from '@prisma/client';

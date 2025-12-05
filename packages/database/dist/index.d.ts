@@ -15,6 +15,7 @@
  * Import Redis separately: import { redis } from '@legal-platform/database/redis';
  */
 export { prisma, checkDatabaseHealth, databaseConfig } from './client';
+export { redis, sessionManager, cacheManager, checkRedisHealth } from './redis';
 export type { PrismaClient } from '@prisma/client';
 export * from '@prisma/client';
 //# sourceMappingURL=index.d.ts.map

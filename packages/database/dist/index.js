@@ -30,11 +30,17 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.databaseConfig = exports.checkDatabaseHealth = exports.prisma = void 0;
+exports.checkRedisHealth = exports.cacheManager = exports.sessionManager = exports.redis = exports.databaseConfig = exports.checkDatabaseHealth = exports.prisma = void 0;
 // PostgreSQL / Prisma exports
 var client_1 = require("./client");
 Object.defineProperty(exports, "prisma", { enumerable: true, get: function () { return client_1.prisma; } });
 Object.defineProperty(exports, "checkDatabaseHealth", { enumerable: true, get: function () { return client_1.checkDatabaseHealth; } });
 Object.defineProperty(exports, "databaseConfig", { enumerable: true, get: function () { return client_1.databaseConfig; } });
+// Redis exports
+var redis_1 = require("./redis");
+Object.defineProperty(exports, "redis", { enumerable: true, get: function () { return redis_1.redis; } });
+Object.defineProperty(exports, "sessionManager", { enumerable: true, get: function () { return redis_1.sessionManager; } });
+Object.defineProperty(exports, "cacheManager", { enumerable: true, get: function () { return redis_1.cacheManager; } });
+Object.defineProperty(exports, "checkRedisHealth", { enumerable: true, get: function () { return redis_1.checkRedisHealth; } });
 __exportStar(require("@prisma/client"), exports);
 //# sourceMappingURL=index.js.map
