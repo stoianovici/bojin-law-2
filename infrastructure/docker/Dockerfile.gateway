@@ -82,7 +82,7 @@ COPY --from=builder --chown=gateway:nodejs /app/packages/database/prisma ./packa
 RUN PRISMA_PNPM_PATH=$(find node_modules/.pnpm -type d -name "@prisma+client@*" 2>/dev/null | head -1) && \
     if [ -n "$PRISMA_PNPM_PATH" ]; then \
       echo "Found Prisma at: $PRISMA_PNPM_PATH" && \
-      mkdir -p "$PRISMA_PNPM_PATH/node_modules/.prisma" && \
+      mkdir -p "$PRISMA_PNPM_PATH/node_modules/.prisma/client" && \
       cp -r /tmp/prisma-client/* "$PRISMA_PNPM_PATH/node_modules/.prisma/client/" && \
       echo "Prisma client installed successfully"; \
     else \
