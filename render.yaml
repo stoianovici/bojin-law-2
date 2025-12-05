@@ -33,6 +33,12 @@ services:
           type: redis
           name: legal-platform-redis
           property: connectionString
+
+      # Azure AD Authentication (set in Render dashboard - same as legacy-import)
+      - key: NEXT_PUBLIC_AZURE_AD_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_AZURE_AD_TENANT_ID
+        sync: false
     healthCheckPath: /api/health
     autoDeploy: false # Disabled - only deploy legacy-import automatically
 

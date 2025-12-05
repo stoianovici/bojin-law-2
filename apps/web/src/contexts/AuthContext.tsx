@@ -1,209 +1,309 @@
-/**
- * Authentication Context
- * Manages user authentication state, login/logout flows, and token refresh
- * Story 2.4: Authentication with Azure AD
- */
-
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+/**
+ * Authentication Context
+ * Provides Azure AD authentication via MSAL with user provisioning
+ */
+
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from 'react';
+import type { AccountInfo } from '@azure/msal-browser';
+import { InteractionRequiredAuthError } from '@azure/msal-browser';
+import { initializeMsal, loginRequest, getMsalInstance } from '@/lib/msal-config';
 import type { User } from '@legal-platform/types';
 
-// Authentication state interface
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  msalAccount: AccountInfo | null;
 }
 
-// Authentication context type
 export interface AuthContextType extends AuthState {
-  login: () => void;
+  login: () => Promise<void>;
   logout: () => Promise<void>;
+  getAccessToken: () => Promise<string | null>;
   refreshToken: () => Promise<boolean>;
   clearError: () => void;
 }
 
-// Create context - exported for testing purposes
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider props
 export interface AuthProviderProps {
   children: ReactNode;
 }
 
-/**
- * Authentication Provider
- * Manages authentication state and provides login/logout methods
- */
 export function AuthProvider({ children }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
     isLoading: true,
     error: null,
+    msalAccount: null,
   });
 
-  /**
-   * Clear error state
-   */
+  const [msalInitialized, setMsalInitialized] = useState(false);
+
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   /**
-   * Initialize authentication state on mount
-   * Checks for existing session and validates it
+   * Provision user in database after Azure AD login
    */
-  useEffect(() => {
-    const initializeAuth = async () => {
+  const provisionUser = useCallback(
+    async (account: AccountInfo, accessToken: string): Promise<User | null> => {
       try {
-        // Check if user has active session by calling a protected endpoint
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include', // Include session cookie
+        const response = await fetch('/api/auth/provision', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken,
+            idTokenClaims: account.idTokenClaims,
+          }),
         });
 
-        if (response.ok) {
-          const userData = await response.json();
-          setState({
-            user: userData,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to provision user');
+        }
+
+        const data = await response.json();
+        return data.user;
+      } catch (error) {
+        console.error('User provisioning error:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
+  /**
+   * Initialize MSAL and check for existing session
+   */
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initialize() {
+      try {
+        const msalInstance = await initializeMsal();
+
+        if (!msalInstance || !isMounted) {
+          setState((prev) => ({ ...prev, isLoading: false }));
+          return;
+        }
+
+        setMsalInitialized(true);
+
+        // Handle redirect response (if returning from Azure AD)
+        const response = await msalInstance.handleRedirectPromise();
+
+        if (response && response.account) {
+          const token = response.accessToken;
+          const user = await provisionUser(response.account, token);
+
+          if (isMounted && user) {
+            setState({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              msalAccount: response.account,
+            });
+          }
+          return;
+        }
+
+        // Check for existing accounts
+        const accounts = msalInstance.getAllAccounts();
+
+        if (accounts.length > 0) {
+          const account = accounts[0];
+
+          try {
+            const tokenResponse = await msalInstance.acquireTokenSilent({
+              ...loginRequest,
+              account,
+            });
+
+            const user = await provisionUser(account, tokenResponse.accessToken);
+
+            if (isMounted && user) {
+              setState({
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+                msalAccount: account,
+              });
+            }
+          } catch (error) {
+            console.warn('Silent token acquisition failed:', error);
+            if (isMounted) {
+              setState({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+                msalAccount: null,
+              });
+            }
+          }
         } else {
-          // No active session
+          if (isMounted) {
+            setState({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: null,
+              msalAccount: null,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('MSAL initialization error:', error);
+        if (isMounted) {
           setState({
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            error: null,
+            error: 'Failed to initialize authentication',
+            msalAccount: null,
           });
         }
-      } catch (error) {
-        console.error('Failed to initialize auth:', error);
-        setState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: 'Failed to initialize authentication',
-        });
       }
+    }
+
+    initialize();
+
+    return () => {
+      isMounted = false;
     };
-
-    initializeAuth();
-  }, []);
+  }, [provisionUser]);
 
   /**
-   * Login method
-   * Redirects to backend OAuth login endpoint
+   * Login via Azure AD redirect
    */
-  const login = useCallback(() => {
-    // Redirect to backend login endpoint which initiates OAuth flow
-    window.location.href = 'http://localhost:4000/auth/login';
-  }, []);
+  const login = useCallback(async () => {
+    const msalInstance = getMsalInstance();
+
+    if (!msalInstance || !msalInitialized) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Authentication not ready. Please refresh the page.',
+      }));
+      return;
+    }
+
+    try {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      await msalInstance.loginRedirect(loginRequest);
+    } catch (error: unknown) {
+      console.error('Login error:', error);
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Login failed. Please try again.',
+      }));
+    }
+  }, [msalInitialized]);
 
   /**
-   * Logout method
-   * Calls backend logout endpoint and clears local state
+   * Logout from Azure AD
    */
   const logout = useCallback(async () => {
-    try {
-      // Call backend logout endpoint
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include', // Include session cookie
-      });
+    const msalInstance = getMsalInstance();
 
-      if (!response.ok) {
-        throw new Error('Logout failed');
-      }
-
-      // Clear authentication state
+    if (!msalInstance) {
       setState({
         user: null,
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        msalAccount: null,
       });
-
-      // Redirect to login page
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Logout failed:', error);
-      setState((prev) => ({
-        ...prev,
-        error: 'Failed to logout. Please try again.',
-      }));
+      return;
     }
-  }, []);
 
-  /**
-   * Refresh access token
-   * Exchanges refresh token for new access token
-   * Returns true if successful, false otherwise
-   */
-  const refreshToken = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        credentials: 'include', // Include session cookie with refresh token
+      const account = state.msalAccount;
+
+      await msalInstance.logoutRedirect({
+        account: account || undefined,
+        postLogoutRedirectUri: window.location.origin,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // Update user data if returned
-        if (data.user) {
-          setState((prev) => ({
-            ...prev,
-            user: data.user,
-            isAuthenticated: true,
-          }));
-        }
-
-        return true;
-      } else {
-        // Refresh token expired or invalid
-        setState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: 'Session expired. Please login again.',
-        });
-        return false;
-      }
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error('Logout error:', error);
       setState({
         user: null,
         isAuthenticated: false,
         isLoading: false,
-        error: 'Session expired. Please login again.',
+        error: null,
+        msalAccount: null,
       });
-      return false;
     }
-  }, []);
+  }, [state.msalAccount]);
+
+  /**
+   * Get access token for API calls
+   */
+  const getAccessToken = useCallback(async (): Promise<string | null> => {
+    const msalInstance = getMsalInstance();
+
+    if (!msalInstance || !state.msalAccount) {
+      return null;
+    }
+
+    try {
+      const response = await msalInstance.acquireTokenSilent({
+        ...loginRequest,
+        account: state.msalAccount,
+      });
+
+      return response.accessToken;
+    } catch (error) {
+      if (error instanceof InteractionRequiredAuthError) {
+        try {
+          await msalInstance.acquireTokenRedirect(loginRequest);
+        } catch (redirectError) {
+          console.error('Token redirect error:', redirectError);
+        }
+      }
+      return null;
+    }
+  }, [state.msalAccount]);
+
+  /**
+   * Refresh token (for compatibility with existing code)
+   */
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    const token = await getAccessToken();
+    return token !== null;
+  }, [getAccessToken]);
 
   const value: AuthContextType = {
     ...state,
     login,
     logout,
+    getAccessToken,
     refreshToken,
     clearError,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 /**
  * Hook to access authentication context
- * @throws Error if used outside AuthProvider
  */
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);

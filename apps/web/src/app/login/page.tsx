@@ -29,27 +29,8 @@ export default function LoginPage() {
     };
   }, [clearError]);
 
-  const handleLogin = () => {
-    login();
-  };
-
-  const handleDevLogin = async () => {
-    try {
-      const response = await fetch('/api/auth/dev-login', {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        // Redirect to dashboard
-        router.push('/');
-      } else {
-        const error = await response.json();
-        console.error('Dev login failed:', error);
-      }
-    } catch (error) {
-      console.error('Dev login error:', error);
-    }
+  const handleLogin = async () => {
+    await login();
   };
 
   if (isLoading) {
@@ -70,9 +51,7 @@ export default function LoginPage() {
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Legal Platform
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to access your workspace
-          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">Sign in to access your workspace</p>
         </div>
 
         {error && (
@@ -104,7 +83,13 @@ export default function LoginPage() {
                     className="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-red-50"
                   >
                     <span className="sr-only">Dismiss</span>
-                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <svg
+                      className="h-5 w-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
                       <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                     </svg>
                   </button>
@@ -143,41 +128,6 @@ export default function LoginPage() {
             <br />
             Please use your organization email to sign in.
           </p>
-
-          {process.env.NODE_ENV === 'development' && (
-            <>
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-gray-50 px-2 text-gray-500">Development Only</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleDevLogin}
-                className="group relative flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <svg
-                    className="h-5 w-5 text-gray-400 group-hover:text-gray-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </span>
-                Dev Login (Skip Azure AD)
-              </button>
-            </>
-          )}
         </div>
 
         <div className="mt-6 text-center text-xs text-gray-400">
