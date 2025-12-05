@@ -21,7 +21,7 @@ import type { Task, TaskType } from '@legal-platform/types';
 /**
  * Mock users for task assignment - realistic Romanian law firm team
  */
-export const MOCK_USERS = [
+const MOCK_USERS = [
   { id: 'partner', name: 'Alex Popescu', initials: 'AP' },
   { id: 'associate1', name: 'Maria Ionescu', initials: 'MI' },
   { id: 'associate2', name: 'Ion Georgescu', initials: 'IG' },
