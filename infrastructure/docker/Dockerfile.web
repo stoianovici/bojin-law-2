@@ -28,8 +28,12 @@ RUN echo "=== Setting up database package ===" && \
     pnpm prisma generate --schema=./prisma/schema.prisma && \
     echo "Prisma client generated. Using pre-built dist:" && \
     ls -la dist/ && \
-    echo "=== Finding Prisma client location ===" && \
-    find /app -name ".prisma" -type d 2>/dev/null | head -5
+    echo "=== Finding and copying Prisma client ===" && \
+    PRISMA_PATH=$(find /app -path "*/.prisma/client" -type d 2>/dev/null | head -1) && \
+    echo "Found Prisma at: $PRISMA_PATH" && \
+    mkdir -p /app/prisma-client && \
+    cp -r "$PRISMA_PATH"/.. /app/prisma-client/ && \
+    ls -la /app/prisma-client/
 
 # 3. UI package
 RUN pnpm build --filter=@legal-platform/ui
@@ -77,10 +81,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/dist ./packages/database/dist
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/package.json ./packages/database/package.json
 
-# Copy Prisma client and @prisma/client from builder
-# pnpm stores these in its content-addressable store, copy the traced versions from standalone
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/node_modules/@prisma ./node_modules/@prisma
+# Copy Prisma client from the known location we created in builder stage
+COPY --from=builder --chown=nextjs:nodejs /app/prisma-client ./node_modules/.prisma
 
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
