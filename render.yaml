@@ -40,7 +40,7 @@ services:
       - key: NEXT_PUBLIC_AZURE_AD_TENANT_ID
         sync: false
     healthCheckPath: /api/health
-    autoDeploy: false # Disabled - only deploy legacy-import automatically
+    autoDeploy: true # Auto-deploy on push to main
 
   ##############################################################################
   # Cache - Redis for Session Management
