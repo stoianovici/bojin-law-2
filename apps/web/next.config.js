@@ -14,14 +14,25 @@ const nextConfig = {
 
   // Webpack config for production build
   webpack: (config, { isServer }) => {
-    // Add explicit aliases for workspace packages
+    // Add explicit aliases for workspace packages that need bundling
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@legal-platform/database': path.resolve(__dirname, '../../packages/database/dist'),
-      '@legal-platform/ui': path.resolve(__dirname, '../../packages/ui/src'),
-      '@legal-platform/types': path.resolve(__dirname, '../../packages/shared/types/src'),
-      '@legal-platform/shared-types': path.resolve(__dirname, '../../packages/shared/types/src'),
+      '@legal-platform/ui': path.resolve(__dirname, '../../packages/ui/dist'),
+      '@legal-platform/types': path.resolve(__dirname, '../../packages/shared/types/dist'),
+      '@legal-platform/shared-types': path.resolve(__dirname, '../../packages/shared/types/dist'),
     };
+
+    // Enable symlink resolution for pnpm workspaces
+    config.resolve.symlinks = true;
+
+    // Externalize database package for server-side builds (don't bundle Prisma)
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        '@legal-platform/database': 'commonjs @legal-platform/database',
+        '@prisma/client': 'commonjs @prisma/client',
+      });
+    }
 
     // Add fallbacks for Node.js modules that shouldn't be bundled in client code
     if (!isServer) {

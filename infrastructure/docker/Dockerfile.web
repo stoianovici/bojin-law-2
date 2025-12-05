@@ -15,8 +15,13 @@ COPY . .
 # Install all dependencies (creates correct symlinks)
 RUN pnpm install --frozen-lockfile --prod=false
 
-# Build database package first (generates Prisma client)
+# Build all workspace packages in dependency order
+# 1. Types package (no dependencies)
+RUN pnpm build --filter=@legal-platform/types
+# 2. Database package (generates Prisma client)
 RUN pnpm build --filter=@legal-platform/database
+# 3. UI package (depends on types)
+RUN pnpm build --filter=@legal-platform/ui
 
 # Copy environment variables for build (only NEXT_PUBLIC_* vars are embedded)
 ARG NEXT_PUBLIC_API_URL
@@ -46,6 +51,17 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+
+# Copy workspace packages that are externalized (needed at runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/packages/database/dist ./packages/database/dist
+COPY --from=builder --chown=nextjs:nodejs /app/packages/database/package.json ./packages/database/package.json
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.pnpm ./node_modules/.pnpm
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
+# Create symlink for workspace package resolution
+RUN mkdir -p node_modules/@legal-platform && \
+    ln -sf /app/packages/database node_modules/@legal-platform/database
 
 USER nextjs
 
