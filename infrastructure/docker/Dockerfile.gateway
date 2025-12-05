@@ -63,8 +63,8 @@ COPY --from=builder /app/services/gateway/package.json ./services/gateway/packag
 COPY --from=builder /app/packages/database/package.json ./packages/database/package.json
 COPY --from=builder /app/packages/shared/types/package.json ./packages/shared/types/package.json
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Install production dependencies only (skip lifecycle scripts - prisma already generated in builder)
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # Copy built gateway application
 COPY --from=builder --chown=gateway:nodejs /app/services/gateway/dist ./services/gateway/dist
