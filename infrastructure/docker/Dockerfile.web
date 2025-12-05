@@ -24,12 +24,10 @@ ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
-# Build Next.js app
+# Build Next.js app with webpack (not Turbopack) for workspace package support
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=2048"
-# Disable Turbopack - use webpack for better workspace package support
-ENV TURBOPACK=0
-RUN pnpm build --filter=@legal-platform/web
+RUN cd apps/web && pnpm next build --webpack
 
 # Stage 2: Production runner
 FROM node:22-alpine AS runner
