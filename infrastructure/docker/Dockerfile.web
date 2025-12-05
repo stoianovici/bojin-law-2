@@ -15,6 +15,9 @@ COPY . .
 # Install all dependencies (creates correct symlinks)
 RUN pnpm install --frozen-lockfile --prod=false
 
+# Set dummy DATABASE_URL for Prisma client generation (doesn't connect, just generates types)
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public"
+
 # Build all workspace packages in dependency order
 # 1. Types package (no dependencies)
 RUN pnpm build --filter=@legal-platform/types
