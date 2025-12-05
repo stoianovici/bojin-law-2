@@ -31,9 +31,10 @@ RUN echo "=== Setting up database package ===" && \
     echo "=== Finding and copying Prisma client ===" && \
     PRISMA_PATH=$(find /app -path "*/.prisma/client" -type d 2>/dev/null | head -1) && \
     echo "Found Prisma at: $PRISMA_PATH" && \
-    mkdir -p /app/prisma-client && \
-    cp -r "$PRISMA_PATH"/.. /app/prisma-client/ && \
-    ls -la /app/prisma-client/
+    mkdir -p /app/prisma-client/client && \
+    cp -r "$PRISMA_PATH"/* /app/prisma-client/client/ && \
+    echo "Copied to /app/prisma-client/client:" && \
+    ls -la /app/prisma-client/client/
 
 # 3. Build Gateway service (skip TS errors - type checking done in CI/dev)
 # pnpm workspace symlinks don't resolve correctly in Docker multi-stage builds

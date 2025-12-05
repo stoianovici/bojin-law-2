@@ -85,6 +85,9 @@ services:
       # JWT Secret (set in Render dashboard)
       - key: JWT_SECRET
         sync: false
+      # Session Secret (set in Render dashboard)
+      - key: SESSION_SECRET
+        sync: false
     healthCheckPath: /health
     autoDeploy: true
 
