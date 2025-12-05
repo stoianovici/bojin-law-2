@@ -73,8 +73,10 @@ COPY --from=builder --chown=gateway:nodejs /app/services/gateway/dist ./services
 COPY --from=builder --chown=gateway:nodejs /app/packages/database/dist ./packages/database/dist
 COPY --from=builder --chown=gateway:nodejs /app/packages/shared/types/dist ./packages/shared/types/dist
 
-# Copy Prisma client and schema
-COPY --from=builder --chown=gateway:nodejs /app/prisma-client ./node_modules/.prisma
+# Copy Prisma client to where pnpm's @prisma/client expects it
+# The pnpm store structure requires it at: node_modules/.pnpm/@prisma+client@VERSION/node_modules/.prisma/client
+RUN mkdir -p node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/.prisma
+COPY --from=builder --chown=gateway:nodejs /app/prisma-client/client ./node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/.prisma/client
 COPY --from=builder --chown=gateway:nodejs /app/packages/database/prisma ./packages/database/prisma
 
 USER gateway
