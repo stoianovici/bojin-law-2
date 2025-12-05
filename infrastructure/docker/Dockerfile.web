@@ -26,6 +26,15 @@ RUN pnpm build --filter=@legal-platform/database
 # 3. UI package (depends on types)
 RUN pnpm build --filter=@legal-platform/ui
 
+# Debug: verify database package was built
+RUN ls -la packages/database/dist/ && cat packages/database/dist/index.js | head -20
+
+# Fix pnpm symlink issue: copy database dist to where Node.js expects it
+# This ensures the externalized module can be resolved during Next.js static page generation
+RUN mkdir -p apps/web/node_modules/@legal-platform/database && \
+    cp -r packages/database/dist apps/web/node_modules/@legal-platform/database/ && \
+    cp packages/database/package.json apps/web/node_modules/@legal-platform/database/
+
 # Copy environment variables for build (only NEXT_PUBLIC_* vars are embedded)
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL

@@ -20,12 +20,13 @@ const nextConfig = {
 
   // Webpack config for production build
   webpack: (config, { isServer }) => {
-    // Add explicit aliases for workspace packages that need bundling
+    // Add explicit aliases for workspace packages
     config.resolve.alias = {
       ...config.resolve.alias,
       '@legal-platform/ui': path.resolve(__dirname, '../../packages/ui/dist'),
       '@legal-platform/types': path.resolve(__dirname, '../../packages/shared/types/dist'),
       '@legal-platform/shared-types': path.resolve(__dirname, '../../packages/shared/types/dist'),
+      '@legal-platform/database': path.resolve(__dirname, '../../packages/database/dist'),
     };
 
     // Enable symlink resolution for pnpm workspaces
