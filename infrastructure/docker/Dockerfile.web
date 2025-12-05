@@ -1,46 +1,22 @@
 # Production Dockerfile for Next.js Web Application
-# Multi-stage build for optimized image size
+# Simplified build for pnpm workspaces
 
-# Stage 1: Dependencies
-FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat
+# Stage 1: Builder
+FROM node:22-alpine AS builder
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy package files for dependency installation
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/web/package.json ./apps/web/
-COPY packages/database/package.json ./packages/database/
-# Copy Prisma schema for postinstall script (prisma generate)
-COPY packages/database/prisma ./packages/database/prisma/
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/shared/types/package.json ./packages/shared/types/
-COPY packages/shared/test-utils/package.json ./packages/shared/test-utils/
-COPY packages/config/package.json ./packages/config/
-COPY packages/romanian-templates/package.json ./packages/romanian-templates/
+# Copy everything first (pnpm workspaces need all files for symlinks)
+COPY . .
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
-
-# Install dependencies
+# Install all dependencies (creates correct symlinks)
 RUN pnpm install --frozen-lockfile --prod=false
 
-# Stage 2: Builder
-FROM node:22-alpine AS builder
-WORKDIR /app
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps ./apps
-COPY --from=deps /app/packages ./packages
-
-# Copy source code
-COPY . .
+# Build database package first (generates Prisma client)
+RUN pnpm build --filter=@legal-platform/database
 
 # Copy environment variables for build (only NEXT_PUBLIC_* vars are embedded)
 ARG NEXT_PUBLIC_API_URL
@@ -48,19 +24,17 @@ ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
-# Build database package first (generates Prisma client)
-RUN pnpm build --filter=@legal-platform/database
-
 # Build Next.js app
-# Note: Render starter tier has 512MB RAM, but build can use more
-# Using 2GB for build, production runtime uses less
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN pnpm build --filter=@legal-platform/web
 
-# Stage 3: Production runner
+# Stage 2: Production runner
 FROM node:22-alpine AS runner
 WORKDIR /app
+
+# Install OpenSSL for Prisma runtime
+RUN apk add --no-cache openssl
 
 ENV NODE_ENV=production
 
