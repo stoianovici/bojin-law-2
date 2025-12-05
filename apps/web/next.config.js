@@ -3,11 +3,9 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: [
-    '@legal-platform/ui',
-    '@legal-platform/shared-types',
-    '@legal-platform/database',
-  ],
+  transpilePackages: ['@legal-platform/ui', '@legal-platform/shared-types'],
+  // Don't bundle database package - keep it external for server-side code
+  serverExternalPackages: ['@legal-platform/database', '@prisma/client'],
   // reactCompiler: true, // Temporarily disabled - requires babel-plugin-react-compiler setup
   output: 'standalone', // Required for Docker deployment
   experimental: {
