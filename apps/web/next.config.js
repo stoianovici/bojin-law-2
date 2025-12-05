@@ -12,14 +12,14 @@ const nextConfig = {
     optimizePackageImports: ['@legal-platform/ui'],
   },
 
-  // Configure Turbopack (default in Next.js 16)
-  // Turbopack handles Node.js module fallbacks automatically
-  // NOTE: Turbopack in Next.js 16.0.2 has path alias resolution issues
-  // Keeping config minimal until fix is available
-  turbopack: {},
-
-  // Webpack config kept for backwards compatibility when using --webpack flag
+  // Webpack config for production build
   webpack: (config, { isServer }) => {
+    // Add explicit alias for database package
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@legal-platform/database': path.resolve(__dirname, '../../packages/database/dist'),
+    };
+
     // Add fallbacks for Node.js modules that shouldn't be bundled in client code
     if (!isServer) {
       config.resolve.fallback = {
