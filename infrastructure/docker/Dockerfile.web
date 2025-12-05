@@ -18,22 +18,18 @@ RUN pnpm install --frozen-lockfile --prod=false
 # Set dummy DATABASE_URL for Prisma client generation (doesn't connect, just generates types)
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public"
 
-# Build all workspace packages in dependency order
-# 1. Types package (no dependencies)
+# Build workspace packages (database dist is pre-committed to git)
+# 1. Types package
 RUN pnpm build --filter=@legal-platform/types
 
-# 2. Database package (generates Prisma client and compiles TypeScript)
-# Run with verbose output to diagnose issues
-RUN echo "=== Building database package ===" && \
+# 2. Database package - use pre-built dist from git, just generate Prisma client
+RUN echo "=== Setting up database package ===" && \
     cd packages/database && \
-    echo "Running prisma generate..." && \
     pnpm prisma generate --schema=./prisma/schema.prisma && \
-    echo "Prisma generate complete. Running tsc..." && \
-    pnpm tsc --listEmittedFiles && \
-    echo "=== Database build complete ===" && \
+    echo "Prisma client generated. Using pre-built dist:" && \
     ls -la dist/
 
-# 3. UI package (depends on types)
+# 3. UI package
 RUN pnpm build --filter=@legal-platform/ui
 
 # Fix pnpm symlink issue: remove symlink and copy actual files

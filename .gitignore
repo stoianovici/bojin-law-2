@@ -66,3 +66,6 @@ tmp/
 # Misc
 .cache/
 .parcel-cache/
+
+# Allow database package dist (needed for Docker builds)
+!packages/database/dist/
