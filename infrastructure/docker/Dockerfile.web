@@ -13,11 +13,16 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/database/package.json ./packages/database/
+# Copy Prisma schema for postinstall script (prisma generate)
+COPY packages/database/prisma ./packages/database/prisma/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/shared/types/package.json ./packages/shared/types/
 COPY packages/shared/test-utils/package.json ./packages/shared/test-utils/
 COPY packages/config/package.json ./packages/config/
 COPY packages/romanian-templates/package.json ./packages/romanian-templates/
+
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile --prod=false
