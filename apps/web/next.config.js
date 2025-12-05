@@ -3,7 +3,11 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@legal-platform/ui', '@legal-platform/shared-types'],
+  transpilePackages: [
+    '@legal-platform/ui',
+    '@legal-platform/shared-types',
+    '@legal-platform/database',
+  ],
   // reactCompiler: true, // Temporarily disabled - requires babel-plugin-react-compiler setup
   output: 'standalone', // Required for Docker deployment
   experimental: {
