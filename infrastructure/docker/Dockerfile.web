@@ -12,6 +12,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copy package files for dependency installation
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
+COPY packages/database/package.json ./packages/database/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/shared/types/package.json ./packages/shared/types/
 COPY packages/shared/test-utils/package.json ./packages/shared/test-utils/
@@ -41,6 +42,9 @@ ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+
+# Build database package first (generates Prisma client)
+RUN pnpm build --filter=@legal-platform/database
 
 # Build Next.js app
 # Note: Render starter tier has 512MB RAM, but build can use more
