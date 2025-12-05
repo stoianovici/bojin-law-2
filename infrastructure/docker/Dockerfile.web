@@ -21,19 +21,30 @@ ENV DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public"
 # Build all workspace packages in dependency order
 # 1. Types package (no dependencies)
 RUN pnpm build --filter=@legal-platform/types
-# 2. Database package (generates Prisma client)
-RUN pnpm build --filter=@legal-platform/database
+
+# 2. Database package (generates Prisma client and compiles TypeScript)
+# Run with verbose output to diagnose issues
+RUN echo "=== Building database package ===" && \
+    cd packages/database && \
+    echo "Running prisma generate..." && \
+    pnpm prisma generate --schema=./prisma/schema.prisma && \
+    echo "Prisma generate complete. Running tsc..." && \
+    pnpm tsc --listEmittedFiles && \
+    echo "=== Database build complete ===" && \
+    ls -la dist/
+
 # 3. UI package (depends on types)
 RUN pnpm build --filter=@legal-platform/ui
 
-# Debug: verify database package was built
-RUN ls -la packages/database/dist/ && cat packages/database/dist/index.js | head -20
-
-# Fix pnpm symlink issue: copy database dist to where Node.js expects it
+# Fix pnpm symlink issue: remove symlink and copy actual files
 # This ensures the externalized module can be resolved during Next.js static page generation
-RUN mkdir -p apps/web/node_modules/@legal-platform/database && \
+RUN echo "=== Fixing database module resolution ===" && \
+    rm -rf apps/web/node_modules/@legal-platform/database && \
+    mkdir -p apps/web/node_modules/@legal-platform/database && \
     cp -r packages/database/dist apps/web/node_modules/@legal-platform/database/ && \
-    cp packages/database/package.json apps/web/node_modules/@legal-platform/database/
+    cp packages/database/package.json apps/web/node_modules/@legal-platform/database/ && \
+    echo "Database package copied. Contents:" && \
+    ls -la apps/web/node_modules/@legal-platform/database/dist/
 
 # Copy environment variables for build (only NEXT_PUBLIC_* vars are embedded)
 ARG NEXT_PUBLIC_API_URL
