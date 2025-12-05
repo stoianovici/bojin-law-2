@@ -82,6 +82,8 @@ services:
         sync: false
       - key: AZURE_AD_TENANT_ID
         sync: false
+      - key: AZURE_AD_REDIRECT_URI
+        value: https://legal-platform-gateway.onrender.com/auth/callback
       # JWT Secret (set in Render dashboard)
       - key: JWT_SECRET
         sync: false
