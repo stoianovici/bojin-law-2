@@ -14,10 +14,13 @@ const nextConfig = {
 
   // Webpack config for production build
   webpack: (config, { isServer }) => {
-    // Add explicit alias for database package
+    // Add explicit aliases for workspace packages
     config.resolve.alias = {
       ...config.resolve.alias,
       '@legal-platform/database': path.resolve(__dirname, '../../packages/database/dist'),
+      '@legal-platform/ui': path.resolve(__dirname, '../../packages/ui/src'),
+      '@legal-platform/types': path.resolve(__dirname, '../../packages/shared/types/src'),
+      '@legal-platform/shared-types': path.resolve(__dirname, '../../packages/shared/types/src'),
     };
 
     // Add fallbacks for Node.js modules that shouldn't be bundled in client code
