@@ -77,10 +77,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/dist ./packages/database/dist
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/package.json ./packages/database/package.json
 
-# Copy Prisma client (required by database package at runtime)
-# In pnpm workspaces, the Prisma client is generated in the package's node_modules
-# Try both possible locations (pnpm may hoist or keep local)
-COPY --from=builder --chown=nextjs:nodejs /app/packages/database/node_modules/.prisma ./node_modules/.prisma
+# Copy Prisma client and @prisma/client from builder
+# pnpm stores these in its content-addressable store, copy the traced versions from standalone
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/node_modules/@prisma ./node_modules/@prisma
 
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
