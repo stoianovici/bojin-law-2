@@ -115,6 +115,7 @@ services:
         sync: false
 
     healthCheckPath: /api/health
+    autoDeploy: false # Manual deploy only - stable service, shared packages may change
 
 ##############################################################################
 # Database - PostgreSQL with pgvector
