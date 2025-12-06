@@ -10,7 +10,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useEmailStats, useEmailSync } from '@/hooks/useEmailSync';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 export function EmailWidget() {
   const { stats, loading: statsLoading, error: statsError } = useEmailStats();

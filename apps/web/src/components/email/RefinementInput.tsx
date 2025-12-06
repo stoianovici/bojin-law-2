@@ -9,7 +9,7 @@
 
 import React, { useState, useCallback } from 'react';
 import type { DraftRefinement } from '@/hooks/useEmailDraft';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 interface RefinementInputProps {
   onRefine: (instruction: string) => Promise<void>;

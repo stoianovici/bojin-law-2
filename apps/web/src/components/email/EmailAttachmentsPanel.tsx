@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { gql, useMutation } from '@apollo/client';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 const SYNC_EMAIL_ATTACHMENTS = gql`
   mutation SyncEmailAttachments($emailId: ID!) {

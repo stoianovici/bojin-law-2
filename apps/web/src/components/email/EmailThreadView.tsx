@@ -17,7 +17,7 @@ import { EmailAttachmentsPanel } from './EmailAttachmentsPanel';
 import { EmailIntelligenceSidebar } from './EmailIntelligenceSidebar';
 import { DraftGenerationPanel } from './DraftGenerationPanel';
 import { EmailComposer } from './EmailComposer';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 import type { EmailDraft } from '@/hooks/useEmailDraft';
 
 interface Email {

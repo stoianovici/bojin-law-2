@@ -19,7 +19,7 @@ import {
 import type { EmailDraft } from '@/hooks/useEmailDraft';
 import { AttachmentSuggestionsPanel } from './AttachmentSuggestionsPanel';
 import { RefinementInput } from './RefinementInput';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 import {
   SnippetAutocomplete,
   SnippetPickerButton,

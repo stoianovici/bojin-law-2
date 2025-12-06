@@ -12,7 +12,7 @@ import React, { useState, useCallback } from 'react';
 import { useGenerateMultipleDrafts } from '@/hooks/useEmailDraft';
 import type { EmailTone, EmailDraft } from '@/hooks/useEmailDraft';
 import { ToneSelector } from './ToneSelector';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 interface DraftGenerationPanelProps {
   emailId: string;

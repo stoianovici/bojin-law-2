@@ -11,7 +11,7 @@ import React, { useState, useCallback } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useEmailThreads, useEmailSync } from '@/hooks/useEmailSync';
 import { EmailThreadFilters } from './EmailThreadFilters';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 interface EmailThread {
   id: string;

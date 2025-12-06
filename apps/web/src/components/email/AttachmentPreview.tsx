@@ -13,7 +13,7 @@
 
 import React, { useState } from 'react';
 import type { AttachmentSuggestion } from '@/hooks/useEmailDraft';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 interface AttachmentPreviewProps {
   attachment: AttachmentSuggestion;

@@ -10,7 +10,7 @@
 import React, { useState } from 'react';
 import { EmailThreadList, EmailThreadView } from '@/components/email';
 import { useEmails } from '@/hooks/useEmailSync';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
 
 interface EmailsTabProps {

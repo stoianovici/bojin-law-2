@@ -10,7 +10,7 @@
 import React, { useState, useMemo } from 'react';
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 const GET_USER_CASES = gql`
   query GetUserCasesForAssignment($status: CaseStatus) {

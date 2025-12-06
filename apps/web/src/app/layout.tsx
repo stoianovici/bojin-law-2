@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { ConditionalLayout } from '../components/layout/ConditionalLayout';
-import { ToastProvider } from '../components/ui/Toast';
+import { ToastProvider } from '../components/ui/toast';
 import { AuthProvider } from '../contexts/AuthContext';
 import { FinancialAccessProvider } from '../contexts/FinancialAccessContext';
 import { ApolloProvider } from '../providers/ApolloProvider';

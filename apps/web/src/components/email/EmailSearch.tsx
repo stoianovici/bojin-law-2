@@ -9,7 +9,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useEmails, useEmailSearchSuggestions } from '@/hooks/useEmailSync';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';
 import debounce from 'lodash/debounce';
 
