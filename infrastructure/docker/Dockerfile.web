@@ -101,8 +101,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma-client/client ./node_modul
 # Copy @prisma/client package (the entry point that re-exports from .prisma/client)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client/ ./node_modules/@prisma/client/
 
-# Install Prisma CLI for migrations
-RUN npm install -g prisma@5.8.0
+# Install Prisma CLI for migrations and ioredis for database package redis exports
+RUN npm install -g prisma@5.8.0 && \
+    npm install ioredis@5.4.1
 
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
