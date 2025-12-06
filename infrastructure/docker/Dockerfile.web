@@ -84,6 +84,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/database/package.json ./
 # Copy Prisma client from the known location we created in builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client ./node_modules/.prisma
 
+# Copy @prisma/client package (the entry point that re-exports from .prisma/client)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
     ln -sf /app/packages/database node_modules/@legal-platform/database
