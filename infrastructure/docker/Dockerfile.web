@@ -31,17 +31,19 @@ RUN echo "=== Setting up database package ===" && \
     echo "=== Finding and copying Prisma client ===" && \
     PRISMA_PATH=$(find /app -path "*/.prisma/client" -type d 2>/dev/null | head -1) && \
     echo "Found Prisma at: $PRISMA_PATH" && \
-    mkdir -p /app/prisma-client && \
-    cp -r "$PRISMA_PATH"/.. /app/prisma-client/ && \
-    ls -la /app/prisma-client/ && \
+    mkdir -p /app/prisma-client/client && \
+    cp -r "$PRISMA_PATH"/* /app/prisma-client/client/ && \
+    echo "Contents of /app/prisma-client/client:" && \
+    ls -la /app/prisma-client/client/ && \
     echo "=== Finding and copying @prisma/client package ===" && \
     PRISMA_NODE_MODULES=$(dirname $(dirname "$PRISMA_PATH")) && \
     PRISMA_CLIENT_PATH="$PRISMA_NODE_MODULES/@prisma/client" && \
     echo "Found @prisma/client at: $PRISMA_CLIENT_PATH" && \
     ls -la "$PRISMA_CLIENT_PATH" && \
-    mkdir -p /app/prisma-client-pkg && \
-    cp -r "$PRISMA_CLIENT_PATH" /app/prisma-client-pkg/ && \
-    ls -la /app/prisma-client-pkg/
+    mkdir -p /app/prisma-client-pkg/client && \
+    cp -r "$PRISMA_CLIENT_PATH"/* /app/prisma-client-pkg/client/ && \
+    echo "Contents of /app/prisma-client-pkg/client:" && \
+    ls -la /app/prisma-client-pkg/client/
 
 # 3. UI package
 RUN pnpm build --filter=@legal-platform/ui
@@ -97,7 +99,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/database/prisma ./packag
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client/client ./node_modules/.prisma/client
 
 # Copy @prisma/client package (the entry point that re-exports from .prisma/client)
-COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client ./node_modules/@prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client/ ./node_modules/@prisma/client/
 
 # Install Prisma CLI for migrations
 RUN npm install -g prisma@5.8.0
