@@ -8,10 +8,8 @@
  * Schedule: Monthly on 1st at 4 AM (configurable via ROI_METRICS_CRON)
  */
 
-import { PrismaClient, TaskStatus } from '@prisma/client';
+import { prisma, TaskStatus } from '@legal-platform/database';
 import Redis from 'ioredis';
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // Configuration

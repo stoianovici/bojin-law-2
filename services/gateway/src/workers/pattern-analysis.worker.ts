@@ -8,12 +8,10 @@
  * Schedule: Weekly on Sunday at 3 AM (configurable via PATTERN_ANALYSIS_CRON)
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@legal-platform/database';
 import Redis from 'ioredis';
 import { PatternDetectionService } from '../services/pattern-detection.service';
 import { DelegationAnalyticsService } from '../services/delegation-analytics.service';
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // Configuration

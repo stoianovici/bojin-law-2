@@ -9,10 +9,8 @@
  * Retention: Prunes snapshots older than 365 days
  */
 
-import { PrismaClient, TaskStatus, SnapshotType, TaskTypeEnum } from '@prisma/client';
+import { prisma, TaskStatus, SnapshotType, TaskTypeEnum } from '@legal-platform/database';
 import Redis from 'ioredis';
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // Configuration

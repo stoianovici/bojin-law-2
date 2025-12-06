@@ -6,12 +6,10 @@
  * Runs daily at a configurable time (default: 7 AM local timezone).
  */
 
-import { PrismaClient } from '@legal-platform/database';
+import { prisma } from '@legal-platform/database';
 import { caseSubscriptionService } from '../services/case-subscription.service';
 import { sendDailyDigestEmail } from '../services/email.service';
 import * as cron from 'node-cron';
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // Configuration

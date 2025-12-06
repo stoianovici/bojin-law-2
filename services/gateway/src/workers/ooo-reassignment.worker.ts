@@ -10,10 +10,8 @@
  * 3. Send notifications to both original assignee and delegate
  */
 
-import { PrismaClient, TaskStatus, TaskPriority, NotificationType } from '@legal-platform/database';
+import { prisma, TaskStatus, TaskPriority, NotificationType } from '@legal-platform/database';
 import type { OOOReassignmentSummary } from '@legal-platform/types';
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // Configuration

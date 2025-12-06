@@ -6,13 +6,11 @@
  * Schedule: First day of each month at 6:00 AM (Europe/Bucharest timezone).
  */
 
-import { PrismaClient } from '@legal-platform/database';
+import { prisma } from '@legal-platform/database';
 import * as cron from 'node-cron';
 import { platformIntelligenceService } from '../services/platform-intelligence.service';
 import { dashboardExportService } from '../services/dashboard-export.service';
 import { notificationService } from '../services/notification.service';
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // Configuration

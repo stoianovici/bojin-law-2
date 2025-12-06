@@ -6,14 +6,11 @@
  * Subscriptions expire every 3 days (4320 minutes) and require renewal.
  */
 
-import { GraphSubscription } from '@legal-platform/database';
-import { PrismaClient } from '@prisma/client';
+import { prisma, GraphSubscription } from '@legal-platform/database';
 import { Client } from '@microsoft/microsoft-graph-client';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError } from '../utils/graph-error-handler';
 import logger from '../utils/logger';
-
-const prisma = new PrismaClient();
 
 // Subscription configuration based on Graph API limits
 const SUBSCRIPTION_EXPIRY_MINUTES = 4320; // 3 days

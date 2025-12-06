@@ -1,10 +1,8 @@
 // Story 4.4: Dependency Automation Service
 // Automatically activates successor tasks when prerequisites complete
 
-import { PrismaClient, Task, TaskStatus, NotificationType } from '@legal-platform/database';
+import { prisma, Task, TaskStatus, NotificationType } from '@legal-platform/database';
 import { getTasksUnblockedBy } from './task-dependency.service';
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // Activation Result

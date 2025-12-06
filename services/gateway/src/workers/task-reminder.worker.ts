@@ -1,11 +1,9 @@
 // Story 4.4: Task Reminder Worker
 // Sends automated reminders for approaching and overdue task deadlines
 
-import { PrismaClient, TaskStatus, NotificationType } from '@legal-platform/database';
+import { prisma, TaskStatus, NotificationType } from '@legal-platform/database';
 import { sendTaskReminderEmail, sendOverdueNotification } from '../services/email.service';
 import { ReminderConfig, EmailReminderPayload } from '@legal-platform/types';
-
-const prisma = new PrismaClient();
 
 // ============================================================================
 // Configuration
