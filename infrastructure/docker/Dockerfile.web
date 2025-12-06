@@ -51,8 +51,12 @@ RUN echo "=== Fixing database module resolution ===" && \
 # Copy environment variables for build (only NEXT_PUBLIC_* vars are embedded)
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_AZURE_AD_CLIENT_ID
+ARG NEXT_PUBLIC_AZURE_AD_TENANT_ID
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_AZURE_AD_CLIENT_ID=$NEXT_PUBLIC_AZURE_AD_CLIENT_ID
+ENV NEXT_PUBLIC_AZURE_AD_TENANT_ID=$NEXT_PUBLIC_AZURE_AD_TENANT_ID
 
 # Build Next.js app with webpack (not Turbopack) for workspace package support
 ENV NODE_ENV=production
