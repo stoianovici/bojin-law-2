@@ -1,7 +1,7 @@
 /**
  * PartnerDashboard - Dashboard for Partner Role
  * Displays operational widgets: supervised cases, firm overview, tasks, employee workload
- * KPI widgets moved to Analytics page
+ * All data comes from real API - no mock data
  */
 
 'use client';
@@ -43,168 +43,47 @@ const defaultLayout: WidgetPosition[] = [
   { i: 'row2-right-stack', x: 4, y: 5, w: 8, h: 8 },
 ];
 
-// Static widget configurations (data will be dynamic)
-
-const mockFirmTasksOverviewWidget: FirmTasksOverviewWidgetType = {
+// Empty widget configurations - will be populated with real data when available
+const emptyFirmTasksOverviewWidget: FirmTasksOverviewWidgetType = {
   id: 'firm-tasks-overview',
   type: 'firmTasksOverview',
   title: 'Prezentare Sarcini Firmă',
   position: { i: 'firm-tasks-overview', x: 8, y: 5, w: 4, h: 5 },
   taskMetrics: {
-    totalActiveTasks: 85,
-    overdueCount: 3,
-    dueTodayCount: 12,
-    dueThisWeekCount: 28,
-    completionRate: 92,
-    avgCompletionRateTrend: 'up',
+    totalActiveTasks: 0,
+    overdueCount: 0,
+    dueTodayCount: 0,
+    dueThisWeekCount: 0,
+    completionRate: 0,
+    avgCompletionRateTrend: 'stable',
   },
-  taskBreakdown: [
-    { type: 'Cercetare', count: 18 },
-    { type: 'Documentare', count: 32 },
-    { type: 'Revizuire', count: 22 },
-    { type: 'Întâlniri', count: 13 },
-  ],
-  priorityTasks: [
-    {
-      id: 'task-001',
-      title: 'Redactare memoriu aparare - Litigiu ABC Industries',
-      caseContext: 'Dosar 2025-001',
-      priority: 'Urgent',
-      assignee: 'Maria Ionescu',
-      dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: 'task-002',
-      title: 'Finalizare due diligence - M&A Tech Innovations',
-      caseContext: 'Dosar 2025-008',
-      priority: 'High',
-      assignee: 'Ion Georgescu',
-      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: 'task-003',
-      title: 'Cercetare jurisprudenta ICCJ - Drept comercial',
-      caseContext: 'Dosar 2025-001',
-      priority: 'High',
-      assignee: 'Elena Popa',
-      dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
-    },
-  ],
+  taskBreakdown: [],
+  priorityTasks: [],
 };
 
-const mockEmployeeWorkloadWidget: EmployeeWorkloadWidgetType = {
+const emptyEmployeeWorkloadWidget: EmployeeWorkloadWidgetType = {
   id: 'employee-workload',
   type: 'employeeWorkload',
   title: 'Utilizare Angajați',
   position: { i: 'employee-workload', x: 0, y: 10, w: 12, h: 6 },
   viewMode: 'weekly',
-  employeeUtilization: [
-    {
-      employeeId: 'associate1',
-      name: 'Maria Ionescu',
-      dailyUtilization: 115,
-      weeklyUtilization: 105,
-      taskCount: 10,
-      estimatedHours: 42,
-      status: 'over',
-      tasks: [
-        { id: 't1', title: 'Memoriu aparare - ABC Industries', estimate: 8, type: 'Documentare' },
-        { id: 't2', title: 'Cercetare ICCJ drept comercial', estimate: 6, type: 'Cercetare' },
-        { id: 't3', title: 'Revizuire contract cesiune', estimate: 4, type: 'Revizuire' },
-      ],
-    },
-    {
-      employeeId: 'associate2',
-      name: 'Ion Georgescu',
-      dailyUtilization: 95,
-      weeklyUtilization: 90,
-      taskCount: 8,
-      estimatedHours: 36,
-      status: 'optimal',
-      tasks: [
-        { id: 't4', title: 'Due diligence M&A', estimate: 7, type: 'Cercetare' },
-        { id: 't5', title: 'Intalnire client Tech Innovations', estimate: 2, type: 'Întâlnire' },
-      ],
-    },
-    {
-      employeeId: 'paralegal1',
-      name: 'Elena Popa',
-      dailyUtilization: 88,
-      weeklyUtilization: 85,
-      taskCount: 7,
-      estimatedHours: 34,
-      status: 'optimal',
-    },
-    {
-      employeeId: 'paralegal2',
-      name: 'Mihai Dumitrescu',
-      dailyUtilization: 45,
-      weeklyUtilization: 50,
-      taskCount: 5,
-      estimatedHours: 20,
-      status: 'under',
-    },
-  ],
+  employeeUtilization: [],
 };
 
-const mockMyTasksWidget: TaskListWidget = {
+const emptyMyTasksWidget: TaskListWidget = {
   id: 'my-tasks',
   type: 'taskList',
   title: 'Sarcinile Mele',
   position: { i: 'my-tasks', x: 6, y: 0, w: 6, h: 5 },
-  tasks: [
-    {
-      id: 'task-p1',
-      title: 'Revizuire strategie litigiu ABC Industries',
-      caseContext: 'Dosar 2025-001',
-      priority: 'High',
-      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      timeEstimate: '2h',
-    },
-    {
-      id: 'task-p2',
-      title: 'Aprobare contract cesiune parti sociale',
-      caseContext: 'M&A Tech Innovations',
-      priority: 'Medium',
-      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      timeEstimate: '1h',
-    },
-    {
-      id: 'task-p3',
-      title: 'Intalnire echipa - planificare Q1 2025',
-      priority: 'Medium',
-      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-      timeEstimate: '1.5h',
-    },
-  ],
+  tasks: [],
 };
 
-const mockAISuggestionsWidget: AISuggestionWidgetType = {
+const emptyAISuggestionsWidget: AISuggestionWidgetType = {
   id: 'ai-suggestions',
   type: 'aiSuggestion',
   title: 'Recomandări AI',
   position: { i: 'ai-suggestions', x: 0, y: 16, w: 12, h: 4 },
-  suggestions: [
-    {
-      id: 'sug-1',
-      text: 'Echipa are utilizare medie de 85% - optim! Maria Ionescu (115%) ar putea avea nevoie de redistribuire sarcini.',
-      timestamp: '1 oră în urmă',
-      type: 'insight',
-    },
-    {
-      id: 'sug-2',
-      text: 'Dosarul 2025-001 (ABC Industries) necesita atentie - termen instanta in 3 zile',
-      timestamp: '2 ore în urmă',
-      type: 'alert',
-      actionLink: '/cases/case-001',
-    },
-    {
-      id: 'sug-3',
-      text: 'Mihai Dumitrescu (50% utilizare) poate prelua sarcini de la Maria Ionescu',
-      timestamp: '3 ore în urmă',
-      type: 'recommendation',
-    },
-  ],
+  suggestions: [],
 };
 
 /**
@@ -243,7 +122,7 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
         supervisorId: '22222222-2222-2222-2222-222222222222', // Partner ID from seed
         teamSize: c.teamSize,
         riskLevel: c.riskLevel,
-        nextDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        nextDeadline: c.nextDeadline ? new Date(c.nextDeadline) : undefined,
       })),
     }),
     [supervisedCases]
@@ -294,23 +173,27 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
 
   return (
     <div>
-      <DashboardGrid layout={defaultLayout} onLayoutChange={handleLayoutChange} isEditing={isEditing}>
+      <DashboardGrid
+        layout={defaultLayout}
+        onLayoutChange={handleLayoutChange}
+        isEditing={isEditing}
+      >
         {/* Row 1: Equal-width widgets */}
         <div key="supervised-cases">
           <SupervisedCasesWidget widget={supervisedCasesWidget} />
         </div>
 
         <div key="my-tasks">
-          <TodayTasksWidget widget={mockMyTasksWidget} />
+          <TodayTasksWidget widget={emptyMyTasksWidget} />
         </div>
 
         <div key="ai-suggestions">
-          <AISuggestionWidget widget={mockAISuggestionsWidget} />
+          <AISuggestionWidget widget={emptyAISuggestionsWidget} />
         </div>
 
         {/* Row 2: Firm Tasks Overview (left, tall) */}
         <div key="firm-tasks-overview">
-          <FirmTasksOverviewWidget widget={mockFirmTasksOverviewWidget} />
+          <FirmTasksOverviewWidget widget={emptyFirmTasksOverviewWidget} />
         </div>
 
         {/* Row 2: Right side container (stacked widgets) */}
@@ -320,7 +203,7 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
           </div>
 
           <div key="employee-workload">
-            <EmployeeWorkloadWidget widget={mockEmployeeWorkloadWidget} />
+            <EmployeeWorkloadWidget widget={emptyEmployeeWorkloadWidget} />
           </div>
         </div>
       </DashboardGrid>
