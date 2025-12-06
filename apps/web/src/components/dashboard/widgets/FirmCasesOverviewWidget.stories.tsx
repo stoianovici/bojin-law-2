@@ -42,7 +42,7 @@ export const Loading: Story = {
     widget: createFirmCasesOverviewWidget(),
     isLoading: true,
   },
-  render: (args) => (
+  render: (args: Record<string, unknown>) => (
     <div className="animate-pulse">
       <div className="h-64 bg-neutral-200 rounded-lg"></div>
     </div>

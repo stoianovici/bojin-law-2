@@ -79,8 +79,8 @@ type Case {
   """Current status of the case"""
   status: CaseStatus!
 
-  """Type of legal case"""
-  type: CaseType!
+  """Type of legal case (dynamic, from CaseTypeConfig)"""
+  type: String!
 
   """Detailed description of the case"""
   description: String!
@@ -304,11 +304,11 @@ input CreateCaseInput {
   """Title of the case (3-500 characters)"""
   title: String!
 
-  """Client ID - must reference an existing client"""
-  clientId: UUID!
+  """Client name - will create or find existing client"""
+  clientName: String!
 
-  """Type of case"""
-  type: CaseType!
+  """Type of case (dynamic code from CaseTypeConfig)"""
+  type: String!
 
   """Detailed description of the case (minimum 10 characters)"""
   description: String!
@@ -343,8 +343,8 @@ input UpdateCaseInput {
   """Updated status"""
   status: CaseStatus
 
-  """Updated case type"""
-  type: CaseType
+  """Updated case type (dynamic code from CaseTypeConfig)"""
+  type: String
 
   """Updated description"""
   description: String
@@ -489,6 +489,19 @@ type Query {
     caseId: UUID!
     role: CaseActorRole!
   ): [CaseActor!]!
+
+  """
+  Search clients by name for autocomplete
+  Returns clients matching the search query (minimum 1 character)
+  Authorization: Authenticated users in the same firm
+  """
+  searchClients(
+    """Search query (minimum 1 character)"""
+    query: String!
+
+    """Maximum number of results (default 10, max 50)"""
+    limit: Int
+  ): [Client!]!
 
   """
   Get retainer usage for a specific period (Story 2.11.2)

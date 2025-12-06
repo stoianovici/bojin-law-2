@@ -16,7 +16,7 @@ const meta: Meta<typeof DocumentList> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="p-6 bg-white h-screen">
         <Story />
       </div>
@@ -33,7 +33,7 @@ type Story = StoryObj<typeof DocumentList>;
 export const Default: Story = {
   args: {
     documents: mockDocuments,
-    onSelectDocument: (doc) => alert(`Selected: ${doc.title}`),
+    onSelectDocument: (doc: any) => alert(`Selected: ${doc.title}`),
     onNewDocument: () => alert('New document clicked'),
   },
 };
@@ -45,7 +45,7 @@ export const WithSelection: Story = {
   args: {
     documents: mockDocuments,
     selectedDocumentId: mockDocuments[0].id,
-    onSelectDocument: (doc) => alert(`Selected: ${doc.title}`),
+    onSelectDocument: (doc: any) => alert(`Selected: ${doc.title}`),
     onNewDocument: () => alert('New document clicked'),
   },
 };
@@ -56,7 +56,7 @@ export const WithSelection: Story = {
 export const Empty: Story = {
   args: {
     documents: [],
-    onSelectDocument: (doc) => alert(`Selected: ${doc.title}`),
+    onSelectDocument: (doc: any) => alert(`Selected: ${doc.title}`),
     onNewDocument: () => alert('New document clicked'),
   },
 };
@@ -67,7 +67,7 @@ export const Empty: Story = {
 export const ContractsOnly: Story = {
   args: {
     documents: createDocuments(8).map((d) => ({ ...d, type: 'Contract' as const })),
-    onSelectDocument: (doc) => alert(`Selected: ${doc.title}`),
+    onSelectDocument: (doc: any) => alert(`Selected: ${doc.title}`),
     onNewDocument: () => alert('New document clicked'),
   },
 };
@@ -83,7 +83,7 @@ export const MixedStatuses: Story = {
       ...createDocuments(3).map((d) => ({ ...d, status: 'Approved' as const })),
       ...createDocuments(2).map((d) => ({ ...d, status: 'Filed' as const })),
     ],
-    onSelectDocument: (doc) => alert(`Selected: ${doc.title}`),
+    onSelectDocument: (doc: any) => alert(`Selected: ${doc.title}`),
     onNewDocument: () => alert('New document clicked'),
   },
 };

@@ -13,7 +13,6 @@ import {
   updateUserRole,
   deactivateUser,
 } from '../../../../lib/services/userManagementApi';
-import { getFirmById } from '../../../../lib/mockFirms';
 import { useAuth } from '../../../../lib/hooks/useAuth';
 import type { User, UserRole } from '@legal-platform/types';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -198,9 +197,8 @@ export default function ActiveUsersPage() {
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {user.firmId
-                      ? getFirmById(user.firmId)?.name || user.firmId
-                      : 'N/A'}
+                    {/* TODO: Fetch firm name from API */}
+                    {user.firmId || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(user.lastActive).toLocaleDateString('ro-RO')}

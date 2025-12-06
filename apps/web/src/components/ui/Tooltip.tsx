@@ -1,93 +1,76 @@
-/**
- * Tooltip Component
- * Accessible tooltip component using Radix UI
- */
-
 'use client';
 
-import React from 'react';
+/**
+ * Tooltip Component
+ * Accessible tooltip component using Radix UI (shadcn/ui style)
+ */
+
+import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import { cn } from '@/lib/utils';
 
-export interface TooltipProps {
-  /**
-   * The content to display inside the tooltip
-   */
+const TooltipProvider = TooltipPrimitive.Provider;
+
+const Tooltip = TooltipPrimitive.Root;
+
+const TooltipTrigger = TooltipPrimitive.Trigger;
+
+const TooltipContent = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <TooltipPrimitive.Portal>
+    <TooltipPrimitive.Content
+      ref={ref}
+      sideOffset={sideOffset}
+      className={cn(
+        'z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+        className
+      )}
+      {...props}
+    />
+  </TooltipPrimitive.Portal>
+));
+TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+
+// Legacy wrapper for backwards compatibility
+export interface SimpleTooltipProps {
   content: React.ReactNode;
-
-  /**
-   * The trigger element that shows the tooltip
-   */
   children: React.ReactNode;
-
-  /**
-   * Optional side to show the tooltip
-   */
   side?: 'top' | 'right' | 'bottom' | 'left';
-
-  /**
-   * Optional alignment of the tooltip
-   */
   align?: 'start' | 'center' | 'end';
-
-  /**
-   * Delay before showing the tooltip (ms)
-   */
   delayDuration?: number;
-
-  /**
-   * Optional CSS class name for the tooltip content
-   */
   className?: string;
 }
 
-/**
- * Tooltip component providing accessible tooltips using Radix UI
- * Supports Romanian content and proper ARIA attributes
- */
-export function Tooltip({
+export function SimpleTooltip({
   content,
   children,
   side = 'top',
   align = 'center',
   delayDuration = 300,
   className = '',
-}: TooltipProps) {
+}: SimpleTooltipProps) {
   return (
-    <TooltipPrimitive.Provider delayDuration={delayDuration}>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>
+    <TooltipProvider delayDuration={delayDuration}>
+      <Tooltip>
+        <TooltipTrigger asChild>
           {children}
-        </TooltipPrimitive.Trigger>
-        <TooltipPrimitive.Portal>
-          <TooltipPrimitive.Content
-            side={side}
-            align={align}
-            className={`
-              z-50 px-3 py-2 text-sm text-white
-              bg-gray-900 rounded-lg shadow-lg
-              border border-gray-700
-              max-w-xs text-center
-              animate-in fade-in-0 zoom-in-95
-              data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95
-              ${className}
-            `}
-          >
-            {content}
-            <TooltipPrimitive.Arrow className="fill-gray-900" />
-          </TooltipPrimitive.Content>
-        </TooltipPrimitive.Portal>
-      </TooltipPrimitive.Root>
-    </TooltipPrimitive.Provider>
+        </TooltipTrigger>
+        <TooltipContent side={side} align={align} className={className}>
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
 // Predefined tooltips for common features
 export const FeatureTooltips = {
-  /**
-   * AI suggestions panel tooltip
-   */
   AISuggestions: () => (
-    <Tooltip content="AI-ul analizează contextul cazului pentru a sugera documente relevante">
+    <SimpleTooltip content="AI-ul analizează contextul cazului pentru a sugera documente relevante">
       <div className="w-5 h-5 text-gray-400 hover:text-gray-600 cursor-help">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -98,14 +81,11 @@ export const FeatureTooltips = {
           />
         </svg>
       </div>
-    </Tooltip>
+    </SimpleTooltip>
   ),
 
-  /**
-   * Natural language input tooltip
-   */
   NaturalLanguageInput: () => (
-    <Tooltip content="Tastați în limbaj natural, de exemplu: 'Verifică contract până vineri pentru cazul Tech Solutions'">
+    <SimpleTooltip content="Tastați în limbaj natural, de exemplu: 'Verifică contract până vineri pentru cazul Tech Solutions'">
       <div className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -116,14 +96,11 @@ export const FeatureTooltips = {
           />
         </svg>
       </div>
-    </Tooltip>
+    </SimpleTooltip>
   ),
 
-  /**
-   * Extracted items tooltip
-   */
   ExtractedItems: () => (
-    <Tooltip content="AI-ul extrage automat termene, angajamente și acțiuni din email-uri">
+    <SimpleTooltip content="AI-ul extrage automat termene, angajamente și acțiuni din email-uri">
       <div className="w-4 h-4 text-blue-500 hover:text-blue-700 cursor-help">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -134,14 +111,11 @@ export const FeatureTooltips = {
           />
         </svg>
       </div>
-    </Tooltip>
+    </SimpleTooltip>
   ),
 
-  /**
-   * Case status tooltip
-   */
   CaseStatus: (status: string) => (
-    <Tooltip content={`Status: ${status}. Faceți clic pentru detalii`}>
+    <SimpleTooltip content={`Status: ${status}. Faceți clic pentru detalii`}>
       <div className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -152,15 +126,12 @@ export const FeatureTooltips = {
           />
         </svg>
       </div>
-    </Tooltip>
+    </SimpleTooltip>
   ),
 
-  /**
-   * User avatar tooltip
-   */
   UserAvatar: (name: string, role: string) => (
-    <Tooltip content={`${name} - ${role}`}>
+    <SimpleTooltip content={`${name} - ${role}`}>
       <span className="sr-only">Info utilizator</span>
-    </Tooltip>
+    </SimpleTooltip>
   ),
 };

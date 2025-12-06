@@ -297,7 +297,7 @@ describe('Multi-User Integration Tests', () => {
 
         const newCategoryName = 'Contract';
         const exists = categories.some(
-          (c) => c.name.toLowerCase() === newCategoryName.toLowerCase()
+          (c: any) => c.name.toLowerCase() === newCategoryName.toLowerCase()
         );
 
         expect(exists).toBe(true);
@@ -443,7 +443,7 @@ describe('Multi-User Integration Tests', () => {
           return {};
         });
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
           // Multiple operations in transaction
           await tx.extractedDocument.update({ where: { id: '1' }, data: {} });
           await tx.importCategory.update({ where: { id: '1' }, data: {} });
@@ -474,7 +474,7 @@ describe('Multi-User Integration Tests', () => {
         );
 
         try {
-          await prisma.$transaction(async (tx) => {
+          await prisma.$transaction(async (tx: any) => {
             await tx.extractedDocument.update({ where: { id: '1' }, data: {} });
           });
         } catch {

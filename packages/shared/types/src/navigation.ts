@@ -18,7 +18,8 @@ export type NavigationSection =
   | 'communications'
   | 'time-tracking'
   | 'reports'
-  | 'user-management';
+  | 'user-management'
+  | 'settings';
 
 /**
  * Navigation state interface

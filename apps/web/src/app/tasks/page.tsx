@@ -16,136 +16,8 @@ import { TaskCreationBar } from '../../components/task/TaskCreationBar';
 import { TaskDetailModal } from '../../components/task/TaskDetailModal';
 import { TaskFilterBar } from '../../components/task/TaskFilterBar';
 import { useTaskManagementStore, useFilteredTasks } from '../../stores/task-management.store';
-import type { Task, TaskType } from '@legal-platform/types';
-import { MOCK_USERS } from '../../constants/mock-data';
+import type { Task } from '@legal-platform/types';
 
-/**
- * Realistic Romanian legal case contexts
- */
-const CASE_CONTEXTS = [
-  { id: 'case-001', name: 'Litigiu Contract - ABC Industries vs XYZ Logistics' },
-  { id: 'case-002', name: 'Contract Review - ABC Industries' },
-  { id: 'case-003', name: 'Consultanta Restructurare - ABC Industries' },
-  { id: 'case-006', name: 'Tranzactie Imobiliara - Familia Popescu' },
-  { id: 'case-007', name: 'Planificare Succesorala - Familia Popescu' },
-  { id: 'case-008', name: 'Aparare Penala - Frauda' },
-  { id: 'case-009', name: 'Disputa Proprietate Intelectuala' },
-  { id: 'case-010', name: 'Conformitate GDPR - ABC Industries' },
-  { id: 'case-012', name: 'M&A Advisory - Tech Innovations' },
-  { id: 'case-013', name: 'Divort - Familia Ionescu' },
-  { id: 'case-014', name: 'Infiintare SRL - Tech Innovations' },
-  { id: 'case-018', name: 'Licenta Software - Tech Innovations' },
-  { id: 'case-019', name: 'Dizolvare Parteneriat - Familia Ionescu' },
-];
-
-/**
- * Generate mock tasks for prototype with realistic Romanian legal tasks
- * TODO: Replace with real API call when backend is ready
- */
-function generateMockTasks(count: number): Task[] {
-  const statuses: Task['status'][] = ['Pending', 'InProgress', 'Completed', 'Cancelled'];
-  const priorities: Task['priority'][] = ['Low', 'Medium', 'High', 'Urgent'];
-  const types: TaskType[] = [
-    'Research',
-    'DocumentCreation',
-    'DocumentRetrieval',
-    'CourtDate',
-    'Meeting',
-    'BusinessTrip',
-  ];
-  // Realistic Romanian legal task titles
-  const titles = [
-    'Redactare cerere chemare in judecata',
-    'Pregatire dosar instanta',
-    'Intalnire client - discutie strategie',
-    'Cercetare jurisprudenta ICCJ',
-    'Redactare memoriu aparare',
-    'Depunere intampinare la tribunal',
-    'Actualizare registru dosare',
-    'Raspuns cerere probatoriu',
-    'Programare audienta martori',
-    'Analiza declaratii martori',
-    'Evaluare propunere tranzactie',
-    'Pregatire concluzii scrise',
-    'Revizuire probe administrate',
-    'Redactare interogatoriu',
-    'Apel status client',
-    'Interviu martor',
-    'Consultatie expert contabil',
-    'Termen instanta - Tribunalul Bucuresti',
-    'Analiza pozitie parte adversa',
-    'Pregatire documente mediere',
-    'Verificare CF si extras carte funciara',
-    'Redactare contract vanzare-cumparare',
-    'Analiza due diligence financiar',
-    'Pregatire hotarare AGA',
-    'Revizuire act constitutiv SRL',
-    'Negociere clauze NDA',
-    'Analiza conformitate GDPR',
-    'Redactare politica protectie date',
-    'Pregatire documentatie fuziune',
-    'Analiza contract licenta software',
-    'Redactare conventie custodie',
-    'Inventariere bunuri comune divort',
-    'Pregatire cerere divort',
-    'Consultatie expert evaluator',
-    'Depunere documentatie ONRC',
-  ];
-
-  const tasks: Task[] = [];
-  let attempts = 0;
-  const maxAttempts = count * 3; // Safety limit to prevent infinite loop
-
-  while (tasks.length < count && attempts < maxAttempts) {
-    attempts++;
-
-    const dueDate = new Date();
-    // Generate dates within a 60-day range (30 days before and after today)
-    dueDate.setDate(dueDate.getDate() + Math.floor(Math.random() * 60) - 30);
-
-    // Skip weekends (Saturday = 6, Sunday = 0)
-    const dayOfWeek = dueDate.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      continue; // Skip this iteration and generate a new date
-    }
-
-    // Mix of time-specific and all-day tasks
-    // Court dates and meetings should have specific times
-    const type = types[Math.floor(Math.random() * types.length)];
-    const hasSpecificTime = type === 'CourtDate' || type === 'Meeting' || Math.random() > 0.5;
-
-    if (hasSpecificTime) {
-      // Set random hour between 8 AM and 6 PM
-      dueDate.setHours(8 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60), 0, 0);
-    } else {
-      // All-day task (midnight)
-      dueDate.setHours(0, 0, 0, 0);
-    }
-
-    const caseContext = CASE_CONTEXTS[Math.floor(Math.random() * CASE_CONTEXTS.length)];
-    const taskTitle = titles[tasks.length % titles.length];
-
-    tasks.push({
-      id: `task-${tasks.length + 1}`,
-      title: taskTitle,
-      description: `${taskTitle} - ${caseContext.name}`,
-      type,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      priority: priorities[Math.floor(Math.random() * priorities.length)],
-      dueDate,
-      assignedTo: MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)].id,
-      caseId: caseContext.id,
-      metadata: {
-        duration: hasSpecificTime ? 30 + Math.floor(Math.random() * 90) : undefined, // 30-120 minutes
-        caseName: caseContext.name,
-      },
-      createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(),
-    });
-  }
-
-  return tasks;
-}
 
 export default function TasksPage() {
   const {
@@ -177,24 +49,7 @@ export default function TasksPage() {
     document.title = 'Sarcini';
   }, []);
 
-  /**
-   * Load mock tasks on mount
-   * TODO: Replace with real API call when backend is ready
-   */
-  useEffect(() => {
-    console.log('[TasksPage] Current tasks length:', tasks.length);
-    if (tasks.length === 0) {
-      const mockTasks = generateMockTasks(150);
-      console.log('[TasksPage] Generated mock tasks:', mockTasks.length, mockTasks);
-      setTasks(mockTasks);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
-
-  // Debug log to see tasks updates
-  useEffect(() => {
-    console.log('[TasksPage] Tasks updated, count:', tasks.length);
-  }, [tasks]);
+  // TODO: Load tasks from API when backend is ready
 
   /**
    * Handle task click (opens detail modal)

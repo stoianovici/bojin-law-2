@@ -9,7 +9,7 @@ import { ProgressBar } from './ProgressBar';
 import { FilterBar } from './FilterBar';
 import { useDocumentStore } from '@/stores/documentStore';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Category } from '@/stores/documentStore';
+import type { Category, DocumentState } from '@/stores/documentStore';
 
 interface CategorizationWorkspaceProps {
   sessionId: string;
@@ -22,23 +22,23 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Store selectors
-  const setSession = useDocumentStore((s) => s.setSession);
-  const setBatch = useDocumentStore((s) => s.setBatch);
-  const setSessionProgress = useDocumentStore((s) => s.setSessionProgress);
-  const setDocuments = useDocumentStore((s) => s.setDocuments);
-  const setCategories = useDocumentStore((s) => s.setCategories);
-  const addCategory = useDocumentStore((s) => s.addCategory);
-  const setDocumentUrl = useDocumentStore((s) => s.setDocumentUrl);
+  const setSession = useDocumentStore((s: DocumentState) => s.setSession);
+  const setBatch = useDocumentStore((s: DocumentState) => s.setBatch);
+  const setSessionProgress = useDocumentStore((s: DocumentState) => s.setSessionProgress);
+  const setDocuments = useDocumentStore((s: DocumentState) => s.setDocuments);
+  const setCategories = useDocumentStore((s: DocumentState) => s.setCategories);
+  const addCategory = useDocumentStore((s: DocumentState) => s.addCategory);
+  const setDocumentUrl = useDocumentStore((s: DocumentState) => s.setDocumentUrl);
 
-  const currentDocument = useDocumentStore((s) => s.getCurrentDocument());
-  const documentUrls = useDocumentStore((s) => s.documentUrls);
-  const getFilteredDocuments = useDocumentStore((s) => s.getFilteredDocuments);
-  const currentDocumentIndex = useDocumentStore((s) => s.currentDocumentIndex);
+  const currentDocument = useDocumentStore((s: DocumentState) => s.getCurrentDocument());
+  const documentUrls = useDocumentStore((s: DocumentState) => s.documentUrls);
+  const getFilteredDocuments = useDocumentStore((s: DocumentState) => s.getFilteredDocuments);
+  const currentDocumentIndex = useDocumentStore((s: DocumentState) => s.currentDocumentIndex);
 
-  const goToNextDocument = useDocumentStore((s) => s.goToNextDocument);
-  const goToPreviousDocument = useDocumentStore((s) => s.goToPreviousDocument);
-  const categorizeDocument = useDocumentStore((s) => s.categorizeDocument);
-  const skipDocument = useDocumentStore((s) => s.skipDocument);
+  const goToNextDocument = useDocumentStore((s: DocumentState) => s.goToNextDocument);
+  const goToPreviousDocument = useDocumentStore((s: DocumentState) => s.goToPreviousDocument);
+  const categorizeDocument = useDocumentStore((s: DocumentState) => s.categorizeDocument);
+  const skipDocument = useDocumentStore((s: DocumentState) => s.skipDocument);
 
   const filteredDocuments = getFilteredDocuments();
 

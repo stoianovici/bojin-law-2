@@ -39,14 +39,13 @@ export interface ExtractedDocument {
   analysisTimestamp?: Date;
 }
 
+export type SupportedLanguage = 'Romanian' | 'English' | 'Italian' | 'French' | 'Mixed';
+
 export interface AIAnalysisResult {
   id: string;
-  primaryLanguage: 'Romanian' | 'English' | 'Mixed';
-  secondaryLanguage: 'Romanian' | 'English' | null;
-  languageRatio: {
-    Romanian: number;
-    English: number;
-  };
+  primaryLanguage: SupportedLanguage;
+  secondaryLanguage: SupportedLanguage | null;
+  languageRatio: Record<string, number>;
   languageConfidence: number;
   documentType: string;
   documentTypeConfidence: number;

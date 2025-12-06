@@ -454,36 +454,6 @@ export class OneDriveExportService {
   }
 
   /**
-   * Upload session summary JSON (legacy - flat structure)
-   */
-  private async uploadSessionSummary(
-    aiTrainingFolderId: string,
-    sessionId: string,
-    categoryMap: Map<string, DocumentToExport[]>,
-    totalDocs: number,
-    uploadedDocs: number
-  ): Promise<void> {
-    const summary = {
-      sessionId,
-      exportedAt: new Date().toISOString(),
-      totalDocuments: totalDocs,
-      documentsExported: uploadedDocs,
-      categories: Array.from(categoryMap.entries()).map(([name, docs]) => ({
-        name,
-        documentCount: docs.length,
-        folderPath: `/AI-Training/${this.sanitizeFolderName(name)}`,
-      })),
-    };
-
-    const content = Buffer.from(JSON.stringify(summary, null, 2));
-
-    await this.client
-      .api(`/me/drive/items/${aiTrainingFolderId}:/_session_summary.json:/content`)
-      .header('Content-Type', 'application/json')
-      .put(content);
-  }
-
-  /**
    * Upload session summary JSON with language-based organization
    */
   private async uploadSessionSummaryByLanguage(

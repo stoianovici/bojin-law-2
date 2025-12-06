@@ -36,7 +36,7 @@ export const Loading: Story = {
     widget: createSupervisedCasesWidget(),
     isLoading: true,
   },
-  render: (args) => (
+  render: (args: Record<string, unknown>) => (
     <div className="animate-pulse space-y-3">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="h-24 bg-neutral-200 rounded-lg"></div>

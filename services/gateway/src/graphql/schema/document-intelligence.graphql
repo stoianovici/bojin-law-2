@@ -1,0 +1,227 @@
+# Document Intelligence Dashboard Schema
+# Story 3.7: AI Document Intelligence Dashboard
+
+# ============================================================================
+# Document Velocity Types (AC: 1)
+# ============================================================================
+
+type DocumentVelocityStats {
+  byUser: [UserDocumentVelocity!]!
+  byType: [DocumentTypeVelocity!]!
+  totalDocuments: Int!
+  averagePerDay: Float!
+  trendPercentage: Float! # Change vs previous period
+}
+
+type UserDocumentVelocity {
+  userId: UUID!
+  userName: String!
+  userRole: String!
+  documentCount: Int!
+  averagePerWeek: Float!
+  trend: Float! # Percentage change
+}
+
+type DocumentTypeVelocity {
+  documentType: String!
+  documentCount: Int!
+  averageCreationTimeMinutes: Float!
+  trend: Float!
+}
+
+# ============================================================================
+# AI Utilization Types (AC: 2)
+# ============================================================================
+
+type AIUtilizationStats {
+  overallUtilizationRate: Float! # Percentage of documents using AI
+  byUser: [UserAIUtilization!]!
+  adoptionTrend: [AdoptionTrendPoint!]!
+  totalAIAssistedDocuments: Int!
+  totalManualDocuments: Int!
+}
+
+type UserAIUtilization {
+  userId: UUID!
+  userName: String!
+  utilizationRate: Float!
+  aiDocumentCount: Int!
+  totalDocumentCount: Int!
+  lastAIUsage: DateTime
+}
+
+type AdoptionTrendPoint {
+  date: String!
+  utilizationRate: Float!
+  documentCount: Int!
+}
+
+# ============================================================================
+# Error Detection Types (AC: 3)
+# ============================================================================
+
+type ErrorDetectionStats {
+  totalConcernsDetected: Int!
+  concernsResolvedBeforeFiling: Int!
+  detectionRate: Float! # Percentage
+  bySeverity: [SeverityBreakdown!]!
+  byType: [ConcernTypeBreakdown!]!
+  trendData: [ErrorDetectionTrendPoint!]!
+}
+
+type SeverityBreakdown {
+  severity: String!
+  count: Int!
+  percentage: Float!
+}
+
+type ConcernTypeBreakdown {
+  concernType: String!
+  count: Int!
+  percentage: Float!
+}
+
+type ErrorDetectionTrendPoint {
+  date: String!
+  detected: Int!
+  resolved: Int!
+}
+
+# ============================================================================
+# Time Savings Types (AC: 4)
+# ============================================================================
+
+type TimeSavingsStats {
+  totalMinutesSaved: Int!
+  averageMinutesSavedPerDocument: Float!
+  estimatedCostSavings: Float! # In RON
+  byUser: [UserTimeSavings!]!
+  byDocumentType: [DocumentTypeTimeSavings!]!
+  methodology: String! # Explanation of calculation
+}
+
+type UserTimeSavings {
+  userId: UUID!
+  userName: String!
+  minutesSaved: Int!
+  documentsCreated: Int!
+  averageSavedPerDocument: Float!
+}
+
+type DocumentTypeTimeSavings {
+  documentType: String!
+  averageManualTimeMinutes: Float!
+  averageAIAssistedTimeMinutes: Float!
+  timeSavedPercentage: Float!
+  sampleSize: Int!
+}
+
+# ============================================================================
+# Template Usage Types (AC: 5)
+# ============================================================================
+
+type TemplateUsageStats {
+  topTemplates: [TemplateUsage!]!
+  topClauses: [ClauseUsage!]!
+  totalTemplateUsage: Int!
+  templateAdoptionRate: Float!
+}
+
+type TemplateUsage {
+  templateId: UUID!
+  templateName: String!
+  category: String!
+  usageCount: Int!
+  lastUsed: DateTime!
+  averageQualityScore: Float
+}
+
+type ClauseUsage {
+  clauseId: UUID!
+  clauseText: String!
+  category: String!
+  frequency: Int!
+  insertionRate: Float! # % of suggestions accepted
+}
+
+# ============================================================================
+# Document Quality Types (AC: 6)
+# ============================================================================
+
+type DocumentQualityTrends {
+  overallQualityScore: Float! # Based on revision counts
+  averageRevisionCount: Float!
+  qualityTrend: [QualityTrendPoint!]!
+  byDocumentType: [DocumentTypeQuality!]!
+  qualityThreshold: Float! # Target: < 30% edit
+}
+
+type QualityTrendPoint {
+  date: String!
+  averageEditPercentage: Float!
+  documentCount: Int!
+  qualityScore: Float!
+}
+
+type DocumentTypeQuality {
+  documentType: String!
+  averageEditPercentage: Float!
+  averageRevisionCount: Float!
+  documentCount: Int!
+  qualityScore: Float!
+}
+
+# ============================================================================
+# Dashboard Aggregate Type
+# ============================================================================
+
+type DocumentIntelligenceDateRange {
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
+type DocumentIntelligenceDashboard {
+  dateRange: DocumentIntelligenceDateRange!
+  velocity: DocumentVelocityStats!
+  aiUtilization: AIUtilizationStats!
+  errorDetection: ErrorDetectionStats!
+  timeSavings: TimeSavingsStats!
+  templateUsage: TemplateUsageStats!
+  qualityTrends: DocumentQualityTrends!
+  lastUpdated: DateTime!
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+input DocumentIntelligenceDateRangeInput {
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
+input DocumentIntelligenceFilters {
+  dateRange: DocumentIntelligenceDateRangeInput!
+  userIds: [UUID!]
+  documentTypes: [String!]
+  compareWithPrevious: Boolean = true
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  # Main dashboard query - returns all metrics in one call
+  documentIntelligenceDashboard(
+    filters: DocumentIntelligenceFilters!
+  ): DocumentIntelligenceDashboard!
+
+  # Individual metric queries for refresh/drill-down
+  documentVelocityStats(filters: DocumentIntelligenceFilters!): DocumentVelocityStats!
+  aiUtilizationStats(filters: DocumentIntelligenceFilters!): AIUtilizationStats!
+  errorDetectionStats(filters: DocumentIntelligenceFilters!): ErrorDetectionStats!
+  timeSavingsStats(filters: DocumentIntelligenceFilters!): TimeSavingsStats!
+  templateUsageStats(filters: DocumentIntelligenceFilters!): TemplateUsageStats!
+  documentQualityTrends(filters: DocumentIntelligenceFilters!): DocumentQualityTrends!
+}

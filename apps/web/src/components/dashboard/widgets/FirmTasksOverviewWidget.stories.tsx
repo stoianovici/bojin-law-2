@@ -36,7 +36,7 @@ export const Loading: Story = {
     widget: createFirmTasksOverviewWidget(),
     isLoading: true,
   },
-  render: (args) => (
+  render: (args: Record<string, unknown>) => (
     <div className="animate-pulse">
       <div className="h-80 bg-neutral-200 rounded-lg"></div>
     </div>

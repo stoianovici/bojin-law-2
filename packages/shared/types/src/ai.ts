@@ -40,6 +40,19 @@ export enum AIOperationType {
   Extraction = 'extraction',
   Embedding = 'embedding',
   Chat = 'chat',
+  // Story 3.6: Document Review
+  DocumentReviewAnalysis = 'document_review_analysis',
+  // Story 4.1: Natural Language Task Parser
+  TaskParsing = 'task_parsing',
+  // Story 5.2: Communication Intelligence
+  CommunicationIntelligence = 'communication_intelligence',
+  RiskAnalysis = 'risk_analysis',
+  ThreadAnalysis = 'thread_analysis',
+  // Story 5.4: Proactive AI Suggestions
+  ProactiveSuggestion = 'proactive_suggestion',
+  MorningBriefing = 'morning_briefing',
+  PatternRecognition = 'pattern_recognition',
+  DocumentCompleteness = 'document_completeness',
 }
 
 // Generation request input

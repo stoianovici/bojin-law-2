@@ -16,7 +16,7 @@ const meta: Meta<typeof DocumentFolderTree> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="w-80 bg-white p-4 border border-gray-200 rounded-lg">
         <Story />
       </div>
@@ -33,7 +33,7 @@ type Story = StoryObj<typeof DocumentFolderTree>;
 export const Default: Story = {
   args: {
     tree: mockTree,
-    onSelectNode: (node) => alert(`Selected: ${node.name}`),
+    onSelectNode: (node: any) => alert(`Selected: ${node.name}`),
   },
 };
 
@@ -44,7 +44,7 @@ export const WithSelection: Story = {
   args: {
     tree: mockTree,
     selectedNodeId: mockTree.id,
-    onSelectNode: (node) => alert(`Selected: ${node.name}`),
+    onSelectNode: (node: any) => alert(`Selected: ${node.name}`),
   },
 };
 
@@ -54,7 +54,7 @@ export const WithSelection: Story = {
 export const ComplexNesting: Story = {
   args: {
     tree: createDocumentTree(0, 4), // Deeper tree
-    onSelectNode: (node) => alert(`Selected: ${node.name}`),
+    onSelectNode: (node: any) => alert(`Selected: ${node.name}`),
   },
 };
 
@@ -64,6 +64,6 @@ export const ComplexNesting: Story = {
 export const ShallowTree: Story = {
   args: {
     tree: createDocumentTree(0, 2),
-    onSelectNode: (node) => alert(`Selected: ${node.name}`),
+    onSelectNode: (node: any) => alert(`Selected: ${node.name}`),
   },
 };

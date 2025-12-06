@@ -112,6 +112,8 @@ export default [
       'storybook-static/**',
       '*.config.js',
       '*.config.mjs',
+      '**/generated/**',
+      '**/*.d.ts',
     ],
   },
 ];

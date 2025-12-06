@@ -1,0 +1,309 @@
+# Document Operations Load Test Scenarios
+# Story 3.8: Document System Testing and Performance - Task 2
+#
+# Tests concurrent document operations:
+# - Document upload (50, 100, 200 users)
+# - Document download (100, 200, 500 users)
+# - Document search (50, 100 users)
+# - Mixed workload simulation
+#
+# Performance thresholds:
+# - Document upload: < 3s p95
+# - Document download: < 1s p95
+# - Document search: < 500ms p95
+
+config:
+  target: "{{ $processEnvironment.API_URL || 'http://localhost:3000' }}"
+  processor: "../processors/auth.js"
+
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+  http:
+    timeout: 30000
+
+  variables:
+    testCaseId: "case-load-test-001"
+
+# Test profile: 50 concurrent users
+phases:
+  - name: "Smoke Test"
+    duration: 30
+    arrivalRate: 1
+
+  - name: "Ramp to 50 users"
+    duration: 60
+    arrivalRate: 5
+    rampTo: 50
+
+  - name: "Sustained 50 users"
+    duration: 180
+    arrivalRate: 50
+
+  - name: "Ramp to 100 users"
+    duration: 60
+    arrivalRate: 50
+    rampTo: 100
+
+  - name: "Sustained 100 users"
+    duration: 180
+    arrivalRate: 100
+
+  - name: "Ramp to 200 users"
+    duration: 60
+    arrivalRate: 100
+    rampTo: 200
+
+  - name: "Peak 200 users"
+    duration: 120
+    arrivalRate: 200
+
+  - name: "Cool down"
+    duration: 60
+    arrivalRate: 200
+    rampTo: 10
+
+scenarios:
+  # Document Upload Scenario (30% weight)
+  - name: "Document Upload"
+    weight: 30
+    flow:
+      - function: "setAuthHeader"
+      - function: "generateDocumentId"
+      - function: "generateDocumentContent"
+
+      # Upload document via GraphQL
+      - post:
+          name: "Upload Document"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              mutation CreateDocument($input: CreateDocumentInput!) {
+                createDocument(input: $input) {
+                  id
+                  title
+                  status
+                  createdAt
+                }
+              }
+            variables:
+              input:
+                title: "Load Test Document {{ $randomNumber(1, 10000) }}"
+                content: "{{ documentContent }}"
+                caseId: "{{ testCaseId }}"
+                documentType: "CONTRACT"
+          capture:
+            - json: "$.data.createDocument.id"
+              as: "createdDocId"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.createDocument.id"
+
+      - think: 1
+
+  # Document Download Scenario (35% weight)
+  - name: "Document Download"
+    weight: 35
+    flow:
+      - function: "setAuthHeader"
+
+      # First list documents to get IDs
+      - post:
+          name: "List Documents"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query ListDocuments($caseId: String, $limit: Int) {
+                documents(caseId: $caseId, limit: $limit) {
+                  id
+                  title
+                }
+              }
+            variables:
+              caseId: "{{ testCaseId }}"
+              limit: 10
+          capture:
+            - json: "$.data.documents[0].id"
+              as: "targetDocId"
+          expect:
+            - statusCode: 200
+
+      # Download specific document
+      - post:
+          name: "Get Document Content"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query GetDocument($id: ID!) {
+                document(id: $id) {
+                  id
+                  title
+                  content
+                  status
+                  versions {
+                    id
+                    version
+                    createdAt
+                  }
+                }
+              }
+            variables:
+              id: "{{ targetDocId }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.document.content"
+
+      - think: 0.5
+
+  # Document Search Scenario (25% weight)
+  - name: "Document Search"
+    weight: 25
+    flow:
+      - function: "setAuthHeader"
+
+      # Full-text search
+      - post:
+          name: "Search Documents"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query SearchDocuments($query: String!, $limit: Int) {
+                searchDocuments(query: $query, limit: $limit) {
+                  results {
+                    id
+                    title
+                    score
+                  }
+                  totalCount
+                }
+              }
+            variables:
+              query: "{{ $randomString(10) }} contract amendment"
+              limit: 20
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.searchDocuments.results"
+
+      - think: 0.3
+
+  # Mixed Operations Scenario (10% weight)
+  - name: "Mixed Workflow"
+    weight: 10
+    flow:
+      - function: "setAuthHeader"
+      - function: "generateDocumentId"
+      - function: "generateDocumentContent"
+
+      # Create document
+      - post:
+          name: "Create Document (Mixed)"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              mutation CreateDocument($input: CreateDocumentInput!) {
+                createDocument(input: $input) {
+                  id
+                  title
+                }
+              }
+            variables:
+              input:
+                title: "Mixed Test Doc {{ $randomNumber(1, 10000) }}"
+                content: "{{ documentContent }}"
+                caseId: "{{ testCaseId }}"
+                documentType: "MEMO"
+          capture:
+            - json: "$.data.createDocument.id"
+              as: "newDocId"
+          expect:
+            - statusCode: 200
+
+      - think: 0.5
+
+      # Read the document back
+      - post:
+          name: "Read Created Document"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query GetDocument($id: ID!) {
+                document(id: $id) {
+                  id
+                  title
+                  content
+                }
+              }
+            variables:
+              id: "{{ newDocId }}"
+          expect:
+            - statusCode: 200
+
+      - think: 0.3
+
+      # Update the document
+      - post:
+          name: "Update Document"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              mutation UpdateDocument($id: ID!, $input: UpdateDocumentInput!) {
+                updateDocument(id: $id, input: $input) {
+                  id
+                  title
+                  updatedAt
+                }
+              }
+            variables:
+              id: "{{ newDocId }}"
+              input:
+                title: "Updated: Mixed Test Doc {{ $randomNumber(1, 10000) }}"
+          expect:
+            - statusCode: 200
+
+      - think: 0.5
+
+      # Search for related documents
+      - post:
+          name: "Search Related"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query SearchDocuments($query: String!, $limit: Int) {
+                searchDocuments(query: $query, limit: $limit) {
+                  results {
+                    id
+                    title
+                  }
+                  totalCount
+                }
+              }
+            variables:
+              query: "Mixed Test"
+              limit: 5
+          expect:
+            - statusCode: 200
+
+# Performance assertions
+ensure:
+  # Document upload < 3s at p95
+  p95: 3000
+  # Max 2% error rate
+  maxErrorRate: 2

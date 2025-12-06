@@ -1,6 +1,7 @@
 /**
  * Gateway Service Entry Point
  * Story 2.4: Authentication with Azure AD
+ * Story 4.4: Task Dependencies and Automation (task reminder worker registration)
  *
  * Main Express application with session management and authentication routes.
  */
@@ -17,6 +18,9 @@ import { userManagementRouter } from './routes/user-management.routes';
 import { graphRouter } from './routes/graph.routes';
 import webhookRouter from './routes/webhook.routes';
 import { createApolloServer, createGraphQLMiddleware } from './graphql/server';
+import { startTaskReminderWorker, stopTaskReminderWorker } from './workers/task-reminder.worker';
+import { startOOOReassignmentWorker, stopOOOReassignmentWorker } from './workers/ooo-reassignment.worker';
+import { startDailyDigestWorker, stopDailyDigestWorker } from './workers/daily-digest.worker';
 
 // Create Express app
 const app: Express = express();
@@ -105,11 +109,58 @@ async function startServer() {
         resolve();
       });
     });
+
+    // Story 4.4: Start task reminder worker
+    const reminderIntervalMs = parseInt(
+      process.env.TASK_REMINDER_INTERVAL_MS || '3600000',
+      10
+    ); // Default: 1 hour
+    startTaskReminderWorker(reminderIntervalMs);
+
+    // Story 4.5: Start OOO reassignment worker
+    const oooIntervalMs = parseInt(
+      process.env.OOO_WORKER_INTERVAL_MS || '3600000',
+      10
+    ); // Default: 1 hour
+    startOOOReassignmentWorker({ checkIntervalMs: oooIntervalMs });
+
+    // Story 4.6: Start daily digest worker
+    startDailyDigestWorker();
   }
+}
+
+// Graceful shutdown handler
+function setupGracefulShutdown() {
+  const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+
+  signals.forEach((signal) => {
+    process.on(signal, () => {
+      console.log(`Received ${signal}, shutting down gracefully...`);
+
+      // Stop workers
+      stopTaskReminderWorker();
+      stopOOOReassignmentWorker();
+      stopDailyDigestWorker();
+
+      // Close HTTP server
+      httpServer.close(() => {
+        console.log('HTTP server closed');
+        process.exit(0);
+      });
+
+      // Force exit after 30s if graceful shutdown fails
+      setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+      }, 30000);
+    });
+  });
 }
 
 // Start the server
 if (process.env.NODE_ENV !== 'test') {
+  setupGracefulShutdown();
+
   startServer().catch((error) => {
     console.error('Failed to start server:', error);
     process.exit(1);

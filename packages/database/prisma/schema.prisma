@@ -60,6 +60,51 @@ model Firm {
   // Relations (Story 2.11.2)
   retainerUsage RetainerPeriodUsage[]
 
+  // Relations (Story 3.6)
+  batchReviews BatchReview[]
+
+  // Relations (Story 4.2)
+  tasks Task[]
+
+  // Relations (Story 4.4)
+  taskTemplates TaskTemplate[]
+
+  // Custom case types
+  caseTypeConfigs CaseTypeConfig[]
+
+  // Relations (Story 5.1: Email Integration)
+  emails Email[]
+
+  // Relations (Story 5.2: Communication Intelligence)
+  extractedDeadlines   ExtractedDeadline[]
+  extractedCommitments ExtractedCommitment[]
+  extractedActionItems ExtractedActionItem[]
+  extractedQuestions   ExtractedQuestion[]
+  riskIndicators       RiskIndicator[]
+  threadSummaries      ThreadSummary[]
+
+  // Relations (Story 5.3: Email Drafting)
+  emailDrafts EmailDraft[]
+
+  // Relations (Story 5.4: Proactive AI Suggestions)
+  suggestions        AISuggestion[]
+  userActionPatterns UserActionPattern[]
+  morningBriefings   MorningBriefing[]
+
+  // Relations (Story 5.5: Multi-Channel Communication Hub)
+  communicationEntries   CommunicationEntry[]
+  communicationTemplates CommunicationTemplate[]
+  bulkCommunications     BulkCommunication[]
+  communicationExports   CommunicationExport[]
+
+  // Relations (Story 5.6: AI Learning and Personalization)
+  writingStyleProfiles         WritingStyleProfile[]
+  personalSnippets             PersonalSnippet[]
+  taskCreationPatterns         TaskCreationPattern[]
+  documentStructurePreferences DocumentStructurePreference[]
+  responseTimePatterns         ResponseTimePattern[]
+  draftEditHistory             DraftEditHistory[]
+
   @@map("firms")
 }
 
@@ -105,6 +150,65 @@ model User {
 
   // Relations (Story 2.9)
   documentVersions DocumentVersion[] @relation("DocumentVersionCreator")
+
+  // Relations (Story 3.6: Document Review)
+  submittedReviews     DocumentReview[]     @relation("ReviewSubmitter")
+  assignedReviews      DocumentReview[]     @relation("ReviewReviewer")
+  reviewComments       ReviewComment[]      @relation("CommentAuthor")
+  resolvedComments     ReviewComment[]      @relation("CommentResolver")
+  commentReplies       ReviewCommentReply[] @relation("ReplyAuthor")
+  reviewHistoryActions ReviewHistory[]      @relation("ReviewHistoryActor")
+  createdBatchReviews  BatchReview[]        @relation("BatchReviewCreator")
+
+  // Relations (Story 4.2: Task Management)
+  assignedTasks     Task[]             @relation("TaskAssignee")
+  createdTasks      Task[]             @relation("TaskCreator")
+  taskAttendees     TaskAttendee[]
+  taskDocumentLinks TaskDocumentLink[]
+  delegationsFrom   TaskDelegation[]   @relation("DelegationDelegator")
+  delegationsTo     TaskDelegation[]   @relation("DelegationDelegate")
+
+  // Relations (Story 4.5: Team Workload Management)
+  availabilities   UserAvailability[]    @relation("UserAvailabilities")
+  delegatedFor     UserAvailability[]    @relation("UserDelegates")
+  skills           UserSkill[]
+  workloadSettings UserWorkloadSettings?
+
+  // Relations (Story 4.6: Task Collaboration)
+  taskComments       TaskComment[]       @relation("TaskCommentAuthor")
+  taskHistoryActions TaskHistory[]       @relation("TaskHistoryActor")
+  caseActivities     CaseActivityEntry[] @relation("CaseActivityActor")
+  taskAttachments    TaskAttachment[]    @relation("TaskAttachmentUploader")
+  caseSubscriptions  CaseSubscription[]
+
+  // Custom case types created by this user
+  createdCaseTypes CaseTypeConfig[]
+
+  // Relations (Story 5.1: Email Integration)
+  emails         Email[]
+  emailSyncState EmailSyncState?
+
+  // Relations (Story 5.3: Email Drafting)
+  emailDrafts EmailDraft[]
+
+  // Relations (Story 5.4: Proactive AI Suggestions)
+  suggestions      AISuggestion[]
+  actionPatterns   UserActionPattern[]
+  morningBriefings MorningBriefing[]
+
+  // Relations (Story 5.5: Multi-Channel Communication Hub)
+  sentCommunications   CommunicationEntry[]    @relation("CommunicationSender")
+  createdTemplates     CommunicationTemplate[] @relation("TemplateCreator")
+  bulkCommunications   BulkCommunication[]     @relation("BulkCommunicationCreator")
+  communicationExports CommunicationExport[]   @relation("CommunicationExporter")
+
+  // Relations (Story 5.6: AI Learning and Personalization)
+  writingStyleProfile          WritingStyleProfile?
+  personalSnippets             PersonalSnippet[]
+  taskCreationPatterns         TaskCreationPattern[]
+  documentStructurePreferences DocumentStructurePreference[]
+  responseTimePatterns         ResponseTimePattern[]
+  draftEditHistory             DraftEditHistory[]
 
   @@map("users")
 }
@@ -191,13 +295,33 @@ enum CaseStatus {
   Archived
 }
 
-// Case type categorization
+// Case type categorization (built-in types)
 enum CaseType {
   Litigation
   Contract
   Advisory
   Criminal
   Other
+}
+
+// Custom case types per firm (user-defined)
+model CaseTypeConfig {
+  id        String   @id @default(uuid())
+  firmId    String   @map("firm_id")
+  name      String   @db.VarChar(100) // Display name in Romanian
+  code      String   @db.VarChar(50) // Internal code (unique per firm)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String   @map("created_by")
+
+  // Relations
+  firm    Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@unique([firmId, code])
+  @@index([firmId])
+  @@map("case_type_configs")
 }
 
 // External party roles in a case
@@ -251,7 +375,7 @@ model Case {
   title       String     @db.VarChar(500)
   clientId    String     @map("client_id")
   status      CaseStatus @default(Active)
-  type        CaseType
+  type        String     @db.VarChar(50) // Dynamic case type code (from CaseTypeConfig)
   description String     @db.Text
   openedDate  DateTime   @map("opened_date") @db.Date
   closedDate  DateTime?  @map("closed_date") @db.Date
@@ -272,20 +396,44 @@ model Case {
   retainerAutoRenew Boolean         @default(false) @map("retainer_auto_renew")
 
   // Search fields (Story 2.10)
-  searchText       String?                              @map("search_text") @db.Text // Concatenated searchable text for full-text search
-  contentEmbedding Unsupported("vector(768)")?          @map("content_embedding") // multilingual-e5-base embedding for semantic search
+  searchText       String?                     @map("search_text") @db.Text // Concatenated searchable text for full-text search
+  contentEmbedding Unsupported("vector(768)")? @map("content_embedding") // multilingual-e5-base embedding for semantic search
 
   // Relations
-  firm        Firm              @relation(fields: [firmId], references: [id], onDelete: Restrict)
-  client      Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  teamMembers CaseTeam[]
-  auditLogs   CaseAuditLog[]
-  actors      CaseActor[]
-  rateHistory CaseRateHistory[]
-  approval    CaseApproval? // Story 2.8.2 - Only present for cases requiring approval
-  timeEntries TimeEntry[]
-  documents   CaseDocument[] // Story 2.8.4 - Documents linked to this case
-  retainerUsage RetainerPeriodUsage[] // Story 2.11.2 - Retainer usage tracking
+  firm           Firm                  @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  client         Client                @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  teamMembers    CaseTeam[]
+  auditLogs      CaseAuditLog[]
+  actors         CaseActor[]
+  rateHistory    CaseRateHistory[]
+  approval       CaseApproval? // Story 2.8.2 - Only present for cases requiring approval
+  timeEntries    TimeEntry[]
+  documents      CaseDocument[] // Story 2.8.4 - Documents linked to this case
+  retainerUsage  RetainerPeriodUsage[] // Story 2.11.2 - Retainer usage tracking
+  tasks          Task[] // Story 4.2 - Tasks for this case
+  templateUsages TaskTemplateUsage[] // Story 4.4 - Template applications to this case
+  activityFeed   CaseActivityEntry[] // Story 4.6 - Activity feed for this case
+  subscriptions  CaseSubscription[] // Story 4.6 - User subscriptions for this case
+  emails         Email[] // Story 5.1 - Emails linked to this case
+
+  // Relations (Story 5.2: Communication Intelligence)
+  extractedDeadlines   ExtractedDeadline[]
+  extractedCommitments ExtractedCommitment[]
+  extractedActionItems ExtractedActionItem[]
+  extractedQuestions   ExtractedQuestion[]
+  riskIndicators       RiskIndicator[]
+  threadSummaries      ThreadSummary[]
+
+  // Relations (Story 5.3: Email Drafting)
+  emailDrafts EmailDraft[]
+
+  // Relations (Story 5.4: Proactive AI Suggestions)
+  suggestions AISuggestion[]
+
+  // Relations (Story 5.5: Multi-Channel Communication Hub)
+  communicationEntries CommunicationEntry[]
+  bulkCommunications   BulkCommunication[]
+  communicationExports CommunicationExport[]
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -401,9 +549,40 @@ model CaseApproval {
 
 // Notification types for approval workflow events
 enum NotificationType {
+  // Existing (Story 2.8.2)
   CasePendingApproval // Partner notification when case submitted for approval
   CaseApproved // Associate notification when case approved
   CaseRejected // Associate notification when case rejected
+  // Story 3.6: Document Review Notifications
+  DocumentReviewRequested // Notification when document is submitted for review
+  DocumentReviewAssigned // Notification when assigned as reviewer
+  DocumentApproved // Notification when document is approved
+  DocumentRejected // Notification when document is rejected
+  DocumentRevisionRequested // Notification when revision is requested
+  DocumentCommentAdded // Notification when comment is added to review
+  DocumentCommentMentioned // Notification when user is @mentioned in comment
+  // Story 4.2: Task Delegation Notifications
+  DelegationRequested // When delegation is created, sent to delegate
+  DelegationAccepted // When delegate accepts, sent to delegator
+  DelegationDeclined // When delegate declines, sent to delegator
+  // Story 4.4: Task Reminder and Dependency Notifications
+  TaskDeadlineReminder // Reminder for approaching deadline
+  TaskOverdue // Task is past due date
+  DependencyBlocked // Task blocked by incomplete dependency
+  DependencyUnblocked // Blocked task now unblocked
+  // Story 4.6: Task Collaboration Notifications
+  TaskCommentAdded // When comment is added to task
+  TaskCommentMentioned // When @mentioned in task comment
+  TaskCommentReplied // When someone replies to your comment
+  TaskStatusUpdated // When task status changes
+  SubtaskCreated // When subtask is added to your task
+  TaskAttachmentAdded // When attachment is added to task
+  // Story 5.4: Proactive AI Suggestions Notifications
+  MorningBriefingReady // When AI morning briefing is generated
+  AISuggestionCreated // When new AI suggestion is available
+  // Story 5.5: Communication Hub Notifications
+  BulkCommunicationCompleted // When bulk communication job completes
+  CommunicationExportReady // When communication export is ready for download
 }
 
 // In-app notifications for users
@@ -416,6 +595,7 @@ model Notification {
   link      String?          @db.VarChar(500) // Deep link to case detail page
   read      Boolean          @default(false)
   caseId    String?          @map("case_id") // Reference to related case
+  taskId    String?          @map("task_id") // Story 4.6: Reference to related task
   createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
   readAt    DateTime?        @map("read_at") @db.Timestamptz
 
@@ -470,22 +650,26 @@ model TimeEntry {
   id          String   @id @default(uuid())
   caseId      String   @map("case_id")
   userId      String   @map("user_id")
+  taskId      String?  @map("task_id") // Story 4.3: Optional task relation for time tracking
   date        DateTime @db.Date
   hours       Decimal  @db.Decimal(5, 2)
   hourlyRate  Decimal  @map("hourly_rate") @db.Decimal(15, 2)
   description String   @db.Text
+  narrative   String?  @db.Text // Story 4.3: Detailed billing narrative for clarity
   billable    Boolean  @default(true)
   firmId      String   @map("firm_id")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
-  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
-  firm Firm @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  case Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  firm Firm  @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull) // Story 4.3
 
   @@index([caseId])
   @@index([userId])
+  @@index([taskId]) // Story 4.3
   @@index([date])
   @@index([firmId])
   @@map("time_entries")
@@ -528,12 +712,20 @@ model Document {
   metadataEmbedding Unsupported("vector(768)")? @map("metadata_embedding") // multilingual-e5-base embedding for semantic search
 
   // Relations
-  client    Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  firm      Firm               @relation(fields: [firmId], references: [id], onDelete: Restrict)
-  uploader  User               @relation("DocumentUploader", fields: [uploadedBy], references: [id], onDelete: Restrict)
-  caseLinks CaseDocument[] // Cases this document is linked to
-  auditLogs DocumentAuditLog[]
-  versions  DocumentVersion[] // Story 2.9: Version history
+  client                   Client                      @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  firm                     Firm                        @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  uploader                 User                        @relation("DocumentUploader", fields: [uploadedBy], references: [id], onDelete: Restrict)
+  caseLinks                CaseDocument[] // Cases this document is linked to
+  auditLogs                DocumentAuditLog[]
+  versions                 DocumentVersion[] // Story 2.9: Version history
+  semanticChanges          SemanticChange[] // Story 3.5: Semantic changes
+  reviews                  DocumentReview[] // Story 3.6: Document reviews
+  taskLinks                TaskDocumentLink[] // Story 4.2: Tasks linked to this document
+  taskAttachments          TaskAttachment[] // Story 4.6: Task attachments linked to this document
+  emailAttachments         EmailAttachment[] // Story 5.1: Email attachments linked to this document
+  attachmentSuggestions    AttachmentSuggestion[] // Story 5.3: Suggested attachments for email drafts
+  completenessChecks       DocumentCompletenessCheck[] // Story 5.4: Document completeness checks
+  communicationAttachments CommunicationAttachment[] // Story 5.5: Communication attachments
 
   @@index([clientId])
   @@index([firmId])
@@ -615,8 +807,15 @@ model DocumentVersion {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  creator  User     @relation("DocumentVersionCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  document            Document                 @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  creator             User                     @relation("DocumentVersionCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  // Story 3.5: Semantic version control relations
+  semanticChangesFrom SemanticChange[]         @relation("SemanticChangeFromVersion")
+  semanticChangesTo   SemanticChange[]         @relation("SemanticChangeToVersion")
+  comparisonCacheFrom VersionComparisonCache[] @relation("CacheFromVersion")
+  comparisonCacheTo   VersionComparisonCache[] @relation("CacheToVersion")
+  // Story 3.6: Document review relations
+  reviews             DocumentReview[]
 
   @@unique([documentId, versionNumber])
   @@index([documentId])
@@ -662,9 +861,9 @@ model RetainerPeriodUsage {
   firmId        String   @map("firm_id")
   periodStart   DateTime @map("period_start") @db.Date
   periodEnd     DateTime @map("period_end") @db.Date
-  hoursUsed     Decimal  @map("hours_used") @db.Decimal(10, 2) @default(0)
+  hoursUsed     Decimal  @default(0) @map("hours_used") @db.Decimal(10, 2)
   hoursIncluded Decimal  @map("hours_included") @db.Decimal(10, 2)
-  rolledOver    Decimal  @map("rolled_over") @db.Decimal(10, 2) @default(0)
+  rolledOver    Decimal  @default(0) @map("rolled_over") @db.Decimal(10, 2)
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -708,17 +907,17 @@ model AITokenUsage {
 
 // AI Response Cache - semantic similarity cache for reducing duplicate API calls
 model AIResponseCache {
-  id              String                       @id @default(uuid())
-  promptHash      String                       @unique @map("prompt_hash") @db.VarChar(64)
+  id              String                      @id @default(uuid())
+  promptHash      String                      @unique @map("prompt_hash") @db.VarChar(64)
   promptEmbedding Unsupported("vector(768)")? @map("prompt_embedding") // multilingual-e5-base embedding
-  prompt          String                       @db.Text
-  response        String                       @db.Text
-  modelUsed       String                       @map("model_used") @db.VarChar(100)
-  operationType   String                       @map("operation_type") @db.VarChar(100)
-  firmId          String                       @map("firm_id")
-  hitCount        Int                          @default(0) @map("hit_count")
-  createdAt       DateTime                     @default(now()) @map("created_at") @db.Timestamptz
-  expiresAt       DateTime                     @map("expires_at") @db.Timestamptz
+  prompt          String                      @db.Text
+  response        String                      @db.Text
+  modelUsed       String                      @map("model_used") @db.VarChar(100)
+  operationType   String                      @map("operation_type") @db.VarChar(100)
+  firmId          String                      @map("firm_id")
+  hitCount        Int                         @default(0) @map("hit_count")
+  createdAt       DateTime                    @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt       DateTime                    @map("expires_at") @db.Timestamptz
 
   @@index([firmId])
   @@index([operationType])
@@ -732,11 +931,11 @@ model AIResponseCache {
 
 // Import session status lifecycle
 enum ImportSessionStatus {
-  Uploading      // PST file being uploaded
-  Extracting     // PST being processed
-  InProgress     // Categorization in progress
-  Completed      // All documents categorized
-  Exported       // Exported to OneDrive
+  Uploading // PST file being uploaded
+  Extracting // PST being processed
+  InProgress // Categorization in progress
+  Completed // All documents categorized
+  Exported // Exported to OneDrive
 }
 
 // Primary language detection results
@@ -750,9 +949,9 @@ enum PrimaryLanguage {
 
 // Template potential rating
 enum TemplatePotential {
-  High    // >80% standard structure
-  Medium  // 50-80% standard
-  Low     // <50% standard
+  High // >80% standard structure
+  Medium // 50-80% standard
+  Low // <50% standard
 }
 
 // Document structure type
@@ -764,28 +963,28 @@ enum StructureType {
 
 // Legacy import session - one per PST file upload
 model LegacyImportSession {
-  id                String              @id @default(uuid())
-  firmId            String              @map("firm_id")
-  pstFileName       String              @map("pst_file_name") @db.VarChar(500)
-  pstFileSize       BigInt              @map("pst_file_size") // Size in bytes
-  pstStoragePath    String?             @map("pst_storage_path") @db.Text // Cloudflare R2 path
-  uploadedBy        String              @map("uploaded_by") // User ID (Partner)
-  status            ImportSessionStatus @default(Uploading)
-  totalDocuments    Int                 @default(0) @map("total_documents")
-  categorizedCount  Int                 @default(0) @map("categorized_count")
-  skippedCount      Int                 @default(0) @map("skipped_count")
-  analyzedCount     Int                 @default(0) @map("analyzed_count") // AI analysis count
-  extractionErrors  Json?               @map("extraction_errors") // Error log from PST extraction
-  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz
-  exportedAt        DateTime?           @map("exported_at") @db.Timestamptz
-  cleanedUpAt       DateTime?           @map("cleaned_up_at") @db.Timestamptz // When R2 files deleted
+  id               String              @id @default(uuid())
+  firmId           String              @map("firm_id")
+  pstFileName      String              @map("pst_file_name") @db.VarChar(500)
+  pstFileSize      BigInt              @map("pst_file_size") // Size in bytes
+  pstStoragePath   String?             @map("pst_storage_path") @db.Text // Cloudflare R2 path
+  uploadedBy       String              @map("uploaded_by") // User ID (Partner)
+  status           ImportSessionStatus @default(Uploading)
+  totalDocuments   Int                 @default(0) @map("total_documents")
+  categorizedCount Int                 @default(0) @map("categorized_count")
+  skippedCount     Int                 @default(0) @map("skipped_count")
+  analyzedCount    Int                 @default(0) @map("analyzed_count") // AI analysis count
+  extractionErrors Json?               @map("extraction_errors") // Error log from PST extraction
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+  exportedAt       DateTime?           @map("exported_at") @db.Timestamptz
+  cleanedUpAt      DateTime?           @map("cleaned_up_at") @db.Timestamptz // When R2 files deleted
 
   // Relations
-  batches           DocumentBatch[]
-  documents         ExtractedDocument[]
-  categories        ImportCategory[]
-  processingLogs    AIProcessingLog[]
+  batches        DocumentBatch[]
+  documents      ExtractedDocument[]
+  categories     ImportCategory[]
+  processingLogs AIProcessingLog[]
 
   @@index([firmId])
   @@index([uploadedBy])
@@ -796,17 +995,17 @@ model LegacyImportSession {
 
 // Document batch - groups documents by month for assistant allocation
 model DocumentBatch {
-  id              String   @id @default(uuid())
-  sessionId       String   @map("session_id")
-  monthYear       String   @map("month_year") @db.VarChar(7) // 'YYYY-MM' format
-  assignedTo      String?  @map("assigned_to") // User ID (Assistant)
-  documentCount   Int      @map("document_count")
-  categorizedCount Int     @default(0) @map("categorized_count")
-  skippedCount    Int      @default(0) @map("skipped_count")
-  assignedAt      DateTime? @map("assigned_at") @db.Timestamptz
-  completedAt     DateTime? @map("completed_at") @db.Timestamptz
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id               String    @id @default(uuid())
+  sessionId        String    @map("session_id")
+  monthYear        String    @map("month_year") @db.VarChar(7) // 'YYYY-MM' format
+  assignedTo       String?   @map("assigned_to") // User ID (Assistant)
+  documentCount    Int       @map("document_count")
+  categorizedCount Int       @default(0) @map("categorized_count")
+  skippedCount     Int       @default(0) @map("skipped_count")
+  assignedAt       DateTime? @map("assigned_at") @db.Timestamptz
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
   session   LegacyImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -828,48 +1027,48 @@ enum DocumentCategorizationStatus {
 
 // Extracted document from PST file
 model ExtractedDocument {
-  id              String                       @id @default(uuid())
-  sessionId       String                       @map("session_id")
-  batchId         String?                      @map("batch_id")
-  fileName        String                       @map("file_name") @db.VarChar(500)
-  fileExtension   String                       @map("file_extension") @db.VarChar(10) // pdf, docx, doc
-  fileSizeBytes   Int                          @map("file_size_bytes")
-  storagePath     String                       @map("storage_path") @db.Text // Cloudflare R2 path
-  folderPath      String                       @map("folder_path") @db.Text // Original PST folder path
-  isSent          Boolean                      @default(false) @map("is_sent") // Determined from folder path
-  extractedText   String?                      @map("extracted_text") @db.Text // For AI analysis
+  id            String  @id @default(uuid())
+  sessionId     String  @map("session_id")
+  batchId       String? @map("batch_id")
+  fileName      String  @map("file_name") @db.VarChar(500)
+  fileExtension String  @map("file_extension") @db.VarChar(10) // pdf, docx, doc
+  fileSizeBytes Int     @map("file_size_bytes")
+  storagePath   String  @map("storage_path") @db.Text // Cloudflare R2 path
+  folderPath    String  @map("folder_path") @db.Text // Original PST folder path
+  isSent        Boolean @default(false) @map("is_sent") // Determined from folder path
+  extractedText String? @map("extracted_text") @db.Text // For AI analysis
 
   // Email metadata
-  emailSubject    String?                      @map("email_subject") @db.VarChar(1000)
-  emailSender     String?                      @map("email_sender") @db.VarChar(500)
-  emailReceiver   String?                      @map("email_receiver") @db.VarChar(500)
-  emailDate       DateTime?                    @map("email_date") @db.Timestamptz
+  emailSubject  String?   @map("email_subject") @db.VarChar(1000)
+  emailSender   String?   @map("email_sender") @db.VarChar(500)
+  emailReceiver String?   @map("email_receiver") @db.VarChar(500)
+  emailDate     DateTime? @map("email_date") @db.Timestamptz
 
   // Categorization
-  categoryId      String?                      @map("category_id")
-  status          DocumentCategorizationStatus @default(Uncategorized)
-  categorizedBy   String?                      @map("categorized_by") // User ID
-  categorizedAt   DateTime?                    @map("categorized_at") @db.Timestamptz
+  categoryId    String?                      @map("category_id")
+  status        DocumentCategorizationStatus @default(Uncategorized)
+  categorizedBy String?                      @map("categorized_by") // User ID
+  categorizedAt DateTime?                    @map("categorized_at") @db.Timestamptz
 
   // AI Analysis Fields (Story 3.2.5 Enhancement)
-  primaryLanguage         PrimaryLanguage?   @map("primary_language")
-  secondaryLanguage       PrimaryLanguage?   @map("secondary_language")
-  languageRatio           Json?              @map("language_ratio") // { Romanian: 0.85, English: 0.15 }
-  languageConfidence      Float?             @map("language_confidence") // 0-1
-  documentType            String?            @map("document_type") @db.VarChar(200) // e.g., "Contract de Vanzare-Cumparare"
-  documentTypeConfidence  Float?             @map("document_type_confidence")
-  clauseCategories        String[]           @map("clause_categories") // ["payment_terms", "warranties"]
-  templatePotential       TemplatePotential? @map("template_potential")
+  primaryLanguage        PrimaryLanguage?   @map("primary_language")
+  secondaryLanguage      PrimaryLanguage?   @map("secondary_language")
+  languageRatio          Json?              @map("language_ratio") // { Romanian: 0.85, English: 0.15 }
+  languageConfidence     Float?             @map("language_confidence") // 0-1
+  documentType           String?            @map("document_type") @db.VarChar(200) // e.g., "Contract de Vanzare-Cumparare"
+  documentTypeConfidence Float?             @map("document_type_confidence")
+  clauseCategories       String[]           @map("clause_categories") // ["payment_terms", "warranties"]
+  templatePotential      TemplatePotential? @map("template_potential")
 
   // AI Metadata (extended analysis)
-  aiMetadata              Json?              @map("ai_metadata") // { complexityScore, structureType, keyTerms, clauseCount }
-  riskIndicators          Json?              @map("risk_indicators") // { hasUnclearTerms, hasMixedJurisdiction, complianceFlags }
-  aiAnalysisVersion       String?            @map("ai_analysis_version") @db.VarChar(100) // e.g., "claude-3-haiku-20240307"
-  analysisTimestamp       DateTime?          @map("analysis_timestamp") @db.Timestamptz
-  analysisTokensUsed      Int?               @map("analysis_tokens_used")
+  aiMetadata         Json?     @map("ai_metadata") // { complexityScore, structureType, keyTerms, clauseCount }
+  riskIndicators     Json?     @map("risk_indicators") // { hasUnclearTerms, hasMixedJurisdiction, complianceFlags }
+  aiAnalysisVersion  String?   @map("ai_analysis_version") @db.VarChar(100) // e.g., "claude-3-haiku-20240307"
+  analysisTimestamp  DateTime? @map("analysis_timestamp") @db.Timestamptz
+  analysisTokensUsed Int?      @map("analysis_tokens_used")
 
-  createdAt               DateTime           @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt               DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
   session  LegacyImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -918,7 +1117,7 @@ model AIProcessingLog {
   processingTimeMs Int      @map("processing_time_ms")
   success          Boolean  @default(true)
   errorMessage     String?  @map("error_message") @db.Text
-  metadata         Json?    // Additional details (documentCount, etc.)
+  metadata         Json? // Additional details (documentCount, etc.)
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
@@ -932,12 +1131,12 @@ model AIProcessingLog {
 
 // Legacy Import Audit Log - tracks all significant actions
 model LegacyImportAuditLog {
-  id          String   @id @default(uuid())
-  sessionId   String   @map("session_id")
-  userId      String   @map("user_id")
-  action      String   @db.VarChar(100) // e.g., "PST_UPLOADED", "EXPORT_COMPLETED", "PST_DELETED"
-  details     Json?    // Additional context
-  timestamp   DateTime @default(now()) @db.Timestamptz
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  userId    String   @map("user_id")
+  action    String   @db.VarChar(100) // e.g., "PST_UPLOADED", "EXPORT_COMPLETED", "PST_DELETED"
+  details   Json? // Additional context
+  timestamp DateTime @default(now()) @db.Timestamptz
 
   @@index([sessionId])
   @@index([userId])
@@ -952,22 +1151,22 @@ model LegacyImportAuditLog {
 
 // Training document - processed legacy documents for AI learning
 model TrainingDocument {
-  id                   String                       @id @default(uuid())
-  category             String                       @db.VarChar(255)
-  originalFilename     String                       @map("original_filename") @db.VarChar(500)
-  originalFolderPath   String?                      @map("original_folder_path") @db.Text
-  oneDriveFileId       String                       @unique @map("one_drive_file_id") @db.VarChar(255)
-  textContent          String                       @map("text_content") @db.Text
-  language             String                       @db.VarChar(10) // 'ro' or 'en'
-  wordCount            Int?                         @map("word_count")
+  id                   String                   @id @default(uuid())
+  category             String                   @db.VarChar(255)
+  originalFilename     String                   @map("original_filename") @db.VarChar(500)
+  originalFolderPath   String?                  @map("original_folder_path") @db.Text
+  oneDriveFileId       String                   @unique @map("one_drive_file_id") @db.VarChar(255)
+  textContent          String                   @map("text_content") @db.Text
+  language             String                   @db.VarChar(10) // 'ro' or 'en'
+  wordCount            Int?                     @map("word_count")
   metadata             Json?
-  processedAt          DateTime                     @default(now()) @map("processed_at") @db.Timestamptz
-  processingDurationMs Int?                         @map("processing_duration_ms")
-  createdAt            DateTime                     @default(now()) @map("created_at") @db.Timestamptz
-  textSearchVector     Unsupported("tsvector")?     @map("text_search_vector") // Full-text search vector
+  processedAt          DateTime                 @default(now()) @map("processed_at") @db.Timestamptz
+  processingDurationMs Int?                     @map("processing_duration_ms")
+  createdAt            DateTime                 @default(now()) @map("created_at") @db.Timestamptz
+  textSearchVector     Unsupported("tsvector")? @map("text_search_vector") // Full-text search vector
 
   // Relations
-  embeddings      DocumentEmbedding[]
+  embeddings       DocumentEmbedding[]
   baseForTemplates TemplateLibrary[]
 
   @@index([category])
@@ -978,13 +1177,13 @@ model TrainingDocument {
 
 // Document embedding chunk for semantic search
 model DocumentEmbedding {
-  id         String                       @id @default(uuid())
-  documentId String                       @map("document_id")
-  chunkIndex Int                          @map("chunk_index")
-  chunkText  String                       @map("chunk_text") @db.Text
-  embedding  Unsupported("vector(768)")  // pgvector type - multilingual-e5-base (768 dimensions)
-  tokenCount Int?                         @map("token_count")
-  createdAt  DateTime                     @default(now()) @map("created_at") @db.Timestamptz
+  id         String                     @id @default(uuid())
+  documentId String                     @map("document_id")
+  chunkIndex Int                        @map("chunk_index")
+  chunkText  String                     @map("chunk_text") @db.Text
+  embedding  Unsupported("vector(768)") // pgvector type - multilingual-e5-base (768 dimensions)
+  tokenCount Int?                       @map("token_count")
+  createdAt  DateTime                   @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
   document TrainingDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
@@ -1022,16 +1221,16 @@ model DocumentPattern {
 
 // Template library - extracted document templates
 model TemplateLibrary {
-  id                  String   @id @default(uuid())
-  category            String   @db.VarChar(255)
-  name                String?  @db.VarChar(500)
-  baseDocumentId      String?  @map("base_document_id")
-  structure           Json // Sections, headings, clause order
-  similarDocumentIds  String[] @map("similar_document_ids") // Array of UUID strings
-  usageCount          Int      @default(0) @map("usage_count")
-  qualityScore        Decimal? @map("quality_score") @db.Decimal(3, 2)
-  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id                 String   @id @default(uuid())
+  category           String   @db.VarChar(255)
+  name               String?  @db.VarChar(500)
+  baseDocumentId     String?  @map("base_document_id")
+  structure          Json // Sections, headings, clause order
+  similarDocumentIds String[] @map("similar_document_ids") // Array of UUID strings
+  usageCount         Int      @default(0) @map("usage_count")
+  qualityScore       Decimal? @map("quality_score") @db.Decimal(3, 2)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
   baseDocument TrainingDocument? @relation(fields: [baseDocumentId], references: [id], onDelete: SetNull)
@@ -1057,22 +1256,2160 @@ enum PipelineStatus {
 
 // Training pipeline run - tracks pipeline executions
 model TrainingPipelineRun {
-  id                  String           @id @default(uuid())
-  runType             PipelineRunType  @map("run_type")
+  id                  String          @id @default(uuid())
+  runType             PipelineRunType @map("run_type")
   status              PipelineStatus
-  startedAt           DateTime         @default(now()) @map("started_at") @db.Timestamptz
-  completedAt         DateTime?        @map("completed_at") @db.Timestamptz
-  documentsDiscovered Int              @default(0) @map("documents_discovered")
-  documentsProcessed  Int              @default(0) @map("documents_processed")
-  documentsFailed     Int              @default(0) @map("documents_failed")
-  patternsIdentified  Int              @default(0) @map("patterns_identified")
-  templatesCreated    Int              @default(0) @map("templates_created")
-  totalTokensUsed     Int              @default(0) @map("total_tokens_used")
-  errorLog            Json?            @map("error_log")
+  startedAt           DateTime        @default(now()) @map("started_at") @db.Timestamptz
+  completedAt         DateTime?       @map("completed_at") @db.Timestamptz
+  documentsDiscovered Int             @default(0) @map("documents_discovered")
+  documentsProcessed  Int             @default(0) @map("documents_processed")
+  documentsFailed     Int             @default(0) @map("documents_failed")
+  patternsIdentified  Int             @default(0) @map("patterns_identified")
+  templatesCreated    Int             @default(0) @map("templates_created")
+  totalTokensUsed     Int             @default(0) @map("total_tokens_used")
+  errorLog            Json?           @map("error_log")
   metadata            Json?
-  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz
 
   @@index([status])
   @@index([startedAt])
   @@map("training_pipeline_runs")
+}
+
+// ============================================================================
+// Story 3.3: Intelligent Document Drafting - Quality Metrics
+// ============================================================================
+
+// Document draft metrics - tracks AI-generated document quality
+model DocumentDraftMetrics {
+  id                    String    @id @default(uuid())
+  documentId            String    @unique @map("document_id")
+  firmId                String    @map("firm_id")
+  userId                String    @map("user_id")
+  documentType          String    @map("document_type") @db.VarChar(50)
+  initialWordCount      Int       @map("initial_word_count")
+  finalWordCount        Int?      @map("final_word_count")
+  charactersAdded       Int       @default(0) @map("characters_added")
+  charactersRemoved     Int       @default(0) @map("characters_removed")
+  editPercentage        Decimal   @map("edit_percentage") @db.Decimal(5, 2) // Target: < 30%
+  timeToFinalizeMinutes Int?      @map("time_to_finalize_minutes")
+  userRating            Int?      @map("user_rating") // 1-5 stars
+  generationTimeMs      Int?      @map("generation_time_ms")
+  tokensUsed            Int?      @map("tokens_used")
+  modelUsed             String?   @map("model_used") @db.VarChar(100)
+  templateId            String?   @map("template_id")
+  precedentIds          String[]  @map("precedent_ids") // Array of referenced document IDs
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  finalizedAt           DateTime? @map("finalized_at") @db.Timestamptz
+
+  @@index([firmId])
+  @@index([userId])
+  @@index([documentType])
+  @@index([editPercentage])
+  @@index([createdAt])
+  @@index([userRating])
+  @@map("document_draft_metrics")
+}
+
+// ============================================================================
+// Story 3.4: Word Integration with Live AI Assistance
+// ============================================================================
+
+// Document comment - synced between platform and Word
+model DocumentComment {
+  id            String    @id @default(uuid())
+  documentId    String    @map("document_id")
+  versionId     String?   @map("version_id")
+  authorId      String    @map("author_id")
+  content       String    @db.Text
+  anchorText    String?   @map("anchor_text") @db.Text
+  anchorStart   Int?      @map("anchor_start")
+  anchorEnd     Int?      @map("anchor_end")
+  wordCommentId String?   @map("word_comment_id") @db.VarChar(255)
+  resolved      Boolean   @default(false)
+  resolvedBy    String?   @map("resolved_by")
+  resolvedAt    DateTime? @map("resolved_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([documentId])
+  @@index([authorId])
+  @@index([wordCommentId])
+  @@map("document_comments")
+}
+
+// Document lock - prevents concurrent editing
+model DocumentLock {
+  id          String   @id @default(uuid())
+  documentId  String   @unique @map("document_id")
+  userId      String   @map("user_id")
+  lockToken   String   @unique @map("lock_token") @db.VarChar(64)
+  lockedAt    DateTime @default(now()) @map("locked_at") @db.Timestamptz
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz
+  sessionType String   @map("session_type") @db.VarChar(50) // 'word_desktop', 'word_online', 'platform'
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("document_locks")
+}
+
+// ============================================================================
+// Story 3.5: Semantic Version Control System
+// ============================================================================
+
+// Change type classification
+enum ChangeType {
+  ADDED
+  REMOVED
+  MODIFIED
+  MOVED
+}
+
+// Change significance levels
+enum ChangeSignificance {
+  FORMATTING
+  MINOR_WORDING
+  SUBSTANTIVE
+  CRITICAL
+}
+
+// Risk levels for changes
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// Response suggestion types
+enum ResponseType {
+  ACCEPT
+  REJECT
+  COUNTER_PROPOSAL
+  CLARIFICATION
+}
+
+// Semantic change - stores analyzed changes between versions
+model SemanticChange {
+  id                  String             @id @default(uuid())
+  documentId          String             @map("document_id")
+  fromVersionId       String             @map("from_version_id")
+  toVersionId         String             @map("to_version_id")
+  changeType          ChangeType         @map("change_type")
+  significance        ChangeSignificance
+  beforeText          String             @map("before_text") @db.Text
+  afterText           String             @map("after_text") @db.Text
+  sectionPath         String?            @map("section_path") @db.VarChar(500)
+  plainSummary        String             @map("plain_summary") @db.Text
+  legalClassification String?            @map("legal_classification") @db.VarChar(100)
+  riskLevel           RiskLevel?         @map("risk_level")
+  riskExplanation     String?            @map("risk_explanation") @db.Text
+  aiConfidence        Decimal?           @map("ai_confidence") @db.Decimal(3, 2)
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  document            Document             @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  fromVersion         DocumentVersion      @relation("SemanticChangeFromVersion", fields: [fromVersionId], references: [id], onDelete: Cascade)
+  toVersion           DocumentVersion      @relation("SemanticChangeToVersion", fields: [toVersionId], references: [id], onDelete: Cascade)
+  responseSuggestions ResponseSuggestion[]
+
+  @@index([documentId])
+  @@index([fromVersionId])
+  @@index([toVersionId])
+  @@map("semantic_changes")
+}
+
+// Version comparison cache - caches expensive comparison results
+model VersionComparisonCache {
+  id             String    @id @default(uuid())
+  fromVersionId  String    @map("from_version_id")
+  toVersionId    String    @map("to_version_id")
+  comparisonData Json      @map("comparison_data")
+  summary        String    @db.Text
+  aggregateRisk  RiskLevel @map("aggregate_risk")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz
+
+  // Relations
+  fromVersion DocumentVersion @relation("CacheFromVersion", fields: [fromVersionId], references: [id], onDelete: Cascade)
+  toVersion   DocumentVersion @relation("CacheToVersion", fields: [toVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([fromVersionId, toVersionId])
+  @@index([expiresAt])
+  @@map("version_comparison_cache")
+}
+
+// Response suggestion - AI-generated response options
+model ResponseSuggestion {
+  id             String       @id @default(uuid())
+  changeId       String       @map("change_id")
+  suggestionType ResponseType @map("suggestion_type")
+  suggestedText  String       @map("suggested_text") @db.Text
+  reasoning      String?      @db.Text
+  language       String       @db.VarChar(10) // 'ro' or 'en'
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  change SemanticChange @relation(fields: [changeId], references: [id], onDelete: Cascade)
+
+  @@index([changeId])
+  @@map("response_suggestions")
+}
+
+// ============================================================================
+// Story 3.6: Document Review and Approval Workflow
+// ============================================================================
+
+// Review status lifecycle
+enum ReviewStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  REVISION_REQUESTED
+}
+
+// Review priority levels
+enum ReviewPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// AI concern type classification
+enum ConcernType {
+  LEGAL_INCONSISTENCY
+  AMBIGUOUS_LANGUAGE
+  MISSING_CLAUSE
+  OUTDATED_REFERENCE
+  COMPLIANCE_ISSUE
+  STYLE_VIOLATION
+  HIGH_RISK_CLAUSE
+}
+
+// AI concern severity levels
+enum ConcernSeverity {
+  INFO
+  WARNING
+  ERROR
+}
+
+// Review action types for history tracking
+enum ReviewAction {
+  SUBMITTED
+  ASSIGNED
+  COMMENT_ADDED
+  COMMENT_RESOLVED
+  APPROVED
+  REJECTED
+  REVISION_REQUESTED
+  RESUBMITTED
+}
+
+// Batch review status
+enum BatchReviewStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Document review - tracks review workflow for documents
+model DocumentReview {
+  id                String         @id @default(uuid())
+  documentId        String         @map("document_id")
+  documentVersionId String         @map("document_version_id")
+  firmId            String         @map("firm_id")
+  submittedBy       String         @map("submitted_by")
+  submittedAt       DateTime       @default(now()) @map("submitted_at") @db.Timestamptz
+  assignedTo        String?        @map("assigned_to")
+  status            ReviewStatus   @default(PENDING)
+  reviewedAt        DateTime?      @map("reviewed_at") @db.Timestamptz
+  feedback          String?        @db.Text
+  priority          ReviewPriority @default(NORMAL)
+  dueDate           DateTime?      @map("due_date") @db.Date
+  revisionNumber    Int            @default(0) @map("revision_number")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  document        Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentVersion DocumentVersion   @relation(fields: [documentVersionId], references: [id])
+  submitter       User              @relation("ReviewSubmitter", fields: [submittedBy], references: [id])
+  reviewer        User?             @relation("ReviewReviewer", fields: [assignedTo], references: [id])
+  comments        ReviewComment[]
+  aiConcerns      AIReviewConcern[]
+  history         ReviewHistory[]
+
+  @@index([documentId])
+  @@index([firmId])
+  @@index([submittedBy])
+  @@index([assignedTo])
+  @@index([status])
+  @@map("document_reviews")
+}
+
+// Review comment - inline comments on documents during review
+model ReviewComment {
+  id             String    @id @default(uuid())
+  reviewId       String    @map("review_id")
+  authorId       String    @map("author_id")
+  content        String    @db.Text
+  anchorText     String?   @map("anchor_text") @db.Text
+  anchorStart    Int?      @map("anchor_start")
+  anchorEnd      Int?      @map("anchor_end")
+  sectionPath    String?   @map("section_path") @db.VarChar(500)
+  resolved       Boolean   @default(false)
+  resolvedBy     String?   @map("resolved_by")
+  resolvedAt     DateTime? @map("resolved_at") @db.Timestamptz
+  suggestionText String?   @map("suggestion_text") @db.Text
+  isAISuggestion Boolean   @default(false) @map("is_ai_suggestion")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  review   DocumentReview       @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  author   User                 @relation("CommentAuthor", fields: [authorId], references: [id])
+  resolver User?                @relation("CommentResolver", fields: [resolvedBy], references: [id])
+  replies  ReviewCommentReply[]
+
+  @@index([reviewId])
+  @@index([authorId])
+  @@map("review_comments")
+}
+
+// Review comment reply - threaded replies to comments
+model ReviewCommentReply {
+  id        String   @id @default(uuid())
+  commentId String   @map("comment_id")
+  authorId  String   @map("author_id")
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  comment ReviewComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  author  User          @relation("ReplyAuthor", fields: [authorId], references: [id])
+
+  @@index([commentId])
+  @@map("review_comment_replies")
+}
+
+// AI review concern - AI-flagged areas of concern in documents
+model AIReviewConcern {
+  id           String          @id @default(uuid())
+  reviewId     String          @map("review_id")
+  concernType  ConcernType     @map("concern_type")
+  severity     ConcernSeverity
+  description  String          @db.Text
+  anchorText   String          @map("anchor_text") @db.Text
+  anchorStart  Int             @map("anchor_start")
+  anchorEnd    Int             @map("anchor_end")
+  sectionPath  String?         @map("section_path") @db.VarChar(500)
+  suggestedFix String?         @map("suggested_fix") @db.Text
+  aiConfidence Decimal         @map("ai_confidence") @db.Decimal(3, 2)
+  dismissed    Boolean         @default(false)
+  dismissedBy  String?         @map("dismissed_by")
+  dismissedAt  DateTime?       @map("dismissed_at") @db.Timestamptz
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  review DocumentReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("ai_review_concerns")
+}
+
+// Review history - tracks all actions on a review
+model ReviewHistory {
+  id             String        @id @default(uuid())
+  reviewId       String        @map("review_id")
+  action         ReviewAction
+  actorId        String        @map("actor_id")
+  previousStatus ReviewStatus? @map("previous_status")
+  newStatus      ReviewStatus? @map("new_status")
+  feedback       String?       @db.Text
+  metadata       Json?
+  timestamp      DateTime      @default(now()) @db.Timestamptz
+
+  // Relations
+  review DocumentReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  actor  User           @relation("ReviewHistoryActor", fields: [actorId], references: [id])
+
+  @@index([reviewId])
+  @@index([timestamp])
+  @@map("review_history")
+}
+
+// Batch review - for batch operations on multiple reviews
+model BatchReview {
+  id             String            @id @default(uuid())
+  firmId         String            @map("firm_id")
+  createdBy      String            @map("created_by")
+  reviewIds      String[]          @map("review_ids")
+  status         BatchReviewStatus
+  processedCount Int               @default(0) @map("processed_count")
+  totalCount     Int               @map("total_count")
+  commonFeedback String?           @map("common_feedback") @db.Text
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  completedAt    DateTime?         @map("completed_at") @db.Timestamptz
+
+  // Relations
+  firm    Firm @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  creator User @relation("BatchReviewCreator", fields: [createdBy], references: [id])
+
+  @@index([firmId])
+  @@index([createdBy])
+  @@map("batch_reviews")
+}
+
+// ============================================================================
+// Story 3.8: Document System Testing and Performance
+// ============================================================================
+
+// Performance metric - stores performance metrics for analysis
+model PerformanceMetric {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now()) @db.Timestamptz
+  value     Float
+  operation String   @db.VarChar(255) // e.g., "GET /api/documents/:id", "ai.claude-sonnet.document_generation"
+  metadata  Json? // Additional context (statusCode, firmId, userId, etc.)
+
+  @@index([timestamp])
+  @@index([operation])
+  @@map("performance_metrics")
+}
+
+// ============================================================================
+// Story 4.1: Natural Language Task Parser
+// ============================================================================
+
+// Task type enum for parsed tasks
+enum TaskTypeEnum {
+  Research
+  DocumentCreation
+  DocumentRetrieval
+  CourtDate
+  Meeting
+  BusinessTrip
+}
+
+// Task parse pattern - learned patterns for autocomplete suggestions
+model TaskParsePattern {
+  id           String       @id @default(uuid())
+  firmId       String       @map("firm_id")
+  inputPattern String       @map("input_pattern") @db.Text // Regex pattern
+  taskType     TaskTypeEnum @map("task_type")
+  frequency    Int          @default(1)
+  lastUsed     DateTime     @default(now()) @map("last_used") @db.Timestamptz
+  metadata     Json? // Extracted entities mapping
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([firmId])
+  @@index([taskType])
+  @@index([frequency])
+  @@map("task_parse_patterns")
+}
+
+// Task parse history - records all parse attempts for learning
+model TaskParseHistory {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  firmId           String   @map("firm_id")
+  inputText        String   @map("input_text") @db.Text
+  detectedLanguage String   @map("detected_language") @db.VarChar(10)
+  parsedResult     Json     @map("parsed_result") // Full NLPTaskParseResponse
+  wasAccepted      Boolean  @map("was_accepted")
+  userCorrections  Json?    @map("user_corrections")
+  finalTaskId      String?  @map("final_task_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations (Story 4.2)
+  task Task?
+
+  @@index([firmId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("task_parse_history")
+}
+
+// ============================================================================
+// Story 4.2: Task Type System Implementation
+// ============================================================================
+
+// Task status lifecycle
+enum TaskStatus {
+  Pending
+  InProgress
+  Completed
+  Cancelled
+}
+
+// Task priority levels
+enum TaskPriority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+// Task entity - main task model with type-specific metadata
+model Task {
+  id             String       @id @default(uuid())
+  firmId         String       @map("firm_id")
+  caseId         String       @map("case_id")
+  type           TaskTypeEnum
+  title          String       @db.VarChar(500)
+  description    String?      @db.Text
+  assignedTo     String       @map("assigned_to")
+  dueDate        DateTime     @map("due_date") @db.Date
+  dueTime        String?      @map("due_time") @db.VarChar(5) // HH:mm format
+  status         TaskStatus   @default(Pending)
+  priority       TaskPriority @default(Medium)
+  estimatedHours Decimal?     @map("estimated_hours") @db.Decimal(5, 2)
+
+  // Type-specific fields stored as JSON
+  typeMetadata Json? @map("type_metadata")
+
+  // Parent task for subtasks
+  parentTaskId String? @map("parent_task_id")
+
+  // Source tracking (from NLP parser)
+  parseHistoryId String? @unique @map("parse_history_id")
+
+  // Story 4.4: Task dependency and template tracking
+  templateStepId  String? @map("template_step_id") // Source template step
+  templateUsageId String? @map("template_usage_id") // Template application instance
+  isCriticalPath  Boolean @default(false) @map("is_critical_path")
+  blockedReason   String? @map("blocked_reason") @db.VarChar(500)
+
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+
+  // Relations
+  firm         Firm              @relation(fields: [firmId], references: [id])
+  case         Case              @relation(fields: [caseId], references: [id])
+  assignee     User              @relation("TaskAssignee", fields: [assignedTo], references: [id])
+  creator      User              @relation("TaskCreator", fields: [createdBy], references: [id])
+  parentTask   Task?             @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
+  subtasks     Task[]            @relation("TaskSubtasks")
+  parseHistory TaskParseHistory? @relation(fields: [parseHistoryId], references: [id])
+
+  // Type-specific relations
+  attendees         TaskAttendee[]
+  documentLinks     TaskDocumentLink[]
+  delegationsSource TaskDelegation[]   @relation("DelegationSource")
+  delegatedTasks    TaskDelegation[]   @relation("DelegatedTask")
+  timeEntries       TimeEntry[] // Story 4.3: Time entries logged against this task
+
+  // Story 4.4: Dependency relations
+  predecessors TaskDependency[] @relation("TaskSuccessor")
+  successors   TaskDependency[] @relation("TaskPredecessor")
+
+  // Story 4.6: Task Collaboration relations
+  comments    TaskComment[]
+  history     TaskHistory[]
+  attachments TaskAttachment[]
+
+  // Story 5.2: Communication Intelligence - tasks converted from extractions
+  convertedFromDeadline   ExtractedDeadline[]   @relation("DeadlineConvertedTask")
+  convertedFromCommitment ExtractedCommitment[] @relation("CommitmentConvertedTask")
+  convertedFromActionItem ExtractedActionItem[] @relation("ActionItemConvertedTask")
+
+  @@index([firmId])
+  @@index([caseId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([dueDate])
+  @@index([type])
+  @@index([parentTaskId])
+  @@map("tasks")
+}
+
+// Attendee response status for meeting tasks
+enum AttendeeResponse {
+  Pending
+  Accepted
+  Declined
+  Tentative
+}
+
+// Task attendee model for Meeting tasks
+model TaskAttendee {
+  id            String           @id @default(uuid())
+  taskId        String           @map("task_id")
+  userId        String?          @map("user_id") // Internal user
+  externalName  String?          @map("external_name") @db.VarChar(200)
+  externalEmail String?          @map("external_email") @db.VarChar(255)
+  isOrganizer   Boolean          @default(false) @map("is_organizer")
+  response      AttendeeResponse @default(Pending)
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  task Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@map("task_attendees")
+}
+
+// Task document link type
+enum TaskDocumentLinkType {
+  Source // Research source document
+  Output // Created document from task
+  Reference // General reference
+}
+
+// Task document link model for Research tasks
+model TaskDocumentLink {
+  id         String               @id @default(uuid())
+  taskId     String               @map("task_id")
+  documentId String               @map("document_id")
+  linkType   TaskDocumentLinkType @map("link_type")
+  notes      String?              @db.Text
+  linkedBy   String               @map("linked_by")
+  linkedAt   DateTime             @default(now()) @map("linked_at") @db.Timestamptz
+
+  task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id])
+  linker   User     @relation(fields: [linkedBy], references: [id])
+
+  @@unique([taskId, documentId])
+  @@index([taskId])
+  @@map("task_document_links")
+}
+
+// Delegation status
+enum DelegationStatus {
+  Pending
+  Accepted
+  Declined
+}
+
+// Task delegation model for Business Trip coverage
+model TaskDelegation {
+  id              String           @id @default(uuid())
+  sourceTaskId    String           @map("source_task_id") // BusinessTrip task
+  delegatedTaskId String?          @map("delegated_task_id") // Task being covered
+  delegatedTo     String           @map("delegated_to")
+  delegatedBy     String           @map("delegated_by")
+  reason          String           @db.Text // "Business Trip coverage"
+  startDate       DateTime         @map("start_date") @db.Date
+  endDate         DateTime         @map("end_date") @db.Date
+  status          DelegationStatus @default(Pending)
+  notes           String?          @db.Text
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  acceptedAt      DateTime?        @map("accepted_at") @db.Timestamptz
+
+  // Story 4.5: Delegation handoff relation
+  handoff DelegationHandoff?
+
+  sourceTask    Task  @relation("DelegationSource", fields: [sourceTaskId], references: [id])
+  delegatedTask Task? @relation("DelegatedTask", fields: [delegatedTaskId], references: [id])
+  delegate      User  @relation("DelegationDelegate", fields: [delegatedTo], references: [id])
+  delegator     User  @relation("DelegationDelegator", fields: [delegatedBy], references: [id])
+
+  @@index([sourceTaskId])
+  @@index([delegatedTo])
+  @@index([startDate, endDate])
+  @@map("task_delegations")
+}
+
+// ============================================================================
+// Story 4.4: Task Dependencies and Automation
+// ============================================================================
+
+// Offset type for task template step scheduling
+enum OffsetType {
+  CaseStart // Days from case creation
+  PreviousTask // Days from previous step completion
+  CaseDeadline // Days before case deadline (negative offset)
+}
+
+// Dependency type for task relationships
+enum DependencyType {
+  FinishToStart // Target starts when source finishes (most common)
+  StartToStart // Target starts when source starts
+  FinishToFinish // Target finishes when source finishes
+  StartToFinish // Target finishes when source starts (rare)
+}
+
+// Task template - defines common workflow patterns
+model TaskTemplate {
+  id          String    @id @default(uuid())
+  firmId      String    @map("firm_id")
+  name        String    @db.VarChar(200)
+  description String?   @db.Text
+  caseType    CaseType? @map("case_type") // Optional: template for specific case types
+  isDefault   Boolean   @default(false) @map("is_default") // Firm default template
+  isActive    Boolean   @default(true) @map("is_active")
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  firm   Firm                @relation(fields: [firmId], references: [id])
+  steps  TaskTemplateStep[]
+  usages TaskTemplateUsage[]
+
+  @@unique([firmId, name])
+  @@index([firmId])
+  @@index([caseType])
+  @@map("task_templates")
+}
+
+// Task template step - individual steps within a template
+model TaskTemplateStep {
+  id             String       @id @default(uuid())
+  templateId     String       @map("template_id")
+  stepOrder      Int          @map("step_order") // Execution order
+  taskType       TaskTypeEnum @map("task_type")
+  title          String       @db.VarChar(500)
+  description    String?      @db.Text
+  estimatedHours Decimal?     @map("estimated_hours") @db.Decimal(5, 2)
+  typeMetadata   Json?        @map("type_metadata") // Type-specific defaults
+  offsetDays     Int          @map("offset_days") // Days from case start or previous task
+  offsetFrom     OffsetType   @default(CaseStart) @map("offset_from")
+  isParallel     Boolean      @default(false) @map("is_parallel") // Can run parallel with next step
+  isCriticalPath Boolean      @default(false) @map("is_critical_path")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  template   TaskTemplate             @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  dependsOn  TemplateStepDependency[] @relation("DependencyTarget")
+  dependents TemplateStepDependency[] @relation("DependencySource")
+
+  @@unique([templateId, stepOrder])
+  @@index([templateId])
+  @@map("task_template_steps")
+}
+
+// Template step dependency - defines dependencies between template steps
+model TemplateStepDependency {
+  id             String         @id @default(uuid())
+  sourceStepId   String         @map("source_step_id") // The step that must complete
+  targetStepId   String         @map("target_step_id") // The step that depends on source
+  dependencyType DependencyType @default(FinishToStart) @map("dependency_type")
+  lagDays        Int            @default(0) @map("lag_days") // Days between finish-start
+
+  sourceStep TaskTemplateStep @relation("DependencySource", fields: [sourceStepId], references: [id], onDelete: Cascade)
+  targetStep TaskTemplateStep @relation("DependencyTarget", fields: [targetStepId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceStepId, targetStepId])
+  @@map("template_step_dependencies")
+}
+
+// Task dependency - actual dependencies between tasks
+model TaskDependency {
+  id             String         @id @default(uuid())
+  predecessorId  String         @map("predecessor_id") // Task that must complete first
+  successorId    String         @map("successor_id") // Task that depends on predecessor
+  dependencyType DependencyType @default(FinishToStart) @map("dependency_type")
+  lagDays        Int            @default(0) @map("lag_days")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  predecessor Task @relation("TaskPredecessor", fields: [predecessorId], references: [id], onDelete: Cascade)
+  successor   Task @relation("TaskSuccessor", fields: [successorId], references: [id], onDelete: Cascade)
+
+  @@unique([predecessorId, successorId])
+  @@index([predecessorId])
+  @@index([successorId])
+  @@map("task_dependencies")
+}
+
+// Task template usage - tracks when templates are applied to cases
+model TaskTemplateUsage {
+  id         String   @id @default(uuid())
+  templateId String   @map("template_id")
+  caseId     String   @map("case_id")
+  appliedBy  String   @map("applied_by")
+  appliedAt  DateTime @default(now()) @map("applied_at") @db.Timestamptz
+  taskIds    String[] @map("task_ids") // Created task IDs
+
+  template TaskTemplate @relation(fields: [templateId], references: [id])
+  case     Case         @relation(fields: [caseId], references: [id])
+
+  @@index([templateId])
+  @@index([caseId])
+  @@map("task_template_usages")
+}
+
+// ============================================================================
+// Story 4.5: Team Workload Management
+// ============================================================================
+
+// Availability type for OOO and reduced hours
+enum AvailabilityType {
+  OutOfOffice // Fully unavailable
+  ReducedHours // Working fewer hours
+  Vacation // Planned vacation
+  SickLeave // Unplanned absence
+  Training // Training/conference
+}
+
+// Skill types for task assignment matching
+enum SkillType {
+  Litigation
+  ContractDrafting
+  LegalResearch
+  ClientCommunication
+  CourtProcedures
+  DocumentReview
+  Negotiation
+  DueDiligence
+  RegulatoryCompliance
+  IntellectualProperty
+}
+
+// User availability - tracks OOO, vacation, reduced hours (AC: 1, 5)
+model UserAvailability {
+  id               String           @id @default(uuid())
+  userId           String           @map("user_id")
+  firmId           String           @map("firm_id")
+  availabilityType AvailabilityType @map("availability_type")
+  startDate        DateTime         @map("start_date") @db.Date
+  endDate          DateTime         @map("end_date") @db.Date
+  hoursPerDay      Decimal?         @map("hours_per_day") @db.Decimal(4, 2) // Override default 8h
+  reason           String?          @db.VarChar(500)
+  autoReassign     Boolean          @default(true) @map("auto_reassign") // AC5: Auto-reassign urgent tasks
+  delegateTo       String?          @map("delegate_to") // Preferred delegate user ID
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  user     User  @relation("UserAvailabilities", fields: [userId], references: [id], onDelete: Cascade)
+  delegate User? @relation("UserDelegates", fields: [delegateTo], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([firmId])
+  @@index([startDate, endDate])
+  @@map("user_availabilities")
+}
+
+// User skill - tracks user proficiencies for task assignment (AC: 3)
+model UserSkill {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  firmId      String    @map("firm_id")
+  skillType   SkillType @map("skill_type")
+  proficiency Int       @default(3) // 1-5 scale
+  verified    Boolean   @default(false) // Partner-verified skill
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillType])
+  @@index([firmId])
+  @@index([skillType])
+  @@map("user_skills")
+}
+
+// Delegation handoff - automatic handoff notes for task delegation (AC: 4)
+model DelegationHandoff {
+  id             String   @id @default(uuid())
+  delegationId   String   @unique @map("delegation_id")
+  handoffNotes   String   @map("handoff_notes") @db.Text
+  contextSummary String?  @map("context_summary") @db.Text // AI-generated summary
+  relatedTaskIds String[] @map("related_task_ids")
+  relatedDocIds  String[] @map("related_doc_ids")
+  aiGenerated    Boolean  @default(false) @map("ai_generated")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  delegation TaskDelegation @relation(fields: [delegationId], references: [id], onDelete: Cascade)
+
+  @@map("delegation_handoffs")
+}
+
+// User workload settings - capacity and preferences (AC: 2, 6)
+model UserWorkloadSettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  firmId              String   @map("firm_id")
+  dailyCapacityHours  Decimal  @default(8) @map("daily_capacity_hours") @db.Decimal(4, 2)
+  weeklyCapacityHours Decimal  @default(40) @map("weekly_capacity_hours") @db.Decimal(5, 2)
+  workingDays         Int[]    @map("working_days") // [1,2,3,4,5] = Mon-Fri
+  maxConcurrentTasks  Int      @default(10) @map("max_concurrent_tasks")
+  overloadThreshold   Decimal  @default(1.2) @map("overload_threshold") @db.Decimal(3, 2) // 120% capacity
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@map("user_workload_settings")
+}
+
+// ============================================================================
+// Story 4.6: Task Collaboration and Updates
+// ============================================================================
+
+// Task comment - comments on tasks with @mention support and threading (AC: 1)
+model TaskComment {
+  id        String    @id @default(uuid())
+  taskId    String    @map("task_id")
+  authorId  String    @map("author_id")
+  content   String    @db.Text
+  parentId  String?   @map("parent_id") // For threaded replies
+  mentions  String[] // User IDs mentioned in comment
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  editedAt  DateTime? @map("edited_at") @db.Timestamptz
+
+  task    Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author  User          @relation("TaskCommentAuthor", fields: [authorId], references: [id])
+  parent  TaskComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies TaskComment[] @relation("CommentReplies")
+
+  @@index([taskId])
+  @@index([authorId])
+  @@index([createdAt])
+  @@map("task_comments")
+}
+
+// Task history action types (AC: 5)
+enum TaskHistoryAction {
+  Created
+  Updated
+  StatusChanged
+  AssigneeChanged
+  PriorityChanged
+  DueDateChanged
+  CommentAdded
+  CommentEdited
+  CommentDeleted
+  AttachmentAdded
+  AttachmentRemoved
+  SubtaskCreated
+  SubtaskCompleted
+  DependencyAdded
+  DependencyRemoved
+  Delegated
+}
+
+// Task history - tracks all modifications with attribution (AC: 5)
+model TaskHistory {
+  id        String            @id @default(uuid())
+  taskId    String            @map("task_id")
+  actorId   String            @map("actor_id")
+  action    TaskHistoryAction
+  field     String?           @db.VarChar(100) // Field that changed
+  oldValue  String?           @map("old_value") @db.Text
+  newValue  String?           @map("new_value") @db.Text
+  metadata  Json? // Additional context (e.g., subtask info, attachment details)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor User @relation("TaskHistoryActor", fields: [actorId], references: [id])
+
+  @@index([taskId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("task_history")
+}
+
+// Case activity types for activity feed (AC: 2)
+enum CaseActivityType {
+  TaskCreated
+  TaskStatusChanged
+  TaskCompleted
+  TaskAssigned
+  TaskCommented
+  DocumentUploaded
+  DocumentVersioned
+  CommunicationReceived
+  CommunicationSent
+  DeadlineApproaching
+  MilestoneReached
+}
+
+// Case activity entry - case activity feed (AC: 2)
+model CaseActivityEntry {
+  id           String           @id @default(uuid())
+  caseId       String           @map("case_id")
+  actorId      String           @map("actor_id")
+  activityType CaseActivityType @map("activity_type")
+  entityType   String           @map("entity_type") @db.VarChar(50) // 'Task', 'Document', 'Communication'
+  entityId     String           @map("entity_id")
+  title        String           @db.VarChar(500)
+  summary      String?          @db.Text
+  metadata     Json? // Type-specific details
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  case  Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  actor User @relation("CaseActivityActor", fields: [actorId], references: [id])
+
+  @@index([caseId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@map("case_activity_entries")
+}
+
+// Task attachment - file attachments linked to tasks with version tracking (AC: 3)
+model TaskAttachment {
+  id                String   @id @default(uuid())
+  taskId            String   @map("task_id")
+  documentId        String?  @map("document_id") // Link to existing document (version tracking)
+  fileName          String   @map("file_name") @db.VarChar(255)
+  fileSize          Int      @map("file_size") // Size in bytes
+  mimeType          String   @map("mime_type") @db.VarChar(100)
+  storageUrl        String   @map("storage_url") @db.VarChar(1000) // R2 URL
+  uploadedBy        String   @map("uploaded_by")
+  version           Int      @default(1) // Attachment version number
+  previousVersionId String?  @map("previous_version_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  task            Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  document        Document?        @relation(fields: [documentId], references: [id])
+  uploader        User             @relation("TaskAttachmentUploader", fields: [uploadedBy], references: [id])
+  previousVersion TaskAttachment?  @relation("AttachmentVersions", fields: [previousVersionId], references: [id])
+  nextVersions    TaskAttachment[] @relation("AttachmentVersions")
+
+  @@index([taskId])
+  @@index([documentId])
+  @@index([uploadedBy])
+  @@map("task_attachments")
+}
+
+// Case subscription - user subscriptions for daily digest (AC: 6)
+model CaseSubscription {
+  id               String   @id @default(uuid())
+  caseId           String   @map("case_id")
+  userId           String   @map("user_id")
+  digestEnabled    Boolean  @default(true) @map("digest_enabled")
+  notifyOnTask     Boolean  @default(true) @map("notify_on_task")
+  notifyOnDocument Boolean  @default(true) @map("notify_on_document")
+  notifyOnComment  Boolean  @default(true) @map("notify_on_comment")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, userId])
+  @@index([userId])
+  @@index([digestEnabled])
+  @@map("case_subscriptions")
+}
+
+// ============================================================================
+// Story 4.7: Task Analytics and Optimization
+// ============================================================================
+
+// Snapshot type for analytics aggregation
+enum SnapshotType {
+  Daily
+  Weekly
+  Monthly
+}
+
+// Task analytics snapshot - pre-aggregated metrics for performance (AC: 1, 2, 3)
+model TaskAnalyticsSnapshot {
+  id           String       @id @default(uuid())
+  firmId       String       @map("firm_id")
+  snapshotDate DateTime     @map("snapshot_date") @db.Date
+  snapshotType SnapshotType @default(Daily) @map("snapshot_type")
+
+  // Completion metrics (AC: 1)
+  totalTasksCreated      Int     @map("total_tasks_created")
+  totalTasksCompleted    Int     @map("total_tasks_completed")
+  avgCompletionTimeHours Decimal @map("avg_completion_time_hours") @db.Decimal(8, 2)
+
+  // By type breakdown (stored as JSON for flexibility)
+  completionByType Json @map("completion_by_type") // { [TaskTypeEnum]: { count, avgHours } }
+  completionByUser Json @map("completion_by_user") // { [userId]: { count, avgHours } }
+
+  // Overdue metrics (AC: 2)
+  overdueCount    Int  @map("overdue_count")
+  overdueByType   Json @map("overdue_by_type")
+  overdueByUser   Json @map("overdue_by_user")
+  bottleneckTasks Json @map("bottleneck_tasks") // Task IDs causing most delays
+
+  // Velocity metrics (AC: 3)
+  velocityScore Decimal @map("velocity_score") @db.Decimal(5, 2) // Tasks completed / target
+  velocityTrend String  @map("velocity_trend") @db.VarChar(20) // 'improving' | 'stable' | 'declining'
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([firmId, snapshotDate, snapshotType])
+  @@index([firmId])
+  @@index([snapshotDate])
+  @@map("task_analytics_snapshots")
+}
+
+// Task pattern type for AI-detected task patterns
+enum TaskPatternType {
+  CoOccurrence // Tasks frequently created together
+  Sequence // Tasks frequently follow each other
+  CaseTypeSpecific // Patterns specific to case type
+}
+
+// Task pattern analysis - AI-detected co-occurrence patterns (AC: 4)
+model TaskPatternAnalysis {
+  id          String          @id @default(uuid())
+  firmId      String          @map("firm_id")
+  patternType TaskPatternType @map("pattern_type")
+
+  // Co-occurring task pattern (AC: 4)
+  taskTypes       String[]   @map("task_types") // TaskTypeEnum values
+  caseTypes       CaseType[] @map("case_types") // Associated case types
+  occurrenceCount Int        @map("occurrence_count")
+  confidence      Decimal    @map("confidence") @db.Decimal(3, 2) // 0.00-1.00
+  suggestedName   String?    @map("suggested_name") @db.VarChar(200) // AI-suggested template name
+
+  // Pattern details
+  avgSequenceGap  Decimal? @map("avg_sequence_gap") @db.Decimal(5, 2) // Days between tasks
+  commonAssignees String[] @map("common_assignees") // User IDs frequently assigned
+
+  isTemplateCreated Boolean @default(false) @map("is_template_created")
+  templateId        String? @map("template_id") // Created template ID if converted
+  isDismissed       Boolean @default(false) @map("is_dismissed") // User dismissed this pattern
+
+  analyzedAt DateTime @default(now()) @map("analyzed_at") @db.Timestamptz
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz // Pattern validity
+
+  @@index([firmId])
+  @@index([patternType])
+  @@index([confidence])
+  @@map("task_pattern_analyses")
+}
+
+// Delegation analytics - delegation pattern analysis per user (AC: 5)
+model DelegationAnalytics {
+  id            String   @id @default(uuid())
+  firmId        String   @map("firm_id")
+  userId        String   @map("user_id")
+  analysisMonth DateTime @map("analysis_month") @db.Date // First of month
+
+  // Delegation metrics (AC: 5)
+  delegationsReceived Int  @map("delegations_received")
+  delegationsGiven    Int  @map("delegations_given")
+  delegationsByType   Json @map("delegations_by_type") // { [TaskTypeEnum]: count }
+
+  // Success metrics
+  successRate       Decimal  @map("success_rate") @db.Decimal(3, 2) // Completed on time
+  avgCompletionTime Decimal? @map("avg_completion_time") @db.Decimal(8, 2)
+
+  // Training opportunities
+  struggleAreas     String[] @map("struggle_areas") // Task types with low success
+  strengthAreas     String[] @map("strength_areas") // Task types with high success
+  suggestedTraining Json?    @map("suggested_training") // AI recommendations
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([firmId, userId, analysisMonth])
+  @@index([firmId])
+  @@index([userId])
+  @@map("delegation_analytics")
+}
+
+// Automation ROI metrics - time savings from automation features (AC: 6)
+model AutomationROIMetrics {
+  id          String   @id @default(uuid())
+  firmId      String   @map("firm_id")
+  metricMonth DateTime @map("metric_month") @db.Date
+
+  // Time savings (AC: 6)
+  templateTasksCreated  Int @map("template_tasks_created") // Tasks from templates
+  manualTasksCreated    Int @map("manual_tasks_created")
+  estimatedTimeSavedMin Int @map("estimated_time_saved_min") // Minutes saved
+
+  // NLP parser savings
+  nlpTasksCreated           Int @map("nlp_tasks_created")
+  avgParseTimeMs            Int @map("avg_parse_time_ms")
+  estimatedFormTimeSavedMin Int @map("estimated_form_time_saved_min")
+
+  // Automation impact
+  autoRemindersSet       Int @map("auto_reminders_sent")
+  autoDependencyTriggers Int @map("auto_dependency_triggers")
+  autoReassignments      Int @map("auto_reassignments") // OOO auto-reassign
+
+  // ROI calculation inputs
+  avgHourlyRate   Decimal @map("avg_hourly_rate") @db.Decimal(10, 2)
+  totalValueSaved Decimal @map("total_value_saved") @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([firmId, metricMonth])
+  @@index([firmId])
+  @@map("automation_roi_metrics")
+}
+
+// ============================================================================
+// Story 5.1: Email Integration and Synchronization
+// ============================================================================
+
+// Email model - synchronized emails from Microsoft Graph API
+model Email {
+  id                String   @id @default(uuid())
+  graphMessageId    String   @unique @map("graph_message_id") // Microsoft Graph message ID
+  conversationId    String   @map("conversation_id") // Graph conversation ID for threading
+  internetMessageId String?  @map("internet_message_id") // SMTP Message-ID header
+  subject           String   @db.VarChar(1000)
+  bodyPreview       String   @map("body_preview") @db.VarChar(500)
+  bodyContent       String   @map("body_content") @db.Text
+  bodyContentType   String   @map("body_content_type") @db.VarChar(10) // text or html
+  from              Json // { name?: string, address: string }
+  toRecipients      Json     @map("to_recipients") // Array of { name?, address }
+  ccRecipients      Json     @map("cc_recipients")
+  bccRecipients     Json     @map("bcc_recipients")
+  receivedDateTime  DateTime @map("received_date_time") @db.Timestamptz
+  sentDateTime      DateTime @map("sent_date_time") @db.Timestamptz
+  hasAttachments    Boolean  @map("has_attachments")
+  importance        String   @db.VarChar(10) // low, normal, high
+  isRead            Boolean  @map("is_read")
+  userId            String   @map("user_id") // User who owns this email
+  caseId            String?  @map("case_id") // Assigned case (nullable until categorized)
+  firmId            String   @map("firm_id")
+  syncedAt          DateTime @default(now()) @map("synced_at") @db.Timestamptz
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user        User              @relation(fields: [userId], references: [id])
+  case        Case?             @relation(fields: [caseId], references: [id])
+  firm        Firm              @relation(fields: [firmId], references: [id])
+  attachments EmailAttachment[]
+
+  // Relations (Story 5.2: Communication Intelligence)
+  extractedDeadlines   ExtractedDeadline[]
+  extractedCommitments ExtractedCommitment[]
+  extractedActionItems ExtractedActionItem[]
+  extractedQuestions   ExtractedQuestion[]
+  riskIndicators       RiskIndicator[]
+
+  // Relations (Story 5.3: Email Drafting)
+  drafts EmailDraft[]
+
+  @@index([userId])
+  @@index([caseId])
+  @@index([conversationId])
+  @@index([receivedDateTime])
+  @@index([firmId])
+  @@map("emails")
+}
+
+// Email attachment model - attachments from synchronized emails
+model EmailAttachment {
+  id                String   @id @default(uuid())
+  emailId           String   @map("email_id")
+  graphAttachmentId String   @map("graph_attachment_id")
+  name              String   @db.VarChar(500)
+  contentType       String   @map("content_type") @db.VarChar(200)
+  size              Int
+  storageUrl        String?  @map("storage_url") @db.Text // R2/OneDrive URL after saving
+  documentId        String?  @map("document_id") // Link to Document if saved to case
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  email    Email     @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id])
+
+  @@index([emailId])
+  @@index([documentId])
+  @@map("email_attachments")
+}
+
+// Email sync state model - tracks sync progress per user
+model EmailSyncState {
+  id                 String    @id @default(uuid())
+  userId             String    @unique @map("user_id")
+  deltaToken         String?   @map("delta_token") @db.Text // For incremental sync
+  subscriptionId     String?   @map("subscription_id") @db.VarChar(255) // Graph subscription ID
+  subscriptionExpiry DateTime? @map("subscription_expiry") @db.Timestamptz
+  lastSyncAt         DateTime? @map("last_sync_at") @db.Timestamptz
+  syncStatus         String    @default("pending") @map("sync_status") @db.VarChar(20) // pending, syncing, synced, error
+  errorMessage       String?   @map("error_message") @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("email_sync_states")
+}
+
+// ============================================================================
+// Story 5.2: Communication Intelligence Engine
+// ============================================================================
+
+// Extraction status for AI-extracted items
+enum ExtractionStatus {
+  Pending // Awaiting user action
+  Converted // Converted to task/event
+  Dismissed // User dismissed
+  Expired // Past due date without action
+}
+
+// Risk type classification for email content
+enum RiskType {
+  ClientDissatisfaction
+  DeadlineRisk
+  ScopeCreep
+  PaymentRisk
+  RelationshipRisk
+}
+
+// Risk severity levels
+enum RiskSeverity {
+  Low
+  Medium
+  High
+}
+
+// Extracted deadline from email content (AC: 1, 2)
+model ExtractedDeadline {
+  id              String           @id @default(uuid())
+  emailId         String           @map("email_id")
+  caseId          String?          @map("case_id")
+  firmId          String           @map("firm_id")
+  description     String           @db.Text
+  dueDate         DateTime         @map("due_date") @db.Timestamptz
+  confidence      Float // 0.0 - 1.0, maps to Low (<0.6), Medium (0.6-0.8), High (>0.8)
+  status          ExtractionStatus @default(Pending)
+  convertedTaskId String?          @map("converted_task_id")
+  dismissedAt     DateTime?        @map("dismissed_at") @db.Timestamptz
+  dismissReason   String?          @map("dismiss_reason") @db.VarChar(500)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  email         Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  case          Case? @relation(fields: [caseId], references: [id])
+  firm          Firm  @relation(fields: [firmId], references: [id])
+  convertedTask Task? @relation("DeadlineConvertedTask", fields: [convertedTaskId], references: [id])
+
+  @@index([emailId])
+  @@index([caseId])
+  @@index([status])
+  @@map("extracted_deadlines")
+}
+
+// Extracted commitment from email content (AC: 1, 2)
+model ExtractedCommitment {
+  id              String           @id @default(uuid())
+  emailId         String           @map("email_id")
+  caseId          String?          @map("case_id")
+  firmId          String           @map("firm_id")
+  party           String           @db.VarChar(200) // Who made the commitment
+  commitmentText  String           @map("commitment_text") @db.Text
+  dueDate         DateTime?        @map("due_date") @db.Timestamptz
+  confidence      Float // 0.0 - 1.0
+  status          ExtractionStatus @default(Pending)
+  convertedTaskId String?          @map("converted_task_id")
+  dismissedAt     DateTime?        @map("dismissed_at") @db.Timestamptz
+  dismissReason   String?          @map("dismiss_reason") @db.VarChar(500)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  email         Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  case          Case? @relation(fields: [caseId], references: [id])
+  firm          Firm  @relation(fields: [firmId], references: [id])
+  convertedTask Task? @relation("CommitmentConvertedTask", fields: [convertedTaskId], references: [id])
+
+  @@index([emailId])
+  @@index([caseId])
+  @@map("extracted_commitments")
+}
+
+// Extracted action item from email content (AC: 1, 2, 4)
+model ExtractedActionItem {
+  id                String           @id @default(uuid())
+  emailId           String           @map("email_id")
+  caseId            String?          @map("case_id")
+  firmId            String           @map("firm_id")
+  description       String           @db.Text
+  suggestedAssignee String?          @map("suggested_assignee") @db.VarChar(200)
+  priority          TaskPriority     @default(Medium)
+  confidence        Float // 0.0 - 1.0
+  status            ExtractionStatus @default(Pending)
+  convertedTaskId   String?          @map("converted_task_id")
+  dismissedAt       DateTime?        @map("dismissed_at") @db.Timestamptz
+  dismissReason     String?          @map("dismiss_reason") @db.VarChar(500)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  email         Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  case          Case? @relation(fields: [caseId], references: [id])
+  firm          Firm  @relation(fields: [firmId], references: [id])
+  convertedTask Task? @relation("ActionItemConvertedTask", fields: [convertedTaskId], references: [id])
+
+  @@index([emailId])
+  @@index([caseId])
+  @@map("extracted_action_items")
+}
+
+// Extracted question requiring response (AC: 1)
+model ExtractedQuestion {
+  id            String           @id @default(uuid())
+  emailId       String           @map("email_id")
+  caseId        String?          @map("case_id")
+  firmId        String           @map("firm_id")
+  questionText  String           @map("question_text") @db.Text
+  respondBy     DateTime?        @map("respond_by") @db.Timestamptz
+  confidence    Float // 0.0 - 1.0
+  status        ExtractionStatus @default(Pending)
+  isAnswered    Boolean          @default(false) @map("is_answered")
+  answeredAt    DateTime?        @map("answered_at") @db.Timestamptz
+  dismissedAt   DateTime?        @map("dismissed_at") @db.Timestamptz
+  dismissReason String?          @map("dismiss_reason") @db.VarChar(500)
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  case  Case? @relation(fields: [caseId], references: [id])
+  firm  Firm  @relation(fields: [firmId], references: [id])
+
+  @@index([emailId])
+  @@index([caseId])
+  @@index([status])
+  @@map("extracted_questions")
+}
+
+// Risk indicator from email analysis (AC: 6)
+model RiskIndicator {
+  id              String       @id @default(uuid())
+  emailId         String       @map("email_id")
+  caseId          String?      @map("case_id")
+  firmId          String       @map("firm_id")
+  type            RiskType
+  severity        RiskSeverity
+  description     String       @db.Text
+  evidence        String       @db.Text // Quote from email
+  suggestedAction String?      @map("suggested_action") @db.Text
+  isResolved      Boolean      @default(false) @map("is_resolved")
+  resolvedAt      DateTime?    @map("resolved_at") @db.Timestamptz
+  resolvedBy      String?      @map("resolved_by")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  case  Case? @relation(fields: [caseId], references: [id])
+  firm  Firm  @relation(fields: [firmId], references: [id])
+
+  @@index([caseId])
+  @@index([type])
+  @@index([severity])
+  @@map("risk_indicators")
+}
+
+// Thread summary for opposing counsel analysis (AC: 5)
+model ThreadSummary {
+  id                      String   @id @default(uuid())
+  conversationId          String   @unique @map("conversation_id") // Graph conversation ID
+  caseId                  String?  @map("case_id")
+  firmId                  String   @map("firm_id")
+  opposingCounselPosition String?  @map("opposing_counsel_position") @db.Text
+  keyArguments            Json?    @map("key_arguments") // Array of argument summaries
+  positionChanges         Json?    @map("position_changes") // Array of position change events
+  lastAnalyzedAt          DateTime @map("last_analyzed_at") @db.Timestamptz
+  messageCount            Int      @map("message_count")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  case Case? @relation(fields: [caseId], references: [id])
+  firm Firm  @relation(fields: [firmId], references: [id])
+
+  @@index([caseId])
+  @@map("thread_summaries")
+}
+
+// ============================================================================
+// Story 5.3: AI-Powered Email Drafting
+// ============================================================================
+
+// Email tone options for draft generation
+enum EmailTone {
+  Formal // Court, official correspondence
+  Professional // Standard business communication
+  Brief // Quick acknowledgment, simple responses
+  Detailed // Comprehensive, thorough explanations
+}
+
+// Recipient type for adapting email language
+enum RecipientType {
+  Client
+  OpposingCounsel
+  Court
+  ThirdParty
+  Internal
+}
+
+// Draft status for workflow tracking
+enum DraftStatus {
+  Generated // AI generated, not yet reviewed
+  Editing // User is editing
+  Ready // Ready to send
+  Sent // Email sent
+  Discarded // User discarded draft
+}
+
+// Email draft model - AI-generated email responses
+model EmailDraft {
+  id                   String        @id @default(uuid())
+  emailId              String        @map("email_id") // Original email being replied to
+  caseId               String?       @map("case_id")
+  firmId               String        @map("firm_id")
+  userId               String        @map("user_id") // User who requested draft
+  tone                 EmailTone     @default(Professional)
+  recipientType        RecipientType @default(Client)
+  subject              String        @db.VarChar(500)
+  body                 String        @db.Text
+  htmlBody             String?       @map("html_body") @db.Text
+  suggestedAttachments Json?         @map("suggested_attachments") // Array of {documentId, title, relevance}
+  confidence           Float // 0.0 - 1.0
+  status               DraftStatus   @default(Generated)
+  userEdits            Json?         @map("user_edits") // Track user modifications
+  sentAt               DateTime?     @map("sent_at") @db.Timestamptz
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  email                 Email                  @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  case                  Case?                  @relation(fields: [caseId], references: [id])
+  firm                  Firm                   @relation(fields: [firmId], references: [id])
+  user                  User                   @relation(fields: [userId], references: [id])
+  refinements           DraftRefinement[]
+  attachmentSuggestions AttachmentSuggestion[]
+  editHistory           DraftEditHistory[] // Story 5.6: Track edits for learning
+
+  @@index([emailId])
+  @@index([caseId])
+  @@index([userId])
+  @@index([status])
+  @@map("email_drafts")
+}
+
+// Draft refinement model - tracks AI refinement history
+model DraftRefinement {
+  id           String   @id @default(uuid())
+  draftId      String   @map("draft_id")
+  instruction  String   @db.Text // User's refinement request
+  previousBody String   @map("previous_body") @db.Text
+  refinedBody  String   @map("refined_body") @db.Text
+  tokensUsed   Int      @map("tokens_used")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  draft EmailDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+  @@map("draft_refinements")
+}
+
+// Attachment suggestion model - AI-suggested attachments for email drafts
+model AttachmentSuggestion {
+  id             String   @id @default(uuid())
+  draftId        String   @map("draft_id")
+  documentId     String   @map("document_id")
+  title          String   @db.VarChar(500)
+  reason         String   @db.Text // Why this document is relevant
+  relevanceScore Float    @map("relevance_score") // 0.0 - 1.0
+  isSelected     Boolean  @default(false) @map("is_selected")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  draft    EmailDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  document Document   @relation(fields: [documentId], references: [id])
+
+  @@index([draftId])
+  @@map("attachment_suggestions")
+}
+
+// ============================================================================
+// Story 5.4: Proactive AI Suggestions System
+// ============================================================================
+
+// Suggestion type - what kind of suggestion this is
+enum SuggestionType {
+  MorningBriefing // Daily prioritized task list
+  TaskSuggestion // Suggested next action
+  PatternMatch // Based on learned patterns
+  DeadlineWarning // Upcoming deadline alert
+  DocumentCheck // Document completeness issue
+  FollowUp // Follow-up action reminder
+  RiskAlert // Risk-based suggestion
+}
+
+// Suggestion category - what area the suggestion relates to
+enum SuggestionCategory {
+  Task // Task-related suggestions
+  Communication // Email/communication suggestions
+  Document // Document-related suggestions
+  Calendar // Calendar/scheduling suggestions
+  Compliance // Compliance/deadline suggestions
+}
+
+// Suggestion priority level
+enum SuggestionPriority {
+  Low
+  Normal
+  High
+  Urgent
+}
+
+// Suggestion status - lifecycle of a suggestion
+enum SuggestionStatus {
+  Pending // Awaiting user action
+  Accepted // User accepted suggestion
+  Dismissed // User dismissed
+  Expired // Suggestion expired without action
+  AutoApplied // System auto-applied (for low-risk actions)
+}
+
+// AI Suggestion model - stores AI-generated suggestions for users
+model AISuggestion {
+  id              String             @id @default(uuid())
+  firmId          String             @map("firm_id")
+  userId          String             @map("user_id")
+  caseId          String?            @map("case_id")
+  type            SuggestionType
+  category        SuggestionCategory
+  title           String             @db.VarChar(500)
+  description     String             @db.Text
+  suggestedAction String?            @map("suggested_action") @db.Text
+  actionPayload   Json?              @map("action_payload") // Type-specific action data
+  confidence      Float // 0.0 - 1.0
+  priority        SuggestionPriority @default(Normal)
+  context         Json? // Context that triggered suggestion
+  status          SuggestionStatus   @default(Pending)
+  dismissedAt     DateTime?          @map("dismissed_at") @db.Timestamptz
+  dismissReason   String?            @map("dismiss_reason") @db.VarChar(500)
+  acceptedAt      DateTime?          @map("accepted_at") @db.Timestamptz
+  expiresAt       DateTime?          @map("expires_at") @db.Timestamptz
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm     Firm                 @relation(fields: [firmId], references: [id])
+  user     User                 @relation(fields: [userId], references: [id])
+  case     Case?                @relation(fields: [caseId], references: [id])
+  feedback SuggestionFeedback[]
+
+  @@index([userId, status])
+  @@index([caseId])
+  @@index([firmId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("ai_suggestions")
+}
+
+// User action pattern model - stores learned user behavior patterns
+model UserActionPattern {
+  id              String   @id @default(uuid())
+  firmId          String   @map("firm_id")
+  userId          String   @map("user_id")
+  patternType     String   @map("pattern_type") @db.VarChar(100) // 'post_filing_client_update', 'morning_email_check', etc.
+  triggerContext  Json     @map("trigger_context") // What triggers this pattern
+  actionSequence  Json     @map("action_sequence") // Sequence of actions taken
+  occurrenceCount Int      @default(1) @map("occurrence_count")
+  lastOccurrence  DateTime @map("last_occurrence") @db.Timestamptz
+  confidence      Float // 0.0 - 1.0 based on consistency
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, patternType])
+  @@index([firmId])
+  @@index([userId])
+  @@index([confidence])
+  @@map("user_action_patterns")
+}
+
+// Morning briefing model - stores daily AI-generated briefings for users
+model MorningBriefing {
+  id               String    @id @default(uuid())
+  firmId           String    @map("firm_id")
+  userId           String    @map("user_id")
+  briefingDate     DateTime  @map("briefing_date") @db.Date
+  prioritizedTasks Json      @map("prioritized_tasks") // Array of { taskId, priority, reason }
+  keyDeadlines     Json      @map("key_deadlines") // Array of upcoming deadlines
+  riskAlerts       Json      @map("risk_alerts") // Array of risk indicators
+  suggestions      Json // Array of AI suggestions for the day
+  summary          String    @db.Text // AI-generated summary
+  isViewed         Boolean   @default(false) @map("is_viewed")
+  viewedAt         DateTime? @map("viewed_at") @db.Timestamptz
+  generatedAt      DateTime  @default(now()) @map("generated_at") @db.Timestamptz
+  tokensUsed       Int       @map("tokens_used")
+
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, briefingDate])
+  @@index([firmId])
+  @@index([userId])
+  @@index([briefingDate])
+  @@map("morning_briefings")
+}
+
+// Document completeness check model - tracks document validation results
+model DocumentCompletenessCheck {
+  id           String    @id @default(uuid())
+  documentId   String    @map("document_id")
+  firmId       String    @map("firm_id")
+  documentType String    @map("document_type") @db.VarChar(100)
+  missingItems Json      @map("missing_items") // Array of { item, severity, suggestion }
+  completeness Float // 0.0 - 1.0 completeness score
+  checkType    String    @map("check_type") @db.VarChar(50) // 'signature', 'section', 'reference'
+  isResolved   Boolean   @default(false) @map("is_resolved")
+  resolvedAt   DateTime? @map("resolved_at") @db.Timestamptz
+  resolvedBy   String?   @map("resolved_by")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([firmId])
+  @@index([isResolved])
+  @@map("document_completeness_checks")
+}
+
+// Suggestion feedback model - tracks user feedback on suggestions for learning
+model SuggestionFeedback {
+  id             String   @id @default(uuid())
+  suggestionId   String   @map("suggestion_id")
+  userId         String   @map("user_id")
+  firmId         String   @map("firm_id")
+  action         String   @db.VarChar(50) // 'accepted', 'dismissed', 'modified', 'ignored'
+  modifiedAction Json?    @map("modified_action") // What user did instead
+  feedbackReason String?  @map("feedback_reason") @db.VarChar(500)
+  responseTimeMs Int?     @map("response_time_ms") // Time to respond
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  suggestion AISuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+
+  @@index([suggestionId])
+  @@index([userId])
+  @@index([firmId])
+  @@index([action])
+  @@map("suggestion_feedback")
+}
+
+// ============================================================================
+// Story 5.5: Multi-Channel Communication Hub
+// ============================================================================
+
+// Communication channel types
+enum CommunicationChannel {
+  Email // Synchronized from Microsoft Graph
+  InternalNote // Platform internal notes
+  WhatsApp // Future: WhatsApp Business API
+  Phone // Phone call logs
+  Meeting // Meeting notes
+  SMS // Future: SMS integration
+}
+
+// Communication direction
+enum CommunicationDirection {
+  Inbound // Received communication
+  Outbound // Sent communication
+  Internal // Internal note/memo
+}
+
+// Privacy level for sensitive communications
+enum PrivacyLevel {
+  Normal // Visible to all case team members
+  Confidential // Visible to specified users only
+  AttorneyOnly // Visible to attorneys only (Partners, Associates)
+  PartnerOnly // Visible to Partners only
+}
+
+// Template categories for communication templates
+enum TemplateCategory {
+  ClientUpdate // Case status updates to clients
+  CourtFiling // Court filing notifications
+  AppointmentReminder // Meeting/appointment reminders
+  DocumentRequest // Request for documents
+  InvoiceReminder // Payment/invoice reminders
+  CaseOpening // New case welcome
+  CaseClosing // Case conclusion notification
+  General // General purpose
+}
+
+// Bulk communication recipient types
+enum BulkRecipientType {
+  CaseClients // All clients on a specific case
+  CaseTeam // All team members on a case
+  AllClients // All firm clients
+  CustomList // Custom recipient list
+  CaseTypeClients // Clients by case type
+}
+
+// Bulk communication status
+enum BulkCommunicationStatus {
+  Draft // Being composed
+  Scheduled // Scheduled for future send
+  InProgress // Currently sending
+  Completed // All sent
+  PartiallyFailed // Some failed
+  Cancelled // User cancelled
+}
+
+// Export format options
+enum ExportFormat {
+  PDF // Formatted PDF document
+  CSV // Spreadsheet format
+  JSON // Machine-readable format
+  DOCX // Word document
+}
+
+// Export status
+enum ExportStatus {
+  Processing // Export in progress
+  Completed // Ready for download
+  Failed // Export failed
+  Expired // Download link expired
+}
+
+// Unified communication entry - stores all communication types in one table
+model CommunicationEntry {
+  id             String                 @id @default(uuid())
+  firmId         String                 @map("firm_id")
+  caseId         String                 @map("case_id")
+  channelType    CommunicationChannel   @map("channel_type")
+  direction      CommunicationDirection
+  subject        String?                @db.VarChar(500)
+  body           String                 @db.Text
+  htmlBody       String?                @map("html_body") @db.Text
+  senderId       String                 @map("sender_id")
+  senderName     String                 @map("sender_name") @db.VarChar(200)
+  senderEmail    String?                @map("sender_email") @db.VarChar(255)
+  recipients     Json // Array of { id, name, email, type: 'to'|'cc'|'bcc' }
+  externalId     String?                @map("external_id") @db.VarChar(255) // Graph message ID, WhatsApp ID, etc.
+  parentId       String?                @map("parent_id") // For threaded conversations
+  isPrivate      Boolean                @default(false) @map("is_private")
+  privacyLevel   PrivacyLevel           @default(Normal) @map("privacy_level")
+  allowedViewers String[]               @map("allowed_viewers") // User IDs if private
+  hasAttachments Boolean                @default(false) @map("has_attachments")
+  metadata       Json? // Channel-specific metadata
+  sentAt         DateTime               @map("sent_at") @db.Timestamptz
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime               @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm        Firm                      @relation(fields: [firmId], references: [id])
+  case        Case                      @relation(fields: [caseId], references: [id])
+  sender      User                      @relation("CommunicationSender", fields: [senderId], references: [id])
+  parent      CommunicationEntry?       @relation("CommunicationThread", fields: [parentId], references: [id])
+  children    CommunicationEntry[]      @relation("CommunicationThread")
+  attachments CommunicationAttachment[]
+
+  @@index([caseId, sentAt])
+  @@index([firmId])
+  @@index([channelType])
+  @@index([senderId])
+  @@index([parentId])
+  @@index([externalId])
+  @@map("communication_entries")
+}
+
+// Communication attachment - attachments for communication entries
+model CommunicationAttachment {
+  id                   String   @id @default(uuid())
+  communicationEntryId String   @map("communication_entry_id")
+  fileName             String   @map("file_name") @db.VarChar(500)
+  fileSize             Int      @map("file_size")
+  mimeType             String   @map("mime_type") @db.VarChar(200)
+  storageUrl           String   @map("storage_url") @db.Text
+  documentId           String?  @map("document_id") // Link to Document if saved to case
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  communicationEntry CommunicationEntry @relation(fields: [communicationEntryId], references: [id], onDelete: Cascade)
+  document           Document?          @relation(fields: [documentId], references: [id])
+
+  @@index([communicationEntryId])
+  @@index([documentId])
+  @@map("communication_attachments")
+}
+
+// Communication template - reusable templates for standard communications
+model CommunicationTemplate {
+  id          String               @id @default(uuid())
+  firmId      String               @map("firm_id")
+  name        String               @db.VarChar(200)
+  description String?              @db.VarChar(500)
+  category    TemplateCategory
+  channelType CommunicationChannel @map("channel_type")
+  subject     String?              @db.VarChar(500)
+  body        String               @db.Text
+  htmlBody    String?              @map("html_body") @db.Text
+  variables   Json // Array of { name, description, defaultValue, required }
+  isActive    Boolean              @default(true) @map("is_active")
+  isGlobal    Boolean              @default(false) @map("is_global") // Available to all users
+  createdBy   String               @map("created_by")
+  usageCount  Int                  @default(0) @map("usage_count")
+  lastUsedAt  DateTime?            @map("last_used_at") @db.Timestamptz
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm    Firm @relation(fields: [firmId], references: [id])
+  creator User @relation("TemplateCreator", fields: [createdBy], references: [id])
+
+  @@index([firmId])
+  @@index([category])
+  @@index([channelType])
+  @@index([isActive])
+  @@map("communication_templates")
+}
+
+// Bulk communication - send messages to multiple recipients
+model BulkCommunication {
+  id              String                  @id @default(uuid())
+  firmId          String                  @map("firm_id")
+  caseId          String?                 @map("case_id") // Optional: case-specific bulk comm
+  templateId      String?                 @map("template_id")
+  subject         String                  @db.VarChar(500)
+  body            String                  @db.Text
+  htmlBody        String?                 @map("html_body") @db.Text
+  channelType     CommunicationChannel    @map("channel_type")
+  recipientType   BulkRecipientType       @map("recipient_type")
+  recipientFilter Json                    @map("recipient_filter") // Criteria for selecting recipients
+  recipients      Json // Array of resolved recipients
+  totalRecipients Int                     @map("total_recipients")
+  sentCount       Int                     @default(0) @map("sent_count")
+  failedCount     Int                     @default(0) @map("failed_count")
+  status          BulkCommunicationStatus @default(Draft)
+  scheduledFor    DateTime?               @map("scheduled_for") @db.Timestamptz
+  startedAt       DateTime?               @map("started_at") @db.Timestamptz
+  completedAt     DateTime?               @map("completed_at") @db.Timestamptz
+  createdBy       String                  @map("created_by")
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime                @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm    Firm                   @relation(fields: [firmId], references: [id])
+  case    Case?                  @relation(fields: [caseId], references: [id])
+  creator User                   @relation("BulkCommunicationCreator", fields: [createdBy], references: [id])
+  logs    BulkCommunicationLog[]
+
+  @@index([firmId])
+  @@index([caseId])
+  @@index([status])
+  @@index([createdBy])
+  @@map("bulk_communications")
+}
+
+// Bulk communication log - tracks individual sends
+model BulkCommunicationLog {
+  id                  String    @id @default(uuid())
+  bulkCommunicationId String    @map("bulk_communication_id")
+  recipientId         String    @map("recipient_id")
+  recipientEmail      String    @map("recipient_email") @db.VarChar(255)
+  recipientName       String    @map("recipient_name") @db.VarChar(200)
+  status              String    @db.VarChar(20) // sent, failed, pending
+  errorMessage        String?   @map("error_message") @db.Text
+  sentAt              DateTime? @map("sent_at") @db.Timestamptz
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  bulkCommunication BulkCommunication @relation(fields: [bulkCommunicationId], references: [id], onDelete: Cascade)
+
+  @@index([bulkCommunicationId])
+  @@index([status])
+  @@map("bulk_communication_logs")
+}
+
+// Communication export - export communication history for case documentation
+model CommunicationExport {
+  id                 String       @id @default(uuid())
+  firmId             String       @map("firm_id")
+  caseId             String       @map("case_id")
+  exportedBy         String       @map("exported_by")
+  format             ExportFormat
+  dateRangeFrom      DateTime?    @map("date_range_from") @db.Timestamptz
+  dateRangeTo        DateTime?    @map("date_range_to") @db.Timestamptz
+  channelTypes       Json         @map("channel_types") // Array of CommunicationChannel
+  includeAttachments Boolean      @default(false) @map("include_attachments")
+  totalEntries       Int          @map("total_entries")
+  fileUrl            String?      @map("file_url") @db.Text
+  status             ExportStatus @default(Processing)
+  errorMessage       String?      @map("error_message") @db.Text
+  expiresAt          DateTime     @map("expires_at") @db.Timestamptz // Auto-delete after expiry
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  completedAt        DateTime?    @map("completed_at") @db.Timestamptz
+
+  firm     Firm @relation(fields: [firmId], references: [id])
+  case     Case @relation(fields: [caseId], references: [id])
+  exporter User @relation("CommunicationExporter", fields: [exportedBy], references: [id])
+
+  @@index([caseId])
+  @@index([exportedBy])
+  @@index([status])
+  @@map("communication_exports")
+}
+
+// ============================================================================
+// Story 5.6: AI Learning and Personalization Models
+// ============================================================================
+
+// Writing style profile - learns user's writing style from draft edits (AC: 1)
+model WritingStyleProfile {
+  id                    String    @id @default(uuid())
+  firmId                String    @map("firm_id")
+  userId                String    @unique @map("user_id")
+  formalityLevel        Float     @default(0.5) @map("formality_level") // 0=casual, 1=formal
+  averageSentenceLength Float     @default(15) @map("average_sentence_length")
+  vocabularyComplexity  Float     @default(0.5) @map("vocabulary_complexity") // 0=simple, 1=complex
+  preferredTone         String    @default("Professional") @map("preferred_tone") @db.VarChar(50)
+  commonPhrases         Json      @default("[]") @map("common_phrases") // Array of { phrase, frequency, context }
+  punctuationStyle      Json      @default("{}") @map("punctuation_style") // { useOxfordComma, preferSemicolons, etc. }
+  languagePatterns      Json      @default("{}") @map("language_patterns") // Romanian vs English patterns
+  sampleCount           Int       @default(0) @map("sample_count") // Number of edits analyzed
+  lastAnalyzedAt        DateTime? @map("last_analyzed_at") @db.Timestamptz
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@map("writing_style_profiles")
+}
+
+// Snippet category for personal snippets (AC: 2)
+enum SnippetCategory {
+  Greeting // Email greetings
+  Closing // Email closings/signatures
+  LegalPhrase // Common legal phrases
+  ClientResponse // Standard client responses
+  InternalNote // Internal communication snippets
+  Custom // User-defined
+}
+
+// Personal snippet - frequently used phrases saved as shortcuts (AC: 2)
+model PersonalSnippet {
+  id             String          @id @default(uuid())
+  firmId         String          @map("firm_id")
+  userId         String          @map("user_id")
+  shortcut       String          @db.VarChar(50) // e.g., "/greeting", "/closing"
+  title          String          @db.VarChar(200)
+  content        String          @db.Text
+  category       SnippetCategory
+  usageCount     Int             @default(0) @map("usage_count")
+  lastUsedAt     DateTime?       @map("last_used_at") @db.Timestamptz
+  isAutoDetected Boolean         @default(false) @map("is_auto_detected") // AI detected vs manually created
+  sourceContext  Json?           @map("source_context") // Where snippet was detected
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, shortcut])
+  @@index([firmId])
+  @@index([userId])
+  @@index([category])
+  @@map("personal_snippets")
+}
+
+// Task creation pattern - learned patterns for automatic task suggestions (AC: 3)
+// Architectural Note: Separate from UserActionPattern because:
+// - UserActionPattern tracks general behavioral sequences (any action type)
+// - TaskCreationPattern stores structured task templates with specific fields
+// - Separation allows type-safe task creation without JSON parsing overhead
+model TaskCreationPattern {
+  id              String    @id @default(uuid())
+  firmId          String    @map("firm_id")
+  userId          String    @map("user_id")
+  patternName     String    @map("pattern_name") @db.VarChar(200)
+  triggerType     String    @map("trigger_type") @db.VarChar(100) // 'case_type', 'document_type', 'email_keyword', etc.
+  triggerContext  Json      @map("trigger_context") // What triggers this pattern
+  taskTemplate    Json      @map("task_template") // { type, title, description, priority, estimatedHours }
+  occurrenceCount Int       @default(1) @map("occurrence_count")
+  confidence      Float // 0.0 - 1.0
+  isActive        Boolean   @default(true) @map("is_active")
+  lastTriggeredAt DateTime? @map("last_triggered_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, patternName])
+  @@index([firmId])
+  @@index([userId])
+  @@index([confidence])
+  @@map("task_creation_patterns")
+}
+
+// Document structure preference - preferred document formatting per user (AC: 4)
+model DocumentStructurePreference {
+  id                String    @id @default(uuid())
+  firmId            String    @map("firm_id")
+  userId            String    @map("user_id")
+  documentType      String    @map("document_type") @db.VarChar(100) // 'Contract', 'Motion', etc.
+  preferredSections Json      @map("preferred_sections") // Array of { name, order, required }
+  headerStyle       Json      @map("header_style") // { format, numbering, etc. }
+  footerContent     String?   @map("footer_content") @db.Text
+  marginPreferences Json?     @map("margin_preferences") // { top, bottom, left, right }
+  fontPreferences   Json?     @map("font_preferences") // { family, size, lineHeight }
+  usageCount        Int       @default(0) @map("usage_count")
+  lastUsedAt        DateTime? @map("last_used_at") @db.Timestamptz
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentType])
+  @@index([firmId])
+  @@index([userId])
+  @@map("document_structure_preferences")
+}
+
+// Response time pattern - tracks user's task completion timing patterns (AC: 5)
+model ResponseTimePattern {
+  id                   String   @id @default(uuid())
+  firmId               String   @map("firm_id")
+  userId               String   @map("user_id")
+  taskType             String   @map("task_type") @db.VarChar(100)
+  caseType             String?  @map("case_type") @db.VarChar(100)
+  averageResponseHours Float    @map("average_response_hours")
+  medianResponseHours  Float    @map("median_response_hours")
+  minResponseHours     Float    @map("min_response_hours")
+  maxResponseHours     Float    @map("max_response_hours")
+  sampleCount          Int      @default(0) @map("sample_count")
+  stdDeviation         Float?   @map("std_deviation")
+  dayOfWeekPattern     Json?    @map("day_of_week_pattern") // { monday: avgHours, tuesday: avgHours, etc. }
+  timeOfDayPattern     Json?    @map("time_of_day_pattern") // { morning: avgHours, afternoon: avgHours, etc. }
+  lastCalculatedAt     DateTime @map("last_calculated_at") @db.Timestamptz
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskType, caseType])
+  @@index([firmId])
+  @@index([userId])
+  @@map("response_time_patterns")
+}
+
+// Edit type for draft edit history (AC: 1)
+enum EditType {
+  Addition // User added content
+  Deletion // User removed content
+  Replacement // User replaced content
+  Reorder // User reordered content
+  StyleChange // Formatting/style changes
+}
+
+// Draft edit history - tracks edits to learn writing style (AC: 1)
+model DraftEditHistory {
+  id              String   @id @default(uuid())
+  firmId          String   @map("firm_id")
+  userId          String   @map("user_id")
+  draftId         String   @map("draft_id") // EmailDraft ID
+  originalText    String   @map("original_text") @db.Text
+  editedText      String   @map("edited_text") @db.Text
+  editType        EditType @map("edit_type")
+  editLocation    String   @map("edit_location") @db.VarChar(100) // 'greeting', 'body', 'closing', 'full'
+  isStyleAnalyzed Boolean  @default(false) @map("is_style_analyzed")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  firm  Firm       @relation(fields: [firmId], references: [id])
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  draft EmailDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([firmId])
+  @@index([isStyleAnalyzed])
+  @@map("draft_edit_history")
 }

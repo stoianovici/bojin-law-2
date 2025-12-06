@@ -1,0 +1,325 @@
+# AI Service Load Test Scenarios
+# Story 3.8: Document System Testing and Performance - Task 3
+#
+# Tests concurrent AI operations:
+# - Document generation (10, 25, 50 users)
+# - Semantic diff analysis (20, 50 users)
+# - Clause suggestions (50, 100 users)
+#
+# Performance thresholds:
+# - Document generation (Haiku): < 5s p95
+# - Document generation (Sonnet): < 15s p95
+# - Semantic diff: < 8s p95
+# - Clause suggestion: < 2s p95
+
+config:
+  target: "{{ $processEnvironment.API_URL || 'http://localhost:3000' }}"
+  processor: "../processors/auth.js"
+
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+  http:
+    timeout: 60000  # 60 seconds for AI operations
+
+  variables:
+    testCaseId: "case-ai-load-test-001"
+
+# AI Service Load Test Phases - more conservative due to AI costs
+phases:
+  - name: "Smoke Test"
+    duration: 30
+    arrivalRate: 1
+
+  - name: "Ramp to 10 users"
+    duration: 60
+    arrivalRate: 2
+    rampTo: 10
+
+  - name: "Sustained 10 users"
+    duration: 120
+    arrivalRate: 10
+
+  - name: "Ramp to 25 users"
+    duration: 60
+    arrivalRate: 10
+    rampTo: 25
+
+  - name: "Sustained 25 users"
+    duration: 120
+    arrivalRate: 25
+
+  - name: "Ramp to 50 users"
+    duration: 60
+    arrivalRate: 25
+    rampTo: 50
+
+  - name: "Peak 50 users"
+    duration: 120
+    arrivalRate: 50
+
+  - name: "Cool down"
+    duration: 60
+    arrivalRate: 50
+    rampTo: 5
+
+scenarios:
+  # Document Generation - Haiku (Fast, cheaper - 40% weight)
+  - name: "Document Generation (Haiku)"
+    weight: 40
+    flow:
+      - function: "setAuthHeader"
+
+      - post:
+          name: "Generate Document (Haiku)"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              mutation GenerateDocument($input: GenerateDocumentInput!) {
+                generateDocument(input: $input) {
+                  id
+                  content
+                  tokenUsage {
+                    inputTokens
+                    outputTokens
+                    totalTokens
+                  }
+                  latencyMs
+                  modelUsed
+                }
+              }
+            variables:
+              input:
+                documentType: "MEMO"
+                templateId: "memo-standard"
+                context:
+                  subject: "Load Test Memo {{ $randomNumber(1, 10000) }}"
+                  recipient: "Test Team"
+                  summary: "This is a load test memo for performance validation."
+                modelTier: "HAIKU"
+                caseId: "{{ testCaseId }}"
+          capture:
+            - json: "$.data.generateDocument.latencyMs"
+              as: "generationLatency"
+            - json: "$.data.generateDocument.tokenUsage.totalTokens"
+              as: "tokensUsed"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.generateDocument.content"
+
+      - think: 2
+
+  # Document Generation - Sonnet (Higher quality - 15% weight)
+  - name: "Document Generation (Sonnet)"
+    weight: 15
+    flow:
+      - function: "setAuthHeader"
+
+      - post:
+          name: "Generate Document (Sonnet)"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              mutation GenerateDocument($input: GenerateDocumentInput!) {
+                generateDocument(input: $input) {
+                  id
+                  content
+                  tokenUsage {
+                    inputTokens
+                    outputTokens
+                    totalTokens
+                  }
+                  latencyMs
+                  modelUsed
+                }
+              }
+            variables:
+              input:
+                documentType: "CONTRACT"
+                templateId: "contract-service"
+                context:
+                  clientName: "Load Test Client {{ $randomNumber(1, 10000) }}"
+                  serviceName: "Performance Testing Services"
+                  duration: "12 months"
+                modelTier: "SONNET"
+                caseId: "{{ testCaseId }}"
+          capture:
+            - json: "$.data.generateDocument.latencyMs"
+              as: "generationLatency"
+            - json: "$.data.generateDocument.tokenUsage.totalTokens"
+              as: "tokensUsed"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.generateDocument.content"
+
+      - think: 3
+
+  # Semantic Diff Analysis (20% weight)
+  - name: "Semantic Diff Analysis"
+    weight: 20
+    flow:
+      - function: "setAuthHeader"
+
+      # Get document versions first
+      - post:
+          name: "Get Document Versions"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query GetDocumentVersions($documentId: ID!) {
+                documentVersions(documentId: $documentId) {
+                  id
+                  version
+                  createdAt
+                }
+              }
+            variables:
+              documentId: "doc-test-versions"
+          capture:
+            - json: "$.data.documentVersions[0].id"
+              as: "baseVersionId"
+            - json: "$.data.documentVersions[1].id"
+              as: "compareVersionId"
+          expect:
+            - statusCode: 200
+
+      # Analyze semantic differences
+      - post:
+          name: "Semantic Diff"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query SemanticDiff($baseVersionId: ID!, $compareVersionId: ID!) {
+                semanticDiff(baseVersionId: $baseVersionId, compareVersionId: $compareVersionId) {
+                  changes {
+                    type
+                    description
+                    severity
+                    oldContent
+                    newContent
+                  }
+                  riskLevel
+                  summary
+                  latencyMs
+                }
+              }
+            variables:
+              baseVersionId: "{{ baseVersionId }}"
+              compareVersionId: "{{ compareVersionId }}"
+          capture:
+            - json: "$.data.semanticDiff.latencyMs"
+              as: "diffLatency"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.semanticDiff.changes"
+
+      - think: 2
+
+  # Clause Suggestions (25% weight)
+  - name: "Clause Suggestions"
+    weight: 25
+    flow:
+      - function: "setAuthHeader"
+
+      - post:
+          name: "Get Clause Suggestions"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              query GetClauseSuggestions($input: ClauseSuggestionInput!) {
+                clauseSuggestions(input: $input) {
+                  suggestions {
+                    id
+                    clauseType
+                    suggestedText
+                    explanation
+                    confidence
+                    precedentSource
+                  }
+                  totalCount
+                  latencyMs
+                }
+              }
+            variables:
+              input:
+                documentId: "doc-clause-test"
+                position: 1500
+                context: "This agreement shall be governed by the laws of..."
+                clauseTypes: ["GOVERNING_LAW", "JURISDICTION", "DISPUTE_RESOLUTION"]
+          capture:
+            - json: "$.data.clauseSuggestions.latencyMs"
+              as: "suggestionLatency"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.clauseSuggestions.suggestions"
+
+      - think: 1
+
+# Rate limiting test scenario - separate profile
+# Run with: artillery run scenarios/ai-service.yml --config config-ratelimit.yml
+---
+# Rate Limit Testing Profile
+config:
+  target: "{{ $processEnvironment.API_URL || 'http://localhost:3000' }}"
+  processor: "../processors/auth.js"
+  http:
+    timeout: 30000
+
+phases:
+  - name: "Burst Load"
+    duration: 30
+    arrivalRate: 100
+
+  - name: "Sustained High"
+    duration: 60
+    arrivalRate: 150
+
+scenarios:
+  - name: "Rate Limit Test"
+    weight: 100
+    flow:
+      - function: "setAuthHeader"
+      - post:
+          name: "Rate Limited Request"
+          url: "/graphql"
+          headers:
+            Content-Type: "application/json"
+          json:
+            query: |
+              mutation GenerateDocument($input: GenerateDocumentInput!) {
+                generateDocument(input: $input) {
+                  id
+                }
+              }
+            variables:
+              input:
+                documentType: "MEMO"
+                templateId: "memo-standard"
+                context:
+                  subject: "Rate Limit Test"
+                modelTier: "HAIKU"
+          # Expect 429 responses under rate limiting
+          expect:
+            - statusCode:
+                - 200
+                - 429
+
+# Performance assertions for AI operations
+ensure:
+  # Haiku generation < 5s at p95
+  # Note: Artillery aggregates all scenarios, so we set a reasonable middle ground
+  p95: 8000
+  # Higher error tolerance for AI due to rate limiting
+  maxErrorRate: 5

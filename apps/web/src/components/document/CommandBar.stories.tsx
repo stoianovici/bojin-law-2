@@ -20,6 +20,12 @@ const meta: Meta<typeof CommandBar> = {
 export default meta;
 type Story = StoryObj<typeof CommandBar>;
 
+type CommandBarArgs = {
+  onCommandSubmit: (command: string) => void;
+  isLoading: boolean;
+  resultMessage?: string;
+};
+
 /**
  * Default state with empty input
  */
@@ -28,7 +34,7 @@ export const Default: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
   },
-  render: (args) => (
+  render: (args: { onCommandSubmit: (command: string) => void; isLoading: boolean }) => (
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <p>Editor content area (command bar fixed at bottom)</p>
@@ -46,7 +52,7 @@ export const WithInputText: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
   },
-  render: (args) => {
+  render: (args: CommandBarArgs) => {
     const [command, setCommand] = React.useState('Adaugă clauză de confidențialitate');
     return (
       <div className="h-[400px] relative bg-gray-50">
@@ -67,7 +73,7 @@ export const Loading: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: true,
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <p>Processing command...</p>
@@ -86,7 +92,7 @@ export const WithResultMessage: Story = {
     isLoading: false,
     resultMessage: 'Clauza de confidențialitate a fost adăugată cu succes la documentul dumneavoastră.',
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <p>Command executed successfully!</p>
@@ -104,7 +110,7 @@ export const WithSuggestions: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
   },
-  render: (args) => {
+  render: (args: CommandBarArgs) => {
     const [isFocused, setIsFocused] = React.useState(true);
     return (
       <div className="h-[500px] relative bg-gray-50">
@@ -129,14 +135,14 @@ export const WithSuggestions: Story = {
  */
 export const InteractiveSubmit: Story = {
   args: {
-    onCommandSubmit: (command) => {
+    onCommandSubmit: (command: string) => {
       action('command-submitted')(command);
       console.log('Command executed:', command);
       alert(`Comandă executată: "${command}"`);
     },
     isLoading: false,
   },
-  render: (args) => {
+  render: (args: CommandBarArgs) => {
     const [isLoading, setIsLoading] = React.useState(false);
     const [resultMessage, setResultMessage] = React.useState('');
 
@@ -180,7 +186,7 @@ export const VoiceInputInteractive: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <p>Click microphone button to test voice input</p>
@@ -205,7 +211,7 @@ export const KeyboardShortcut: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <div className="text-center">
@@ -233,7 +239,7 @@ export const RomanianCommands: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[500px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <p>Focus input to see Romanian command suggestions</p>
@@ -260,7 +266,7 @@ export const RomanianDiacritics: Story = {
     isLoading: false,
     resultMessage: 'Modificările au fost aplicate cu succes. Documentul conține acum clauza de confidențialitate și obligațiile părților.',
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[500px] relative bg-gray-50">
       <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600 p-8">
         <h3 className="text-lg font-semibold mb-4">Test Diacritice Românești</h3>
@@ -291,7 +297,7 @@ export const LongCommand: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
       <CommandBar {...args} />
     </div>
@@ -313,7 +319,7 @@ export const DisabledDuringLoading: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: true,
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <p>All buttons disabled during command execution</p>
@@ -336,7 +342,7 @@ export const MobileView: Story = {
       defaultViewport: 'mobile1',
     },
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <p>Mobile layout</p>
@@ -359,7 +365,7 @@ export const TabletView: Story = {
       defaultViewport: 'tablet',
     },
   },
-  render: (args) => (
+  render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <p>Tablet layout</p>
@@ -377,7 +383,7 @@ export const MultipleCommands: Story = {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
   },
-  render: (args) => {
+  render: (args: CommandBarArgs) => {
     const [commandHistory, setCommandHistory] = React.useState<string[]>([]);
 
     const handleSubmit = (command: string) => {

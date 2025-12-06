@@ -2,9 +2,40 @@
 # GraphQL schema for in-app notifications
 
 enum NotificationType {
+  # Case Approval (Story 2.8.2)
   CasePendingApproval
   CaseApproved
   CaseRejected
+  # Document Review (Story 3.6)
+  DocumentReviewRequested
+  DocumentReviewAssigned
+  DocumentApproved
+  DocumentRejected
+  DocumentRevisionRequested
+  DocumentCommentAdded
+  DocumentCommentMentioned
+  # Task Delegation (Story 4.2)
+  DelegationRequested
+  DelegationAccepted
+  DelegationDeclined
+  # Task Reminder and Dependency (Story 4.4)
+  TaskDeadlineReminder
+  TaskOverdue
+  DependencyBlocked
+  DependencyUnblocked
+  # Task Collaboration (Story 4.6)
+  TaskCommentAdded
+  TaskCommentMentioned
+  TaskCommentReplied
+  TaskStatusUpdated
+  SubtaskCreated
+  TaskAttachmentAdded
+  # AI Suggestions (Story 5.4)
+  MorningBriefingReady
+  AISuggestionCreated
+  # Communication Hub (Story 5.5)
+  BulkCommunicationCompleted
+  CommunicationExportReady
 }
 
 type Notification {

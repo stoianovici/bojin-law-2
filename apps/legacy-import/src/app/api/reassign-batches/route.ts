@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     // Find users who finished all their batches
     for (const [userId, userBatchList] of userBatches) {
       const allComplete = userBatchList.every(
-        (b) => b.categorizedCount + b.skippedCount >= b.documentCount
+        (b: { categorizedCount: number; skippedCount: number; documentCount: number }) => b.categorizedCount + b.skippedCount >= b.documentCount
       );
       if (allComplete) {
         finishedUsers.push(userId);
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Count unassigned batches
-    const unassignedCount = batches.filter((b) => !b.assignedTo).length;
+    const unassignedCount = batches.filter((b: { assignedTo: string | null }) => !b.assignedTo).length;
 
     return NextResponse.json({
       stalledBatches,
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
 
         // Filter to only incomplete batches
         batchesToAssign = stalledBatches.filter(
-          (b) => b.categorizedCount + b.skippedCount < b.documentCount
+          (b: { categorizedCount: number; skippedCount: number; documentCount: number }) => b.categorizedCount + b.skippedCount < b.documentCount
         );
       }
 
@@ -197,9 +197,9 @@ export async function POST(request: NextRequest) {
       where: { sessionId },
     });
 
-    const unassignedCount = updatedBatches.filter((b) => !b.assignedTo).length;
+    const unassignedCount = updatedBatches.filter((b: { assignedTo: string | null }) => !b.assignedTo).length;
     const completedCount = updatedBatches.filter(
-      (b) => b.categorizedCount + b.skippedCount >= b.documentCount
+      (b: { categorizedCount: number; skippedCount: number; documentCount: number }) => b.categorizedCount + b.skippedCount >= b.documentCount
     ).length;
 
     const result: ReassignmentResult = {

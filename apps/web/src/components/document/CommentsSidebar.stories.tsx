@@ -53,14 +53,14 @@ export const AddingComment: Story = {
   args: {
     isOpen: true,
     onToggle: action('toggle'),
-    onAddComment: (text) => {
+    onAddComment: (text: string) => {
       action('add-comment')(text);
       console.log('New comment:', text);
     },
     onResolveComment: action('resolve-comment'),
     onReplyComment: action('reply-comment'),
   },
-  render: (args) => {
+  render: (args: any) => {
     const [isOpen, setIsOpen] = React.useState(true);
     return (
       <div className="h-[700px]">
@@ -195,7 +195,7 @@ export const InteractiveToggle: Story = {
     onResolveComment: action('resolve-comment'),
     onReplyComment: action('reply-comment'),
   },
-  render: (args) => {
+  render: (args: any) => {
     const [isOpen, setIsOpen] = React.useState(true);
     return (
       <div className="h-[700px] flex">
@@ -223,7 +223,7 @@ export const InteractiveResolve: Story = {
     isOpen: true,
     onToggle: action('toggle'),
     onAddComment: action('add-comment'),
-    onResolveComment: (commentId) => {
+    onResolveComment: (commentId: string) => {
       action('resolve-comment')(commentId);
       console.log('Resolved comment:', commentId);
       alert(`Comentariul ${commentId} a fost marcat ca rezolvat!`);
@@ -241,7 +241,7 @@ export const InteractiveReply: Story = {
     onToggle: action('toggle'),
     onAddComment: action('add-comment'),
     onResolveComment: action('resolve-comment'),
-    onReplyComment: (commentId, text) => {
+    onReplyComment: (commentId: string, text: string) => {
       action('reply-comment')(commentId, text);
       console.log('Reply to comment:', commentId, text);
       alert(`Răspuns la comentariul ${commentId}`);
@@ -382,7 +382,7 @@ export const FullHeight: Story = {
     onResolveComment: action('resolve-comment'),
     onReplyComment: action('reply-comment'),
   },
-  render: (args) => (
+  render: (args: any) => (
     <div className="h-[900px]">
       <CommentsSidebar {...args} />
     </div>

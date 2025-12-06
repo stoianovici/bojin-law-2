@@ -8,7 +8,7 @@
 
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
-import type { Case, CaseType, BillingType } from '@legal-platform/types';
+import type { Case, BillingType } from '@legal-platform/types';
 
 // GraphQL mutation for creating a case
 const CREATE_CASE = gql`
@@ -55,8 +55,8 @@ export interface CustomRatesInput {
 
 export interface CreateCaseInput {
   title: string;
-  clientId: string;
-  type: CaseType;
+  clientName: string;
+  type: string; // Dynamic case type code
   description: string;
   value?: number;
   metadata?: Record<string, unknown>;

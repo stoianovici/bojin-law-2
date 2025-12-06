@@ -11,8 +11,8 @@ export async function GET() {
   const prismaDebug = {
     hasPrisma: !!prisma,
     prismaType: typeof prisma,
-    hasLegacyImportSession: !!(prisma as Record<string, unknown>)?.legacyImportSession,
-    hasDocumentBatch: !!(prisma as Record<string, unknown>)?.documentBatch,
+    hasLegacyImportSession: !!(prisma as unknown as Record<string, unknown>)?.legacyImportSession,
+    hasDocumentBatch: !!(prisma as unknown as Record<string, unknown>)?.documentBatch,
     modelKeys: prisma
       ? Object.keys(prisma).filter((k) => !k.startsWith('_') && !k.startsWith('$'))
       : [],

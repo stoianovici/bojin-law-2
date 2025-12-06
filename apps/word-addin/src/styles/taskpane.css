@@ -1,0 +1,498 @@
+/**
+ * Word Add-in Task Pane Styles
+ * Story 3.4: Word Integration with Live AI Assistance
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  font-size: 14px;
+  color: #323130;
+  background-color: #faf9f8;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Task Pane Container */
+.taskpane {
+  padding: 16px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.taskpane-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #edebe9;
+  margin-bottom: 16px;
+}
+
+.taskpane-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #323130;
+}
+
+.taskpane-header .icon {
+  width: 24px;
+  height: 24px;
+  color: #0078d4;
+}
+
+/* Section Styles */
+.section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #605e5c;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Suggestion Cards */
+.suggestion-card {
+  background: #fff;
+  border: 1px solid #edebe9;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.suggestion-card:hover {
+  border-color: #0078d4;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-card.selected {
+  border-color: #0078d4;
+  background: #f3f2f1;
+}
+
+.suggestion-content {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #323130;
+  margin-bottom: 8px;
+}
+
+.suggestion-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #605e5c;
+}
+
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.confidence-badge.high {
+  background: #dff6dd;
+  color: #107c10;
+}
+
+.confidence-badge.medium {
+  background: #fff4ce;
+  color: #835c00;
+}
+
+.confidence-badge.low {
+  background: #fde7e9;
+  color: #a80000;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.btn-primary {
+  background: #0078d4;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #106ebe;
+}
+
+.btn-primary:disabled {
+  background: #c8c6c4;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #323130;
+  border: 1px solid #8a8886;
+}
+
+.btn-secondary:hover {
+  background: #f3f2f1;
+}
+
+.btn-icon {
+  padding: 8px;
+}
+
+/* Input Fields */
+.input-group {
+  margin-bottom: 12px;
+}
+
+.input-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #605e5c;
+  margin-bottom: 4px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #8a8886;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.15s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #0078d4;
+  box-shadow: 0 0 0 1px #0078d4;
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  color: #605e5c;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #edebe9;
+  border-top-color: #0078d4;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error State */
+.error-message {
+  background: #fde7e9;
+  border: 1px solid #f1707b;
+  color: #a80000;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* Success State */
+.success-message {
+  background: #dff6dd;
+  border: 1px solid #5db65b;
+  color: #107c10;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #edebe9;
+  margin-bottom: 16px;
+}
+
+.tab {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #605e5c;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.tab:hover {
+  color: #323130;
+}
+
+.tab.active {
+  color: #0078d4;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #0078d4;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: #605e5c;
+}
+
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Mode Toggle */
+.mode-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #edebe9;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #605e5c;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-btn:hover {
+  border-color: #8a8886;
+}
+
+.mode-btn.active {
+  border-color: #0078d4;
+  background: #f0f6fc;
+  color: #0078d4;
+}
+
+/* Selection Context */
+.selection-context {
+  background: #f3f2f1;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.selection-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #605e5c;
+  margin-bottom: 4px;
+}
+
+.selection-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #323130;
+  font-style: italic;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+/* Explanation Panel */
+.explanation-panel {
+  background: #fff;
+  border: 1px solid #edebe9;
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.explanation-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #323130;
+  margin-bottom: 12px;
+}
+
+.explanation-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #323130;
+  margin-bottom: 12px;
+}
+
+.legal-basis {
+  background: #f3f2f1;
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.legal-basis-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #605e5c;
+  margin-bottom: 4px;
+}
+
+.legal-basis-text {
+  font-size: 13px;
+  color: #323130;
+}
+
+.source-references {
+  margin-top: 12px;
+}
+
+.source-references-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #605e5c;
+  margin-bottom: 8px;
+}
+
+.source-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #e1dfdd;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #323130;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+/* Improvement Options */
+.improvement-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.improvement-option {
+  padding: 12px;
+  border: 1px solid #edebe9;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.improvement-option:hover {
+  border-color: #8a8886;
+}
+
+.improvement-option.selected {
+  border-color: #0078d4;
+  background: #f0f6fc;
+}
+
+.improvement-option-icon {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.improvement-option-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #323130;
+}
+
+/* Diff View */
+.diff-view {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  background: #fff;
+  border: 1px solid #edebe9;
+  border-radius: 4px;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diff-removed {
+  background: #fde7e9;
+  color: #a80000;
+  text-decoration: line-through;
+}
+
+.diff-added {
+  background: #dff6dd;
+  color: #107c10;
+}
+
+/* Footer */
+.taskpane-footer {
+  padding-top: 16px;
+  border-top: 1px solid #edebe9;
+  margin-top: 24px;
+  font-size: 11px;
+  color: #a19f9d;
+  text-align: center;
+}

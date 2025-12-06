@@ -168,7 +168,7 @@ test.describe('Dashboard Accessibility - WCAG AA Compliance', () => {
     // In a real scenario, this could be saved to a file or sent to a reporting service
     if (violations.length > 0) {
       console.log('Accessibility violations found:', violations.length);
-      violations.forEach((violation, index) => {
+      violations.forEach((violation: any, index: number) => {
         console.log(`\n${index + 1}. ${violation.id} (${violation.impact})`);
         console.log(`   ${violation.description}`);
         console.log(`   Affected elements: ${violation.nodes.length}`);

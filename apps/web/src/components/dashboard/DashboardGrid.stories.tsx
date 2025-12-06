@@ -39,7 +39,7 @@ export const EmptyGrid: Story = {
 export const WithWidgets: Story = {
   args: {
     layout: mockLayout,
-    onLayoutChange: (layout) => console.log('Layout changed:', layout),
+    onLayoutChange: (layout: typeof mockLayout) => console.log('Layout changed:', layout),
     children: mockLayout.map((item) => (
       <div key={item.i} className="bg-white border rounded-lg p-4 shadow-sm">
         <h3 className="font-semibold mb-2">Widget {item.i}</h3>
@@ -54,7 +54,7 @@ export const WithWidgets: Story = {
 export const DragModeActive: Story = {
   args: {
     layout: mockLayout,
-    onLayoutChange: (layout) => console.log('Layout changed:', layout),
+    onLayoutChange: (layout: typeof mockLayout) => console.log('Layout changed:', layout),
     children: mockLayout.map((item) => (
       <div key={item.i} className="bg-white border-2 border-dashed border-blue-400 rounded-lg p-4 shadow-lg cursor-move">
         <h3 className="font-semibold mb-2">Widget {item.i}</h3>

@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const documents = await prisma.extractedDocument.findMany({
       where: {
         sessionId,
-        batchId: { in: userBatchInfo.batches.map((b) => b.batchId) },
+        batchId: { in: userBatchInfo.batches.map((b: { batchId: string }) => b.batchId) },
       },
       select: {
         id: true,

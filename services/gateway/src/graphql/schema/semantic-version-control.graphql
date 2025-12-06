@@ -1,0 +1,231 @@
+# Semantic Version Control Schema
+# Story 3.5: Semantic Version Control System
+#
+# Types and operations for version comparison, semantic diff, and AI-powered change analysis
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+enum ChangeType {
+  ADDED
+  REMOVED
+  MODIFIED
+  MOVED
+}
+
+enum ChangeSignificance {
+  FORMATTING
+  MINOR_WORDING
+  SUBSTANTIVE
+  CRITICAL
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ResponseType {
+  ACCEPT
+  REJECT
+  COUNTER_PROPOSAL
+  CLARIFICATION
+}
+
+enum PartyRole {
+  CLIENT
+  OPPOSING
+}
+
+enum LegalChangeType {
+  TERM_MODIFICATION
+  OBLIGATION_CHANGE
+  PARTY_CHANGE
+  DATE_CHANGE
+  AMOUNT_CHANGE
+  LIABILITY_CHANGE
+  TERMINATION_CHANGE
+  FORCE_MAJEURE_CHANGE
+  PAYMENT_TERMS_CHANGE
+  SCOPE_CHANGE
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+type SemanticChange {
+  id: UUID!
+  documentId: UUID!
+  fromVersionId: UUID!
+  toVersionId: UUID!
+  changeType: ChangeType!
+  significance: ChangeSignificance!
+  beforeText: String!
+  afterText: String!
+  sectionPath: String
+  plainSummary: String!
+  legalClassification: LegalChangeType
+  riskLevel: RiskLevel
+  riskExplanation: String
+  aiConfidence: Float
+  createdAt: DateTime!
+  responseSuggestions: [ResponseSuggestion!]
+}
+
+type ResponseSuggestion {
+  id: UUID!
+  changeId: UUID!
+  suggestionType: ResponseType!
+  suggestedText: String!
+  reasoning: String
+  language: String!
+  createdAt: DateTime!
+}
+
+type ChangeBreakdown {
+  formatting: Int!
+  minorWording: Int!
+  substantive: Int!
+  critical: Int!
+}
+
+type VersionComparison {
+  fromVersion: DocumentVersionInfo!
+  toVersion: DocumentVersionInfo!
+  changes: [SemanticChange!]!
+  executiveSummary: String!
+  aggregateRisk: RiskLevel!
+  totalChanges: Int!
+  changeBreakdown: ChangeBreakdown!
+  comparedAt: DateTime!
+}
+
+type DocumentVersionInfo {
+  id: UUID!
+  documentId: UUID!
+  versionNumber: Int!
+  oneDriveVersionId: String
+  changesSummary: String
+  createdBy: UserBasic!
+  createdAt: DateTime!
+  riskLevel: RiskLevel
+}
+
+type UserBasic {
+  id: UUID!
+  firstName: String!
+  lastName: String!
+  email: String!
+}
+
+type VersionTimeline {
+  documentId: UUID!
+  versions: [DocumentVersionInfo!]!
+  totalVersions: Int!
+}
+
+type AggregateRiskResult {
+  riskLevel: RiskLevel!
+  explanation: String!
+  contributingFactors: [String!]!
+  highRiskChanges: [UUID!]!
+}
+
+type RollbackResult {
+  success: Boolean!
+  newVersionId: UUID!
+  newVersionNumber: Int!
+  message: String!
+  document: Document!
+}
+
+# ============================================================================
+# Inputs
+# ============================================================================
+
+input CompareVersionsInput {
+  documentId: UUID!
+  fromVersionId: UUID!
+  toVersionId: UUID!
+}
+
+input GenerateResponseSuggestionsInput {
+  changeId: UUID!
+  partyRole: PartyRole!
+  language: String
+}
+
+input RollbackVersionInput {
+  documentId: UUID!
+  targetVersionId: UUID!
+  reason: String
+}
+
+input SemanticChangesFilterInput {
+  documentId: UUID!
+  fromVersionId: UUID!
+  toVersionId: UUID!
+  significance: ChangeSignificance
+  legalClassification: LegalChangeType
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  # Compare two document versions
+  compareVersions(input: CompareVersionsInput!): VersionComparison!
+
+  # Get version timeline for a document
+  documentVersionTimeline(documentId: UUID!): VersionTimeline!
+
+  # Get filtered semantic changes
+  semanticChanges(input: SemanticChangesFilterInput!): [SemanticChange!]!
+
+  # Get a single semantic change by ID
+  semanticChange(id: UUID!): SemanticChange
+
+  # Get response suggestions for a change
+  responseSuggestions(changeId: UUID!): [ResponseSuggestion!]!
+
+  # Get aggregate risk for a version comparison
+  versionComparisonRisk(
+    documentId: UUID!
+    fromVersionId: UUID!
+    toVersionId: UUID!
+  ): AggregateRiskResult!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  # Rollback document to a previous version
+  rollbackToVersion(input: RollbackVersionInput!): RollbackResult!
+
+  # Generate AI response suggestions for a change
+  generateResponseSuggestions(
+    input: GenerateResponseSuggestionsInput!
+  ): [ResponseSuggestion!]!
+
+  # Apply a response suggestion to the document
+  applyResponseSuggestion(
+    suggestionId: UUID!
+    documentId: UUID!
+  ): Document!
+
+  # Refresh comparison cache for a version pair
+  refreshVersionComparison(
+    documentId: UUID!
+    fromVersionId: UUID!
+    toVersionId: UUID!
+  ): VersionComparison!
+
+  # Dismiss/hide a semantic change
+  dismissSemanticChange(changeId: UUID!): SemanticChange!
+}

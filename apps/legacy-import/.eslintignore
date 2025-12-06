@@ -4,6 +4,9 @@
 **/*.spec.ts
 **/*.spec.tsx
 
+# Ignore generated files
+src/generated/**/*
+
 # Ignore template files (draft code with intentional flexibility)
 src/templates/**/*.ts
 

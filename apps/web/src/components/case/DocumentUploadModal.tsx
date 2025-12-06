@@ -314,7 +314,7 @@ export function DocumentUploadModal({
               <div className="mt-4 space-y-2">
                 <h4 className="text-sm font-medium text-gray-700">Uploading to OneDrive...</h4>
                 <div className="max-h-48 overflow-y-auto rounded-md border border-gray-200">
-                  {progress.map((item, idx) => (
+                  {progress.map((item: UploadProgress, idx: number) => (
                     <div key={idx} className="border-b border-gray-100 px-4 py-3 last:border-b-0">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-gray-900">{item.fileName}</p>

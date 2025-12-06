@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma';
 import { requireAuth, AuthError } from '@/lib/auth';
 
 interface CategorizeRequest {
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     const wasSkipped = document.status === 'Skipped';
 
     // Update the document
-    const updatedDocument = await prisma.$transaction(async (tx) => {
+    const updatedDocument = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Update document status
       const updated = await tx.extractedDocument.update({
         where: { id: documentId },
@@ -166,9 +167,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
+      const { message, statusCode } = error;
       return NextResponse.json(
-        { error: error.message },
-        { status: error.statusCode }
+        { error: message },
+        { status: statusCode }
       );
     }
     console.error('Failed to categorize document:', error);

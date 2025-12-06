@@ -3,6 +3,9 @@
  * Based on architecture/data-models.md
  */
 
+// Imports
+import type { TaskTypeMetadata } from './task-types';
+
 // Enums
 // Story 2.11.1: Added BusinessOwner role for firm-wide financial data access
 export type UserRole = 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
@@ -374,16 +377,23 @@ export interface TaskMetadata {
 export interface Task {
   id: string; // UUID
   caseId: string; // UUID
+  firmId: string; // UUID - Required for firm isolation (Story 4.2)
   type: TaskType;
   title: string;
   description: string;
   assignedTo: string; // UUID (User ID)
   dueDate: Date;
+  dueTime?: string; // HH:mm format (Story 4.2)
   status: 'Pending' | 'InProgress' | 'Completed' | 'Cancelled';
   priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  estimatedHours?: number; // Story 4.2
   metadata: TaskMetadata;
+  typeMetadata?: TaskTypeMetadata; // Type-specific metadata (Story 4.2)
+  parentTaskId?: string; // UUID - For subtasks (Story 4.2)
+  subtasks?: Task[]; // Child tasks (Story 4.2)
   createdAt: Date;
   updatedAt: Date;
+  completedAt?: Date; // Story 4.2
 }
 
 // ============================================================================
@@ -476,6 +486,22 @@ export interface DocumentBrowserFilters {
 export interface DocumentsByCase {
   case: Case;
   documents: ClientDocumentWithDetails[];
+}
+
+// ============================================================================
+// Story 5.4: Proactive AI Suggestions - User Preferences
+// ============================================================================
+
+/**
+ * User preferences for AI and platform behavior
+ * Stored as JSON in User.preferences field
+ */
+export interface UserPreferences {
+  language: 'ro' | 'en';
+  aiSuggestionLevel: 'aggressive' | 'moderate' | 'minimal';
+  emailDigestFrequency: 'realtime' | 'hourly' | 'daily';
+  dashboardLayout: Record<string, unknown>;
+  timeZone: string;
 }
 
 // Factory override types for testing

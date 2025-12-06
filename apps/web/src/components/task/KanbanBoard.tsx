@@ -23,7 +23,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import type { Task, TaskType } from '@legal-platform/types';
-import { MOCK_USERS } from '../../constants/mock-data';
+
+// TODO: Replace with real user data from API
+const USERS: { id: string; name: string; initials: string }[] = [];
 
 /**
  * Task type color mapping (same as CalendarView)
@@ -157,9 +159,9 @@ function TaskCard({ task, onClick, isDragging = false }: TaskCardProps) {
         {/* Assignee avatar placeholder */}
         <div
           className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-[10px] font-semibold"
-          title={MOCK_USERS.find((u) => u.id === task.assignedTo)?.name || task.assignedTo}
+          title={USERS.find((u) => u.id === task.assignedTo)?.name || task.assignedTo}
         >
-          {MOCK_USERS.find((u) => u.id === task.assignedTo)?.initials || 'U'}
+          {USERS.find((u) => u.id === task.assignedTo)?.initials || 'U'}
         </div>
       </div>
 
@@ -220,7 +222,9 @@ function Column({ column, tasks, onTaskClick }: ColumnProps) {
     >
       {/* Column header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">{column.title}</h2>
+        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+          {column.title}
+        </h2>
         <span
           className="px-2 py-1 rounded-full text-xs font-semibold text-white"
           style={{ backgroundColor: column.color }}

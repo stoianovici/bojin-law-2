@@ -1,33 +1,23 @@
 /**
- * Analytics Page - Financial Dashboard
- * Story 2.11.4: Financial Dashboard UI
+ * Analytics Page - Unified Analytics Dashboard
  *
- * Comprehensive financial dashboard for Partners and Business Owners.
- * Displays revenue, utilization, profitability, and retainer metrics.
+ * Tabbed analytics dashboard combining:
+ * - Financial Analytics (Revenue, Utilization, Profitability)
+ * - Task Analytics (Completion, Overdue, Velocity, Patterns, etc.)
  */
 
 'use client';
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { DollarSign, ListTodo } from 'lucide-react';
 
 // Components
 import { FinancialData } from '../../components/auth/FinancialData';
-import { DashboardHeader } from '../../components/analytics/DashboardHeader';
-import { DateRangePicker } from '../../components/analytics/DateRangePicker';
-import { PeriodComparisonToggle } from '../../components/analytics/PeriodComparisonToggle';
-import {
-  RevenueOverviewWidget,
-  RevenueTrendWidget,
-  UtilizationWidget,
-  ProfitabilityWidget,
-  RetainerStatusWidget,
-} from '../../components/analytics/widgets';
+import { FinancialAnalyticsTab } from '../../components/analytics/FinancialAnalyticsTab';
+import { TaskAnalyticsTab } from '../../components/analytics/TaskAnalyticsTab';
 
-// Hooks and store
-import { useAnalyticsFiltersStore } from '../../stores/analyticsFiltersStore';
-import { useFinancialKPIsComparison } from '../../hooks/useFinancialKPIsComparison';
+type AnalyticsMainTab = 'financial' | 'tasks';
 
 /**
  * Access Denied component for unauthorized users
@@ -54,7 +44,7 @@ function AccessDenied() {
       </div>
       <h2 className="text-xl font-semibold text-gray-900 mb-2">Acces restricționat</h2>
       <p className="text-gray-500 max-w-sm mb-6">
-        Analizele financiare sunt disponibile doar pentru Parteneri și Administratori.
+        Analizele sunt disponibile doar pentru Parteneri și Administratori.
       </p>
       <button
         onClick={() => router.push('/')}
@@ -66,126 +56,86 @@ function AccessDenied() {
   );
 }
 
-/**
- * Dashboard content component
- */
-function DashboardContent() {
-  const { dateRange, comparisonEnabled, getPreviousPeriod } =
-    useAnalyticsFiltersStore();
+// Main tab configuration
+const mainTabs: { id: AnalyticsMainTab; label: string; icon: React.ReactNode }[] = [
+  {
+    id: 'financial',
+    label: 'Analize Financiare',
+    icon: <DollarSign className="w-5 h-5" />,
+  },
+  {
+    id: 'tasks',
+    label: 'Analize Sarcini',
+    icon: <ListTodo className="w-5 h-5" />,
+  },
+];
 
-  // Get financial KPIs with comparison
-  const { current, previous, deltas, isLoading, error, refetch } =
-    useFinancialKPIsComparison({
-      dateRange,
-      previousDateRange: getPreviousPeriod(),
-      comparisonEnabled,
-    });
+/**
+ * Analytics Dashboard with tabs
+ */
+function AnalyticsDashboard() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get('tab');
+
+  // Initialize from URL param or default to 'financial'
+  const [activeMainTab, setActiveMainTab] = useState<AnalyticsMainTab>(
+    tabParam === 'tasks' ? 'tasks' : 'financial'
+  );
+
+  // Sync URL when tab changes
+  const handleTabChange = (tab: AnalyticsMainTab) => {
+    setActiveMainTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === 'financial') {
+      params.delete('tab');
+    } else {
+      params.set('tab', tab);
+    }
+    const newUrl = params.toString() ? `/analytics?${params.toString()}` : '/analytics';
+    router.replace(newUrl, { scroll: false });
+  };
+
+  // Sync state with URL on param change
+  useEffect(() => {
+    if (tabParam === 'tasks' && activeMainTab !== 'tasks') {
+      setActiveMainTab('tasks');
+    } else if (!tabParam && activeMainTab !== 'financial') {
+      setActiveMainTab('financial');
+    }
+  }, [tabParam, activeMainTab]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Page Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <DashboardHeader />
-
-            <div className="flex flex-wrap items-center gap-3">
-              <DateRangePicker />
-              <PeriodComparisonToggle />
-
-              {/* Refresh button */}
+      {/* Main tab navigation */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-1" aria-label="Analytics sections">
+            {mainTabs.map((tab) => (
               <button
-                onClick={refetch}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                title="Refresh data"
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`
+                  flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                  ${
+                    activeMainTab === tab.id
+                      ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 hover:bg-gray-50'
+                  }
+                `}
+                aria-current={activeMainTab === tab.id ? 'page' : undefined}
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
-                />
-                <span className="sr-only">Refresh</span>
+                {tab.icon}
+                {tab.label}
               </button>
-            </div>
-          </div>
+            ))}
+          </nav>
         </div>
       </div>
 
-      {/* Dashboard Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Revenue Overview - 1 column */}
-          <RevenueOverviewWidget
-            totalRevenue={current?.totalRevenue ?? 0}
-            revenueByBillingType={
-              current?.revenueByBillingType ?? {
-                hourly: 0,
-                fixed: 0,
-                retainer: 0,
-              }
-            }
-            isLoading={isLoading}
-            error={error}
-            onRetry={refetch}
-            delta={deltas?.totalRevenue}
-            className="lg:col-span-1"
-          />
-
-          {/* Revenue Trend - 2 columns */}
-          <RevenueTrendWidget
-            revenueTrend={current?.revenueTrend ?? []}
-            previousTrend={previous?.revenueTrend}
-            comparisonEnabled={comparisonEnabled}
-            isLoading={isLoading}
-            error={error}
-            onRetry={refetch}
-            className="lg:col-span-2"
-          />
-
-          {/* Utilization - 1 column */}
-          <UtilizationWidget
-            utilizationRate={current?.utilizationRate ?? 0}
-            totalBillableHours={current?.totalBillableHours ?? 0}
-            totalNonBillableHours={current?.totalNonBillableHours ?? 0}
-            utilizationByRole={current?.utilizationByRole ?? []}
-            isLoading={isLoading}
-            error={error}
-            onRetry={refetch}
-            delta={deltas?.utilizationRate}
-          />
-
-          {/* Profitability - 2 columns */}
-          <ProfitabilityWidget
-            effectiveHourlyRate={current?.effectiveHourlyRate ?? 0}
-            profitabilityByCase={current?.profitabilityByCase ?? []}
-            isLoading={isLoading}
-            error={error}
-            onRetry={refetch}
-            delta={deltas?.effectiveHourlyRate}
-            className="lg:col-span-2"
-          />
-
-          {/* Retainer Status - 1 column */}
-          <RetainerStatusWidget
-            retainerUtilizationAverage={current?.retainerUtilizationAverage ?? null}
-            retainerCasesCount={current?.retainerCasesCount ?? 0}
-            isLoading={isLoading}
-            error={error}
-            onRetry={refetch}
-            delta={deltas?.retainerUtilizationAverage}
-          />
-        </div>
-
-        {/* Metadata footer */}
-        {current && (
-          <div className="mt-8 text-center text-xs text-gray-400">
-            <p>
-              Date calculate la{' '}
-              {new Date(current.calculatedAt).toLocaleString('ro-RO')} •{' '}
-              {current.caseCount} dosare în analiză
-            </p>
-          </div>
-        )}
-      </div>
+      {/* Tab content */}
+      {activeMainTab === 'financial' && <FinancialAnalyticsTab />}
+      {activeMainTab === 'tasks' && <TaskAnalyticsTab />}
     </div>
   );
 }
@@ -195,16 +145,14 @@ function DashboardContent() {
  * Wrapped with FinancialData to enforce authorization
  */
 export default function AnalyticsPage() {
-  // useFinancialDataScope is available via FinancialData component
-
   // Set document title
   React.useEffect(() => {
-    document.title = 'Analize Financiare';
+    document.title = 'Analize';
   }, []);
 
   return (
     <FinancialData fallback={<AccessDenied />}>
-      <DashboardContent />
+      <AnalyticsDashboard />
     </FinancialData>
   );
 }

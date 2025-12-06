@@ -20,13 +20,8 @@ const taskTypes: { value: TimeTaskType; label: string }[] = [
   { value: 'Other', label: 'Altele' },
 ];
 
-const mockCases = [
-  { id: 'case-1', name: 'Dosar Popescu vs. SRL Construct' },
-  { id: 'case-2', name: 'Contract Ionescu - Furnizare Servicii' },
-  { id: 'case-3', name: 'Litigiu Georgescu - Proprietate' },
-  { id: 'case-4', name: 'Advisory Dumitrescu SRL' },
-  { id: 'case-5', name: 'Contencios Marin vs. Primărie' },
-];
+// Cases should be fetched from API - empty array for clean state
+const mockCases: Array<{ id: string; name: string }> = [];
 
 function formatElapsedTime(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform documents for export
-    const docsToExport: DocumentToExport[] = documents.map((doc) => ({
+    const docsToExport: DocumentToExport[] = documents.map((doc: typeof documents[number]) => ({
       id: doc.id,
       fileName: doc.fileName,
       fileExtension: doc.fileExtension,

@@ -1,7 +1,6 @@
 /**
- * Mock Firm Data
- * Temporary data for firm selection until Firm entity is fully implemented
- * Story 2.4.1: Partner User Management
+ * Firm Data
+ * CLEANED: Mock data removed - use real API calls instead
  */
 
 export interface Firm {
@@ -9,20 +8,8 @@ export interface Firm {
   name: string;
 }
 
-export const mockFirms: Firm[] = [
-  {
-    id: 'firm-001',
-    name: 'Popescu & Ionescu Law Firm',
-  },
-  {
-    id: 'firm-002',
-    name: 'Bucuresti Legal Associates',
-  },
-  {
-    id: 'firm-003',
-    name: 'Cluj Corporate Law',
-  },
-];
+// Empty array - firms should be fetched from API
+export const mockFirms: Firm[] = [];
 
 /**
  * Get firm by ID

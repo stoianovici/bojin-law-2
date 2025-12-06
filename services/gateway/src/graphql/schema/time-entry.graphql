@@ -1,0 +1,213 @@
+# Time Entry and Time Tracking
+# Story 4.3: Time Estimation & Manual Time Logging
+
+"""
+Time entry for manual time logging against cases and tasks
+"""
+type TimeEntry {
+  id: ID!
+  caseId: ID!
+  case: Case!
+  taskId: ID
+  task: Task
+  userId: ID!
+  user: User!
+  date: DateTime!
+  hours: Float!
+  hourlyRate: Float! @requiresFinancialAccess
+  description: String!
+  narrative: String
+  billable: Boolean!
+  firmId: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  # Computed
+  amount: Float! @requiresFinancialAccess
+}
+
+"""
+Weekly summary of time entries with billable/non-billable breakdown
+"""
+type WeeklySummary {
+  weekStart: DateTime!
+  weekEnd: DateTime!
+  totalHours: Float!
+  billableHours: Float!
+  nonBillableHours: Float!
+  billableAmount: Float! @requiresFinancialAccess
+  entriesCount: Int!
+  byDay: [DailySummary!]!
+  trend: TrendIndicator!
+}
+
+"""
+Daily time entry summary
+"""
+type DailySummary {
+  date: DateTime!
+  dayOfWeek: String!
+  totalHours: Float!
+  billableHours: Float!
+  nonBillableHours: Float!
+}
+
+"""
+Trend indicator for time tracking comparisons
+"""
+enum TrendIndicator {
+  UP
+  DOWN
+  STABLE
+}
+
+"""
+Task type comparison for estimate vs actual analysis
+"""
+type TaskTypeComparison {
+  taskType: TaskType!
+  taskCount: Int!
+  avgEstimatedHours: Float!
+  avgActualHours: Float!
+  accuracy: Float!
+  variance: Float!
+  variancePercent: Float!
+}
+
+"""
+Estimate vs actual time report for personal improvement
+"""
+type EstimateVsActualReport {
+  userId: ID!
+  periodStart: DateTime!
+  periodEnd: DateTime!
+  overallAccuracy: Float!
+  byTaskType: [TaskTypeComparison!]!
+  improvementTrend: TrendIndicator!
+  recommendations: [String!]!
+}
+
+"""
+AI-powered time estimation for task planning
+"""
+type TimeEstimation {
+  estimatedHours: Float!
+  confidence: Float!
+  reasoning: String!
+  basedOnSimilarTasks: Int!
+  rangeMin: Float!
+  rangeMax: Float!
+}
+
+"""
+Input for creating a new time entry
+"""
+input CreateTimeEntryInput {
+  caseId: ID!
+  taskId: ID
+  date: DateTime!
+  hours: Float!
+  description: String!
+  narrative: String
+  billable: Boolean!
+}
+
+"""
+Input for updating an existing time entry
+"""
+input UpdateTimeEntryInput {
+  date: DateTime
+  hours: Float
+  description: String
+  narrative: String
+  billable: Boolean
+}
+
+"""
+Filter options for querying time entries
+"""
+input TimeEntryFilterInput {
+  caseId: ID
+  taskId: ID
+  dateFrom: DateTime
+  dateTo: DateTime
+  billable: Boolean
+}
+
+"""
+Input for AI time estimation
+"""
+input EstimateTimeInput {
+  taskType: TaskType!
+  taskTitle: String!
+  taskDescription: String
+  caseType: CaseType
+}
+
+extend type Query {
+  """
+  Get a single time entry by ID
+  """
+  timeEntry(id: ID!): TimeEntry
+
+  """
+  Query time entries with filters
+  """
+  timeEntries(filters: TimeEntryFilterInput, limit: Int, offset: Int): [TimeEntry!]!
+
+  """
+  Get all time entries for a specific task
+  """
+  timeEntriesByTask(taskId: ID!): [TimeEntry!]!
+
+  """
+  Get current user's time entries with optional filters
+  """
+  myTimeEntries(filters: TimeEntryFilterInput): [TimeEntry!]!
+
+  """
+  Get weekly summary for current user
+  """
+  weeklySummary(weekStart: DateTime!): WeeklySummary!
+
+  """
+  Get multi-week trend data for current user
+  """
+  weeklyTrend(weekCount: Int!): [WeeklySummary!]!
+
+  """
+  Get estimate vs actual report for improvement tracking
+  """
+  estimateVsActualReport(periodStart: DateTime!, periodEnd: DateTime!): EstimateVsActualReport!
+
+  """
+  Get accuracy data for a specific task type
+  """
+  taskTypeAccuracy(taskType: TaskType!): TaskTypeComparison!
+}
+
+extend type Mutation {
+  """
+  Create a new time entry (manual time logging)
+  """
+  createTimeEntry(input: CreateTimeEntryInput!): TimeEntry!
+
+  """
+  Update an existing time entry
+  """
+  updateTimeEntry(id: ID!, input: UpdateTimeEntryInput!): TimeEntry!
+
+  """
+  Delete a time entry
+  """
+  deleteTimeEntry(id: ID!): Boolean!
+
+  """
+  Quick log time against a task (pre-filled case and task)
+  """
+  logTimeAgainstTask(taskId: ID!, hours: Float!, description: String!, billable: Boolean): TimeEntry!
+
+  """
+  Get AI-powered time estimation for task planning
+  """
+  estimateTaskTime(input: EstimateTimeInput!): TimeEstimation!
+}

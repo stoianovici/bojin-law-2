@@ -16,7 +16,7 @@ const meta: Meta<typeof AIInsightsPanel> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="relative h-screen bg-gray-50">
         <Story />
       </div>
@@ -34,8 +34,8 @@ export const WithSuggestions: Story = {
   args: {
     caseName: 'Contract de Achiziție - Acme Corp',
     suggestions: mockSuggestions,
-    onDismissSuggestion: (id) => alert(`Dismissed suggestion: ${id}`),
-    onTakeAction: (id) => alert(`Action taken on: ${id}`),
+    onDismissSuggestion: (id: any) => alert(`Dismissed suggestion: ${id}`),
+    onTakeAction: (id: any) => alert(`Action taken on: ${id}`),
   },
 };
 
@@ -46,8 +46,8 @@ export const EmptyState: Story = {
   args: {
     caseName: 'Litigiu Comercial - MegaCorp',
     suggestions: [],
-    onDismissSuggestion: (id) => alert(`Dismissed suggestion: ${id}`),
-    onTakeAction: (id) => alert(`Action taken on: ${id}`),
+    onDismissSuggestion: (id: any) => alert(`Dismissed suggestion: ${id}`),
+    onTakeAction: (id: any) => alert(`Action taken on: ${id}`),
   },
 };
 
@@ -61,8 +61,8 @@ export const DocumentSuggestions: Story = {
       ...s,
       type: 'document' as const,
     })),
-    onDismissSuggestion: (id) => alert(`Dismissed suggestion: ${id}`),
-    onTakeAction: (id) => alert(`Action taken on: ${id}`),
+    onDismissSuggestion: (id: any) => alert(`Dismissed suggestion: ${id}`),
+    onTakeAction: (id: any) => alert(`Action taken on: ${id}`),
   },
 };
 
@@ -76,8 +76,8 @@ export const DeadlineSuggestions: Story = {
       ...s,
       type: 'deadline' as const,
     })),
-    onDismissSuggestion: (id) => alert(`Dismissed suggestion: ${id}`),
-    onTakeAction: (id) => alert(`Action taken on: ${id}`),
+    onDismissSuggestion: (id: any) => alert(`Dismissed suggestion: ${id}`),
+    onTakeAction: (id: any) => alert(`Action taken on: ${id}`),
   },
 };
 
@@ -91,8 +91,8 @@ export const TaskSuggestions: Story = {
       ...s,
       type: 'task' as const,
     })),
-    onDismissSuggestion: (id) => alert(`Dismissed suggestion: ${id}`),
-    onTakeAction: (id) => alert(`Action taken on: ${id}`),
+    onDismissSuggestion: (id: any) => alert(`Dismissed suggestion: ${id}`),
+    onTakeAction: (id: any) => alert(`Action taken on: ${id}`),
   },
 };
 
@@ -107,8 +107,8 @@ export const MixedSuggestions: Story = {
       ...createWorkspaceAISuggestions(2).map((s) => ({ ...s, type: 'deadline' as const })),
       ...createWorkspaceAISuggestions(2).map((s) => ({ ...s, type: 'task' as const })),
     ],
-    onDismissSuggestion: (id) => alert(`Dismissed suggestion: ${id}`),
-    onTakeAction: (id) => alert(`Action taken on: ${id}`),
+    onDismissSuggestion: (id: any) => alert(`Dismissed suggestion: ${id}`),
+    onTakeAction: (id: any) => alert(`Action taken on: ${id}`),
   },
 };
 
@@ -119,8 +119,8 @@ export const RomanianDiacritics: Story = {
   args: {
     caseName: 'Divorț București - Secția Civilă',
     suggestions: createWorkspaceAISuggestions(4),
-    onDismissSuggestion: (id) => alert(`Dismissed suggestion: ${id}`),
-    onTakeAction: (id) => alert(`Action taken on: ${id}`),
+    onDismissSuggestion: (id: any) => alert(`Dismissed suggestion: ${id}`),
+    onTakeAction: (id: any) => alert(`Action taken on: ${id}`),
   },
 };
 
@@ -131,7 +131,7 @@ export const ManySuggestions: Story = {
   args: {
     caseName: 'Litigiu Extins - Multe Aspecte',
     suggestions: createWorkspaceAISuggestions(12),
-    onDismissSuggestion: (id) => alert(`Dismissed suggestion: ${id}`),
-    onTakeAction: (id) => alert(`Action taken on: ${id}`),
+    onDismissSuggestion: (id: any) => alert(`Dismissed suggestion: ${id}`),
+    onTakeAction: (id: any) => alert(`Action taken on: ${id}`),
   },
 };

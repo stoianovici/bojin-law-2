@@ -108,7 +108,7 @@ export function NotificationCenter() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {notifications.map((notification) => (
+                  {notifications.map((notification: Notification) => (
                     <div
                       key={notification.id}
                       className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${

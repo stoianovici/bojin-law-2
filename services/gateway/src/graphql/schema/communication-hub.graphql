@@ -1,0 +1,334 @@
+# ============================================================================
+# Communication Hub GraphQL Schema
+# Story 5.5: Multi-Channel Communication Hub
+# ============================================================================
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+enum CommunicationChannel {
+  EMAIL
+  PHONE
+  INTERNAL_NOTE
+  SMS
+  FAX
+  MEETING
+  LETTER
+}
+
+enum CommunicationDirection {
+  INBOUND
+  OUTBOUND
+  INTERNAL
+}
+
+enum PrivacyLevel {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  PRIVILEGED
+}
+
+enum TemplateCategory {
+  GENERAL
+  LEGAL
+  CLIENT_ONBOARDING
+  CASE_UPDATE
+  BILLING
+  REMINDER
+  CUSTOM
+}
+
+enum BulkRecipientType {
+  ALL_CONTACTS
+  CASE_CLIENTS
+  CASE_TEAM
+  CUSTOM_LIST
+}
+
+enum BulkCommunicationStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+# ============================================================================
+# Types - Timeline
+# ============================================================================
+
+type TimelineEntry {
+  id: ID!
+  channelType: CommunicationChannel!
+  direction: CommunicationDirection!
+  subject: String
+  bodyPreview: String!
+  body: String!
+  htmlBody: String
+  senderName: String!
+  senderEmail: String
+  recipients: [RecipientInfo!]!
+  hasAttachments: Boolean!
+  attachments: [CommunicationAttachment!]!
+  isPrivate: Boolean!
+  privacyLevel: PrivacyLevel!
+  sentAt: DateTime!
+  parentId: ID
+  childCount: Int!
+  case: Case
+  metadata: JSON
+}
+
+type RecipientInfo {
+  id: ID
+  name: String!
+  email: String!
+  type: String! # to, cc, bcc
+}
+
+type CommunicationAttachment {
+  id: ID!
+  fileName: String!
+  fileSize: Int!
+  mimeType: String!
+  downloadUrl: String!
+  documentId: ID
+}
+
+type PaginatedTimeline {
+  entries: [TimelineEntry!]!
+  totalCount: Int!
+  hasMore: Boolean!
+  cursor: String
+}
+
+# ============================================================================
+# Types - Templates
+# ============================================================================
+
+type CommunicationTemplate {
+  id: ID!
+  name: String!
+  description: String
+  category: TemplateCategory!
+  channelType: CommunicationChannel!
+  subject: String
+  body: String!
+  htmlBody: String
+  variables: [TemplateVariable!]!
+  isActive: Boolean!
+  isGlobal: Boolean!
+  usageCount: Int!
+  lastUsedAt: DateTime
+  createdBy: User!
+  createdAt: DateTime!
+}
+
+type TemplateVariable {
+  name: String!
+  description: String!
+  defaultValue: String
+  required: Boolean!
+}
+
+type RenderedTemplate {
+  subject: String
+  body: String!
+  htmlBody: String
+}
+
+# ============================================================================
+# Types - Bulk Communication
+# ============================================================================
+
+type BulkCommunication {
+  id: ID!
+  subject: String!
+  body: String!
+  channelType: CommunicationChannel!
+  recipientType: BulkRecipientType!
+  totalRecipients: Int!
+  sentCount: Int!
+  failedCount: Int!
+  status: BulkCommunicationStatus!
+  scheduledFor: DateTime
+  startedAt: DateTime
+  completedAt: DateTime
+  createdBy: User!
+  createdAt: DateTime!
+  case: Case
+}
+
+type BulkCommunicationProgress {
+  totalRecipients: Int!
+  sentCount: Int!
+  failedCount: Int!
+  pendingCount: Int!
+  percentComplete: Float!
+  estimatedTimeRemaining: Int # seconds
+}
+
+# ============================================================================
+# Types - Export
+# ============================================================================
+
+type CommunicationExport {
+  id: ID!
+  caseId: ID!
+  format: ExportFormat!
+  totalEntries: Int!
+  status: ExportStatus!
+  downloadUrl: String
+  expiresAt: DateTime
+  createdAt: DateTime!
+  completedAt: DateTime
+  errorMessage: String
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+input TimelineFilter {
+  caseId: ID!
+  channelTypes: [CommunicationChannel!]
+  direction: CommunicationDirection
+  dateFrom: DateTime
+  dateTo: DateTime
+  searchTerm: String
+  includePrivate: Boolean
+}
+
+input CreateInternalNoteInput {
+  caseId: ID!
+  body: String!
+  isPrivate: Boolean
+  privacyLevel: PrivacyLevel
+  allowedViewers: [ID!]
+}
+
+input CreateTemplateInput {
+  name: String!
+  description: String
+  category: TemplateCategory!
+  channelType: CommunicationChannel!
+  subject: String
+  body: String!
+  htmlBody: String
+  variables: [TemplateVariableInput!]
+  isGlobal: Boolean
+}
+
+input TemplateVariableInput {
+  name: String!
+  description: String!
+  defaultValue: String
+  required: Boolean!
+}
+
+input UpdateTemplateInput {
+  name: String
+  description: String
+  category: TemplateCategory
+  subject: String
+  body: String
+  htmlBody: String
+  variables: [TemplateVariableInput!]
+  isGlobal: Boolean
+  isActive: Boolean
+}
+
+input RenderTemplateInput {
+  templateId: ID!
+  variables: JSON!
+}
+
+input CreateBulkCommunicationInput {
+  caseId: ID
+  templateId: ID
+  subject: String!
+  body: String!
+  channelType: CommunicationChannel!
+  recipientType: BulkRecipientType!
+  recipientFilter: JSON!
+  scheduledFor: DateTime
+}
+
+input ExportCommunicationsInput {
+  caseId: ID!
+  format: ExportFormat!
+  dateRangeFrom: DateTime
+  dateRangeTo: DateTime
+  channelTypes: [CommunicationChannel!]
+  includeAttachments: Boolean
+}
+
+input UpdatePrivacyInput {
+  communicationId: ID!
+  privacyLevel: PrivacyLevel!
+  allowedViewers: [ID!]
+}
+
+# ============================================================================
+# Query Extensions
+# ============================================================================
+
+extend type Query {
+  # Timeline
+  caseTimeline(filter: TimelineFilter!, first: Int, after: String): PaginatedTimeline!
+  communicationEntry(id: ID!): TimelineEntry
+
+  # Templates
+  communicationTemplates(
+    category: TemplateCategory
+    channelType: CommunicationChannel
+    searchTerm: String
+  ): [CommunicationTemplate!]!
+  communicationTemplate(id: ID!): CommunicationTemplate
+
+  # Bulk Communications
+  bulkCommunications(caseId: ID, status: BulkCommunicationStatus): [BulkCommunication!]!
+  bulkCommunicationProgress(id: ID!): BulkCommunicationProgress!
+
+  # Exports
+  communicationExports(caseId: ID!): [CommunicationExport!]!
+  communicationExport(id: ID!): CommunicationExport
+}
+
+# ============================================================================
+# Mutation Extensions
+# ============================================================================
+
+extend type Mutation {
+  # Internal Notes
+  createInternalNote(input: CreateInternalNoteInput!): TimelineEntry!
+  updateInternalNote(id: ID!, body: String!): TimelineEntry!
+  deleteInternalNote(id: ID!): Boolean!
+
+  # Templates
+  createCommunicationTemplate(input: CreateTemplateInput!): CommunicationTemplate!
+  updateCommunicationTemplate(id: ID!, input: UpdateTemplateInput!): CommunicationTemplate!
+  deleteCommunicationTemplate(id: ID!): Boolean!
+  renderTemplate(input: RenderTemplateInput!): RenderedTemplate!
+
+  # Bulk Communications
+  createBulkCommunication(input: CreateBulkCommunicationInput!): BulkCommunication!
+  sendBulkCommunication(id: ID!): BulkCommunication!
+  cancelBulkCommunication(id: ID!): BulkCommunication!
+
+  # Export
+  exportCommunications(input: ExportCommunicationsInput!): CommunicationExport!
+
+  # Privacy
+  updateCommunicationPrivacy(input: UpdatePrivacyInput!): TimelineEntry!
+}

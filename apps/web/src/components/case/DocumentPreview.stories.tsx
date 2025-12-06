@@ -17,7 +17,7 @@ const meta: Meta<typeof DocumentPreview> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="h-screen bg-gray-50 p-6">
         <Story />
       </div>

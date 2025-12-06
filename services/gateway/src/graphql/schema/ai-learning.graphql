@@ -1,0 +1,423 @@
+# AI Learning and Personalization Schema
+# Story 5.6: Learning user preferences and personalizing AI responses
+
+# ==============================================================================
+# Types
+# ==============================================================================
+
+"""
+Common phrase detected in user's writing
+"""
+type CommonPhrase {
+  phrase: String!
+  frequency: Int!
+  context: String!
+}
+
+"""
+Punctuation style preferences
+"""
+type PunctuationStyle {
+  useOxfordComma: Boolean!
+  preferSemicolons: Boolean!
+  useDashes: String!
+  colonBeforeLists: Boolean!
+}
+
+"""
+Language-specific writing patterns
+"""
+type LanguagePatterns {
+  primaryLanguage: String!
+  formalityByLanguage: JSON
+  preferredGreetingsByLanguage: JSON
+  legalTermsPreference: String!
+}
+
+"""
+User's learned writing style profile
+"""
+type WritingStyleProfile {
+  id: ID!
+  firmId: ID!
+  userId: ID!
+  formalityLevel: Float!
+  averageSentenceLength: Float!
+  vocabularyComplexity: Float!
+  preferredTone: String!
+  commonPhrases: [CommonPhrase!]!
+  punctuationStyle: PunctuationStyle!
+  languagePatterns: LanguagePatterns!
+  sampleCount: Int!
+  lastAnalyzedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Personal snippet category
+"""
+enum SnippetCategory {
+  Greeting
+  Closing
+  LegalPhrase
+  ClientResponse
+  InternalNote
+  Custom
+}
+
+"""
+Personal snippet for quick insertion
+"""
+type PersonalSnippet {
+  id: ID!
+  firmId: ID!
+  userId: ID!
+  shortcut: String!
+  title: String!
+  content: String!
+  category: SnippetCategory!
+  usageCount: Int!
+  lastUsedAt: DateTime
+  isAutoDetected: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Task creation pattern learned from user behavior
+"""
+type TaskCreationPattern {
+  id: ID!
+  firmId: ID!
+  userId: ID!
+  patternName: String!
+  triggerType: String!
+  triggerContext: JSON!
+  taskTemplate: JSON!
+  occurrenceCount: Int!
+  confidence: Float!
+  isActive: Boolean!
+  lastTriggeredAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Document structure preference
+"""
+type DocumentStructurePreference {
+  id: ID!
+  firmId: ID!
+  userId: ID!
+  documentType: String!
+  preferredSections: JSON!
+  headerStyle: JSON!
+  footerContent: String
+  marginPreferences: JSON
+  fontPreferences: JSON
+  usageCount: Int!
+  lastUsedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Response time pattern for task types
+"""
+type ResponseTimePattern {
+  id: ID!
+  firmId: ID!
+  userId: ID!
+  taskType: String!
+  caseType: String
+  averageResponseHours: Float!
+  medianResponseHours: Float!
+  minResponseHours: Float!
+  maxResponseHours: Float!
+  sampleCount: Int!
+  stdDeviation: Float
+  dayOfWeekPattern: JSON
+  timeOfDayPattern: JSON
+  lastCalculatedAt: DateTime!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Predicted completion time for a task
+"""
+type CompletionTimePrediction {
+  estimatedHours: Float!
+  confidenceLevel: Float!
+  basedOnSamples: Int!
+  adjustedForDayOfWeek: Boolean!
+  adjustedForTimeOfDay: Boolean!
+  factors: [String!]!
+}
+
+"""
+AI-suggested snippet
+"""
+type SnippetSuggestion {
+  content: String!
+  suggestedTitle: String!
+  suggestedShortcut: String!
+  category: SnippetCategory!
+  occurrenceCount: Int!
+  confidence: Float!
+}
+
+"""
+AI-suggested task based on patterns
+"""
+type TaskSuggestion {
+  patternId: ID!
+  patternName: String!
+  taskTemplate: JSON!
+  triggerContext: JSON!
+  confidence: Float!
+  occurrenceCount: Int!
+}
+
+"""
+Overall learning status for a user
+"""
+type LearningStatus {
+  userId: ID!
+  writingStyleSamples: Int!
+  snippetsCount: Int!
+  taskPatternsCount: Int!
+  documentPreferencesCount: Int!
+  responseTimePatternCount: Int!
+  lastAnalysisAt: DateTime
+  nextScheduledAnalysis: DateTime
+}
+
+"""
+Personalization settings for a user
+"""
+type PersonalizationSettings {
+  userId: ID!
+  styleAdaptationEnabled: Boolean!
+  snippetSuggestionsEnabled: Boolean!
+  taskPatternSuggestionsEnabled: Boolean!
+  responseTimePredictionsEnabled: Boolean!
+  documentPreferencesEnabled: Boolean!
+  learningFromEditsEnabled: Boolean!
+  privacyLevel: String!
+}
+
+# ==============================================================================
+# Inputs
+# ==============================================================================
+
+input CreateSnippetInput {
+  shortcut: String!
+  title: String!
+  content: String!
+  category: SnippetCategory!
+}
+
+input UpdateSnippetInput {
+  shortcut: String
+  title: String
+  content: String
+  category: SnippetCategory
+}
+
+input CreateTaskPatternInput {
+  patternName: String!
+  triggerType: String!
+  triggerContext: JSON!
+  taskTemplate: JSON!
+}
+
+input UpdateDocumentPreferenceInput {
+  documentType: String!
+  preferredSections: JSON!
+  headerStyle: JSON!
+  footerContent: String
+  marginPreferences: JSON
+  fontPreferences: JSON
+}
+
+input UpdatePersonalizationSettingsInput {
+  styleAdaptationEnabled: Boolean
+  snippetSuggestionsEnabled: Boolean
+  taskPatternSuggestionsEnabled: Boolean
+  responseTimePredictionsEnabled: Boolean
+  documentPreferencesEnabled: Boolean
+  learningFromEditsEnabled: Boolean
+  privacyLevel: String
+}
+
+input RecordEditInput {
+  draftId: ID!
+  originalText: String!
+  editedText: String!
+  editLocation: String!
+}
+
+# ==============================================================================
+# Queries
+# ==============================================================================
+
+extend type Query {
+  """
+  Get the user's writing style profile
+  """
+  myWritingStyleProfile: WritingStyleProfile
+
+  """
+  Get all personal snippets for the current user
+  """
+  mySnippets(category: SnippetCategory): [PersonalSnippet!]!
+
+  """
+  Get a specific snippet by ID
+  """
+  snippet(id: ID!): PersonalSnippet
+
+  """
+  Search snippets by shortcut or content
+  """
+  searchSnippets(query: String!): [PersonalSnippet!]!
+
+  """
+  Get learned task creation patterns
+  """
+  myTaskPatterns(isActive: Boolean): [TaskCreationPattern!]!
+
+  """
+  Get document structure preferences
+  """
+  myDocumentPreferences(documentType: String): [DocumentStructurePreference!]!
+
+  """
+  Get response time patterns
+  """
+  myResponseTimePatterns(taskType: String): [ResponseTimePattern!]!
+
+  """
+  Predict completion time for a task
+  """
+  predictCompletionTime(
+    taskType: String!
+    caseType: String
+  ): CompletionTimePrediction
+
+  """
+  Get suggested tasks based on current context
+  """
+  suggestedTasks(
+    caseType: String
+    documentType: String
+    emailKeywords: [String!]
+  ): [TaskSuggestion!]!
+
+  """
+  Get AI-suggested snippets to save
+  """
+  snippetSuggestions: [SnippetSuggestion!]!
+
+  """
+  Get overall learning status
+  """
+  learningStatus: LearningStatus!
+
+  """
+  Get personalization settings
+  """
+  personalizationSettings: PersonalizationSettings!
+}
+
+# ==============================================================================
+# Mutations
+# ==============================================================================
+
+extend type Mutation {
+  """
+  Create a new personal snippet
+  """
+  createSnippet(input: CreateSnippetInput!): PersonalSnippet!
+
+  """
+  Update a personal snippet
+  """
+  updateSnippet(id: ID!, input: UpdateSnippetInput!): PersonalSnippet!
+
+  """
+  Delete a personal snippet
+  """
+  deleteSnippet(id: ID!): Boolean!
+
+  """
+  Record snippet usage (updates usage count)
+  """
+  recordSnippetUsage(id: ID!): PersonalSnippet!
+
+  """
+  Accept a snippet suggestion
+  """
+  acceptSnippetSuggestion(
+    content: String!
+    shortcut: String!
+    title: String!
+    category: SnippetCategory!
+  ): PersonalSnippet!
+
+  """
+  Dismiss a snippet suggestion
+  """
+  dismissSnippetSuggestion(content: String!): Boolean!
+
+  """
+  Create a task creation pattern
+  """
+  createTaskPattern(input: CreateTaskPatternInput!): TaskCreationPattern!
+
+  """
+  Toggle task pattern active status
+  """
+  toggleTaskPattern(id: ID!, isActive: Boolean!): TaskCreationPattern!
+
+  """
+  Delete a task pattern
+  """
+  deleteTaskPattern(id: ID!): Boolean!
+
+  """
+  Update document structure preferences
+  """
+  updateDocumentPreference(
+    input: UpdateDocumentPreferenceInput!
+  ): DocumentStructurePreference!
+
+  """
+  Record an edit to learn from
+  """
+  recordDraftEdit(input: RecordEditInput!): Boolean!
+
+  """
+  Trigger style analysis from recent edits
+  """
+  analyzeWritingStyle: WritingStyleProfile
+
+  """
+  Reset writing style profile
+  """
+  resetWritingStyleProfile: Boolean!
+
+  """
+  Update personalization settings
+  """
+  updatePersonalizationSettings(
+    input: UpdatePersonalizationSettingsInput!
+  ): PersonalizationSettings!
+
+  """
+  Clear all learning data
+  """
+  clearAllLearningData: Boolean!
+}

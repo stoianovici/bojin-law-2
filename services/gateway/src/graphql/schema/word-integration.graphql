@@ -1,0 +1,369 @@
+# Word Integration Schema
+# Story 3.4: Word Integration with Live AI Assistance
+# GraphQL types for Word document editing, locking, comments, and sync
+
+# =============================================================================
+# Document Lock Types
+# =============================================================================
+
+"""
+Type of editing session for document locks
+"""
+enum DocumentLockSessionType {
+  """Document open in Word Desktop"""
+  WORD_DESKTOP
+  """Document open in Word Online"""
+  WORD_ONLINE
+  """Document open in platform editor"""
+  PLATFORM
+}
+
+"""
+Document lock information
+"""
+type DocumentLock {
+  """Lock ID"""
+  id: UUID!
+  """Locked document ID"""
+  documentId: UUID!
+  """User holding the lock"""
+  user: User!
+  """Lock token for validation"""
+  lockToken: String!
+  """When the lock was acquired"""
+  lockedAt: DateTime!
+  """When the lock expires"""
+  expiresAt: DateTime!
+  """Type of editing session"""
+  sessionType: DocumentLockSessionType!
+}
+
+"""
+Document lock status
+"""
+type DocumentLockStatus {
+  """Whether the document is currently locked"""
+  isLocked: Boolean!
+  """Lock details if locked"""
+  lock: DocumentLock
+  """Whether current user holds the lock"""
+  currentUserHoldsLock: Boolean!
+}
+
+# =============================================================================
+# Word Edit Session Types
+# =============================================================================
+
+"""
+Word edit session returned when opening a document in Word
+"""
+type WordEditSession {
+  """Document ID"""
+  documentId: UUID!
+  """Word protocol URL (ms-word:ofe|u|...)"""
+  wordUrl: String!
+  """Lock token for this session"""
+  lockToken: String!
+  """When the session/lock expires"""
+  expiresAt: DateTime!
+  """OneDrive item ID"""
+  oneDriveId: String!
+}
+
+# =============================================================================
+# Document Comment Types
+# =============================================================================
+
+"""
+A comment on a document
+"""
+type DocumentComment {
+  """Comment ID"""
+  id: UUID!
+  """Document this comment belongs to"""
+  documentId: UUID!
+  """Version the comment was made on (optional)"""
+  versionId: UUID
+  """Author of the comment"""
+  author: User!
+  """Comment content"""
+  content: String!
+  """Text the comment is anchored to"""
+  anchorText: String
+  """Start position of anchor in document"""
+  anchorStart: Int
+  """End position of anchor in document"""
+  anchorEnd: Int
+  """Word comment ID for sync"""
+  wordCommentId: String
+  """Whether the comment is resolved"""
+  resolved: Boolean!
+  """User who resolved the comment"""
+  resolvedBy: User
+  """When the comment was resolved"""
+  resolvedAt: DateTime
+  """When the comment was created"""
+  createdAt: DateTime!
+  """When the comment was last updated"""
+  updatedAt: DateTime!
+}
+
+"""
+Input for creating a comment
+"""
+input CreateCommentInput {
+  """Document to comment on"""
+  documentId: UUID!
+  """Comment content"""
+  content: String!
+  """Text being commented on"""
+  anchorText: String
+  """Start position in document"""
+  anchorStart: Int
+  """End position in document"""
+  anchorEnd: Int
+}
+
+# =============================================================================
+# Track Changes Types
+# =============================================================================
+
+"""
+Type of tracked change in Word document
+"""
+enum TrackChangeType {
+  """Text was inserted"""
+  INSERTION
+  """Text was deleted"""
+  DELETION
+  """Text was modified"""
+  MODIFICATION
+  """Formatting was changed"""
+  FORMAT_CHANGE
+}
+
+"""
+A tracked change extracted from Word document
+"""
+type TrackChange {
+  """Change ID"""
+  id: String!
+  """Type of change"""
+  type: TrackChangeType!
+  """Name of the author who made the change"""
+  authorName: String!
+  """Changed/inserted content"""
+  content: String!
+  """Original content (for deletions/modifications)"""
+  originalContent: String
+  """When the change was made"""
+  timestamp: DateTime!
+  """Paragraph index in document"""
+  paragraphIndex: Int
+}
+
+"""
+Summary of track changes for a document version
+"""
+type TrackChangesSummary {
+  """Total number of changes"""
+  totalChanges: Int!
+  """Number of insertions"""
+  insertions: Int!
+  """Number of deletions"""
+  deletions: Int!
+  """Number of modifications"""
+  modifications: Int!
+  """Number of format changes"""
+  formatChanges: Int!
+  """Authors who made changes"""
+  authors: [String!]!
+  """Human-readable summary"""
+  summary: String!
+}
+
+# =============================================================================
+# Sync Status Types
+# =============================================================================
+
+"""
+Sync status for document-OneDrive synchronization
+"""
+enum DocumentSyncStatus {
+  """Document is in sync with OneDrive"""
+  SYNCED
+  """Sync is in progress"""
+  SYNCING
+  """Changes pending sync"""
+  PENDING_CHANGES
+  """Sync error occurred"""
+  ERROR
+}
+
+"""
+Document sync information
+"""
+type DocumentSyncInfo {
+  """Current sync status"""
+  status: DocumentSyncStatus!
+  """Last successful sync timestamp"""
+  lastSyncAt: DateTime
+  """OneDrive item ID if synced"""
+  oneDriveId: String
+  """OneDrive path"""
+  oneDrivePath: String
+  """Error message if status is ERROR"""
+  errorMessage: String
+}
+
+"""
+Result of a Word sync operation (distinct from SyncResult in document.graphql)
+"""
+type WordSyncResult {
+  """Whether changes were downloaded"""
+  updated: Boolean!
+  """New version number if updated"""
+  newVersionNumber: Int
+  """Track changes found during sync"""
+  trackChanges: [TrackChange!]
+  """Comments synced"""
+  commentsCount: Int
+}
+
+# =============================================================================
+# Mutations
+# =============================================================================
+
+extend type Mutation {
+  """
+  Open a document in Word desktop application.
+  Acquires a lock and returns a Word protocol URL.
+  """
+  openInWord(documentId: UUID!): WordEditSession!
+
+  """
+  Close a Word editing session and release the lock.
+  Triggers sync from OneDrive.
+  """
+  closeWordSession(
+    """Document ID"""
+    documentId: UUID!
+    """Lock token to validate ownership"""
+    lockToken: String!
+  ): WordSyncResult!
+
+  """
+  Renew an existing document lock.
+  Called periodically while editing in Word.
+  """
+  renewDocumentLock(
+    """Document ID"""
+    documentId: UUID!
+    """Current lock token"""
+    lockToken: String!
+  ): DocumentLock!
+
+  """
+  Force release a document lock (admin only).
+  """
+  forceReleaseDocumentLock(documentId: UUID!): Boolean!
+
+  """
+  Add a comment to a document.
+  """
+  addDocumentComment(input: CreateCommentInput!): DocumentComment!
+
+  """
+  Resolve a document comment.
+  """
+  resolveDocumentComment(commentId: UUID!): DocumentComment!
+
+  """
+  Unresolve a document comment.
+  """
+  unresolveDocumentComment(commentId: UUID!): DocumentComment!
+
+  """
+  Delete a document comment.
+  """
+  deleteComment(commentId: UUID!): Boolean!
+
+  """
+  Sync document comments from Word to platform.
+  """
+  syncCommentsFromWord(documentId: UUID!): Int!
+
+  """
+  Sync document comments from platform to Word.
+  """
+  syncCommentsToWord(documentId: UUID!): Int!
+
+  # syncDocumentFromOneDrive is defined in document.graphql
+
+  """
+  Upload a document to OneDrive for Word editing.
+  """
+  uploadToOneDrive(documentId: UUID!): String!
+}
+
+# =============================================================================
+# Queries
+# =============================================================================
+
+extend type Query {
+  """
+  Get lock status for a document.
+  """
+  documentLockStatus(documentId: UUID!): DocumentLockStatus!
+
+  """
+  Get all comments for a document.
+  """
+  documentComments(
+    """Document ID"""
+    documentId: UUID!
+    """Only show unresolved comments"""
+    unresolvedOnly: Boolean = false
+  ): [DocumentComment!]!
+
+  """
+  Get track changes from a Word document.
+  """
+  documentTrackChanges(documentId: UUID!): [TrackChange!]!
+
+  """
+  Get track changes summary.
+  """
+  documentTrackChangesSummary(documentId: UUID!): TrackChangesSummary!
+
+  """
+  Get sync status for a document.
+  """
+  documentSyncStatus(documentId: UUID!): DocumentSyncInfo!
+}
+
+# =============================================================================
+# Subscriptions
+# =============================================================================
+
+extend type Subscription {
+  """
+  Subscribe to document lock status changes.
+  """
+  documentLockChanged(documentId: UUID!): DocumentLockStatus
+
+  """
+  Subscribe to new comments on a document.
+  """
+  commentAdded(documentId: UUID!): DocumentComment
+
+  """
+  Subscribe to comment resolution changes.
+  """
+  commentResolved(documentId: UUID!): DocumentComment
+
+  """
+  Subscribe to sync status changes.
+  """
+  documentSyncStatusChanged(documentId: UUID!): DocumentSyncInfo
+}

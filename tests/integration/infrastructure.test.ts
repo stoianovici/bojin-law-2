@@ -87,7 +87,7 @@ describe('Infrastructure Integration Tests', () => {
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(10);
-      results.forEach((result, index) => {
+      results.forEach((result: any, index: number) => {
         expect(result).toEqual([{ value: index }]);
       });
     });
@@ -189,7 +189,7 @@ describe('Infrastructure Integration Tests', () => {
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(20);
-      results.forEach((result, index) => {
+      results.forEach((result: any, index: number) => {
         expect(result).toEqual({ value: index });
       });
     });

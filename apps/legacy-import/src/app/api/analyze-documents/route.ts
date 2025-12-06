@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         select: { id: true },
         take: 100, // Process in batches of 100
       });
-      docsToAnalyze = unanalyzedDocs.map(d => d.id);
+      docsToAnalyze = unanalyzedDocs.map((d: { id: string }) => d.id);
     }
 
     if (docsToAnalyze.length === 0) {
@@ -134,18 +134,18 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ...status,
-      languageDistribution: languageStats.reduce((acc, stat) => {
+      languageDistribution: languageStats.reduce((acc: Record<string, number>, stat: { primaryLanguage: string | null; _count: number }) => {
         acc[stat.primaryLanguage || 'Unknown'] = stat._count;
         return acc;
-      }, {} as Record<string, number>),
-      documentTypes: typeStats.reduce((acc, stat) => {
+      }, {}),
+      documentTypes: typeStats.reduce((acc: Record<string, number>, stat: { documentType: string | null; _count: number }) => {
         acc[stat.documentType || 'Unknown'] = stat._count;
         return acc;
-      }, {} as Record<string, number>),
-      templatePotential: templateStats.reduce((acc, stat) => {
+      }, {}),
+      templatePotential: templateStats.reduce((acc: Record<string, number>, stat: { templatePotential: string | null; _count: number }) => {
         acc[stat.templatePotential || 'Unknown'] = stat._count;
         return acc;
-      }, {} as Record<string, number>),
+      }, {}),
     });
   } catch (error) {
     console.error('Status check error:', error);

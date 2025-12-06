@@ -1,0 +1,273 @@
+# Email Integration GraphQL Schema
+# Story 5.1: Email Integration and Synchronization
+#
+# Provides types and operations for email synchronization,
+# threading, categorization, and search.
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Email address with optional display name
+"""
+type EmailAddress {
+  name: String
+  address: String!
+}
+
+"""
+Email message from Microsoft Graph
+"""
+type Email {
+  id: ID!
+  graphMessageId: String!
+  conversationId: String!
+  subject: String!
+  bodyPreview: String!
+  bodyContent: String!
+  bodyContentType: String!
+  from: EmailAddress!
+  toRecipients: [EmailAddress!]!
+  ccRecipients: [EmailAddress!]!
+  receivedDateTime: DateTime!
+  sentDateTime: DateTime!
+  hasAttachments: Boolean!
+  importance: String!
+  isRead: Boolean!
+  case: Case
+  attachments: [EmailAttachment!]!
+  thread: EmailThread
+}
+
+"""
+Email attachment with storage information
+"""
+type EmailAttachment {
+  id: ID!
+  name: String!
+  contentType: String!
+  size: Int!
+  downloadUrl: String
+  document: Document
+}
+
+"""
+Email thread (conversation) grouping related messages
+"""
+type EmailThread {
+  id: ID!
+  conversationId: String!
+  subject: String!
+  participantCount: Int!
+  messageCount: Int!
+  emails: [Email!]!
+  case: Case
+  hasUnread: Boolean!
+  hasAttachments: Boolean!
+  lastMessageDate: DateTime!
+  firstMessageDate: DateTime!
+}
+
+"""
+Email synchronization status
+"""
+type EmailSyncStatus {
+  status: String!
+  lastSyncAt: DateTime
+  emailCount: Int!
+  pendingCategorization: Int!
+}
+
+"""
+Paginated email search results
+"""
+type EmailSearchResult {
+  emails: [Email!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+"""
+Email thread with participant details
+"""
+type EmailThreadParticipant {
+  email: String!
+  name: String
+  messageCount: Int!
+  roles: [String!]!
+}
+
+"""
+Email categorization result from AI
+"""
+type EmailCategorizationResult {
+  emailId: ID!
+  caseId: ID
+  confidence: Float!
+  reasoning: String!
+}
+
+"""
+Email statistics for dashboard
+"""
+type EmailStats {
+  totalEmails: Int!
+  unreadEmails: Int!
+  uncategorizedEmails: Int!
+  emailsWithAttachments: Int!
+  emailsByCase: [EmailCaseCount!]!
+}
+
+type EmailCaseCount {
+  caseId: ID!
+  caseName: String!
+  count: Int!
+}
+
+# ============================================================================
+# Inputs
+# ============================================================================
+
+"""
+Filters for email queries
+"""
+input EmailFilters {
+  caseId: ID
+  search: String
+  hasAttachments: Boolean
+  isUnread: Boolean
+  dateFrom: DateTime
+  dateTo: DateTime
+  uncategorizedOnly: Boolean
+  importance: String
+}
+
+"""
+Filters for email thread queries
+"""
+input EmailThreadFilters {
+  caseId: ID
+  hasUnread: Boolean
+  hasAttachments: Boolean
+  search: String
+  dateFrom: DateTime
+  dateTo: DateTime
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Search emails with filters and pagination
+  """
+  emails(filters: EmailFilters, limit: Int, offset: Int): EmailSearchResult!
+
+  """
+  Get email threads for current user
+  """
+  emailThreads(
+    filters: EmailThreadFilters
+    limit: Int
+    offset: Int
+  ): [EmailThread!]!
+
+  """
+  Get single email thread by conversation ID
+  """
+  emailThread(conversationId: String!): EmailThread
+
+  """
+  Get single email by ID
+  """
+  email(id: ID!): Email
+
+  """
+  Get email synchronization status
+  """
+  emailSyncStatus: EmailSyncStatus!
+
+  """
+  Get thread participants
+  """
+  emailThreadParticipants(conversationId: String!): [EmailThreadParticipant!]!
+
+  """
+  Get email statistics for dashboard
+  """
+  emailStats: EmailStats!
+
+  """
+  Get search suggestions based on email content
+  """
+  emailSearchSuggestions(prefix: String!): [String!]!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Start email synchronization for current user
+  """
+  startEmailSync: EmailSyncStatus!
+
+  """
+  Assign email to a case
+  """
+  assignEmailToCase(emailId: ID!, caseId: ID!): Email!
+
+  """
+  Assign all emails in thread to a case
+  """
+  assignThreadToCase(conversationId: String!, caseId: ID!): EmailThread!
+
+  """
+  Mark email as read/unread
+  """
+  markEmailRead(emailId: ID!, isRead: Boolean!): Email!
+
+  """
+  Mark entire thread as read
+  """
+  markThreadRead(conversationId: String!): EmailThread!
+
+  """
+  Sync attachments for an email
+  """
+  syncEmailAttachments(emailId: ID!): [EmailAttachment!]!
+
+  """
+  Trigger AI categorization for uncategorized emails
+  """
+  triggerEmailCategorization: Int!
+
+  """
+  Create or renew email webhook subscription
+  """
+  createEmailSubscription: EmailSyncStatus!
+}
+
+# ============================================================================
+# Subscriptions
+# ============================================================================
+
+extend type Subscription {
+  """
+  Subscribe to new email notifications
+  """
+  emailReceived: Email!
+
+  """
+  Subscribe to email sync progress updates
+  """
+  emailSyncProgress: EmailSyncStatus!
+
+  """
+  Subscribe to email categorization results
+  """
+  emailCategorized: EmailCategorizationResult!
+}

@@ -8,6 +8,11 @@
  * Story 2.11.3: Financial KPIs Backend Service (financial-kpis schema)
  * Story 3.1: AI Service Infrastructure (ai-monitoring schema)
  * Story 3.3: Intelligent Document Drafting (document-drafting schema)
+ * Story 3.6: Document Review and Approval Workflow (document-review schema)
+ * Story 3.7: AI Document Intelligence Dashboard (document-intelligence schema)
+ * Story 3.8: Document System Testing and Performance (performance-metrics schema)
+ * Story 4.3: Time Estimation & Manual Time Logging (time-entry schema)
+ * Story 4.4: Task Dependencies and Automation (task-template, task-dependency schemas)
  *
  * Loads and merges all GraphQL schema files and applies directives
  */
@@ -40,6 +45,105 @@ export function loadSchema(): string {
     join(schemaDir, 'document-drafting.graphql'),
     'utf-8'
   );
+  const wordIntegrationSchema = readFileSync(
+    join(schemaDir, 'word-integration.graphql'),
+    'utf-8'
+  );
+  const semanticVersionControlSchema = readFileSync(
+    join(schemaDir, 'semantic-version-control.graphql'),
+    'utf-8'
+  );
+  const documentReviewSchema = readFileSync(
+    join(schemaDir, 'document-review.graphql'),
+    'utf-8'
+  );
+  const documentIntelligenceSchema = readFileSync(
+    join(schemaDir, 'document-intelligence.graphql'),
+    'utf-8'
+  );
+  const performanceMetricsSchema = readFileSync(
+    join(schemaDir, 'performance-metrics.graphql'),
+    'utf-8'
+  );
+  // Story 4.1: Natural Language Task Parser
+  const taskParserSchema = readFileSync(
+    join(schemaDir, 'task-parser.graphql'),
+    'utf-8'
+  );
+  // Story 4.2: Task Type System Implementation
+  const taskSchema = readFileSync(
+    join(schemaDir, 'task.graphql'),
+    'utf-8'
+  );
+  // Story 4.3: Time Estimation & Manual Time Logging
+  const timeEntrySchema = readFileSync(
+    join(schemaDir, 'time-entry.graphql'),
+    'utf-8'
+  );
+  // Story 4.4: Task Dependencies and Automation
+  const taskTemplateSchema = readFileSync(
+    join(schemaDir, 'task-template.graphql'),
+    'utf-8'
+  );
+  const taskDependencySchema = readFileSync(
+    join(schemaDir, 'task-dependency.graphql'),
+    'utf-8'
+  );
+  // Story 4.5: Team Workload Management
+  const workloadManagementSchema = readFileSync(
+    join(schemaDir, 'workload-management.graphql'),
+    'utf-8'
+  );
+  // Story 4.6: Task Collaboration and Updates
+  const taskCollaborationSchema = readFileSync(
+    join(schemaDir, 'task-collaboration.graphql'),
+    'utf-8'
+  );
+  // Story 4.7: Task Analytics and Optimization
+  const taskAnalyticsSchema = readFileSync(
+    join(schemaDir, 'task-analytics.graphql'),
+    'utf-8'
+  );
+  // Dynamic case types per firm
+  const caseTypeSchema = readFileSync(
+    join(schemaDir, 'case-type.graphql'),
+    'utf-8'
+  );
+  // Story 5.1: Email Integration and Synchronization
+  const emailSchema = readFileSync(
+    join(schemaDir, 'email.graphql'),
+    'utf-8'
+  );
+  // Story 5.2: Communication Intelligence Engine
+  const communicationIntelligenceSchema = readFileSync(
+    join(schemaDir, 'communication-intelligence.graphql'),
+    'utf-8'
+  );
+  // Story 5.3: AI-Powered Email Drafting
+  const emailDraftingSchema = readFileSync(
+    join(schemaDir, 'email-drafting.graphql'),
+    'utf-8'
+  );
+  // Story 5.4: Proactive AI Suggestions - may already exist
+  const proactiveSuggestionsSchema = readFileSync(
+    join(schemaDir, 'proactive-suggestions.graphql'),
+    'utf-8'
+  );
+  // Story 5.5: Multi-Channel Communication Hub - may already exist
+  const communicationHubSchema = readFileSync(
+    join(schemaDir, 'communication-hub.graphql'),
+    'utf-8'
+  );
+  // Story 5.6: AI Learning and Personalization
+  const aiLearningSchema = readFileSync(
+    join(schemaDir, 'ai-learning.graphql'),
+    'utf-8'
+  );
+  // Story 5.7: Platform Intelligence Dashboard
+  const platformIntelligenceSchema = readFileSync(
+    join(schemaDir, 'platform-intelligence.graphql'),
+    'utf-8'
+  );
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -58,6 +162,27 @@ export function loadSchema(): string {
     financialKpisSchema,
     aiMonitoringSchema,
     documentDraftingSchema,
+    wordIntegrationSchema,
+    semanticVersionControlSchema,
+    documentReviewSchema,
+    documentIntelligenceSchema,
+    performanceMetricsSchema,
+    taskParserSchema,
+    taskSchema,
+    timeEntrySchema,
+    taskTemplateSchema,
+    taskDependencySchema,
+    workloadManagementSchema,
+    taskCollaborationSchema,
+    taskAnalyticsSchema,
+    caseTypeSchema,
+    emailSchema,
+    communicationIntelligenceSchema,
+    emailDraftingSchema,
+    proactiveSuggestionsSchema,
+    communicationHubSchema,
+    aiLearningSchema,
+    platformIntelligenceSchema,
   ].join('\n\n');
 }
 

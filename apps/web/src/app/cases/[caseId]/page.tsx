@@ -6,7 +6,8 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useCaseWorkspaceStore } from '../../../stores/case-workspace.store';
 import { CaseHeader } from '../../../components/case/CaseHeader';
@@ -17,10 +18,10 @@ import { OverviewTab } from '../../../components/case/tabs/OverviewTab';
 import { CommunicationsTab } from '../../../components/case/tabs/CommunicationsTab';
 import { TimeEntriesTab } from '../../../components/case/tabs/TimeEntriesTab';
 import { NotesTab } from '../../../components/case/tabs/NotesTab';
+import { IntelligenceTab } from '../../../components/case/tabs/IntelligenceTab';
 import { AIInsightsPanel } from '../../../components/case/AIInsightsPanel';
 import { QuickActionsBar } from '../../../components/case/QuickActionsBar';
 import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
-import { createMockCaseWorkspace } from '../../../lib/mockData';
 import { useCase } from '../../../hooks/useCase';
 import type { Case, User, Document, Task, AISuggestion, DocumentNode } from '@legal-platform/types';
 
@@ -88,11 +89,17 @@ function LoadingSkeleton() {
  */
 export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   const { caseId } = React.use(params);
+  const router = useRouter();
   const { activeTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
   const [caseData, setCaseData] = useState<CaseWorkspaceData | null>(null);
 
   // Use the real useCase hook to get actual case data
   const { case: realCaseData, loading, error } = useCase(caseId);
+
+  // Handler for creating new document
+  const handleNewDocument = useCallback(() => {
+    router.push(`/cases/${caseId}/documents/new`);
+  }, [router, caseId]);
 
   // Load case data on mount
   useEffect(() => {
@@ -101,10 +108,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
 
     // Load workspace data when real case data is available
     if (realCaseData && !loading) {
-      // Generate mock workspace data using factory
-      const mockWorkspace = createMockCaseWorkspace();
-
-      // Merge real case data with mock workspace features
+      // Build workspace data from real case data (no mock data)
       const workspaceData: CaseWorkspaceData = {
         case: {
           ...realCaseData,
@@ -120,49 +124,18 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
             lastActive: new Date(user.lastActive || Date.now()),
           };
         }),
-        nextDeadline: {
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-          description: 'Next deadline',
-        },
-        documents: mockWorkspace.documents.map((doc) => ({
-          ...doc,
-          createdAt: new Date(doc.createdAt),
-          updatedAt: new Date(doc.updatedAt),
-        })),
-        tasks: mockWorkspace.tasks.map((task) => ({
-          ...task,
-          dueDate: new Date(task.dueDate),
-          createdAt: new Date(task.createdAt),
-          updatedAt: new Date(task.updatedAt),
-        })),
-        folderTree: [mockWorkspace.documentTree],
-        recentActivity: mockWorkspace.recentActivity.map((activity) => ({
-          ...activity,
-          timestamp: new Date(activity.timestamp),
-        })),
-        upcomingDeadlines: [
-          {
-            id: 'deadline-1',
-            title: 'Filing response',
-            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            status: 'upcoming' as const,
-          },
-          {
-            id: 'deadline-2',
-            title: 'Court hearing',
-            date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-            status: 'upcoming' as const,
-          },
-        ],
+        nextDeadline: undefined,
+        documents: [], // TODO: Fetch from API
+        tasks: [], // TODO: Fetch from API
+        folderTree: [], // TODO: Fetch from API
+        recentActivity: [], // TODO: Fetch from API
+        upcomingDeadlines: [], // TODO: Fetch from API
         stats: {
-          totalDocuments: mockWorkspace.documents.length,
-          openTasks: mockWorkspace.tasks.filter((t) => t.status !== 'Completed').length,
-          billableHours: 24.5,
+          totalDocuments: 0,
+          openTasks: 0,
+          billableHours: 0,
         },
-        aiSuggestions: mockWorkspace.aiSuggestions.map((suggestion) => ({
-          ...suggestion,
-          timestamp: new Date(suggestion.timestamp),
-        })),
+        aiSuggestions: [], // TODO: Fetch from API
       };
 
       setCaseData(workspaceData);
@@ -218,7 +191,13 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           />
         );
       case 'documents':
-        return <DocumentsTab folderTree={caseData.folderTree} documents={caseData.documents} />;
+        return (
+          <DocumentsTab
+            folderTree={caseData.folderTree}
+            documents={caseData.documents}
+            onNewDocument={handleNewDocument}
+          />
+        );
       case 'tasks':
         return <TasksTab tasks={caseData.tasks} users={caseData.teamMembers} />;
       case 'communications':
@@ -227,6 +206,8 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         return <TimeEntriesTab />;
       case 'notes':
         return <NotesTab />;
+      case 'intelligence':
+        return <IntelligenceTab caseId={caseId} />;
       default:
         return <OverviewTab case={caseData.case} />;
     }

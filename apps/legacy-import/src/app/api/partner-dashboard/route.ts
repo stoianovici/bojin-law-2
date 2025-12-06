@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate batch progress
-    const batches: BatchWithProgress[] = session.batches.map((batch) => ({
+    const batches: BatchWithProgress[] = session.batches.map((batch: typeof session.batches[number]) => ({
       id: batch.id,
       monthYear: batch.monthYear,
       assignedTo: batch.assignedTo,
@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
       assistantProgress,
       categoryStats: {
         totalCategories: categories.length,
-        categoriesWithDocs: categories.filter((c) => c.documentCount > 0).length,
+        categoriesWithDocs: categories.filter((c: { documentCount: number }) => c.documentCount > 0).length,
         potentialDuplicates,
       },
     };

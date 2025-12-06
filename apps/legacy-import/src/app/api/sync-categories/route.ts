@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
       if (session) {
         await prisma.importCategory.createMany({
-          data: DEFAULT_CATEGORIES.map((name) => ({
+          data: DEFAULT_CATEGORIES.map((name: string) => ({
             sessionId,
             name,
             documentCount: 0,

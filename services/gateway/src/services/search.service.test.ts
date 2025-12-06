@@ -5,47 +5,45 @@
  * Tests for full-text, semantic, and hybrid search functionality.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-
 // Mock external dependencies
-vi.mock('@legal-platform/database', () => ({
+jest.mock('@legal-platform/database', () => ({
   redis: {
-    get: vi.fn(),
-    set: vi.fn(),
-    del: vi.fn(),
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
   },
   cacheManager: {
-    get: vi.fn(),
-    set: vi.fn(),
+    get: jest.fn(),
+    set: jest.fn(),
   },
   prisma: {
-    $queryRaw: vi.fn(),
+    $queryRaw: jest.fn(),
     searchHistory: {
-      create: vi.fn(),
-      findMany: vi.fn(),
+      create: jest.fn(),
+      findMany: jest.fn(),
     },
   },
 }));
 
-vi.mock('./embedding.service', () => ({
-  EmbeddingService: vi.fn().mockImplementation(() => ({
-    generateEmbedding: vi.fn().mockResolvedValue(Array(1536).fill(0.1)),
+jest.mock('./embedding.service', () => ({
+  EmbeddingService: jest.fn().mockImplementation(() => ({
+    generateEmbedding: jest.fn().mockResolvedValue(Array(1536).fill(0.1)),
   })),
 }));
 
-import { SearchService, SearchMode, SearchFilters } from './search.service';
+import { SearchService, SearchFilters, SearchMode } from './search.service';
 import { redis, prisma, cacheManager } from '@legal-platform/database';
 
 describe('SearchService', () => {
   let searchService: SearchService;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     searchService = new SearchService();
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
   });
 
   describe('fullTextSearch', () => {
@@ -63,8 +61,8 @@ describe('SearchService', () => {
         },
       ];
 
-      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce(mockCaseResults);
-      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([]); // documents
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce(mockCaseResults);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce([]); // documents
 
       const result = await searchService.fullTextSearch(
         'contract',
@@ -92,8 +90,8 @@ describe('SearchService', () => {
         },
       ];
 
-      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([]); // cases
-      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce(mockDocResults);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce([]); // cases
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce(mockDocResults);
 
       const result = await searchService.fullTextSearch(
         'agreement',
@@ -108,7 +106,7 @@ describe('SearchService', () => {
     });
 
     it('should apply date range filter', async () => {
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
       const filters: SearchFilters = {
         dateRange: {
@@ -123,7 +121,7 @@ describe('SearchService', () => {
     });
 
     it('should apply case type filter', async () => {
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
       const filters: SearchFilters = {
         caseTypes: ['Litigation', 'Contract'],
@@ -135,7 +133,7 @@ describe('SearchService', () => {
     });
 
     it('should apply case status filter', async () => {
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
       const filters: SearchFilters = {
         caseStatuses: ['Active', 'PendingApproval'],
@@ -147,7 +145,7 @@ describe('SearchService', () => {
     });
 
     it('should handle empty results', async () => {
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
       const result = await searchService.fullTextSearch(
         'nonexistent',
@@ -176,8 +174,8 @@ describe('SearchService', () => {
         },
       ];
 
-      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce(mockCaseResults);
-      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([]); // documents
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce(mockCaseResults);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce([]); // documents
 
       const result = await searchService.semanticSearch(
         'employment dispute',
@@ -197,8 +195,8 @@ describe('SearchService', () => {
         { id: 'case-2', similarity: 0.3, title: 'Low Match' }, // Below threshold
       ];
 
-      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce(mockResults);
-      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([]);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce(mockResults);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce([]);
 
       const result = await searchService.semanticSearch(
         'test query',
@@ -217,7 +215,7 @@ describe('SearchService', () => {
   describe('hybridSearch', () => {
     it('should combine full-text and semantic results using RRF', async () => {
       // Mock full-text results
-      vi.mocked(prisma.$queryRaw)
+      (jest.mocked as any)(prisma.$queryRaw)
         .mockResolvedValueOnce([
           { id: 'case-ft', title: 'FT Result', rank: 0.9, status: 'Active', type: 'Contract' },
         ])
@@ -241,7 +239,7 @@ describe('SearchService', () => {
 
     it('should deduplicate results from both methods', async () => {
       // Same case appears in both full-text and semantic results
-      vi.mocked(prisma.$queryRaw)
+      (jest.mocked as any)(prisma.$queryRaw)
         .mockResolvedValueOnce([
           { id: 'case-same', title: 'Same Case', rank: 0.9, status: 'Active', type: 'Contract' },
         ])
@@ -259,13 +257,13 @@ describe('SearchService', () => {
         0
       );
 
-      const caseIds = result.map((r) => r.case?.id || r.document?.id);
-      const uniqueIds = [...new Set(caseIds)];
-      expect(caseIds.length).toBe(uniqueIds.length);
+      const resultIds = result.map((r) => r.id);
+      const uniqueIds = [...new Set(resultIds)];
+      expect(resultIds.length).toBe(uniqueIds.length);
     });
 
     it('should rank results using RRF algorithm with k=60', async () => {
-      vi.mocked(prisma.$queryRaw)
+      (jest.mocked as any)(prisma.$queryRaw)
         .mockResolvedValueOnce([
           { id: 'case-1', title: 'Result 1', rank: 0.95, status: 'Active', type: 'Contract' },
           { id: 'case-2', title: 'Result 2', rank: 0.85, status: 'Active', type: 'Contract' },
@@ -292,8 +290,8 @@ describe('SearchService', () => {
 
   describe('search', () => {
     it('should use full-text search when mode is FULL_TEXT', async () => {
-      vi.mocked(redis.get).mockResolvedValue(null);
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
       await searchService.search('test', 'firm-123', SearchMode.FULL_TEXT, {}, 20, 0);
 
@@ -301,8 +299,8 @@ describe('SearchService', () => {
     });
 
     it('should use semantic search when mode is SEMANTIC', async () => {
-      vi.mocked(redis.get).mockResolvedValue(null);
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
       await searchService.search('test', 'firm-123', SearchMode.SEMANTIC, {}, 20, 0);
 
@@ -310,8 +308,8 @@ describe('SearchService', () => {
     });
 
     it('should use hybrid search when mode is HYBRID', async () => {
-      vi.mocked(redis.get).mockResolvedValue(null);
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
       await searchService.search('test', 'firm-123', SearchMode.HYBRID, {}, 20, 0);
 
@@ -324,7 +322,7 @@ describe('SearchService', () => {
         total: 1,
         searchTime: 50,
       };
-      vi.mocked(redis.get).mockResolvedValue(JSON.stringify(cachedResults));
+      (jest.mocked as any)(redis.get).mockResolvedValue(JSON.stringify(cachedResults));
 
       const result = await searchService.search(
         'cached query',
@@ -340,8 +338,8 @@ describe('SearchService', () => {
     });
 
     it('should cache search results', async () => {
-      vi.mocked(redis.get).mockResolvedValue(null);
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([]);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
       await searchService.search('new query', 'firm-123', SearchMode.HYBRID, {}, 20, 0);
 
@@ -356,7 +354,7 @@ describe('SearchService', () => {
 
   describe('recordSearch', () => {
     it('should record search in history', async () => {
-      vi.mocked(prisma.searchHistory.create).mockResolvedValue({
+      (jest.mocked as any)(prisma.searchHistory.create).mockResolvedValue({
         id: 'history-1',
         userId: 'user-123',
         firmId: 'firm-123',
@@ -371,7 +369,7 @@ describe('SearchService', () => {
         'user-123',
         'firm-123',
         'test query',
-        SearchMode.HYBRID,
+        'Hybrid',
         {},
         10
       );
@@ -407,8 +405,8 @@ describe('SearchService', () => {
         },
       ];
 
-      vi.mocked(cacheManager.get).mockResolvedValue(null);
-      vi.mocked(prisma.searchHistory.findMany).mockResolvedValue(mockSearches as any);
+      (jest.mocked as any)(cacheManager.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.searchHistory.findMany).mockResolvedValue(mockSearches as any);
 
       const result = await searchService.getRecentSearches('user-123', 10);
 
@@ -431,7 +429,7 @@ describe('SearchService', () => {
         { id: 'cached-1', query: 'cached', searchType: 'HYBRID', resultCount: 5 },
       ];
 
-      vi.mocked(cacheManager.get).mockResolvedValue(cachedSearches);
+      (jest.mocked as any)(cacheManager.get).mockResolvedValue(cachedSearches);
 
       const result = await searchService.getRecentSearches('user-123', 10);
 
@@ -440,8 +438,8 @@ describe('SearchService', () => {
     });
 
     it('should cache recent searches', async () => {
-      vi.mocked(cacheManager.get).mockResolvedValue(null);
-      vi.mocked(prisma.searchHistory.findMany).mockResolvedValue([]);
+      (jest.mocked as any)(cacheManager.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.searchHistory.findMany).mockResolvedValue([]);
 
       await searchService.getRecentSearches('user-123', 10);
 
@@ -453,7 +451,7 @@ describe('SearchService', () => {
     });
   });
 
-  describe('warmCache', () => {
+  describe('warmCacheForFirm', () => {
     it('should warm cache with popular searches', async () => {
       const popularQueries = [
         { query: 'contract', _count: { query: 50 } },
@@ -461,22 +459,12 @@ describe('SearchService', () => {
       ];
 
       // Mock groupBy for popular queries
-      vi.mocked(prisma.$queryRaw).mockResolvedValue(popularQueries);
+      (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue(popularQueries);
 
-      await searchService.warmCache('firm-123');
+      await searchService.warmCacheForFirm('firm-123');
 
       // Verify search was called for each popular query
       expect(redis.set).toHaveBeenCalled();
-    });
-  });
-
-  describe('clearCache', () => {
-    it('should clear search cache for a firm', async () => {
-      vi.mocked(redis.del).mockResolvedValue(1);
-
-      await searchService.clearCache('firm-123');
-
-      expect(redis.del).toHaveBeenCalled();
     });
   });
 });

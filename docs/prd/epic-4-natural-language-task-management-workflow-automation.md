@@ -30,19 +30,33 @@
 5. Research tasks link to relevant documents and sources
 6. Business Trip tasks trigger delegation workflow for coverage
 
-## Story 4.3: Intelligent Time Tracking
+## Story 4.3: Time Estimation & Manual Time Logging
 
 **As a** lawyer billing my time,
-**I want** automatic time tracking with AI-assisted allocation,
-**so that** I capture all billable hours accurately.
+**I want** to estimate task duration upfront and log actual time manually,
+**so that** I maintain accurate control over billable hours.
 
 **Acceptance Criteria:**
-1. Background service tracks active window and document interactions
-2. AI suggests time entries based on activity: "Drafted contract (2.5 hours) for Case X"
-3. Daily review screen shows all suggested entries for confirmation
-4. Manual timer available for meetings and calls
-5. Time entries include required billing codes and descriptions
-6. Weekly summary shows billable vs non-billable hours with trends
+1. Estimated time field required on task creation (AI can suggest based on similar past tasks)
+2. Manual time logging via simple entry: hours and description
+3. Quick-log option from task context ("Log time against this task")
+4. Time entries include narrative descriptions for billing clarity
+5. Weekly summary shows logged billable vs non-billable hours with trends
+6. Comparison view: estimated vs actual time per task type (for personal improvement)
+
+## Story 4.3.1: Partner Activity Insights (Background Tracking)
+
+**As a** partner reviewing team efficiency,
+**I want** background activity metrics on tasks,
+**so that** I can identify coaching opportunities and workflow improvements.
+
+**Acceptance Criteria:**
+1. Background service tracks active window/document interactions (opt-in, privacy-disclosed)
+2. Activity data visible only to partners in management dashboards
+3. Metrics show: time-on-task patterns, document activity duration, task switching frequency
+4. Data clearly labeled as "Activity Metrics" vs "Logged Time" (never conflated)
+5. Activity data excluded from timesheet reports and client billing
+6. Aggregate analytics for workflow optimization, not individual monitoring
 
 ## Story 4.4: Task Dependencies and Automation
 

@@ -1,0 +1,181 @@
+# Email Drafting GraphQL Schema
+# Story 5.3: AI-Powered Email Drafting
+
+type EmailDraft {
+  id: ID!
+  emailId: ID!
+  email: Email
+  caseId: ID
+  case: Case
+  userId: ID!
+  user: User
+  tone: EmailTone!
+  recipientType: RecipientType!
+  subject: String!
+  body: String!
+  htmlBody: String
+  suggestedAttachments: [AttachmentSuggestion!]!
+  confidence: Float!
+  status: DraftStatus!
+  userEdits: JSON
+  sentAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  refinements: [DraftRefinement!]!
+}
+
+type DraftRefinement {
+  id: ID!
+  draftId: ID!
+  instruction: String!
+  previousBody: String!
+  refinedBody: String!
+  tokensUsed: Int!
+  createdAt: DateTime!
+}
+
+type AttachmentSuggestion {
+  id: ID!
+  documentId: ID!
+  document: Document
+  title: String!
+  reason: String!
+  relevanceScore: Float!
+  isSelected: Boolean!
+}
+
+type MultipleDraftsResponse {
+  drafts: [DraftOption!]!
+  recommendedTone: EmailTone!
+  recommendationReason: String!
+}
+
+type DraftOption {
+  tone: EmailTone!
+  draft: EmailDraft!
+}
+
+type InlineSuggestion {
+  type: InlineSuggestionType!
+  suggestion: String!
+  confidence: Float!
+  reason: String
+}
+
+type DraftGenerationStatus {
+  isGenerating: Boolean!
+  progress: Int
+  error: String
+}
+
+enum EmailTone {
+  Formal
+  Professional
+  Brief
+  Detailed
+}
+
+enum RecipientType {
+  Client
+  OpposingCounsel
+  Court
+  ThirdParty
+  Internal
+}
+
+enum DraftStatus {
+  Generated
+  Editing
+  Ready
+  Sent
+  Discarded
+}
+
+enum InlineSuggestionType {
+  Completion
+  Correction
+  Improvement
+}
+
+input GenerateDraftInput {
+  emailId: ID!
+  tone: EmailTone
+  recipientType: RecipientType
+}
+
+input RefineDraftInput {
+  draftId: ID!
+  instruction: String!
+}
+
+input UpdateDraftInput {
+  draftId: ID!
+  subject: String
+  body: String
+  status: DraftStatus
+  selectedAttachmentIds: [ID!]
+}
+
+input InlineSuggestionInput {
+  draftId: ID!
+  partialText: String!
+}
+
+extend type Query {
+  """
+  Get a single email draft by ID
+  """
+  emailDraft(id: ID!): EmailDraft
+
+  """
+  Get email drafts with optional filters
+  """
+  emailDrafts(emailId: ID, caseId: ID, status: DraftStatus): [EmailDraft!]!
+
+  """
+  Get attachment suggestions for a draft
+  """
+  attachmentSuggestions(draftId: ID!): [AttachmentSuggestion!]!
+}
+
+extend type Mutation {
+  """
+  Generate a single email draft with specified tone
+  """
+  generateEmailDraft(input: GenerateDraftInput!): EmailDraft!
+
+  """
+  Generate multiple drafts with different tones
+  """
+  generateMultipleDrafts(emailId: ID!): MultipleDraftsResponse!
+
+  """
+  Refine an existing draft with AI
+  """
+  refineDraft(input: RefineDraftInput!): EmailDraft!
+
+  """
+  Update draft content manually
+  """
+  updateDraft(input: UpdateDraftInput!): EmailDraft!
+
+  """
+  Send the draft email via Graph API
+  """
+  sendDraft(draftId: ID!): Boolean!
+
+  """
+  Discard a draft
+  """
+  discardDraft(draftId: ID!): Boolean!
+
+  """
+  Toggle attachment selection
+  """
+  selectAttachment(suggestionId: ID!, selected: Boolean!): AttachmentSuggestion!
+
+  """
+  Get inline AI suggestion while editing
+  """
+  getInlineSuggestion(input: InlineSuggestionInput!): InlineSuggestion
+}

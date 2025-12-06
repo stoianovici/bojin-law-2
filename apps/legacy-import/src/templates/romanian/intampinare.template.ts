@@ -6,7 +6,7 @@
  * filed in response to a lawsuit, used to contest claims and present defense arguments.
  */
 
-import { RomanianTemplateDefinition, TemplateSection } from './notificare-avocateasca.template';
+import type { RomanianTemplateDefinition } from './notificare-avocateasca.template';
 
 export const IntampinareTemplate: RomanianTemplateDefinition = {
   metadata: {

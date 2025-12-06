@@ -42,7 +42,7 @@ const createTestApp = (): Express => {
   app.use(express.json());
 
   // Example API routes
-  app.get('/api/cases', async (req, res) => {
+  app.get('/api/cases', async (req: any, res: any) => {
     // In real app, fetch from database
     const cases = [
       { id: '1', title: 'Case 1', status: 'Active' },
@@ -51,7 +51,7 @@ const createTestApp = (): Express => {
     res.json({ data: cases });
   });
 
-  app.get('/api/cases/:id', async (req, res) => {
+  app.get('/api/cases/:id', async (req: any, res: any) => {
     const { id } = req.params;
     // In real app, fetch from database
     if (id === '999') {
@@ -60,7 +60,7 @@ const createTestApp = (): Express => {
     res.json({ data: { id, title: 'Test Case', status: 'Active' } });
   });
 
-  app.post('/api/cases', async (req, res) => {
+  app.post('/api/cases', async (req: any, res: any) => {
     const { title, clientId } = req.body;
 
     // Validate required fields
@@ -80,7 +80,7 @@ const createTestApp = (): Express => {
     res.status(201).json({ data: newCase });
   });
 
-  app.put('/api/cases/:id', async (req, res) => {
+  app.put('/api/cases/:id', async (req: any, res: any) => {
     const { id } = req.params;
     const { title, status } = req.body;
 
@@ -90,7 +90,7 @@ const createTestApp = (): Express => {
     });
   });
 
-  app.delete('/api/cases/:id', async (req, res) => {
+  app.delete('/api/cases/:id', async (req: any, res: any) => {
     const { id } = req.params;
     // In real app, delete from database
     res.status(204).send();

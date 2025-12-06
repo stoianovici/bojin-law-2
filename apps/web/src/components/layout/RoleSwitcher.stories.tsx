@@ -38,7 +38,7 @@ const meta: Meta<typeof RoleSwitcher> = {
     },
   },
   decorators: [
-    (Story, context) => {
+    (Story: any, context: any) => {
       useEffect(() => {
         if (context.args.initialRole) {
           useNavigationStore.getState().setCurrentRole(context.args.initialRole as UserRole);
@@ -223,7 +223,7 @@ export const CompactLayout: Story = {
     onRoleChange: fn(),
   },
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="p-2 w-48">
         <Story />
       </div>
@@ -247,7 +247,7 @@ export const FullWidthLayout: Story = {
     onRoleChange: fn(),
   },
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="p-4 w-full max-w-md">
         <Story />
       </div>
@@ -271,7 +271,7 @@ export const InSidebarContext: Story = {
     onRoleChange: fn(),
   },
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
         <div className="flex-1 p-4">
           <div className="text-sm text-gray-600 mb-4">Sidebar Content</div>

@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Only Partners and Admins can view user list
-    if (currentUser.role !== 'Partner' && currentUser.role !== 'Admin') {
+    // Only Partners and BusinessOwners can view user list
+    if (currentUser.role !== 'Partner' && currentUser.role !== 'BusinessOwner') {
       return NextResponse.json(
         { error: 'forbidden', message: 'Nu ai permisiunea să vezi lista de utilizatori' },
         { status: 403 }

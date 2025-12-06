@@ -1,0 +1,365 @@
+# Task Analytics GraphQL Schema
+# Story 4.7: Task Analytics and Optimization
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+input AnalyticsFiltersInput {
+  dateRange: DateRangeInput!
+  taskTypes: [TaskType!]
+  userIds: [ID!]
+  caseIds: [ID!]
+  limit: Int
+  offset: Int
+}
+
+input CreateTemplateFromPatternInput {
+  patternId: ID!
+  templateName: String!
+  description: String
+}
+
+# ============================================================================
+# Completion Time Analytics (AC: 1)
+# ============================================================================
+
+type CompletionTimeMetrics {
+  avgCompletionTimeHours: Float!
+  medianCompletionTimeHours: Float!
+  minCompletionTimeHours: Float!
+  maxCompletionTimeHours: Float!
+  totalTasksAnalyzed: Int!
+}
+
+type CompletionByType {
+  taskType: TaskType!
+  metrics: CompletionTimeMetrics!
+  comparedToPrevious: Float
+}
+
+type CompletionByUser {
+  userId: ID!
+  userName: String!
+  metrics: CompletionTimeMetrics!
+  taskCount: Int!
+  comparedToTeamAvg: Float
+}
+
+# DateRange type defined in financial-kpis.graphql
+
+type CompletionTimeAnalyticsResponse {
+  firmMetrics: CompletionTimeMetrics!
+  byType: [CompletionByType!]!
+  byUser: [CompletionByUser!]!
+  dateRange: DateRange!
+}
+
+# ============================================================================
+# Overdue Analysis (AC: 2)
+# ============================================================================
+
+enum ImpactLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+type OverdueTask {
+  taskId: ID!
+  taskTitle: String!
+  taskType: TaskType!
+  assigneeId: ID!
+  assigneeName: String!
+  caseId: ID!
+  caseTitle: String!
+  dueDate: DateTime!
+  daysOverdue: Int!
+  blockedBy: [ID!]
+  estimatedImpact: ImpactLevel!
+}
+
+enum BottleneckType {
+  USER_OVERLOAD
+  TASK_TYPE_DELAY
+  DEPENDENCY_CHAIN
+  CASE_COMPLEXITY
+}
+
+type BottleneckPattern {
+  patternType: BottleneckType!
+  description: String!
+  affectedTasks: Int!
+  suggestedAction: String!
+  relatedUsers: [ID!]
+  relatedTaskTypes: [TaskType!]
+}
+
+type OverdueByTypeItem {
+  taskType: TaskType!
+  count: Int!
+  avgDaysOverdue: Float!
+}
+
+type OverdueByUserItem {
+  userId: ID!
+  userName: String!
+  count: Int!
+}
+
+type OverdueAnalyticsResponse {
+  totalOverdue: Int!
+  overdueByType: [OverdueByTypeItem!]!
+  overdueByUser: [OverdueByUserItem!]!
+  bottleneckPatterns: [BottleneckPattern!]!
+  criticalTasks: [OverdueTask!]!
+}
+
+# ============================================================================
+# Velocity Trends (AC: 3)
+# ============================================================================
+
+enum TrendDirection {
+  IMPROVING
+  STABLE
+  DECLINING
+}
+
+enum TrendDirectionSimple {
+  UP
+  STABLE
+  DOWN
+}
+
+enum VelocityInterval {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+type VelocityDataPoint {
+  date: DateTime!
+  tasksCreated: Int!
+  tasksCompleted: Int!
+  velocityScore: Float!
+  trend: TrendDirection!
+}
+
+type VelocityByUser {
+  userId: ID!
+  userName: String!
+  currentVelocity: Float!
+  previousVelocity: Float!
+  trendDirection: TrendDirectionSimple!
+  percentageChange: Float!
+}
+
+type FirmVelocity {
+  current: Float!
+  previous: Float!
+  trend: TrendDirection!
+  percentageChange: Float!
+}
+
+type VelocityTrendsResponse {
+  firmVelocity: FirmVelocity!
+  timeSeries: [VelocityDataPoint!]!
+  byUser: [VelocityByUser!]!
+  interval: VelocityInterval!
+}
+
+# ============================================================================
+# Pattern Detection (AC: 4)
+# ============================================================================
+
+type PatternAssignee {
+  userId: ID!
+  userName: String!
+  frequency: Int!
+}
+
+type PatternSampleCase {
+  caseId: ID!
+  caseTitle: String!
+}
+
+type TaskCoOccurrencePattern {
+  id: ID!
+  taskTypes: [TaskType!]!
+  caseTypes: [CaseType!]!
+  occurrenceCount: Int!
+  confidence: Float!
+  suggestedTemplateName: String!
+  avgSequenceGapDays: Float
+  commonAssignees: [PatternAssignee!]!
+  sampleCases: [PatternSampleCase!]!
+  isTemplateCreated: Boolean!
+}
+
+type PatternDetectionResponse {
+  patterns: [TaskCoOccurrencePattern!]!
+  analysisDate: DateTime!
+  totalPatternsFound: Int!
+  highConfidenceCount: Int!
+}
+
+# ============================================================================
+# Delegation Analysis (AC: 5)
+# ============================================================================
+
+enum TrainingPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+type TrainingSuggestion {
+  skillArea: TaskType!
+  reason: String!
+  priority: TrainingPriority!
+  suggestedAction: String!
+}
+
+type DelegationPatternUser {
+  userId: ID!
+  userName: String!
+  role: String!
+  delegationsReceived: Int!
+  delegationsGiven: Int!
+  successRate: Float!
+  avgCompletionDays: Float!
+  strengthAreas: [TaskType!]!
+  struggleAreas: [TaskType!]!
+  suggestedTraining: [TrainingSuggestion!]!
+}
+
+type DelegationFlow {
+  fromUserId: ID!
+  fromUserName: String!
+  toUserId: ID!
+  toUserName: String!
+  count: Int!
+  avgSuccessRate: Float!
+}
+
+type UserTrainingOpportunities {
+  userId: ID!
+  userName: String!
+  suggestions: [TrainingSuggestion!]!
+}
+
+type DelegationAnalyticsResponse {
+  byUser: [DelegationPatternUser!]!
+  topDelegationFlows: [DelegationFlow!]!
+  firmWideSuccessRate: Float!
+  trainingOpportunities: [UserTrainingOpportunities!]!
+}
+
+# ============================================================================
+# ROI Calculator (AC: 6)
+# ============================================================================
+
+type ROIMetrics {
+  templateTasksCreated: Int!
+  manualTasksCreated: Int!
+  templateAdoptionRate: Float!
+  estimatedTemplateTimeSavedHours: Float!
+  nlpTasksCreated: Int!
+  estimatedNLPTimeSavedHours: Float!
+  autoRemindersSet: Int!
+  autoDependencyTriggers: Int!
+  autoReassignments: Int!
+  estimatedAutomationTimeSavedHours: Float!
+  totalTimeSavedHours: Float!
+  avgHourlyRate: Float!
+  totalValueSaved: Float!
+  comparisonPeriod: DateRange!
+  previousPeriodSavings: Float
+  savingsGrowthPercent: Float
+}
+
+type ROITimeSeriesPoint {
+  date: DateTime!
+  timeSavedHours: Float!
+  valueSaved: Float!
+}
+
+type SavingsCategory {
+  category: String!
+  hoursSaved: Float!
+  valueSaved: Float!
+  percentageOfTotal: Float!
+}
+
+type ROIDashboardResponse {
+  currentPeriod: ROIMetrics!
+  timeSeries: [ROITimeSeriesPoint!]!
+  projectedAnnualSavings: Float!
+  topSavingsCategories: [SavingsCategory!]!
+}
+
+# ============================================================================
+# Worker Health
+# ============================================================================
+
+enum WorkerStatus {
+  HEALTHY
+  STALE
+  ERROR
+  DISABLED
+}
+
+type WorkerHealthStatus {
+  workerName: String!
+  lastRunAt: DateTime
+  nextScheduledRun: DateTime
+  status: WorkerStatus!
+  lastError: String
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  # Completion Analytics (AC: 1)
+  taskCompletionAnalytics(filters: AnalyticsFiltersInput!): CompletionTimeAnalyticsResponse!
+
+  # Overdue Analysis (AC: 2)
+  overdueAnalytics(filters: AnalyticsFiltersInput!): OverdueAnalyticsResponse!
+
+  # Velocity Trends (AC: 3)
+  velocityTrends(filters: AnalyticsFiltersInput!, interval: VelocityInterval!): VelocityTrendsResponse!
+
+  # Pattern Detection (AC: 4)
+  taskPatterns: PatternDetectionResponse!
+  taskPattern(patternId: ID!): TaskCoOccurrencePattern
+
+  # Delegation Analysis (AC: 5)
+  delegationAnalytics(filters: AnalyticsFiltersInput!): DelegationAnalyticsResponse!
+  userDelegationPattern(userId: ID!, filters: AnalyticsFiltersInput!): DelegationPatternUser
+
+  # ROI Calculator (AC: 6)
+  roiDashboard(filters: AnalyticsFiltersInput!): ROIDashboardResponse!
+
+  # Worker Health (Admin only)
+  analyticsWorkersHealth: [WorkerHealthStatus!]!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  # Create template from detected pattern (AC: 4)
+  createTemplateFromPattern(input: CreateTemplateFromPatternInput!): TaskTemplate!
+
+  # Manually trigger analytics workers (admin only)
+  triggerPatternAnalysis: PatternDetectionResponse!
+  triggerAnalyticsAggregation(date: DateTime): Boolean!
+  triggerROIMetricsCalculation(month: DateTime): Boolean!
+
+  # Dismiss/acknowledge a pattern (won't show again)
+  dismissPattern(patternId: ID!): Boolean!
+}

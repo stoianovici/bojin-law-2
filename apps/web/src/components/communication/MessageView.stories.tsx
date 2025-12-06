@@ -109,7 +109,7 @@ const meta: Meta<typeof MessageView> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       return (
         <div className="h-screen bg-gray-50">
           <Story />
@@ -127,7 +127,7 @@ type Story = StoryObj<typeof MessageView>;
  */
 export const Default: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread)
       );
@@ -148,7 +148,7 @@ export const Default: Story = {
  */
 export const NoThreadSelected: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(null)
       );
@@ -169,7 +169,7 @@ export const NoThreadSelected: Story = {
  */
 export const MessagesExpanded: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1', 'msg-2']);
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread, expandedIds)
@@ -191,7 +191,7 @@ export const MessagesExpanded: Story = {
  */
 export const WithReplyButton: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1']);
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread, expandedIds)
@@ -213,7 +213,7 @@ export const WithReplyButton: Story = {
  */
 export const WithAttachment: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1']);
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread, expandedIds)
@@ -235,7 +235,7 @@ export const WithAttachment: Story = {
  */
 export const WithUnconvertedItemsWarning: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread)
       );
@@ -256,7 +256,7 @@ export const WithUnconvertedItemsWarning: Story = {
  */
 export const MarkAsProcessedButton: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread)
       );
@@ -277,7 +277,7 @@ export const MarkAsProcessedButton: Story = {
  */
 export const ProcessedThread: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const processedThread: CommunicationThread = {
         ...mockThread,
         isProcessed: true,
@@ -308,7 +308,7 @@ export const ProcessedThread: Story = {
  */
 export const LongConversation: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const longThread: CommunicationThread = {
         ...mockThread,
         messages: [
@@ -363,7 +363,7 @@ export const LongConversation: Story = {
  */
 export const RomanianLanguage: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1']);
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread, expandedIds)
@@ -385,7 +385,7 @@ export const RomanianLanguage: Story = {
  */
 export const EmptyThread: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const emptyThread: CommunicationThread = {
         ...mockThread,
         messages: [],
@@ -415,7 +415,7 @@ export const EmptyThread: Story = {
  */
 export const AllMessagesExpanded: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const allExpandedIds = new Set(['msg-1', 'msg-2']);
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread, allExpandedIds)
@@ -437,7 +437,7 @@ export const AllMessagesExpanded: Story = {
  */
 export const Mobile: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1']);
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
         createMockStore(mockThread, expandedIds)

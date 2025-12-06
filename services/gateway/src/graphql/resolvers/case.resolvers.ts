@@ -450,6 +450,29 @@ export const caseResolvers = {
       });
     },
 
+    // Search clients by name for autocomplete
+    searchClients: async (_: any, args: { query: string; limit?: number }, context: Context) => {
+      const user = requireAuth(context);
+      const limit = Math.min(args.limit || 10, 50);
+
+      if (args.query.length < 1) {
+        return [];
+      }
+
+      // Use case-insensitive ILIKE for PostgreSQL search
+      return prisma.client.findMany({
+        where: {
+          firmId: user.firmId,
+          name: {
+            contains: args.query,
+            mode: 'insensitive',
+          },
+        },
+        orderBy: { name: 'asc' },
+        take: limit,
+      });
+    },
+
     // ============================================================================
     // Story 2.11.2: Retainer Billing Support Queries
     // ============================================================================
@@ -543,14 +566,23 @@ export const caseResolvers = {
         });
       }
 
-      // Verify client exists
-      const client = await prisma.client.findUnique({
-        where: { id: args.input.clientId },
+      // Find or create client by name
+      let client = await prisma.client.findFirst({
+        where: {
+          firmId: user.firmId,
+          name: args.input.clientName,
+        },
       });
 
-      if (!client || client.firmId !== user.firmId) {
-        throw new GraphQLError('Client not found', {
-          extensions: { code: 'NOT_FOUND' },
+      if (!client) {
+        // Create new client with the provided name
+        client = await prisma.client.create({
+          data: {
+            firmId: user.firmId,
+            name: args.input.clientName,
+            type: 'Individual', // Default type
+            status: 'Active',
+          },
         });
       }
 
@@ -589,7 +621,7 @@ export const caseResolvers = {
             firmId: user.firmId,
             caseNumber,
             title: args.input.title,
-            clientId: args.input.clientId,
+            clientId: client.id,
             type: args.input.type,
             description: args.input.description,
             status: caseStatus,

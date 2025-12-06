@@ -44,11 +44,13 @@ export function NaturalLanguageEntry() {
 
     const { parsedEntry } = lastParseResult;
 
+    // TODO: Get userId and userName from auth context
+    // TODO: Require caseId and caseName from parsing or selection
     addTimeEntry({
-      userId: 'user-001',
-      userName: 'Current User',
-      caseId: parsedEntry.caseId || 'case-1',
-      caseName: parsedEntry.caseName || 'Dosar General',
+      userId: '', // Should come from auth context
+      userName: '', // Should come from auth context
+      caseId: parsedEntry.caseId || '', // Should be required, not fallback
+      caseName: parsedEntry.caseName || '', // Should be required, not fallback
       taskType: parsedEntry.taskType || 'Other',
       date: new Date(),
       duration: parsedEntry.duration || 0,
@@ -179,7 +181,7 @@ export function NaturalLanguageEntry() {
                 <div>
                   <span className="text-sm font-medium text-gray-700">Dosar:</span>
                   <span className="ml-2 text-sm text-gray-900">
-                    {lastParseResult.parsedEntry.caseName || 'Dosar General'}
+                    {lastParseResult.parsedEntry.caseName || '(Nu a fost detectat)'}
                   </span>
                 </div>
 

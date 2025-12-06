@@ -25,41 +25,20 @@ import {
 } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Mock data for development
-const mockUsageStats = {
-  totalTokens: 2500000,
-  totalCostCents: 4250,
-  requestCount: 1250,
-  avgLatencyMs: 450,
-  cacheHitRate: 0.32,
-  byModel: [
-    { model: 'claude-3-haiku-20240307', tokens: 500000, costCents: 125, requestCount: 500 },
-    { model: 'claude-3-5-sonnet-20241022', tokens: 1500000, costCents: 3750, requestCount: 600 },
-    { model: 'claude-3-opus-20240229', tokens: 500000, costCents: 375, requestCount: 150 },
-  ],
-  byOperation: [
-    { operation: 'text_generation', tokens: 800000, costCents: 1500, requestCount: 400 },
-    { operation: 'document_summary', tokens: 600000, costCents: 1200, requestCount: 300 },
-    { operation: 'classification', tokens: 200000, costCents: 50, requestCount: 200 },
-    { operation: 'extraction', tokens: 300000, costCents: 75, requestCount: 150 },
-    { operation: 'legal_analysis', tokens: 600000, costCents: 1425, requestCount: 200 },
-  ],
+// Empty state - TODO: Replace with real GraphQL API call
+const emptyUsageStats = {
+  totalTokens: 0,
+  totalCostCents: 0,
+  requestCount: 0,
+  avgLatencyMs: 0,
+  cacheHitRate: 0,
+  byModel: [] as { model: string; tokens: number; costCents: number; requestCount: number }[],
+  byOperation: [] as { operation: string; tokens: number; costCents: number; requestCount: number }[],
 };
 
-const mockDailyTrend = [
-  { date: '2025-11-20', tokens: 350000, costCents: 600, requests: 175 },
-  { date: '2025-11-21', tokens: 420000, costCents: 720, requests: 210 },
-  { date: '2025-11-22', tokens: 380000, costCents: 650, requests: 190 },
-  { date: '2025-11-23', tokens: 250000, costCents: 430, requests: 125 },
-  { date: '2025-11-24', tokens: 280000, costCents: 480, requests: 140 },
-  { date: '2025-11-25', tokens: 410000, costCents: 700, requests: 205 },
-  { date: '2025-11-26', tokens: 410000, costCents: 670, requests: 205 },
-];
+const emptyDailyTrend: { date: string; tokens: number; costCents: number; requests: number }[] = [];
 
-const mockProviderHealth = [
-  { provider: 'Claude', status: 'HEALTHY', latencyMs: 150, lastChecked: new Date() },
-  { provider: 'Grok', status: 'HEALTHY', latencyMs: 200, lastChecked: new Date() },
-];
+const emptyProviderHealth: { provider: string; status: string; latencyMs: number; lastChecked: Date }[] = [];
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -103,10 +82,10 @@ export default function AIUsagePage() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('7d');
 
-  // In production, fetch from GraphQL
-  const usageStats = mockUsageStats;
-  const dailyTrend = mockDailyTrend;
-  const providerHealth = mockProviderHealth;
+  // TODO: Fetch from GraphQL API
+  const usageStats = emptyUsageStats;
+  const dailyTrend = emptyDailyTrend;
+  const providerHealth = emptyProviderHealth;
 
   // Calculate model breakdown for pie chart
   const modelPieData = useMemo(() => {

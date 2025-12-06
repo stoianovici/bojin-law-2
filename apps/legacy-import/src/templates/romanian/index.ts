@@ -80,7 +80,7 @@ export type RomanianTemplateSlug = keyof typeof ROMANIAN_TEMPLATES;
  * Get template by slug
  */
 export function getTemplate(slug: RomanianTemplateSlug): {
-  definition: RomanianTemplateDefinition;
+  definition: RomanianTemplateDefinition | { metadata: RomanianTemplateDefinition['metadata'] };
   generate: (variables: Record<string, string>) => string;
   validate: (variables: Record<string, string>) => { valid: boolean; missing: string[] };
 } {
@@ -88,7 +88,11 @@ export function getTemplate(slug: RomanianTemplateSlug): {
   if (!template) {
     throw new Error(`Template not found: ${slug}`);
   }
-  return template;
+  return template as {
+    definition: RomanianTemplateDefinition | { metadata: RomanianTemplateDefinition['metadata'] };
+    generate: (variables: Record<string, string>) => string;
+    validate: (variables: Record<string, string>) => { valid: boolean; missing: string[] };
+  };
 }
 
 /**

@@ -63,129 +63,13 @@ const DEFAULT_FILTERS: CommunicationFilters = {
   unreadOnly: false,
 };
 
-// Simple inline mock data for prototype
-function createMockThreads(): CommunicationThread[] {
-  const mockThreads: CommunicationThread[] = [
-    {
-      id: '1',
-      subject: 'Contract Review - Tech Solutions SRL',
-      caseId: 'case-1',
-      caseName: 'Tech Solutions Contract',
-      caseType: 'Contract',
-      participants: [
-        { userId: '1', name: 'Elena Popescu', email: 'elena@techsol.ro', role: 'sender' },
-        { userId: '2', name: 'Mihai Bojin', email: 'mihai@law.ro', role: 'recipient' },
-      ],
-      messages: [
-        {
-          id: 'msg-1',
-          threadId: '1',
-          senderId: '1',
-          senderName: 'Elena Popescu',
-          senderEmail: 'elena@techsol.ro',
-          recipientIds: ['2'],
-          subject: 'Contract Review - Tech Solutions SRL',
-          body: 'Bună ziua,\n\nVă transmit în atașament contractul pentru serviciile juridice. Aș aprecia dacă puteți revizui clauzele până vineri.\n\nMulțumesc,\nElena',
-          sentDate: new Date('2024-11-10T10:30:00'),
-          attachments: [{ id: 'att-1', filename: 'contract_draft.pdf', fileSize: 245000, mimeType: 'application/pdf', downloadUrl: '#' }],
-          isFromUser: false,
-          isRead: false,
-        },
-      ],
-      hasAttachments: true,
-      isUnread: true,
-      lastMessageDate: new Date('2024-11-10T10:30:00'),
-      extractedItems: {
-        deadlines: [{ id: 'd1', description: 'Revizie contract', dueDate: new Date('2024-11-15'), sourceMessageId: 'msg-1', confidence: 'High' }],
-        commitments: [],
-        actionItems: [{ id: 'a1', description: 'Revizuire clauze contract', priority: 'High', sourceMessageId: 'msg-1', confidence: 'High' }],
-      },
-      createdAt: new Date('2024-11-10T10:30:00'),
-      updatedAt: new Date('2024-11-10T10:30:00'),
-    },
-    {
-      id: '2',
-      subject: 'Litigiu de muncă - Ioan Popescu vs Acme Corp',
-      caseId: 'case-2',
-      caseName: 'Popescu Employment Case',
-      caseType: 'Litigation',
-      participants: [
-        { userId: '3', name: 'Ioan Popescu', email: 'ioan@email.ro', role: 'sender' },
-        { userId: '2', name: 'Mihai Bojin', email: 'mihai@law.ro', role: 'recipient' },
-      ],
-      messages: [
-        {
-          id: 'msg-2',
-          threadId: '2',
-          senderId: '3',
-          senderName: 'Ioan Popescu',
-          senderEmail: 'ioan@email.ro',
-          recipientIds: ['2'],
-          subject: 'Litigiu de muncă - Ioan Popescu vs Acme Corp',
-          body: 'Bună ziua,\n\nDoresc să vă informez că am primit răspunsul de la companie. Pot veni mâine pentru consultație?\n\nCu stimă,\nIoan Popescu',
-          sentDate: new Date('2024-11-12T14:20:00'),
-          attachments: [],
-          isFromUser: false,
-          isRead: true,
-        },
-      ],
-      hasAttachments: false,
-      isUnread: false,
-      lastMessageDate: new Date('2024-11-12T14:20:00'),
-      extractedItems: {
-        deadlines: [],
-        commitments: [],
-        actionItems: [{ id: 'a2', description: 'Programare consultație', priority: 'Medium', sourceMessageId: 'msg-2', confidence: 'Medium' }],
-      },
-      createdAt: new Date('2024-11-12T14:20:00'),
-      updatedAt: new Date('2024-11-12T14:20:00'),
-    },
-    {
-      id: '3',
-      subject: 'Întrebare despre drepturile de proprietate intelectuală',
-      caseId: 'case-3',
-      caseName: 'IP Rights Advisory',
-      caseType: 'Advisory',
-      participants: [
-        { userId: '4', name: 'Ana Ionescu', email: 'ana@startup.ro', role: 'sender' },
-        { userId: '2', name: 'Mihai Bojin', email: 'mihai@law.ro', role: 'recipient' },
-      ],
-      messages: [
-        {
-          id: 'msg-3',
-          threadId: '3',
-          senderId: '4',
-          senderName: 'Ana Ionescu',
-          senderEmail: 'ana@startup.ro',
-          recipientIds: ['2'],
-          subject: 'Întrebare despre drepturile de proprietate intelectuală',
-          body: 'Bună ziua,\n\nAm o întrebare urgentă despre brevetarea software-ului nostru. Ne putem întâlni săptămâna aceasta?\n\nMulțumesc,\nAna',
-          sentDate: new Date('2024-11-13T09:15:00'),
-          attachments: [],
-          isFromUser: false,
-          isRead: true,
-        },
-      ],
-      hasAttachments: false,
-      isUnread: false,
-      lastMessageDate: new Date('2024-11-13T09:15:00'),
-      extractedItems: {
-        deadlines: [],
-        commitments: [],
-        actionItems: [],
-      },
-      createdAt: new Date('2024-11-13T09:15:00'),
-      updatedAt: new Date('2024-11-13T09:15:00'),
-    },
-  ];
-  return mockThreads;
-}
+// Communication threads should be fetched from API - start with empty array
 
 export const useCommunicationStore = create<CommunicationState>()(
   persist(
     (set, get) => ({
-      // Initial state
-      threads: createMockThreads(),
+      // Initial state - empty, data comes from API
+      threads: [] as CommunicationThread[],
       selectedThreadId: null,
       expandedMessageIds: new Set(),
       filters: DEFAULT_FILTERS,

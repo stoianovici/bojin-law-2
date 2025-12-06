@@ -93,7 +93,7 @@ describe('CreateCaseModal', () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Title/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Client ID/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Client Name/)).toBeInTheDocument();
       expect(screen.getByLabelText(/Case Type/)).toBeInTheDocument();
       expect(screen.getByLabelText(/Description/)).toBeInTheDocument();
       expect(screen.getByLabelText(/Case Value/)).toBeInTheDocument();
@@ -138,14 +138,14 @@ describe('CreateCaseModal', () => {
     });
   });
 
-  it('shows validation error for invalid UUID in clientId', async () => {
+  it('shows validation error for client name too short', async () => {
     render(<CreateCaseModal />);
 
     fireEvent.click(screen.getByText('+ New Case'));
 
     await waitFor(() => {
-      const clientInput = screen.getByLabelText(/Client ID/);
-      fireEvent.change(clientInput, { target: { value: 'invalid-uuid' } });
+      const clientInput = screen.getByLabelText(/Client Name/);
+      fireEvent.change(clientInput, { target: { value: 'A' } });
       fireEvent.blur(clientInput);
     });
 
@@ -153,7 +153,7 @@ describe('CreateCaseModal', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Please select a valid client')).toBeInTheDocument();
+      expect(screen.getByText('Client name must be at least 2 characters')).toBeInTheDocument();
     });
   });
 
@@ -169,13 +169,13 @@ describe('CreateCaseModal', () => {
 
     await waitFor(() => {
       const titleInput = screen.getByLabelText(/Title/);
-      const clientInput = screen.getByLabelText(/Client ID/);
+      const clientInput = screen.getByLabelText(/Client Name/);
       const typeSelect = screen.getByLabelText(/Case Type/);
       const descInput = screen.getByLabelText(/Description/);
 
       fireEvent.change(titleInput, { target: { value: 'Test Case Title' } });
       fireEvent.change(clientInput, {
-        target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+        target: { value: 'Test Client' },
       });
       fireEvent.change(typeSelect, { target: { value: 'Litigation' } });
       fireEvent.change(descInput, {
@@ -189,7 +189,7 @@ describe('CreateCaseModal', () => {
     await waitFor(() => {
       expect(mockCreateCase).toHaveBeenCalledWith({
         title: 'Test Case Title',
-        clientId: '123e4567-e89b-12d3-a456-426614174000',
+        clientName: 'Test Client',
         type: 'Litigation',
         description: 'This is a test case description',
         value: undefined,
@@ -211,8 +211,8 @@ describe('CreateCaseModal', () => {
       fireEvent.change(screen.getByLabelText(/Title/), {
         target: { value: 'Test Case' },
       });
-      fireEvent.change(screen.getByLabelText(/Client ID/), {
-        target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+      fireEvent.change(screen.getByLabelText(/Client Name/), {
+        target: { value: 'Test Client' },
       });
       fireEvent.change(screen.getByLabelText(/Case Type/), {
         target: { value: 'Litigation' },
@@ -247,8 +247,8 @@ describe('CreateCaseModal', () => {
       fireEvent.change(screen.getByLabelText(/Title/), {
         target: { value: 'Test Case' },
       });
-      fireEvent.change(screen.getByLabelText(/Client ID/), {
-        target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+      fireEvent.change(screen.getByLabelText(/Client Name/), {
+        target: { value: 'Test Client' },
       });
       fireEvent.change(screen.getByLabelText(/Case Type/), {
         target: { value: 'Litigation' },
@@ -314,8 +314,8 @@ describe('CreateCaseModal', () => {
       fireEvent.change(screen.getByLabelText(/Title/), {
         target: { value: 'Test Case' },
       });
-      fireEvent.change(screen.getByLabelText(/Client ID/), {
-        target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+      fireEvent.change(screen.getByLabelText(/Client Name/), {
+        target: { value: 'Test Client' },
       });
       fireEvent.change(screen.getByLabelText(/Case Type/), {
         target: { value: 'Litigation' },
@@ -422,8 +422,8 @@ describe('CreateCaseModal', () => {
         fireEvent.change(screen.getByLabelText(/Title/), {
           target: { value: 'Test Case' },
         });
-        fireEvent.change(screen.getByLabelText(/Client ID/), {
-          target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+        fireEvent.change(screen.getByLabelText(/Client Name/), {
+          target: { value: 'Test Client' },
         });
         fireEvent.change(screen.getByLabelText(/Case Type/), {
           target: { value: 'Litigation' },
@@ -454,8 +454,8 @@ describe('CreateCaseModal', () => {
         fireEvent.change(screen.getByLabelText(/Title/), {
           target: { value: 'Test Case' },
         });
-        fireEvent.change(screen.getByLabelText(/Client ID/), {
-          target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+        fireEvent.change(screen.getByLabelText(/Client Name/), {
+          target: { value: 'Test Client' },
         });
         fireEvent.change(screen.getByLabelText(/Case Type/), {
           target: { value: 'Litigation' },
@@ -532,8 +532,8 @@ describe('CreateCaseModal', () => {
         fireEvent.change(screen.getByLabelText(/Title/), {
           target: { value: 'Test Case' },
         });
-        fireEvent.change(screen.getByLabelText(/Client ID/), {
-          target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+        fireEvent.change(screen.getByLabelText(/Client Name/), {
+          target: { value: 'Test Client' },
         });
         fireEvent.change(screen.getByLabelText(/Case Type/), {
           target: { value: 'Litigation' },
@@ -645,8 +645,8 @@ describe('CreateCaseModal', () => {
         fireEvent.change(screen.getByLabelText(/Title/), {
           target: { value: 'Test Case' },
         });
-        fireEvent.change(screen.getByLabelText(/Client ID/), {
-          target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+        fireEvent.change(screen.getByLabelText(/Client Name/), {
+          target: { value: 'Test Client' },
         });
         fireEvent.change(screen.getByLabelText(/Case Type/), {
           target: { value: 'Litigation' },
@@ -691,8 +691,8 @@ describe('CreateCaseModal', () => {
         fireEvent.change(screen.getByLabelText(/Title/), {
           target: { value: 'Test Case' },
         });
-        fireEvent.change(screen.getByLabelText(/Client ID/), {
-          target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+        fireEvent.change(screen.getByLabelText(/Client Name/), {
+          target: { value: 'Test Client' },
         });
         fireEvent.change(screen.getByLabelText(/Case Type/), {
           target: { value: 'Litigation' },
@@ -737,8 +737,8 @@ describe('CreateCaseModal', () => {
         fireEvent.change(screen.getByLabelText(/Title/), {
           target: { value: 'Test Case' },
         });
-        fireEvent.change(screen.getByLabelText(/Client ID/), {
-          target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+        fireEvent.change(screen.getByLabelText(/Client Name/), {
+          target: { value: 'Test Client' },
         });
         fireEvent.change(screen.getByLabelText(/Case Type/), {
           target: { value: 'Litigation' },
@@ -783,8 +783,8 @@ describe('CreateCaseModal', () => {
         fireEvent.change(screen.getByLabelText(/Title/), {
           target: { value: 'Test Case' },
         });
-        fireEvent.change(screen.getByLabelText(/Client ID/), {
-          target: { value: '123e4567-e89b-12d3-a456-426614174000' },
+        fireEvent.change(screen.getByLabelText(/Client Name/), {
+          target: { value: 'Test Client' },
         });
         fireEvent.change(screen.getByLabelText(/Case Type/), {
           target: { value: 'Litigation' },

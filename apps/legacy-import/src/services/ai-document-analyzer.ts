@@ -10,10 +10,7 @@ import type { Job, Queue as BullQueue } from 'bull';
 // These imports are safe - no Redis connection
 import { francAll } from 'franc-min';
 import { prisma } from '@/lib/prisma';
-import { ExtractedDocument, AIAnalysisResult } from '@shared/types';
-
-// Language type matching Prisma enum
-type SupportedLanguage = 'Romanian' | 'English' | 'Italian' | 'French' | 'Mixed';
+import type { ExtractedDocument, AIAnalysisResult, SupportedLanguage } from '@legal-platform/types';
 
 // Map franc ISO 639-3 codes to our supported languages
 const FRANC_LANG_MAP: Record<string, SupportedLanguage> = {
@@ -467,7 +464,7 @@ ${textPreview}
       const allResults: AIAnalysisResult[] = [];
 
       for (const batch of batches) {
-        const results = await this.analyzeWithClaude(batch);
+        const results = await this.analyzeWithClaude(batch as ExtractedDocument[]);
         allResults.push(...results);
 
         // Update database with results
@@ -501,7 +498,7 @@ ${textPreview}
     });
 
     // Create a map for quick lookup
-    const docMap = new Map(documents.map((d) => [d.id, d]));
+    const docMap = new Map(documents.map((d: typeof documents[number]) => [d.id, d]));
 
     // Update documents with analysis results
     const updates = results.map((result) =>

@@ -37,7 +37,7 @@ export const Default: Story = {
  */
 export const FormatButtonsInteractive: Story = {
   args: {
-    onFormatClick: (format) => {
+    onFormatClick: (format: string) => {
       action('format-clicked')(format);
       console.log(`Format applied: ${format}`);
     },
@@ -54,7 +54,7 @@ export const FormatButtonsInteractive: Story = {
 export const AlignmentInteractive: Story = {
   args: {
     onFormatClick: action('format-clicked'),
-    onAlignClick: (alignment) => {
+    onAlignClick: (alignment: string) => {
       action('align-clicked')(alignment);
       console.log(`Alignment changed: ${alignment}`);
     },
@@ -71,7 +71,7 @@ export const HeadingDropdownInteractive: Story = {
   args: {
     onFormatClick: action('format-clicked'),
     onAlignClick: action('align-clicked'),
-    onHeadingChange: (heading) => {
+    onHeadingChange: (heading: string) => {
       action('heading-changed')(heading);
       console.log(`Heading changed: ${heading}`);
     },
@@ -88,7 +88,7 @@ export const InsertMenuInteractive: Story = {
     onFormatClick: action('format-clicked'),
     onAlignClick: action('align-clicked'),
     onHeadingChange: action('heading-changed'),
-    onInsertClick: (type) => {
+    onInsertClick: (type: string) => {
       action('insert-clicked')(type);
       console.log(`Insert: ${type}`);
     },

@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma';
 
 interface ImportedDocument {
   id: string;
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Create database records in a transaction
     const result = await prisma.$transaction(
-      async (tx) => {
+      async (tx: Prisma.TransactionClient) => {
         const createdDocs = [];
 
         for (const [monthYear, monthDocs] of byMonth) {

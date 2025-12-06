@@ -10,7 +10,12 @@ import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import type { Task, TaskType, TaskSortConfig } from '@legal-platform/types';
-import { MOCK_USERS } from '../../constants/mock-data';
+
+// TODO: Replace with real user data from API
+const USERS: { id: string; name: string; initials: string }[] = [];
+import { QuickTimeLog } from '@/components/time/QuickTimeLog';
+import { useLogTimeAgainstTask } from '@/hooks/useTimeEntries';
+import { Clock } from 'lucide-react';
 
 /**
  * Task type color mapping (same as CalendarView and KanbanBoard)
@@ -81,34 +86,6 @@ interface ListViewProps {
 const ITEMS_PER_PAGE = 10;
 
 /**
- * Sort icon component - moved outside ListView to avoid recreation during render
- */
-function SortIcon({ field, sortConfig }: { field: keyof Task; sortConfig: TaskSortConfig }) {
-  if (sortConfig.field !== field) {
-    return (
-      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-        />
-      </svg>
-    );
-  }
-
-  return sortConfig.direction === 'asc' ? (
-    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-    </svg>
-  ) : (
-    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  );
-}
-
-/**
  * ListView Component
  */
 export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
@@ -117,6 +94,10 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
     field: 'dueDate',
     direction: 'asc',
   });
+  const [logTimeTaskId, setLogTimeTaskId] = useState<string | null>(null);
+
+  // Time tracking hook
+  const [logTimeAgainstTask, { loading: loggingTime }] = useLogTimeAgainstTask();
 
   /**
    * Handle column sort
@@ -138,7 +119,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
    * Sort tasks based on current sort configuration
    */
   const sortedTasks = useMemo(() => {
-    const sorted = [...tasks].sort((a, b) => {
+    const sorted = [...tasks].sort((a: typeof tasks[number], b: typeof tasks[number]) => {
       const aValue = a[sortConfig.field];
       const bValue = b[sortConfig.field];
 
@@ -177,6 +158,54 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
    */
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    setLogTimeTaskId(null); // Close any open time log forms
+  };
+
+  /**
+   * Handle time log submission
+   */
+  const handleTimeLogSubmit = async (
+    taskId: string,
+    data: { hours: number; description: string; billable: boolean }
+  ) => {
+    await logTimeAgainstTask({
+      variables: {
+        taskId,
+        hours: data.hours,
+        description: data.description,
+        billable: data.billable,
+      },
+    });
+
+    setLogTimeTaskId(null);
+  };
+
+  /**
+   * Sort icon component
+   */
+  const SortIcon = ({ field }: { field: keyof Task }) => {
+    if (sortConfig.field !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+          />
+        </svg>
+      );
+    }
+
+    return sortConfig.direction === 'asc' ? (
+      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
   };
 
   return (
@@ -194,7 +223,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Titlu</span>
-                  <SortIcon field="title" sortConfig={sortConfig} />
+                  <SortIcon field="title" />
                 </div>
               </th>
               <th
@@ -204,7 +233,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Tip</span>
-                  <SortIcon field="type" sortConfig={sortConfig} />
+                  <SortIcon field="type" />
                 </div>
               </th>
               <th
@@ -214,7 +243,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Asignat</span>
-                  <SortIcon field="assignedTo" sortConfig={sortConfig} />
+                  <SortIcon field="assignedTo" />
                 </div>
               </th>
               <th
@@ -224,7 +253,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Termen</span>
-                  <SortIcon field="dueDate" sortConfig={sortConfig} />
+                  <SortIcon field="dueDate" />
                 </div>
               </th>
               <th
@@ -234,7 +263,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Prioritate</span>
-                  <SortIcon field="priority" sortConfig={sortConfig} />
+                  <SortIcon field="priority" />
                 </div>
               </th>
               <th
@@ -244,8 +273,14 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               >
                 <div className="flex items-center gap-2">
                   <span>Status</span>
-                  <SortIcon field="status" sortConfig={sortConfig} />
+                  <SortIcon field="status" />
                 </div>
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+              >
+                Acțiuni
               </th>
             </tr>
           </thead>
@@ -254,7 +289,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedTasks.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
+                <td colSpan={7} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center justify-center text-gray-400">
                     <svg
                       className="w-12 h-12 mb-3 opacity-50"
@@ -301,7 +336,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       {(() => {
-                        const user = MOCK_USERS.find((u) => u.id === task.assignedTo);
+                        const user = USERS.find((u) => u.id === task.assignedTo);
                         return (
                           <>
                             <div
@@ -310,9 +345,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                             >
                               {user?.initials || 'U'}
                             </div>
-                            <span className="text-sm text-gray-700">
-                              {user?.name || task.assignedTo}
-                            </span>
+                            <span className="text-sm text-gray-700">{user?.name || task.assignedTo}</span>
                           </>
                         );
                       })()}
@@ -336,15 +369,39 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
                       />
-                      <span className="text-sm text-gray-700">
-                        {PRIORITY_LABELS[task.priority]}
-                      </span>
+                      <span className="text-sm text-gray-700">{PRIORITY_LABELS[task.priority]}</span>
                     </div>
                   </td>
 
                   {/* Status */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-gray-700">{STATUS_LABELS[task.status]}</span>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    {logTimeTaskId === task.id ? (
+                      <div className="min-w-[300px]">
+                        <QuickTimeLog
+                          caseId={task.caseId}
+                          taskId={task.id}
+                          taskTitle={task.title}
+                          onSubmit={(data: { description: string; hours: number; minutes: number; notes?: string }) => handleTimeLogSubmit(task.id, data)}
+                          onCancel={() => setLogTimeTaskId(null)}
+                          isLoading={loggingTime}
+                          compact={false}
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setLogTimeTaskId(task.id)}
+                        className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium"
+                      >
+                        <Clock className="h-4 w-4" />
+                        <span>Înregistrează</span>
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

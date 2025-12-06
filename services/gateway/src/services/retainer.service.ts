@@ -50,7 +50,7 @@ export class RetainerService {
         end.setDate(0); // Setting date to 0 gives last day of previous month
         break;
 
-      case 'Quarterly':
+      case 'Quarterly': {
         // Determine which quarter we're in (0-3)
         const quarter = Math.floor(start.getMonth() / 3);
         // Start: First day of the quarter
@@ -58,6 +58,7 @@ export class RetainerService {
         // End: Last day of the quarter
         end.setMonth((quarter + 1) * 3, 0);
         break;
+      }
 
       case 'Annually':
         // Start: January 1st

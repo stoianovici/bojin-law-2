@@ -2,7 +2,8 @@
  * Cases List Page
  * Story 2.8: Case CRUD Operations UI
  *
- * Displays all cases with filtering, search, and create functionality
+ * Displays all cases with filtering, search, and create functionality.
+ * For Partners viewing PendingApproval status, shows approval queue inline.
  */
 
 'use client';
@@ -10,20 +11,40 @@
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CaseListTable } from '../../components/case/CaseListTable';
+import { PendingApprovalTable } from '../../components/case/PendingApprovalTable';
 import { CaseFilters } from '../../components/case/CaseFilters';
 import { CaseSearchBar } from '../../components/case/CaseSearchBar';
 import { CreateCaseModal } from '../../components/case/CreateCaseModal';
 import { useCases } from '../../hooks/useCases';
+import { usePendingCases } from '../../hooks/usePendingCases';
+import { useAuthorization } from '../../hooks/useAuthorization';
 import { useCaseFiltersStore } from '../../stores/caseFiltersStore';
 
 function CasesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isPartner } = useAuthorization();
   const { status, clientId, assignedToMe, setFromURLParams, toURLParams } =
     useCaseFiltersStore();
 
   const filters = { status, clientId, assignedToMe };
+
+  // Determine if we should show the pending approval queue
+  const showPendingApprovalQueue = isPartner && status === 'PendingApproval';
+
+  // Use appropriate hook based on context
   const { cases, loading, error } = useCases(filters);
+  const {
+    cases: pendingCases,
+    loading: pendingLoading,
+    error: pendingError,
+    refetch: pendingRefetch,
+  } = usePendingCases(!showPendingApprovalQueue); // Skip if not showing pending queue
+
+  // Use pending cases data when showing approval queue for Partners
+  const displayCases = showPendingApprovalQueue ? pendingCases : cases;
+  const isLoading = showPendingApprovalQueue ? pendingLoading : loading;
+  const displayError = showPendingApprovalQueue ? pendingError : error;
 
   // Initialize filters from URL on mount
   useEffect(() => {
@@ -45,13 +66,13 @@ function CasesPageContent() {
   }, []);
 
 
-  if (error) {
+  if (displayError) {
     return (
       <main className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h2 className="text-red-800 font-semibold mb-2">Eroare la încărcarea dosarelor</h2>
-            <p className="text-red-600">{error.message}</p>
+            <p className="text-red-600">{displayError.message}</p>
           </div>
         </div>
       </main>
@@ -78,8 +99,25 @@ function CasesPageContent() {
           <CaseFilters />
         </div>
 
+        {/* Pending Approval Queue Header for Partners */}
+        {showPendingApprovalQueue && (
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-gray-900">Coadă de aprobare</h2>
+              {displayCases.length > 0 && (
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {displayCases.length} în așteptare
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-500">
+              Dosarele sunt sortate după data trimiterii (cele mai vechi primele)
+            </p>
+          </div>
+        )}
+
         {/* Loading State */}
-        {loading && cases.length === 0 && (
+        {isLoading && displayCases.length === 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
@@ -95,7 +133,7 @@ function CasesPageContent() {
         )}
 
         {/* Empty State */}
-        {!loading && cases.length === 0 && (
+        {!isLoading && displayCases.length === 0 && (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
             <svg
               className="mx-auto h-12 w-12 text-gray-400 mb-4"
@@ -106,16 +144,28 @@ function CasesPageContent() {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              {showPendingApprovalQueue ? (
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              ) : (
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              )}
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nu s-au găsit dosare</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {showPendingApprovalQueue
+                ? 'Nu sunt dosare în așteptare pentru aprobare'
+                : 'Nu s-au găsit dosare'}
+            </h3>
             <p className="text-gray-500 mb-4">
-              {filters.status || filters.assignedToMe
-                ? 'Niciun dosar nu corespunde filtrelor. Încercați să ajustați criteriile de filtrare.'
-                : 'Începeți prin a crea primul dosar.'}
+              {showPendingApprovalQueue
+                ? 'Toate dosarele trimise au fost revizuite. Dosarele noi vor apărea aici.'
+                : filters.status || filters.assignedToMe
+                  ? 'Niciun dosar nu corespunde filtrelor. Încercați să ajustați criteriile de filtrare.'
+                  : 'Începeți prin a crea primul dosar.'}
             </p>
             <div className="flex items-center justify-center gap-3">
-              {!filters.status && !filters.assignedToMe && <CreateCaseModal />}
+              {!filters.status && !filters.assignedToMe && !showPendingApprovalQueue && (
+                <CreateCaseModal />
+              )}
               {(filters.status || filters.assignedToMe) && (
                 <button
                   onClick={() => useCaseFiltersStore.getState().clearFilters()}
@@ -128,13 +178,22 @@ function CasesPageContent() {
           </div>
         )}
 
-        {/* Cases Table */}
-        {cases.length > 0 && <CaseListTable cases={cases} />}
+        {/* Cases Table - Show PendingApprovalTable for Partners viewing pending cases */}
+        {displayCases.length > 0 && (
+          showPendingApprovalQueue ? (
+            <PendingApprovalTable
+              cases={pendingCases}
+              onRefetch={pendingRefetch}
+            />
+          ) : (
+            <CaseListTable cases={cases} />
+          )
+        )}
 
         {/* Results Count */}
-        {cases.length > 0 && (
+        {displayCases.length > 0 && (
           <div className="mt-6 text-sm text-gray-600 text-center">
-            Se afișează {cases.length} {cases.length === 1 ? 'dosar' : 'dosare'}
+            Se afișează {displayCases.length} {displayCases.length === 1 ? 'dosar' : 'dosare'}
           </div>
         )}
       </div>

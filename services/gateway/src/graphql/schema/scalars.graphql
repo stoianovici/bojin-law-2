@@ -8,6 +8,12 @@ Example: 2025-01-15T10:30:00Z
 scalar DateTime
 
 """
+Date-only scalar type conforming to ISO 8601 format (YYYY-MM-DD)
+Example: 2025-01-15
+"""
+scalar Date
+
+"""
 UUID scalar type conforming to RFC 4122
 Example: 550e8400-e29b-41d4-a716-446655440000
 """

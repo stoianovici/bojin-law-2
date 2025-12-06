@@ -1,0 +1,114 @@
+# Case Type Configuration GraphQL Schema
+# Dynamic case types per firm - allows Partners to create custom case types
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Case type configuration - represents a custom case type for a firm
+"""
+type CaseTypeConfig {
+  """Unique identifier for the case type"""
+  id: UUID!
+
+  """Firm that owns this case type"""
+  firmId: UUID!
+
+  """Display name of the case type (in Romanian)"""
+  name: String!
+
+  """Internal code for the case type (unique per firm)"""
+  code: String!
+
+  """Whether this case type is active and can be selected"""
+  isActive: Boolean!
+
+  """Sort order for display in dropdown"""
+  sortOrder: Int!
+
+  """When the case type was created"""
+  createdAt: DateTime!
+
+  """User who created this case type"""
+  creator: User!
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for creating a new case type
+"""
+input CreateCaseTypeInput {
+  """Display name of the case type (2-100 characters)"""
+  name: String!
+
+  """Internal code (2-50 characters, alphanumeric with underscores)"""
+  code: String!
+
+  """Sort order for display (optional, defaults to 0)"""
+  sortOrder: Int
+}
+
+"""
+Input for updating a case type
+"""
+input UpdateCaseTypeInput {
+  """Updated display name"""
+  name: String
+
+  """Updated sort order"""
+  sortOrder: Int
+
+  """Whether the case type is active"""
+  isActive: Boolean
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get all case types for the current user's firm
+  Returns both system default types and custom firm-specific types
+  Authorization: Authenticated users only
+  """
+  caseTypes(
+    """Include inactive case types (default: false)"""
+    includeInactive: Boolean
+  ): [CaseTypeConfig!]!
+
+  """
+  Get a single case type by ID
+  Returns null if not found or user doesn't have access
+  """
+  caseType(id: UUID!): CaseTypeConfig
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Create a new custom case type for the firm
+  Authorization: Partner role required
+  """
+  createCaseType(input: CreateCaseTypeInput!): CaseTypeConfig!
+
+  """
+  Update an existing case type
+  Authorization: Partner role required
+  """
+  updateCaseType(id: UUID!, input: UpdateCaseTypeInput!): CaseTypeConfig!
+
+  """
+  Deactivate a case type (soft delete)
+  Cannot deactivate system default types
+  Authorization: Partner role required
+  """
+  deactivateCaseType(id: UUID!): CaseTypeConfig!
+}

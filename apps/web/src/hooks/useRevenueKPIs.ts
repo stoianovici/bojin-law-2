@@ -95,7 +95,7 @@ export interface DateRange {
  * @returns React Query result with KPI data
  */
 export function useFirmRevenueKPIs(dateRange?: DateRange) {
-  const addNotification = useNotificationStore((state) => state.addNotification);
+  const addNotification = useNotificationStore((state: { addNotification: any }) => state.addNotification);
 
   return useQuery<FirmRevenueKPIs>({
     queryKey: ['firmRevenueKPIs', dateRange?.startDate, dateRange?.endDate],
@@ -139,7 +139,7 @@ export function useFirmRevenueKPIs(dateRange?: DateRange) {
  * @returns React Query result with case KPI data
  */
 export function useCaseRevenueKPI(caseId: string, enabled: boolean = true) {
-  const addNotification = useNotificationStore((state) => state.addNotification);
+  const addNotification = useNotificationStore((state: { addNotification: any }) => state.addNotification);
 
   return useQuery<RevenueComparison | null>({
     queryKey: ['caseRevenueKPI', caseId],

@@ -1,0 +1,64 @@
+# Artillery Load Testing Configuration
+# Story 3.8: Document System Testing and Performance
+#
+# Main configuration file for load testing the document management system.
+# See README.md for usage instructions.
+
+config:
+  target: "{{ $processEnvironment.API_URL }}"
+  phases:
+    # Smoke test - verify basic functionality
+    - duration: 60
+      arrivalRate: 1
+      name: "Smoke test"
+
+    # Ramp up - gradually increase load
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 50
+      name: "Ramp up"
+
+    # Sustained load - main test phase
+    - duration: 300
+      arrivalRate: 50
+      name: "Sustained load"
+
+    # Ramp down - graceful decrease
+    - duration: 120
+      arrivalRate: 50
+      rampTo: 0
+      name: "Ramp down"
+
+  # Default environment
+  environments:
+    local:
+      target: "http://localhost:3000"
+    staging:
+      target: "{{ $processEnvironment.STAGING_URL }}"
+    production:
+      target: "{{ $processEnvironment.PRODUCTION_URL }}"
+
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+  processor: "./processors/auth.js"
+
+  http:
+    timeout: 30000  # 30 seconds
+
+  # Performance thresholds
+  ensure:
+    p95: 3000      # Document operations < 3s at p95
+    maxErrorRate: 2 # Max 2% error rate
+
+# Default scenario - imports other scenario files
+scenarios:
+  - name: "Health Check"
+    weight: 1
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200

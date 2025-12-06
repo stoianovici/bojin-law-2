@@ -5,10 +5,13 @@
 
 import { NextResponse } from 'next/server';
 
+// Gateway URL - use environment variable or default to localhost for development
+const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:4000';
+
 export async function POST(request: Request) {
   try {
     // Forward logout request to gateway
-    const response = await fetch('http://localhost:4000/auth/logout', {
+    const response = await fetch(`${GATEWAY_URL}/auth/logout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

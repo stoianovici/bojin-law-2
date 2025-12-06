@@ -48,3 +48,45 @@ export * from './ai';
 
 // Training Pipeline Types
 export * from './training-pipeline';
+
+// Document Drafting Types
+export * from './document-drafting';
+
+// Word Integration Types
+export * from './word-integration';
+
+// Semantic Version Control Types
+export * from './semantic-version-control';
+
+// Document Review Types
+export * from './document-review';
+
+// Document Intelligence Dashboard Types
+export * from './document-intelligence';
+
+// NLP Task Parser Types (Story 4.1)
+export * from './nlp-task-parser';
+
+// Task Type System Types (Story 4.2)
+export * from './task-types';
+
+// Task Dependencies and Automation Types (Story 4.4)
+export * from './task-dependencies';
+
+// Workload Management Types (Story 4.5)
+export * from './workload-management';
+
+// Task Collaboration Types (Story 4.6)
+export * from './task-collaboration';
+
+// Task Analytics Types (Story 4.7)
+export * from './task-analytics';
+
+// Proactive AI Suggestions Types (Story 5.4)
+export * from './proactive-suggestions';
+
+// AI Learning and Personalization Types (Story 5.6)
+export * from './ai-learning';
+
+// Platform Intelligence Types (Story 5.7)
+export * from './platform-intelligence';

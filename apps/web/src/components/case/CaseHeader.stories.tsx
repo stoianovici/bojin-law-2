@@ -93,7 +93,7 @@ export const Default: Story = {
     nextDeadline: mockDeadline,
     onEditCase: () => alert('Edit case clicked'),
     onAddTeamMember: () => alert('Add team member clicked'),
-    onMenuAction: (action) => alert(`Menu action: ${action}`),
+    onMenuAction: (action: any) => alert(`Menu action: ${action}`),
   },
 };
 
@@ -240,7 +240,7 @@ export const Minimal: Story = {
     case: mockCase,
     onEditCase: () => alert('Edit case clicked'),
     onAddTeamMember: () => alert('Add team member clicked'),
-    onMenuAction: (action) => alert(`Menu action: ${action}`),
+    onMenuAction: (action: any) => alert(`Menu action: ${action}`),
   },
 };
 

@@ -6,10 +6,7 @@
  * build clause libraries, and calculate template quality scores
  */
 
-import type {
-  DocumentPattern,
-  CreateRomanianTemplate,
-} from '@legal-platform/types';
+import type { DocumentPattern } from '@legal-platform/types';
 
 export interface ExtractedPhrase {
   text: string;

@@ -101,7 +101,7 @@ const meta: Meta<typeof ExtractedItemsSidebar> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       // Update the mock thread for the story
       return (
         <div className="w-96 bg-white border rounded shadow">
@@ -159,7 +159,7 @@ export const HoverStateDismissButtons: Story = {
  */
 export const EmptyState: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       // Mock empty thread
       const emptyThread: CommunicationThread = {
         ...mockThread,
@@ -195,7 +195,7 @@ export const EmptyState: Story = {
  */
 export const NoThreadSelected: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue({
         getSelectedThread: () => null,
       });
@@ -221,7 +221,7 @@ export const NoThreadSelected: Story = {
  */
 export const OnlyDeadlines: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const deadlinesOnlyThread: CommunicationThread = {
         ...mockThread,
         extractedItems: {
@@ -278,7 +278,7 @@ export const OnlyDeadlines: Story = {
  */
 export const MultipleActionItems: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const actionsThread: CommunicationThread = {
         ...mockThread,
         extractedItems: {
@@ -362,7 +362,7 @@ export const AllSectionsExpanded: Story = {
  */
 export const MixedConfidenceLevels: Story = {
   decorators: [
-    (Story) => {
+    (Story: React.ComponentType) => {
       const mixedConfidenceThread: CommunicationThread = {
         ...mockThread,
         extractedItems: {

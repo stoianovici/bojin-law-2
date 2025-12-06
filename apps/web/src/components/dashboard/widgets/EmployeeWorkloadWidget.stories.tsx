@@ -37,7 +37,7 @@ export const Loading: Story = {
     widget: createEmployeeWorkloadWidget(),
     isLoading: true,
   },
-  render: (args) => (
+  render: (args: Record<string, unknown>) => (
     <div className="animate-pulse">
       <div className="h-96 bg-neutral-200 rounded-lg"></div>
     </div>

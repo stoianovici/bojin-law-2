@@ -1,0 +1,101 @@
+# Story 4.4: Task Dependency GraphQL Schema
+
+type TaskDependency {
+  id: ID!
+  predecessorId: ID!
+  predecessor: Task!
+  successorId: ID!
+  successor: Task!
+  dependencyType: DependencyType!
+  lagDays: Int!
+  createdAt: DateTime!
+}
+
+type DeadlineCascadeResult {
+  affectedTasks: [AffectedTask!]!
+  conflicts: [DeadlineConflict!]!
+  suggestedResolution: String
+}
+
+type AffectedTask {
+  taskId: ID!
+  taskTitle: String!
+  currentDueDate: Date!
+  newDueDate: Date!
+  daysDelta: Int!
+}
+
+type DeadlineConflict {
+  taskId: ID!
+  taskTitle: String!
+  conflictType: ConflictType!
+  message: String!
+  severity: ConflictSeverity!
+}
+
+enum ConflictType {
+  PastDeadline
+  OverlapConflict
+  ResourceConflict
+}
+
+enum ConflictSeverity {
+  Warning
+  Error
+}
+
+type CriticalPathResult {
+  caseId: ID!
+  criticalTasks: [Task!]!
+  totalDuration: Int!
+  estimatedCompletionDate: Date!
+  bottlenecks: [BottleneckInfo!]!
+}
+
+type BottleneckInfo {
+  taskId: ID!
+  taskTitle: String!
+  dependentCount: Int!
+  slackDays: Int!
+}
+
+type ParallelTaskGroup {
+  groupId: ID!
+  tasks: [Task!]!
+  canRunSimultaneously: Boolean!
+  suggestedAssignees: [AssigneeSuggestion!]!
+}
+
+type AssigneeSuggestion {
+  userId: ID!
+  user: User!
+  matchScore: Int!
+  currentWorkload: Float!
+  availableCapacity: Float!
+  reasoning: String!
+}
+
+extend type Task {
+  predecessors: [TaskDependency!]!
+  successors: [TaskDependency!]!
+  isCriticalPath: Boolean!
+  isBlocked: Boolean!
+  blockedReason: String
+}
+
+extend type Query {
+  taskDependencies(taskId: ID!): [TaskDependency!]!
+  blockedTasks(caseId: ID!): [Task!]!
+  criticalPath(caseId: ID!): CriticalPathResult!
+  parallelTasks(caseId: ID!): [ParallelTaskGroup!]!
+}
+
+extend type Mutation {
+  addTaskDependency(predecessorId: ID!, successorId: ID!, type: DependencyType!, lagDays: Int): TaskDependency!
+  removeTaskDependency(dependencyId: ID!): Boolean!
+
+  previewDeadlineCascade(taskId: ID!, newDueDate: Date!): DeadlineCascadeResult!
+  applyDeadlineCascade(taskId: ID!, newDueDate: Date!, confirmConflicts: Boolean!): [Task!]!
+
+  recalculateCriticalPath(caseId: ID!): CriticalPathResult!
+}

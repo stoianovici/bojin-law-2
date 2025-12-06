@@ -204,7 +204,7 @@ export function assertQueryCalledWith(
  */
 export function getExecutedQueries(mockDb: DatabaseClient): string[] {
   const queryMock = mockDb.query as jest.Mock;
-  return queryMock.mock.calls.map((call) => call[0]);
+  return queryMock.mock.calls.map((call: any[]) => call[0]);
 }
 
 /**

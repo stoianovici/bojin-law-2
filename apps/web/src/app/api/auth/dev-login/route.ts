@@ -6,6 +6,9 @@
 
 import { NextResponse } from 'next/server';
 
+// Gateway URL - use environment variable or default to localhost for development
+const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:4000';
+
 export async function POST(_request: Request) {
   // Only allow in development
   if (process.env.NODE_ENV !== 'development') {
@@ -17,7 +20,7 @@ export async function POST(_request: Request) {
 
   try {
     // Forward request to gateway
-    const response = await fetch('http://localhost:4000/auth/dev-login', {
+    const response = await fetch(`${GATEWAY_URL}/auth/dev-login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,0 +1,240 @@
+# Document Review and Approval Workflow Schema
+# Story 3.6: Document Review and Approval Workflow
+
+# Review status lifecycle
+enum ReviewStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  REVISION_REQUESTED
+}
+
+# Review priority levels
+enum ReviewPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+# AI concern type classification
+enum ConcernType {
+  LEGAL_INCONSISTENCY
+  AMBIGUOUS_LANGUAGE
+  MISSING_CLAUSE
+  OUTDATED_REFERENCE
+  COMPLIANCE_ISSUE
+  STYLE_VIOLATION
+  HIGH_RISK_CLAUSE
+}
+
+# AI concern severity levels
+enum ConcernSeverity {
+  INFO
+  WARNING
+  ERROR
+}
+
+# Document review entity
+type DocumentReview {
+  id: UUID!
+  documentId: UUID!
+  document: Document!
+  documentVersion: DocumentVersion!
+  submittedBy: User!
+  submittedAt: DateTime!
+  assignedTo: User
+  status: ReviewStatus!
+  reviewedAt: DateTime
+  feedback: String
+  priority: ReviewPriority!
+  dueDate: DateTime
+  revisionNumber: Int!
+  comments: [ReviewComment!]!
+  aiConcerns: [AIReviewConcern!]!
+  history: [ReviewHistoryEntry!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# Review comment for inline annotations
+type ReviewComment {
+  id: UUID!
+  author: User!
+  content: String!
+  anchorText: String
+  anchorStart: Int
+  anchorEnd: Int
+  sectionPath: String
+  resolved: Boolean!
+  resolvedBy: User
+  resolvedAt: DateTime
+  suggestionText: String
+  isAISuggestion: Boolean!
+  replies: [ReviewCommentReply!]!
+  createdAt: DateTime!
+}
+
+# Reply to a review comment
+type ReviewCommentReply {
+  id: UUID!
+  author: User!
+  content: String!
+  createdAt: DateTime!
+}
+
+# AI-flagged area of concern
+type AIReviewConcern {
+  id: UUID!
+  concernType: ConcernType!
+  severity: ConcernSeverity!
+  description: String!
+  anchorText: String!
+  anchorStart: Int!
+  anchorEnd: Int!
+  sectionPath: String
+  suggestedFix: String
+  aiConfidence: Float!
+  dismissed: Boolean!
+}
+
+# Review history entry for audit trail
+type ReviewHistoryEntry {
+  id: UUID!
+  action: String!
+  actor: User!
+  previousStatus: ReviewStatus
+  newStatus: ReviewStatus
+  feedback: String
+  timestamp: DateTime!
+}
+
+# Batch review for processing multiple documents
+type BatchReview {
+  id: UUID!
+  reviews: [DocumentReview!]!
+  status: String!
+  processedCount: Int!
+  totalCount: Int!
+  commonFeedback: String
+  createdAt: DateTime!
+}
+
+# Review statistics for dashboard
+type ReviewStatistics {
+  totalPending: Int!
+  totalInReview: Int!
+  totalApproved: Int!
+  totalRejected: Int!
+  averageReviewTimeHours: Float!
+  reviewsByPriority: ReviewPriorityStats!
+}
+
+type ReviewPriorityStats {
+  low: Int!
+  normal: Int!
+  high: Int!
+  urgent: Int!
+}
+
+# Input: Submit document for review
+input SubmitReviewInput {
+  documentId: UUID!
+  versionId: UUID!
+  assignedTo: UUID
+  priority: ReviewPriority = NORMAL
+  dueDate: DateTime
+  message: String
+}
+
+# Input: Add inline comment
+input AddCommentInput {
+  reviewId: UUID!
+  content: String!
+  anchorText: String
+  anchorStart: Int
+  anchorEnd: Int
+  sectionPath: String
+  suggestionText: String
+}
+
+# Input: Make review decision
+input ReviewDecisionInput {
+  reviewId: UUID!
+  decision: ReviewStatus!
+  feedback: String!
+}
+
+# Input: Batch review decision
+input BatchReviewInput {
+  reviewIds: [UUID!]!
+  decision: ReviewStatus!
+  commonFeedback: String!
+}
+
+# Queries
+extend type Query {
+  # Get review by ID
+  documentReview(id: UUID!): DocumentReview!
+
+  # Get pending reviews for current user
+  # Partners: all firm reviews, Associates: assigned only
+  pendingDocumentReviews(
+    priority: ReviewPriority
+    limit: Int = 20
+    offset: Int = 0
+  ): [DocumentReview!]!
+
+  # Get reviews submitted by current user
+  mySubmittedReviews(
+    status: ReviewStatus
+    limit: Int = 20
+    offset: Int = 0
+  ): [DocumentReview!]!
+
+  # Get review history for a document
+  documentReviewHistory(documentId: UUID!): [DocumentReview!]!
+
+  # Get similar documents for batch review (AC: 6)
+  similarDocumentsForBatch(
+    documentIds: [UUID!]!
+    threshold: Float = 0.8
+  ): [[DocumentReview!]!]!
+
+  # Get review statistics for dashboard
+  reviewStatistics: ReviewStatistics!
+}
+
+# Mutations
+extend type Mutation {
+  # Submit document for review (AC: 1)
+  submitDocumentForReview(input: SubmitReviewInput!): DocumentReview!
+
+  # Assign reviewer (Partners only)
+  assignReviewer(reviewId: UUID!, reviewerId: UUID!): DocumentReview!
+
+  # Add inline comment (AC: 3)
+  addReviewComment(input: AddCommentInput!): ReviewComment!
+
+  # Reply to comment
+  replyToComment(commentId: UUID!, content: String!): ReviewCommentReply!
+
+  # Resolve comment
+  resolveComment(commentId: UUID!): ReviewComment!
+
+  # Make review decision (AC: 4)
+  makeReviewDecision(input: ReviewDecisionInput!): DocumentReview!
+
+  # Resubmit after revision (AC: 5)
+  resubmitForReview(reviewId: UUID!, message: String): DocumentReview!
+
+  # Dismiss AI concern
+  dismissAIConcern(concernId: UUID!): AIReviewConcern!
+
+  # Batch review (AC: 6)
+  batchReviewDecision(input: BatchReviewInput!): BatchReview!
+
+  # Generate AI concerns for review
+  generateAIConcerns(reviewId: UUID!): [AIReviewConcern!]!
+}

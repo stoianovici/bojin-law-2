@@ -9,8 +9,13 @@
 import { useState, useEffect } from 'react';
 import { useRequireRole } from '../../../../hooks/useAuthorization';
 import { getPendingUsers, activateUser } from '../../../../lib/services/userManagementApi';
-import { getAllFirms, type Firm } from '../../../../lib/mockFirms';
 import type { User, UserRole } from '@legal-platform/types';
+
+// TODO: Replace with actual firm fetching from API
+interface Firm {
+  id: string;
+  name: string;
+}
 import * as Dialog from '@radix-ui/react-dialog';
 
 export default function PendingUsersPage() {
@@ -34,7 +39,8 @@ export default function PendingUsersPage() {
   useEffect(() => {
     if (authorized) {
       loadPendingUsers();
-      setFirms(getAllFirms());
+      // TODO: Fetch firms from API instead of empty array
+      setFirms([]);
     }
   }, [authorized]);
 

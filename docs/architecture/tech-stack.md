@@ -27,6 +27,8 @@
 | CSS Framework        | Tailwind CSS                         | 3.4+                           | Utility-first CSS                             | Rapid development, consistent spacing, excellent tree-shaking, dark mode support                  |
 | Data Visualization   | Recharts                             | 2.5+                           | React charting library                        | TypeScript support, responsive charts, 100KB gzipped, MIT license, integrates with React/Tailwind |
 | Calendar Component   | React Big Calendar + date-fns        | 1.8+ / 3.0+                    | Calendar/scheduler UI + date utilities        | Full-featured calendar with drag-and-drop, 65KB total gzipped, MIT license, TypeScript support    |
+| Word Add-in UI       | Fluent UI React                      | 9.0+                           | Microsoft Office Add-in components            | Required for Office Add-in design consistency, Microsoft design language, accessibility compliant |
+| Office Integration   | Office.js (@microsoft/office-js)     | Latest                         | Word Add-in API                               | Official Microsoft API for Office Add-ins, required for Word document interaction                 |
 
 ---
 
@@ -164,3 +166,58 @@ Story 1.4 requires calendar widget for Paralegal dashboard showing:
 - Monitor bundle size during implementation
 - Consider Tremor library for future dashboard enhancements if additional features needed
 - Evaluate react-calendar as lightweight alternative if bundle budget becomes constrained in future stories
+
+---
+
+## ✅ DECISION APPROVED - 2025-11-29
+
+### 3. Word Add-in Technology Stack (Required for Story 3.4)
+
+**Context:**
+Story 3.4 (Word Integration with Live AI Assistance) requires a Microsoft Word Add-in with:
+
+- Task pane UI for AI suggestions, explanations, and improvements
+- SSO authentication with Azure AD
+- Document interaction via Office.js API
+- Microsoft design language compliance
+
+**Proposed Solution: Fluent UI React 9.0+ with Office.js**
+
+**Pros:**
+
+- ✅ Official Microsoft design system for Office Add-ins
+- ✅ Required for Microsoft 365 certification
+- ✅ Excellent TypeScript support
+- ✅ Built-in accessibility (WCAG AA compliant)
+- ✅ Consistent with Microsoft 365 user experience
+- ✅ Maintained by Microsoft with regular updates
+- ✅ Office.js is the only supported API for Word Add-ins
+
+**Cons:**
+
+- ⚠️ Different from platform UI library (Radix UI + Tailwind)
+- ⚠️ Larger bundle size (~150KB for Fluent UI)
+- ⚠️ Learning curve for developers unfamiliar with Fluent UI
+
+**Rationale for Exception:**
+The Word Add-in is a separate application deployed to Microsoft AppSource. Using Microsoft's recommended UI framework ensures:
+1. Approval for Microsoft 365 marketplace distribution
+2. Consistent user experience within Word
+3. Proper Office.js integration patterns
+
+**Decision:**
+
+- ✅ **APPROVED:** Fluent UI React 9.0+ for Word Add-in UI (exception to Radix UI standard)
+- ✅ **APPROVED:** @microsoft/office-js for Word document interaction
+- ✅ **APPROVED:** OfficeRuntime.auth for SSO authentication
+
+**Approved By:** Sarah (Product Owner)
+**Date:** 2025-11-29
+**Scope:** Word Add-in application only (`apps/word-addin/`)
+
+**Implementation Notes:**
+
+- Fluent UI is approved ONLY for the Word Add-in, not for the main web application
+- Main platform continues to use Radix UI + Tailwind CSS
+- Add-in will be built with Vite for consistency with platform tooling
+- TypeScript types available via @types/office-js

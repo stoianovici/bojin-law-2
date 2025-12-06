@@ -95,7 +95,7 @@ export function SearchFiltersPanel({
   const toggleCaseType = (type: CaseType) => {
     const currentTypes = filters.caseTypes || [];
     const newTypes = currentTypes.includes(type)
-      ? currentTypes.filter((t) => t !== type)
+      ? currentTypes.filter((t: CaseType) => t !== type)
       : [...currentTypes, type];
 
     onFiltersChange({
@@ -108,7 +108,7 @@ export function SearchFiltersPanel({
   const toggleCaseStatus = (status: CaseStatus) => {
     const currentStatuses = filters.caseStatuses || [];
     const newStatuses = currentStatuses.includes(status)
-      ? currentStatuses.filter((s) => s !== status)
+      ? currentStatuses.filter((s: CaseStatus) => s !== status)
       : [...currentStatuses, status];
 
     onFiltersChange({
@@ -121,7 +121,7 @@ export function SearchFiltersPanel({
   const toggleDocumentType = (type: string) => {
     const currentTypes = filters.documentTypes || [];
     const newTypes = currentTypes.includes(type)
-      ? currentTypes.filter((t) => t !== type)
+      ? currentTypes.filter((t: string) => t !== type)
       : [...currentTypes, type];
 
     onFiltersChange({

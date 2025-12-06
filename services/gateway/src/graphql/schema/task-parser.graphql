@@ -1,0 +1,223 @@
+# Task Parser GraphQL Schema
+# Story 4.1: Natural Language Task Parser
+
+# =====================
+# Types
+# =====================
+
+"""
+Task types for parsing
+"""
+enum TaskTypeValue {
+  Research
+  DocumentCreation
+  DocumentRetrieval
+  CourtDate
+  Meeting
+  BusinessTrip
+}
+
+"""
+Task priority levels
+"""
+enum TaskPriorityValue {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+"""
+Parsed entity types
+"""
+enum ParsedEntityType {
+  taskType
+  date
+  time
+  priority
+  person
+  case
+  location
+  duration
+}
+
+"""
+Clarification entity types
+"""
+enum ClarificationEntityType {
+  case
+  assignee
+  taskType
+  date
+}
+
+"""
+A field with its parsed value and confidence score
+"""
+type ParsedStringField {
+  value: String
+  confidence: Float!
+}
+
+type ParsedTaskTypeField {
+  value: TaskTypeValue
+  confidence: Float!
+}
+
+type ParsedPriorityField {
+  value: TaskPriorityValue
+  confidence: Float!
+}
+
+type ParsedDateField {
+  value: DateTime
+  confidence: Float!
+}
+
+"""
+All parsed task fields with confidence scores
+"""
+type ParsedTaskFields {
+  taskType: ParsedTaskTypeField!
+  title: ParsedStringField!
+  description: ParsedStringField!
+  dueDate: ParsedDateField!
+  dueTime: ParsedStringField!
+  priority: ParsedPriorityField!
+  assigneeName: ParsedStringField!
+  assigneeId: ParsedStringField!
+  caseReference: ParsedStringField!
+  caseId: ParsedStringField!
+}
+
+"""
+An entity extracted from the input text
+"""
+type ParsedEntity {
+  type: ParsedEntityType!
+  value: String!
+  normalizedValue: String
+  startIndex: Int!
+  endIndex: Int!
+  confidence: Float!
+}
+
+"""
+An option for clarification
+"""
+type ClarificationOption {
+  value: String!
+  label: String!
+  context: String
+}
+
+"""
+A question to clarify ambiguous input
+"""
+type ClarificationQuestion {
+  id: ID!
+  entityType: ClarificationEntityType!
+  question: String!
+  options: [ClarificationOption!]
+  allowFreeText: Boolean!
+}
+
+"""
+Response from parsing natural language task input
+"""
+type TaskParseResult {
+  parseId: ID!
+  originalText: String!
+  detectedLanguage: String!
+  parsedTask: ParsedTaskFields!
+  entities: [ParsedEntity!]!
+  overallConfidence: Float!
+  clarificationsNeeded: [ClarificationQuestion!]!
+  isComplete: Boolean!
+}
+
+"""
+A suggestion based on learned patterns
+"""
+type TaskPatternSuggestion {
+  id: ID!
+  pattern: String!
+  completedText: String!
+  taskType: TaskTypeValue!
+  frequency: Int!
+  lastUsed: DateTime!
+}
+
+# =====================
+# Inputs
+# =====================
+
+"""
+Context for task parsing
+"""
+input TaskParseContextInput {
+  activeCaseIds: [ID!]
+  teamMemberNames: [String!]
+  recentTaskPatterns: [String!]
+}
+
+"""
+Corrections to apply before task creation
+"""
+input TaskCorrectionInput {
+  taskType: TaskTypeValue
+  title: String
+  description: String
+  dueDate: DateTime
+  dueTime: String
+  priority: TaskPriorityValue
+  assigneeId: ID
+  caseId: ID
+}
+
+# =====================
+# Queries
+# =====================
+
+extend type Query {
+  """
+  Get autocomplete suggestions based on partial input and learned patterns
+  """
+  taskPatternSuggestions(partialInput: String!): [TaskPatternSuggestion!]!
+}
+
+# =====================
+# Mutations
+# =====================
+
+extend type Mutation {
+  """
+  Parse natural language task input
+  """
+  parseTask(input: String!, context: TaskParseContextInput): TaskParseResult!
+
+  """
+  Resolve a clarification question with an answer
+  """
+  resolveClarification(
+    parseId: ID!
+    questionId: ID!
+    answer: String!
+  ): TaskParseResult!
+
+  """
+  Confirm task creation with optional corrections
+  Returns the created Task
+  """
+  confirmTaskCreation(parseId: ID!, corrections: TaskCorrectionInput): Task!
+
+  """
+  Record that a parsed task was accepted (for pattern learning)
+  """
+  recordParsedTask(
+    parseId: ID!
+    wasAccepted: Boolean!
+    corrections: TaskCorrectionInput
+    finalTaskId: ID
+  ): Boolean!
+}

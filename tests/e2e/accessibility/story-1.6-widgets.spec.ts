@@ -226,11 +226,11 @@ test.describe('Story 1.6 - Partner Dashboard Widgets Accessibility', () => {
 
     if (violations.length > 0) {
       console.log('\nAccessibility violations found on Partner dashboard:');
-      violations.forEach((violation, index) => {
+      violations.forEach((violation: any, index: number) => {
         console.log(`\n${index + 1}. ${violation.id} (Impact: ${violation.impact})`);
         console.log(`   ${violation.description}`);
         console.log(`   Affected elements: ${violation.nodes.length}`);
-        violation.nodes.forEach((node) => {
+        violation.nodes.forEach((node: any) => {
           console.log(`     - ${node.html}`);
           console.log(`       ${node.failureSummary}`);
         });
@@ -325,7 +325,7 @@ test.describe('Story 1.6 - Analytics Page Accessibility', () => {
 
     if (violations.length > 0) {
       console.log('\nAccessibility violations found on Analytics page:');
-      violations.forEach((violation, index) => {
+      violations.forEach((violation: any, index: number) => {
         console.log(`\n${index + 1}. ${violation.id} (Impact: ${violation.impact})`);
         console.log(`   ${violation.description}`);
         console.log(`   Affected elements: ${violation.nodes.length}`);

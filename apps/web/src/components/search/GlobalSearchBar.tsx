@@ -189,7 +189,7 @@ export const GlobalSearchBar = forwardRef<GlobalSearchBarRef, GlobalSearchBarPro
               <div className="px-3 py-1 text-xs font-medium text-gray-500 uppercase">
                 Recent Searches
               </div>
-              {recentSearches.map((search, index) => (
+              {recentSearches.map((search: typeof recentSearches[number], index: number) => (
                 <button
                   key={search.id}
                   onClick={() => handleSubmit(search.query)}

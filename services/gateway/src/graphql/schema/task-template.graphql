@@ -1,0 +1,110 @@
+# Story 4.4: Task Template GraphQL Schema
+
+type TaskTemplate {
+  id: ID!
+  firmId: ID!
+  name: String!
+  description: String
+  caseType: CaseType
+  isDefault: Boolean!
+  isActive: Boolean!
+  steps: [TaskTemplateStep!]!
+  createdBy: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  usageCount: Int!
+}
+
+type TaskTemplateStep {
+  id: ID!
+  templateId: ID!
+  stepOrder: Int!
+  taskType: TaskType!
+  title: String!
+  description: String
+  estimatedHours: Float
+  typeMetadata: JSON
+  offsetDays: Int!
+  offsetFrom: OffsetType!
+  isParallel: Boolean!
+  isCriticalPath: Boolean!
+  dependencies: [TemplateStepDependency!]!
+  dependents: [TemplateStepDependency!]!
+}
+
+enum OffsetType {
+  CaseStart
+  PreviousTask
+  CaseDeadline
+}
+
+enum DependencyType {
+  FinishToStart
+  StartToStart
+  FinishToFinish
+  StartToFinish
+}
+
+type TemplateStepDependency {
+  id: ID!
+  sourceStepId: ID!
+  targetStepId: ID!
+  dependencyType: DependencyType!
+  lagDays: Int!
+}
+
+input CreateTaskTemplateInput {
+  name: String!
+  description: String
+  caseType: CaseType
+  isDefault: Boolean
+}
+
+input CreateTemplateStepInput {
+  taskType: TaskType!
+  title: String!
+  description: String
+  estimatedHours: Float
+  typeMetadata: JSON
+  offsetDays: Int!
+  offsetFrom: OffsetType!
+  isParallel: Boolean
+  isCriticalPath: Boolean
+}
+
+input ApplyTemplateInput {
+  templateId: ID!
+  caseId: ID!
+  startDate: Date!
+  assignees: JSON # { stepId: userId }
+}
+
+type ApplyTemplateResult {
+  usageId: ID!
+  createdTasks: [Task!]!
+  dependenciesCreated: Int!
+  warnings: [String!]!
+}
+
+extend type Query {
+  taskTemplate(id: ID!): TaskTemplate
+  taskTemplates(caseType: CaseType, activeOnly: Boolean): [TaskTemplate!]!
+  defaultTemplate(caseType: CaseType): TaskTemplate
+}
+
+extend type Mutation {
+  createTaskTemplate(input: CreateTaskTemplateInput!): TaskTemplate!
+  updateTaskTemplate(id: ID!, input: CreateTaskTemplateInput!): TaskTemplate!
+  deleteTaskTemplate(id: ID!): Boolean!
+  duplicateTaskTemplate(id: ID!, newName: String!): TaskTemplate!
+
+  addTemplateStep(templateId: ID!, input: CreateTemplateStepInput!): TaskTemplateStep!
+  updateTemplateStep(stepId: ID!, input: CreateTemplateStepInput!): TaskTemplateStep!
+  removeTemplateStep(stepId: ID!): Boolean!
+  reorderTemplateSteps(templateId: ID!, stepIds: [ID!]!): [TaskTemplateStep!]!
+
+  addStepDependency(sourceStepId: ID!, targetStepId: ID!, type: DependencyType!, lagDays: Int): TemplateStepDependency!
+  removeStepDependency(dependencyId: ID!): Boolean!
+
+  applyTemplate(input: ApplyTemplateInput!): ApplyTemplateResult!
+}

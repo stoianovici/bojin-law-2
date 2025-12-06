@@ -1,13 +1,12 @@
 /**
  * User Context
- * Provides mock user data for testing navigation and role switching
+ * Provides authenticated user data from AuthContext
  */
 
 'use client';
 
 import React, { createContext, useContext, type ReactNode } from 'react';
-// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
-import { useNavigationStore } from '../stores/navigation.store';
+import { useAuth } from '../lib/hooks/useAuth';
 import type { User } from '@legal-platform/types';
 
 interface UserContextType {
@@ -22,23 +21,24 @@ export interface UserProviderProps {
 
 /**
  * User Context Provider
- * Provides mock user data synchronized with navigation store's current role
+ * Provides authenticated user data from AuthContext
  */
 export function UserProvider({ children }: UserProviderProps) {
-  const { currentRole } = useNavigationStore();
+  const { user: authUser } = useAuth();
 
-  // Mock user data
-  const user: User = {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    email: 'alexandru.popescu@example.com',
-    firstName: 'Alexandru',
-    lastName: 'Popescu',
-    role: currentRole,
-    status: 'Active',
-    firmId: '550e8400-e29b-41d4-a716-446655440001',
-    azureAdId: 'azure-ad-id-12345',
+  // Use authenticated user from AuthContext
+  // Fallback to minimal user object if not authenticated (shouldn't happen in protected routes)
+  const user: User = authUser ?? {
+    id: '',
+    email: '',
+    firstName: 'Guest',
+    lastName: '',
+    role: 'Associate',
+    status: 'Pending',
+    firmId: null,
+    azureAdId: '',
     preferences: {},
-    createdAt: new Date('2024-01-01'),
+    createdAt: new Date(),
     lastActive: new Date(),
   };
 

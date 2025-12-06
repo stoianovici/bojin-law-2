@@ -5,7 +5,6 @@
  */
 
 import * as pst from 'pst-extractor';
-// @ts-expect-error - uuid types issue in some configs
 import { v4 as uuidv4 } from 'uuid';
 
 // Supported file extensions for extraction
@@ -181,7 +180,7 @@ function processFolder(
                     if (content) {
                       // Read stream to buffer
                       const chunks: Buffer[] = [];
-                      const bufferSize = attachment.attachSize || 8192;
+                      const bufferSize = attachment.filesize || 8192;
                       const buffer = Buffer.alloc(bufferSize);
 
                       let bytesRead: number;

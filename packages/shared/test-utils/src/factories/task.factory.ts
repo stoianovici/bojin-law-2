@@ -169,6 +169,7 @@ export function createTask(overrides: TaskOverrides = {}): Task {
   return {
     id: faker.string.uuid(),
     caseId: faker.string.uuid(),
+    firmId: faker.string.uuid(),
     type,
     title: generateTaskTitle(type),
     description: generateTaskDescription(type),

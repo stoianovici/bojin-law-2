@@ -1,0 +1,356 @@
+# Proactive AI Suggestions GraphQL Schema
+# Story 5.4: Proactive AI Suggestions System
+
+# ====================
+# Types
+# ====================
+
+type AISuggestion {
+  id: ID!
+  type: SuggestionType!
+  category: SuggestionCategory!
+  title: String!
+  description: String!
+  suggestedAction: String
+  actionPayload: JSON
+  confidence: Float!
+  priority: SuggestionPriority!
+  status: SuggestionStatus!
+  case: Case
+  expiresAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type MorningBriefing {
+  id: ID!
+  briefingDate: Date!
+  prioritizedTasks: [PrioritizedTask!]!
+  keyDeadlines: [DeadlineInfo!]!
+  riskAlerts: [RiskAlert!]!
+  suggestions: [AISuggestion!]!
+  summary: String!
+  isViewed: Boolean!
+  viewedAt: DateTime
+  tokensUsed: Int
+  createdAt: DateTime!
+}
+
+type PrioritizedTask {
+  taskId: ID!
+  task: Task
+  priority: Int!
+  priorityReason: String!
+  suggestedTimeSlot: String
+}
+
+type DeadlineInfo {
+  id: ID
+  taskId: ID
+  title: String!
+  dueDate: DateTime!
+  daysUntilDue: Int!
+  severity: DeadlineSeverity!
+  caseId: ID
+  case: Case
+  suggestedActions: [SuggestedAction!]!
+  blockedBy: [String!]
+}
+
+type RiskAlert {
+  type: String!
+  description: String!
+  suggestedAction: String!
+  severity: RiskSeverity!
+}
+
+type SuggestedAction {
+  action: String!
+  description: String!
+  actionType: ActionType!
+  payload: JSON
+}
+
+type DocumentCompletenessResult {
+  documentId: ID!
+  documentType: String!
+  completenessScore: Float!
+  missingItems: [MissingItem!]!
+  suggestions: [String!]!
+}
+
+type MissingItem {
+  item: String!
+  severity: ItemSeverity!
+  section: String
+  suggestion: String!
+}
+
+type UserActionPattern {
+  id: ID!
+  patternType: String!
+  description: String
+  triggerContext: JSON
+  actionSequence: JSON
+  occurrenceCount: Int!
+  confidence: Float!
+  isActive: Boolean!
+  lastOccurrence: DateTime!
+}
+
+type SuggestionAnalytics {
+  totalSuggestions: Int!
+  acceptedCount: Int!
+  dismissedCount: Int!
+  acceptanceRate: Float!
+  averageResponseTimeMs: Float!
+  byType: [SuggestionTypeStats!]!
+  byCategory: [SuggestionCategoryStats!]!
+}
+
+type SuggestionTypeStats {
+  type: SuggestionType!
+  count: Int!
+  acceptanceRate: Float!
+}
+
+type SuggestionCategoryStats {
+  category: SuggestionCategory!
+  count: Int!
+  acceptanceRate: Float!
+}
+
+type SuggestionFeedbackResult {
+  success: Boolean!
+  suggestionId: ID!
+  newStatus: SuggestionStatus!
+}
+
+# ====================
+# Enums
+# ====================
+
+enum SuggestionType {
+  MorningBriefing
+  TaskSuggestion
+  PatternMatch
+  DeadlineWarning
+  DocumentCheck
+  FollowUp
+  RiskAlert
+}
+
+enum SuggestionCategory {
+  Task
+  Communication
+  Document
+  Calendar
+  Compliance
+}
+
+enum SuggestionPriority {
+  Low
+  Normal
+  High
+  Urgent
+}
+
+enum SuggestionStatus {
+  Pending
+  Accepted
+  Dismissed
+  Expired
+  AutoApplied
+}
+
+enum DeadlineSeverity {
+  Info
+  Warning
+  Critical
+}
+
+enum RiskSeverity {
+  Low
+  Medium
+  High
+}
+
+enum ActionType {
+  CreateTask
+  SendEmail
+  ScheduleMeeting
+  ReviewDocument
+  Navigate
+}
+
+enum ItemSeverity {
+  Required
+  Recommended
+  Optional
+}
+
+# ====================
+# Inputs
+# ====================
+
+input SuggestionContextInput {
+  currentScreen: String
+  currentCaseId: ID
+  currentDocumentId: ID
+  recentActions: [RecentActionInput!]
+}
+
+input RecentActionInput {
+  type: String!
+  timestamp: DateTime
+  context: JSON
+}
+
+input SuggestionFeedbackInput {
+  suggestionId: ID!
+  action: String!
+  modifiedAction: JSON
+  feedbackReason: String
+  responseTimeMs: Int
+}
+
+input DocumentCompletenessInput {
+  documentId: ID!
+  documentContent: String!
+  documentType: String!
+  documentTitle: String
+}
+
+# Note: DateRangeInput is defined in search.graphql with { start: DateTime!, end: DateTime! }
+
+input DeadlineWarningsInput {
+  caseId: ID
+  lookaheadDays: Int
+  includeDependencies: Boolean
+}
+
+# ====================
+# Queries
+# ====================
+
+extend type Query {
+  """
+  Get the morning briefing for a specific date (defaults to today)
+  """
+  morningBriefing(date: Date): MorningBriefing
+
+  """
+  Get contextual suggestions based on current user context
+  """
+  contextualSuggestions(context: SuggestionContextInput!): [AISuggestion!]!
+
+  """
+  Get all pending suggestions for the current user
+  """
+  pendingSuggestions(limit: Int, offset: Int): [AISuggestion!]!
+
+  """
+  Get upcoming deadline warnings
+  """
+  deadlineWarnings(input: DeadlineWarningsInput): [DeadlineInfo!]!
+
+  """
+  Get overdue deadline warnings
+  """
+  overdueDeadlines: [DeadlineInfo!]!
+
+  """
+  Check document completeness (requires document content)
+  """
+  documentCompleteness(input: DocumentCompletenessInput!): DocumentCompletenessResult!
+
+  """
+  Get detected user action patterns
+  """
+  userPatterns(limit: Int): [UserActionPattern!]!
+
+  """
+  Get suggestion analytics for performance tracking
+  """
+  suggestionAnalytics(dateRange: DateRangeInput): SuggestionAnalytics!
+
+  """
+  Get pattern-based suggestions for the current user
+  """
+  patternBasedSuggestions(limit: Int): [AISuggestion!]!
+
+  """
+  Get deadline statistics summary
+  """
+  deadlineStats: DeadlineStats!
+}
+
+type DeadlineStats {
+  total: Int!
+  critical: Int!
+  warning: Int!
+  info: Int!
+  overdue: Int!
+}
+
+# ====================
+# Mutations
+# ====================
+
+extend type Mutation {
+  """
+  Accept a suggestion and optionally execute its action
+  """
+  acceptSuggestion(suggestionId: ID!): AISuggestion!
+
+  """
+  Dismiss a suggestion with optional reason
+  """
+  dismissSuggestion(suggestionId: ID!, reason: String): AISuggestion!
+
+  """
+  Record detailed feedback for a suggestion (for learning)
+  """
+  recordSuggestionFeedback(input: SuggestionFeedbackInput!): SuggestionFeedbackResult!
+
+  """
+  Mark a morning briefing as viewed
+  """
+  markBriefingViewed(briefingId: ID!): MorningBriefing!
+
+  """
+  Force refresh suggestions for current context (invalidates cache)
+  """
+  refreshSuggestions(context: SuggestionContextInput!): [AISuggestion!]!
+
+  """
+  Request a new morning briefing generation
+  """
+  generateMorningBriefing: MorningBriefing!
+
+  """
+  Mark a document completeness issue as resolved
+  """
+  markCompletenessResolved(checkId: ID!): Boolean!
+
+  """
+  Record a user action for pattern learning
+  """
+  recordUserAction(type: String!, context: JSON): Boolean!
+}
+
+# ====================
+# Subscriptions (future)
+# ====================
+
+# extend type Subscription {
+#   """
+#   Subscribe to new suggestions as they are generated
+#   """
+#   newSuggestion: AISuggestion!
+#
+#   """
+#   Subscribe to deadline warning updates
+#   """
+#   deadlineUpdate: DeadlineInfo!
+# }

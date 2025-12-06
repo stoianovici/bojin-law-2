@@ -1,0 +1,454 @@
+# Performance Metrics GraphQL Schema
+# Story 3.8: Document System Testing and Performance - Task 17
+
+"""
+Complete performance snapshot of the system
+"""
+type PerformanceSnapshot {
+  """Timestamp of the snapshot"""
+  timestamp: DateTime!
+
+  """API performance metrics"""
+  api: ApiMetrics!
+
+  """AI operations performance metrics"""
+  ai: AiPerformanceMetrics!
+
+  """Database performance metrics"""
+  database: DatabaseMetrics!
+
+  """Cache performance metrics"""
+  cache: CacheMetrics!
+
+  """System resource metrics"""
+  system: SystemMetrics!
+}
+
+"""
+API performance metrics
+"""
+type ApiMetrics {
+  """Total requests in the current window"""
+  totalRequests: Int!
+
+  """Average response time in milliseconds"""
+  avgResponseTime: Float!
+
+  """95th percentile response time in milliseconds"""
+  p95ResponseTime: Float!
+
+  """Error rate (0-1)"""
+  errorRate: Float!
+
+  """Metrics broken down by endpoint"""
+  byEndpoint: [EndpointMetrics!]!
+}
+
+"""
+Performance metrics for a specific endpoint
+"""
+type EndpointMetrics {
+  """API endpoint path"""
+  endpoint: String!
+
+  """HTTP method"""
+  method: String!
+
+  """Number of requests"""
+  requestCount: Int!
+
+  """Average response time in milliseconds"""
+  avgResponseTime: Float!
+
+  """95th percentile response time in milliseconds"""
+  p95ResponseTime: Float!
+
+  """Number of errors"""
+  errorCount: Int!
+
+  """Health status of the endpoint"""
+  status: HealthStatus!
+}
+
+"""
+AI operations performance metrics
+"""
+type AiPerformanceMetrics {
+  """Total AI operations"""
+  totalOperations: Int!
+
+  """Average latency in milliseconds"""
+  avgLatency: Float!
+
+  """95th percentile latency in milliseconds"""
+  p95Latency: Float!
+
+  """Metrics broken down by model"""
+  byModel: [AiModelMetrics!]!
+
+  """Metrics broken down by operation type"""
+  byOperation: [AiOperationMetrics!]!
+}
+
+"""
+Performance metrics for a specific AI model
+"""
+type AiModelMetrics {
+  """Model identifier"""
+  model: String!
+
+  """Number of requests"""
+  requestCount: Int!
+
+  """Average time to first token in milliseconds"""
+  avgTTFT: Float!
+
+  """Average total latency in milliseconds"""
+  avgTotalLatency: Float!
+
+  """Number of errors"""
+  errorCount: Int!
+
+  """Health status of the model"""
+  status: HealthStatus!
+}
+
+"""
+Performance metrics for a specific AI operation type
+"""
+type AiOperationMetrics {
+  """Operation type (e.g., document_generation, semantic_diff)"""
+  operation: String!
+
+  """Number of operations"""
+  count: Int!
+
+  """Average latency in milliseconds"""
+  avgLatency: Float!
+
+  """95th percentile latency in milliseconds"""
+  p95Latency: Float!
+
+  """Success rate (0-1)"""
+  successRate: Float!
+}
+
+"""
+Database performance metrics
+"""
+type DatabaseMetrics {
+  """Total query count"""
+  queryCount: Int!
+
+  """Average query time in milliseconds"""
+  avgQueryTime: Float!
+
+  """95th percentile query time in milliseconds"""
+  p95QueryTime: Float!
+
+  """Connection pool usage (0-1)"""
+  connectionPoolUsage: Float!
+
+  """Number of slow queries"""
+  slowQueries: Int!
+}
+
+"""
+Cache performance metrics
+"""
+type CacheMetrics {
+  """Cache hit rate (0-1)"""
+  hitRate: Float!
+
+  """Cache miss rate (0-1)"""
+  missRate: Float!
+
+  """Total cache requests"""
+  totalRequests: Int!
+
+  """Memory usage in bytes"""
+  memoryUsage: Float!
+}
+
+"""
+System resource metrics
+"""
+type SystemMetrics {
+  """System uptime in seconds"""
+  uptime: Float!
+
+  """Memory usage breakdown"""
+  memoryUsage: MemoryUsage!
+
+  """CPU usage (0-1)"""
+  cpuUsage: Float!
+
+  """Active connections count"""
+  activeConnections: Int!
+}
+
+"""
+Memory usage breakdown
+"""
+type MemoryUsage {
+  """Heap memory used in bytes"""
+  heapUsed: Float!
+
+  """Total heap memory in bytes"""
+  heapTotal: Float!
+
+  """External memory in bytes"""
+  external: Float!
+
+  """Resident set size in bytes"""
+  rss: Float!
+}
+
+"""
+Health status for performance indicators
+"""
+enum HealthStatus {
+  HEALTHY
+  DEGRADED
+  CRITICAL
+}
+
+"""
+Performance alert notification
+"""
+type PerformanceAlert {
+  """Unique alert identifier"""
+  id: ID!
+
+  """Type of alert"""
+  type: AlertType!
+
+  """Severity level"""
+  severity: AlertSeverity!
+
+  """Metric that triggered the alert"""
+  metric: String!
+
+  """Current metric value"""
+  currentValue: Float!
+
+  """Threshold that was exceeded"""
+  threshold: Float!
+
+  """Human-readable message"""
+  message: String!
+
+  """When the alert was created"""
+  timestamp: DateTime!
+
+  """Whether the alert has been acknowledged"""
+  acknowledged: Boolean!
+}
+
+"""
+Type of performance alert
+"""
+enum AlertType {
+  API_SLOW
+  AI_SLOW
+  DB_SLOW
+  CACHE_LOW
+  ERROR_RATE_HIGH
+  RESOURCE_HIGH
+}
+
+"""
+Alert severity level
+"""
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+"""
+Time series data for charts
+"""
+type TimeSeriesData {
+  """Array of ISO timestamp strings"""
+  timestamps: [String!]!
+
+  """Array of metric values"""
+  values: [Float!]!
+
+  """Label for the data series"""
+  label: String!
+}
+
+"""
+Performance thresholds configuration
+"""
+type PerformanceThresholds {
+  """API response time thresholds"""
+  api: ApiThresholds!
+
+  """AI latency thresholds"""
+  ai: AiThresholds!
+
+  """Database query thresholds"""
+  database: DatabaseThresholds!
+
+  """Cache thresholds"""
+  cache: CacheThresholds!
+}
+
+"""
+API response time thresholds
+"""
+type ApiThresholds {
+  """Document upload threshold"""
+  documentUpload: ThresholdPair!
+
+  """Document download threshold"""
+  documentDownload: ThresholdPair!
+
+  """Search threshold"""
+  search: ThresholdPair!
+
+  """GraphQL threshold"""
+  graphql: ThresholdPair!
+}
+
+"""
+AI latency thresholds
+"""
+type AiThresholds {
+  """Haiku model thresholds"""
+  haiku: AiModelThreshold!
+
+  """Sonnet model thresholds"""
+  sonnet: AiModelThreshold!
+
+  """Opus model thresholds"""
+  opus: AiModelThreshold!
+}
+
+"""
+AI model threshold pair
+"""
+type AiModelThreshold {
+  """Time to first token threshold in ms"""
+  ttft: Int!
+
+  """Total latency threshold in ms"""
+  total: Int!
+}
+
+"""
+Database query thresholds
+"""
+type DatabaseThresholds {
+  """Query time thresholds"""
+  query: ThresholdPair!
+
+  """Transaction time thresholds"""
+  transaction: ThresholdPair!
+}
+
+"""
+Cache thresholds
+"""
+type CacheThresholds {
+  """Minimum acceptable hit rate"""
+  minHitRate: Float!
+}
+
+"""
+Threshold pair with p95 and target values
+"""
+type ThresholdPair {
+  """95th percentile threshold in ms"""
+  p95: Int!
+
+  """Target threshold in ms"""
+  target: Int!
+}
+
+"""
+Metric type for historical queries
+"""
+enum MetricType {
+  API
+  AI
+  DATABASE
+  CACHE
+}
+
+"""
+Time interval for historical data
+"""
+enum TimeInterval {
+  HOUR
+  DAY
+}
+
+"""
+Sort options for endpoint ranking
+"""
+enum EndpointSortBy {
+  SLOWEST
+  MOST_ERRORS
+  MOST_REQUESTS
+}
+
+extend type Query {
+  """
+  Get real-time performance snapshot.
+  Requires Partner or Admin role.
+  """
+  performanceSnapshot(firmId: ID): PerformanceSnapshot!
+
+  """
+  Get historical performance metrics.
+  Requires Partner or Admin role.
+  """
+  performanceHistory(
+    metricType: MetricType!
+    startDate: DateTime!
+    endDate: DateTime!
+    interval: TimeInterval
+  ): [TimeSeriesData!]!
+
+  """
+  Get active performance alerts.
+  Requires Partner or Admin role.
+  """
+  performanceAlerts(
+    severity: AlertSeverity
+    acknowledged: Boolean
+  ): [PerformanceAlert!]!
+
+  """
+  Get endpoint performance ranking.
+  Requires Partner or Admin role.
+  """
+  endpointRanking(
+    limit: Int
+    sortBy: EndpointSortBy
+  ): [EndpointMetrics!]!
+
+  """
+  Get AI model performance comparison.
+  Requires Partner or Admin role.
+  """
+  aiModelComparison: [AiModelMetrics!]!
+
+  """
+  Get configured performance thresholds.
+  Requires Partner or Admin role.
+  """
+  performanceThresholds: PerformanceThresholds!
+}
+
+extend type Mutation {
+  """
+  Acknowledge a performance alert.
+  Requires Partner or Admin role.
+  """
+  acknowledgePerformanceAlert(alertId: ID!): Boolean!
+}

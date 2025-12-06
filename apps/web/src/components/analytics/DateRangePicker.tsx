@@ -21,6 +21,18 @@ export interface DateRangePickerProps {
    * Optional additional class names
    */
   className?: string;
+  /**
+   * Controlled mode: start date
+   */
+  startDate?: Date;
+  /**
+   * Controlled mode: end date
+   */
+  endDate?: Date;
+  /**
+   * Controlled mode: change handler
+   */
+  onChange?: (start: Date, end: Date) => void;
 }
 
 /**
@@ -59,9 +71,15 @@ function formatDateForInput(date: Date): string {
  * <DateRangePicker />
  * ```
  */
-export function DateRangePicker({ className = '' }: DateRangePickerProps) {
-  const { dateRange, preset, setDateRange, setPreset } =
-    useAnalyticsFiltersStore();
+export function DateRangePicker({ className = '', startDate, endDate, onChange }: DateRangePickerProps) {
+  const store = useAnalyticsFiltersStore();
+
+  // Use controlled mode if props are provided, otherwise use store
+  const isControlled = startDate !== undefined && endDate !== undefined && onChange !== undefined;
+  const dateRange = isControlled ? { start: startDate, end: endDate } : store.dateRange;
+  const preset = isControlled ? 'custom' as DateRangePreset : store.preset;
+  const setDateRange = isControlled ? (range: { start: Date; end: Date }) => onChange(range.start, range.end) : store.setDateRange;
+  const setPreset = store.setPreset;
 
   const [isOpen, setIsOpen] = useState(false);
   const [customStart, setCustomStart] = useState(
@@ -72,7 +90,28 @@ export function DateRangePicker({ className = '' }: DateRangePickerProps) {
   // Handle preset selection
   const handlePresetClick = (selectedPreset: DateRangePreset) => {
     if (selectedPreset !== 'custom') {
-      setPreset(selectedPreset);
+      if (isControlled) {
+        // Calculate preset dates for controlled mode
+        const now = new Date();
+        let start: Date;
+        let end: Date = new Date();
+        end.setHours(23, 59, 59, 999);
+
+        if (selectedPreset === 'last30') {
+          start = new Date();
+          start.setDate(start.getDate() - 30);
+        } else if (selectedPreset === 'lastQuarter') {
+          start = new Date();
+          start.setMonth(start.getMonth() - 3);
+        } else {
+          // ytd
+          start = new Date(now.getFullYear(), 0, 1);
+        }
+        start.setHours(0, 0, 0, 0);
+        onChange!(start, end);
+      } else {
+        setPreset(selectedPreset);
+      }
       setIsOpen(false);
     }
   };
@@ -85,7 +124,11 @@ export function DateRangePicker({ className = '' }: DateRangePickerProps) {
     if (start <= end) {
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
-      setDateRange({ start, end });
+      if (isControlled) {
+        onChange!(start, end);
+      } else {
+        setDateRange({ start, end });
+      }
       setIsOpen(false);
     }
   };

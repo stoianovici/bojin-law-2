@@ -1,0 +1,320 @@
+# Platform Intelligence GraphQL Schema
+# Story 5.7: Platform Intelligence Dashboard
+
+# ============================================================================
+# Date Range Types (shared, may already be defined elsewhere)
+# ============================================================================
+
+# Uses DateRangeInput from existing schema files
+# Uses DateTime scalar from scalars.graphql
+# Uses JSON scalar from scalars.graphql
+
+# ============================================================================
+# Communication Response Analytics (AC: 2)
+# ============================================================================
+
+type ResponseTimeMetrics {
+  avgResponseTimeHours: Float!
+  medianResponseTimeHours: Float!
+  p90ResponseTimeHours: Float!
+  totalEmailsAnalyzed: Int!
+  withinSLAPercent: Float!
+}
+
+type ResponseTimeComparison {
+  currentPeriod: ResponseTimeMetrics!
+  baselinePeriod: ResponseTimeMetrics!
+  improvementPercent: Float!
+}
+
+enum EmailRecipientType {
+  CLIENT
+  OPPOSING_COUNSEL
+  COURT
+  INTERNAL
+}
+
+type ResponseTimeByType {
+  emailType: EmailRecipientType!
+  metrics: ResponseTimeMetrics!
+  volumeCount: Int!
+}
+
+type ResponseTimeTrend {
+  date: DateTime!
+  avgResponseTimeHours: Float!
+  volumeCount: Int!
+}
+
+type CommunicationAnalytics {
+  currentResponseTime: ResponseTimeMetrics!
+  baselineComparison: ResponseTimeComparison
+  byRecipientType: [ResponseTimeByType!]!
+  trend: [ResponseTimeTrend!]!
+}
+
+# ============================================================================
+# Document Quality Analytics (AC: 3)
+# ============================================================================
+
+type DocumentRevisionMetrics {
+  totalDocumentsCreated: Int!
+  avgRevisionsPerDocument: Float!
+  documentsWithZeroRevisions: Int!
+  documentsWithMultipleRevisions: Int!
+  firstTimeRightPercent: Float!
+}
+
+type DocumentErrorMetrics {
+  totalReviewsCompleted: Int!
+  reviewsWithIssues: Int!
+  issuesByCategory: JSON!
+  avgIssuesPerReview: Float!
+  issueResolutionTimeHours: Float!
+}
+
+type DocumentQualityTrend {
+  date: DateTime!
+  firstTimeRightPercent: Float!
+  avgRevisions: Float!
+  issueCount: Int!
+}
+
+type DocumentQualityAnalytics {
+  revisionMetrics: DocumentRevisionMetrics!
+  errorMetrics: DocumentErrorMetrics!
+  qualityTrend: [DocumentQualityTrend!]!
+}
+
+# ============================================================================
+# AI Utilization Analytics (AC: 5)
+# ============================================================================
+
+enum AIFeatureType {
+  EMAIL_DRAFTING
+  DOCUMENT_GENERATION
+  CLAUSE_SUGGESTIONS
+  TASK_PARSING
+  MORNING_BRIEFING
+  PROACTIVE_SUGGESTIONS
+  SEMANTIC_SEARCH
+  VERSION_COMPARISON
+  STYLE_ANALYSIS
+}
+
+type FeatureUsage {
+  feature: AIFeatureType!
+  requestCount: Int!
+  tokenCount: Int!
+  avgLatencyMs: Float!
+  acceptanceRate: Float
+}
+
+type AIUtilizationByUser {
+  userId: ID!
+  userName: String!
+  totalRequests: Int!
+  totalTokens: Int!
+  totalCostCents: Int!
+  byFeature: [FeatureUsage!]!
+  adoptionScore: Int!
+}
+
+type FirmAITotal {
+  totalRequests: Int!
+  totalTokens: Int!
+  totalCostCents: Int!
+  avgRequestsPerUser: Float!
+}
+
+type AIUtilizationSummary {
+  firmTotal: FirmAITotal!
+  byUser: [AIUtilizationByUser!]!
+  byFeature: [FeatureUsage!]!
+  topUsers: [AIUtilizationByUser!]!
+  underutilizedUsers: [AIUtilizationByUser!]!
+}
+
+# ============================================================================
+# Efficiency Metrics (AC: 1)
+# ============================================================================
+
+type EfficiencyMetrics {
+  totalTimeSavedHours: Float!
+  aiAssistedActions: Int!
+  automationTriggers: Int!
+  manualVsAutomatedRatio: Float!
+}
+
+# ============================================================================
+# Task Completion Summary (AC: 4)
+# ============================================================================
+
+type TaskCompletionTrend {
+  date: DateTime!
+  completionRate: Float!
+  deadlineAdherence: Float!
+  tasksCompleted: Int!
+}
+
+type TaskCompletionSummary {
+  completionRate: Float!
+  deadlineAdherence: Float!
+  avgCompletionTimeHours: Float!
+  overdueCount: Int!
+  trend: [TaskCompletionTrend!]!
+}
+
+# ============================================================================
+# ROI Summary (AC: 6)
+# ============================================================================
+
+type PlatformSavingsCategory {
+  category: String!
+  hoursSaved: Float!
+  valueInCurrency: Float!
+  percentOfTotal: Float!
+}
+
+type ROISummary {
+  totalValueSaved: Float!
+  billableHoursRecovered: Float!
+  projectedAnnualSavings: Float!
+  savingsByCategory: [PlatformSavingsCategory!]!
+}
+
+# ============================================================================
+# Recommendations
+# ============================================================================
+
+enum RecommendationCategory {
+  EFFICIENCY
+  COMMUNICATION
+  QUALITY
+  ADOPTION
+}
+
+enum RecommendationPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+type PlatformRecommendation {
+  category: RecommendationCategory!
+  priority: RecommendationPriority!
+  message: String!
+  actionableSteps: [String!]!
+}
+
+# ============================================================================
+# Platform Intelligence Dashboard (AC: 1-6)
+# ============================================================================
+
+type PlatformDateRange {
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
+type PlatformIntelligenceDashboard {
+  dateRange: PlatformDateRange!
+  firmId: ID!
+  generatedAt: DateTime!
+
+  efficiency: EfficiencyMetrics!
+  communication: CommunicationAnalytics!
+  documentQuality: DocumentQualityAnalytics!
+  taskCompletion: TaskCompletionSummary!
+  aiUtilization: AIUtilizationSummary!
+  roi: ROISummary!
+
+  platformHealthScore: Int!
+  recommendations: [PlatformRecommendation!]!
+}
+
+# ============================================================================
+# Export Types
+# ============================================================================
+
+enum ExportFormat {
+  PDF
+  EXCEL
+  CSV
+}
+
+type ExportResult {
+  url: String!
+  expiresAt: DateTime!
+  format: ExportFormat!
+}
+
+input ExportSectionsInput {
+  efficiency: Boolean
+  communication: Boolean
+  quality: Boolean
+  tasks: Boolean
+  ai: Boolean
+  roi: Boolean
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get full platform intelligence dashboard (AC: 1-6).
+  Requires Partner or BusinessOwner role.
+  """
+  platformIntelligenceDashboard(
+    dateRange: DateRangeInput!
+  ): PlatformIntelligenceDashboard!
+
+  """
+  Get communication analytics section (AC: 2).
+  Requires Partner or BusinessOwner role.
+  """
+  communicationAnalytics(dateRange: DateRangeInput!): CommunicationAnalytics!
+
+  """
+  Get document quality analytics section (AC: 3).
+  Requires Partner or BusinessOwner role.
+  """
+  documentQualityAnalytics(dateRange: DateRangeInput!): DocumentQualityAnalytics!
+
+  """
+  Get AI utilization analytics section (AC: 5).
+  Requires Partner or BusinessOwner role.
+  """
+  aiUtilizationAnalytics(dateRange: DateRangeInput!): AIUtilizationSummary!
+
+  """
+  Get AI utilization for a specific user (AC: 5).
+  Requires Partner or BusinessOwner role.
+  """
+  userAIUtilization(userId: ID!, dateRange: DateRangeInput!): AIUtilizationByUser
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Export platform intelligence dashboard to various formats.
+  Returns a signed URL for download.
+  Requires Partner or BusinessOwner role.
+  """
+  exportPlatformIntelligence(
+    dateRange: DateRangeInput!
+    format: ExportFormat!
+    sections: ExportSectionsInput
+  ): ExportResult!
+
+  """
+  Manually refresh cached platform intelligence data.
+  Returns true on success.
+  Requires Partner or BusinessOwner role.
+  """
+  refreshPlatformIntelligence: Boolean!
+}

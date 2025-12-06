@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Only Partners and Admins can update status
-    if (currentUser.role !== 'Partner' && currentUser.role !== 'Admin') {
+    // Only Partners and BusinessOwners can update status
+    if (currentUser.role !== 'Partner' && currentUser.role !== 'BusinessOwner') {
       return NextResponse.json(
         { error: 'forbidden', message: 'Nu ai permisiunea să modifici statusuri' },
         { status: 403 }

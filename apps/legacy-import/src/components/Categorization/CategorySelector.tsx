@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Plus, Check, Search } from 'lucide-react';
 import { useDocumentStore } from '@/stores/documentStore';
-import type { Category } from '@/stores/documentStore';
+import type { Category, DocumentState } from '@/stores/documentStore';
 
 interface CategorySelectorProps {
   selectedCategoryId: string | null;
@@ -33,7 +33,7 @@ export function CategorySelector({
   onCreateCategory,
   disabled = false,
 }: CategorySelectorProps) {
-  const categories = useDocumentStore((s) => s.categories);
+  const categories = useDocumentStore((s: DocumentState) => s.categories);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -44,10 +44,10 @@ export function CategorySelector({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const newCategoryInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
+  const selectedCategory = categories.find((c: Category) => c.id === selectedCategoryId);
 
   // Filter categories based on search (diacritic-insensitive)
-  const filteredCategories = categories.filter((c) =>
+  const filteredCategories = categories.filter((c: Category) =>
     normalizeForSearch(c.name).includes(normalizeForSearch(searchQuery))
   );
 
@@ -115,7 +115,7 @@ export function CategorySelector({
     }
 
     // Check for duplicate (diacritic-insensitive)
-    if (categories.some((c) => normalizeForSearch(c.name) === normalizeForSearch(name))) {
+    if (categories.some((c: Category) => normalizeForSearch(c.name) === normalizeForSearch(name))) {
       setError('Categoria există deja');
       return;
     }

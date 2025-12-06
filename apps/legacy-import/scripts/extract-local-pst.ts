@@ -130,7 +130,7 @@ async function uploadToR2(
 
 async function* extractDocumentsFromPST(
   pstFilePath: string,
-  sessionId: string,
+  _sessionId: string,
   stats: ExtractionStats
 ): AsyncGenerator<{ doc: ExtractedDoc; content: Buffer }> {
   const pstFile = new pst.PSTFile(pstFilePath);

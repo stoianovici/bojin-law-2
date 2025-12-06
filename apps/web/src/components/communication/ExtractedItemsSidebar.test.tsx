@@ -357,9 +357,10 @@ describe('ExtractedItemsSidebar', () => {
       const commitmentsHeader = screen.getByText(/Angajamente \(1\)/i);
       fireEvent.click(commitmentsHeader);
 
-      // Click create task button
-      const createButton = screen.getByText(/Creează Task/i);
-      fireEvent.click(createButton);
+      // Click create task button (use getAllByText and get the one in commitments section - index 2)
+      const createButtons = screen.getAllByText(/Creează Task/i);
+      // Index 0, 1 are from deadlines (2 items), index 2 is from commitments
+      fireEvent.click(createButtons[2]);
 
       // Check pre-populated fields
       const titleInput = screen.getByLabelText(/Titlu/i) as HTMLInputElement;
@@ -377,9 +378,9 @@ describe('ExtractedItemsSidebar', () => {
       const commitmentsHeader = screen.getByText(/Angajamente \(1\)/i);
       fireEvent.click(commitmentsHeader);
 
-      // Click create task button
-      const createButton = screen.getByText(/Creează Task/i);
-      fireEvent.click(createButton);
+      // Click create task button (use getAllByText and get the one in commitments section - index 2)
+      const createButtons = screen.getAllByText(/Creează Task/i);
+      fireEvent.click(createButtons[2]);
 
       // Save the task
       const saveButton = screen.getByText(/Salvează Task/i);
@@ -401,9 +402,9 @@ describe('ExtractedItemsSidebar', () => {
       const actionsHeader = screen.getByText(/Acțiuni \(1\)/i);
       fireEvent.click(actionsHeader);
 
-      // Click create task button
-      const createButton = screen.getByText(/Creează Task/i);
-      fireEvent.click(createButton);
+      // Click create task button (use getAllByText and get the one in actions section - index 2)
+      const createButtons = screen.getAllByText(/Creează Task/i);
+      fireEvent.click(createButtons[2]);
 
       // Check pre-populated fields
       const titleInput = screen.getByLabelText(/Titlu/i) as HTMLInputElement;
@@ -424,9 +425,9 @@ describe('ExtractedItemsSidebar', () => {
       const actionsHeader = screen.getByText(/Acțiuni \(1\)/i);
       fireEvent.click(actionsHeader);
 
-      // Click create task button
-      const createButton = screen.getByText(/Creează Task/i);
-      fireEvent.click(createButton);
+      // Click create task button (use getAllByText and get the one in actions section - index 2)
+      const createButtons = screen.getAllByText(/Creează Task/i);
+      fireEvent.click(createButtons[2]);
 
       // Save the task
       const saveButton = screen.getByText(/Salvează Task/i);
@@ -553,8 +554,9 @@ describe('ExtractedItemsSidebar', () => {
       fireEvent.click(saveButton);
 
       await waitFor(() => {
-        const convertedItem = screen.getByText('Revizuire contract').closest('div');
-        expect(convertedItem).toHaveClass('bg-green-50');
+        // Find the item card container (now converted with green background)
+        const convertedItem = screen.getByText('Revizuire contract').closest('.bg-green-50');
+        expect(convertedItem).toBeInTheDocument();
         expect(convertedItem).toHaveClass('border-green-200');
       });
     });
@@ -579,8 +581,9 @@ describe('ExtractedItemsSidebar', () => {
       mockGetSelectedThread.mockReturnValue(mockThread);
       render(<ExtractedItemsSidebar />);
 
-      const unconvertedItem = screen.getByText('Revizuire contract').closest('div');
-      expect(unconvertedItem).toHaveClass('bg-yellow-50');
+      // Find the item card container (parent with background color class)
+      const unconvertedItem = screen.getByText('Revizuire contract').closest('.bg-yellow-50');
+      expect(unconvertedItem).toBeInTheDocument();
     });
 
     it('should show blue background for unconverted commitments', () => {
@@ -591,8 +594,9 @@ describe('ExtractedItemsSidebar', () => {
       const commitmentsHeader = screen.getByText(/Angajamente \(1\)/i);
       fireEvent.click(commitmentsHeader);
 
-      const unconvertedItem = screen.getByText('Elena Popescu').closest('div');
-      expect(unconvertedItem).toHaveClass('bg-blue-50');
+      // Find the item card container (parent with background color class)
+      const unconvertedItem = screen.getByText('Elena Popescu').closest('.bg-blue-50');
+      expect(unconvertedItem).toBeInTheDocument();
     });
 
     it('should show green background for unconverted action items', () => {
@@ -603,8 +607,9 @@ describe('ExtractedItemsSidebar', () => {
       const actionsHeader = screen.getByText(/Acțiuni \(1\)/i);
       fireEvent.click(actionsHeader);
 
-      const unconvertedItem = screen.getByText('Pregătire raport legal').closest('div');
-      expect(unconvertedItem).toHaveClass('bg-green-50');
+      // Find the item card container (parent with background color class)
+      const unconvertedItem = screen.getByText('Pregătire raport legal').closest('.bg-green-50');
+      expect(unconvertedItem).toBeInTheDocument();
     });
   });
 

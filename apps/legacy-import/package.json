@@ -8,6 +8,7 @@
     "postinstall": "prisma generate",
     "start": "next start -p ${PORT:-3001}",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "type-check": "tsc --noEmit",
     "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
     "test:watch": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest --watch",
     "test:coverage": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest --coverage"
@@ -55,10 +56,12 @@
     "tus-js-client": "^4.1.0",
     "uuid": "^10.0.0",
     "word-extractor": "^1.0.4",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.76",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
+    "@microsoft/microsoft-graph-types": "^2.40.0",
     "@swc/core": "^1.15.3",
     "@swc/jest": "^0.2.39",
     "@testing-library/jest-dom": "^6.0.0",

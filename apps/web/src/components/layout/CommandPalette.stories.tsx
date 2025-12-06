@@ -39,7 +39,7 @@ const meta: Meta<typeof CommandPalette> = {
     },
   },
   decorators: [
-    (Story, context) => {
+    (Story: any, context: any) => {
       useEffect(() => {
         // Open command palette for stories
         if (context.args.open) {
@@ -290,7 +290,7 @@ export const WithBackdrop: Story = {
     open: true,
   },
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-8">
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">Content 1</div>

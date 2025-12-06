@@ -1,7 +1,7 @@
 'use client';
 
 import { useDocumentStore } from '@/stores/documentStore';
-import type { FilterType } from '@/stores/documentStore';
+import type { FilterType, DocumentState, DocumentMetadata } from '@/stores/documentStore';
 
 interface FilterOption {
   value: FilterType;
@@ -10,18 +10,18 @@ interface FilterOption {
 }
 
 export function FilterBar() {
-  const documents = useDocumentStore((s) => s.documents);
-  const activeFilter = useDocumentStore((s) => s.activeFilter);
-  const setActiveFilter = useDocumentStore((s) => s.setActiveFilter);
+  const documents = useDocumentStore((s: DocumentState) => s.documents);
+  const activeFilter = useDocumentStore((s: DocumentState) => s.activeFilter);
+  const setActiveFilter = useDocumentStore((s: DocumentState) => s.setActiveFilter);
 
   // Calculate counts for each filter
   const counts = {
     all: documents.length,
-    categorized: documents.filter((d) => d.status === 'Categorized').length,
-    uncategorized: documents.filter((d) => d.status === 'Uncategorized').length,
-    skipped: documents.filter((d) => d.status === 'Skipped').length,
-    sent: documents.filter((d) => d.isSent).length,
-    received: documents.filter((d) => !d.isSent).length,
+    categorized: documents.filter((d: DocumentMetadata) => d.status === 'Categorized').length,
+    uncategorized: documents.filter((d: DocumentMetadata) => d.status === 'Uncategorized').length,
+    skipped: documents.filter((d: DocumentMetadata) => d.status === 'Skipped').length,
+    sent: documents.filter((d: DocumentMetadata) => d.isSent).length,
+    received: documents.filter((d: DocumentMetadata) => !d.isSent).length,
   };
 
   const statusFilters: FilterOption[] = [

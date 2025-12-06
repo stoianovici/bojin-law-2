@@ -99,10 +99,12 @@ export interface ExtractedActionItem {
 export interface AIDraftResponse {
   id: string;
   threadId: string;
-  tone: 'formal' | 'professional' | 'brief';
+  tone: 'formal' | 'professional' | 'brief' | 'detailed'; // Added 'detailed' for Story 5.3
   draftBody: string;
+  htmlBody?: string; // Added for rich text support (Story 5.3)
   suggestedAttachments: string[]; // Document titles
   confidence: 'Low' | 'Medium' | 'High';
+  recipientType?: 'Client' | 'OpposingCounsel' | 'Court' | 'ThirdParty' | 'Internal'; // Added for Story 5.3
   generatedAt: Date;
 }
 

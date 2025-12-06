@@ -6,7 +6,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSessionProgress } from '@/services/batch-allocation.service';
 
 /**
  * GET - Get session progress statistics
@@ -108,11 +107,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate batch progress
-    const completedBatches = session.batches.filter(b => b.completedAt !== null).length;
-    const assignedBatches = session.batches.filter(b => b.assignedTo !== null).length;
+    const completedBatches = session.batches.filter((b: { completedAt: Date | null }) => b.completedAt !== null).length;
+    const assignedBatches = session.batches.filter((b: { assignedTo: string | null }) => b.assignedTo !== null).length;
 
     // Get unique users working on session
-    const activeUsers = new Set(session.batches.filter(b => b.assignedTo).map(b => b.assignedTo));
+    const activeUsers = new Set(session.batches.filter((b: { assignedTo: string | null }) => b.assignedTo).map((b: { assignedTo: string | null }) => b.assignedTo));
 
     // Calculate overall progress percentage
     const totalDocs = session.totalDocuments;
@@ -146,7 +145,7 @@ export async function GET(request: NextRequest) {
         total: session.batches.length,
         assigned: assignedBatches,
         completed: completedBatches,
-        items: session.batches.map(b => ({
+        items: session.batches.map((b: typeof session.batches[number]) => ({
           id: b.id,
           monthYear: b.monthYear,
           assignedTo: b.assignedTo,
@@ -159,7 +158,7 @@ export async function GET(request: NextRequest) {
       },
 
       // Category breakdown
-      categories: session.categories.map(c => ({
+      categories: session.categories.map((c: typeof session.categories[number]) => ({
         id: c.id,
         name: c.name,
         documentCount: c.documentCount,

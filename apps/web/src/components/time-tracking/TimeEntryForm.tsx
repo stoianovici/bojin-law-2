@@ -20,13 +20,8 @@ const taskTypes: { value: TimeTaskType; label: string }[] = [
   { value: 'Other', label: 'Altele' },
 ];
 
-const mockCases = [
-  { id: 'case-1', name: 'Dosar Popescu vs. SRL Construct' },
-  { id: 'case-2', name: 'Contract Ionescu - Furnizare Servicii' },
-  { id: 'case-3', name: 'Litigiu Georgescu - Proprietate' },
-  { id: 'case-4', name: 'Advisory Dumitrescu SRL' },
-  { id: 'case-5', name: 'Contencios Marin vs. Primărie' },
-];
+// Cases should be fetched from API - empty array for clean state
+const mockCases: Array<{ id: string; name: string }> = [];
 
 export function TimeEntryForm() {
   const addTimeEntry = useTimeTrackingStore((state) => state.addTimeEntry);
@@ -77,11 +72,12 @@ export function TimeEntryForm() {
     // Submit
     const selectedCase = mockCases.find((c) => c.id === formData.caseId);
 
+    // TODO: Get userId and userName from auth context
     addTimeEntry({
-      userId: 'user-001',
-      userName: 'Current User',
+      userId: '', // Should come from auth context
+      userName: '', // Should come from auth context
       caseId: formData.caseId,
-      caseName: selectedCase?.name || 'Unknown Case',
+      caseName: selectedCase?.name || '',
       taskType: formData.taskType as TimeTaskType,
       date: new Date(formData.date),
       duration: totalMinutes,

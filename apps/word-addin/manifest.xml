@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Word Add-in Manifest
+  Story 3.4: Word Integration with Live AI Assistance
+
+  Office Add-in manifest for the Legal Platform Word integration.
+  Provides AI-powered assistance directly within Microsoft Word.
+-->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+
+  <!-- Unique ID for this add-in (generate new UUID for production) -->
+  <Id>8e3e0c5f-1234-4d2f-9a5b-3c7d8e9f0a1b</Id>
+
+  <!-- Version following semver -->
+  <Version>1.0.0.0</Version>
+
+  <!-- Provider information -->
+  <ProviderName>Bojin Law Legal Platform</ProviderName>
+
+  <!-- Display name shown to users -->
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Legal AI Assistant"/>
+  <Description DefaultValue="AI-powered legal document assistance with clause suggestions, language explanations, and text improvements."/>
+
+  <!-- Icon URLs - replace with actual hosted icons -->
+  <IconUrl DefaultValue="https://localhost:3000/assets/addin-icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/addin-icon-128.png"/>
+
+  <!-- Support URL -->
+  <SupportUrl DefaultValue="https://support.legalplatform.com"/>
+
+  <!-- Application domains for security -->
+  <AppDomains>
+    <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://localhost:4000</AppDomain>
+    <AppDomain>https://login.microsoftonline.com</AppDomain>
+    <AppDomain>https://graph.microsoft.com</AppDomain>
+  </AppDomains>
+
+  <!-- Host applications this add-in works with -->
+  <Hosts>
+    <Host Name="Document"/>
+  </Hosts>
+
+  <!-- Required permissions -->
+  <Requirements>
+    <Sets DefaultMinVersion="1.1">
+      <Set Name="WordApi" MinVersion="1.3"/>
+    </Sets>
+  </Requirements>
+
+  <!-- Default settings -->
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/word-addin/taskpane.html"/>
+  </DefaultSettings>
+
+  <!-- Read-write permission to document -->
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <!-- Version overrides for modern ribbon integration -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <!-- Hosts configuration -->
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <!-- Extension point for task pane commands -->
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <!-- Custom tab on the ribbon -->
+            <CustomTab id="LegalAI.Tab">
+              <Group id="LegalAI.Group">
+                <Label resid="GroupLabel"/>
+
+                <!-- AI Suggestions button -->
+                <Control xsi:type="Button" id="LegalAI.SuggestionsButton">
+                  <Label resid="SuggestionsButton.Label"/>
+                  <Supertip>
+                    <Title resid="SuggestionsButton.Label"/>
+                    <Description resid="SuggestionsButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.Suggestions.16"/>
+                    <bt:Image size="32" resid="Icon.Suggestions.32"/>
+                    <bt:Image size="80" resid="Icon.Suggestions.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>SuggestionsPane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+
+                <!-- Explain Selection button -->
+                <Control xsi:type="Button" id="LegalAI.ExplainButton">
+                  <Label resid="ExplainButton.Label"/>
+                  <Supertip>
+                    <Title resid="ExplainButton.Label"/>
+                    <Description resid="ExplainButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.Explain.16"/>
+                    <bt:Image size="32" resid="Icon.Explain.32"/>
+                    <bt:Image size="80" resid="Icon.Explain.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>explainSelection</FunctionName>
+                  </Action>
+                </Control>
+
+                <!-- Improve Text button -->
+                <Control xsi:type="Button" id="LegalAI.ImproveButton">
+                  <Label resid="ImproveButton.Label"/>
+                  <Supertip>
+                    <Title resid="ImproveButton.Label"/>
+                    <Description resid="ImproveButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.Improve.16"/>
+                    <bt:Image size="32" resid="Icon.Improve.32"/>
+                    <bt:Image size="80" resid="Icon.Improve.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ImprovePane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Improve.Url"/>
+                  </Action>
+                </Control>
+
+                <!-- Sync Status button -->
+                <Control xsi:type="Button" id="LegalAI.SyncButton">
+                  <Label resid="SyncButton.Label"/>
+                  <Supertip>
+                    <Title resid="SyncButton.Label"/>
+                    <Description resid="SyncButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.Sync.16"/>
+                    <bt:Image size="32" resid="Icon.Sync.32"/>
+                    <bt:Image size="80" resid="Icon.Sync.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>syncDocument</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="TabLabel"/>
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <!-- Resources -->
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.Suggestions.16" DefaultValue="https://localhost:3000/assets/icons/suggestions-16.png"/>
+        <bt:Image id="Icon.Suggestions.32" DefaultValue="https://localhost:3000/assets/icons/suggestions-32.png"/>
+        <bt:Image id="Icon.Suggestions.80" DefaultValue="https://localhost:3000/assets/icons/suggestions-80.png"/>
+        <bt:Image id="Icon.Explain.16" DefaultValue="https://localhost:3000/assets/icons/explain-16.png"/>
+        <bt:Image id="Icon.Explain.32" DefaultValue="https://localhost:3000/assets/icons/explain-32.png"/>
+        <bt:Image id="Icon.Explain.80" DefaultValue="https://localhost:3000/assets/icons/explain-80.png"/>
+        <bt:Image id="Icon.Improve.16" DefaultValue="https://localhost:3000/assets/icons/improve-16.png"/>
+        <bt:Image id="Icon.Improve.32" DefaultValue="https://localhost:3000/assets/icons/improve-32.png"/>
+        <bt:Image id="Icon.Improve.80" DefaultValue="https://localhost:3000/assets/icons/improve-80.png"/>
+        <bt:Image id="Icon.Sync.16" DefaultValue="https://localhost:3000/assets/icons/sync-16.png"/>
+        <bt:Image id="Icon.Sync.32" DefaultValue="https://localhost:3000/assets/icons/sync-32.png"/>
+        <bt:Image id="Icon.Sync.80" DefaultValue="https://localhost:3000/assets/icons/sync-80.png"/>
+      </bt:Images>
+
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/word-addin/taskpane.html"/>
+        <bt:Url id="Taskpane.Improve.Url" DefaultValue="https://localhost:3000/word-addin/taskpane.html?mode=improve"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/word-addin/commands.html"/>
+      </bt:Urls>
+
+      <bt:ShortStrings>
+        <bt:String id="TabLabel" DefaultValue="Legal AI"/>
+        <bt:String id="GroupLabel" DefaultValue="AI Assistant"/>
+        <bt:String id="SuggestionsButton.Label" DefaultValue="Suggestions"/>
+        <bt:String id="ExplainButton.Label" DefaultValue="Explain"/>
+        <bt:String id="ImproveButton.Label" DefaultValue="Improve"/>
+        <bt:String id="SyncButton.Label" DefaultValue="Sync"/>
+      </bt:ShortStrings>
+
+      <bt:LongStrings>
+        <bt:String id="SuggestionsButton.Tooltip" DefaultValue="Get AI-powered clause suggestions and completions"/>
+        <bt:String id="ExplainButton.Tooltip" DefaultValue="Get a plain-language explanation of selected legal text"/>
+        <bt:String id="ImproveButton.Tooltip" DefaultValue="Improve selected text for clarity, formality, or legal precision"/>
+        <bt:String id="SyncButton.Tooltip" DefaultValue="Sync document with the Legal Platform"/>
+      </bt:LongStrings>
+    </Resources>
+
+    <!-- WebApplicationInfo for SSO -->
+    <WebApplicationInfo>
+      <Id>${AZURE_AD_CLIENT_ID}</Id>
+      <Resource>api://${AZURE_AD_CLIENT_ID}</Resource>
+      <Scopes>
+        <Scope>User.Read</Scope>
+        <Scope>Files.ReadWrite</Scope>
+      </Scopes>
+    </WebApplicationInfo>
+  </VersionOverrides>
+</OfficeApp>

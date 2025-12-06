@@ -37,7 +37,7 @@ const meta: Meta<typeof Sidebar> = {
     },
   },
   decorators: [
-    (Story, context) => {
+    (Story: any, context: any) => {
       // Reset store state before each story
       useEffect(() => {
         const { setCurrentRole, setCurrentSection, isSidebarCollapsed } =
@@ -255,7 +255,7 @@ export const Collapsed: Story = {
     section: 'cases',
   },
   decorators: [
-    (Story) => {
+    (Story: any) => {
       useEffect(() => {
         useNavigationStore.setState({ isSidebarCollapsed: true });
         return () => {
@@ -288,7 +288,7 @@ export const Expanded: Story = {
     section: 'dashboard',
   },
   decorators: [
-    (Story) => {
+    (Story: any) => {
       useEffect(() => {
         useNavigationStore.setState({ isSidebarCollapsed: false });
       }, []);

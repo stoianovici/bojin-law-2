@@ -1,0 +1,575 @@
+/**
+ * Email Resolvers
+ * Story 5.1: Email Integration and Synchronization
+ *
+ * GraphQL resolvers for email sync, threading, search, and categorization
+ */
+
+import { GraphQLError } from 'graphql';
+import { prisma } from '@legal-platform/database';
+import { PubSub } from 'graphql-subscriptions';
+import { EmailSyncService, getEmailSyncService } from '../../services/email-sync.service';
+import { EmailThreadService, getEmailThreadService } from '../../services/email-thread.service';
+import { EmailSearchService, getEmailSearchService } from '../../services/email-search.service';
+import { EmailAttachmentService, getEmailAttachmentService } from '../../services/email-attachment.service';
+import { EmailWebhookService, getEmailWebhookService } from '../../services/email-webhook.service';
+import { triggerProcessing } from '../../workers/email-categorization.worker';
+import Redis from 'ioredis';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface Context {
+  user: {
+    id: string;
+    role: string;
+    firmId: string;
+    accessToken?: string;
+  };
+}
+
+// ============================================================================
+// PubSub for Subscriptions
+// ============================================================================
+
+const pubsub = new PubSub();
+
+const EMAIL_RECEIVED = 'EMAIL_RECEIVED';
+const EMAIL_SYNC_PROGRESS = 'EMAIL_SYNC_PROGRESS';
+const EMAIL_CATEGORIZED = 'EMAIL_CATEGORIZED';
+
+// ============================================================================
+// Service Initialization
+// ============================================================================
+
+const emailSyncService = getEmailSyncService(prisma);
+const emailThreadService = getEmailThreadService(prisma);
+const emailSearchService = getEmailSearchService(prisma);
+const emailAttachmentService = getEmailAttachmentService(prisma);
+
+// Redis for webhook service (lazy init)
+let redis: Redis | null = null;
+function getRedis(): Redis {
+  if (!redis) {
+    redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  }
+  return redis;
+}
+
+// ============================================================================
+// Resolvers
+// ============================================================================
+
+export const emailResolvers = {
+  Query: {
+    /**
+     * Search emails with filters and pagination
+     */
+    emails: async (
+      _: any,
+      args: { filters?: any; limit?: number; offset?: number },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const filters = {
+        userId: user.id,
+        ...args.filters,
+      };
+
+      return await emailSearchService.searchEmails(
+        filters,
+        args.limit || 20,
+        args.offset || 0
+      );
+    },
+
+    /**
+     * Get email threads
+     */
+    emailThreads: async (
+      _: any,
+      args: { filters?: any; limit?: number; offset?: number },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const filters = {
+        userId: user.id,
+        ...args.filters,
+      };
+
+      const result = await emailThreadService.getThreads(filters, {
+        limit: args.limit || 20,
+        offset: args.offset || 0,
+      });
+
+      return result.threads;
+    },
+
+    /**
+     * Get single email thread
+     */
+    emailThread: async (
+      _: any,
+      args: { conversationId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return await emailThreadService.getThread(args.conversationId, user.id);
+    },
+
+    /**
+     * Get single email by ID
+     */
+    email: async (_: any, args: { id: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.id,
+          userId: user.id,
+        },
+        include: {
+          case: true,
+          attachments: true,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      return email;
+    },
+
+    /**
+     * Get email sync status
+     */
+    emailSyncStatus: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return await emailSyncService.getSyncStatus(user.id);
+    },
+
+    /**
+     * Get thread participants
+     */
+    emailThreadParticipants: async (
+      _: any,
+      args: { conversationId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return await emailThreadService.getThreadParticipants(
+        args.conversationId,
+        user.id
+      );
+    },
+
+    /**
+     * Get email statistics
+     */
+    emailStats: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return await emailSearchService.getEmailStats(user.id);
+    },
+
+    /**
+     * Get search suggestions
+     */
+    emailSearchSuggestions: async (
+      _: any,
+      args: { prefix: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return await emailSearchService.getSuggestions(args.prefix, user.id);
+    },
+  },
+
+  Mutation: {
+    /**
+     * Start email synchronization
+     */
+    startEmailSync: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user || !user.accessToken) {
+        throw new GraphQLError('Authentication required with valid access token', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Start sync in background
+      emailSyncService
+        .syncUserEmails(user.id, user.accessToken)
+        .then((result) => {
+          // Publish progress update
+          pubsub.publish(EMAIL_SYNC_PROGRESS, {
+            emailSyncProgress: {
+              status: result.success ? 'synced' : 'error',
+              emailCount: result.emailsSynced,
+              lastSyncAt: new Date(),
+              pendingCategorization: 0,
+            },
+          });
+        })
+        .catch((error) => {
+          console.error('Email sync failed:', error);
+        });
+
+      // Return current status
+      return await emailSyncService.getSyncStatus(user.id);
+    },
+
+    /**
+     * Assign email to case
+     */
+    assignEmailToCase: async (
+      _: any,
+      args: { emailId: string; caseId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify email belongs to user
+      const email = await prisma.email.findFirst({
+        where: { id: args.emailId, userId: user.id },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify case exists and user has access
+      const caseAccess = await prisma.caseTeam.findFirst({
+        where: { caseId: args.caseId, userId: user.id },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Update email
+      return await prisma.email.update({
+        where: { id: args.emailId },
+        data: { caseId: args.caseId },
+        include: { case: true, attachments: true },
+      });
+    },
+
+    /**
+     * Assign entire thread to case
+     */
+    assignThreadToCase: async (
+      _: any,
+      args: { conversationId: string; caseId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify case access
+      const caseAccess = await prisma.caseTeam.findFirst({
+        where: { caseId: args.caseId, userId: user.id },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Update all emails in thread
+      await emailThreadService.assignThreadToCase(
+        args.conversationId,
+        args.caseId,
+        user.id
+      );
+
+      // Return updated thread
+      return await emailThreadService.getThread(args.conversationId, user.id);
+    },
+
+    /**
+     * Mark email as read/unread
+     */
+    markEmailRead: async (
+      _: any,
+      args: { emailId: string; isRead: boolean },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify email belongs to user
+      const email = await prisma.email.findFirst({
+        where: { id: args.emailId, userId: user.id },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      return await prisma.email.update({
+        where: { id: args.emailId },
+        data: { isRead: args.isRead },
+        include: { case: true, attachments: true },
+      });
+    },
+
+    /**
+     * Mark thread as read
+     */
+    markThreadRead: async (
+      _: any,
+      args: { conversationId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      await emailThreadService.markThreadAsRead(args.conversationId, user.id);
+
+      return await emailThreadService.getThread(args.conversationId, user.id);
+    },
+
+    /**
+     * Sync attachments for email
+     */
+    syncEmailAttachments: async (
+      _: any,
+      args: { emailId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user || !user.accessToken) {
+        throw new GraphQLError('Authentication required with valid access token', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify email belongs to user
+      const email = await prisma.email.findFirst({
+        where: { id: args.emailId, userId: user.id },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      const result = await emailAttachmentService.syncAllAttachments(
+        args.emailId,
+        user.accessToken
+      );
+
+      return result.attachments;
+    },
+
+    /**
+     * Trigger AI categorization
+     */
+    triggerEmailCategorization: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only partners/admins can trigger batch categorization
+      if (user.role !== 'Partner' && user.role !== 'Admin') {
+        throw new GraphQLError('Only partners/admins can trigger batch categorization', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const result = await triggerProcessing();
+
+      return result.processed;
+    },
+
+    /**
+     * Create/renew email subscription
+     */
+    createEmailSubscription: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user || !user.accessToken) {
+        throw new GraphQLError('Authentication required with valid access token', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const webhookService = new EmailWebhookService(
+        prisma,
+        getRedis()
+      );
+
+      await webhookService.createSubscription(user.id, user.accessToken);
+
+      return await emailSyncService.getSyncStatus(user.id);
+    },
+  },
+
+  Subscription: {
+    emailReceived: {
+      subscribe: () => pubsub.asyncIterator([EMAIL_RECEIVED]),
+    },
+    emailSyncProgress: {
+      subscribe: () => pubsub.asyncIterator([EMAIL_SYNC_PROGRESS]),
+    },
+    emailCategorized: {
+      subscribe: () => pubsub.asyncIterator([EMAIL_CATEGORIZED]),
+    },
+  },
+
+  // Type resolvers
+  Email: {
+    from: (parent: any) => parent.from || { address: '' },
+    toRecipients: (parent: any) => parent.toRecipients || [],
+    ccRecipients: (parent: any) => parent.ccRecipients || [],
+    case: async (parent: any) => {
+      if (!parent.caseId) return null;
+      if (parent.case) return parent.case;
+      return await prisma.case.findUnique({ where: { id: parent.caseId } });
+    },
+    attachments: async (parent: any) => {
+      if (parent.attachments) return parent.attachments;
+      return await prisma.emailAttachment.findMany({
+        where: { emailId: parent.id },
+      });
+    },
+    thread: async (parent: any, _args: any, context: Context) => {
+      if (!context.user) return null;
+      const threadService = getEmailThreadService(prisma);
+      return await threadService.getThread(parent.conversationId, context.user.id);
+    },
+  },
+
+  EmailThread: {
+    case: async (parent: any) => {
+      if (!parent.caseId) return null;
+      return await prisma.case.findUnique({ where: { id: parent.caseId } });
+    },
+  },
+
+  EmailAttachment: {
+    document: async (parent: any) => {
+      if (!parent.documentId) return null;
+      return await prisma.document.findUnique({ where: { id: parent.documentId } });
+    },
+    downloadUrl: async (parent: any, _args: any, context: Context) => {
+      if (!context.user?.accessToken || !parent.storageUrl) return null;
+      try {
+        const attachmentService = getEmailAttachmentService(prisma);
+        const result = await attachmentService.getAttachmentDownloadUrl(
+          parent.id,
+          context.user.accessToken
+        );
+        return result.url;
+      } catch {
+        return null;
+      }
+    },
+  },
+};
+
+// ============================================================================
+// Helper to publish events (for use by other services)
+// ============================================================================
+
+export function publishEmailReceived(email: any) {
+  pubsub.publish(EMAIL_RECEIVED, { emailReceived: email });
+}
+
+export function publishEmailCategorized(result: any) {
+  pubsub.publish(EMAIL_CATEGORIZED, { emailCategorized: result });
+}

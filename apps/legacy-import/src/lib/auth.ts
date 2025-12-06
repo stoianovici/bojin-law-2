@@ -5,13 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from './prisma';
+import type { UserRole } from '@/generated/prisma';
 
 export interface AuthUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
-  role: 'Partner' | 'Associate' | 'Paralegal' | 'Admin';
+  role: UserRole;
   firmId: string;
 }
 
@@ -185,7 +186,7 @@ export async function requireAuth(request: NextRequest): Promise<AuthUser> {
  */
 export async function requirePartner(request: NextRequest): Promise<AuthUser> {
   const user = await requireAuth(request);
-  if (user.role !== 'Partner' && user.role !== 'Admin') {
+  if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
     throw new AuthError('Partner role required', 403);
   }
   return user;

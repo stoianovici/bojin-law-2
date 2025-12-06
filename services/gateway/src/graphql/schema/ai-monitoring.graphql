@@ -107,17 +107,6 @@ type DailyUsage {
   requests: Int!
 }
 
-"""
-Input for date range filtering
-"""
-input DateRangeInput {
-  """Start date (inclusive)"""
-  start: DateTime!
-
-  """End date (inclusive)"""
-  end: DateTime!
-}
-
 extend type Query {
   """
   Get AI usage statistics for a firm.

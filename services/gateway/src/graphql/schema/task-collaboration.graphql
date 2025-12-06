@@ -1,0 +1,312 @@
+# Task Collaboration Schema
+# Story 4.6: Task Collaboration and Updates
+
+# ============================================================================
+# Task Comment Types (AC: 1)
+# ============================================================================
+
+type TaskComment {
+  id: ID!
+  taskId: ID!
+  authorId: ID!
+  author: User!
+  content: String!
+  parentId: ID
+  parent: TaskComment
+  mentions: [ID!]!
+  mentionedUsers: [User!]!
+  replies: [TaskComment!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  editedAt: DateTime
+}
+
+input CreateTaskCommentInput {
+  taskId: ID!
+  content: String!
+  parentId: ID
+}
+
+input UpdateTaskCommentInput {
+  content: String!
+}
+
+# ============================================================================
+# Task History Types (AC: 5)
+# ============================================================================
+
+enum TaskHistoryAction {
+  Created
+  Updated
+  StatusChanged
+  AssigneeChanged
+  PriorityChanged
+  DueDateChanged
+  CommentAdded
+  CommentEdited
+  CommentDeleted
+  AttachmentAdded
+  AttachmentRemoved
+  SubtaskCreated
+  SubtaskCompleted
+  DependencyAdded
+  DependencyRemoved
+  Delegated
+}
+
+type TaskHistoryEntry {
+  id: ID!
+  taskId: ID!
+  actorId: ID!
+  actor: User!
+  action: TaskHistoryAction!
+  field: String
+  oldValue: String
+  newValue: String
+  metadata: JSON
+  createdAt: DateTime!
+}
+
+input HistoryOptions {
+  limit: Int
+  actions: [TaskHistoryAction!]
+  since: DateTime
+  until: DateTime
+}
+
+# ============================================================================
+# Case Activity Feed Types (AC: 2)
+# ============================================================================
+
+enum CaseActivityType {
+  TaskCreated
+  TaskStatusChanged
+  TaskCompleted
+  TaskAssigned
+  TaskCommented
+  DocumentUploaded
+  DocumentVersioned
+  CommunicationReceived
+  CommunicationSent
+  DeadlineApproaching
+  MilestoneReached
+}
+
+type CaseActivityEntry {
+  id: ID!
+  caseId: ID!
+  case: Case!
+  actorId: ID!
+  actor: User!
+  activityType: CaseActivityType!
+  entityType: String!
+  entityId: ID!
+  title: String!
+  summary: String
+  metadata: JSON
+  createdAt: DateTime!
+}
+
+type CaseActivityFeedResponse {
+  entries: [CaseActivityEntry!]!
+  hasMore: Boolean!
+  nextCursor: String
+}
+
+input FeedOptions {
+  limit: Int
+  cursor: String
+  activityTypes: [CaseActivityType!]
+  since: DateTime
+  until: DateTime
+}
+
+# ============================================================================
+# Task Attachment Types (AC: 3)
+# ============================================================================
+
+type TaskAttachment {
+  id: ID!
+  taskId: ID!
+  documentId: ID
+  document: Document
+  fileName: String!
+  fileSize: Int!
+  mimeType: String!
+  storageUrl: String!
+  uploadedBy: ID!
+  uploader: User!
+  version: Int!
+  previousVersionId: ID
+  previousVersion: TaskAttachment
+  createdAt: DateTime!
+}
+
+type TaskAttachmentVersion {
+  version: Int!
+  attachment: TaskAttachment!
+  uploadedAt: DateTime!
+  uploadedBy: User!
+}
+
+input UploadTaskAttachmentInput {
+  taskId: ID!
+  linkToDocumentId: ID
+}
+
+# ============================================================================
+# Subtask Types (AC: 4)
+# ============================================================================
+
+input CreateSubtaskInput {
+  parentTaskId: ID!
+  title: String!
+  description: String
+  assignedTo: ID
+  dueDate: Date
+  priority: TaskPriority
+  estimatedHours: Float
+}
+
+type SubtaskWithContext {
+  subtask: Task!
+  parentTask: ParentTaskContext!
+}
+
+type ParentTaskContext {
+  id: ID!
+  title: String!
+  caseId: ID!
+  caseTitle: String!
+  type: String!
+}
+
+type SubtaskProgress {
+  total: Int!
+  completed: Int!
+  percentage: Int!
+}
+
+# ============================================================================
+# Case Subscription Types (AC: 6)
+# ============================================================================
+
+type CaseSubscription {
+  id: ID!
+  caseId: ID!
+  case: Case!
+  userId: ID!
+  user: User!
+  digestEnabled: Boolean!
+  notifyOnTask: Boolean!
+  notifyOnDocument: Boolean!
+  notifyOnComment: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input UpdateSubscriptionInput {
+  digestEnabled: Boolean
+  notifyOnTask: Boolean
+  notifyOnDocument: Boolean
+  notifyOnComment: Boolean
+}
+
+input SubscriptionOptions {
+  digestEnabled: Boolean
+  notifyOnTask: Boolean
+  notifyOnDocument: Boolean
+  notifyOnComment: Boolean
+}
+
+type DailyDigest {
+  userId: ID!
+  date: Date!
+  cases: [DigestCaseSummary!]!
+}
+
+type DigestCaseSummary {
+  caseId: ID!
+  caseTitle: String!
+  caseNumber: String!
+  taskUpdates: [DigestTaskUpdate!]!
+  newComments: Int!
+  newAttachments: Int!
+}
+
+type DigestTaskUpdate {
+  taskId: ID!
+  taskTitle: String!
+  updateType: String!
+  summary: String!
+  actor: String!
+  timestamp: DateTime!
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  # Task Comments (AC: 1)
+  taskComments(taskId: ID!): [TaskComment!]!
+  taskComment(commentId: ID!): TaskComment
+
+  # Task History (AC: 5)
+  taskHistory(taskId: ID!, options: HistoryOptions): [TaskHistoryEntry!]!
+
+  # Case Activity Feed (AC: 2)
+  caseActivityFeed(caseId: ID!, options: FeedOptions): CaseActivityFeedResponse!
+  recentCaseActivity(caseId: ID!, limit: Int): [CaseActivityEntry!]!
+
+  # Task Attachments (AC: 3)
+  taskAttachments(taskId: ID!): [TaskAttachment!]!
+  taskAttachment(attachmentId: ID!): TaskAttachment
+  attachmentVersionHistory(attachmentId: ID!): [TaskAttachmentVersion!]!
+  attachmentDownloadUrl(attachmentId: ID!): String!
+
+  # Subtasks (AC: 4)
+  subtasks(parentTaskId: ID!): [Task!]!
+  subtaskProgress(parentTaskId: ID!): SubtaskProgress!
+
+  # Case Subscriptions (AC: 6)
+  caseSubscription(caseId: ID!): CaseSubscription
+  myCaseSubscriptions: [CaseSubscription!]!
+  myDailyDigest(date: Date): DailyDigest!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  # Task Comments (AC: 1)
+  createTaskComment(input: CreateTaskCommentInput!): TaskComment!
+  updateTaskComment(commentId: ID!, input: UpdateTaskCommentInput!): TaskComment!
+  deleteTaskComment(commentId: ID!): Boolean!
+
+  # Task Attachments (AC: 3)
+  # Note: File upload handled via multipart form, returns attachment after upload
+  deleteTaskAttachment(attachmentId: ID!): Boolean!
+
+  # Subtasks (AC: 4)
+  createSubtask(input: CreateSubtaskInput!): SubtaskWithContext!
+  completeSubtask(subtaskId: ID!): Task!
+
+  # Case Subscriptions (AC: 6)
+  subscribeToCaseFeed(caseId: ID!, options: SubscriptionOptions): CaseSubscription!
+  unsubscribeFromCaseFeed(caseId: ID!): Boolean!
+  updateCaseSubscription(caseId: ID!, input: UpdateSubscriptionInput!): CaseSubscription!
+}
+
+# ============================================================================
+# Subscriptions (Real-time)
+# ============================================================================
+
+extend type Subscription {
+  # Real-time task comment updates
+  taskCommentAdded(taskId: ID!): TaskComment!
+
+  # Real-time case activity feed updates
+  caseActivityAdded(caseId: ID!): CaseActivityEntry!
+}

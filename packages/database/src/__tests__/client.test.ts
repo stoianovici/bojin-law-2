@@ -63,7 +63,7 @@ describe('Database Client', () => {
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(5);
-      results.forEach((result) => {
+      results.forEach((result: any) => {
         expect(result).toEqual([{ test: 1 }]);
       });
     });

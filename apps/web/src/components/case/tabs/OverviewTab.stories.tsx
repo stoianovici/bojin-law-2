@@ -46,7 +46,7 @@ const meta: Meta<typeof OverviewTab> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: React.ComponentType) => (
       <div className="h-screen overflow-auto bg-gray-50">
         <Story />
       </div>

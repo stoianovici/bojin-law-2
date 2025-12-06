@@ -9,14 +9,16 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import * as Dialog from '@radix-ui/react-dialog';
-import type { CaseType, BillingType } from '@legal-platform/types';
+import type { BillingType } from '@legal-platform/types';
 import { useCaseCreate } from '../../hooks/useCaseCreate';
 import { useDefaultRates } from '../../hooks/useDefaultRates';
+import { useCaseTypes } from '../../hooks/useCaseTypes';
+import { useClients } from '../../hooks/useClients';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { FinancialData } from '../auth/FinancialData';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,22 +27,20 @@ import { useAuth } from '../../contexts/AuthContext';
 const createCaseSchema = z.object({
   title: z
     .string()
-    .min(3, 'Title must be at least 3 characters')
-    .max(500, 'Title must not exceed 500 characters'),
-  clientId: z.string().uuid('Please select a valid client'),
-  type: z.enum(['Litigation', 'Contract', 'Advisory', 'Criminal', 'Other'], {
-    required_error: 'Please select a case type',
-  }),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  value: z.number().positive('Value must be positive').optional().nullable(),
+    .min(3, 'Titlul trebuie să aibă cel puțin 3 caractere')
+    .max(500, 'Titlul nu poate depăși 500 de caractere'),
+  clientName: z.string().min(2, 'Numele clientului trebuie să aibă cel puțin 2 caractere').max(200, 'Numele clientului nu poate depăși 200 de caractere'),
+  type: z.string().min(1, 'Vă rugăm selectați tipul dosarului'),
+  description: z.string().min(10, 'Descrierea trebuie să aibă cel puțin 10 caractere'),
+  value: z.number().positive('Valoarea trebuie să fie pozitivă').optional().nullable(),
   billingType: z.enum(['Hourly', 'Fixed'], {
-    required_error: 'Please select a billing type',
+    required_error: 'Vă rugăm selectați tipul de facturare',
   }),
-  fixedAmount: z.number().positive('Fixed amount must be positive').optional().nullable(),
+  fixedAmount: z.number().positive('Suma fixă trebuie să fie pozitivă').optional().nullable(),
   useCustomRates: z.boolean(),
-  customPartnerRate: z.number().positive('Rate must be positive').optional().nullable(),
-  customAssociateRate: z.number().positive('Rate must be positive').optional().nullable(),
-  customParalegalRate: z.number().positive('Rate must be positive').optional().nullable(),
+  customPartnerRate: z.number().positive('Tariful trebuie să fie pozitiv').optional().nullable(),
+  customAssociateRate: z.number().positive('Tariful trebuie să fie pozitiv').optional().nullable(),
+  customParalegalRate: z.number().positive('Tariful trebuie să fie pozitiv').optional().nullable(),
 }).refine(
   (data) => {
     // If billing type is Fixed, fixedAmount is required
@@ -50,19 +50,19 @@ const createCaseSchema = z.object({
     return true;
   },
   {
-    message: 'Fixed amount is required when billing type is Fixed',
+    message: 'Suma fixă este obligatorie când tipul de facturare este Fix',
     path: ['fixedAmount'],
   }
 );
 
 type CreateCaseFormData = z.infer<typeof createCaseSchema>;
 
-function centsToDollars(cents: number): number {
+function centsToLei(cents: number): number {
   return cents / 100;
 }
 
-function dollarsToCents(dollars: number): number {
-  return Math.round(dollars * 100);
+function leiToCents(lei: number): number {
+  return Math.round(lei * 100);
 }
 
 interface CreateCaseModalProps {
@@ -72,13 +72,54 @@ interface CreateCaseModalProps {
 
 export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
   const [open, setOpen] = useState(false);
+  const [showAddType, setShowAddType] = useState(false);
+  const [newTypeName, setNewTypeName] = useState('');
+  const [newTypeCode, setNewTypeCode] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const clientInputRef = useRef<HTMLInputElement>(null);
+  const clientDropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { createCase, loading } = useCaseCreate();
   const { rates: defaultRates } = useDefaultRates();
+  const { caseTypes, loading: caseTypesLoading, createCaseType, createLoading } = useCaseTypes();
+  const { clients, loading: clientsLoading, searchClients, clearClients } = useClients();
   const { addNotification } = useNotificationStore();
 
   // Story 2.8.2: Associates create cases with PendingApproval status
   const isAssociate = user?.role === 'Associate';
+  const isPartner = user?.role === 'Partner';
+
+  // Auto-generate code from name
+  useEffect(() => {
+    if (newTypeName) {
+      const generatedCode = newTypeName
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+        .replace(/[^A-Z0-9\s]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 50);
+      setNewTypeCode(generatedCode);
+    }
+  }, [newTypeName]);
+
+  // Close client dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        clientDropdownRef.current &&
+        !clientDropdownRef.current.contains(event.target as Node) &&
+        clientInputRef.current &&
+        !clientInputRef.current.contains(event.target as Node)
+      ) {
+        setShowClientDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const {
     register,
@@ -86,11 +127,12 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
     formState: { errors, isDirty },
     reset,
     control,
+    setValue,
   } = useForm<CreateCaseFormData>({
     resolver: zodResolver(createCaseSchema),
     defaultValues: {
       title: '',
-      clientId: '',
+      clientName: '',
       type: undefined,
       description: '',
       value: null,
@@ -108,11 +150,14 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
   const useCustomRates = useWatch({ control, name: 'useCustomRates' });
 
   const handleClose = () => {
-    if (isDirty && !confirm('You have unsaved changes. Are you sure you want to close?')) {
+    if (isDirty && !confirm('Aveți modificări nesalvate. Sigur doriți să închideți?')) {
       return;
     }
     setOpen(false);
     reset();
+    setSelectedClientId(null);
+    setShowClientDropdown(false);
+    clearClients();
   };
 
   const onSubmit = async (data: CreateCaseFormData) => {
@@ -123,20 +168,20 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
         data.customAssociateRate != null ||
         data.customParalegalRate != null
       ) ? {
-        partnerRate: data.customPartnerRate ? dollarsToCents(data.customPartnerRate) : undefined,
-        associateRate: data.customAssociateRate ? dollarsToCents(data.customAssociateRate) : undefined,
-        paralegalRate: data.customParalegalRate ? dollarsToCents(data.customParalegalRate) : undefined,
+        partnerRate: data.customPartnerRate ? leiToCents(data.customPartnerRate) : undefined,
+        associateRate: data.customAssociateRate ? leiToCents(data.customAssociateRate) : undefined,
+        paralegalRate: data.customParalegalRate ? leiToCents(data.customParalegalRate) : undefined,
       } : undefined;
 
       // Story 2.8.2: Associates submit for approval, Partners create directly as Active
       const result = await createCase({
         title: data.title,
-        clientId: data.clientId,
-        type: data.type as CaseType,
+        clientName: data.clientName,
+        type: data.type,
         description: data.description,
         value: data.value ?? undefined,
         billingType: data.billingType as BillingType,
-        fixedAmount: data.fixedAmount ? dollarsToCents(data.fixedAmount) : undefined,
+        fixedAmount: data.fixedAmount ? leiToCents(data.fixedAmount) : undefined,
         customRates,
         submitForApproval: isAssociate, // Associates submit for approval, Partners bypass
       });
@@ -146,31 +191,34 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
         if (isAssociate) {
           addNotification({
             type: 'success',
-            title: 'Case Submitted for Approval',
-            message: "Case submitted for approval. You'll be notified when it's reviewed.",
+            title: 'Dosar trimis pentru aprobare',
+            message: 'Dosarul a fost trimis pentru aprobare. Veți fi notificat când va fi revizuit.',
           });
         } else {
           addNotification({
             type: 'success',
-            title: 'Case Created',
-            message: `Case ${result.case?.caseNumber} has been created successfully.`,
+            title: 'Dosar creat',
+            message: `Dosarul ${result.case?.caseNumber} a fost creat cu succes.`,
           });
         }
         setOpen(false);
         reset();
+        setSelectedClientId(null);
+        setShowClientDropdown(false);
+        clearClients();
         onSuccess?.();
       } else {
         addNotification({
           type: 'error',
-          title: 'Failed to Create Case',
-          message: result.error || 'An error occurred while creating the case.',
+          title: 'Eroare la crearea dosarului',
+          message: result.error || 'A apărut o eroare la crearea dosarului.',
         });
       }
     } catch (error) {
       addNotification({
         type: 'error',
-        title: 'Error',
-        message: 'An unexpected error occurred. Please try again.',
+        title: 'Eroare',
+        message: 'A apărut o eroare neașteptată. Vă rugăm încercați din nou.',
       });
     }
   };
@@ -180,7 +228,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
       <Dialog.Trigger asChild>
         {trigger || (
           <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
-            + New Case
+            + Dosar nou
           </button>
         )}
       </Dialog.Trigger>
@@ -209,7 +257,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <Dialog.Title className="text-2xl font-bold text-gray-900">
-                Create New Case
+                Creare dosar nou
               </Dialog.Title>
               <Dialog.Close
                 onClick={handleClose}
@@ -247,7 +295,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                     />
                   </svg>
                   <p className="text-sm text-blue-800">
-                    This case will be submitted for Partner approval before becoming active.
+                    Acest dosar va fi trimis pentru aprobarea Partenerului înainte de a deveni activ.
                   </p>
                 </div>
               </div>
@@ -258,7 +306,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
               {/* Title */}
               <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                  Title <span className="text-red-500">*</span>
+                  Titlu <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="title"
@@ -267,55 +315,217 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.title ? 'border-red-300' : 'border-gray-300'
                   }`}
-                  placeholder="Enter case title"
+                  placeholder="Introduceți titlul dosarului"
                 />
                 {errors.title && (
                   <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
                 )}
               </div>
 
-              {/* Client ID - Temporary UUID input until clients query is available */}
-              <div>
-                <label htmlFor="clientId" className="block text-sm font-medium text-gray-700 mb-1">
-                  Client ID <span className="text-red-500">*</span>
+              {/* Client Name with Autocomplete */}
+              <div className="relative">
+                <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nume client <span className="text-red-500">*</span>
                 </label>
-                <input
-                  id="clientId"
-                  type="text"
-                  {...register('clientId')}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.clientId ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter client UUID (e.g., 123e4567-e89b-12d3-a456-426614174000)"
-                />
-                {errors.clientId && (
-                  <p className="mt-1 text-sm text-red-600">{errors.clientId.message}</p>
+                <div className="relative">
+                  {(() => {
+                    const { ref: registerRef, ...registerRest } = register('clientName');
+                    return (
+                      <input
+                        id="clientName"
+                        type="text"
+                        ref={(e) => {
+                          registerRef(e);
+                          clientInputRef.current = e;
+                        }}
+                        {...registerRest}
+                        onChange={(e) => {
+                          registerRest.onChange(e);
+                          const value = e.target.value;
+                          searchClients(value);
+                          setShowClientDropdown(value.length >= 1);
+                          setSelectedClientId(null);
+                        }}
+                        onFocus={(e) => {
+                          if (e.target.value.length >= 1) {
+                            searchClients(e.target.value);
+                            setShowClientDropdown(true);
+                          }
+                        }}
+                        autoComplete="off"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.clientName ? 'border-red-300' : 'border-gray-300'
+                        } ${selectedClientId ? 'bg-blue-50' : ''}`}
+                        placeholder="Căutați sau introduceți un client nou"
+                      />
+                    );
+                  })()}
+                  {clientsLoading && (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    </div>
+                  )}
+                  {selectedClientId && !clientsLoading && (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Client Autocomplete Dropdown */}
+                {showClientDropdown && clients.length > 0 && (
+                  <div
+                    ref={clientDropdownRef}
+                    className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
+                  >
+                    {clients.map((client) => (
+                      <button
+                        key={client.id}
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors border-b border-gray-100 last:border-b-0"
+                        onClick={() => {
+                          setValue('clientName', client.name, { shouldValidate: true });
+                          setSelectedClientId(client.id);
+                          setShowClientDropdown(false);
+                        }}
+                      >
+                        <div className="font-medium text-gray-900">{client.name}</div>
+                        {client.address && (
+                          <div className="text-sm text-gray-500 truncate">{client.address}</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 )}
-                <p className="mt-1 text-xs text-gray-500">
-                  Note: Client dropdown will be added when clients query API is available
-                </p>
+
+                {selectedClientId && (
+                  <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Client existent selectat
+                  </p>
+                )}
+                {errors.clientName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.clientName.message}</p>
+                )}
               </div>
 
               {/* Case Type */}
               <div>
                 <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                  Case Type <span className="text-red-500">*</span>
+                  Tip dosar <span className="text-red-500">*</span>
                 </label>
-                <select
-                  id="type"
-                  {...register('type')}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.type ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Select case type</option>
-                  <option value="Litigation">Litigation</option>
-                  <option value="Contract">Contract</option>
-                  <option value="Advisory">Advisory</option>
-                  <option value="Criminal">Criminal</option>
-                  <option value="Other">Other</option>
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    id="type"
+                    {...register('type')}
+                    disabled={caseTypesLoading}
+                    className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.type ? 'border-red-300' : 'border-gray-300'
+                    } ${caseTypesLoading ? 'bg-gray-100' : ''}`}
+                  >
+                    <option value="">Selectați tipul dosarului</option>
+                    {caseTypes.map((ct) => (
+                      <option key={ct.id} value={ct.code}>
+                        {ct.name}
+                      </option>
+                    ))}
+                  </select>
+                  {isPartner && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddType(!showAddType)}
+                      className="px-3 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                      title="Adaugă tip nou"
+                    >
+                      + Tip nou
+                    </button>
+                  )}
+                </div>
                 {errors.type && <p className="mt-1 text-sm text-red-600">{errors.type.message}</p>}
+
+                {/* Add New Type Form (Partners only) */}
+                {showAddType && isPartner && (
+                  <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md space-y-3">
+                    <div>
+                      <label htmlFor="newTypeName" className="block text-sm font-medium text-gray-700 mb-1">
+                        Nume tip nou
+                      </label>
+                      <input
+                        id="newTypeName"
+                        type="text"
+                        value={newTypeName}
+                        onChange={(e) => setNewTypeName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="ex: Insolvență"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="newTypeCode" className="block text-sm font-medium text-gray-700 mb-1">
+                        Cod (generat automat)
+                      </label>
+                      <input
+                        id="newTypeCode"
+                        type="text"
+                        value={newTypeCode}
+                        onChange={(e) => setNewTypeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                        placeholder="INSOLVENTA"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddType(false);
+                          setNewTypeName('');
+                          setNewTypeCode('');
+                        }}
+                        className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                      >
+                        Anulează
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!newTypeName || !newTypeCode || createLoading}
+                        onClick={async () => {
+                          const result = await createCaseType(newTypeName, newTypeCode);
+                          if (result.success) {
+                            addNotification({
+                              type: 'success',
+                              title: 'Tip dosar creat',
+                              message: `Tipul "${newTypeName}" a fost adăugat cu succes.`,
+                            });
+                            setShowAddType(false);
+                            setNewTypeName('');
+                            setNewTypeCode('');
+                          } else {
+                            addNotification({
+                              type: 'error',
+                              title: 'Eroare',
+                              message: result.error || 'Nu s-a putut crea tipul de dosar.',
+                            });
+                          }
+                        }}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        {createLoading && (
+                          <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                        )}
+                        Salvează
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -324,7 +534,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   htmlFor="description"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Description <span className="text-red-500">*</span>
+                  Descriere <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   id="description"
@@ -333,7 +543,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.description ? 'border-red-300' : 'border-gray-300'
                   }`}
-                  placeholder="Enter case description (minimum 10 characters)"
+                  placeholder="Introduceți descrierea dosarului (minim 10 caractere)"
                 />
                 {errors.description && (
                   <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
@@ -344,7 +554,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
               <FinancialData>
                 <div>
                   <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">
-                    Case Value (Optional)
+                    Valoare dosar (Opțional)
                   </label>
                   <input
                     id="value"
@@ -354,7 +564,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.value ? 'border-red-300' : 'border-gray-300'
                     }`}
-                    placeholder="Enter monetary value"
+                    placeholder="Introduceți valoarea"
                   />
                   {errors.value && (
                     <p className="mt-1 text-sm text-red-600">{errors.value.message}</p>
@@ -365,12 +575,12 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
               {/* Billing Section (Partners only - Story 2.8.1) */}
               <FinancialData>
                 <div className="border-t border-gray-200 pt-6 space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900">Billing Information</h3>
+                  <h3 className="text-lg font-medium text-gray-900">Informații facturare</h3>
 
                   {/* Billing Type */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Billing Type <span className="text-red-500">*</span>
+                      Tip facturare <span className="text-red-500">*</span>
                     </label>
                     <div className="flex gap-4">
                       <label className="flex items-center">
@@ -380,7 +590,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                           {...register('billingType')}
                           className="mr-2"
                         />
-                        <span className="text-sm">Hourly Billing</span>
+                        <span className="text-sm">Facturare pe oră</span>
                       </label>
                       <label className="flex items-center">
                         <input
@@ -389,7 +599,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                           {...register('billingType')}
                           className="mr-2"
                         />
-                        <span className="text-sm">Fixed Fee</span>
+                        <span className="text-sm">Sumă fixă</span>
                       </label>
                     </div>
                     {errors.billingType && (
@@ -401,23 +611,23 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   {billingType === 'Fixed' && (
                     <div>
                       <label htmlFor="fixedAmount" className="block text-sm font-medium text-gray-700 mb-1">
-                        Fixed Amount <span className="text-red-500">*</span>
+                        Sumă fixă <span className="text-red-500">*</span>
                       </label>
                       <div className="relative mt-1">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                          <span className="text-gray-500 sm:text-sm">$</span>
-                        </div>
                         <input
                           type="number"
                           id="fixedAmount"
                           step="0.01"
                           min="0"
                           {...register('fixedAmount', { valueAsNumber: true })}
-                          className={`block w-full rounded-md border-gray-300 pl-7 pr-3 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                          className={`block w-full rounded-md border-gray-300 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
                             errors.fixedAmount ? 'border-red-300' : ''
                           }`}
                           placeholder="0.00"
                         />
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                          <span className="text-gray-500 sm:text-sm">RON</span>
+                        </div>
                       </div>
                       {errors.fixedAmount && (
                         <p className="mt-1 text-sm text-red-600">{errors.fixedAmount.message}</p>
@@ -428,11 +638,11 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   {/* Default Rates Preview (shown when Hourly billing type selected) */}
                   {billingType === 'Hourly' && !useCustomRates && defaultRates && (
                     <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                      <p className="text-sm font-medium text-blue-900 mb-2">Default Hourly Rates:</p>
+                      <p className="text-sm font-medium text-blue-900 mb-2">Tarife orare implicite:</p>
                       <div className="text-sm text-blue-800 space-y-1">
-                        <div>Partner: ${centsToDollars(defaultRates.partnerRate).toFixed(2)}/hr</div>
-                        <div>Associate: ${centsToDollars(defaultRates.associateRate).toFixed(2)}/hr</div>
-                        <div>Paralegal: ${centsToDollars(defaultRates.paralegalRate).toFixed(2)}/hr</div>
+                        <div>Partener: {centsToLei(defaultRates.partnerRate).toFixed(2)} RON/oră</div>
+                        <div>Avocat: {centsToLei(defaultRates.associateRate).toFixed(2)} RON/oră</div>
+                        <div>Paralegal: {centsToLei(defaultRates.paralegalRate).toFixed(2)} RON/oră</div>
                       </div>
                     </div>
                   )}
@@ -446,7 +656,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                           {...register('useCustomRates')}
                           className="mr-2"
                         />
-                        <span className="text-sm text-gray-700">Use custom rates for this case</span>
+                        <span className="text-sm text-gray-700">Utilizează tarife personalizate pentru acest dosar</span>
                       </label>
                     </div>
                   )}
@@ -456,67 +666,58 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                     <div className="space-y-3 pl-4 border-l-2 border-gray-200">
                       <div>
                         <label htmlFor="customPartnerRate" className="block text-sm font-medium text-gray-700 mb-1">
-                          Partner Rate
+                          Tarif Partener
                         </label>
                         <div className="relative">
-                          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="text-gray-500 sm:text-sm">$</span>
-                          </div>
                           <input
                             type="number"
                             id="customPartnerRate"
                             step="0.01"
                             min="0"
                             {...register('customPartnerRate', { valueAsNumber: true })}
-                            className="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder={defaultRates ? centsToDollars(defaultRates.partnerRate).toFixed(2) : '0.00'}
+                            className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            placeholder={defaultRates ? centsToLei(defaultRates.partnerRate).toFixed(2) : '0.00'}
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                            <span className="text-gray-500 sm:text-sm">/hr</span>
+                            <span className="text-gray-500 sm:text-sm">RON/oră</span>
                           </div>
                         </div>
                       </div>
                       <div>
                         <label htmlFor="customAssociateRate" className="block text-sm font-medium text-gray-700 mb-1">
-                          Associate Rate
+                          Tarif Avocat
                         </label>
                         <div className="relative">
-                          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="text-gray-500 sm:text-sm">$</span>
-                          </div>
                           <input
                             type="number"
                             id="customAssociateRate"
                             step="0.01"
                             min="0"
                             {...register('customAssociateRate', { valueAsNumber: true })}
-                            className="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder={defaultRates ? centsToDollars(defaultRates.associateRate).toFixed(2) : '0.00'}
+                            className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            placeholder={defaultRates ? centsToLei(defaultRates.associateRate).toFixed(2) : '0.00'}
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                            <span className="text-gray-500 sm:text-sm">/hr</span>
+                            <span className="text-gray-500 sm:text-sm">RON/oră</span>
                           </div>
                         </div>
                       </div>
                       <div>
                         <label htmlFor="customParalegalRate" className="block text-sm font-medium text-gray-700 mb-1">
-                          Paralegal Rate
+                          Tarif Paralegal
                         </label>
                         <div className="relative">
-                          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="text-gray-500 sm:text-sm">$</span>
-                          </div>
                           <input
                             type="number"
                             id="customParalegalRate"
                             step="0.01"
                             min="0"
                             {...register('customParalegalRate', { valueAsNumber: true })}
-                            className="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder={defaultRates ? centsToDollars(defaultRates.paralegalRate).toFixed(2) : '0.00'}
+                            className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            placeholder={defaultRates ? centsToLei(defaultRates.paralegalRate).toFixed(2) : '0.00'}
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                            <span className="text-gray-500 sm:text-sm">/hr</span>
+                            <span className="text-gray-500 sm:text-sm">RON/oră</span>
                           </div>
                         </div>
                       </div>
@@ -533,7 +734,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                   disabled={loading}
                 >
-                  Cancel
+                  Anulează
                 </button>
                 <button
                   type="submit"
@@ -562,7 +763,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                       ></path>
                     </svg>
                   )}
-                  {loading ? 'Creating...' : 'Create Case'}
+                  {loading ? 'Se creează...' : 'Creează dosar'}
                 </button>
               </div>
             </form>

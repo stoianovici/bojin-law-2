@@ -30,7 +30,7 @@ export async function getProcessedDocumentIds(): Promise<Set<string>> {
     select: { oneDriveFileId: true },
   });
 
-  return new Set(documents.map((d) => d.oneDriveFileId));
+  return new Set(documents.map((d: { oneDriveFileId: string }) => d.oneDriveFileId));
 }
 
 /**
@@ -53,7 +53,7 @@ export async function storeTrainingDocument(input: {
   }>;
 }): Promise<string> {
   // Use a transaction to ensure atomicity
-  const result = await prisma!.$transaction(async (tx) => {
+  const result = await prisma!.$transaction(async (tx: any) => {
     // Create the training document
     const doc = await tx.trainingDocument.create({
       data: {

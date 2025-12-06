@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma';
 import { requirePartner, AuthError } from '@/lib/auth';
 
 interface MergeCategoriesRequest {
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Perform the merge in a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Update all documents from source categories to target category
       const updateResult = await tx.extractedDocument.updateMany({
         where: {
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
             targetCategoryId,
             targetCategoryName: targetCategory.name,
             sourceCategoryIds,
-            sourceCategoryNames: sourceCategories.map((c) => c.name),
+            sourceCategoryNames: sourceCategories.map((c: { name: string }) => c.name),
             documentsUpdated: updateResult.count,
             mergedByEmail: user.email,
           },
@@ -150,9 +151,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof AuthError) {
+      const { message, statusCode } = error;
       return NextResponse.json(
-        { error: error.message },
-        { status: error.statusCode }
+        { error: message },
+        { status: statusCode }
       );
     }
     console.error('Error merging categories:', error);

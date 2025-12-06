@@ -13,7 +13,7 @@ const meta: Meta<typeof QuickActionsBar> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="relative h-screen bg-gray-50">
         <Story />
       </div>
@@ -29,8 +29,8 @@ type Story = StoryObj<typeof QuickActionsBar>;
  */
 export const Default: Story = {
   args: {
-    onSubmit: (input) => alert(`Submitted: ${input}`),
-    onSuggestionClick: (suggestion) => alert(`Suggestion clicked: ${suggestion}`),
+    onSubmit: (input: any) => alert(`Submitted: ${input}`),
+    onSuggestionClick: (suggestion: any) => alert(`Suggestion clicked: ${suggestion}`),
   },
 };
 
@@ -39,11 +39,11 @@ export const Default: Story = {
  */
 export const WithHandlers: Story = {
   args: {
-    onSubmit: (input) => {
+    onSubmit: (input: any) => {
       console.log('Quick action submitted:', input);
       alert(`Ați trimis: "${input}"\n\nAceasta ar declanșa o acțiune în aplicația reală.`);
     },
-    onSuggestionClick: (suggestion) => {
+    onSuggestionClick: (suggestion: any) => {
       console.log('Suggestion clicked:', suggestion);
       alert(`Sugestie selectată: "${suggestion}"\n\nCampul de introducere va fi populat.`);
     },

@@ -13,7 +13,7 @@ const meta: Meta<typeof TimeEntriesTab> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: React.ComponentType) => (
       <div className="h-screen">
         <Story />
       </div>

@@ -5,36 +5,34 @@
  * Tests for Voyage AI embedding generation, caching, and batch processing.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-
 // Mock external dependencies
-vi.mock('@legal-platform/database', () => ({
+jest.mock('@legal-platform/database', () => ({
   redis: {
-    get: vi.fn(),
-    set: vi.fn(),
-    del: vi.fn(),
-    lpush: vi.fn(),
-    rpop: vi.fn(),
-    llen: vi.fn(),
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    lpush: jest.fn(),
+    rpop: jest.fn(),
+    llen: jest.fn(),
   },
   cacheManager: {
-    get: vi.fn(),
-    set: vi.fn(),
+    get: jest.fn(),
+    set: jest.fn(),
   },
   prisma: {
     case: {
-      findUnique: vi.fn(),
+      findUnique: jest.fn(),
     },
     document: {
-      findUnique: vi.fn(),
+      findUnique: jest.fn(),
     },
-    $executeRaw: vi.fn(),
+    $executeRaw: jest.fn(),
   },
 }));
 
 // Mock fetch for Voyage AI API
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+const mockFetch = jest.fn();
+global.fetch = mockFetch as unknown as typeof fetch;
 
 import { EmbeddingService } from './embedding.service';
 import { redis, prisma } from '@legal-platform/database';
@@ -43,18 +41,18 @@ describe('EmbeddingService', () => {
   let embeddingService: EmbeddingService;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     embeddingService = new EmbeddingService();
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
   });
 
   describe('generateEmbedding', () => {
     it('should return cached embedding if available', async () => {
       const cachedEmbedding = Array(1536).fill(0.1);
-      vi.mocked(redis.get).mockResolvedValue(JSON.stringify(cachedEmbedding));
+      (jest.mocked as any)(redis.get).mockResolvedValue(JSON.stringify(cachedEmbedding));
 
       const result = await embeddingService.generateEmbedding('test text');
 
@@ -65,7 +63,7 @@ describe('EmbeddingService', () => {
 
     it('should call Voyage AI API when embedding not cached', async () => {
       const embedding = Array(1536).fill(0.2);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -89,7 +87,7 @@ describe('EmbeddingService', () => {
 
     it('should cache the generated embedding', async () => {
       const embedding = Array(1536).fill(0.3);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -108,7 +106,7 @@ describe('EmbeddingService', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
@@ -121,7 +119,7 @@ describe('EmbeddingService', () => {
     it('should truncate long text before generating embedding', async () => {
       const longText = 'a'.repeat(50000);
       const embedding = Array(1536).fill(0.4);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -138,7 +136,7 @@ describe('EmbeddingService', () => {
     it('should use chunking for very long texts', async () => {
       const longText = 'word '.repeat(10000);
       const embedding = Array(1536).fill(0.5);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -166,15 +164,15 @@ describe('EmbeddingService', () => {
       };
       const embedding = Array(1536).fill(0.6);
 
-      vi.mocked(prisma.case.findUnique).mockResolvedValue(mockCase as any);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.case.findUnique).mockResolvedValue(mockCase as any);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
         }),
       });
-      vi.mocked(prisma.$executeRaw).mockResolvedValue(1);
+      (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
 
       await embeddingService.generateCaseEmbedding('case-123', 'firm-123');
 
@@ -186,7 +184,7 @@ describe('EmbeddingService', () => {
     });
 
     it('should skip if case not found', async () => {
-      vi.mocked(prisma.case.findUnique).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.case.findUnique).mockResolvedValue(null);
 
       await embeddingService.generateCaseEmbedding('nonexistent', 'firm-123');
 
@@ -206,15 +204,15 @@ describe('EmbeddingService', () => {
       };
       const embedding = Array(1536).fill(0.7);
 
-      vi.mocked(prisma.case.findUnique).mockResolvedValue(mockCase as any);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.case.findUnique).mockResolvedValue(mockCase as any);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
         }),
       });
-      vi.mocked(prisma.$executeRaw).mockResolvedValue(1);
+      (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
 
       await embeddingService.generateCaseEmbedding('case-456', 'firm-123');
 
@@ -237,15 +235,15 @@ describe('EmbeddingService', () => {
       };
       const embedding = Array(1536).fill(0.8);
 
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(mockDocument as any);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.document.findUnique).mockResolvedValue(mockDocument as any);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
         }),
       });
-      vi.mocked(prisma.$executeRaw).mockResolvedValue(1);
+      (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
 
       await embeddingService.generateDocumentEmbedding('doc-123', 'firm-123');
 
@@ -257,7 +255,7 @@ describe('EmbeddingService', () => {
     });
 
     it('should skip if document not found', async () => {
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.document.findUnique).mockResolvedValue(null);
 
       await embeddingService.generateDocumentEmbedding('nonexistent', 'firm-123');
 
@@ -268,7 +266,7 @@ describe('EmbeddingService', () => {
 
   describe('queueForEmbedding', () => {
     it('should add item to embedding queue', async () => {
-      vi.mocked(redis.lpush).mockResolvedValue(1);
+      (jest.mocked as any)(redis.lpush).mockResolvedValue(1);
 
       await embeddingService.queueForEmbedding({
         type: 'case',
@@ -283,7 +281,7 @@ describe('EmbeddingService', () => {
     });
 
     it('should handle multiple queue items', async () => {
-      vi.mocked(redis.lpush).mockResolvedValue(1);
+      (jest.mocked as any)(redis.lpush).mockResolvedValue(1);
 
       await embeddingService.queueForEmbedding({
         type: 'case',
@@ -314,19 +312,19 @@ describe('EmbeddingService', () => {
       };
       const embedding = Array(1536).fill(0.9);
 
-      vi.mocked(redis.rpop).mockResolvedValueOnce(
+      (jest.mocked as any)(redis.rpop).mockResolvedValueOnce(
         JSON.stringify({ type: 'case', id: 'case-queue', firmId: 'firm-123' })
       );
-      vi.mocked(redis.rpop).mockResolvedValueOnce(null);
-      vi.mocked(prisma.case.findUnique).mockResolvedValue(mockCase as any);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(redis.rpop).mockResolvedValueOnce(null);
+      (jest.mocked as any)(prisma.case.findUnique).mockResolvedValue(mockCase as any);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
         }),
       });
-      vi.mocked(prisma.$executeRaw).mockResolvedValue(1);
+      (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
 
       await embeddingService.processQueue();
 
@@ -344,19 +342,19 @@ describe('EmbeddingService', () => {
       };
       const embedding = Array(1536).fill(0.95);
 
-      vi.mocked(redis.rpop).mockResolvedValueOnce(
+      (jest.mocked as any)(redis.rpop).mockResolvedValueOnce(
         JSON.stringify({ type: 'document', id: 'doc-queue', firmId: 'firm-123' })
       );
-      vi.mocked(redis.rpop).mockResolvedValueOnce(null);
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(mockDocument as any);
-      vi.mocked(redis.get).mockResolvedValue(null);
+      (jest.mocked as any)(redis.rpop).mockResolvedValueOnce(null);
+      (jest.mocked as any)(prisma.document.findUnique).mockResolvedValue(mockDocument as any);
+      (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
         }),
       });
-      vi.mocked(prisma.$executeRaw).mockResolvedValue(1);
+      (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
 
       await embeddingService.processQueue();
 
@@ -364,7 +362,7 @@ describe('EmbeddingService', () => {
     });
 
     it('should handle empty queue', async () => {
-      vi.mocked(redis.rpop).mockResolvedValue(null);
+      (jest.mocked as any)(redis.rpop).mockResolvedValue(null);
 
       await embeddingService.processQueue();
 
@@ -373,14 +371,4 @@ describe('EmbeddingService', () => {
     });
   });
 
-  describe('getQueueLength', () => {
-    it('should return the queue length', async () => {
-      vi.mocked(redis.llen).mockResolvedValue(5);
-
-      const length = await embeddingService.getQueueLength();
-
-      expect(length).toBe(5);
-      expect(redis.llen).toHaveBeenCalledWith('embedding:queue');
-    });
-  });
 });

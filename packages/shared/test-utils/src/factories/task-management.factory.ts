@@ -305,6 +305,7 @@ export function createMockTask(overrides?: Partial<Task>): Task {
   return {
     id: `task-${faker.string.uuid()}`,
     caseId: `case-${faker.string.uuid()}`,
+    firmId: `firm-${faker.string.uuid()}`,
     type: taskType,
     title,
     description,

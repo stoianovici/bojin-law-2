@@ -22,3 +22,28 @@ export * from './widgets';
 
 // Re-export formatters
 export * from './utils/formatters';
+
+// Story 4.7: Task Analytics Components
+export { CompletionTimeCharts } from './CompletionTimeCharts';
+export { OverdueAnalysisPanel } from './OverdueAnalysisPanel';
+export { VelocityTrendsChart } from './VelocityTrendsChart';
+export { PatternDetectionPanel } from './PatternDetectionPanel';
+export { DelegationAnalysisPanel } from './DelegationAnalysisPanel';
+export { ROIDashboard } from './ROIDashboard';
+export { AnalyticsFilterBar } from './AnalyticsFilterBar';
+
+// Tab components for unified analytics page
+export { FinancialAnalyticsTab } from './FinancialAnalyticsTab';
+export { TaskAnalyticsTab } from './TaskAnalyticsTab';
+
+// Story 5.7: Platform Intelligence Components
+export { PlatformHealthScoreCard } from './PlatformHealthScoreCard';
+export { KeyMetricsSummaryRow } from './KeyMetricsSummaryRow';
+export { ResponseTimeAnalyticsPanel } from './ResponseTimeAnalyticsPanel';
+export { ResponseTimeTrendChart } from './ResponseTimeTrendChart';
+export { DocumentQualityPanel } from './DocumentQualityPanel';
+export { DocumentIssuesBreakdown } from './DocumentIssuesBreakdown';
+export { AIUtilizationPanel } from './AIUtilizationPanel';
+export { UserAdoptionLeaderboard } from './UserAdoptionLeaderboard';
+export { FeatureUsageBreakdown } from './FeatureUsageBreakdown';
+export { RecommendationsPanel } from './RecommendationsPanel';

@@ -1,16 +1,5 @@
 # Case Approval Workflow Schema (Story 2.8.2)
-
-"""
-Approval status for case review workflow
-- Pending: Case awaiting Partner review
-- Approved: Case has been approved by Partner
-- Rejected: Case rejected, requires revision
-"""
-enum ApprovalStatus {
-  Pending
-  Approved
-  Rejected
-}
+# ApprovalStatus enum defined in enums.graphql
 
 """
 Case approval tracking - one record per case requiring approval

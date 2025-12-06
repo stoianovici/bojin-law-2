@@ -7,9 +7,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
+import { UserRole } from '@/generated/prisma';
+
 interface UpdateRoleRequest {
   userId: string;
-  role: 'Partner' | 'Associate' | 'Paralegal' | 'Admin';
+  role: UserRole;
 }
 
 /**
@@ -27,8 +29,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Only Partners and Admins can update roles
-    if (currentUser.role !== 'Partner' && currentUser.role !== 'Admin') {
+    // Only Partners and BusinessOwners can update roles
+    if (currentUser.role !== 'Partner' && currentUser.role !== 'BusinessOwner') {
       return NextResponse.json(
         { error: 'forbidden', message: 'Nu ai permisiunea să modifici roluri' },
         { status: 403 }
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    const validRoles = ['Partner', 'Associate', 'Paralegal', 'Admin'];
+    const validRoles: UserRole[] = ['Partner', 'Associate', 'Paralegal', 'BusinessOwner'];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { error: 'invalid_role', message: 'Rol invalid' },

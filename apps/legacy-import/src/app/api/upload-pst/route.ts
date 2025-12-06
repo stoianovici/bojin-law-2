@@ -195,9 +195,10 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof AuthError) {
+      const { message, statusCode } = error;
       return NextResponse.json(
-        { error: error.message },
-        { status: error.statusCode }
+        { error: message },
+        { status: statusCode }
       );
     }
     console.error('POST upload-pst error:', error);

@@ -23,6 +23,18 @@ const operationComplexityMap: Record<AIOperationType, TaskComplexity> = {
   [AIOperationType.DocumentSummary]: TaskComplexity.Standard,
   [AIOperationType.Chat]: TaskComplexity.Standard,
   [AIOperationType.LegalAnalysis]: TaskComplexity.Complex,
+  [AIOperationType.DocumentReviewAnalysis]: TaskComplexity.Complex,
+  // Story 4.1: Natural Language Task Parser - simple extraction task
+  [AIOperationType.TaskParsing]: TaskComplexity.Simple,
+  // Story 5.2: Communication Intelligence
+  [AIOperationType.CommunicationIntelligence]: TaskComplexity.Standard,
+  [AIOperationType.RiskAnalysis]: TaskComplexity.Complex,
+  [AIOperationType.ThreadAnalysis]: TaskComplexity.Standard,
+  // Story 5.4: Proactive AI Suggestions
+  [AIOperationType.ProactiveSuggestion]: TaskComplexity.Standard,
+  [AIOperationType.MorningBriefing]: TaskComplexity.Standard,
+  [AIOperationType.PatternRecognition]: TaskComplexity.Standard,
+  [AIOperationType.DocumentCompleteness]: TaskComplexity.Simple,
 };
 
 // Complexity to model mapping

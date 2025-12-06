@@ -25,10 +25,12 @@ import {
   Clock,
   BarChart3,
   Users,
-  ClipboardCheck,
   Briefcase,
+  Brain,
+  Settings,
   type LucideIcon
 } from 'lucide-react';
+import { useSnippetSuggestions } from '@/hooks/usePersonalSnippets';
 
 /**
  * Icon mapping for navigation items
@@ -36,8 +38,8 @@ import {
 const iconMap: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
   analytics: TrendingUp,
+  'platform-intelligence': BarChart3,
   cases: Scale,
-  'pending-approvals': ClipboardCheck,
   'my-cases': Briefcase,
   documents: FileText,
   tasks: CheckSquare,
@@ -45,6 +47,8 @@ const iconMap: Record<string, LucideIcon> = {
   'time-tracking': Clock,
   reports: BarChart3,
   'user-management': Users,
+  'ai-personalization': Brain,
+  settings: Settings,
 };
 
 /**
@@ -68,20 +72,20 @@ const navigationItems: NavigationItem[] = [
     roles: ['Partner', 'BusinessOwner'], // Partners and BusinessOwners - Story 2.11.4
   },
   {
+    id: 'platform-intelligence',
+    label: 'Inteligență Platformă',
+    icon: 'platform-intelligence',
+    href: '/analytics/platform-intelligence',
+    section: 'analytics',
+    roles: ['Partner', 'BusinessOwner'], // Story 5.7 - Platform Intelligence Dashboard
+  },
+  {
     id: 'cases',
     label: 'Cazuri',
     icon: 'cases',
     href: '/cases',
     section: 'cases',
-    roles: ['Partner', 'Associate', 'Paralegal'],
-  },
-  {
-    id: 'pending-approvals',
-    label: 'Pending Approvals',
-    icon: 'pending-approvals',
-    href: '/cases/pending-approvals',
-    section: 'cases',
-    roles: ['Partner'], // Partners only - Story 2.8.2 Task 22
+    roles: ['Partner', 'Paralegal'],
   },
   {
     id: 'my-cases',
@@ -129,7 +133,15 @@ const navigationItems: NavigationItem[] = [
     icon: 'reports',
     href: '/reports',
     section: 'reports',
-    roles: ['Partner', 'Associate'],
+    roles: ['Partner'],
+  },
+  {
+    id: 'ai-personalization',
+    label: 'AI Personalizare',
+    icon: 'ai-personalization',
+    href: '/settings/personalization',
+    section: 'settings',
+    roles: ['Partner', 'Associate', 'Paralegal'],
   },
 ];
 
@@ -164,6 +176,9 @@ export function Sidebar({ className = '' }: SidebarProps) {
   const skipPendingQuery = currentRole !== 'Partner';
   const { cases: pendingCases = [] } = usePendingCases(skipPendingQuery);
   const pendingCount = pendingCases.length;
+
+  // Story 5.6 Task 39: Fetch snippet suggestions count for AI Personalization badge
+  const { count: snippetSuggestionsCount = 0 } = useSnippetSuggestions();
 
   // Filter navigation items by current role
   const visibleItems = navigationItems.filter((item) =>
@@ -248,10 +263,16 @@ export function Sidebar({ className = '' }: SidebarProps) {
                       {!isSidebarCollapsed && (
                         <span className="truncate flex-1">{item.label}</span>
                       )}
-                      {/* Story 2.8.2 Task 22: Show badge count for pending approvals */}
-                      {item.id === 'pending-approvals' && pendingCount > 0 && !isSidebarCollapsed && (
+                      {/* Show badge count for pending approvals on Cases link for Partners */}
+                      {item.id === 'cases' && currentRole === 'Partner' && pendingCount > 0 && !isSidebarCollapsed && (
                         <span className="ml-auto bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                           {pendingCount}
+                        </span>
+                      )}
+                      {/* Story 5.6: Show badge count for snippet suggestions on AI Personalization */}
+                      {item.id === 'ai-personalization' && snippetSuggestionsCount > 0 && !isSidebarCollapsed && (
+                        <span className="ml-auto bg-purple-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {snippetSuggestionsCount}
                         </span>
                       )}
                     </Link>

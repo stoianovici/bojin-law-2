@@ -10,6 +10,12 @@ import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { format } from 'date-fns';
 import type { Task, TaskType } from '@legal-platform/types';
+import { QuickTimeLog } from '@/components/time/QuickTimeLog';
+import { useLogTimeAgainstTask, useTimeEntriesByTask } from '@/hooks/useTimeEntries';
+import { TaskComments } from './TaskComments';
+import { SubtaskPanel } from './SubtaskPanel';
+import { TaskAttachments } from './TaskAttachments';
+import { TaskHistoryTimeline } from './TaskHistoryTimeline';
 
 /**
  * Task type labels in Romanian
@@ -88,6 +94,12 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [activeCollabTab, setActiveCollabTab] = useState<'comments' | 'subtasks' | 'attachments' | 'history'>('comments');
+
+  // Time tracking hooks
+  const [logTimeAgainstTask, { loading: loggingTime }] = useLogTimeAgainstTask();
+  const { data: timeEntriesData } = useTimeEntriesByTask(task?.id || '');
 
   /**
    * Initialize form data when task changes
@@ -123,7 +135,34 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
     setErrors({});
 
     setShowDeleteConfirm(false);
+    setShowQuickLog(false);
   }, [task, isOpen]);
+
+  /**
+   * Calculate total logged hours
+   */
+  const totalLoggedHours = timeEntriesData?.timeEntriesByTask?.reduce(
+    (total: number, entry: { hours: number }) => total + entry.hours,
+    0
+  ) || 0;
+
+  /**
+   * Handle quick time log submission
+   */
+  const handleTimeLogSubmit = async (data: { hours: number; description: string; billable: boolean }) => {
+    if (!task) return;
+
+    await logTimeAgainstTask({
+      variables: {
+        taskId: task.id,
+        hours: data.hours,
+        description: data.description,
+        billable: data.billable,
+      },
+    });
+
+    setShowQuickLog(false);
+  };
 
   /**
    * Update form field
@@ -553,6 +592,84 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
               <h3 className="text-sm font-semibold text-gray-700 mb-4">Detalii Specifice</h3>
               {renderTypeSpecificFields()}
             </div>
+
+            {/* Time Tracking Section (only show in edit mode) */}
+            {isEditMode && task && (
+              <div className="pt-4 border-t border-gray-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-700">Timp Înregistrat</h3>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">
+                      Total: <span className="font-medium text-gray-900">{totalLoggedHours.toFixed(2)}h</span>
+                    </span>
+                    {!showQuickLog && (
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickLog(true)}
+                        className="px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium"
+                      >
+                        Înregistrează Timp
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {showQuickLog && (
+                  <QuickTimeLog
+                    caseId={task.caseId}
+                    taskId={task.id}
+                    taskTitle={task.title}
+                    onSubmit={handleTimeLogSubmit}
+                    onCancel={() => setShowQuickLog(false)}
+                    isLoading={loggingTime}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Collaboration Sections (Story 4.6) - only show in edit mode */}
+            {isEditMode && task && (
+              <div className="pt-4 border-t border-gray-200">
+                {/* Tab Navigation */}
+                <div className="flex border-b border-gray-200 mb-4">
+                  {[
+                    { key: 'comments', label: 'Comentarii' },
+                    { key: 'subtasks', label: 'Sub-sarcini' },
+                    { key: 'attachments', label: 'Atașamente' },
+                    { key: 'history', label: 'Istoric' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveCollabTab(tab.key as typeof activeCollabTab)}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                        activeCollabTab === tab.key
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab Content */}
+                <div className="min-h-[200px]">
+                  {activeCollabTab === 'comments' && (
+                    <TaskComments taskId={task.id} currentUserId="current-user-id" />
+                  )}
+                  {activeCollabTab === 'subtasks' && (
+                    <SubtaskPanel parentTaskId={task.id} caseId={task.caseId} />
+                  )}
+                  {activeCollabTab === 'attachments' && (
+                    <TaskAttachments taskId={task.id} currentUserId="current-user-id" />
+                  )}
+                  {activeCollabTab === 'history' && (
+                    <TaskHistoryTimeline taskId={task.id} />
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex items-center justify-between pt-6 border-t border-gray-200">

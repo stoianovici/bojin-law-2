@@ -15,14 +15,6 @@ enum FinancialDataScope {
 }
 
 """
-Date range input for filtering KPIs
-"""
-input DateRangeInput {
-  start: DateTime!
-  end: DateTime!
-}
-
-"""
 Date range type for response
 """
 type DateRange {

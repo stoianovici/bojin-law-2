@@ -348,6 +348,36 @@ export class CacheService {
     this.hits = 0;
     this.misses = 0;
   }
+
+  /**
+   * Simple get method for compatibility with other services
+   * Returns the cache entry if found, null otherwise
+   */
+  async get(key: string, firmId: string): Promise<AICacheEntry | null> {
+    const result = await this.lookupByHash(key, firmId);
+    return result.found ? result.entry || null : null;
+  }
+
+  /**
+   * Simple set method for compatibility with other services
+   * Stores a response in the cache
+   */
+  async set(
+    key: string,
+    prompt: string,
+    response: string,
+    modelUsed: string,
+    operationType: AIOperationType,
+    firmId: string
+  ): Promise<void> {
+    await this.store({
+      prompt,
+      response,
+      modelUsed,
+      operationType,
+      firmId,
+    });
+  }
 }
 
 // Singleton instance

@@ -8,8 +8,10 @@
 import React from 'react';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import { CheckIcon } from '@radix-ui/react-icons';
-import { MOCK_USERS } from '../../constants/mock-data';
 import type { TaskFilters } from '@legal-platform/types';
+
+// TODO: Replace with real user data from API
+const USERS: { id: string; name: string; initials: string }[] = [];
 
 /**
  * TaskFilterBar Props
@@ -66,7 +68,7 @@ export function TaskFilterBar({ filters, onFiltersChange, onClearFilters }: Task
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700">Filtru utilizatori:</span>
             <div className="flex items-center gap-3">
-              {MOCK_USERS.map((user) => {
+              {USERS.map((user) => {
                 const isChecked = selectedUsers.includes(user.id);
 
                 return (

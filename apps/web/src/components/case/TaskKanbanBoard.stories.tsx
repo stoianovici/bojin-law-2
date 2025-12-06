@@ -17,7 +17,7 @@ const meta: Meta<typeof TaskKanbanBoard> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="p-6 bg-gray-50 min-h-screen">
         <Story />
       </div>
@@ -35,9 +35,9 @@ export const Default: Story = {
   args: {
     tasks: mockTasks,
     users: mockUsers,
-    onTaskClick: (task) => alert(`Task clicked: ${task.title}`),
-    onTaskMenu: (task) => alert(`Menu for: ${task.title}`),
-    onAddTask: (column) => alert(`Add task to: ${column}`),
+    onTaskClick: (task: any) => alert(`Task clicked: ${task.title}`),
+    onTaskMenu: (task: any) => alert(`Menu for: ${task.title}`),
+    onAddTask: (column: any) => alert(`Add task to: ${column}`),
   },
 };
 
@@ -53,9 +53,9 @@ export const DistributedTasks: Story = {
       ...createTasks(2).map((t) => ({ ...t, status: 'complete' as const })),
     ],
     users: mockUsers,
-    onTaskClick: (task) => alert(`Task clicked: ${task.title}`),
-    onTaskMenu: (task) => alert(`Menu for: ${task.title}`),
-    onAddTask: (column) => alert(`Add task to: ${column}`),
+    onTaskClick: (task: any) => alert(`Task clicked: ${task.title}`),
+    onTaskMenu: (task: any) => alert(`Menu for: ${task.title}`),
+    onAddTask: (column: any) => alert(`Add task to: ${column}`),
   },
 };
 
@@ -66,9 +66,9 @@ export const Empty: Story = {
   args: {
     tasks: [],
     users: mockUsers,
-    onTaskClick: (task) => alert(`Task clicked: ${task.title}`),
-    onTaskMenu: (task) => alert(`Menu for: ${task.title}`),
-    onAddTask: (column) => alert(`Add task to: ${column}`),
+    onTaskClick: (task: any) => alert(`Task clicked: ${task.title}`),
+    onTaskMenu: (task: any) => alert(`Menu for: ${task.title}`),
+    onAddTask: (column: any) => alert(`Add task to: ${column}`),
   },
 };
 
@@ -79,9 +79,9 @@ export const HighPriorityTasks: Story = {
   args: {
     tasks: createTasks(10).map((t) => ({ ...t, priority: 'High' as const })),
     users: mockUsers,
-    onTaskClick: (task) => alert(`Task clicked: ${task.title}`),
-    onTaskMenu: (task) => alert(`Menu for: ${task.title}`),
-    onAddTask: (column) => alert(`Add task to: ${column}`),
+    onTaskClick: (task: any) => alert(`Task clicked: ${task.title}`),
+    onTaskMenu: (task: any) => alert(`Menu for: ${task.title}`),
+    onAddTask: (column: any) => alert(`Add task to: ${column}`),
   },
 };
 

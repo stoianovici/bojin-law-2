@@ -17,7 +17,7 @@ const meta: Meta<typeof DocumentsTab> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: React.ComponentType) => (
       <div className="h-screen">
         <Story />
       </div>
@@ -35,7 +35,7 @@ export const Default: Story = {
   args: {
     documents: mockDocuments,
     folderTree: mockTree,
-    onSelectDocument: (doc) => console.log('Selected document:', doc.title),
+    onSelectDocument: (doc: { title: string }) => console.log('Selected document:', doc.title),
     onNewDocument: () => alert('New document'),
   },
 };
@@ -48,7 +48,7 @@ export const WithSelectedDocument: Story = {
     documents: mockDocuments,
     folderTree: mockTree,
     selectedDocumentId: mockDocuments[0].id,
-    onSelectDocument: (doc) => console.log('Selected document:', doc.title),
+    onSelectDocument: (doc: { title: string }) => console.log('Selected document:', doc.title),
     onNewDocument: () => alert('New document'),
   },
 };
@@ -60,7 +60,7 @@ export const FewDocuments: Story = {
   args: {
     documents: createDocuments(3),
     folderTree: mockTree,
-    onSelectDocument: (doc) => console.log('Selected document:', doc.title),
+    onSelectDocument: (doc: { title: string }) => console.log('Selected document:', doc.title),
     onNewDocument: () => alert('New document'),
   },
 };
@@ -72,7 +72,7 @@ export const ManyDocuments: Story = {
   args: {
     documents: createDocuments(30),
     folderTree: mockTree,
-    onSelectDocument: (doc) => console.log('Selected document:', doc.title),
+    onSelectDocument: (doc: { title: string }) => console.log('Selected document:', doc.title),
     onNewDocument: () => alert('New document'),
   },
 };

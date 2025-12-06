@@ -1,0 +1,407 @@
+# Workload Management
+# Story 4.5: Team Workload Management
+
+# ============================================================================
+# Availability Types
+# ============================================================================
+
+enum AvailabilityType {
+  OutOfOffice
+  ReducedHours
+  Vacation
+  SickLeave
+  Training
+}
+
+type UserAvailability {
+  id: ID!
+  userId: ID!
+  user: User!
+  firmId: ID!
+  availabilityType: AvailabilityType!
+  startDate: Date!
+  endDate: Date!
+  hoursPerDay: Float
+  reason: String
+  autoReassign: Boolean!
+  delegateTo: ID
+  delegate: User
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# ============================================================================
+# Skill Types
+# ============================================================================
+
+enum SkillType {
+  Litigation
+  ContractDrafting
+  LegalResearch
+  ClientCommunication
+  CourtProcedures
+  DocumentReview
+  Negotiation
+  DueDiligence
+  RegulatoryCompliance
+  IntellectualProperty
+}
+
+type UserSkill {
+  id: ID!
+  userId: ID!
+  skillType: SkillType!
+  proficiency: Int! # 1-5
+  verified: Boolean!
+}
+
+# ============================================================================
+# Workload Types (AC: 2)
+# ============================================================================
+
+type DailyWorkload {
+  date: Date!
+  allocatedHours: Float!
+  capacityHours: Float!
+  utilizationPercent: Float!
+  taskCount: Int!
+  overloaded: Boolean!
+}
+
+enum WorkloadStatus {
+  UnderUtilized
+  Optimal
+  NearCapacity
+  Overloaded
+}
+
+type UserWorkload {
+  userId: ID!
+  user: User!
+  dailyWorkloads: [DailyWorkload!]!
+  weeklyAllocated: Float!
+  weeklyCapacity: Float!
+  averageUtilization: Float!
+  status: WorkloadStatus!
+}
+
+type TeamWorkloadSummary {
+  firmId: ID!
+  dateRange: DateRange!
+  members: [UserWorkload!]!
+  teamAverageUtilization: Float!
+  overloadedCount: Int!
+  underUtilizedCount: Int!
+}
+
+# ============================================================================
+# Team Calendar Types (AC: 1)
+# ============================================================================
+
+type CalendarTask {
+  id: ID!
+  title: String!
+  type: TaskType!
+  dueDate: Date!
+  dueTime: String
+  status: TaskStatus!
+  estimatedHours: Float
+  caseId: ID!
+  caseTitle: String!
+  isCriticalPath: Boolean!
+}
+
+type TeamCalendarEntry {
+  userId: ID!
+  user: User!
+  date: Date!
+  tasks: [CalendarTask!]!
+  availability: UserAvailability
+  totalAllocatedHours: Float!
+  capacityHours: Float!
+  utilizationPercent: Float!
+}
+
+type TeamMemberCalendar {
+  userId: ID!
+  user: User!
+  entries: [TeamCalendarEntry!]!
+  weeklyTotal: Float!
+  weeklyCapacity: Float!
+  hasAvailabilityOverride: Boolean!
+}
+
+type TeamCalendarView {
+  firmId: ID!
+  startDate: Date!
+  endDate: Date!
+  members: [TeamMemberCalendar!]!
+}
+
+# ============================================================================
+# Assignment Suggestion Types (AC: 3)
+# ============================================================================
+
+type AssignmentSuggestion {
+  userId: ID!
+  user: User!
+  matchScore: Int! # 0-100
+  skillMatch: Int! # 0-100
+  capacityMatch: Int! # 0-100
+  currentWorkload: Float!
+  availableCapacity: Float!
+  reasoning: String!
+  caveats: [String!]
+}
+
+type AssignmentSuggestionResponse {
+  suggestions: [AssignmentSuggestion!]!
+  noSuitableCandidates: Boolean!
+  allOverloaded: Boolean!
+  recommendedAssignee: ID
+}
+
+# ============================================================================
+# Delegation Handoff Types (AC: 4)
+# ============================================================================
+
+type DelegationHandoff {
+  id: ID!
+  delegationId: ID!
+  handoffNotes: String!
+  contextSummary: String
+  relatedTaskIds: [ID!]!
+  relatedDocIds: [ID!]!
+  aiGenerated: Boolean!
+  createdAt: DateTime!
+}
+
+type GeneratedHandoff {
+  handoffNotes: String!
+  contextSummary: String!
+  suggestedDocs: [ID!]!
+  suggestedTasks: [ID!]!
+}
+
+# ============================================================================
+# Capacity Planning Types (AC: 6)
+# ============================================================================
+
+type BottleneckTask {
+  id: ID!
+  title: String!
+  dueDate: Date!
+  estimatedHours: Float!
+  isCriticalPath: Boolean!
+  caseId: ID!
+}
+
+enum BottleneckSeverity {
+  Warning
+  Critical
+}
+
+type CapacityBottleneck {
+  date: Date!
+  userId: ID!
+  user: User!
+  overageHours: Float!
+  impactedTasks: [BottleneckTask!]!
+  severity: BottleneckSeverity!
+  suggestedAction: String!
+}
+
+# RiskLevel enum defined in semantic-version-control.graphql
+
+type DailyCapacity {
+  date: Date!
+  totalCapacity: Float!
+  totalAllocated: Float!
+}
+
+type CapacityForecast {
+  firmId: ID!
+  forecastRange: DateRange!
+  bottlenecks: [CapacityBottleneck!]!
+  teamCapacityByDay: [DailyCapacity!]!
+  overallRisk: RiskLevel!
+  recommendations: [String!]!
+}
+
+type ResourceAllocationSuggestion {
+  overloadedUserId: ID!
+  suggestedDelegateId: ID!
+  taskId: ID!
+  rationale: String!
+  impactScore: Int! # 0-100
+}
+
+# ============================================================================
+# User Workload Settings
+# ============================================================================
+
+type UserWorkloadSettings {
+  id: ID!
+  userId: ID!
+  dailyCapacityHours: Float!
+  weeklyCapacityHours: Float!
+  workingDays: [Int!]! # 0=Sun, 1=Mon, etc.
+  maxConcurrentTasks: Int!
+  overloadThreshold: Float!
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+input CreateAvailabilityInput {
+  availabilityType: AvailabilityType!
+  startDate: Date!
+  endDate: Date!
+  hoursPerDay: Float
+  reason: String
+  autoReassign: Boolean
+  delegateTo: ID
+}
+
+input UpdateAvailabilityInput {
+  availabilityType: AvailabilityType
+  startDate: Date
+  endDate: Date
+  hoursPerDay: Float
+  reason: String
+  autoReassign: Boolean
+  delegateTo: ID
+}
+
+input UserSkillInput {
+  skillType: SkillType!
+  proficiency: Int! # 1-5
+}
+
+input AssignmentSuggestionInput {
+  taskType: TaskType!
+  taskTitle: String!
+  caseId: ID!
+  estimatedHours: Float!
+  dueDate: Date!
+  requiredSkills: [SkillType!]
+  excludeUserIds: [ID!]
+}
+
+input GenerateHandoffInput {
+  delegationId: ID!
+  sourceTaskId: ID!
+  delegatorNotes: String
+  includeCaseContext: Boolean
+  includeRecentActivity: Boolean
+}
+
+input UpdateWorkloadSettingsInput {
+  dailyCapacityHours: Float
+  weeklyCapacityHours: Float
+  workingDays: [Int!]
+  maxConcurrentTasks: Int
+  overloadThreshold: Float
+}
+
+# ============================================================================
+# Common Types
+# ============================================================================
+
+# DateRange type defined in financial-kpis.graphql
+# User type defined in case.graphql
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  # Team Calendar (AC: 1)
+  teamCalendar(dateRange: DateRangeInput!): TeamCalendarView!
+  myCalendar(dateRange: DateRangeInput!): TeamMemberCalendar!
+
+  # Workload Meter (AC: 2)
+  teamWorkload(dateRange: DateRangeInput!): TeamWorkloadSummary!
+  userWorkload(userId: ID!, dateRange: DateRangeInput!): UserWorkload!
+  myWorkload(dateRange: DateRangeInput!): UserWorkload!
+
+  # Assignment Suggestions (AC: 3)
+  suggestAssignees(input: AssignmentSuggestionInput!): AssignmentSuggestionResponse!
+
+  # Availability
+  myAvailabilities(dateRange: DateRangeInput): [UserAvailability!]!
+  teamAvailability(dateRange: DateRangeInput!): [UserAvailability!]!
+
+  # Skills
+  mySkills: [UserSkill!]!
+  userSkills(userId: ID!): [UserSkill!]!
+
+  # Delegation Handoff (AC: 4)
+  delegationHandoff(delegationId: ID!): DelegationHandoff
+
+  # Capacity Planning (AC: 6)
+  capacityForecast(days: Int): CapacityForecast!
+  resourceAllocationSuggestions: [ResourceAllocationSuggestion!]!
+
+  # User Settings
+  myWorkloadSettings: UserWorkloadSettings
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  # Availability (AC: 1, 5)
+  createAvailability(input: CreateAvailabilityInput!): UserAvailability!
+  updateAvailability(id: ID!, input: UpdateAvailabilityInput!): UserAvailability!
+  deleteAvailability(id: ID!): Boolean!
+
+  # Skills (AC: 3)
+  updateMySkills(skills: [UserSkillInput!]!): [UserSkill!]!
+  verifyUserSkill(skillId: ID!): UserSkill! # Partner only
+
+  # Delegation Handoff (AC: 4)
+  generateHandoff(input: GenerateHandoffInput!): GeneratedHandoff!
+  saveHandoff(
+    delegationId: ID!
+    handoffNotes: String!
+    contextSummary: String
+    relatedTaskIds: [ID!]
+    relatedDocIds: [ID!]
+  ): DelegationHandoff!
+
+  # OOO Reassignment (AC: 5)
+  processOOOReassignments(availabilityId: ID!): OOOReassignmentSummary!
+
+  # Workload Settings
+  updateMyWorkloadSettings(input: UpdateWorkloadSettingsInput!): UserWorkloadSettings!
+}
+
+# ============================================================================
+# OOO Reassignment Result Types (AC: 5)
+# ============================================================================
+
+type ReassignmentResult {
+  taskId: ID!
+  taskTitle: String!
+  originalAssignee: ID!
+  newAssignee: ID!
+  reason: String!
+  success: Boolean!
+  error: String
+}
+
+type SkippedTask {
+  taskId: ID!
+  reason: String!
+}
+
+type OOOReassignmentSummary {
+  userId: ID!
+  period: DateRange!
+  tasksReassigned: [ReassignmentResult!]!
+  tasksSkipped: [SkippedTask!]!
+  delegateTo: ID!
+}

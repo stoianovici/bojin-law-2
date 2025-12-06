@@ -27,7 +27,7 @@ const meta: Meta<typeof TaskCard> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="w-80">
         <Story />
       </div>
@@ -45,8 +45,8 @@ export const Default: Story = {
   args: {
     task: mockTask,
     assignee: mockAssignee,
-    onTaskClick: (task) => alert(`Task clicked: ${task.title}`),
-    onMenuClick: (task) => alert(`Menu clicked for: ${task.title}`),
+    onTaskClick: (task: any) => alert(`Task clicked: ${task.title}`),
+    onMenuClick: (task: any) => alert(`Menu clicked for: ${task.title}`),
   },
 };
 
@@ -127,8 +127,8 @@ export const Overdue: Story = {
 export const NoAssignee: Story = {
   args: {
     task: mockTask,
-    onTaskClick: (task) => alert(`Task clicked: ${task.title}`),
-    onMenuClick: (task) => alert(`Menu clicked for: ${task.title}`),
+    onTaskClick: (task: any) => alert(`Task clicked: ${task.title}`),
+    onMenuClick: (task: any) => alert(`Menu clicked for: ${task.title}`),
   },
 };
 

@@ -351,6 +351,7 @@ export function createMockTaskFromCommunication(
   extractedItemType: 'deadline' | 'commitment' | 'actionItem',
   options?: {
     caseId?: string;
+    firmId?: string;
     threadId?: string;
     messageId?: string;
     assignedTo?: string;
@@ -390,6 +391,7 @@ export function createMockTaskFromCommunication(
   return {
     id: taskId,
     caseId: options?.caseId || generateId(),
+    firmId: options?.firmId || generateId(),
     type: taskTypeMap[extractedItemType] || 'Research',
     title,
     description: `Task creat automat din comunicare.\n\nExtrăgere: ${extractedItemType}\nConfidență AI: ${extractedItem.confidence}\n\nMesaj sursă: ${extractedItem.sourceMessageId}`,

@@ -15,7 +15,7 @@ const meta: Meta<typeof QuickTaskCreator> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: any) => (
       <div className="max-w-2xl bg-white p-6 rounded shadow">
         <Story />
       </div>
@@ -40,7 +40,7 @@ export const DeadlineItem: Story = {
     prefillDescription: 'Termen extras din email: Revizuirea contractului cu clientul Tech Solutions SRL trebuie finalizată până la data menționată.',
     prefillDueDate: new Date('2025-11-20'),
     prefillPriority: 'High',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -65,7 +65,7 @@ export const CommitmentItem: Story = {
     prefillDescription: 'Va trimite documentația completă până vineri',
     prefillDueDate: new Date('2025-11-18'),
     prefillPriority: 'Medium',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -90,7 +90,7 @@ export const ActionItem: Story = {
     prefillDescription: 'Acțiune extrasă din email: Pregătirea raportului legal pentru cazul Tech Solutions SRL',
     prefillPriority: 'High',
     prefillAssignedTo: 'Avocat senior',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -111,7 +111,7 @@ export const EmptyForm: Story = {
     threadId: 'thread-123',
     messageId: 'msg-456',
     caseId: 'case-789',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -134,7 +134,7 @@ export const ValidationErrorTitle: Story = {
     caseId: 'case-789',
     prefillDescription: 'Description without title',
     prefillDueDate: new Date('2025-11-20'),
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -157,7 +157,7 @@ export const ValidationErrorDueDate: Story = {
     caseId: 'case-789',
     prefillTitle: 'Task without due date',
     prefillDescription: 'This task has no due date set',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -183,7 +183,7 @@ export const FullyPopulated: Story = {
     prefillDueDate: new Date('2025-12-01'),
     prefillPriority: 'High',
     prefillAssignedTo: 'Avocat senior',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -208,7 +208,7 @@ export const LowPriority: Story = {
     prefillDescription: 'Acțiune extrasă din email: Actualizarea informațiilor de contact pentru client',
     prefillDueDate: new Date('2025-11-25'),
     prefillPriority: 'Low',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -233,7 +233,7 @@ export const RomanianLabels: Story = {
     prefillDescription: 'Va prezenta documentele necesare pentru aprobarea contractului',
     prefillDueDate: new Date('2025-11-22'),
     prefillPriority: 'Medium',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task creat cu succes!');
     },
@@ -265,7 +265,7 @@ export const InteractiveExample: Story = {
     prefillDescription: 'Încercați Ctrl+Enter pentru a salva sau Escape pentru a anula',
     prefillDueDate: new Date('2025-11-30'),
     prefillPriority: 'Medium',
-    onSave: (taskData) => {
+    onSave: (taskData: any) => {
       console.log('Task saved:', taskData);
       alert('Task salvat cu Ctrl+Enter!');
     },

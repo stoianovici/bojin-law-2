@@ -42,19 +42,12 @@ export function ReportViewer() {
   const handleChartClick = (dataPoint: ChartDataPoint) => {
     if (!selectedReportId) return;
 
-    // Generate mock drill-down data
-    const mockDetailRows = Array.from({ length: 25 }, (_, i) => ({
-      id: `item-${i + 1}`,
-      name: `Element ${i + 1} - ${dataPoint.label}`,
-      value: Math.floor(Math.random() * 1000),
-      date: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
-      status: ['Activ', 'Închis', 'În așteptare'][Math.floor(Math.random() * 3)],
-    }));
-
+    // TODO: Replace with actual API call to fetch drill-down data
+    // Detail rows should be fetched from API based on reportId and dataPoint
     openDrillDown({
       reportId: selectedReportId,
       dataPoint,
-      detailRows: mockDetailRows,
+      detailRows: [], // Empty - should come from API
       columns: [
         { key: 'name', label: 'Name', labelRo: 'Nume', type: 'text' },
         { key: 'value', label: 'Value', labelRo: 'Valoare', type: 'number' },

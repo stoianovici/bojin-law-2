@@ -47,7 +47,7 @@ export const SuggestionsTab: Story = {
     isCollapsed: false,
     onToggleCollapse: action('toggle-collapse'),
   },
-  render: (args) => {
+  render: (args: { isCollapsed: boolean; onToggleCollapse: () => void }) => {
     const [isCollapsed, setIsCollapsed] = React.useState(args.isCollapsed);
     return (
       <div className="h-[600px]">
@@ -111,7 +111,7 @@ export const InteractiveToggle: Story = {
       console.log('Panel toggled');
     },
   },
-  render: (args) => {
+  render: (args: { isCollapsed: boolean; onToggleCollapse?: () => void }) => {
     const [isCollapsed, setIsCollapsed] = React.useState(false);
     return (
       <div className="h-[600px] flex">
@@ -140,7 +140,7 @@ export const EmptySuggestions: Story = {
     isCollapsed: false,
     onToggleCollapse: action('toggle-collapse'),
   },
-  render: (args) => {
+  render: (args: Record<string, unknown>) => {
     // Mock component with empty suggestions
     const EmptyPanel = () => {
       return (
@@ -232,7 +232,7 @@ export const FullHeight: Story = {
     isCollapsed: false,
     onToggleCollapse: action('toggle-collapse'),
   },
-  render: (args) => (
+  render: (args: { isCollapsed: boolean; onToggleCollapse: () => void }) => (
     <div className="h-[800px]">
       <AIAssistantPanel {...args} />
     </div>

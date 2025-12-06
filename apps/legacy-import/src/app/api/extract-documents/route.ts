@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma';
 import { streamFromR2ToFile, uploadExtractedDocument } from '@/lib/r2-storage';
 import {
   extractFromPSTFile,
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
 
       // Step 2: Create database records in a transaction (with extended timeout)
       const result = await prisma.$transaction(
-        async (tx) => {
+        async (tx: Prisma.TransactionClient) => {
           const batchIds = new Map<string, string>();
 
           // Create batches for each month

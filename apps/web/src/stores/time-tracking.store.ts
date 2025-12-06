@@ -15,48 +15,9 @@ import type {
   NaturalLanguageParseResult,
 } from '@legal-platform/types';
 
-// Simple inline mock data generator (avoiding test-utils import for browser compatibility)
-function generateMockEntries(): TimeEntry[] {
-  const entries: TimeEntry[] = [];
-  const cases = [
-    'Dosar Popescu vs. SRL Construct',
-    'Contract Ionescu - Furnizare Servicii',
-    'Litigiu Georgescu - Proprietate',
-  ];
-  const taskTypes: TimeTaskType[] = ['Research', 'Drafting', 'ClientMeeting', 'Email'];
-  const descriptions = [
-    'Cercetare jurisprudență',
-    'Redactare contract',
-    'Întâlnire client',
-    'Corespondență email',
-  ];
-
-  for (let i = 0; i < 20; i++) {
-    const daysAgo = Math.floor(Math.random() * 30);
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
-
-    entries.push({
-      id: `time-${i}`,
-      userId: 'user-001',
-      userName: 'Mihai Bojin',
-      caseId: `case-${Math.floor(Math.random() * 3) + 1}`,
-      caseName: cases[Math.floor(Math.random() * cases.length)],
-      taskType: taskTypes[Math.floor(Math.random() * taskTypes.length)],
-      date,
-      duration: 30 + Math.floor(Math.random() * 180),
-      description: descriptions[Math.floor(Math.random() * descriptions.length)],
-      isBillable: Math.random() < 0.7,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-  }
-
-  return entries.sort((a, b) => b.date.getTime() - a.date.getTime());
-}
-
+// Time entries should be fetched from API - start with empty array
 const initialState = {
-  entries: generateMockEntries(),
+  entries: [] as TimeEntry[],
   activeTimer: {
     isRunning: false,
     isPaused: false,
@@ -179,9 +140,10 @@ export const useTimeTrackingStore = create<TimeTrackingStore>()(
           totalMinutes += elapsed;
         }
 
+        // TODO: Get userId and userName from auth context
         const entry = {
-          userId: 'user-001',
-          userName: 'Current User',
+          userId: '', // Should come from auth context
+          userName: '', // Should come from auth context
           caseId: state.activeTimer.caseId,
           caseName: state.activeTimer.caseName,
           taskType: state.activeTimer.taskType,

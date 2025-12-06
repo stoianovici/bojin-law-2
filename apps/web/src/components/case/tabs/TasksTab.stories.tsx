@@ -17,7 +17,7 @@ const meta: Meta<typeof TasksTab> = {
   },
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    (Story: React.ComponentType) => (
       <div className="h-screen">
         <Story />
       </div>
@@ -35,8 +35,8 @@ export const Default: Story = {
   args: {
     tasks: mockTasks,
     users: mockUsers,
-    onTaskClick: (task) => alert(`Task: ${task.title}`),
-    onAddTask: (column) => alert(`Add task to: ${column}`),
+    onTaskClick: (task: { title: string }) => alert(`Task: ${task.title}`),
+    onAddTask: (column: string) => alert(`Add task to: ${column}`),
   },
 };
 
@@ -52,8 +52,8 @@ export const DistributedTasks: Story = {
       ...createTasks(2).map((t) => ({ ...t, status: 'complete' as const })),
     ],
     users: mockUsers,
-    onTaskClick: (task) => alert(`Task: ${task.title}`),
-    onAddTask: (column) => alert(`Add task to: ${column}`),
+    onTaskClick: (task: { title: string }) => alert(`Task: ${task.title}`),
+    onAddTask: (column: string) => alert(`Add task to: ${column}`),
   },
 };
 
@@ -64,8 +64,8 @@ export const EmptyState: Story = {
   args: {
     tasks: [],
     users: mockUsers,
-    onTaskClick: (task) => alert(`Task: ${task.title}`),
-    onAddTask: (column) => alert(`Add task to: ${column}`),
+    onTaskClick: (task: { title: string }) => alert(`Task: ${task.title}`),
+    onAddTask: (column: string) => alert(`Add task to: ${column}`),
   },
 };
 
@@ -76,8 +76,8 @@ export const ManyTasks: Story = {
   args: {
     tasks: createTasks(30),
     users: mockUsers,
-    onTaskClick: (task) => alert(`Task: ${task.title}`),
-    onAddTask: (column) => alert(`Add task to: ${column}`),
+    onTaskClick: (task: { title: string }) => alert(`Task: ${task.title}`),
+    onAddTask: (column: string) => alert(`Add task to: ${column}`),
   },
 };
 

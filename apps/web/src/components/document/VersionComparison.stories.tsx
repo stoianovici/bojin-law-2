@@ -304,7 +304,7 @@ export const FullHeight: Story = {
     onAcceptChanges: action('accept-changes'),
     onRejectChanges: action('reject-changes'),
   },
-  render: (args) => (
+  render: (args: any) => (
     <div className="h-[900px]">
       <VersionComparison {...args} />
     </div>

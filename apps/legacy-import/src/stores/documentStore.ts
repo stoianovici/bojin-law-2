@@ -56,7 +56,7 @@ export interface SessionProgress {
 
 export type FilterType = 'all' | 'categorized' | 'uncategorized' | 'skipped' | 'sent' | 'received';
 
-interface DocumentState {
+export interface DocumentState {
   // Session
   sessionId: string | null;
   sessionStatus: string | null;

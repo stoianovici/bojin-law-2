@@ -5,7 +5,6 @@
  */
 
 import * as pst from 'pst-extractor';
-// @ts-expect-error - exceljs has ESM issues with TypeScript
 import ExcelJS from 'exceljs';
 
 export interface ExtractedContact {

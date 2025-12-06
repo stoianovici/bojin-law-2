@@ -6,7 +6,7 @@
  * used for the transfer of goods, real estate, or other assets.
  */
 
-import { RomanianTemplateDefinition, TemplateSection } from './notificare-avocateasca.template';
+import type { RomanianTemplateDefinition } from './notificare-avocateasca.template';
 
 export const ContractVanzareCumparareTemplate: RomanianTemplateDefinition = {
   metadata: {

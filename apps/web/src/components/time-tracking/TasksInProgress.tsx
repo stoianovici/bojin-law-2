@@ -9,59 +9,17 @@ import React from 'react';
 import { useTimeTrackingStore } from '../../stores/time-tracking.store';
 import type { TimeTaskType } from '@legal-platform/types';
 
-// Mock tasks data (in Epic 1, this would come from task management store)
-const mockTasksInProgress = [
-  {
-    id: 'task-1',
-    title: 'Redactare contract de vânzare-cumpărare',
-    caseId: 'case-1',
-    caseName: 'Dosar Popescu vs. SRL Construct',
-    priority: 'high' as const,
-    dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
-    assignee: 'Mihai Bojin',
-    suggestedTimeTaskType: 'Drafting' as TimeTaskType,
-  },
-  {
-    id: 'task-2',
-    title: 'Cercetare jurisprudență CJUE - litigii comerciale',
-    caseId: 'case-2',
-    caseName: 'Contract Ionescu - Furnizare Servicii',
-    priority: 'medium' as const,
-    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-    assignee: 'Mihai Bojin',
-    suggestedTimeTaskType: 'Research' as TimeTaskType,
-  },
-  {
-    id: 'task-3',
-    title: 'Întâlnire client - discuție strategie proces',
-    caseId: 'case-3',
-    caseName: 'Litigiu Georgescu - Proprietate',
-    priority: 'high' as const,
-    dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // Tomorrow
-    assignee: 'Mihai Bojin',
-    suggestedTimeTaskType: 'ClientMeeting' as TimeTaskType,
-  },
-  {
-    id: 'task-4',
-    title: 'Răspuns la email client - clarificări contract',
-    caseId: 'case-2',
-    caseName: 'Contract Ionescu - Furnizare Servicii',
-    priority: 'medium' as const,
-    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    assignee: 'Mihai Bojin',
-    suggestedTimeTaskType: 'Email' as TimeTaskType,
-  },
-  {
-    id: 'task-5',
-    title: 'Pregătire documente pentru instanță',
-    caseId: 'case-3',
-    caseName: 'Litigiu Georgescu - Proprietate',
-    priority: 'high' as const,
-    dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days from now
-    assignee: 'Mihai Bojin',
-    suggestedTimeTaskType: 'CourtAppearance' as TimeTaskType,
-  },
-];
+// Tasks should be fetched from API - empty array for clean state
+const mockTasksInProgress: Array<{
+  id: string;
+  title: string;
+  caseId: string;
+  caseName: string;
+  priority: 'high' | 'medium' | 'low';
+  dueDate: Date;
+  assignee: string;
+  suggestedTimeTaskType: TimeTaskType;
+}> = [];
 
 const taskTypeLabels: Record<TimeTaskType, string> = {
   Research: 'Cercetare',
@@ -125,9 +83,10 @@ export function TasksInProgress() {
   }, [showQuickEntry, selectedDuration, durationOptions]);
 
   const handleCompleteTask = (task: (typeof mockTasksInProgress)[0], durationMinutes: number) => {
+    // TODO: Get userId and userName from auth context
     addTimeEntry({
-      userId: 'user-001',
-      userName: 'Mihai Bojin',
+      userId: '', // Should come from auth context
+      userName: '', // Should come from auth context
       caseId: task.caseId,
       caseName: task.caseName,
       taskType: task.suggestedTimeTaskType,

@@ -10,7 +10,8 @@ export type WorkspaceTab =
   | 'tasks'
   | 'communications'
   | 'time-entries'
-  | 'notes';
+  | 'notes'
+  | 'intelligence';
 
 // Document Tree Node for folder hierarchy
 export interface DocumentNode {

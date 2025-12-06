@@ -5,27 +5,13 @@
 
 import { NextResponse } from 'next/server';
 
+// Gateway URL - use environment variable or default to localhost for development
+const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:4000';
+
 export async function GET(request: Request) {
   try {
-    // Mock user in development - matches seed data IDs
-    if (process.env.NODE_ENV === 'development') {
-      return NextResponse.json({
-        id: 'aa3992a2-4bb0-45e2-9bc5-15e75f6a5793', // Partner user from seed
-        email: 'partner@demo.lawfirm.ro',
-        firstName: 'Alex',
-        lastName: 'Popescu',
-        role: 'Partner',
-        status: 'Active',
-        firmId: '99d685ee-1723-4d21-9634-ea414ceaba9b', // Demo firm from seed
-        azureAdId: 'aad-partner-demo-12345',
-        preferences: { language: 'ro', aiSuggestionLevel: 'high' },
-        createdAt: new Date().toISOString(),
-        lastActive: new Date().toISOString(),
-      });
-    }
-
     // Forward request to gateway
-    const response = await fetch('http://localhost:4000/auth/me', {
+    const response = await fetch(`${GATEWAY_URL}/auth/me`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

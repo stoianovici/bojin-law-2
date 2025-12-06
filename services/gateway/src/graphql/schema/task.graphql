@@ -1,0 +1,202 @@
+# Task Type System
+# Story 4.2: Task Type System Implementation
+
+type Task {
+  id: ID!
+  caseId: ID!
+  case: Case!
+  type: TaskType!
+  title: String!
+  description: String
+  assignedTo: ID!
+  assignee: User!
+  dueDate: Date!
+  dueTime: String
+  status: TaskStatus!
+  priority: TaskPriority!
+  estimatedHours: Float
+  typeMetadata: JSON
+  parentTaskId: ID
+  parentTask: Task
+  subtasks: [Task!]!
+  createdBy: ID!
+  creator: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  completedAt: DateTime
+  # Type-specific relations
+  attendees: [TaskAttendee!]! # Meeting tasks only
+  linkedDocuments: [TaskDocumentLink!]! # Research tasks
+  delegations: [TaskDelegation!]! # BusinessTrip tasks
+}
+
+enum TaskType {
+  Research
+  DocumentCreation
+  DocumentRetrieval
+  CourtDate
+  Meeting
+  BusinessTrip
+}
+
+enum TaskStatus {
+  Pending
+  InProgress
+  Completed
+  Cancelled
+}
+
+enum TaskPriority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+type TaskAttendee {
+  id: ID!
+  taskId: ID!
+  userId: ID
+  user: User
+  externalName: String
+  externalEmail: String
+  isOrganizer: Boolean!
+  response: AttendeeResponse!
+}
+
+enum AttendeeResponse {
+  Pending
+  Accepted
+  Declined
+  Tentative
+}
+
+type TaskDocumentLink {
+  id: ID!
+  taskId: ID!
+  documentId: ID!
+  document: Document!
+  linkType: TaskDocumentLinkType!
+  notes: String
+  linkedBy: User!
+  linkedAt: DateTime!
+}
+
+enum TaskDocumentLinkType {
+  Source
+  Output
+  Reference
+}
+
+type TaskDelegation {
+  id: ID!
+  sourceTaskId: ID!
+  sourceTask: Task!
+  delegatedTaskId: ID
+  delegatedTask: Task
+  delegatedTo: ID!
+  delegate: User!
+  delegatedBy: ID!
+  delegator: User!
+  reason: String!
+  startDate: Date!
+  endDate: Date!
+  status: DelegationStatus!
+  notes: String
+  createdAt: DateTime!
+  acceptedAt: DateTime
+}
+
+enum DelegationStatus {
+  Pending
+  Accepted
+  Declined
+}
+
+input CreateTaskInput {
+  caseId: ID!
+  type: TaskType!
+  title: String!
+  description: String
+  assignedTo: ID!
+  dueDate: Date!
+  dueTime: String
+  priority: TaskPriority
+  estimatedHours: Float
+  typeMetadata: JSON
+}
+
+input UpdateTaskInput {
+  title: String
+  description: String
+  assignedTo: ID
+  dueDate: Date
+  dueTime: String
+  status: TaskStatus
+  priority: TaskPriority
+  estimatedHours: Float
+  typeMetadata: JSON
+}
+
+input TaskFilterInput {
+  types: [TaskType!]
+  statuses: [TaskStatus!]
+  priorities: [TaskPriority!]
+  assignedTo: [ID!]
+  caseId: ID
+  dueDateFrom: Date
+  dueDateTo: Date
+  searchQuery: String
+}
+
+input AddAttendeeInput {
+  userId: ID
+  externalName: String
+  externalEmail: String
+  isOrganizer: Boolean
+}
+
+input LinkDocumentInput {
+  documentId: ID!
+  linkType: TaskDocumentLinkType!
+  notes: String
+}
+
+input CreateDelegationInput {
+  delegatedTo: ID!
+  taskIds: [ID!] # Tasks to delegate (optional, can delegate all user's tasks)
+  startDate: Date!
+  endDate: Date!
+  notes: String
+}
+
+type Query {
+  task(id: ID!): Task
+  tasks(filters: TaskFilterInput, limit: Int, offset: Int): [Task!]!
+  tasksByCase(caseId: ID!, filters: TaskFilterInput): [Task!]!
+  myTasks(filters: TaskFilterInput): [Task!]!
+  myDelegations: [TaskDelegation!]!
+  delegationsToMe: [TaskDelegation!]!
+}
+
+type Mutation {
+  createTask(input: CreateTaskInput!): Task!
+  updateTask(id: ID!, input: UpdateTaskInput!): Task!
+  completeTask(id: ID!): Task!
+  cancelTask(id: ID!, reason: String): Task!
+  deleteTask(id: ID!): Boolean!
+
+  # Meeting attendees (AC: 4)
+  addTaskAttendee(taskId: ID!, input: AddAttendeeInput!): TaskAttendee!
+  removeTaskAttendee(taskId: ID!, attendeeId: ID!): Boolean!
+  updateAttendeeResponse(attendeeId: ID!, response: AttendeeResponse!): TaskAttendee!
+
+  # Research documents (AC: 5)
+  linkDocumentToTask(taskId: ID!, input: LinkDocumentInput!): TaskDocumentLink!
+  unlinkDocumentFromTask(taskId: ID!, documentId: ID!): Boolean!
+
+  # Business trip delegation (AC: 6)
+  createDelegation(sourceTaskId: ID!, input: CreateDelegationInput!): [TaskDelegation!]!
+  acceptDelegation(delegationId: ID!): TaskDelegation!
+  declineDelegation(delegationId: ID!, reason: String): TaskDelegation!
+}

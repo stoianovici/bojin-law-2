@@ -1,0 +1,367 @@
+# Story 5.2: Communication Intelligence Engine
+# GraphQL schema for extracted items, risk indicators, and thread summaries
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+enum ExtractionStatus {
+  Pending
+  Converted
+  Dismissed
+  Expired
+}
+
+enum ExtractionConfidence {
+  Low
+  Medium
+  High
+}
+
+enum RiskType {
+  ClientDissatisfaction
+  DeadlineRisk
+  ScopeCreep
+  PaymentRisk
+  RelationshipRisk
+}
+
+enum RiskSeverity {
+  Low
+  Medium
+  High
+}
+
+enum ExtractionType {
+  deadline
+  commitment
+  actionItem
+  question
+}
+
+# ============================================================================
+# Types - Extracted Items
+# ============================================================================
+
+type ExtractedDeadline {
+  id: ID!
+  emailId: ID!
+  caseId: ID
+  description: String!
+  dueDate: DateTime!
+  confidence: Float!
+  confidenceLevel: ExtractionConfidence!
+  status: ExtractionStatus!
+  convertedTaskId: ID
+  dismissedAt: DateTime
+  dismissReason: String
+  createdAt: DateTime!
+
+  # Relations
+  email: Email
+  case: Case
+  convertedTask: Task
+}
+
+type ExtractedCommitment {
+  id: ID!
+  emailId: ID!
+  caseId: ID
+  party: String!
+  commitmentText: String!
+  dueDate: DateTime
+  confidence: Float!
+  confidenceLevel: ExtractionConfidence!
+  status: ExtractionStatus!
+  convertedTaskId: ID
+  dismissedAt: DateTime
+  dismissReason: String
+  createdAt: DateTime!
+
+  # Relations
+  email: Email
+  case: Case
+  convertedTask: Task
+}
+
+type ExtractedActionItem {
+  id: ID!
+  emailId: ID!
+  caseId: ID
+  description: String!
+  suggestedAssignee: String
+  priority: TaskPriority!
+  confidence: Float!
+  confidenceLevel: ExtractionConfidence!
+  status: ExtractionStatus!
+  convertedTaskId: ID
+  dismissedAt: DateTime
+  dismissReason: String
+  createdAt: DateTime!
+
+  # Relations
+  email: Email
+  case: Case
+  convertedTask: Task
+}
+
+type ExtractedQuestion {
+  id: ID!
+  emailId: ID!
+  caseId: ID
+  questionText: String!
+  respondBy: DateTime
+  confidence: Float!
+  confidenceLevel: ExtractionConfidence!
+  status: ExtractionStatus!
+  isAnswered: Boolean!
+  answeredAt: DateTime
+  dismissedAt: DateTime
+  dismissReason: String
+  createdAt: DateTime!
+
+  # Relations
+  email: Email
+  case: Case
+}
+
+# ============================================================================
+# Types - Risk Indicators
+# ============================================================================
+
+type RiskIndicator {
+  id: ID!
+  emailId: ID!
+  caseId: ID
+  type: RiskType!
+  severity: RiskSeverity!
+  description: String!
+  evidence: String!
+  suggestedAction: String
+  isResolved: Boolean!
+  resolvedAt: DateTime
+  resolvedBy: ID
+  createdAt: DateTime!
+
+  # Relations
+  email: Email
+  case: Case
+}
+
+# ============================================================================
+# Types - Thread Summary
+# ============================================================================
+
+type KeyArgument {
+  party: String!
+  argument: String!
+  evidence: String
+  date: String!
+  emailId: ID!
+}
+
+type PositionChange {
+  date: String!
+  previousPosition: String!
+  newPosition: String!
+  trigger: String
+  emailId: ID!
+}
+
+type ThreadSummary {
+  id: ID!
+  conversationId: String!
+  caseId: ID
+  opposingCounselPosition: String
+  keyArguments: [KeyArgument!]!
+  positionChanges: [PositionChange!]!
+  lastAnalyzedAt: DateTime!
+  messageCount: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+
+  # Relations
+  case: Case
+}
+
+# ============================================================================
+# Types - Aggregates
+# ============================================================================
+
+type ExtractedItemsCounts {
+  deadlines: Int!
+  commitments: Int!
+  actionItems: Int!
+  questions: Int!
+  total: Int!
+}
+
+type RiskSummary {
+  highSeverityCount: Int!
+  mediumSeverityCount: Int!
+  lowSeverityCount: Int!
+  unresolvedCount: Int!
+  risksByType: [RiskTypeCount!]!
+}
+
+type RiskTypeCount {
+  type: RiskType!
+  count: Int!
+}
+
+type CaseIntelligenceSummary {
+  caseId: ID!
+  extractedItemsCounts: ExtractedItemsCounts!
+  riskSummary: RiskSummary!
+  hasHighPriorityItems: Boolean!
+  lastAnalyzedAt: DateTime
+}
+
+# ============================================================================
+# Types - Calendar Suggestion
+# ============================================================================
+
+type CalendarSuggestion {
+  id: ID!
+  title: String!
+  startDateTime: DateTime!
+  endDateTime: DateTime
+  isAllDay: Boolean!
+  description: String!
+  caseId: ID
+  sourceExtractionId: ID!
+  sourceType: String!
+  reminderMinutes: [Int!]!
+  priority: String!
+}
+
+# ============================================================================
+# Types - Task Conversion
+# ============================================================================
+
+type ConversionSuggestion {
+  title: String!
+  description: String!
+  suggestedAssignee: ID
+  dueDate: DateTime
+  priority: TaskPriority!
+  taskType: TaskType!
+  caseId: ID
+  sourceEmailId: ID!
+}
+
+type ConversionResult {
+  success: Boolean!
+  taskId: ID
+  error: String
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+input ExtractedItemsFilter {
+  caseId: ID
+  emailId: ID
+  status: ExtractionStatus
+  minConfidence: Float
+  fromDate: DateTime
+  toDate: DateTime
+}
+
+input RiskIndicatorsFilter {
+  caseId: ID
+  type: RiskType
+  severity: RiskSeverity
+  isResolved: Boolean
+}
+
+input ConvertToTaskInput {
+  extractionId: ID!
+  extractionType: ExtractionType!
+  title: String
+  description: String
+  assignedTo: ID
+  dueDate: DateTime
+  priority: TaskPriority
+  taskType: TaskType
+}
+
+input DismissExtractionInput {
+  extractionId: ID!
+  extractionType: ExtractionType!
+  reason: String
+}
+
+input MarkQuestionAnsweredInput {
+  questionId: ID!
+}
+
+input ResolveRiskInput {
+  riskId: ID!
+}
+
+# ============================================================================
+# Query Extensions
+# ============================================================================
+
+extend type Query {
+  # Extracted Items
+  extractedDeadlines(filter: ExtractedItemsFilter): [ExtractedDeadline!]!
+  extractedCommitments(filter: ExtractedItemsFilter): [ExtractedCommitment!]!
+  extractedActionItems(filter: ExtractedItemsFilter): [ExtractedActionItem!]!
+  extractedQuestions(filter: ExtractedItemsFilter): [ExtractedQuestion!]!
+
+  # Risk Indicators
+  riskIndicators(filter: RiskIndicatorsFilter): [RiskIndicator!]!
+  caseRiskSummary(caseId: ID!): RiskSummary!
+
+  # Thread Summaries
+  threadSummary(conversationId: String!): ThreadSummary
+  caseThreadSummaries(caseId: ID!): [ThreadSummary!]!
+
+  # Aggregates
+  caseIntelligenceSummary(caseId: ID!): CaseIntelligenceSummary!
+  extractedItemsCounts(caseId: ID!): ExtractedItemsCounts!
+
+  # Conversion Suggestions
+  conversionSuggestion(
+    extractionId: ID!
+    extractionType: ExtractionType!
+  ): ConversionSuggestion
+
+  # Calendar Suggestions
+  calendarSuggestions(caseId: ID!): [CalendarSuggestion!]!
+}
+
+# ============================================================================
+# Mutation Extensions
+# ============================================================================
+
+extend type Mutation {
+  # Task Conversion
+  convertExtractionToTask(input: ConvertToTaskInput!): ConversionResult!
+
+  # Dismiss Extraction
+  dismissExtraction(input: DismissExtractionInput!): Boolean!
+
+  # Question Management
+  markQuestionAnswered(input: MarkQuestionAnsweredInput!): ExtractedQuestion!
+
+  # Risk Management
+  resolveRisk(input: ResolveRiskInput!): RiskIndicator!
+
+  # Manual Analysis Trigger
+  triggerEmailAnalysis(emailId: ID!): Boolean!
+  triggerThreadAnalysis(conversationId: String!): ThreadSummary
+
+  # Calendar Event Creation
+  createCalendarEvent(suggestionId: ID!): CalendarEventResult!
+}
+
+# Result type for calendar event creation
+type CalendarEventResult {
+  success: Boolean!
+  eventId: ID
+  error: String
+}

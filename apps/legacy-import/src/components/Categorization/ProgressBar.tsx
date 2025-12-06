@@ -1,12 +1,13 @@
 'use client';
 
 import { useDocumentStore } from '@/stores/documentStore';
+import type { DocumentState } from '@/stores/documentStore';
 
 export function ProgressBar() {
-  const batch = useDocumentStore((s) => s.batch);
-  const batchRange = useDocumentStore((s) => s.batchRange);
-  const sessionProgress = useDocumentStore((s) => s.sessionProgress);
-  const getBatchProgress = useDocumentStore((s) => s.getBatchProgress);
+  const batch = useDocumentStore((s: DocumentState) => s.batch);
+  const batchRange = useDocumentStore((s: DocumentState) => s.batchRange);
+  const sessionProgress = useDocumentStore((s: DocumentState) => s.sessionProgress);
+  const getBatchProgress = useDocumentStore((s: DocumentState) => s.getBatchProgress);
 
   const batchProgress = getBatchProgress();
 

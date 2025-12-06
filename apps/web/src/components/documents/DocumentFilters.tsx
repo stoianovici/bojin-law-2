@@ -9,23 +9,9 @@ import React from 'react';
 import { useDocumentsStore } from '../../stores/documents.store';
 import type { DocumentType, FileType } from '@legal-platform/types';
 
-// Mock data for filter options - will be replaced with API data
-const MOCK_CASES = [
-  { id: 'case-001', name: 'Smith vs. Johnson' },
-  { id: 'case-002', name: 'Contract Dispute - ABC Corp' },
-  { id: 'case-003', name: 'M&A Advisory - Tech Partners' },
-  { id: 'case-004', name: 'Divorce - Popa Family' },
-  { id: 'case-005', name: 'Real Estate - Commercial Property' },
-  { id: 'case-006', name: 'Criminal Defense - Fraud Case' },
-];
-
-const MOCK_ATTORNEYS = [
-  { id: 'atty-1', name: 'Ion Popescu' },
-  { id: 'atty-2', name: 'Maria Ionescu' },
-  { id: 'atty-3', name: 'Andrei Georgescu' },
-  { id: 'atty-4', name: 'Elena Dumitrescu' },
-  { id: 'atty-5', name: 'Victor Popa' },
-];
+// Cases and attorneys should be fetched from API - empty arrays for clean state
+const MOCK_CASES: Array<{ id: string; name: string }> = [];
+const MOCK_ATTORNEYS: Array<{ id: string; name: string }> = [];
 
 const DOCUMENT_TYPES: DocumentType[] = ['Contract', 'Motion', 'Letter', 'Memo', 'Pleading', 'Other'];
 const FILE_TYPES: FileType[] = ['PDF', 'DOCX', 'XLSX', 'TXT', 'Other'];
