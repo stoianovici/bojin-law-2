@@ -76,6 +76,9 @@ RUN apk add --no-cache openssl
 
 ENV NODE_ENV=production
 
+# Install Prisma CLI for running migrations at startup
+RUN npm install -g prisma@latest
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -88,6 +91,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/
 # Copy workspace database package (externalized, needed at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/dist ./packages/database/dist
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/package.json ./packages/database/package.json
+COPY --from=builder --chown=nextjs:nodejs /app/packages/database/prisma ./packages/database/prisma
 
 # Copy Prisma client from the known location we created in builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client ./node_modules/.prisma
@@ -99,6 +103,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client ./node_m
 RUN mkdir -p node_modules/@legal-platform && \
     ln -sf /app/packages/database node_modules/@legal-platform/database
 
+# Copy entrypoint script (runs migrations before starting server)
+COPY --chown=nextjs:nodejs apps/web/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
 USER nextjs
 
 EXPOSE 3000
@@ -106,8 +114,8 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# Health check (increased start-period to allow for migrations)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["node", "apps/web/server.js"]
+CMD ["./docker-entrypoint.sh"]
