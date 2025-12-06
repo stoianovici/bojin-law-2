@@ -33,7 +33,15 @@ RUN echo "=== Setting up database package ===" && \
     echo "Found Prisma at: $PRISMA_PATH" && \
     mkdir -p /app/prisma-client && \
     cp -r "$PRISMA_PATH"/.. /app/prisma-client/ && \
-    ls -la /app/prisma-client/
+    ls -la /app/prisma-client/ && \
+    echo "=== Finding and copying @prisma/client package ===" && \
+    PRISMA_NODE_MODULES=$(dirname $(dirname "$PRISMA_PATH")) && \
+    PRISMA_CLIENT_PATH="$PRISMA_NODE_MODULES/@prisma/client" && \
+    echo "Found @prisma/client at: $PRISMA_CLIENT_PATH" && \
+    ls -la "$PRISMA_CLIENT_PATH" && \
+    mkdir -p /app/prisma-client-pkg && \
+    cp -r "$PRISMA_CLIENT_PATH" /app/prisma-client-pkg/ && \
+    ls -la /app/prisma-client-pkg/
 
 # 3. UI package
 RUN pnpm build --filter=@legal-platform/ui
@@ -85,7 +93,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/database/package.json ./
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client ./node_modules/.prisma
 
 # Copy @prisma/client package (the entry point that re-exports from .prisma/client)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client ./node_modules/@prisma/client
 
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
