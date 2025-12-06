@@ -1819,8 +1819,8 @@ ALTER INDEX "idx_embeddings_document" RENAME TO "document_embeddings_document_id
 -- RenameIndex
 ALTER INDEX "idx_patterns_category" RENAME TO "document_patterns_category_idx";
 
--- RenameIndex
-ALTER INDEX "idx_patterns_type" RENAME TO "document_patterns_pattern_type_idx";
+-- RenameIndex (Fixed: drop old index if exists since new index was already created above)
+DROP INDEX IF EXISTS "idx_patterns_type";
 
 -- RenameIndex
 ALTER INDEX "idx_templates_category" RENAME TO "template_library_category_idx";
@@ -1834,5 +1834,5 @@ ALTER INDEX "idx_training_docs_onedrive" RENAME TO "training_documents_one_drive
 -- RenameIndex
 ALTER INDEX "idx_training_docs_processed" RENAME TO "training_documents_processed_at_idx";
 
--- RenameIndex
-ALTER INDEX "idx_pipeline_runs_status" RENAME TO "training_pipeline_runs_status_idx";
+-- RenameIndex (Fixed: drop old index if exists since new index was already created above)
+DROP INDEX IF EXISTS "idx_pipeline_runs_status";
