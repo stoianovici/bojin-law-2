@@ -92,15 +92,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/database/dist ./packages
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/package.json ./packages/database/package.json
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/prisma ./packages/database/prisma
 
-# Copy Prisma client from the known location we created in builder stage
-COPY --from=builder --chown=nextjs:nodejs /app/prisma-client ./node_modules/.prisma
+# Install Prisma CLI and regenerate client in runner (most reliable approach)
+# This ensures the client is generated for the correct platform with correct paths
+RUN npm install -g prisma@5.8.0 && \
+    npm install @prisma/client@5.8.0
 
-# Copy @prisma/client package (the entry point that re-exports from .prisma/client)
-COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client ./node_modules/@prisma/client
-
-# Copy Prisma CLI for migrations (using compatible version 5.8.0)
-# Create a minimal package.json for prisma installation
-RUN npm install -g prisma@5.8.0
+# Generate Prisma client for this container's platform
+RUN prisma generate --schema=/app/packages/database/prisma/schema.prisma
 
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
