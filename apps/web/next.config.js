@@ -3,6 +3,13 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Explicitly expose NEXT_PUBLIC_* env vars (needed for Docker builds)
+  env: {
+    NEXT_PUBLIC_AZURE_AD_CLIENT_ID: process.env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID,
+    NEXT_PUBLIC_AZURE_AD_TENANT_ID: process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  },
   transpilePackages: ['@legal-platform/ui', '@legal-platform/shared-types'],
   // Don't bundle database package - keep it external for server-side code
   serverExternalPackages: ['@legal-platform/database', '@prisma/client'],
