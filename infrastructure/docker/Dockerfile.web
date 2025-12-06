@@ -98,9 +98,21 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma-client ./node_modules/.pri
 # Copy @prisma/client package (the entry point that re-exports from .prisma/client)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client ./node_modules/@prisma/client
 
+# Copy Prisma CLI for migrations (using compatible version 5.8.0)
+# Create a minimal package.json for prisma installation
+RUN npm install -g prisma@5.8.0
+
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
     ln -sf /app/packages/database node_modules/@legal-platform/database
+
+# Create startup script that runs migrations then starts the app
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'echo "Running database migrations..."' >> /app/start.sh && \
+    echo 'prisma migrate deploy --schema=/app/packages/database/prisma/schema.prisma || echo "Migration failed, continuing anyway..."' >> /app/start.sh && \
+    echo 'echo "Starting Next.js server..."' >> /app/start.sh && \
+    echo 'exec node apps/web/server.js' >> /app/start.sh && \
+    chmod +x /app/start.sh
 
 USER nextjs
 
@@ -113,4 +125,4 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["node", "apps/web/server.js"]
+CMD ["/app/start.sh"]
