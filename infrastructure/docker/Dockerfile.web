@@ -41,13 +41,7 @@ RUN echo "=== Setting up database package ===" && \
     ls -la "$PRISMA_CLIENT_PATH" && \
     mkdir -p /app/prisma-client-pkg && \
     cp -r "$PRISMA_CLIENT_PATH" /app/prisma-client-pkg/ && \
-    ls -la /app/prisma-client-pkg/ && \
-    echo "=== Finding and copying prisma CLI package ===" && \
-    PRISMA_CLI_PATH="$PRISMA_NODE_MODULES/prisma" && \
-    echo "Found prisma CLI at: $PRISMA_CLI_PATH" && \
-    mkdir -p /app/prisma-cli && \
-    cp -r "$PRISMA_CLI_PATH" /app/prisma-cli/ && \
-    ls -la /app/prisma-cli/
+    ls -la /app/prisma-client-pkg/
 
 # 3. UI package
 RUN pnpm build --filter=@legal-platform/ui
@@ -104,16 +98,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma-client ./node_modules/.pri
 # Copy @prisma/client package (the entry point that re-exports from .prisma/client)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client ./node_modules/@prisma/client
 
-# Copy prisma CLI package (needed for migrations)
-COPY --from=builder --chown=nextjs:nodejs /app/prisma-cli/prisma ./node_modules/prisma
-
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
     ln -sf /app/packages/database node_modules/@legal-platform/database
-
-# Copy entrypoint script (runs migrations before starting server)
-COPY --chown=nextjs:nodejs apps/web/docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
 
 USER nextjs
 
@@ -122,8 +109,8 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Health check (increased start-period to allow for migrations)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["./docker-entrypoint.sh"]
+CMD ["node", "apps/web/server.js"]
