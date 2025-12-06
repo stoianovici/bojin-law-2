@@ -43,7 +43,13 @@ RUN echo "=== Setting up database package ===" && \
     mkdir -p /app/prisma-client-pkg/client && \
     cp -r "$PRISMA_CLIENT_PATH"/* /app/prisma-client-pkg/client/ && \
     echo "Contents of /app/prisma-client-pkg/client:" && \
-    ls -la /app/prisma-client-pkg/client/
+    ls -la /app/prisma-client-pkg/client/ && \
+    echo "=== Copying ioredis for runtime ===" && \
+    IOREDIS_PATH=$(find /app -path "*/node_modules/ioredis" -type d 2>/dev/null | head -1) && \
+    echo "Found ioredis at: $IOREDIS_PATH" && \
+    mkdir -p /app/ioredis-pkg && \
+    cp -r "$IOREDIS_PATH" /app/ioredis-pkg/ && \
+    ls -la /app/ioredis-pkg/
 
 # 3. UI package
 RUN pnpm build --filter=@legal-platform/ui
@@ -101,9 +107,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma-client/client ./node_modul
 # Copy @prisma/client package (the entry point that re-exports from .prisma/client)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client/ ./node_modules/@prisma/client/
 
-# Install Prisma CLI for migrations and ioredis for database package redis exports
-RUN npm install -g prisma@5.8.0 && \
-    npm install ioredis@5.4.1
+# Install Prisma CLI for migrations
+RUN npm install -g prisma@5.8.0
+
+# Copy ioredis from builder (needed by @legal-platform/database redis exports)
+COPY --from=builder --chown=nextjs:nodejs /app/ioredis-pkg/ioredis ./node_modules/ioredis
 
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
