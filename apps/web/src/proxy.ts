@@ -14,23 +14,10 @@ import { NextResponse } from 'next/server';
  */
 
 // Routes that require OAuth authentication
-const protectedRoutes = [
-  '/dashboard',
-  '/cases',
-  '/documents',
-  '/tasks',
-  '/admin',
-  '/settings',
-];
+const protectedRoutes = ['/dashboard', '/cases', '/documents', '/tasks', '/admin', '/settings'];
 
 // Public routes that don't require OAuth authentication
-const publicRoutes = [
-  '/login',
-  '/auth/callback',
-  '/auth/login',
-  '/auth/logout',
-  '/auth/refresh',
-];
+const publicRoutes = ['/login', '/auth/callback', '/auth/login', '/auth/logout', '/auth/refresh'];
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -96,7 +83,8 @@ export function proxy(request: NextRequest) {
   }
 
   // Check for session cookie (OAuth session)
-  const sessionCookie = request.cookies.get('sid');
+  // Cookie name must match what's set in /api/auth/provision/route.ts
+  const sessionCookie = request.cookies.get('legal-platform-session');
 
   if (!sessionCookie) {
     // No session cookie - redirect to login
