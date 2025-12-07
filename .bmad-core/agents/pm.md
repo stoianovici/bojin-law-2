@@ -62,6 +62,13 @@ commands:
   - create-story: Create user story from requirements (task brownfield-create-story)
   - doc-out: Output full document to current destination file
   - shard-prd: run the task shard-doc.md for the provided prd.md (ask if not found)
+  - handoff {next-agent}: |
+      Prepare context handoff for the next agent:
+      - Write handoff notes to .ai/handoff-{timestamp}.md
+      - Include: PRD decisions, prioritization rationale, scope boundaries
+      - Document stakeholder feedback and constraints
+      - List any deferred features with reasoning
+      - The next agent should load this file on activation
   - yolo: Toggle Yolo Mode
   - exit: Exit (confirm)
 dependencies:

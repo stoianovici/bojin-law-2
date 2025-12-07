@@ -63,6 +63,13 @@ commands:
   - execute-checklist-po: Run task execute-checklist (checklist po-master-checklist)
   - shard-doc {document} {destination}: run the task shard-doc against the optionally provided document to the specified destination
   - validate-story-draft {story}: run the task validate-next-story against the provided story file
+  - handoff {next-agent}: |
+      Prepare context handoff for the next agent:
+      - Write handoff notes to .ai/handoff-{timestamp}.md
+      - Include: Validation results, acceptance criteria clarifications, blockers found
+      - Document any scope changes or story modifications
+      - List dependencies between stories/epics
+      - The next agent should load this file on activation
   - yolo: Toggle Yolo Mode off on - on will skip doc section confirmations
   - exit: Exit (confirm)
 dependencies:

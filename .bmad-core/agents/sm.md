@@ -52,6 +52,13 @@ commands:
   - correct-course: Execute task correct-course.md
   - draft: Execute task create-next-story.md
   - story-checklist: Execute task execute-checklist.md with checklist story-draft-checklist.md
+  - handoff {next-agent}: |
+      Prepare context handoff for the next agent:
+      - Write handoff notes to .ai/handoff-{timestamp}.md
+      - Include: Story drafted, epic progress, blockers identified
+      - Document any ambiguities found in PRD/architecture
+      - List stories ready for development vs needing refinement
+      - The next agent should load this file on activation
   - exit: Say goodbye as the Scrum Master, and then abandon inhabiting this persona
 dependencies:
   checklists:

@@ -46,13 +46,15 @@ To identify the next logical story based on project progress and epic definition
 
 #### 3.2 Read Architecture Documents Based on Story Type
 
-**For ALL Stories:** tech-stack.md, unified-project-structure.md, coding-standards.md, testing-strategy.md
+**PERFORMANCE OPTIMIZATION:** Load all required architecture files in PARALLEL using multiple Read tool calls in a single message. Claude supports concurrent tool execution - use it for faster context gathering.
 
-**For Backend/API Stories, additionally:** data-models.md, database-schema.md, backend-architecture.md, rest-api-spec.md, external-apis.md
+**For ALL Stories (load in parallel):** tech-stack.md, unified-project-structure.md, coding-standards.md, testing-strategy.md
 
-**For Frontend/UI Stories, additionally:** frontend-architecture.md, components.md, core-workflows.md, data-models.md
+**For Backend/API Stories, additionally (load in parallel):** data-models.md, database-schema.md, backend-architecture.md, rest-api-spec.md, external-apis.md
 
-**For Full-Stack Stories:** Read both Backend and Frontend sections above
+**For Frontend/UI Stories, additionally (load in parallel):** frontend-architecture.md, components.md, core-workflows.md, data-models.md
+
+**For Full-Stack Stories:** Read both Backend and Frontend sections above (all in parallel)
 
 #### 3.3 Extract Story-Specific Technical Details
 
