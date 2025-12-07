@@ -486,3 +486,152 @@ After deployment, verify:
 - `apps/web/src/app/auth/callback/page.tsx` - Read returnUrl from sessionStorage
 - `apps/web/src/components/layout/ConditionalLayout.tsx` - Pass returnUrl query param
 - `apps/web/src/lib/apollo-client.ts` - Version marker updated to v4
+
+---
+
+## 2025-12-07: Session Cookie Fallback Fix (v5)
+
+### Issue Summary
+
+Even after completing Microsoft login successfully at `/`, navigating to `/cases`, `/documents`, or `/tasks` would show a secondary login screen. Investigation revealed that MSAL's sessionStorage was completely empty despite successful authentication.
+
+### Root Cause
+
+MSAL (Microsoft Authentication Library) was not persisting tokens to sessionStorage as expected. When the user navigated to a protected route:
+
+1. `AuthContext` initialized and called `msalInstance.getAllAccounts()`
+2. MSAL returned empty array (no cached accounts in sessionStorage)
+3. `AuthContext` set `isAuthenticated: false`
+4. `ConditionalLayout` redirected to `/login?returnUrl=/cases`
+5. User saw another login screen
+
+The session cookie (`legal-platform-session`) set during login was still valid, but `AuthContext` didn't use it as a fallback.
+
+### Fix Applied
+
+#### Fix 1: Update `/api/auth/me` to use local session cookie
+
+**File**: `apps/web/src/app/api/auth/me/route.ts`
+
+Changed from proxying to gateway to checking the local session cookie directly:
+
+```typescript
+import { getAuthUser } from '@/lib/auth';
+
+export async function GET(request: NextRequest) {
+  const { user, error } = await getAuthUser(request);
+
+  if (!user) {
+    return NextResponse.json(
+      { authenticated: false, error: error || 'Not authenticated' },
+      { status: 401 }
+    );
+  }
+
+  return NextResponse.json({
+    authenticated: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      firmId: user.firmId,
+      status: 'Active',
+      // ...
+    },
+  });
+}
+```
+
+#### Fix 2: Add session cookie fallback to AuthContext
+
+**File**: `apps/web/src/contexts/AuthContext.tsx`
+
+Added `checkSessionCookie()` function and use it as fallback:
+
+```typescript
+const checkSessionCookie = useCallback(async (): Promise<User | null> => {
+  try {
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.authenticated && data.user) {
+      console.log('[AuthContext] Session cookie valid, user:', data.user.email);
+      return data.user;
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+}, []);
+
+// In initialize():
+} else {
+  // No MSAL accounts - check session cookie as fallback
+  console.log('[AuthContext] No MSAL accounts, checking session cookie...');
+  const sessionUser = await checkSessionCookie();
+
+  if (sessionUser) {
+    // Session cookie is valid - user is authenticated
+    setState({
+      user: sessionUser,
+      isAuthenticated: true,
+      isLoading: false,
+      error: null,
+      msalAccount: null,
+    });
+  } else {
+    // No MSAL account and no valid session cookie
+    setState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+      msalAccount: null,
+    });
+  }
+}
+```
+
+### Complete Auth Flow After Fix
+
+```
+1. User logs in via Microsoft at /
+2. Provision endpoint sets session cookie (legal-platform-session)
+3. User navigates to /cases
+4. AuthContext initializes, MSAL has no accounts (sessionStorage empty)
+5. AuthContext calls /api/auth/me
+6. /api/auth/me validates session cookie, returns user
+7. AuthContext sets isAuthenticated: true with user from cookie
+8. User sees /cases content without re-authentication
+```
+
+### Commit
+
+```
+a49b886 fix: use session cookie as fallback when MSAL has no cached accounts
+```
+
+### Verification Steps
+
+After deployment, verify:
+
+1. Console shows `[Apollo] Client version: 2025-12-07-v5`
+2. Login at `/` via Microsoft
+3. Navigate to `/cases` - should show cases content directly
+4. Console shows `[AuthContext] No MSAL accounts, checking session cookie...`
+5. Console shows `[AuthContext] Session cookie valid, user: <email>`
+6. No secondary login screen appears
+
+### Files Modified
+
+- `apps/web/src/app/api/auth/me/route.ts` - Check local session cookie
+- `apps/web/src/contexts/AuthContext.tsx` - Add checkSessionCookie() fallback
+- `apps/web/src/lib/apollo-client.ts` - Version marker updated to v5
