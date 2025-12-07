@@ -1061,16 +1061,169 @@ Unlike previous attempts that tried to add more checks and fallbacks, this fix a
 
 ---
 
-## Current State (2025-12-07 - Post v9)
+## 2025-12-07: MSAL Cookie Fallback and Singleton Redirect (v10) - DEPLOYED
+
+### Issue Summary
+
+Despite v9 fixing the AuthCallback/AuthContext race condition, the login loop persisted. Investigation revealed that `handleRedirectPromise()` was returning `null` because MSAL couldn't find its auth state.
+
+### Root Cause Analysis
+
+Two issues were identified:
+
+1. **sessionStorage state loss**: MSAL stores OAuth state in sessionStorage before redirecting to Microsoft. In production, this state can be lost if:
+   - Browser clears sessionStorage between redirect and return
+   - Third-party storage restrictions clear the data
+   - Browser partitioning isolates storage
+
+2. **Duplicate redirect promise processing**: React can re-mount components, causing `handleRedirectPromise()` to be called multiple times. After the first call, MSAL clears the URL hash to prevent reprocessing. Subsequent calls return `null`.
+
+### Fix Applied
+
+#### Fix 1: Enable `storeAuthStateInCookie` in MSAL config
+
+**File**: `apps/web/src/lib/msal-config.ts`
+
+```typescript
+// Before:
+cache: {
+  cacheLocation: 'sessionStorage',
+  storeAuthStateInCookie: false,  // Only sessionStorage
+},
+
+// After:
+cache: {
+  cacheLocation: 'sessionStorage',
+  // Enable cookie fallback to prevent auth state loss during redirect
+  // This is critical for production where sessionStorage may be cleared
+  storeAuthStateInCookie: true,
+},
+```
+
+#### Fix 2: Add singleton pattern for `handleRedirectPromise()`
+
+**File**: `apps/web/src/lib/msal-config.ts`
+
+```typescript
+let redirectPromiseResult: AuthenticationResult | null = null;
+let redirectPromiseProcessed = false;
+
+export async function handleMsalRedirect(): Promise<AuthenticationResult | null> {
+  // Return cached result if already processed
+  if (redirectPromiseProcessed) {
+    console.log(
+      '[MSAL] Returning cached redirect result:',
+      redirectPromiseResult ? 'success' : 'null'
+    );
+    return redirectPromiseResult;
+  }
+
+  const instance = await initializeMsal();
+  if (!instance) return null;
+
+  // Log URL state for debugging
+  const hasHash = window.location.hash.length > 1;
+  const hasCode =
+    window.location.hash.includes('code=') || window.location.search.includes('code=');
+  console.log('[MSAL] Processing redirect promise, hasHash:', hasHash, 'hasCode:', hasCode);
+
+  try {
+    redirectPromiseResult = await instance.handleRedirectPromise();
+    redirectPromiseProcessed = true;
+
+    if (redirectPromiseResult) {
+      console.log(
+        '[MSAL] Redirect promise returned account:',
+        redirectPromiseResult.account?.username
+      );
+    } else {
+      console.log('[MSAL] Redirect promise returned null');
+    }
+
+    return redirectPromiseResult;
+  } catch (error) {
+    console.error('[MSAL] Error handling redirect promise:', error);
+    redirectPromiseProcessed = true;
+    return null;
+  }
+}
+```
+
+#### Fix 3: Update AuthContext to use singleton
+
+**File**: `apps/web/src/contexts/AuthContext.tsx`
+
+```typescript
+// Before:
+const msalInstance = await initializeMsal();
+const response = await msalInstance.handleRedirectPromise();
+
+// After:
+// Use singleton handleMsalRedirect to prevent duplicate processing
+const response = await handleMsalRedirect();
+const msalInstance = getMsalInstance();
+```
+
+### Why This Fix Should Work
+
+1. **Cookie fallback prevents state loss**: Even if sessionStorage is cleared, MSAL can read auth state from the fallback cookie.
+
+2. **Singleton prevents duplicate calls**: The redirect promise is only processed once, regardless of how many times React re-mounts components.
+
+3. **Better logging for debugging**: If issues persist, we can now see exactly what's happening:
+   - Whether the URL contains auth code
+   - Whether MSAL found the auth state
+   - Whether the redirect was already processed
+
+### Commit
+
+```
+b00c918 fix: enable MSAL cookie fallback and singleton redirect handler (v10)
+```
+
+### Verification Steps
+
+After deployment, verify in browser console:
+
+1. Version check: `[Apollo] Client version: 2025-12-07-v10`
+2. On `/auth/callback`:
+   ```
+   [MSAL] Processing redirect promise, hasHash: true, hasCode: true
+   [MSAL] Redirect promise returned account: user@email.com
+   [AuthContext] Redirect response: received
+   ```
+3. No "Authentication failed" or timeout errors
+4. User lands on correct destination (not `/login`)
+
+### Files Modified
+
+- `apps/web/src/lib/msal-config.ts` - Enable cookie fallback, add singleton handler
+- `apps/web/src/contexts/AuthContext.tsx` - Use singleton handler
+- `apps/web/src/lib/apollo-client.ts` - Version marker updated to v10
+
+---
+
+## Current State (2025-12-07 - Post v10)
 
 ### Status: DEPLOYED - TESTING
 
-The v9 fix has been deployed. If successful, navigating to protected routes after Microsoft authentication should work correctly without showing the login screen.
+The v10 fix addresses the root cause of `handleRedirectPromise()` returning null by:
 
-### If v9 Doesn't Work
+1. Adding cookie fallback for MSAL state persistence
+2. Ensuring redirect processing happens exactly once
 
-If the issue persists, the next areas to investigate:
+### If v10 Doesn't Work
 
-1. **AuthContext's handleRedirectPromise() failing silently** - Add logging to see if MSAL is returning null
-2. **Cookie being blocked by browser** - Modern browsers may block cookies in certain scenarios
-3. **Render proxy issues** - Check if cookies are being stripped by Render's CDN/proxy
+If the issue persists, check browser console for:
+
+1. `[MSAL] Redirect promise returned null` with `hasCode: true`
+   - Indicates auth code is present but MSAL couldn't find state
+   - May need to check cookie settings or browser restrictions
+
+2. `[MSAL] Error handling redirect promise: <error>`
+   - Indicates MSAL threw an error during processing
+   - Check error message for specifics
+
+3. No MSAL logs at all
+   - Check if MSAL is initializing correctly
+   - May indicate JavaScript loading issues
