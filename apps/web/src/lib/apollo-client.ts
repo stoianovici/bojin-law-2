@@ -3,7 +3,7 @@
  * Story 2.8: Case CRUD Operations UI
  *
  * Configured to work with GraphQL gateway with session-based authentication
- * Version: 2025-12-07-v5 (session cookie fallback when MSAL has no accounts)
+ * Version: 2025-12-07-v9 (AuthCallback waits for AuthContext instead of racing)
  */
 
 import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
@@ -11,7 +11,7 @@ import { onError } from '@apollo/client/link/error';
 
 // Log version on client load to verify cache is updated
 if (typeof window !== 'undefined') {
-  console.log('[Apollo] Client version: 2025-12-07-v5');
+  console.log('[Apollo] Client version: 2025-12-07-v9');
 }
 
 // GraphQL endpoint - use local proxy to avoid CORS/cookie issues in development

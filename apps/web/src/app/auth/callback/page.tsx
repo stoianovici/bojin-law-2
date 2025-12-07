@@ -2,96 +2,124 @@
  * OAuth Callback Page
  * Handles Azure AD OAuth redirect and token exchange
  * Story 2.4: Authentication with Azure AD
+ *
+ * FIX (v9): This page now waits for AuthContext to finish processing
+ * the MSAL redirect instead of racing with a direct /api/auth/me check.
+ * AuthContext's handleRedirectPromise() sets the session cookie via provisionUser(),
+ * and only then sets isAuthenticated: true.
  */
 
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 // Session storage key for return URL (must match login page)
 const RETURN_URL_KEY = 'auth_return_url';
 
+// Timeout for auth processing (10 seconds)
+const AUTH_TIMEOUT_MS = 10000;
+
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(true);
+  const { isAuthenticated, isLoading, error: authError } = useAuth();
+  const [hasTimedOut, setHasTimedOut] = useState(false);
+  const hasRedirected = useRef(false);
 
-  useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        // Get error from query params (if OAuth failed)
-        const errorParam = searchParams.get('error');
-        const errorDescription = searchParams.get('error_description');
+  // Compute error from various sources (no setState in effects)
+  const error = useMemo(() => {
+    // OAuth error from URL params
+    const errorParam = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    if (errorParam) {
+      console.log('[AuthCallback] OAuth error from URL:', errorParam, errorDescription);
+      return errorDescription || 'Authentication failed. Please try again.';
+    }
 
-        if (errorParam) {
-          setError(errorDescription || 'Authentication failed. Please try again.');
-          setIsProcessing(false);
-          return;
+    // User status errors (pending/inactive)
+    const status = searchParams.get('status');
+    const userEmail = searchParams.get('email');
+    if (status === 'Pending') {
+      return `Your account is pending activation. Please contact your firm's partner for access. (${userEmail})`;
+    }
+    if (status === 'Inactive') {
+      return `Your account has been deactivated. Please contact your administrator for assistance. (${userEmail})`;
+    }
+
+    // AuthContext error
+    if (authError) {
+      console.log('[AuthCallback] AuthContext error:', authError);
+      return authError;
+    }
+
+    // Timeout error
+    if (hasTimedOut && !isLoading && !isAuthenticated) {
+      console.log('[AuthCallback] Auth failed after timeout');
+      return 'Authentication timed out. Please try again.';
+    }
+
+    return null;
+  }, [searchParams, authError, hasTimedOut, isLoading, isAuthenticated]);
+
+  // Get redirect destination from sessionStorage (saved before MSAL redirect)
+  const getRedirectDestination = (): string => {
+    if (typeof window !== 'undefined') {
+      const storedReturnUrl = sessionStorage.getItem(RETURN_URL_KEY);
+      if (storedReturnUrl) {
+        sessionStorage.removeItem(RETURN_URL_KEY);
+        if (storedReturnUrl.startsWith('/') && !storedReturnUrl.startsWith('//')) {
+          console.log('[AuthCallback] Using stored returnUrl:', storedReturnUrl);
+          return storedReturnUrl;
         }
-
-        // Check if user status from query params (backend sets this on pending/inactive users)
-        const status = searchParams.get('status');
-        const userEmail = searchParams.get('email');
-
-        if (status === 'Pending') {
-          setError(
-            `Your account is pending activation. Please contact your firm's partner for access. (${userEmail})`
-          );
-          setIsProcessing(false);
-          return;
-        }
-
-        if (status === 'Inactive') {
-          setError(
-            `Your account has been deactivated. Please contact your administrator for assistance. (${userEmail})`
-          );
-          setIsProcessing(false);
-          return;
-        }
-
-        // Helper to get redirect destination
-        const getRedirectDestination = (): string => {
-          if (typeof window !== 'undefined') {
-            const storedReturnUrl = sessionStorage.getItem(RETURN_URL_KEY);
-            if (storedReturnUrl) {
-              sessionStorage.removeItem(RETURN_URL_KEY);
-              if (storedReturnUrl.startsWith('/') && !storedReturnUrl.startsWith('//')) {
-                console.log('[AuthCallback] Using stored returnUrl:', storedReturnUrl);
-                return storedReturnUrl;
-              }
-            }
-          }
-          return '/';
-        };
-
-        // Directly verify session with backend (don't rely on AuthContext state which may be stale)
-        console.log('[AuthCallback] Checking session with /api/auth/me...');
-        const response = await fetch('/api/auth/me', { credentials: 'include' });
-        const data = await response.json();
-        console.log('[AuthCallback] /api/auth/me response:', data);
-
-        if (data.authenticated) {
-          const destination = getRedirectDestination();
-          console.log('[AuthCallback] Session verified, redirecting to:', destination);
-          window.location.href = destination;
-        } else {
-          // Session not found - authentication failed
-          console.log('[AuthCallback] Session not found, showing error');
-          setError('Authentication failed. Please try again.');
-          setIsProcessing(false);
-        }
-      } catch (err) {
-        console.error('Callback error:', err);
-        setError('An error occurred during authentication. Please try again.');
-        setIsProcessing(false);
       }
-    };
+    }
+    return '/';
+  };
 
-    handleCallback();
-  }, [searchParams]);
+  // Set up timeout for auth processing
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.log('[AuthCallback] Auth timeout reached');
+      setHasTimedOut(true);
+    }, AUTH_TIMEOUT_MS);
 
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Wait for AuthContext to finish processing, then redirect
+  useEffect(() => {
+    console.log('[AuthCallback] Auth state:', { isLoading, isAuthenticated, hasTimedOut, error });
+
+    // Don't redirect if there's an error or we've already redirected
+    if (error || hasRedirected.current) {
+      return;
+    }
+
+    // AuthContext is still processing - wait
+    if (isLoading) {
+      console.log('[AuthCallback] Waiting for AuthContext to finish processing...');
+      return;
+    }
+
+    // AuthContext finished - check if authenticated
+    if (isAuthenticated) {
+      hasRedirected.current = true;
+      const destination = getRedirectDestination();
+      console.log('[AuthCallback] Auth successful, redirecting to:', destination);
+      // Use window.location.href for a full page load to ensure clean state
+      window.location.href = destination;
+      return;
+    }
+
+    // AuthContext finished but not authenticated - wait for timeout
+    console.log(
+      '[AuthCallback] AuthContext finished but not authenticated, waiting for timeout...'
+    );
+  }, [isLoading, isAuthenticated, hasTimedOut, error]);
+
+  // Show error UI
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
@@ -139,19 +167,16 @@ function AuthCallbackContent() {
     );
   }
 
-  if (isProcessing) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-          <p className="mt-4 text-lg font-medium text-gray-900">Authenticating...</p>
-          <p className="mt-2 text-sm text-gray-600">Please wait while we sign you in</p>
-        </div>
+  // Show loading UI while AuthContext processes the redirect
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+        <p className="mt-4 text-lg font-medium text-gray-900">Authenticating...</p>
+        <p className="mt-2 text-sm text-gray-600">Please wait while we sign you in</p>
       </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }
 
 export default function AuthCallbackPage() {
