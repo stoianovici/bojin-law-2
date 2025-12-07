@@ -1203,27 +1203,131 @@ After deployment, verify in browser console:
 
 ---
 
-## Current State (2025-12-07 - Post v10)
+## 2025-12-07: Middleware Cookie Name Fix (v11) - DEPLOYED
 
-### Status: DEPLOYED - TESTING
+### Issue Summary
 
-The v10 fix addresses the root cause of `handleRedirectPromise()` returning null by:
+Despite all previous fixes (v1-v10), navigating to `/cases`, `/documents`, `/tasks`, or `/settings` still caused a redirect loop to `/login`. The client-side auth was working correctly, but something was redirecting at the server level.
 
-1. Adding cookie fallback for MSAL state persistence
-2. Ensuring redirect processing happens exactly once
+### Root Cause Analysis
 
-### If v10 Doesn't Work
+Investigation of browser Network tab revealed a **307 redirect** happening on `/cases`:
 
-If the issue persists, check browser console for:
+```
+cases                    307    document    0.2 kB
+login?returnUrl=%2Fcases 200    document    3.0 kB
+```
 
-1. `[MSAL] Redirect promise returned null` with `hasCode: true`
-   - Indicates auth code is present but MSAL couldn't find state
-   - May need to check cookie settings or browser restrictions
+A 307 is a server-side redirect, meaning the redirect happened BEFORE any React/client-side code ran.
 
-2. `[MSAL] Error handling redirect promise: <error>`
-   - Indicates MSAL threw an error during processing
-   - Check error message for specifics
+The culprit was `apps/web/src/proxy.ts`, which Next.js was using as middleware. On line 99:
 
-3. No MSAL logs at all
-   - Check if MSAL is initializing correctly
-   - May indicate JavaScript loading issues
+```typescript
+// WRONG - checking for 'sid' cookie
+const sessionCookie = request.cookies.get('sid');
+```
+
+But the actual session cookie set by `/api/auth/provision` is named `legal-platform-session`.
+
+### Why Previous Fixes Didn't Work
+
+All previous fixes (v1-v10) focused on client-side issues:
+
+- Apollo client redirect handling
+- AuthContext race conditions
+- MSAL token caching
+- ConditionalLayout timing
+
+But the middleware was intercepting requests BEFORE any client-side code ran, checking for a cookie that didn't exist (`sid`), and redirecting to `/login`.
+
+### Fix Applied
+
+**File**: `apps/web/src/proxy.ts`
+
+```typescript
+// Before:
+const sessionCookie = request.cookies.get('sid');
+
+// After:
+// Cookie name must match what's set in /api/auth/provision/route.ts
+const sessionCookie = request.cookies.get('legal-platform-session');
+```
+
+### How the Middleware Works
+
+The middleware (`proxy.ts`) provides two layers of protection:
+
+1. **Basic Auth** (optional) - For staging environments, requires username/password
+2. **OAuth Session Check** - For protected routes, requires session cookie
+
+Protected routes that require authentication:
+
+- `/dashboard`
+- `/cases`
+- `/documents`
+- `/tasks`
+- `/admin`
+- `/settings`
+
+Public routes that bypass OAuth check:
+
+- `/login`
+- `/auth/callback`
+- `/auth/login`
+- `/auth/logout`
+- `/auth/refresh`
+
+### Commit
+
+```
+33b3cb2 fix: middleware checks correct session cookie name (v11)
+```
+
+### Verification Steps
+
+After deployment, verify:
+
+1. Console shows `[Apollo] Client version: 2025-12-07-v11`
+2. Navigate to `/cases` - should load without redirect
+3. Network tab should NOT show 307 redirect on `/cases`
+4. All protected routes (`/documents`, `/tasks`, `/settings`) should work
+
+### Files Modified
+
+- `apps/web/src/proxy.ts` - Fixed cookie name from `sid` to `legal-platform-session`
+- `apps/web/src/lib/apollo-client.ts` - Version marker updated to v11
+
+### Key Lesson
+
+When debugging auth issues, always check the Network tab for **server-side redirects (3xx status codes)**. A 307 redirect indicates the problem is at the middleware/server level, not client-side React code.
+
+---
+
+## Summary of All Fixes (v1-v11)
+
+| Version | Issue                                                | Fix                                                |
+| ------- | ---------------------------------------------------- | -------------------------------------------------- |
+| v1      | GraphQL proxy not passing user context in production | Pass `x-mock-user` header in all environments      |
+| v2      | Apollo client redirecting on UNAUTHENTICATED errors  | Remove redirect from error handler                 |
+| v3      | Return URL lost when redirecting to login            | Add `returnUrl` query param                        |
+| v4      | Return URL lost during MSAL redirect                 | Store in sessionStorage                            |
+| v5      | MSAL sessionStorage empty after login                | Add session cookie fallback in AuthContext         |
+| v6      | ConditionalLayout race condition                     | Add independent session verification               |
+| v7      | Client-side navigation issues                        | Use `window.location.href` for redirects           |
+| v8      | AuthCallback closure bug                             | Direct session verification via `/api/auth/me`     |
+| v9      | AuthCallback racing with AuthContext                 | Wait for AuthContext instead of independent check  |
+| v10     | MSAL state lost during redirect                      | Enable `storeAuthStateInCookie`, singleton handler |
+| **v11** | **Middleware checking wrong cookie name**            | **Change `sid` to `legal-platform-session`**       |
+
+### Architecture After All Fixes
+
+```
+Request Flow for Protected Routes:
+1. Browser requests /cases
+2. Middleware (proxy.ts) checks for 'legal-platform-session' cookie
+3. If cookie exists → allow request through
+4. If no cookie → 307 redirect to /login?returnUrl=/cases
+5. Client-side React loads
+6. AuthContext initializes, checks MSAL + session cookie fallback
+7. ConditionalLayout renders MainLayout for authenticated users
+```
