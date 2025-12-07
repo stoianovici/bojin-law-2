@@ -8,7 +8,6 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '../../../lib/hooks/useAuth';
 
 // Session storage key for return URL (must match login page)
 const RETURN_URL_KEY = 'auth_return_url';
@@ -16,7 +15,6 @@ const RETURN_URL_KEY = 'auth_return_url';
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(true);
 
@@ -68,26 +66,21 @@ function AuthCallbackContent() {
           return '/';
         };
 
-        // Check if authentication succeeded
-        // The backend sets the session cookie automatically
-        // We just need to verify the user is authenticated
-        if (isAuthenticated) {
-          // Use window.location for reliable redirect (full page reload ensures auth state is fresh)
+        // Directly verify session with backend (don't rely on AuthContext state which may be stale)
+        console.log('[AuthCallback] Checking session with /api/auth/me...');
+        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        const data = await response.json();
+        console.log('[AuthCallback] /api/auth/me response:', data);
+
+        if (data.authenticated) {
           const destination = getRedirectDestination();
-          console.log('[AuthCallback] Authenticated, redirecting to:', destination);
+          console.log('[AuthCallback] Session verified, redirecting to:', destination);
           window.location.href = destination;
         } else {
-          // Wait a moment for the auth context to update
-          setTimeout(() => {
-            if (isAuthenticated) {
-              const destination = getRedirectDestination();
-              console.log('[AuthCallback] Authenticated after delay, redirecting to:', destination);
-              window.location.href = destination;
-            } else {
-              setError('Authentication failed. Please try again.');
-              setIsProcessing(false);
-            }
-          }, 1000);
+          // Session not found - authentication failed
+          console.log('[AuthCallback] Session not found, showing error');
+          setError('Authentication failed. Please try again.');
+          setIsProcessing(false);
         }
       } catch (err) {
         console.error('Callback error:', err);
@@ -97,7 +90,7 @@ function AuthCallbackContent() {
     };
 
     handleCallback();
-  }, [searchParams, isAuthenticated, router]);
+  }, [searchParams]);
 
   if (error) {
     return (
