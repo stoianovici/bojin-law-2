@@ -56,6 +56,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   /**
+   * Check session cookie for existing authentication
+   * Fallback when MSAL has no cached tokens
+   */
+  const checkSessionCookie = useCallback(async (): Promise<User | null> => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      if (data.authenticated && data.user) {
+        console.log('[AuthContext] Session cookie valid, user:', data.user.email);
+        return data.user;
+      }
+      return null;
+    } catch (error) {
+      console.error('[AuthContext] Session check error:', error);
+      return null;
+    }
+  }, []);
+
+  /**
    * Provision user in database after Azure AD login
    */
   const provisionUser = useCallback(
@@ -159,14 +185,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
             }
           }
         } else {
+          // No MSAL accounts - check session cookie as fallback
+          console.log('[AuthContext] No MSAL accounts, checking session cookie...');
+          const sessionUser = await checkSessionCookie();
+
           if (isMounted) {
-            setState({
-              user: null,
-              isAuthenticated: false,
-              isLoading: false,
-              error: null,
-              msalAccount: null,
-            });
+            if (sessionUser) {
+              // Session cookie is valid - user is authenticated
+              console.log('[AuthContext] Session cookie valid, user authenticated');
+              setState({
+                user: sessionUser,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+                msalAccount: null, // No MSAL account, but session is valid
+              });
+            } else {
+              // No MSAL account and no valid session cookie
+              setState({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+                msalAccount: null,
+              });
+            }
           }
         }
       } catch (error) {
@@ -188,7 +231,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       isMounted = false;
     };
-  }, [provisionUser]);
+  }, [provisionUser, checkSessionCookie]);
 
   /**
    * Login via Azure AD redirect

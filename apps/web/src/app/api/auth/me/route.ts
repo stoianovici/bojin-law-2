@@ -1,39 +1,42 @@
 /**
- * Get current user endpoint proxy
- * Forwards request to gateway service to check active session
+ * Get current user endpoint
+ * Checks the local session cookie to return the authenticated user
+ * This provides a fallback auth mechanism when MSAL tokens aren't cached in sessionStorage
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/auth';
 
-// Gateway URL - use environment variable or default to localhost for development
-const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:4000';
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    // Forward request to gateway
-    const response = await fetch(`${GATEWAY_URL}/auth/me`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward cookies to maintain session
-        cookie: request.headers.get('cookie') || '',
-      },
-    });
+    const { user, error } = await getAuthUser(request);
 
-    if (!response.ok) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: response.status }
+        { authenticated: false, error: error || 'Not authenticated' },
+        { status: 401 }
       );
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    // Return user in the format expected by AuthContext
+    return NextResponse.json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        firmId: user.firmId,
+        status: 'Active',
+        azureAdId: '',
+        preferences: {},
+        createdAt: new Date(),
+        lastActive: new Date(),
+      },
+    });
   } catch (error) {
-    console.error('Auth me proxy error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to get user' },
-      { status: 500 }
-    );
+    console.error('[/api/auth/me] Error:', error);
+    return NextResponse.json({ authenticated: false, error: 'Server error' }, { status: 500 });
   }
 }
