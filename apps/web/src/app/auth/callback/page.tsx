@@ -10,6 +10,9 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../lib/hooks/useAuth';
 
+// Session storage key for return URL (must match login page)
+const RETURN_URL_KEY = 'auth_return_url';
+
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -50,17 +53,32 @@ function AuthCallbackContent() {
           return;
         }
 
+        // Helper to get redirect destination
+        const getRedirectDestination = (): string => {
+          if (typeof window !== 'undefined') {
+            const storedReturnUrl = sessionStorage.getItem(RETURN_URL_KEY);
+            if (storedReturnUrl) {
+              sessionStorage.removeItem(RETURN_URL_KEY);
+              if (storedReturnUrl.startsWith('/') && !storedReturnUrl.startsWith('//')) {
+                console.log('[AuthCallback] Using stored returnUrl:', storedReturnUrl);
+                return storedReturnUrl;
+              }
+            }
+          }
+          return '/';
+        };
+
         // Check if authentication succeeded
         // The backend sets the session cookie automatically
         // We just need to verify the user is authenticated
         if (isAuthenticated) {
-          // Redirect to dashboard on successful authentication
-          router.push('/');
+          // Redirect to intended destination on successful authentication
+          router.push(getRedirectDestination());
         } else {
           // Wait a moment for the auth context to update
           setTimeout(() => {
             if (isAuthenticated) {
-              router.push('/');
+              router.push(getRedirectDestination());
             } else {
               setError('Authentication failed. Please try again.');
               setIsProcessing(false);

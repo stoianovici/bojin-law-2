@@ -6,12 +6,15 @@
 
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
-export default function LoginPage() {
+// Session storage key for return URL
+const RETURN_URL_KEY = 'auth_return_url';
+
+function LoginPageContent() {
   const { isAuthenticated, login, error, clearError, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,12 +26,21 @@ export default function LoginPage() {
   useEffect(() => {
     console.log('[LoginPage] Auth state:', { isAuthenticated, isLoading, returnUrl });
     if (isAuthenticated) {
-      // Decode and validate returnUrl - only allow internal paths
+      // Check for stored returnUrl first (from before MSAL redirect)
       let destination = '/';
-      if (returnUrl) {
+      const storedReturnUrl =
+        typeof window !== 'undefined' ? sessionStorage.getItem(RETURN_URL_KEY) : null;
+
+      if (storedReturnUrl) {
+        // Clear stored URL after reading
+        sessionStorage.removeItem(RETURN_URL_KEY);
+        if (storedReturnUrl.startsWith('/') && !storedReturnUrl.startsWith('//')) {
+          destination = storedReturnUrl;
+        }
+      } else if (returnUrl) {
+        // Fall back to URL param
         try {
           const decoded = decodeURIComponent(returnUrl);
-          // Only allow relative paths starting with /
           if (decoded.startsWith('/') && !decoded.startsWith('//')) {
             destination = decoded;
           }
@@ -49,6 +61,18 @@ export default function LoginPage() {
   }, [clearError]);
 
   const handleLogin = async () => {
+    // Store returnUrl before MSAL redirects away
+    if (returnUrl && typeof window !== 'undefined') {
+      try {
+        const decoded = decodeURIComponent(returnUrl);
+        if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+          sessionStorage.setItem(RETURN_URL_KEY, decoded);
+          console.log('[LoginPage] Stored returnUrl for after login:', decoded);
+        }
+      } catch {
+        // Invalid encoding, don't store
+      }
+    }
     await login();
   };
 
@@ -154,5 +178,22 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
