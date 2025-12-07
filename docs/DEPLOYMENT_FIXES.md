@@ -176,3 +176,85 @@ After deployment, verify:
 1. Session cookie is simple base64 encoding (not encrypted)
 2. No CSRF protection on session cookie
 3. Gateway session middleware (express-session) is unused when proxied from web app
+
+---
+
+## 2025-12-07: Apollo Client Redirect Loop Fix
+
+### Issue Summary
+
+After the GraphQL authentication fix, `/cases`, `/tasks`, and `/documents` pages were still redirecting to `/` (dashboard) instead of displaying their content.
+
+### Root Cause
+
+The Apollo Client error handler in `apps/web/src/lib/apollo-client.ts` was automatically redirecting to `/login` when it received `UNAUTHENTICATED` GraphQL errors:
+
+```typescript
+// PROBLEMATIC CODE
+if (gqlError.extensions?.code === 'UNAUTHENTICATED') {
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login'; // Hard redirect!
+  }
+}
+```
+
+This caused a redirect loop:
+
+1. User navigates to `/cases`
+2. Page loads, Apollo fires GraphQL query before auth is fully established
+3. Gateway returns `UNAUTHENTICATED` error (race condition)
+4. Apollo error handler redirects to `/login` via `window.location.href`
+5. Login page sees user is authenticated (MSAL session is valid)
+6. Login page redirects to `/`
+
+### Why analytics worked but cases/tasks/documents didn't
+
+- **Analytics pages**: Don't make GraphQL queries on initial load (uses `<FinancialData>` wrapper)
+- **Cases/Tasks/Documents**: Use hooks like `useCases`, `useTaskManagementStore` that fire queries immediately on mount
+
+### Fix Applied
+
+Removed the automatic redirect from Apollo error handler. Authentication redirects are now handled solely by `ConditionalLayout` which properly waits for auth state to be established.
+
+**File**: `apps/web/src/lib/apollo-client.ts`
+
+**Before:**
+
+```typescript
+if (gqlError.extensions?.code === 'UNAUTHENTICATED') {
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+```
+
+**After:**
+
+```typescript
+// UNAUTHENTICATED errors are handled by ConditionalLayout
+// We don't redirect here to avoid race conditions with auth initialization
+if (gqlError.extensions?.code !== 'UNAUTHENTICATED') {
+  console.error(`[GraphQL error]: ...`);
+}
+```
+
+### Why This Fix Works
+
+1. `ConditionalLayout` already handles auth redirects properly:
+   - Waits for `isLoading` to be false before checking `isAuthenticated`
+   - Only redirects after auth state is fully initialized
+   - Uses `router.replace('/login')` for proper SPA navigation
+
+2. Apollo no longer causes race condition redirects:
+   - UNAUTHENTICATED errors during auth initialization are silently ignored
+   - Once auth is established, subsequent GraphQL requests succeed
+   - No more redirect loops
+
+### Verification Steps
+
+After deployment, verify:
+
+1. Navigate directly to `/cases` via URL bar - should stay on cases page
+2. Click "Cazuri" in sidebar - should navigate to cases page
+3. Same for `/tasks` and `/documents`
+4. No redirect to `/` should occur

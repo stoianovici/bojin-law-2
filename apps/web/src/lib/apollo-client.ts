@@ -12,20 +12,18 @@ import { onError } from '@apollo/client/link/error';
 const GRAPHQL_URI = process.env.NEXT_PUBLIC_GRAPHQL_URI || '/api/graphql';
 
 // Error handling link
+// Note: UNAUTHENTICATED errors are handled by ConditionalLayout which checks auth state
+// and redirects to /login if needed. We don't redirect here to avoid race conditions
+// with auth initialization on page load.
 const errorLink = onError((error: any) => {
   if (error.graphQLErrors) {
     error.graphQLErrors.forEach((gqlError: any) => {
-      console.error(
-        `[GraphQL error]: Message: ${gqlError.message}, Location: ${gqlError.locations}, Path: ${gqlError.path}`,
-        gqlError.extensions
-      );
-
-      // Handle UNAUTHENTICATED errors
-      if (gqlError.extensions?.code === 'UNAUTHENTICATED') {
-        // Redirect to login
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+      // Only log non-auth errors to avoid console spam during auth initialization
+      if (gqlError.extensions?.code !== 'UNAUTHENTICATED') {
+        console.error(
+          `[GraphQL error]: Message: ${gqlError.message}, Location: ${gqlError.locations}, Path: ${gqlError.path}`,
+          gqlError.extensions
+        );
       }
     });
   }
