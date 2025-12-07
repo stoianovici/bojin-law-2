@@ -51,15 +51,17 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     if (process.env.NODE_ENV === 'production' && sessionVerified === null) {
       const checkBeforeRedirect = async () => {
         try {
+          console.log('[ConditionalLayout] Checking /api/auth/me before redirect...');
           const response = await fetch('/api/auth/me', { credentials: 'include' });
           const data = await response.json();
+          console.log('[ConditionalLayout] /api/auth/me response:', data);
           if (data.authenticated) {
             console.log('[ConditionalLayout] Session cookie valid, marking as verified');
             setSessionVerified(true);
             return;
           }
-        } catch {
-          // Session check failed
+        } catch (error) {
+          console.error('[ConditionalLayout] Session check error:', error);
         }
 
         console.log('[ConditionalLayout] No valid session, redirecting to /login');
