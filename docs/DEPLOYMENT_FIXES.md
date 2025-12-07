@@ -335,3 +335,154 @@ After deployment, verify:
 2. Click sidebar links - should navigate correctly
 3. Check console for `[LoginPage] ... redirecting to /cases` (not `/`)
 4. Version marker should show `2025-12-07-v3`
+
+---
+
+## 2025-12-07: SessionStorage Fix for MSAL Redirect (v4)
+
+### Issue Summary
+
+After the v3 returnUrl fix, navigating to `/cases` while not logged in triggered the Microsoft login flow, but after completing login, the user still ended up on `/` instead of `/cases`. The app was also entering a login loop where Microsoft login would fail and fall back to the login screen.
+
+### Root Cause
+
+Two issues were identified:
+
+1. **Missing Suspense Boundary**: The `useSearchParams()` hook was used in LoginPage without a Suspense boundary. In Next.js App Router, this can cause hydration issues and unexpected behavior.
+
+2. **ReturnUrl Lost During MSAL Redirect**: The returnUrl query parameter was lost when MSAL redirected to Microsoft and back:
+
+```
+/login?returnUrl=/cases → Microsoft Login → /auth/callback → / (returnUrl lost!)
+```
+
+The OAuth flow goes through Microsoft's servers, so the query params on `/login` are not preserved when returning to `/auth/callback`.
+
+### Fix Applied
+
+#### Fix 1: Wrap LoginPage with Suspense
+
+**File**: `apps/web/src/app/login/page.tsx`
+
+```typescript
+// Before: Direct export without Suspense
+export default function LoginPage() {
+  const searchParams = useSearchParams(); // Can cause hydration issues
+  // ...
+}
+
+// After: Wrapped in Suspense like auth/callback
+function LoginPageContent() {
+  const searchParams = useSearchParams();
+  // ...
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+```
+
+#### Fix 2: Persist returnUrl in sessionStorage
+
+**File 1**: `apps/web/src/app/login/page.tsx`
+
+```typescript
+const RETURN_URL_KEY = 'auth_return_url';
+
+const handleLogin = async () => {
+  // Store returnUrl BEFORE MSAL redirects to Microsoft
+  if (returnUrl && typeof window !== 'undefined') {
+    const decoded = decodeURIComponent(returnUrl);
+    if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+      sessionStorage.setItem(RETURN_URL_KEY, decoded);
+      console.log('[LoginPage] Stored returnUrl for after login:', decoded);
+    }
+  }
+  await login();
+};
+
+// Also check sessionStorage when already authenticated
+useEffect(() => {
+  if (isAuthenticated) {
+    let destination = '/';
+    const storedReturnUrl = sessionStorage.getItem(RETURN_URL_KEY);
+    if (storedReturnUrl) {
+      sessionStorage.removeItem(RETURN_URL_KEY);
+      if (storedReturnUrl.startsWith('/') && !storedReturnUrl.startsWith('//')) {
+        destination = storedReturnUrl;
+      }
+    }
+    router.push(destination);
+  }
+}, [isAuthenticated]);
+```
+
+**File 2**: `apps/web/src/app/auth/callback/page.tsx`
+
+```typescript
+const RETURN_URL_KEY = 'auth_return_url';
+
+const getRedirectDestination = (): string => {
+  if (typeof window !== 'undefined') {
+    const storedReturnUrl = sessionStorage.getItem(RETURN_URL_KEY);
+    if (storedReturnUrl) {
+      sessionStorage.removeItem(RETURN_URL_KEY);
+      if (storedReturnUrl.startsWith('/') && !storedReturnUrl.startsWith('//')) {
+        console.log('[AuthCallback] Using stored returnUrl:', storedReturnUrl);
+        return storedReturnUrl;
+      }
+    }
+  }
+  return '/';
+};
+
+// Use getRedirectDestination() instead of hardcoded '/'
+if (isAuthenticated) {
+  router.push(getRedirectDestination());
+}
+```
+
+### Complete Auth Flow After Fix
+
+```
+1. User navigates to /cases (not logged in)
+2. ConditionalLayout redirects to /login?returnUrl=%2Fcases
+3. User clicks "Sign in with Microsoft"
+4. LoginPage stores "/cases" in sessionStorage
+5. MSAL redirects to Microsoft
+6. User authenticates with Microsoft
+7. Microsoft redirects to /auth/callback
+8. AuthCallback reads "/cases" from sessionStorage
+9. AuthCallback redirects to /cases
+10. User lands on /cases as intended
+```
+
+### Commits
+
+```
+953e021 fix: preserve returnUrl when redirecting to login to fix navigation loop
+006cc83 fix: persist returnUrl through MSAL redirect via sessionStorage
+```
+
+### Verification Steps
+
+After deployment, verify:
+
+1. Console shows `[Apollo] Client version: 2025-12-07-v4`
+2. Navigate to `/cases` while not logged in
+3. Click "Sign in with Microsoft"
+4. Console shows `[LoginPage] Stored returnUrl for after login: /cases`
+5. Complete Microsoft authentication
+6. Console shows `[AuthCallback] Using stored returnUrl: /cases`
+7. User lands on `/cases` (not `/`)
+
+### Files Modified
+
+- `apps/web/src/app/login/page.tsx` - Added Suspense, sessionStorage handling
+- `apps/web/src/app/auth/callback/page.tsx` - Read returnUrl from sessionStorage
+- `apps/web/src/components/layout/ConditionalLayout.tsx` - Pass returnUrl query param
+- `apps/web/src/lib/apollo-client.ts` - Version marker updated to v4
