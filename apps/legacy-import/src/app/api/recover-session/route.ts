@@ -115,3 +115,43 @@ export async function GET() {
     pstFileName: PST_FILE_NAME,
   });
 }
+
+// PUT to update session status (e.g., move from Uploading to Extracting)
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { status } = body;
+
+    if (!status) {
+      return NextResponse.json({ error: 'status is required' }, { status: 400 });
+    }
+
+    const validStatuses = ['Uploading', 'Extracting', 'InProgress', 'Completed', 'Exported'];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    const session = await prisma.legacyImportSession.update({
+      where: { id: SESSION_ID },
+      data: { status },
+    });
+
+    return NextResponse.json({
+      message: 'Session status updated',
+      session: {
+        id: session.id,
+        pstFileName: session.pstFileName,
+        status: session.status,
+      },
+    });
+  } catch (error) {
+    console.error('[RecoverSession] PUT error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update session', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
