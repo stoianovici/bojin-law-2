@@ -15,7 +15,7 @@ import React, {
 } from 'react';
 import type { AccountInfo } from '@azure/msal-browser';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { initializeMsal, loginRequest, getMsalInstance } from '@/lib/msal-config';
+import { loginRequest, getMsalInstance, handleMsalRedirect } from '@/lib/msal-config';
 import type { User } from '@legal-platform/types';
 
 export interface AuthState {
@@ -121,9 +121,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function initialize() {
       try {
-        const msalInstance = await initializeMsal();
+        console.log('[AuthContext] Starting initialization...');
 
+        // Use singleton handleMsalRedirect to prevent duplicate processing
+        const response = await handleMsalRedirect();
+
+        const msalInstance = getMsalInstance();
         if (!msalInstance || !isMounted) {
+          console.log('[AuthContext] No MSAL instance or unmounted');
           setState((prev) => ({ ...prev, isLoading: false }));
           return;
         }
@@ -131,7 +136,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setMsalInitialized(true);
 
         // Handle redirect response (if returning from Azure AD)
-        const response = await msalInstance.handleRedirectPromise();
+        console.log('[AuthContext] Redirect response:', response ? 'received' : 'null');
 
         if (response && response.account) {
           const token = response.accessToken;
