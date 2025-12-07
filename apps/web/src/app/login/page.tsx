@@ -49,7 +49,8 @@ function LoginPageContent() {
         }
       }
       console.log('[LoginPage] User is authenticated, redirecting to', destination);
-      router.push(destination);
+      // Use window.location for reliable redirect (router.push can fail in some cases)
+      window.location.href = destination;
     }
   }, [isAuthenticated, isLoading, router, returnUrl]);
 

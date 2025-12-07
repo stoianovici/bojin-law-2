@@ -72,13 +72,17 @@ function AuthCallbackContent() {
         // The backend sets the session cookie automatically
         // We just need to verify the user is authenticated
         if (isAuthenticated) {
-          // Redirect to intended destination on successful authentication
-          router.push(getRedirectDestination());
+          // Use window.location for reliable redirect (full page reload ensures auth state is fresh)
+          const destination = getRedirectDestination();
+          console.log('[AuthCallback] Authenticated, redirecting to:', destination);
+          window.location.href = destination;
         } else {
           // Wait a moment for the auth context to update
           setTimeout(() => {
             if (isAuthenticated) {
-              router.push(getRedirectDestination());
+              const destination = getRedirectDestination();
+              console.log('[AuthCallback] Authenticated after delay, redirecting to:', destination);
+              window.location.href = destination;
             } else {
               setError('Authentication failed. Please try again.');
               setIsProcessing(false);
