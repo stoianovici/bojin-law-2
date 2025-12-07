@@ -925,3 +925,152 @@ console.log(
 4. **Test with localStorage** instead of sessionStorage for returnUrl
 
 5. **Consider server-side session** instead of cookie-based auth for MSAL failover
+
+---
+
+## 2025-12-07: AuthCallback Race Condition Fix (v9) - DEPLOYED
+
+### Issue Summary
+
+The root cause of the persistent login loop was finally identified: AuthCallback was **racing** with AuthContext. AuthCallback's direct `/api/auth/me` check ran before AuthContext had finished processing `handleRedirectPromise()` and setting the session cookie.
+
+### Root Cause Analysis
+
+Previous attempts (v6-v8) focused on:
+
+- Cookie settings
+- Session verification fallbacks
+- Window.location.href redirects
+
+But the real issue was a **timing/race condition**:
+
+```
+Timeline (problematic):
+─────────────────────────────────────────────────────────────────────
+0ms:   /auth/callback mounts
+       → AuthCallback useEffect: calls /api/auth/me (NO COOKIE YET!)
+       → AuthContext useEffect: starts handleRedirectPromise()
+
+50ms:  AuthCallback: gets {authenticated: false}
+       AuthCallback: shows "Authentication failed" or redirects to /login
+
+200ms: AuthContext: handleRedirectPromise() completes
+       AuthContext: calls provisionUser() → sets cookie
+       AuthContext: sets isAuthenticated: true
+       (TOO LATE - user already redirected!)
+```
+
+The key insight: `handleRedirectPromise()` is async and takes time to exchange the OAuth code for tokens. AuthCallback's immediate check for the session cookie was doomed to fail because the cookie hadn't been set yet.
+
+### Fix Applied
+
+Rewrote `/auth/callback/page.tsx` to **wait for AuthContext** instead of doing its own session check:
+
+**Before (v8):**
+
+```typescript
+// AuthCallback did its own /api/auth/me check immediately
+useEffect(() => {
+  const response = await fetch('/api/auth/me', { credentials: 'include' });
+  const data = await response.json();
+  if (data.authenticated) {
+    window.location.href = destination;
+  } else {
+    setError('Authentication failed');
+  }
+}, []);
+```
+
+**After (v9):**
+
+```typescript
+// AuthCallback now waits for AuthContext
+const { isAuthenticated, isLoading, error: authError } = useAuth();
+
+// Compute error from various sources (no setState in effects)
+const error = useMemo(() => {
+  if (errorParam) return errorDescription;
+  if (authError) return authError;
+  if (hasTimedOut && !isLoading && !isAuthenticated) return 'Timeout';
+  return null;
+}, [searchParams, authError, hasTimedOut, isLoading, isAuthenticated]);
+
+// Wait for AuthContext to finish processing, then redirect
+useEffect(() => {
+  if (error || hasRedirected.current) return;
+  if (isLoading) return; // Still processing
+
+  if (isAuthenticated) {
+    hasRedirected.current = true;
+    window.location.href = getRedirectDestination();
+  }
+}, [isLoading, isAuthenticated, hasTimedOut, error]);
+```
+
+### Key Changes
+
+1. **Removed direct `/api/auth/me` fetch** - No more racing with AuthContext
+2. **Use `useAuth()` hook** - Wait for AuthContext's `isAuthenticated` state
+3. **Use `useMemo` for error state** - Satisfies ESLint rule about setState in effects
+4. **Add 10-second timeout** - Fallback if auth takes too long
+5. **Use `hasRedirected` ref** - Prevent double redirects
+
+### Correct Auth Flow After Fix
+
+```
+1. User logs in via Microsoft
+2. Microsoft redirects to /auth/callback
+3. AuthCallback renders with isLoading: true (from AuthContext)
+4. AuthCallback shows "Authenticating..." spinner
+5. AuthContext's handleRedirectPromise() processes the OAuth code
+6. AuthContext calls provisionUser() → sets session cookie
+7. AuthContext sets isAuthenticated: true, isLoading: false
+8. AuthCallback sees !isLoading && isAuthenticated
+9. AuthCallback reads returnUrl from sessionStorage
+10. AuthCallback redirects to destination via window.location.href
+```
+
+### Commit
+
+```
+0c7f3c7 fix: AuthCallback waits for AuthContext to prevent race condition (v9)
+```
+
+### Verification Steps
+
+After deployment, verify in browser console:
+
+1. Version check: `[Apollo] Client version: 2025-12-07-v9`
+2. On `/auth/callback`: `[AuthCallback] Waiting for AuthContext to finish processing...`
+3. After auth completes: `[AuthCallback] Auth successful, redirecting to: /`
+4. No "Authentication failed" errors
+5. User lands on correct destination (not `/login`)
+
+### Files Modified
+
+- `apps/web/src/app/auth/callback/page.tsx` - Complete rewrite to wait for AuthContext
+- `apps/web/src/lib/apollo-client.ts` - Version marker updated to v9
+
+### Why This Fix Should Work
+
+Unlike previous attempts that tried to add more checks and fallbacks, this fix addresses the fundamental issue: **synchronization**. By using AuthContext's state instead of an independent check, we guarantee that:
+
+1. The session cookie EXISTS before we check authentication
+2. The redirect only happens AFTER provisioning is complete
+3. There's no race between multiple async operations
+
+---
+
+## Current State (2025-12-07 - Post v9)
+
+### Status: DEPLOYED - TESTING
+
+The v9 fix has been deployed. If successful, navigating to protected routes after Microsoft authentication should work correctly without showing the login screen.
+
+### If v9 Doesn't Work
+
+If the issue persists, the next areas to investigate:
+
+1. **AuthContext's handleRedirectPromise() failing silently** - Add logging to see if MSAL is returning null
+2. **Cookie being blocked by browser** - Modern browsers may block cookies in certain scenarios
+3. **Render proxy issues** - Check if cookies are being stripped by Render's CDN/proxy
