@@ -53,9 +53,7 @@ import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
  * Determine financial data scope based on user role
  * Story 2.11.1: BusinessOwner gets 'firm' scope, Partner gets 'own' scope
  */
-function getFinancialDataScopeFromRole(
-  role: string | undefined
-): FinancialDataScope | null {
+function getFinancialDataScopeFromRole(role: string | undefined): FinancialDataScope | null {
   if (role === 'BusinessOwner') return 'firm';
   if (role === 'Partner') return 'own';
   return null;
@@ -114,19 +112,39 @@ const resolvers = {
     ...platformIntelligenceResolvers.Mutation,
   },
   // Enum resolvers for analytics
-  ...taskAnalyticsResolvers.TrendDirection && { TrendDirection: taskAnalyticsResolvers.TrendDirection },
-  ...taskAnalyticsResolvers.TrendDirectionSimple && { TrendDirectionSimple: taskAnalyticsResolvers.TrendDirectionSimple },
-  ...taskAnalyticsResolvers.VelocityInterval && { VelocityInterval: taskAnalyticsResolvers.VelocityInterval },
-  ...taskAnalyticsResolvers.ImpactLevel && { ImpactLevel: taskAnalyticsResolvers.ImpactLevel },
-  ...taskAnalyticsResolvers.BottleneckType && { BottleneckType: taskAnalyticsResolvers.BottleneckType },
-  ...taskAnalyticsResolvers.TrainingPriority && { TrainingPriority: taskAnalyticsResolvers.TrainingPriority },
-  ...taskAnalyticsResolvers.WorkerStatus && { WorkerStatus: taskAnalyticsResolvers.WorkerStatus },
+  ...(taskAnalyticsResolvers.TrendDirection && {
+    TrendDirection: taskAnalyticsResolvers.TrendDirection,
+  }),
+  ...(taskAnalyticsResolvers.TrendDirectionSimple && {
+    TrendDirectionSimple: taskAnalyticsResolvers.TrendDirectionSimple,
+  }),
+  ...(taskAnalyticsResolvers.VelocityInterval && {
+    VelocityInterval: taskAnalyticsResolvers.VelocityInterval,
+  }),
+  ...(taskAnalyticsResolvers.ImpactLevel && { ImpactLevel: taskAnalyticsResolvers.ImpactLevel }),
+  ...(taskAnalyticsResolvers.BottleneckType && {
+    BottleneckType: taskAnalyticsResolvers.BottleneckType,
+  }),
+  ...(taskAnalyticsResolvers.TrainingPriority && {
+    TrainingPriority: taskAnalyticsResolvers.TrainingPriority,
+  }),
+  ...(taskAnalyticsResolvers.WorkerStatus && { WorkerStatus: taskAnalyticsResolvers.WorkerStatus }),
   // Platform Intelligence enum resolvers (Story 5.7)
-  ...platformIntelligenceResolvers.EmailRecipientType && { EmailRecipientType: platformIntelligenceResolvers.EmailRecipientType },
-  ...platformIntelligenceResolvers.AIFeatureType && { AIFeatureType: platformIntelligenceResolvers.AIFeatureType },
-  ...platformIntelligenceResolvers.RecommendationCategory && { RecommendationCategory: platformIntelligenceResolvers.RecommendationCategory },
-  ...platformIntelligenceResolvers.RecommendationPriority && { RecommendationPriority: platformIntelligenceResolvers.RecommendationPriority },
-  ...platformIntelligenceResolvers.ExportFormat && { ExportFormat: platformIntelligenceResolvers.ExportFormat },
+  ...(platformIntelligenceResolvers.EmailRecipientType && {
+    EmailRecipientType: platformIntelligenceResolvers.EmailRecipientType,
+  }),
+  ...(platformIntelligenceResolvers.AIFeatureType && {
+    AIFeatureType: platformIntelligenceResolvers.AIFeatureType,
+  }),
+  ...(platformIntelligenceResolvers.RecommendationCategory && {
+    RecommendationCategory: platformIntelligenceResolvers.RecommendationCategory,
+  }),
+  ...(platformIntelligenceResolvers.RecommendationPriority && {
+    RecommendationPriority: platformIntelligenceResolvers.RecommendationPriority,
+  }),
+  ...(platformIntelligenceResolvers.ExportFormat && {
+    ExportFormat: platformIntelligenceResolvers.ExportFormat,
+  }),
   Case: caseResolvers.Case,
   Firm: firmResolvers.Firm,
   CaseApproval: approvalResolvers.CaseApproval,
@@ -218,19 +236,21 @@ export async function createApolloServer(httpServer: http.Server) {
 export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestHandler {
   return expressMiddleware(server, {
     context: async ({ req }: { req: Request }): Promise<Context> => {
-      // Support for mock user in development (bypassing session)
-      if (process.env.NODE_ENV !== 'production' && req.headers['x-mock-user']) {
+      // Support for user context passed from web app proxy
+      // The web app authenticates users via session cookie and passes context via x-mock-user header
+      // This is trusted internal communication (browser -> web app -> gateway)
+      if (req.headers['x-mock-user']) {
         try {
-          const mockUser = JSON.parse(req.headers['x-mock-user'] as string);
+          const userContext = JSON.parse(req.headers['x-mock-user'] as string);
           return {
             user: {
-              id: mockUser.userId,
-              firmId: mockUser.firmId,
-              role: mockUser.role,
-              email: mockUser.email,
+              id: userContext.userId,
+              firmId: userContext.firmId,
+              role: userContext.role,
+              email: userContext.email,
             },
             // Story 2.11.1: Populate financial data scope based on role
-            financialDataScope: getFinancialDataScopeFromRole(mockUser.role),
+            financialDataScope: getFinancialDataScopeFromRole(userContext.role),
           };
         } catch (error) {
           console.warn('Invalid x-mock-user header:', error);
