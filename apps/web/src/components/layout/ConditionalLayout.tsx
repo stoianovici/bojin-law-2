@@ -29,10 +29,22 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
 
   // Redirect unauthenticated users to login in production
   useEffect(() => {
+    // Debug logging for redirect tracing
+    if (typeof window !== 'undefined' && !isPublicRoute) {
+      console.log('[ConditionalLayout] Auth state:', {
+        isLoading,
+        isAuthenticated,
+        isPublicRoute,
+        pathname,
+        nodeEnv: process.env.NODE_ENV,
+      });
+    }
+
     if (!isLoading && !isAuthenticated && !isPublicRoute && process.env.NODE_ENV === 'production') {
+      console.log('[ConditionalLayout] Redirecting to /login - user not authenticated');
       router.replace('/login');
     }
-  }, [isLoading, isAuthenticated, isPublicRoute, router]);
+  }, [isLoading, isAuthenticated, isPublicRoute, router, pathname]);
 
   // Show loading state during auth initialization
   if (isLoading) {

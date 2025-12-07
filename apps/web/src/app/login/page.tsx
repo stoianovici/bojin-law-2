@@ -17,10 +17,12 @@ export default function LoginPage() {
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
+    console.log('[LoginPage] Auth state:', { isAuthenticated, isLoading });
     if (isAuthenticated) {
+      console.log('[LoginPage] User is authenticated, redirecting to /');
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   // Clear error when component unmounts
   useEffect(() => {
