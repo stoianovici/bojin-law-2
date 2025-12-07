@@ -635,3 +635,293 @@ After deployment, verify:
 - `apps/web/src/app/api/auth/me/route.ts` - Check local session cookie
 - `apps/web/src/contexts/AuthContext.tsx` - Add checkSessionCookie() fallback
 - `apps/web/src/lib/apollo-client.ts` - Version marker updated to v5
+
+---
+
+## 2025-12-07: ConditionalLayout Race Condition Fix (v6) - PARTIAL SUCCESS
+
+### Issue Summary
+
+Despite v5 session cookie fallback, the user was still being redirected to login after authentication. Investigation showed:
+
+1. MSAL sessionStorage remained empty in production
+2. AuthContext's `checkSessionCookie()` was working correctly
+3. But ConditionalLayout was redirecting to login BEFORE AuthContext finished checking
+
+### Root Cause
+
+Race condition between ConditionalLayout and AuthContext:
+
+```
+1. User navigates to /cases
+2. ConditionalLayout renders with isLoading: true (from AuthContext)
+3. AuthContext finishes MSAL check (no accounts)
+4. AuthContext sets isLoading: false, isAuthenticated: false TEMPORARILY
+5. AuthContext starts async checkSessionCookie()
+6. ConditionalLayout sees: isLoading: false, isAuthenticated: false → REDIRECTS TO LOGIN
+7. checkSessionCookie() completes, but too late - user already redirected
+```
+
+### Fix Attempted (v6)
+
+Added independent session verification to ConditionalLayout:
+
+**File**: `apps/web/src/components/layout/ConditionalLayout.tsx`
+
+```typescript
+const [sessionVerified, setSessionVerified] = useState<boolean | null>(null);
+
+useEffect(() => {
+  // Skip if public route, already authenticated, or still loading
+  if (isPublicRoute || isAuthenticated || isLoading) return;
+
+  // AuthContext says not authenticated - double-check via /api/auth/me
+  if (process.env.NODE_ENV === 'production' && sessionVerified === null) {
+    const checkBeforeRedirect = async () => {
+      try {
+        console.log('[ConditionalLayout] Checking /api/auth/me before redirect...');
+        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        const data = await response.json();
+        console.log('[ConditionalLayout] /api/auth/me response:', data);
+
+        if (data.authenticated) {
+          console.log('[ConditionalLayout] Session cookie valid, marking as verified');
+          setSessionVerified(true);
+          return;
+        }
+      } catch (error) {
+        console.error('[ConditionalLayout] Session check error:', error);
+      }
+
+      setSessionVerified(false);
+      const returnUrl = encodeURIComponent(pathname || '/');
+      router.replace(`/login?returnUrl=${returnUrl}`);
+    };
+
+    checkBeforeRedirect();
+  }
+}, [isLoading, isAuthenticated, isPublicRoute, router, pathname, sessionVerified]);
+
+// Updated render logic:
+if (!isAuthenticated && !sessionVerified && process.env.NODE_ENV === 'production') {
+  return <LoadingSpinner />;
+}
+```
+
+### Result
+
+This fix was deployed but the login loop persisted. The issue appears to be that even with session verification, something else is triggering the redirect cycle.
+
+### Commits
+
+```
+2b5e265 chore: add debug logging to trace redirect issue
+fabd526 fix: remove Apollo UNAUTHENTICATED redirect causing page navigation loop
+d66b0a7 docs: add v4 sessionStorage fix to deployment documentation
+```
+
+---
+
+## 2025-12-07: window.location.href Redirect Fix (v7) - ATTEMPTED
+
+### Issue Summary
+
+The login loop continued despite ConditionalLayout's independent session verification. Analysis revealed potential issues with React Router's client-side navigation not properly refreshing auth state.
+
+### Root Cause Hypothesis
+
+Using `router.push()` for navigation after authentication was problematic:
+
+1. React Router performs client-side navigation
+2. Client-side navigation doesn't trigger full page reload
+3. Auth state may be stale during client-side navigation
+4. Components may re-render with old auth state before new state propagates
+
+### Fix Attempted (v7)
+
+Changed LoginPage and AuthCallback to use `window.location.href` for redirects:
+
+**File 1**: `apps/web/src/app/login/page.tsx`
+
+```typescript
+// Before:
+router.push(destination);
+
+// After:
+window.location.href = destination;
+```
+
+**File 2**: `apps/web/src/app/auth/callback/page.tsx`
+
+```typescript
+// Before:
+router.push(getRedirectDestination());
+
+// After:
+window.location.href = getRedirectDestination();
+```
+
+### Commits
+
+```
+6bc1d5c fix: use window.location.href for reliable redirects after auth
+```
+
+### Result
+
+This fix was deployed but did not resolve the issue.
+
+---
+
+## 2025-12-07: AuthCallback Direct Session Verification (v8) - ATTEMPTED
+
+### Issue Summary
+
+Despite all previous fixes, the login loop persisted. Further analysis identified a React closure bug in AuthCallback.
+
+### Root Cause
+
+AuthCallback had a React closure bug with `isAuthenticated`:
+
+```typescript
+// PROBLEMATIC CODE in AuthCallback
+if (isAuthenticated) {
+  window.location.href = destination;
+} else {
+  setTimeout(() => {
+    if (isAuthenticated) {
+      // BUG: This captures the OLD value!
+      window.location.href = destination;
+    } else {
+      setError('Authentication failed');
+    }
+  }, 1000);
+}
+```
+
+The `setTimeout` callback captured `isAuthenticated` at closure creation time, not execution time. Even if authentication succeeded and `isAuthenticated` became `true`, the callback would still see `false`.
+
+### Fix Attempted (v8)
+
+Changed AuthCallback to directly verify session via `/api/auth/me` instead of relying on AuthContext state:
+
+**File**: `apps/web/src/app/auth/callback/page.tsx`
+
+```typescript
+// Before: Relied on isAuthenticated from useAuth() (potentially stale)
+const { isAuthenticated } = useAuth();
+if (isAuthenticated) { ... }
+
+// After: Direct session verification via HTTP
+console.log('[AuthCallback] Checking session with /api/auth/me...');
+const response = await fetch('/api/auth/me', { credentials: 'include' });
+const data = await response.json();
+console.log('[AuthCallback] /api/auth/me response:', data);
+
+if (data.authenticated) {
+  const destination = getRedirectDestination();
+  console.log('[AuthCallback] Session verified, redirecting to:', destination);
+  window.location.href = destination;
+} else {
+  console.log('[AuthCallback] Session not found, showing error');
+  setError('Authentication failed. Please try again.');
+  setIsProcessing(false);
+}
+```
+
+Also removed the unused `useAuth()` import and `isAuthenticated` dependency.
+
+### Commits
+
+```
+0be7066 fix: AuthCallback directly verifies session via /api/auth/me
+```
+
+### Result
+
+**STATUS: NOT RESOLVED** - The login loop still persists after this fix.
+
+---
+
+## Current State (2025-12-07)
+
+### Problem
+
+After successful Microsoft authentication, navigating to protected routes (`/cases`, `/documents`, `/tasks`, `/settings/billing`) shows a login screen instead of the content. The app enters a redirect loop where:
+
+1. User completes Microsoft login
+2. Redirected to `/auth/callback`
+3. AuthCallback should redirect to destination
+4. Instead, user ends up at `/login?returnUrl=<destination>`
+5. LoginPage may redirect back, causing a loop
+
+### Key Observations
+
+1. **MSAL sessionStorage is empty** - After OAuth redirect, MSAL doesn't restore cached tokens
+2. **Session cookie IS valid** - `/api/auth/me` returns authenticated: true
+3. **AuthContext falls back correctly** - Logs show session cookie validation working
+4. **Something still triggers redirect** - Despite valid session, user sees login screen
+
+### Files Modified Throughout These Attempts
+
+- `apps/web/src/contexts/AuthContext.tsx` - Session cookie fallback
+- `apps/web/src/components/layout/ConditionalLayout.tsx` - Independent session verification
+- `apps/web/src/app/login/page.tsx` - Suspense wrapper, sessionStorage, window.location.href
+- `apps/web/src/app/auth/callback/page.tsx` - Direct session verification, window.location.href
+- `apps/web/src/app/api/auth/me/route.ts` - Local session cookie check
+- `apps/web/src/lib/apollo-client.ts` - Removed UNAUTHENTICATED redirect
+
+### Potential Remaining Issues to Investigate
+
+1. **Cookie not being sent**: Check if `legal-platform-session` cookie has correct attributes (SameSite, Secure, Path, Domain)
+
+2. **Cookie expiration**: Check if cookie is expiring too quickly
+
+3. **Multiple redirects**: Check if there's a cascade of redirects that loses the session
+
+4. **Browser cookie issues**: Third-party cookie blocking, storage partitioning in modern browsers
+
+5. **Render proxy stripping cookies**: Check if Render's proxy affects cookie handling
+
+6. **CORS issues**: Check if credentials are being sent properly across subdomains
+
+### Debugging Commands
+
+Check session cookie in browser:
+
+```javascript
+document.cookie.split(';').find((c) => c.includes('legal-platform-session'));
+```
+
+Check if `/api/auth/me` sees the cookie (run in browser console):
+
+```javascript
+fetch('/api/auth/me', { credentials: 'include' })
+  .then((r) => r.json())
+  .then(console.log);
+```
+
+Check sessionStorage:
+
+```javascript
+console.log(
+  'MSAL sessionStorage:',
+  Object.keys(sessionStorage).filter((k) => k.includes('msal'))
+);
+```
+
+### Next Steps to Try
+
+1. **Verify cookie settings** in `/api/auth/provision/route.ts`:
+   - Ensure `sameSite: 'lax'` (not 'strict')
+   - Ensure `secure: true` for production
+   - Ensure `path: '/'`
+   - Ensure no domain mismatch
+
+2. **Add cookie debugging** to trace exactly when/where cookie is lost
+
+3. **Check Render logs** for any proxy-related issues
+
+4. **Test with localStorage** instead of sessionStorage for returnUrl
+
+5. **Consider server-side session** instead of cookie-based auth for MSAL failover
