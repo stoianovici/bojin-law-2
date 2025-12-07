@@ -42,7 +42,9 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
 
     if (!isLoading && !isAuthenticated && !isPublicRoute && process.env.NODE_ENV === 'production') {
       console.log('[ConditionalLayout] Redirecting to /login - user not authenticated');
-      router.replace('/login');
+      // Preserve the intended destination so login can redirect back
+      const returnUrl = encodeURIComponent(pathname || '/');
+      router.replace(`/login?returnUrl=${returnUrl}`);
     }
   }, [isLoading, isAuthenticated, isPublicRoute, router, pathname]);
 

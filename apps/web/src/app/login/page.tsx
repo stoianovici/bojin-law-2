@@ -8,21 +8,38 @@
 
 import React from 'react';
 import { useAuth } from '../../lib/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function LoginPage() {
   const { isAuthenticated, login, error, clearError, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Redirect to dashboard if already authenticated
+  // Get the return URL from query params (set by ConditionalLayout when redirecting)
+  const returnUrl = searchParams.get('returnUrl');
+
+  // Redirect to intended destination if already authenticated
   useEffect(() => {
-    console.log('[LoginPage] Auth state:', { isAuthenticated, isLoading });
+    console.log('[LoginPage] Auth state:', { isAuthenticated, isLoading, returnUrl });
     if (isAuthenticated) {
-      console.log('[LoginPage] User is authenticated, redirecting to /');
-      router.push('/');
+      // Decode and validate returnUrl - only allow internal paths
+      let destination = '/';
+      if (returnUrl) {
+        try {
+          const decoded = decodeURIComponent(returnUrl);
+          // Only allow relative paths starting with /
+          if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+            destination = decoded;
+          }
+        } catch {
+          // Invalid encoding, use default
+        }
+      }
+      console.log('[LoginPage] User is authenticated, redirecting to', destination);
+      router.push(destination);
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, returnUrl]);
 
   // Clear error when component unmounts
   useEffect(() => {

@@ -258,3 +258,80 @@ After deployment, verify:
 2. Click "Cazuri" in sidebar - should navigate to cases page
 3. Same for `/tasks` and `/documents`
 4. No redirect to `/` should occur
+
+---
+
+## 2025-12-07: Return URL Fix for Auth Redirect
+
+### Issue Summary
+
+Despite the Apollo redirect fix, `/cases`, `/tasks`, and `/documents` pages still redirected to `/` (dashboard).
+
+### Root Cause
+
+There was a race condition between MSAL initialization and ConditionalLayout's auth check:
+
+1. User navigates to `/cases`
+2. ConditionalLayout renders with `isLoading: true`, shows loading spinner
+3. MSAL initialization runs asynchronously
+4. If MSAL's `getAllAccounts()` returns empty briefly or has timing issues, it sets `isAuthenticated: false, isLoading: false`
+5. ConditionalLayout sees `!isLoading && !isAuthenticated`, redirects to `/login`
+6. By the time LoginPage mounts, MSAL has properly initialized and `isAuthenticated: true`
+7. LoginPage redirects to `/` (hardcoded destination)
+8. User ends up on dashboard instead of `/cases`
+
+### Fix Applied
+
+Preserve the intended destination when redirecting to login, then redirect back after auth is confirmed.
+
+**File 1**: `apps/web/src/components/layout/ConditionalLayout.tsx`
+
+```typescript
+// Before:
+router.replace('/login');
+
+// After:
+const returnUrl = encodeURIComponent(pathname || '/');
+router.replace(`/login?returnUrl=${returnUrl}`);
+```
+
+**File 2**: `apps/web/src/app/login/page.tsx`
+
+```typescript
+// Added:
+const searchParams = useSearchParams();
+const returnUrl = searchParams.get('returnUrl');
+
+// In useEffect:
+if (isAuthenticated) {
+  let destination = '/';
+  if (returnUrl) {
+    const decoded = decodeURIComponent(returnUrl);
+    if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+      destination = decoded;
+    }
+  }
+  router.push(destination);
+}
+```
+
+### Why This Fix Works
+
+Even if there's a timing issue with MSAL initialization causing a temporary redirect to `/login`, the user will be sent back to their intended destination (`/cases`) once auth is confirmed. This makes the redirect transparent to the user.
+
+### Security Consideration
+
+The returnUrl validation ensures only internal paths are allowed:
+
+- Must start with `/`
+- Must not start with `//` (prevents protocol-relative URLs like `//evil.com`)
+- Invalid/external URLs fall back to `/`
+
+### Verification Steps
+
+After deployment, verify:
+
+1. Navigate directly to `/cases` via URL bar - should stay on cases page
+2. Click sidebar links - should navigate correctly
+3. Check console for `[LoginPage] ... redirecting to /cases` (not `/`)
+4. Version marker should show `2025-12-07-v3`
