@@ -44,6 +44,7 @@ import { taskAnalyticsResolvers } from './resolvers/task-analytics.resolvers';
 import { caseTypeResolvers } from './resolvers/case-type.resolvers';
 import { communicationIntelligenceResolvers } from './resolvers/communication-intelligence.resolvers';
 import { emailDraftingResolvers } from './resolvers/email-drafting.resolvers';
+import { emailResolvers } from './resolvers/email.resolvers';
 import { aiLearningResolvers } from './resolvers/ai-learning.resolvers';
 import { platformIntelligenceResolvers } from './resolvers/platform-intelligence.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
@@ -86,6 +87,7 @@ const resolvers = {
     ...caseTypeResolvers.Query,
     ...communicationIntelligenceResolvers.Query,
     ...emailDraftingResolvers.Query,
+    ...emailResolvers.Query,
     ...aiLearningResolvers.Query,
     ...platformIntelligenceResolvers.Query,
   },
@@ -108,8 +110,12 @@ const resolvers = {
     ...caseTypeResolvers.Mutation,
     ...communicationIntelligenceResolvers.Mutation,
     ...emailDraftingResolvers.Mutation,
+    ...emailResolvers.Mutation,
     ...aiLearningResolvers.Mutation,
     ...platformIntelligenceResolvers.Mutation,
+  },
+  Subscription: {
+    ...emailResolvers.Subscription,
   },
   // Enum resolvers for analytics
   ...(taskAnalyticsResolvers.TrendDirection && {
