@@ -1331,3 +1331,183 @@ Request Flow for Protected Routes:
 6. AuthContext initializes, checks MSAL + session cookie fallback
 7. ConditionalLayout renders MainLayout for authenticated users
 ```
+
+---
+
+## 2025-12-08: Legacy Import Database & PST Recovery
+
+### Issue Summary
+
+The `bojin-legacy-import` service was failing with 500 errors on `/api/auth/provision`. Additionally, a 47GB PST file that had been previously uploaded and extracted was missing from the database (though files existed in R2).
+
+### Problems Identified
+
+1. **Wrong DATABASE_URL**: Legacy import was pointing to a deleted database (`dpg-d4dk9fodl3ps73d3d7k0-a`) instead of the correct one (`dpg-d4q61v6r433s73agrcc0-a`)
+
+2. **Lost PST Session**: A 47GB PST file (`backup email valentin.pst`) had been uploaded to R2 but the database session record was lost when the database was reset
+
+3. **Old Extraction Data**: ~30,000 documents from a previous extraction existed in R2 under a different session ID
+
+### Fixes Applied
+
+#### Fix 1: Update DATABASE_URL via Render API
+
+Used Render API to update the environment variable:
+
+```bash
+curl -X PATCH https://api.render.com/v1/services/{service_id}/env-vars/DATABASE_URL \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "postgresql://...@dpg-d4q61v6r433s73agrcc0-a..."}'
+```
+
+#### Fix 2: Create PST Session Recovery Endpoint
+
+**File**: `apps/legacy-import/src/app/api/recover-session/route.ts`
+
+Created a one-time endpoint to recreate the lost session:
+
+```typescript
+const SESSION_ID = '95666859-4bd0-4fc6-b4fb-9428fc7442c1';
+const PST_FILE_NAME = 'backup email valentin.pst';
+const PST_FILE_SIZE = BigInt(Math.round(47.3 * 1024 * 1024 * 1024));
+
+// POST creates session, GET checks status, PUT updates status
+```
+
+#### Fix 3: Clean Up Old R2 Documents
+
+Deleted 30,401 documents from old extractions under different session IDs to avoid confusion:
+
+```javascript
+// Kept only documents under the current session
+const KEEP_SESSION = '95666859-4bd0-4fc6-b4fb-9428fc7442c1';
+// Deleted all others
+```
+
+#### Fix 4: Run Full PST Extraction Locally
+
+Used existing script to extract documents with full metadata:
+
+```bash
+cd apps/legacy-import
+export R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=...
+export API_BASE_URL=https://bojin-legacy-import.onrender.com
+npx tsx scripts/extract-local-pst.ts "/path/to/backup email valentin.pst" "95666859-4bd0-4fc6-b4fb-9428fc7442c1"
+```
+
+The script:
+
+- Parses PST file locally (handles 47GB without timeout)
+- Extracts .pdf, .doc, .docx attachments
+- Uploads each document to R2
+- Creates database records via API in batches of 100
+- Preserves email metadata (subject, sender, date, month)
+
+### R2 Bucket State
+
+After cleanup:
+
+- **PST file**: 47.44 GB (28 chunks under `pst/` prefix)
+- **Documents**: Being extracted under `documents/{sessionId}/`
+
+### Files Modified/Created
+
+- `apps/legacy-import/src/app/api/recover-session/route.ts` - Session recovery endpoint
+- `apps/legacy-import/scripts/recover-session.ts` - CLI recovery script
+- `apps/legacy-import/scripts/extract-local-pst.ts` - Local extraction script (existing)
+
+### Verification Steps
+
+1. Check legacy-import health: `https://bojin-legacy-import.onrender.com/api/health`
+2. Verify session exists: `GET /api/recover-session`
+3. Monitor extraction progress in terminal
+4. Check documents appearing in web UI
+
+---
+
+## 2025-12-08: User Name Display in Partner Dashboard
+
+### Issue Summary
+
+The Partner Dashboard showed truncated user IDs (e.g., "Utilizator 922bde00") instead of actual user names in the "Progres asistenți" section.
+
+### Root Cause
+
+The `/api/partner-dashboard` endpoint was returning user IDs without looking up the actual names from the User table.
+
+### Fix Applied
+
+**File**: `apps/legacy-import/src/app/api/partner-dashboard/route.ts`
+
+Added user name lookup:
+
+```typescript
+// Get all unique user IDs from batches
+const userIds = [...new Set(
+  session.batches.map(b => b.assignedTo).filter((id): id is string => id !== null)
+)];
+
+// Fetch user names
+const users = userIds.length > 0
+  ? await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, firstName: true, lastName: true, email: true }
+    })
+  : [];
+
+const userNameMap = new Map(users.map(u => [
+  u.id,
+  u.firstName && u.lastName
+    ? `${u.firstName} ${u.lastName}`
+    : u.email || 'Unknown'
+]));
+
+// Add to batch response
+assignedToName: batch.assignedTo ? userNameMap.get(batch.assignedTo) : undefined,
+
+// Add to assistant progress
+userName: userNameMap.get(batch.assignedTo),
+```
+
+**File**: `apps/legacy-import/src/components/Dashboard/PartnerDashboard.tsx`
+
+Updated interface and display:
+
+```typescript
+interface BatchWithProgress {
+  // ... existing fields
+  assignedToName?: string; // Added
+}
+
+// In render:
+{
+  batch.assignedToName || `Utilizator ${batch.assignedTo.slice(0, 8)}`;
+}
+```
+
+### Commit
+
+```
+9b8a5b9 fix: display user names instead of IDs in partner dashboard
+```
+
+### Verification Steps
+
+After deployment:
+
+1. Go to Partner Dashboard
+2. "Progres asistenți" should show actual names (e.g., "Lucian Bojin")
+3. "Loturi pe luni" table should show names in "Atribuit la" column
+
+---
+
+## Summary Table (Updated)
+
+| Date       | Service       | Issue                           | Fix                                          |
+| ---------- | ------------- | ------------------------------- | -------------------------------------------- |
+| 2025-12-07 | web           | GraphQL auth in production      | Pass x-mock-user header                      |
+| 2025-12-07 | web           | Auth redirect loops (v1-v11)    | Multiple fixes, final: middleware cookie fix |
+| 2025-12-08 | legacy-import | Wrong DATABASE_URL              | Update via Render API                        |
+| 2025-12-08 | legacy-import | Lost PST session                | Recovery endpoint + local extraction         |
+| 2025-12-08 | legacy-import | User IDs shown instead of names | Fetch user names from User table             |
