@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
 const GRAPHQL_ENDPOINT = process.env.GRAPHQL_ENDPOINT || 'http://localhost:4000/graphql';
 
@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
       headers['Cookie'] = cookieHeader;
     }
 
+    // Get MS access token if provided (for email sync operations)
+    const msAccessToken = request.headers.get('x-ms-access-token');
+
     // Pass authenticated user context to gateway
     // In production, we authenticate via session cookie and pass user context
     // In development without a session, use mock user for convenience
@@ -38,6 +41,8 @@ export async function POST(request: NextRequest) {
         firmId: user.firmId,
         role: user.role,
         email: user.email,
+        // Include MS access token for operations that need Graph API access
+        accessToken: msAccessToken || undefined,
       });
     } else if (process.env.NODE_ENV === 'development') {
       // Fallback to mock user only in development when no session exists

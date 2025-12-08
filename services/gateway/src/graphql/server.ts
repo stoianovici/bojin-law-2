@@ -248,6 +248,8 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
               firmId: userContext.firmId,
               role: userContext.role,
               email: userContext.email,
+              // MS access token for Graph API operations (email sync, etc.)
+              accessToken: userContext.accessToken,
             },
             // Story 2.11.1: Populate financial data scope based on role
             financialDataScope: getFinancialDataScopeFromRole(userContext.role),

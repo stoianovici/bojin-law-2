@@ -11,7 +11,10 @@ import { PubSub } from 'graphql-subscriptions';
 import { EmailSyncService, getEmailSyncService } from '../../services/email-sync.service';
 import { EmailThreadService, getEmailThreadService } from '../../services/email-thread.service';
 import { EmailSearchService, getEmailSearchService } from '../../services/email-search.service';
-import { EmailAttachmentService, getEmailAttachmentService } from '../../services/email-attachment.service';
+import {
+  EmailAttachmentService,
+  getEmailAttachmentService,
+} from '../../services/email-attachment.service';
 import { EmailWebhookService, getEmailWebhookService } from '../../services/email-webhook.service';
 import { triggerProcessing } from '../../workers/email-categorization.worker';
 import Redis from 'ioredis';
@@ -20,11 +23,15 @@ import Redis from 'ioredis';
 // Types
 // ============================================================================
 
+// Use the Context type from case.resolvers.ts for consistency
+// The accessToken is now passed from the web app through the GraphQL proxy
 interface Context {
-  user: {
+  user?: {
     id: string;
     role: string;
     firmId: string;
+    email: string;
+    // MS Graph API access token for email sync operations
     accessToken?: string;
   };
 }
@@ -84,11 +91,7 @@ export const emailResolvers = {
         ...args.filters,
       };
 
-      return await emailSearchService.searchEmails(
-        filters,
-        args.limit || 20,
-        args.offset || 0
-      );
+      return await emailSearchService.searchEmails(filters, args.limit || 20, args.offset || 0);
     },
 
     /**
@@ -123,11 +126,7 @@ export const emailResolvers = {
     /**
      * Get single email thread
      */
-    emailThread: async (
-      _: any,
-      args: { conversationId: string },
-      context: Context
-    ) => {
+    emailThread: async (_: any, args: { conversationId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -189,11 +188,7 @@ export const emailResolvers = {
     /**
      * Get thread participants
      */
-    emailThreadParticipants: async (
-      _: any,
-      args: { conversationId: string },
-      context: Context
-    ) => {
+    emailThreadParticipants: async (_: any, args: { conversationId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -202,10 +197,7 @@ export const emailResolvers = {
         });
       }
 
-      return await emailThreadService.getThreadParticipants(
-        args.conversationId,
-        user.id
-      );
+      return await emailThreadService.getThreadParticipants(args.conversationId, user.id);
     },
 
     /**
@@ -226,11 +218,7 @@ export const emailResolvers = {
     /**
      * Get search suggestions
      */
-    emailSearchSuggestions: async (
-      _: any,
-      args: { prefix: string },
-      context: Context
-    ) => {
+    emailSearchSuggestions: async (_: any, args: { prefix: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -352,11 +340,7 @@ export const emailResolvers = {
       }
 
       // Update all emails in thread
-      await emailThreadService.assignThreadToCase(
-        args.conversationId,
-        args.caseId,
-        user.id
-      );
+      await emailThreadService.assignThreadToCase(args.conversationId, args.caseId, user.id);
 
       // Return updated thread
       return await emailThreadService.getThread(args.conversationId, user.id);
@@ -365,11 +349,7 @@ export const emailResolvers = {
     /**
      * Mark email as read/unread
      */
-    markEmailRead: async (
-      _: any,
-      args: { emailId: string; isRead: boolean },
-      context: Context
-    ) => {
+    markEmailRead: async (_: any, args: { emailId: string; isRead: boolean }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -399,11 +379,7 @@ export const emailResolvers = {
     /**
      * Mark thread as read
      */
-    markThreadRead: async (
-      _: any,
-      args: { conversationId: string },
-      context: Context
-    ) => {
+    markThreadRead: async (_: any, args: { conversationId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -420,11 +396,7 @@ export const emailResolvers = {
     /**
      * Sync attachments for email
      */
-    syncEmailAttachments: async (
-      _: any,
-      args: { emailId: string },
-      context: Context
-    ) => {
+    syncEmailAttachments: async (_: any, args: { emailId: string }, context: Context) => {
       const { user } = context;
 
       if (!user || !user.accessToken) {
@@ -488,10 +460,7 @@ export const emailResolvers = {
         });
       }
 
-      const webhookService = new EmailWebhookService(
-        prisma,
-        getRedis()
-      );
+      const webhookService = new EmailWebhookService(prisma, getRedis());
 
       await webhookService.createSubscription(user.id, user.accessToken);
 
