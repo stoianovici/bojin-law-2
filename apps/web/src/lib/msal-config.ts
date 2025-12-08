@@ -57,16 +57,17 @@ export const msalConfig: Configuration = {
 
 /**
  * Scopes required for the application
+ * Includes Mail.Read for email sync functionality (Story 5.1)
  */
 export const loginRequest = {
-  scopes: ['openid', 'profile', 'email', 'User.Read'],
+  scopes: ['openid', 'profile', 'email', 'User.Read', 'Mail.Read', 'Mail.ReadBasic'],
 };
 
 /**
  * Microsoft Graph API scopes
  */
 export const graphScopes = {
-  scopes: ['Files.ReadWrite.All', 'Sites.ReadWrite.All'],
+  scopes: ['Files.ReadWrite.All', 'Sites.ReadWrite.All', 'Mail.Read'],
 };
 
 /**

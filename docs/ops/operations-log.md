@@ -71,13 +71,15 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-08] Session 4 started. Problem persisting after previous fix. Re-investigating.
 - [2025-12-08] Session 4 - Found root cause: `hasMsalAccount` was computed once at render time via `hasMsalAccount()` call, not as reactive state. When MSAL init completes with no accounts, the UI still showed "Sync" button because hasMsalAccount was evaluated before MSAL finished initializing. Fixed by: (1) Added `hasMsalAccountState` state variable, (2) Added `updateHasMsalAccount()` function called after MSAL init, (3) Changed context value to use state instead of computed function call.
 - [2025-12-08] Session 4 - Second issue found: The `/communications` page was a different component that didn't use `hasMsalAccount`. Updated to show "Conectează Microsoft" button when no MSAL account.
+- [2025-12-08] Session 4 - Third issue found: MSAL `loginRequest` scopes did not include `Mail.Read`. User authenticated but had no permission to read emails. Added `Mail.Read` and `Mail.ReadBasic` to scopes.
 
 #### Files Involved
 
 - `services/gateway/src/graphql/server.ts` - **FIXED** - Added emailResolvers import/merge + token extraction
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - Email resolver definitions
 - `services/gateway/src/graphql/resolvers/case.resolvers.ts` - **FIXED** - Added accessToken to Context type
-- `apps/web/src/lib/apollo-client.ts` - **FIXED v15** - Added auth link for MS token, version bump
+- `apps/web/src/lib/apollo-client.ts` - **FIXED v16** - Added auth link for MS token, version bump
+- `apps/web/src/lib/msal-config.ts` - **FIXED** - Added Mail.Read scope to loginRequest
 - `apps/web/src/contexts/AuthContext.tsx` - **FIXED v3** - Made hasMsalAccount reactive state instead of computed function
 - `apps/web/src/app/api/graphql/route.ts` - **FIXED** - Forward x-ms-access-token header
 - `apps/web/src/hooks/useEmailSync.ts` - Frontend email hooks/queries
