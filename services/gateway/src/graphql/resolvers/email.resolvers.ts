@@ -115,12 +115,19 @@ export const emailResolvers = {
         ...args.filters,
       };
 
-      const result = await emailThreadService.getThreads(filters, {
-        limit: args.limit || 20,
-        offset: args.offset || 0,
-      });
+      try {
+        const result = await emailThreadService.getThreads(filters, {
+          limit: args.limit || 20,
+          offset: args.offset || 0,
+        });
 
-      return result.threads;
+        // Always return an array, even if empty
+        return result?.threads || [];
+      } catch (error) {
+        console.error('Error fetching email threads:', error);
+        // Return empty array on error to avoid null issues
+        return [];
+      }
     },
 
     /**
