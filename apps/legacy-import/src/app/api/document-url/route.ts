@@ -7,13 +7,10 @@ export async function GET(request: NextRequest) {
     const documentId = request.nextUrl.searchParams.get('documentId');
 
     if (!documentId) {
-      return NextResponse.json(
-        { error: 'Missing documentId parameter' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing documentId parameter' }, { status: 400 });
     }
 
-    // Fetch the document to get its storage path
+    // Fetch the document to get its storage path and extracted text
     const document = await prisma.extractedDocument.findUnique({
       where: { id: documentId },
       select: {
@@ -21,21 +18,16 @@ export async function GET(request: NextRequest) {
         storagePath: true,
         fileName: true,
         fileExtension: true,
+        extractedText: true,
       },
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: 'Document not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
     if (!document.storagePath) {
-      return NextResponse.json(
-        { error: 'Document has no storage path' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Document has no storage path' }, { status: 404 });
     }
 
     // Generate presigned URL with 1 hour expiration
@@ -45,13 +37,11 @@ export async function GET(request: NextRequest) {
       url,
       fileName: document.fileName,
       fileExtension: document.fileExtension,
+      extractedText: document.extractedText,
       expiresIn: 3600,
     });
   } catch (error) {
     console.error('Failed to get document URL:', error);
-    return NextResponse.json(
-      { error: 'Failed to get document URL' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get document URL' }, { status: 500 });
   }
 }

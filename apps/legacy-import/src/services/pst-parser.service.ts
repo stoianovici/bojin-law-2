@@ -137,24 +137,47 @@ function extractFolderInfo(folder: pst.PSTFolder, parentPath: string = ''): Fold
 }
 
 /**
+ * Options for batched extraction
+ */
+export interface BatchExtractionOptions {
+  skip?: number; // Number of documents to skip (for resuming)
+  take?: number; // Maximum documents to extract (for batching)
+  onProgress?: (progress: ExtractionProgress) => void;
+}
+
+/**
+ * Internal state for tracking position during batched extraction
+ */
+interface ExtractionState {
+  currentIndex: number; // Global document index across all folders
+  extracted: ExtractedAttachment[];
+  shouldStop: boolean;
+}
+
+/**
  * Processes emails in a folder and extracts attachments
+ * Supports skip/take for resumable batch extraction
  */
 function processFolder(
   folder: pst.PSTFolder,
   folderPath: string,
   progress: ExtractionProgress,
-  onProgress?: (progress: ExtractionProgress) => void
-): ExtractedAttachment[] {
-  const attachments: ExtractedAttachment[] = [];
+  state: ExtractionState,
+  options: BatchExtractionOptions = {}
+): void {
+  const { skip = 0, take = Infinity } = options;
   const isSent = isSentFolder(folderPath);
 
   progress.currentFolder = folderPath;
+
+  // Check if we should stop
+  if (state.shouldStop) return;
 
   // Iterate through emails
   if (folder.contentCount > 0) {
     let email = folder.getNextChild();
 
-    while (email !== null) {
+    while (email !== null && !state.shouldStop) {
       progress.processedEmails++;
 
       if (email instanceof pst.PSTMessage) {
@@ -166,7 +189,7 @@ function processFolder(
           progress.totalAttachments += attachmentCount;
 
           if (attachmentCount > 0) {
-            for (let i = 0; i < attachmentCount; i++) {
+            for (let i = 0; i < attachmentCount && !state.shouldStop; i++) {
               try {
                 const attachment = message.getAttachment(i);
                 if (attachment) {
@@ -174,6 +197,18 @@ function processFolder(
                   const extension = getFileExtension(fileName);
 
                   if (isSupportedExtension(extension)) {
+                    // Check if we should skip this document
+                    if (state.currentIndex < skip) {
+                      state.currentIndex++;
+                      continue;
+                    }
+
+                    // Check if we've reached our batch limit
+                    if (state.extracted.length >= take) {
+                      state.shouldStop = true;
+                      break;
+                    }
+
                     // Get attachment content
                     const content = attachment.fileInputStream;
 
@@ -219,12 +254,15 @@ function processFolder(
                         monthYear: formatMonthYear(emailMetadata.receivedDate),
                       };
 
-                      attachments.push(extractedAttachment);
+                      state.extracted.push(extractedAttachment);
+                      state.currentIndex++;
                       progress.extractedAttachments++;
                     }
                   }
                 }
               } catch (attachError) {
+                // Still increment index for skipped errors
+                state.currentIndex++;
                 progress.errors.push({
                   folderPath,
                   emailSubject: message.subject || 'Unknown',
@@ -247,36 +285,99 @@ function processFolder(
       }
 
       // Report progress periodically
-      if (onProgress && progress.processedEmails % 100 === 0) {
-        onProgress({ ...progress });
+      if (options.onProgress && progress.processedEmails % 100 === 0) {
+        options.onProgress({ ...progress });
       }
 
       email = folder.getNextChild();
     }
   }
 
-  // Process subfolders
-  if (folder.hasSubfolders) {
+  // Process subfolders (unless we've hit our limit)
+  if (folder.hasSubfolders && !state.shouldStop) {
     const subfolders = folder.getSubFolders();
     for (const subfolder of subfolders) {
+      if (state.shouldStop) break;
       const subfolderPath = `${folderPath}/${subfolder.displayName}`;
       progress.totalEmails += subfolder.contentCount || 0;
 
-      const subAttachments = processFolder(subfolder, subfolderPath, progress, onProgress);
-      attachments.push(...subAttachments);
+      processFolder(subfolder, subfolderPath, progress, state, options);
+    }
+  }
+}
+
+/**
+ * Counts total supported documents in a PST without loading content
+ * This is a fast scan to determine total document count for progress tracking
+ */
+function countDocumentsInFolder(folder: pst.PSTFolder): number {
+  let count = 0;
+
+  // Count in current folder
+  if (folder.contentCount > 0) {
+    let email = folder.getNextChild();
+
+    while (email !== null) {
+      if (email instanceof pst.PSTMessage) {
+        const message = email as pst.PSTMessage;
+        const attachmentCount = message.numberOfAttachments;
+
+        if (attachmentCount > 0) {
+          for (let i = 0; i < attachmentCount; i++) {
+            try {
+              const attachment = message.getAttachment(i);
+              if (attachment) {
+                const fileName = attachment.longFilename || attachment.filename || 'unnamed';
+                const extension = getFileExtension(fileName);
+                if (isSupportedExtension(extension)) {
+                  count++;
+                }
+              }
+            } catch {
+              // Skip problematic attachments in count
+            }
+          }
+        }
+      }
+      email = folder.getNextChild();
     }
   }
 
-  return attachments;
+  // Count in subfolders
+  if (folder.hasSubfolders) {
+    const subfolders = folder.getSubFolders();
+    for (const subfolder of subfolders) {
+      count += countDocumentsInFolder(subfolder);
+    }
+  }
+
+  return count;
+}
+
+/**
+ * Counts total supported documents in a PST file (fast scan, no content loading)
+ */
+export async function countDocumentsInPST(pstFilePath: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    try {
+      const pstFile = new pst.PSTFile(pstFilePath);
+      const rootFolder = pstFile.getRootFolder();
+      const count = countDocumentsInFolder(rootFolder);
+      resolve(count);
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 /**
  * Extracts attachments from a PST file path
  * Uses file path directly for memory efficiency with large PST files
+ * Supports skip/take for resumable batch extraction
  */
 export async function extractFromPSTFile(
   pstFilePath: string,
-  onProgress?: (progress: ExtractionProgress) => void
+  options: BatchExtractionOptions = {}
 ): Promise<ExtractionResult> {
   return new Promise((resolve, reject) => {
     try {
@@ -292,6 +393,13 @@ export async function extractFromPSTFile(
         errors: [],
       };
 
+      // Initialize extraction state
+      const state: ExtractionState = {
+        currentIndex: 0,
+        extracted: [],
+        shouldStop: false,
+      };
+
       // Get folder structure first
       const rootFolder = pstFile.getRootFolder();
       const folderStructure = extractFolderInfo(rootFolder);
@@ -299,17 +407,12 @@ export async function extractFromPSTFile(
       // Calculate total emails
       progress.totalEmails = folderStructure.reduce((sum, f) => sum + f.documentCount, 0);
 
-      // Extract attachments
-      const attachments = processFolder(
-        rootFolder,
-        rootFolder.displayName || 'Root',
-        progress,
-        onProgress
-      );
+      // Extract attachments with skip/take support
+      processFolder(rootFolder, rootFolder.displayName || 'Root', progress, state, options);
 
       // Update folder structure with actual document counts
       const folderCounts = new Map<string, number>();
-      for (const attachment of attachments) {
+      for (const attachment of state.extracted) {
         const count = folderCounts.get(attachment.folderPath) || 0;
         folderCounts.set(attachment.folderPath, count + 1);
       }
@@ -320,7 +423,7 @@ export async function extractFromPSTFile(
       }));
 
       resolve({
-        attachments,
+        attachments: state.extracted,
         progress,
         folderStructure: updatedFolderStructure,
       });

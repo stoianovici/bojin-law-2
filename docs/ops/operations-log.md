@@ -8,7 +8,7 @@
 | ID      | Title                                  | Type        | Priority    | Status        | Sessions |
 | ------- | -------------------------------------- | ----------- | ----------- | ------------- | -------- |
 | OPS-001 | Communications page not loading emails | Bug         | P0-Critical | Investigating | 4        |
-| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Verifying     | 2        |
+| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Verifying     | 3        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -94,8 +94,8 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 | **Type**        | Performance          |
 | **Priority**    | P1-High              |
 | **Created**     | 2025-12-08           |
-| **Sessions**    | 2                    |
-| **Last Active** | 2025-12-08 20:00 UTC |
+| **Sessions**    | 3                    |
+| **Last Active** | 2025-12-08 15:00 UTC |
 
 #### Description
 
@@ -109,15 +109,15 @@ Legacy document import process stalls/fails when processing approximately 8,000 
 
 #### Root Cause
 
-**PRIMARY (CRITICAL):** The `/api/get-batch` endpoint in `apps/legacy-import/src/app/api/get-batch/route.ts` has NO pagination - it fetches ALL documents for a user's batches in a single query. At 8K docs, this causes:
+**PRIMARY (Session 2):** The `/api/get-batch` endpoint in `apps/legacy-import/src/app/api/get-batch/route.ts` had NO pagination - it fetched ALL documents for a user's batches in a single query. At 8K docs, this causes memory exhaustion and payload too large.
 
-- Memory exhaustion from loading massive result sets
-- Network payload too large (including extractedText field = 8-80MB transfer)
-- PostgreSQL query timeouts
+**SECONDARY (Session 2):** Missing composite database indexes on `(sessionId, batchId)` causing slow queries.
 
-**SECONDARY:** Missing composite database indexes on `(sessionId, batchId)` causing slow queries.
+**TERTIARY (Session 3 - CRITICAL):** The extraction process itself stopped at ~8K documents due to:
 
-**TERTIARY:** AI analysis limited to 100 docs per call (80+ API calls needed for 8K docs).
+1. **Memory exhaustion**: `extractFromPSTFile()` loaded ALL document Buffers into memory at once. With 8K+ PDFs (100KB-10MB each), this could require 1-10GB of RAM.
+2. **Sequential processing**: Each document was uploaded to R2 and had text extracted (~1-2 seconds per doc). 8K docs = 2-4 hours of processing.
+3. **Render request timeout**: Render web services have a 10-minute timeout. The extraction request was killed after 10 minutes, leaving the process incomplete at ~8K docs.
 
 #### Fix Applied
 
@@ -151,11 +151,37 @@ Legacy document import process stalls/fails when processing approximately 8,000 
 - Added `@@index([sessionId, batchId])` - used in get-batch query
 - Added `@@index([sessionId, status])` - used in analysis queries
 
+**Fix 6 (Session 3): Resumable batch extraction**
+
+- File: `packages/database/prisma/schema.prisma`
+  - Added `extractionProgress` JSON field to track: `{totalInPst, extractedCount, isComplete}`
+
+- File: `apps/legacy-import/src/services/pst-parser.service.ts`
+  - Added `BatchExtractionOptions` interface with `skip` and `take` parameters
+  - Added `countDocumentsInPST()` - fast scan to count total docs without loading content
+  - Modified `processFolder()` to support skip/take for resumable extraction
+  - Modified `extractFromPSTFile()` to accept batch options
+
+- File: `apps/legacy-import/src/app/api/extract-documents/route.ts`
+  - First call: counts total documents in PST, saves to `extractionProgress`
+  - Subsequent calls: resumes from where it left off (skip already extracted docs)
+  - Processes ~500 docs per batch (fits within 10-minute timeout)
+  - Returns progress: `{totalInPst, extractedCount, isComplete, remainingCount}`
+
+- File: `apps/legacy-import/src/app/page.tsx`
+  - Updated `ExtractStep` component to support batch extraction with "Continue" button
+  - Added `ExtractionIncompleteBanner` component shown in categorize step when extraction incomplete
+  - Shows progress bar with extracted/total counts
+  - Allows users to continue extraction or proceed with partial data
+
 #### Session Log
 
 - [2025-12-08 19:45] Issue created. Initial triage identified critical pagination issue in get-batch endpoint. The endpoint loads ALL documents without pagination, and includes the large `extractedText` field unnecessarily.
 - [2025-12-08 20:00] Session 2 started. Continuing from: New. Beginning implementation of pagination fix.
 - [2025-12-08 20:15] Session 2 - Implemented 5 fixes: (1) Removed extractedText from batch query, (2) Added extractedText to document-url for lazy loading, (3) Updated frontend store and component for lazy text loading, (4) Added pagination with page/pageSize params, (5) Added composite indexes. Ready for deployment and verification.
+- [2025-12-08] Session 3 started. Problem persists - extraction stopping at ~8K docs.
+- [2025-12-08] Session 3 - Root cause found: extraction loads ALL documents into memory and processes sequentially. With 8K+ docs, this exceeds Render's 10-minute request timeout.
+- [2025-12-08] Session 3 - Implemented resumable batch extraction: PST parser now supports skip/take, API tracks progress in DB, frontend shows "Continue extraction" button. Extracts ~500 docs per batch to stay under timeout.
 
 #### Files Involved
 
@@ -163,7 +189,10 @@ Legacy document import process stalls/fails when processing approximately 8,000 
 - `apps/legacy-import/src/app/api/document-url/route.ts` - **FIXED** - Added extractedText to response
 - `apps/legacy-import/src/stores/documentStore.ts` - **FIXED** - Added extractedTexts cache
 - `apps/legacy-import/src/components/Categorization/CategorizationWorkspace.tsx` - **FIXED** - Lazy load extractedText
-- `packages/database/prisma/schema.prisma` - **FIXED** - Added composite indexes
+- `packages/database/prisma/schema.prisma` - **FIXED** - Added composite indexes + extractionProgress field
+- `apps/legacy-import/src/services/pst-parser.service.ts` - **FIXED** - Added skip/take batch extraction + countDocumentsInPST
+- `apps/legacy-import/src/app/api/extract-documents/route.ts` - **FIXED** - Resumable batch extraction with progress tracking
+- `apps/legacy-import/src/app/page.tsx` - **FIXED** - ExtractStep with batch UI + ExtractionIncompleteBanner
 - `apps/legacy-import/src/app/api/analyze-documents/route.ts` - Batch size limited to 100 (future optimization)
 - `apps/legacy-import/src/services/ai-document-analyzer.ts` - BATCH_SIZE = 25 (future optimization)
 

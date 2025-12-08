@@ -1,6 +1,7 @@
 /**
  * Extract Documents API Route
  * Processes uploaded PST file and extracts documents
+ * Supports RESUMABLE extraction for large PST files
  * Part of Story 3.2.5 - Legacy Document Import
  */
 
@@ -10,6 +11,7 @@ import { Prisma } from '@/generated/prisma';
 import { streamFromR2ToFile, uploadExtractedDocument } from '@/lib/r2-storage';
 import {
   extractFromPSTFile,
+  countDocumentsInPST,
   groupByMonth,
   getExtractionSummary,
 } from '@/services/pst-parser.service';
@@ -20,10 +22,23 @@ import { join } from 'path';
 import { unlink } from 'fs/promises';
 import { randomUUID } from 'crypto';
 
+// Batch size for resumable extraction - balance between progress and timeout risk
+const EXTRACTION_BATCH_SIZE = 500;
+
+interface ExtractionProgress {
+  totalInPst: number;
+  extractedCount: number;
+  isComplete: boolean;
+  lastBatchAt?: string;
+}
+
 /**
- * POST - Start PST extraction for a session
+ * POST - Start or continue PST extraction for a session
+ * Supports resumable extraction for large PST files
  */
 export async function POST(request: NextRequest) {
+  let tempPstPath: string | null = null;
+
   try {
     const body = await request.json();
     const { sessionId } = body;
@@ -45,121 +60,206 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'PST file not uploaded yet' }, { status: 400 });
     }
 
-    if (session.status !== 'Extracting') {
+    // Allow both 'Extracting' (first time) and 'InProgress' (resuming) statuses
+    if (session.status !== 'Extracting' && session.status !== 'InProgress') {
       return NextResponse.json(
-        { error: `Invalid session status: ${session.status}. Expected: Extracting` },
+        { error: `Invalid session status: ${session.status}. Expected: Extracting or InProgress` },
         { status: 400 }
       );
     }
 
+    // Get or initialize extraction progress
+    let progress: ExtractionProgress = (session.extractionProgress as ExtractionProgress) || {
+      totalInPst: 0,
+      extractedCount: 0,
+      isComplete: false,
+    };
+
     // Stream PST from R2 to temp file (memory-efficient for large files)
-    const tempPstPath = join(tmpdir(), `pst-${randomUUID()}.pst`);
+    tempPstPath = join(tmpdir(), `pst-${randomUUID()}.pst`);
 
-    try {
-      console.log(`Streaming PST to temp file: ${tempPstPath}`);
-      await streamFromR2ToFile(session.pstStoragePath, tempPstPath);
-      console.log('PST download complete, starting extraction...');
+    console.log(`Streaming PST to temp file: ${tempPstPath}`);
+    await streamFromR2ToFile(session.pstStoragePath, tempPstPath);
+    console.log('PST download complete');
 
-      // Extract attachments from file path (not buffer)
-      const extractionResult = await extractFromPSTFile(tempPstPath);
+    // First time: count total documents in PST
+    if (progress.totalInPst === 0) {
+      console.log('First extraction call - counting total documents in PST...');
+      const totalCount = await countDocumentsInPST(tempPstPath);
+      progress.totalInPst = totalCount;
+      console.log(`Total documents in PST: ${totalCount}`);
 
-      // Get summary
-      const summary = getExtractionSummary(extractionResult);
+      // Save initial count
+      await prisma.legacyImportSession.update({
+        where: { id: sessionId },
+        data: {
+          extractionProgress: progress as unknown as Prisma.JsonObject,
+        },
+      });
+    }
 
-      // Group by month for batch creation
-      const byMonth = groupByMonth(extractionResult.attachments);
+    // Check if already complete
+    if (progress.isComplete) {
+      return NextResponse.json({
+        success: true,
+        sessionId,
+        message: 'Extraction already complete',
+        progress: {
+          totalInPst: progress.totalInPst,
+          extractedCount: progress.extractedCount,
+          isComplete: true,
+          remainingCount: 0,
+        },
+        status: session.status,
+      });
+    }
 
-      // Step 1: Upload all documents to R2 and extract text for language detection
-      // This is the slow part that was causing transaction timeouts
-      const uploadedDocs: Array<{
-        attachment: (typeof extractionResult.attachments)[0];
-        storagePath: string;
-        extractedText: string;
-        primaryLanguage: SupportedLanguage;
-        languageConfidence: number;
-      }> = [];
+    const skipCount = progress.extractedCount;
+    console.log(
+      `Resuming extraction from document ${skipCount}, batch size ${EXTRACTION_BATCH_SIZE}`
+    );
 
-      for (const attachment of extractionResult.attachments) {
-        const uploadResult = await uploadExtractedDocument(
-          sessionId,
-          attachment.id,
-          attachment.content,
-          attachment.fileExtension,
-          {
-            originalFileName: attachment.fileName,
-            folderPath: attachment.folderPath,
-            emailSubject: attachment.emailMetadata.subject,
-          }
-        );
+    // Extract next batch of attachments
+    const extractionResult = await extractFromPSTFile(tempPstPath, {
+      skip: skipCount,
+      take: EXTRACTION_BATCH_SIZE,
+    });
 
-        // Extract text and detect language for supported file types
-        let extractedText = '';
-        let primaryLanguage: SupportedLanguage = 'Mixed';
-        let languageConfidence = 0;
+    const batchAttachments = extractionResult.attachments;
+    console.log(`Extracted ${batchAttachments.length} documents in this batch`);
 
-        const supportedExtensions = ['pdf', 'docx', 'doc'];
-        if (supportedExtensions.includes(attachment.fileExtension.toLowerCase())) {
-          try {
-            const textResult = await extractTextAndDetectLanguage(
-              attachment.content,
-              attachment.fileExtension
-            );
-            extractedText = textResult.text;
-            primaryLanguage = textResult.primaryLanguage;
-            languageConfidence = textResult.languageConfidence;
-          } catch (err) {
-            console.warn(
-              `Text extraction failed for ${attachment.fileName}:`,
-              err instanceof Error ? err.message : 'Unknown error'
-            );
-          }
+    if (batchAttachments.length === 0) {
+      // No more documents to extract
+      progress.isComplete = true;
+      progress.lastBatchAt = new Date().toISOString();
+
+      await prisma.legacyImportSession.update({
+        where: { id: sessionId },
+        data: {
+          status: 'InProgress',
+          extractionProgress: progress as unknown as Prisma.JsonObject,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        sessionId,
+        message: 'Extraction complete - no more documents',
+        progress: {
+          totalInPst: progress.totalInPst,
+          extractedCount: progress.extractedCount,
+          isComplete: true,
+          remainingCount: 0,
+        },
+        status: 'InProgress',
+      });
+    }
+
+    // Upload documents to R2 and extract text
+    const uploadedDocs: Array<{
+      attachment: (typeof batchAttachments)[0];
+      storagePath: string;
+      extractedText: string;
+      primaryLanguage: SupportedLanguage;
+      languageConfidence: number;
+    }> = [];
+
+    for (const attachment of batchAttachments) {
+      const uploadResult = await uploadExtractedDocument(
+        sessionId,
+        attachment.id,
+        attachment.content,
+        attachment.fileExtension,
+        {
+          originalFileName: attachment.fileName,
+          folderPath: attachment.folderPath,
+          emailSubject: attachment.emailMetadata.subject,
         }
+      );
 
-        uploadedDocs.push({
-          attachment,
-          storagePath: uploadResult.key,
-          extractedText,
-          primaryLanguage,
-          languageConfidence,
-        });
+      // Extract text and detect language for supported file types
+      let extractedText = '';
+      let primaryLanguage: SupportedLanguage = 'Mixed';
+      let languageConfidence = 0;
+
+      const supportedExtensions = ['pdf', 'docx', 'doc'];
+      if (supportedExtensions.includes(attachment.fileExtension.toLowerCase())) {
+        try {
+          const textResult = await extractTextAndDetectLanguage(
+            attachment.content,
+            attachment.fileExtension
+          );
+          extractedText = textResult.text;
+          primaryLanguage = textResult.primaryLanguage;
+          languageConfidence = textResult.languageConfidence;
+        } catch (err) {
+          console.warn(
+            `Text extraction failed for ${attachment.fileName}:`,
+            err instanceof Error ? err.message : 'Unknown error'
+          );
+        }
       }
 
-      // Step 2: Create database records in a transaction (with extended timeout)
-      const result = await prisma.$transaction(
-        async (tx: Prisma.TransactionClient) => {
-          const batchIds = new Map<string, string>();
+      uploadedDocs.push({
+        attachment,
+        storagePath: uploadResult.key,
+        extractedText,
+        primaryLanguage,
+        languageConfidence,
+      });
+    }
 
-          // Create batches for each month
-          for (const [monthYear, attachments] of byMonth) {
-            const batch = await tx.documentBatch.create({
+    // Group by month for batch creation/updating
+    const byMonth = groupByMonth(batchAttachments);
+
+    // Create database records in a transaction
+    await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        // Get or create batches for each month
+        for (const [monthYear, attachments] of byMonth) {
+          // Try to find existing batch
+          let batch = await tx.documentBatch.findUnique({
+            where: {
+              sessionId_monthYear: {
+                sessionId,
+                monthYear,
+              },
+            },
+          });
+
+          if (!batch) {
+            // Create new batch
+            batch = await tx.documentBatch.create({
               data: {
                 sessionId,
                 monthYear,
                 documentCount: attachments.length,
               },
             });
-            batchIds.set(monthYear, batch.id);
+          } else {
+            // Update existing batch document count
+            await tx.documentBatch.update({
+              where: { id: batch.id },
+              data: {
+                documentCount: batch.documentCount + attachments.length,
+              },
+            });
           }
 
-          // Create document records (R2 uploads already done)
-          const documentRecords = [];
-          for (const {
-            attachment,
-            storagePath,
-            extractedText,
-            primaryLanguage,
-            languageConfidence,
-          } of uploadedDocs) {
-            const batchId = batchIds.get(attachment.monthYear);
-            const doc = await tx.extractedDocument.create({
+          // Create document records for this batch
+          for (const attachment of attachments) {
+            const uploadedDoc = uploadedDocs.find((u) => u.attachment.id === attachment.id);
+            if (!uploadedDoc) continue;
+
+            await tx.extractedDocument.create({
               data: {
                 id: attachment.id,
                 sessionId,
-                batchId,
+                batchId: batch.id,
                 fileName: attachment.fileName,
                 fileExtension: attachment.fileExtension,
                 fileSizeBytes: attachment.fileSizeBytes,
-                storagePath,
+                storagePath: uploadedDoc.storagePath,
                 folderPath: attachment.folderPath,
                 isSent: attachment.isSent,
                 emailSubject: attachment.emailMetadata.subject,
@@ -169,82 +269,84 @@ export async function POST(request: NextRequest) {
                   attachment.emailMetadata.receiverEmail || attachment.emailMetadata.receiverName,
                 emailDate: attachment.emailMetadata.receivedDate,
                 status: 'Uncategorized',
-                // Language detection fields
-                extractedText: extractedText || null,
-                primaryLanguage,
-                languageConfidence,
+                extractedText: uploadedDoc.extractedText || null,
+                primaryLanguage: uploadedDoc.primaryLanguage,
+                languageConfidence: uploadedDoc.languageConfidence,
               },
             });
-            documentRecords.push(doc);
           }
-
-          // Update session status
-          await tx.legacyImportSession.update({
-            where: { id: sessionId },
-            data: {
-              status: 'InProgress',
-              totalDocuments: extractionResult.attachments.length,
-              extractionErrors:
-                extractionResult.progress.errors.length > 0
-                  ? JSON.parse(JSON.stringify(extractionResult.progress.errors))
-                  : undefined,
-            },
-          });
-
-          // Create audit log
-          await tx.legacyImportAuditLog.create({
-            data: {
-              sessionId,
-              userId: session.uploadedBy,
-              action: 'EXTRACTION_COMPLETED',
-              details: {
-                totalDocuments: summary.totalDocuments,
-                byExtension: summary.byExtension,
-                byMonth: summary.byMonth,
-                sentCount: summary.sentCount,
-                receivedCount: summary.receivedCount,
-                errorCount: summary.errorCount,
-                batchCount: byMonth.size,
-              },
-            },
-          });
-
-          return {
-            documents: documentRecords,
-            batchCount: byMonth.size,
-          };
-        },
-        {
-          maxWait: 60000, // 60 seconds max wait to acquire transaction
-          timeout: 120000, // 2 minutes timeout for transaction execution
         }
-      );
 
-      return NextResponse.json({
-        success: true,
-        sessionId,
-        extraction: {
-          totalDocuments: summary.totalDocuments,
-          byExtension: summary.byExtension,
-          byMonth: summary.byMonth,
-          sentCount: summary.sentCount,
-          receivedCount: summary.receivedCount,
-          uniqueFolders: summary.uniqueFolders,
-          batchCount: result.batchCount,
-          errorCount: summary.errorCount,
-        },
-        folderStructure: extractionResult.folderStructure,
-        status: 'InProgress',
-      });
-    } finally {
-      // Always clean up temp file
-      try {
-        await unlink(tempPstPath);
-        console.log(`Cleaned up temp file: ${tempPstPath}`);
-      } catch {
-        // Ignore cleanup errors
+        // Update extraction progress
+        const newExtractedCount = progress.extractedCount + batchAttachments.length;
+        const isComplete = newExtractedCount >= progress.totalInPst;
+
+        progress.extractedCount = newExtractedCount;
+        progress.isComplete = isComplete;
+        progress.lastBatchAt = new Date().toISOString();
+
+        // Update session
+        await tx.legacyImportSession.update({
+          where: { id: sessionId },
+          data: {
+            status: 'InProgress',
+            totalDocuments: newExtractedCount,
+            extractionProgress: progress as unknown as Prisma.JsonObject,
+            extractionErrors:
+              extractionResult.progress.errors.length > 0
+                ? JSON.parse(JSON.stringify(extractionResult.progress.errors))
+                : undefined,
+          },
+        });
+
+        // Create audit log
+        await tx.legacyImportAuditLog.create({
+          data: {
+            sessionId,
+            userId: session.uploadedBy,
+            action: isComplete ? 'EXTRACTION_COMPLETED' : 'EXTRACTION_BATCH_COMPLETED',
+            details: {
+              batchSize: batchAttachments.length,
+              totalExtracted: newExtractedCount,
+              totalInPst: progress.totalInPst,
+              isComplete,
+              byMonth: Object.fromEntries(byMonth.entries()),
+            },
+          },
+        });
+      },
+      {
+        maxWait: 60000,
+        timeout: 120000,
       }
-    }
+    );
+
+    const summary = getExtractionSummary(extractionResult);
+    const remainingCount = progress.totalInPst - progress.extractedCount;
+
+    return NextResponse.json({
+      success: true,
+      sessionId,
+      message: progress.isComplete
+        ? 'Extraction complete!'
+        : `Extracted ${batchAttachments.length} documents. ${remainingCount} remaining.`,
+      extraction: {
+        batchDocuments: summary.totalDocuments,
+        byExtension: summary.byExtension,
+        byMonth: summary.byMonth,
+        sentCount: summary.sentCount,
+        receivedCount: summary.receivedCount,
+        errorCount: summary.errorCount,
+      },
+      progress: {
+        totalInPst: progress.totalInPst,
+        extractedCount: progress.extractedCount,
+        isComplete: progress.isComplete,
+        remainingCount,
+      },
+      folderStructure: extractionResult.folderStructure,
+      status: 'InProgress',
+    });
   } catch (error) {
     console.error('Extract documents error:', error);
 
@@ -257,6 +359,7 @@ export async function POST(request: NextRequest) {
           data: {
             extractionErrors: {
               fatal: error instanceof Error ? error.message : 'Unknown error',
+              timestamp: new Date().toISOString(),
             },
           },
         });
@@ -272,6 +375,16 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    // Always clean up temp file
+    if (tempPstPath) {
+      try {
+        await unlink(tempPstPath);
+        console.log(`Cleaned up temp file: ${tempPstPath}`);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
   }
 }
 
@@ -333,6 +446,13 @@ export async function GET(request: NextRequest) {
       if (stat.status === 'Skipped') stats.skipped = stat._count;
     }
 
+    // Get extraction progress
+    const extractionProgress = (session.extractionProgress as ExtractionProgress) || {
+      totalInPst: 0,
+      extractedCount: session.totalDocuments,
+      isComplete: session.status !== 'Extracting',
+    };
+
     return NextResponse.json({
       sessionId: session.id,
       status: session.status,
@@ -343,6 +463,20 @@ export async function GET(request: NextRequest) {
       batches: session.batches,
       categoryCount: session._count.categories,
       extractionErrors: session.extractionErrors,
+      // Extraction progress for resumable extraction
+      extractionProgress: {
+        totalInPst: extractionProgress.totalInPst,
+        extractedCount: extractionProgress.extractedCount,
+        isComplete: extractionProgress.isComplete,
+        remainingCount: Math.max(
+          0,
+          extractionProgress.totalInPst - extractionProgress.extractedCount
+        ),
+        canContinue:
+          !extractionProgress.isComplete &&
+          session.status !== 'Completed' &&
+          session.status !== 'Exported',
+      },
     });
   } catch (error) {
     console.error('Get extraction status error:', error);

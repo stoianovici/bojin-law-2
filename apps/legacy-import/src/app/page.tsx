@@ -51,87 +51,198 @@ interface ExtractStepProps {
   onComplete: () => void;
 }
 
+interface ExtractionIncompleteBannerProps {
+  sessionId: string;
+  onContinueExtraction: () => void;
+}
+
+function ExtractionIncompleteBanner({
+  sessionId,
+  onContinueExtraction,
+}: ExtractionIncompleteBannerProps) {
+  const [extractionStatus, setExtractionStatus] = useState<{
+    totalInPst: number;
+    extractedCount: number;
+    remainingCount: number;
+    canContinue: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    async function checkExtractionStatus() {
+      try {
+        const res = await fetch(`/api/extract-documents?sessionId=${sessionId}`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const progress = data.extractionProgress;
+
+        if (progress && progress.canContinue && progress.remainingCount > 0) {
+          setExtractionStatus({
+            totalInPst: progress.totalInPst,
+            extractedCount: progress.extractedCount,
+            remainingCount: progress.remainingCount,
+            canContinue: progress.canContinue,
+          });
+        }
+      } catch (err) {
+        console.error('Error checking extraction status:', err);
+      }
+    }
+
+    checkExtractionStatus();
+  }, [sessionId]);
+
+  if (!extractionStatus || !extractionStatus.canContinue) {
+    return null;
+  }
+
+  const progressPercent = Math.round(
+    (extractionStatus.extractedCount / extractionStatus.totalInPst) * 100
+  );
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <FolderOpen className="h-5 w-5 text-amber-600" />
+          <div>
+            <p className="font-medium text-amber-900">Extragerea nu este completă</p>
+            <p className="text-sm text-amber-700">
+              {extractionStatus.extractedCount.toLocaleString()} din{' '}
+              {extractionStatus.totalInPst.toLocaleString()} documente extrase ({progressPercent}%).
+              Mai sunt <strong>{extractionStatus.remainingCount.toLocaleString()}</strong> de
+              extras.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onContinueExtraction}
+          className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium flex items-center gap-2"
+        >
+          <FolderOpen className="h-4 w-4" />
+          Continuă extragerea
+        </button>
+      </div>
+      {/* Mini progress bar */}
+      <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-amber-500 rounded-full transition-all"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 interface ExtractionProgress {
-  status: 'extracting' | 'analyzing' | 'complete' | 'error';
+  status: 'idle' | 'extracting' | 'batch_complete' | 'complete' | 'error';
   extractedCount: number;
-  totalCount: number;
-  analyzedCount: number;
-  currentFolder?: string;
+  totalInPst: number;
+  remainingCount: number;
+  batchSize?: number;
   error?: string;
 }
 
 function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
   const [progress, setProgress] = useState<ExtractionProgress>({
-    status: 'extracting',
+    status: 'idle',
     extractedCount: 0,
-    totalCount: 0,
-    analyzedCount: 0,
+    totalInPst: 0,
+    remainingCount: 0,
   });
   const [error, setError] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
 
+  // Check current extraction status on mount
   useEffect(() => {
     if (!sessionId) return;
 
-    let isMounted = true;
-    let pollInterval: NodeJS.Timeout;
-
-    async function startExtraction() {
+    async function checkStatus() {
       try {
-        // Start extraction
-        const extractRes = await fetch('/api/extract-documents', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId }),
-        });
+        const res = await fetch(`/api/extract-documents?sessionId=${sessionId}`);
+        if (!res.ok) return;
 
-        if (!extractRes.ok) {
-          throw new Error('Failed to start extraction');
-        }
+        const data = await res.json();
+        const extractionProgress = data.extractionProgress;
 
-        // Poll for progress
-        pollInterval = setInterval(async () => {
-          try {
-            const progressRes = await fetch(`/api/session-progress?sessionId=${sessionId}`);
-            if (!progressRes.ok) return;
+        if (extractionProgress) {
+          const isComplete = extractionProgress.isComplete;
+          setProgress({
+            status: isComplete
+              ? 'complete'
+              : extractionProgress.extractedCount > 0
+                ? 'batch_complete'
+                : 'idle',
+            extractedCount: extractionProgress.extractedCount || 0,
+            totalInPst: extractionProgress.totalInPst || 0,
+            remainingCount: extractionProgress.remainingCount || 0,
+          });
 
-            const data = await progressRes.json();
-
-            if (!isMounted) return;
-
-            setProgress({
-              status:
-                data.status === 'Extracted' || data.status === 'InProgress'
-                  ? 'complete'
-                  : 'extracting',
-              extractedCount: data.totalDocuments || 0,
-              totalCount: data.totalDocuments || 0,
-              analyzedCount: data.analyzedCount || 0,
-            });
-
-            // Move to categorize when extraction is complete
-            if (data.status === 'Extracted' || data.status === 'InProgress') {
-              clearInterval(pollInterval);
-              setTimeout(onComplete, 1000);
-            }
-          } catch (err) {
-            console.error('Error polling progress:', err);
+          // Auto-complete if extraction is done
+          if (isComplete && extractionProgress.extractedCount > 0) {
+            setTimeout(onComplete, 1000);
           }
-        }, 2000);
-      } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Extraction failed');
-          setProgress((p) => ({ ...p, status: 'error' }));
         }
+      } catch (err) {
+        console.error('Error checking extraction status:', err);
       }
     }
 
-    startExtraction();
-
-    return () => {
-      isMounted = false;
-      if (pollInterval) clearInterval(pollInterval);
-    };
+    checkStatus();
   }, [sessionId, onComplete]);
+
+  const runExtractionBatch = async () => {
+    if (!sessionId || isExtracting) return;
+
+    setIsExtracting(true);
+    setError(null);
+    setProgress((p) => ({ ...p, status: 'extracting' }));
+
+    try {
+      const res = await fetch('/api/extract-documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to extract documents');
+      }
+
+      const data = await res.json();
+
+      const isComplete = data.progress?.isComplete;
+      setProgress({
+        status: isComplete ? 'complete' : 'batch_complete',
+        extractedCount: data.progress?.extractedCount || 0,
+        totalInPst: data.progress?.totalInPst || 0,
+        remainingCount: data.progress?.remainingCount || 0,
+        batchSize: data.extraction?.batchDocuments || 0,
+      });
+
+      // Auto-complete if extraction is done
+      if (isComplete) {
+        setTimeout(onComplete, 1500);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Extraction failed');
+      setProgress((p) => ({ ...p, status: 'error' }));
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  // Auto-start extraction on first render if not already extracted
+  useEffect(() => {
+    if (sessionId && progress.status === 'idle' && !isExtracting) {
+      runExtractionBatch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, progress.status]);
+
+  const progressPercent =
+    progress.totalInPst > 0 ? Math.round((progress.extractedCount / progress.totalInPst) * 100) : 0;
 
   if (error) {
     return (
@@ -142,12 +253,25 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
           </div>
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">Extragerea a eșuat</h2>
           <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Încearcă din nou
-          </button>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                setError(null);
+                runExtractionBatch();
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Încearcă din nou
+            </button>
+            {progress.extractedCount > 0 && (
+              <button
+                onClick={onComplete}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Continuă cu {progress.extractedCount} documente
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -163,7 +287,26 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
             </div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Extragere finalizată!</h2>
             <p className="text-gray-600">
-              Am găsit {progress.extractedCount} documente pregătite pentru categorizare.
+              Am extras {progress.extractedCount.toLocaleString()} documente pregătite pentru
+              categorizare.
+            </p>
+          </>
+        ) : progress.status === 'batch_complete' ? (
+          <>
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mb-4">
+              <FolderOpen className="h-6 w-6 text-amber-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              Lot de extragere finalizat
+            </h2>
+            <p className="text-gray-600">
+              Am extras {progress.extractedCount.toLocaleString()} din{' '}
+              {progress.totalInPst.toLocaleString()} documente.
+              <br />
+              <strong className="text-amber-600">
+                {progress.remainingCount.toLocaleString()}
+              </strong>{' '}
+              documente rămase de extras.
             </p>
           </>
         ) : (
@@ -172,6 +315,14 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Se extrag documentele...</h2>
             <p className="text-gray-600">
               Se procesează fișierul PST și se extrag atașamentele PDF, DOCX și DOC.
+              {progress.totalInPst > 0 && (
+                <>
+                  <br />
+                  <span className="text-sm">
+                    Total în PST: {progress.totalInPst.toLocaleString()} documente
+                  </span>
+                </>
+              )}
             </p>
           </>
         )}
@@ -181,19 +332,59 @@ function ExtractStep({ sessionId, onComplete }: ExtractStepProps) {
       <div className="max-w-md mx-auto">
         <div className="flex items-center justify-between mb-2 text-sm text-gray-600">
           <span>Documente extrase</span>
-          <span>{progress.extractedCount}</span>
+          <span>
+            {progress.extractedCount.toLocaleString()}
+            {progress.totalInPst > 0 && ` / ${progress.totalInPst.toLocaleString()}`}
+            {progress.totalInPst > 0 && ` (${progressPercent}%)`}
+          </span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              progress.status === 'complete' ? 'bg-green-500' : 'bg-blue-600'
+              progress.status === 'complete'
+                ? 'bg-green-500'
+                : progress.status === 'batch_complete'
+                  ? 'bg-amber-500'
+                  : 'bg-blue-600'
             }`}
-            style={{ width: progress.status === 'complete' ? '100%' : '50%' }}
+            style={{ width: `${progressPercent || (isExtracting ? 10 : 0)}%` }}
           />
         </div>
-        {progress.currentFolder && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Se procesează: {progress.currentFolder}
+
+        {/* Continue Extraction Button */}
+        {progress.status === 'batch_complete' && progress.remainingCount > 0 && (
+          <div className="mt-6 text-center space-y-3">
+            <button
+              onClick={runExtractionBatch}
+              disabled={isExtracting}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+            >
+              {isExtracting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Se extrag...
+                </>
+              ) : (
+                <>
+                  <FolderOpen className="h-4 w-4" />
+                  Continuă extragerea ({progress.remainingCount.toLocaleString()} rămase)
+                </>
+              )}
+            </button>
+            <button
+              onClick={onComplete}
+              className="text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+              Sau continuă cu documentele extrase deja
+            </button>
+          </div>
+        )}
+
+        {/* Info about batch extraction */}
+        {(progress.status === 'extracting' || progress.status === 'batch_complete') && (
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            Extragerea se face în loturi de ~500 documente pentru a evita timeout-ul.
+            {progress.status === 'batch_complete' && ' Apasă butonul pentru a continua.'}
           </p>
         )}
       </div>
@@ -519,6 +710,10 @@ function ImportPageContent() {
       {/* Categorize Step */}
       {currentStep === 'categorize' && session.sessionId && (
         <div className="space-y-4">
+          <ExtractionIncompleteBanner
+            sessionId={session.sessionId}
+            onContinueExtraction={() => setCurrentStep('extract')}
+          />
           <CategorizationWorkspace sessionId={session.sessionId} />
           <div className="flex justify-end">
             <button

@@ -975,6 +975,7 @@ model LegacyImportSession {
   skippedCount     Int                 @default(0) @map("skipped_count")
   analyzedCount    Int                 @default(0) @map("analyzed_count") // AI analysis count
   extractionErrors Json?               @map("extraction_errors") // Error log from PST extraction
+  extractionProgress Json?             @map("extraction_progress") // Track resumable extraction: {totalInPst, extractedCount, isComplete}
   createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz
   exportedAt       DateTime?           @map("exported_at") @db.Timestamptz
@@ -1082,6 +1083,9 @@ model ExtractedDocument {
   @@index([emailDate])
   @@index([primaryLanguage])
   @@index([templatePotential])
+  // Composite indexes for common query patterns
+  @@index([sessionId, batchId])
+  @@index([sessionId, status])
   @@map("extracted_documents")
 }
 

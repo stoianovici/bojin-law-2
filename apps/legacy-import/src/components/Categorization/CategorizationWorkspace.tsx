@@ -29,9 +29,11 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
   const setCategories = useDocumentStore((s: DocumentState) => s.setCategories);
   const addCategory = useDocumentStore((s: DocumentState) => s.addCategory);
   const setDocumentUrl = useDocumentStore((s: DocumentState) => s.setDocumentUrl);
+  const setExtractedText = useDocumentStore((s: DocumentState) => s.setExtractedText);
 
   const currentDocument = useDocumentStore((s: DocumentState) => s.getCurrentDocument());
   const documentUrls = useDocumentStore((s: DocumentState) => s.documentUrls);
+  const extractedTexts = useDocumentStore((s: DocumentState) => s.extractedTexts);
   const getFilteredDocuments = useDocumentStore((s: DocumentState) => s.getFilteredDocuments);
   const currentDocumentIndex = useDocumentStore((s: DocumentState) => s.currentDocumentIndex);
 
@@ -75,9 +77,9 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
     initialize();
   }, [sessionId, user?.id, setSession, setBatch, setDocuments, setCategories, setSessionProgress]);
 
-  // Fetch document URL when current document changes
+  // Fetch document URL and extracted text when current document changes
   useEffect(() => {
-    async function fetchDocumentUrl() {
+    async function fetchDocumentData() {
       if (!currentDocument) return;
       if (documentUrls[currentDocument.id]) return;
 
@@ -86,13 +88,17 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         if (!res.ok) throw new Error('Failed to get document URL');
         const data = await res.json();
         setDocumentUrl(currentDocument.id, data.url);
+        // Also store extractedText (now fetched lazily per-document)
+        if (data.extractedText !== undefined) {
+          setExtractedText(currentDocument.id, data.extractedText);
+        }
       } catch (err) {
         console.error('Failed to fetch document URL:', err);
       }
     }
 
-    fetchDocumentUrl();
-  }, [currentDocument, documentUrls, setDocumentUrl]);
+    fetchDocumentData();
+  }, [currentDocument, documentUrls, setDocumentUrl, setExtractedText]);
 
   // Sync categories on document change
   useEffect(() => {
@@ -244,6 +250,10 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
   }
 
   const documentUrl = currentDocument ? documentUrls[currentDocument.id] : null;
+  // Get extracted text from cache (lazy-loaded), fallback to document field for backwards compat
+  const currentExtractedText = currentDocument
+    ? (extractedTexts[currentDocument.id] ?? currentDocument.extractedText)
+    : null;
 
   return (
     <div className="space-y-4">
@@ -262,7 +272,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
               url={documentUrl}
               fileName={currentDocument.fileName}
               fileExtension={currentDocument.fileExtension}
-              extractedText={currentDocument.extractedText}
+              extractedText={currentExtractedText}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">

@@ -15,11 +15,20 @@ import {
 /**
  * GET - Get assigned batches for current user, allocating if needed
  */
+// Default page size - reasonable for UI performance
+const DEFAULT_PAGE_SIZE = 100;
+const MAX_PAGE_SIZE = 500;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     const userId = searchParams.get('userId'); // TODO: Get from auth context
+    const page = Math.max(0, parseInt(searchParams.get('page') || '0', 10));
+    const pageSize = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(1, parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10))
+    );
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
@@ -51,11 +60,20 @@ export async function GET(request: NextRequest) {
     // Allocate batches to user
     const userBatchInfo = await allocateBatchesToUser(sessionId, userId);
 
-    // Get documents for user's batches
+    // Get total document count for pagination info
+    const batchIds = userBatchInfo.batches.map((b: { batchId: string }) => b.batchId);
+    const totalDocumentsInBatches = await prisma.extractedDocument.count({
+      where: {
+        sessionId,
+        batchId: { in: batchIds },
+      },
+    });
+
+    // Get documents for user's batches with pagination
     const documents = await prisma.extractedDocument.findMany({
       where: {
         sessionId,
-        batchId: { in: userBatchInfo.batches.map((b: { batchId: string }) => b.batchId) },
+        batchId: { in: batchIds },
       },
       select: {
         id: true,
@@ -70,8 +88,7 @@ export async function GET(request: NextRequest) {
         status: true,
         categoryId: true,
         storagePath: true,
-        // AI analysis fields
-        extractedText: true,
+        // AI analysis fields (extractedText loaded lazily via document-url endpoint)
         primaryLanguage: true,
         secondaryLanguage: true,
         languageConfidence: true,
@@ -80,6 +97,8 @@ export async function GET(request: NextRequest) {
         templatePotential: true,
       },
       orderBy: [{ emailDate: 'asc' }, { fileName: 'asc' }],
+      skip: page * pageSize,
+      take: pageSize,
     });
 
     // Get categories for this session
@@ -92,6 +111,8 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { name: 'asc' },
     });
+
+    const totalPages = Math.ceil(totalDocumentsInBatches / pageSize);
 
     return NextResponse.json({
       userId,
@@ -117,6 +138,15 @@ export async function GET(request: NextRequest) {
         userBatchInfo.batches.length > 0
           ? `${userBatchInfo.batches[0].monthYear} - ${userBatchInfo.batches[userBatchInfo.batches.length - 1].monthYear}`
           : null,
+      // Pagination info
+      pagination: {
+        page,
+        pageSize,
+        totalDocumentsInBatches,
+        totalPages,
+        hasNextPage: page < totalPages - 1,
+        hasPreviousPage: page > 0,
+      },
     });
   } catch (error) {
     console.error('Get batch error:', error);

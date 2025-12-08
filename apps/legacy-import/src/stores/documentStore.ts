@@ -80,6 +80,8 @@ export interface DocumentState {
 
   // Document URL cache
   documentUrls: Record<string, string>;
+  // Extracted text cache (loaded lazily per-document)
+  extractedTexts: Record<string, string>;
 
   // Actions
   setSession: (sessionId: string, status: string) => void;
@@ -91,6 +93,7 @@ export interface DocumentState {
   setCurrentDocumentIndex: (index: number) => void;
   setActiveFilter: (filter: FilterType) => void;
   setDocumentUrl: (documentId: string, url: string) => void;
+  setExtractedText: (documentId: string, text: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 
@@ -124,6 +127,7 @@ const initialState = {
   categories: [],
   activeFilter: 'all' as FilterType,
   documentUrls: {},
+  extractedTexts: {},
 };
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -151,6 +155,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   setDocumentUrl: (documentId, url) =>
     set((state) => ({
       documentUrls: { ...state.documentUrls, [documentId]: url },
+    })),
+
+  setExtractedText: (documentId, text) =>
+    set((state) => ({
+      extractedTexts: { ...state.extractedTexts, [documentId]: text ?? '' },
     })),
 
   setLoading: (isLoading) => set({ isLoading }),
