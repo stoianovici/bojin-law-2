@@ -16,12 +16,14 @@ import { retainerService } from '../../services/retainer.service';
 
 // Types for GraphQL context
 // Story 2.11.1: Added BusinessOwner role and financialDataScope
+// Story 5.1: Added accessToken for email operations
 export interface Context {
   user?: {
     id: string;
     firmId: string;
     role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     email: string;
+    accessToken?: string; // Story 5.1: MS access token for email operations
   };
   // Story 2.11.1: Financial data scope for Partners and BusinessOwners
   financialDataScope?: 'own' | 'firm' | null;
@@ -142,12 +144,9 @@ function validateBillingInput(input: any) {
   // If billing type is Fixed, fixedAmount is required
   if (input.billingType === 'Fixed') {
     if (input.fixedAmount === null || input.fixedAmount === undefined) {
-      throw new GraphQLError(
-        'Fixed amount is required when billing type is Fixed',
-        {
-          extensions: { code: 'BAD_USER_INPUT' },
-        }
-      );
+      throw new GraphQLError('Fixed amount is required when billing type is Fixed', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
     }
 
     if (input.fixedAmount <= 0) {
@@ -201,11 +200,7 @@ async function trackRateChanges(
   }> = [];
 
   // Track billing type change to Fixed with fixed amount
-  if (
-    oldBillingType !== newBillingType &&
-    newBillingType === 'Fixed' &&
-    newRates.fixedAmount
-  ) {
+  if (oldBillingType !== newBillingType && newBillingType === 'Fixed' && newRates.fixedAmount) {
     changes.push({
       caseId,
       firmId,
@@ -243,10 +238,7 @@ async function trackRateChanges(
       });
     }
 
-    if (
-      oldCustom.paralegalRate !== newCustom.paralegalRate &&
-      newCustom.paralegalRate
-    ) {
+    if (oldCustom.paralegalRate !== newCustom.paralegalRate && newCustom.paralegalRate) {
       changes.push({
         caseId,
         firmId,
@@ -507,11 +499,7 @@ export const caseResolvers = {
       }
 
       // Get usage for the specified period (or current period)
-      return retainerService.getUsageForPeriod(
-        args.caseId,
-        user.firmId,
-        args.periodStart
-      );
+      return retainerService.getUsageForPeriod(args.caseId, user.firmId, args.periodStart);
     },
 
     // Get retainer usage history for a case
@@ -754,7 +742,10 @@ export const caseResolvers = {
       if (args.input.billingType || args.input.fixedAmount || args.input.customRates) {
         validateBillingInput({
           billingType: args.input.billingType || existingCase.billingType,
-          fixedAmount: args.input.fixedAmount !== undefined ? args.input.fixedAmount : existingCase.fixedAmount,
+          fixedAmount:
+            args.input.fixedAmount !== undefined
+              ? args.input.fixedAmount
+              : existingCase.fixedAmount,
           customRates: args.input.customRates,
         });
       }
@@ -810,8 +801,14 @@ export const caseResolvers = {
               customRates: existingCase.customRates,
             },
             {
-              fixedAmount: args.input.fixedAmount !== undefined ? args.input.fixedAmount : existingCase.fixedAmount,
-              customRates: args.input.customRates !== undefined ? args.input.customRates : existingCase.customRates,
+              fixedAmount:
+                args.input.fixedAmount !== undefined
+                  ? args.input.fixedAmount
+                  : existingCase.fixedAmount,
+              customRates:
+                args.input.customRates !== undefined
+                  ? args.input.customRates
+                  : existingCase.customRates,
             },
             existingCase.billingType,
             args.input.billingType || existingCase.billingType

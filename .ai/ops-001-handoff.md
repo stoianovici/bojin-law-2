@@ -1,96 +1,77 @@
-# OPS-001 Handoff Notes
+# Handoff: [OPS-001] Communications page not loading emails
 
-## Issue Summary
+**Session**: 2
+**Date**: 2025-12-08
+**Status**: Fixing (code changes complete, ready for deployment)
 
-**Title:** Communications page not loading emails
-**Priority:** P0-Critical
-**Status:** New
+## Work Completed This Session
 
-The /communications page is not displaying any emails despite authentication working correctly and the StartEmailSync mutation being called.
+### Fix 1: Register emailResolvers in GraphQL server
 
-## Root Cause Analysis
+- Added import for `emailResolvers` in `services/gateway/src/graphql/server.ts`
+- Merged email queries into Query resolvers (`emailResolvers.Query`)
+- Merged email mutations into Mutation resolvers (`emailResolvers.Mutation`)
+- Added Subscription resolvers (`emailResolvers.Subscription`)
+- Added type resolvers: `Email`, `EmailThread`, `EmailAttachment`
 
-### Primary Bug (Fix First)
+### Fix 2: Pass MS access token through GraphQL context
 
-**Email resolvers are not registered in the GraphQL server.**
+- **Apollo Client** (`apps/web/src/lib/apollo-client.ts`):
+  - Added `setContext` auth link to fetch and include MS access token as `x-ms-access-token` header
+  - Created `setMsAccessTokenGetter()` function for AuthProvider to register token getter
 
-Location: `services/gateway/src/graphql/server.ts`
+- **AuthContext** (`apps/web/src/contexts/AuthContext.tsx`):
+  - Added import for `setMsAccessTokenGetter`
+  - Added useEffect to register `getAccessToken` function with Apollo client
 
-The file imports `emailDraftingResolvers` (line ~46) but does NOT import or merge `emailResolvers` from `./resolvers/email.resolvers`. This means all email-related GraphQL operations silently fail:
+- **GraphQL Proxy** (`apps/web/src/app/api/graphql/route.ts`):
+  - Added code to forward `x-ms-access-token` header to gateway
 
-- Query: `emails`, `emailThreads`, `emailThread`
-- Mutation: `startEmailSync`, `assignEmailToCase`, `markEmailAsRead`, etc.
-- Subscription: `emailReceived`, `emailSyncProgress`
+- **Gateway Context** (`services/gateway/src/graphql/server.ts`):
+  - Extract `x-ms-access-token` from request headers
+  - Include `accessToken` in user context object
 
-### Secondary Bug (Fix After Primary)
+- **Context Type** (`services/gateway/src/graphql/resolvers/case.resolvers.ts`):
+  - Added `accessToken?: string` to Context.user type definition
 
-**MS access token not passed through GraphQL context.**
+## Current State
 
-When `startEmailSync` is called, the resolver at `email.resolvers.ts:253` checks:
+All code changes are complete. The fix needs to be:
 
-```typescript
-if (!user || !user.accessToken) {
-  throw new GraphQLError('Authentication required with valid access token', ...);
-}
-```
+1. Committed to git
+2. Deployed to production (Render)
+3. Verified by testing /communications page
 
-But the context only provides `{id, firmId, role, email}` - no accessToken.
+## Blockers/Questions
 
-The access token extraction happens in the web app's GraphQL proxy (`apps/web/src/app/api/graphql/route.ts`) but it builds an `x-mock-user` header without including the token.
+None - fix is ready for deployment.
 
-## Suggested Fix Steps
+## Next Steps
 
-### Step 1: Register Email Resolvers
+1. **Commit changes**: Run git add/commit with the changes
+2. **Push to remote**: Push to trigger deployment
+3. **Verify fix**:
+   - Navigate to https://legal-platform-web.onrender.com/communications
+   - Check browser Network tab for successful GraphQL responses
+   - Verify emails load in the UI
+   - Check console for any remaining errors
+4. **Update status**: Change status to "Resolved" once verified
 
-In `services/gateway/src/graphql/server.ts`:
+## Key Files Modified
 
-1. Add import:
+| File                                                       | Change                                          |
+| ---------------------------------------------------------- | ----------------------------------------------- |
+| `services/gateway/src/graphql/server.ts`                   | Import + merge emailResolvers, extract MS token |
+| `services/gateway/src/graphql/resolvers/case.resolvers.ts` | Add accessToken to Context type                 |
+| `apps/web/src/lib/apollo-client.ts`                        | Add auth link for MS token                      |
+| `apps/web/src/contexts/AuthContext.tsx`                    | Register token getter with Apollo               |
+| `apps/web/src/app/api/graphql/route.ts`                    | Forward x-ms-access-token header                |
 
-```typescript
-import { emailResolvers } from './resolvers/email.resolvers';
-```
+## Testing Checklist
 
-2. Merge into resolvers (in the `makeExecutableSchema` call):
-
-```typescript
-Query: {
-  ...emailResolvers.Query,
-  // ...existing queries
-},
-Mutation: {
-  ...emailResolvers.Mutation,
-  // ...existing mutations
-},
-Subscription: {
-  ...emailResolvers.Subscription,
-  // ...existing subscriptions
-}
-```
-
-### Step 2: Pass Access Token Through Context
-
-1. In `apps/web/src/app/api/graphql/route.ts`, extract MS access token from session
-2. Pass it to gateway via header (e.g., `x-ms-access-token`)
-3. In `services/gateway/src/graphql/server.ts` context builder, extract and include in user object
-
-## Files to Investigate
-
-| File                                                        | Purpose                                            |
-| ----------------------------------------------------------- | -------------------------------------------------- |
-| `services/gateway/src/graphql/server.ts`                    | GraphQL server setup - needs resolver registration |
-| `services/gateway/src/graphql/resolvers/email.resolvers.ts` | Email resolver implementations                     |
-| `apps/web/src/app/api/graphql/route.ts`                     | GraphQL proxy - needs token pass-through           |
-| `apps/web/src/hooks/useEmailSync.ts`                        | Frontend hooks (reference for API shape)           |
-
-## Testing
-
-After fix:
-
-1. Navigate to /communications
-2. Check browser Network tab for successful GraphQL responses
-3. Verify emails load in the UI
-4. Check console for any remaining errors
-
-## Session History
-
-- **2025-12-08:** Issue created, root cause identified via codebase exploration
+- [ ] Gateway builds without errors
+- [ ] Web app builds without errors
+- [ ] /communications page loads
+- [ ] Email sync starts successfully
+- [ ] Email threads are displayed
+- [ ] No console errors related to email operations

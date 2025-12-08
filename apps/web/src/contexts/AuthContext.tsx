@@ -11,11 +11,13 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react';
 import type { AccountInfo } from '@azure/msal-browser';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import { loginRequest, getMsalInstance, handleMsalRedirect } from '@/lib/msal-config';
+import { setMsAccessTokenGetter } from '@/lib/apollo-client';
 import type { User } from '@legal-platform/types';
 
 export interface AuthState {
@@ -337,6 +339,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const token = await getAccessToken();
     return token !== null;
   }, [getAccessToken]);
+
+  /**
+   * Register MS access token getter with Apollo client
+   * This allows GraphQL requests to include the MS access token for email operations
+   */
+  const getAccessTokenRef = useRef(getAccessToken);
+  getAccessTokenRef.current = getAccessToken;
+
+  useEffect(() => {
+    // Set up the token getter for Apollo client
+    setMsAccessTokenGetter(() => getAccessTokenRef.current());
+  }, []);
 
   const value: AuthContextType = {
     ...state,

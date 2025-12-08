@@ -7,7 +7,7 @@
 
 | ID      | Title                                  | Type | Priority    | Status | Sessions |
 | ------- | -------------------------------------- | ---- | ----------- | ------ | -------- |
-| OPS-001 | Communications page not loading emails | Bug  | P0-Critical | New    | 1        |
+| OPS-001 | Communications page not loading emails | Bug  | P0-Critical | Fixing | 2        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -19,11 +19,11 @@
 
 | Field           | Value       |
 | --------------- | ----------- |
-| **Status**      | New         |
+| **Status**      | Fixing      |
 | **Type**        | Bug         |
 | **Priority**    | P0-Critical |
 | **Created**     | 2025-12-08  |
-| **Sessions**    | 1           |
+| **Sessions**    | 2           |
 | **Last Active** | 2025-12-08  |
 
 #### Description
@@ -44,19 +44,38 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 
 #### Fix Applied
 
-TBD
+**Fix 1: Register emailResolvers in GraphQL server**
+
+- File: `services/gateway/src/graphql/server.ts`
+- Added import: `import { emailResolvers } from './resolvers/email.resolvers';`
+- Merged `emailResolvers.Query` into Query resolvers
+- Merged `emailResolvers.Mutation` into Mutation resolvers
+- Added `emailResolvers.Subscription` to Subscription resolvers
+- Added type resolvers: `Email`, `EmailThread`, `EmailAttachment`
+
+**Fix 2: Pass MS access token through GraphQL context**
+
+- File: `apps/web/src/lib/apollo-client.ts` - Added auth link to include `x-ms-access-token` header
+- File: `apps/web/src/contexts/AuthContext.tsx` - Register token getter with Apollo client
+- File: `apps/web/src/app/api/graphql/route.ts` - Forward `x-ms-access-token` header to gateway
+- File: `services/gateway/src/graphql/server.ts` - Extract token from header and add to context
+- File: `services/gateway/src/graphql/resolvers/case.resolvers.ts` - Updated Context type to include `accessToken`
 
 #### Session Log
 
 - [2025-12-08] Issue created. Initial triage identified two critical bugs: (1) emailResolvers not merged into GraphQL server schema, (2) MS access token not passed through context.
+- [2025-12-08] Session 2 started. Implemented both fixes: registered emailResolvers in server.ts and set up MS access token pass-through from client to gateway.
 
 #### Files Involved
 
-- `services/gateway/src/graphql/server.ts` - Missing emailResolvers import/merge
+- `services/gateway/src/graphql/server.ts` - **FIXED** - Added emailResolvers import/merge + token extraction
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - Email resolver definitions
+- `services/gateway/src/graphql/resolvers/case.resolvers.ts` - **FIXED** - Added accessToken to Context type
+- `apps/web/src/lib/apollo-client.ts` - **FIXED** - Added auth link for MS token
+- `apps/web/src/contexts/AuthContext.tsx` - **FIXED** - Register token getter
+- `apps/web/src/app/api/graphql/route.ts` - **FIXED** - Forward x-ms-access-token header
 - `apps/web/src/hooks/useEmailSync.ts` - Frontend email hooks/queries
 - `apps/web/src/components/email/EmailThreadList.tsx` - Email list component
-- `apps/web/src/app/api/graphql/route.ts` - GraphQL proxy (missing access token pass-through)
 
 ---
 

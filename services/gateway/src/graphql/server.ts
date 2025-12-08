@@ -44,6 +44,7 @@ import { taskAnalyticsResolvers } from './resolvers/task-analytics.resolvers';
 import { caseTypeResolvers } from './resolvers/case-type.resolvers';
 import { communicationIntelligenceResolvers } from './resolvers/communication-intelligence.resolvers';
 import { emailDraftingResolvers } from './resolvers/email-drafting.resolvers';
+import { emailResolvers } from './resolvers/email.resolvers';
 import { aiLearningResolvers } from './resolvers/ai-learning.resolvers';
 import { platformIntelligenceResolvers } from './resolvers/platform-intelligence.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
@@ -86,6 +87,7 @@ const resolvers = {
     ...caseTypeResolvers.Query,
     ...communicationIntelligenceResolvers.Query,
     ...emailDraftingResolvers.Query,
+    ...emailResolvers.Query,
     ...aiLearningResolvers.Query,
     ...platformIntelligenceResolvers.Query,
   },
@@ -108,8 +110,12 @@ const resolvers = {
     ...caseTypeResolvers.Mutation,
     ...communicationIntelligenceResolvers.Mutation,
     ...emailDraftingResolvers.Mutation,
+    ...emailResolvers.Mutation,
     ...aiLearningResolvers.Mutation,
     ...platformIntelligenceResolvers.Mutation,
+  },
+  Subscription: {
+    ...emailResolvers.Subscription,
   },
   // Enum resolvers for analytics
   ...(taskAnalyticsResolvers.TrendDirection && {
@@ -208,6 +214,10 @@ const resolvers = {
   InlineSuggestionType: emailDraftingResolvers.InlineSuggestionType,
   // AI Learning resolvers (Story 5.6)
   SnippetCategory: aiLearningResolvers.SnippetCategory,
+  // Email resolvers (Story 5.1)
+  Email: emailResolvers.Email,
+  EmailThread: emailResolvers.EmailThread,
+  EmailAttachment: emailResolvers.EmailAttachment,
 };
 
 /**
@@ -236,6 +246,9 @@ export async function createApolloServer(httpServer: http.Server) {
 export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestHandler {
   return expressMiddleware(server, {
     context: async ({ req }: { req: Request }): Promise<Context> => {
+      // Extract MS access token from header (Story 5.1: Email Integration)
+      const msAccessToken = req.headers['x-ms-access-token'] as string | undefined;
+
       // Support for user context passed from web app proxy
       // The web app authenticates users via session cookie and passes context via x-mock-user header
       // This is trusted internal communication (browser -> web app -> gateway)
@@ -248,6 +261,7 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
               firmId: userContext.firmId,
               role: userContext.role,
               email: userContext.email,
+              accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
             },
             // Story 2.11.1: Populate financial data scope based on role
             financialDataScope: getFinancialDataScopeFromRole(userContext.role),
@@ -267,6 +281,7 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
               firmId: user.firmId,
               role: user.role,
               email: user.email,
+              accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
             }
           : undefined,
         // Story 2.11.1: Populate financial data scope based on role
