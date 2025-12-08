@@ -1748,6 +1748,32 @@ const logout = useCallback(async () => {
 10. Frontend displays email threads
 ```
 
+#### Fix 5: Wire Up Email Resolvers in GraphQL Server (ROOT CAUSE)
+
+**File**: `services/gateway/src/graphql/server.ts`
+
+The email resolvers were defined but **never imported or merged** into the main resolvers object. This was the root cause of the "Cannot return null" error - GraphQL had no resolver to handle email queries.
+
+```typescript
+// Added import
+import { emailResolvers } from './resolvers/email.resolvers';
+
+// Added to Query resolvers
+const resolvers = {
+  Query: {
+    // ... other resolvers
+    ...emailResolvers.Query,
+  },
+  Mutation: {
+    // ... other resolvers
+    ...emailResolvers.Mutation,
+  },
+  Subscription: {
+    ...emailResolvers.Subscription,
+  },
+};
+```
+
 ### Commits
 
 ```
@@ -1755,6 +1781,7 @@ const logout = useCallback(async () => {
 947039b feat: add email sync button and connect communications to API
 231c8e6 fix: logout now clears session cookie properly
 83899ca fix: emailThreads returns empty array instead of null
+1f8c0ae fix: wire up emailResolvers in GraphQL server
 ```
 
 ### Verification Steps
@@ -1780,11 +1807,11 @@ After deployment:
 
 ## Summary Table (Updated)
 
-| Date       | Service       | Issue                           | Fix                                          |
-| ---------- | ------------- | ------------------------------- | -------------------------------------------- |
-| 2025-12-07 | web           | GraphQL auth in production      | Pass x-mock-user header                      |
-| 2025-12-07 | web           | Auth redirect loops (v1-v11)    | Multiple fixes, final: middleware cookie fix |
-| 2025-12-08 | legacy-import | Wrong DATABASE_URL              | Update via Render API                        |
-| 2025-12-08 | legacy-import | Lost PST session                | Recovery endpoint + local extraction         |
-| 2025-12-08 | legacy-import | User IDs shown instead of names | Fetch user names from User table             |
-| 2025-12-08 | web + gateway | Email sync not fetching emails  | Pass MS token, add sync UI, fix null return  |
+| Date       | Service       | Issue                           | Fix                                           |
+| ---------- | ------------- | ------------------------------- | --------------------------------------------- |
+| 2025-12-07 | web           | GraphQL auth in production      | Pass x-mock-user header                       |
+| 2025-12-07 | web           | Auth redirect loops (v1-v11)    | Multiple fixes, final: middleware cookie fix  |
+| 2025-12-08 | legacy-import | Wrong DATABASE_URL              | Update via Render API                         |
+| 2025-12-08 | legacy-import | Lost PST session                | Recovery endpoint + local extraction          |
+| 2025-12-08 | legacy-import | User IDs shown instead of names | Fetch user names from User table              |
+| 2025-12-08 | web + gateway | Email sync not fetching emails  | Pass MS token, add sync UI, wire up resolvers |
