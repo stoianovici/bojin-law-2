@@ -19,6 +19,7 @@ interface BatchWithProgress {
   id: string;
   monthYear: string;
   assignedTo: string | null;
+  assignedToName?: string;
   documentCount: number;
   categorizedCount: number;
   skippedCount: number;
@@ -495,7 +496,7 @@ export function PartnerDashboard({
                     <td className="py-3 px-3">
                       {batch.assignedTo ? (
                         <span className="text-gray-700">
-                          Utilizator {batch.assignedTo.slice(0, 8)}
+                          {batch.assignedToName || `Utilizator ${batch.assignedTo.slice(0, 8)}`}
                         </span>
                       ) : (
                         <span className="text-gray-400 italic">Neatribuit</span>

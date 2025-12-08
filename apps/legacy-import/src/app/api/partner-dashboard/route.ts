@@ -51,10 +51,7 @@ export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId');
 
   if (!sessionId) {
-    return NextResponse.json(
-      { error: 'sessionId is required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
   }
 
   try {
@@ -73,31 +70,52 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
+    // Get all unique user IDs from batches
+    const userIds = [
+      ...new Set(
+        session.batches.map((b) => b.assignedTo).filter((id): id is string => id !== null)
+      ),
+    ];
+
+    // Fetch user names
+    const users =
+      userIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, firstName: true, lastName: true, email: true },
+          })
+        : [];
+
+    const userNameMap = new Map(
+      users.map((u) => [
+        u.id,
+        u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email || 'Unknown',
+      ])
+    );
+
     // Calculate batch progress
-    const batches: BatchWithProgress[] = session.batches.map((batch: typeof session.batches[number]) => ({
-      id: batch.id,
-      monthYear: batch.monthYear,
-      assignedTo: batch.assignedTo,
-      documentCount: batch.documentCount,
-      categorizedCount: batch.categorizedCount,
-      skippedCount: batch.skippedCount,
-      assignedAt: batch.assignedAt?.toISOString() ?? null,
-      completedAt: batch.completedAt?.toISOString() ?? null,
-      progressPercent:
-        batch.documentCount > 0
-          ? Math.round(
-              ((batch.categorizedCount + batch.skippedCount) /
-                batch.documentCount) *
-                100
-            )
-          : 0,
-    }));
+    const batches: BatchWithProgress[] = session.batches.map(
+      (batch: (typeof session.batches)[number]) => ({
+        id: batch.id,
+        monthYear: batch.monthYear,
+        assignedTo: batch.assignedTo,
+        assignedToName: batch.assignedTo ? userNameMap.get(batch.assignedTo) : undefined,
+        documentCount: batch.documentCount,
+        categorizedCount: batch.categorizedCount,
+        skippedCount: batch.skippedCount,
+        assignedAt: batch.assignedAt?.toISOString() ?? null,
+        completedAt: batch.completedAt?.toISOString() ?? null,
+        progressPercent:
+          batch.documentCount > 0
+            ? Math.round(
+                ((batch.categorizedCount + batch.skippedCount) / batch.documentCount) * 100
+              )
+            : 0,
+      })
+    );
 
     // Group batches by assistant to calculate per-assistant progress
     const assistantMap = new Map<string, AssistantProgress>();
@@ -105,8 +123,7 @@ export async function GET(request: NextRequest) {
     for (const batch of session.batches) {
       if (batch.assignedTo) {
         const existing = assistantMap.get(batch.assignedTo);
-        const isComplete =
-          batch.categorizedCount + batch.skippedCount >= batch.documentCount;
+        const isComplete = batch.categorizedCount + batch.skippedCount >= batch.documentCount;
 
         if (existing) {
           existing.totalBatches += 1;
@@ -117,6 +134,7 @@ export async function GET(request: NextRequest) {
         } else {
           assistantMap.set(batch.assignedTo, {
             userId: batch.assignedTo,
+            userName: userNameMap.get(batch.assignedTo),
             totalBatches: 1,
             completedBatches: isComplete ? 1 : 0,
             totalDocuments: batch.documentCount,
@@ -129,19 +147,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate progress percentages for each assistant
-    const assistantProgress: AssistantProgress[] = Array.from(
-      assistantMap.values()
-    ).map((assistant) => ({
-      ...assistant,
-      progressPercent:
-        assistant.totalDocuments > 0
-          ? Math.round(
-              ((assistant.categorizedDocuments + assistant.skippedDocuments) /
-                assistant.totalDocuments) *
-                100
-            )
-          : 0,
-    }));
+    const assistantProgress: AssistantProgress[] = Array.from(assistantMap.values()).map(
+      (assistant) => ({
+        ...assistant,
+        progressPercent:
+          assistant.totalDocuments > 0
+            ? Math.round(
+                ((assistant.categorizedDocuments + assistant.skippedDocuments) /
+                  assistant.totalDocuments) *
+                  100
+              )
+            : 0,
+      })
+    );
 
     // Find potential duplicate categories (similar names)
     const categories = session.categories;
@@ -162,10 +180,7 @@ export async function GET(request: NextRequest) {
           // Find existing group or create new one
           let found = false;
           for (const group of potentialDuplicates) {
-            if (
-              group.includes(categories[i].id) ||
-              group.includes(categories[j].id)
-            ) {
+            if (group.includes(categories[i].id) || group.includes(categories[j].id)) {
               if (!group.includes(categories[i].id)) group.push(categories[i].id);
               if (!group.includes(categories[j].id)) group.push(categories[j].id);
               found = true;
@@ -195,7 +210,8 @@ export async function GET(request: NextRequest) {
       assistantProgress,
       categoryStats: {
         totalCategories: categories.length,
-        categoriesWithDocs: categories.filter((c: { documentCount: number }) => c.documentCount > 0).length,
+        categoriesWithDocs: categories.filter((c: { documentCount: number }) => c.documentCount > 0)
+          .length,
         potentialDuplicates,
       },
     };
@@ -203,10 +219,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching partner dashboard:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
   }
 }
 
