@@ -63,7 +63,7 @@ function ExtractionIncompleteBanner({
   const [extractionStatus, setExtractionStatus] = useState<{
     totalInPst: number;
     extractedCount: number;
-    remainingCount: number;
+    remainingCount: number; // -1 means unknown
     canContinue: boolean;
   } | null>(null);
 
@@ -76,7 +76,8 @@ function ExtractionIncompleteBanner({
         const data = await res.json();
         const progress = data.extractionProgress;
 
-        if (progress && progress.canContinue && progress.remainingCount > 0) {
+        // Show banner if canContinue is true (regardless of remainingCount)
+        if (progress && progress.canContinue) {
           setExtractionStatus({
             totalInPst: progress.totalInPst,
             extractedCount: progress.extractedCount,
@@ -96,9 +97,11 @@ function ExtractionIncompleteBanner({
     return null;
   }
 
-  const progressPercent = Math.round(
-    (extractionStatus.extractedCount / extractionStatus.totalInPst) * 100
-  );
+  const isUnknownTotal =
+    extractionStatus.remainingCount === -1 || extractionStatus.totalInPst === 0;
+  const progressPercent = isUnknownTotal
+    ? 0
+    : Math.round((extractionStatus.extractedCount / extractionStatus.totalInPst) * 100);
 
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -106,12 +109,23 @@ function ExtractionIncompleteBanner({
         <div className="flex items-center gap-3">
           <FolderOpen className="h-5 w-5 text-amber-600" />
           <div>
-            <p className="font-medium text-amber-900">Extragerea nu este completă</p>
+            <p className="font-medium text-amber-900">
+              {isUnknownTotal ? 'Extragerea poate fi incompletă' : 'Extragerea nu este completă'}
+            </p>
             <p className="text-sm text-amber-700">
-              {extractionStatus.extractedCount.toLocaleString()} din{' '}
-              {extractionStatus.totalInPst.toLocaleString()} documente extrase ({progressPercent}%).
-              Mai sunt <strong>{extractionStatus.remainingCount.toLocaleString()}</strong> de
-              extras.
+              {isUnknownTotal ? (
+                <>
+                  {extractionStatus.extractedCount.toLocaleString()} documente extrase.
+                  <strong> Apasă pentru a verifica dacă mai sunt documente de extras.</strong>
+                </>
+              ) : (
+                <>
+                  {extractionStatus.extractedCount.toLocaleString()} din{' '}
+                  {extractionStatus.totalInPst.toLocaleString()} documente extrase (
+                  {progressPercent}%). Mai sunt{' '}
+                  <strong>{extractionStatus.remainingCount.toLocaleString()}</strong> de extras.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -120,16 +134,18 @@ function ExtractionIncompleteBanner({
           className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium flex items-center gap-2"
         >
           <FolderOpen className="h-4 w-4" />
-          Continuă extragerea
+          {isUnknownTotal ? 'Verifică și continuă' : 'Continuă extragerea'}
         </button>
       </div>
-      {/* Mini progress bar */}
-      <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-amber-500 rounded-full transition-all"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
+      {/* Mini progress bar - only show if we know the total */}
+      {!isUnknownTotal && (
+        <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-amber-500 rounded-full transition-all"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }

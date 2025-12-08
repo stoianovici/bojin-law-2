@@ -69,11 +69,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or initialize extraction progress
-    let progress: ExtractionProgress = (session.extractionProgress as ExtractionProgress) || {
-      totalInPst: 0,
-      extractedCount: 0,
-      isComplete: false,
-    };
+    // For existing sessions without extractionProgress, count existing documents
+    let progress: ExtractionProgress;
+    if (session.extractionProgress) {
+      progress = session.extractionProgress as ExtractionProgress;
+    } else {
+      // Count existing documents for this session (for backward compatibility)
+      const existingDocCount = await prisma.extractedDocument.count({
+        where: { sessionId },
+      });
+      progress = {
+        totalInPst: 0, // Will be counted on first extraction call
+        extractedCount: existingDocCount,
+        isComplete: false,
+      };
+    }
 
     // Stream PST from R2 to temp file (memory-efficient for large files)
     tempPstPath = join(tmpdir(), `pst-${randomUUID()}.pst`);
@@ -447,11 +457,31 @@ export async function GET(request: NextRequest) {
     }
 
     // Get extraction progress
-    const extractionProgress = (session.extractionProgress as ExtractionProgress) || {
-      totalInPst: 0,
-      extractedCount: session.totalDocuments,
-      isComplete: session.status !== 'Extracting',
-    };
+    // For sessions without extractionProgress, we don't know if extraction is complete
+    // So we assume it's NOT complete and allow continuation
+    let extractionProgress: ExtractionProgress;
+    let canContinue = false;
+
+    if (session.extractionProgress) {
+      extractionProgress = session.extractionProgress as ExtractionProgress;
+      canContinue =
+        !extractionProgress.isComplete &&
+        session.status !== 'Completed' &&
+        session.status !== 'Exported';
+    } else {
+      // No extraction progress saved - this is a legacy session
+      // Assume extraction may be incomplete and allow continuation
+      extractionProgress = {
+        totalInPst: 0, // Unknown - will be counted when extraction is triggered
+        extractedCount: session.totalDocuments,
+        isComplete: false, // Assume NOT complete for legacy sessions
+      };
+      // Allow continuation for InProgress or Extracting sessions without progress data
+      canContinue =
+        (session.status === 'InProgress' || session.status === 'Extracting') &&
+        session.status !== 'Completed' &&
+        session.status !== 'Exported';
+    }
 
     return NextResponse.json({
       sessionId: session.id,
@@ -468,14 +498,11 @@ export async function GET(request: NextRequest) {
         totalInPst: extractionProgress.totalInPst,
         extractedCount: extractionProgress.extractedCount,
         isComplete: extractionProgress.isComplete,
-        remainingCount: Math.max(
-          0,
-          extractionProgress.totalInPst - extractionProgress.extractedCount
-        ),
-        canContinue:
-          !extractionProgress.isComplete &&
-          session.status !== 'Completed' &&
-          session.status !== 'Exported',
+        remainingCount:
+          extractionProgress.totalInPst > 0
+            ? Math.max(0, extractionProgress.totalInPst - extractionProgress.extractedCount)
+            : -1, // -1 indicates unknown (needs to count PST)
+        canContinue,
       },
     });
   } catch (error) {
