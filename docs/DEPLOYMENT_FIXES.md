@@ -1426,7 +1426,7 @@ After cleanup:
 
 ---
 
-## 2025-12-08: User Name Display in Partner Dashboard
+## 2025-12-08: User Name Display in Legacy Import Partner Dashboard
 
 ### Issue Summary
 
