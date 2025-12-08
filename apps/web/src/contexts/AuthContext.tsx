@@ -56,6 +56,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   });
 
   const [msalInitialized, setMsalInitialized] = useState(false);
+  const [hasMsalAccountState, setHasMsalAccountState] = useState(false);
+
+  /**
+   * Update hasMsalAccount state based on current MSAL accounts
+   */
+  const updateHasMsalAccount = useCallback(() => {
+    const msalInstance = getMsalInstance();
+    if (!msalInstance) {
+      setHasMsalAccountState(false);
+      return;
+    }
+    const accounts = msalInstance.getAllAccounts();
+    const hasAccounts = accounts.length > 0;
+    console.log('[AuthContext] updateHasMsalAccount:', hasAccounts, 'accounts:', accounts.length);
+    setHasMsalAccountState(hasAccounts);
+  }, []);
 
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
@@ -140,6 +156,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         setMsalInitialized(true);
+        // Update MSAL account state immediately after initialization
+        updateHasMsalAccount();
 
         // Handle redirect response (if returning from Azure AD)
         console.log('[AuthContext] Redirect response:', response ? 'received' : 'null');
@@ -242,7 +260,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       isMounted = false;
     };
-  }, [provisionUser, checkSessionCookie]);
+  }, [provisionUser, checkSessionCookie, updateHasMsalAccount]);
 
   /**
    * Login via Azure AD redirect
@@ -424,13 +442,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   /**
-   * Check if any MSAL accounts are available
+   * Keep hasMsalAccountState in sync with state.msalAccount
    */
-  const hasMsalAccount = useCallback((): boolean => {
-    if (state.msalAccount) return true;
-    const msalInstance = getMsalInstance();
-    if (!msalInstance) return false;
-    return msalInstance.getAllAccounts().length > 0;
+  useEffect(() => {
+    if (state.msalAccount) {
+      setHasMsalAccountState(true);
+    }
+    // Note: We don't set to false here because MSAL accounts may exist
+    // in browser storage even when state.msalAccount is null
   }, [state.msalAccount]);
 
   /**
@@ -452,7 +471,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     getAccessToken,
     refreshToken,
     clearError,
-    hasMsalAccount: hasMsalAccount(),
+    hasMsalAccount: hasMsalAccountState,
     reconnectMicrosoft,
   };
 
