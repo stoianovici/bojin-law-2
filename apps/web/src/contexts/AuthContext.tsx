@@ -363,11 +363,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return response.accessToken;
       } catch (error) {
         if (error instanceof InteractionRequiredAuthError) {
-          try {
-            await msalInstance.acquireTokenRedirect(loginRequest);
-          } catch (redirectError) {
-            console.error('Token redirect error:', redirectError);
-          }
+          // User needs to re-authenticate (e.g., consent to new scopes like Mail.Read)
+          console.log('[AuthContext] Interaction required - setting hasMsalAccount to false');
+          setHasMsalAccountState(false);
         }
         return null;
       }
@@ -392,8 +390,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           error
         );
         if (error instanceof InteractionRequiredAuthError) {
-          // Token expired or requires interaction - user needs to re-authenticate
-          console.log('[AuthContext] Interaction required to get MS token');
+          // User needs to re-authenticate (e.g., consent to new scopes like Mail.Read)
+          console.log('[AuthContext] Interaction required - setting hasMsalAccount to false');
+          setHasMsalAccountState(false);
         }
         return null;
       }
