@@ -75,15 +75,15 @@ Create/update `.ai/ops-{issue-id}-handoff.md`:
 {any useful commands, error messages, etc.}
 ```
 
-## 5. Git Commit (Optional)
+## 5. Git Commit and Push
 
-Check for uncommitted work:
+Automatically commit and push WIP to preserve work across sessions:
 
 1. **Run `git status`** to check for changes
 
-2. **If there are changes**, ask user:
-   - "You have uncommitted changes. Commit before saving session? (y/n)"
-   - If yes, create a WIP commit:
+2. **If there are changes**:
+   - Stage all modified files with `git add`
+   - Create WIP commit:
 
      ```
      wip: {brief description} (OPS-XXX)
@@ -97,9 +97,9 @@ Check for uncommitted work:
      Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
      ```
 
-3. **Ask about pushing**:
-   - "Push WIP commit to remote? (y/n)"
-   - This ensures code is backed up even if local machine has issues
+3. **Push automatically**:
+   - Run `git push` to backup work to remote
+   - If push fails, set upstream and retry
 
 4. **Record commit info** in handoff file under "Commands/Context to Remember"
 

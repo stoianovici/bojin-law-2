@@ -85,15 +85,13 @@ If user mentioned follow-up work needed:
 
 ## 11. Git Commit and Push
 
-After documenting the resolution:
+Automatically commit and push the fix (issue is resolved, ready for deployment):
 
-1. **Check for uncommitted changes**:
-   - Run `git status` to see if there are changes related to this fix
+1. **Run `git status`** to check for uncommitted changes
 
-2. **If there are uncommitted changes**:
-   - Show the user what files have changed
-   - Ask: "Commit these changes for OPS-XXX? (y/n)"
-   - If yes, stage relevant files and commit with message:
+2. **If there are changes**:
+   - Stage all relevant files with `git add`
+   - Commit with message:
 
      ```
      fix: {brief description} (OPS-XXX)
@@ -106,13 +104,13 @@ After documenting the resolution:
      Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
      ```
 
-3. **Ask about pushing**:
-   - "Push to remote? (y/n)"
-   - If yes: `git push`
+3. **Push automatically**:
+   - Run `git push`
+   - If push fails (no upstream, etc.), set upstream and retry
 
 4. **Record in ops log**:
    - Add commit hash to Fix Applied section
-   - Note push status
+   - Note: "Committed and pushed: {hash}"
 
 ## 12. Report Summary
 

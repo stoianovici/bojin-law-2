@@ -28,69 +28,61 @@ The user's input is: $ARGUMENTS
 
 ## 4. Determine Commit Type
 
-Ask user or infer from context:
+Infer from context or use argument if provided:
 
-| Type        | When to Use                    | Prefix                     |
+| Type        | When to Use                    | Auto-detect from           |
 | ----------- | ------------------------------ | -------------------------- |
-| `wip:`      | Work in progress, not complete | Partial fix, investigation |
-| `fix:`      | Issue fully resolved           | Ready to close             |
-| `refactor:` | Code improvement during fix    | Cleanup, optimization      |
-| `test:`     | Adding/updating tests          | Test coverage              |
-| `docs:`     | Documentation updates          | Comments, README           |
+| `wip:`      | Work in progress, not complete | Default if unclear         |
+| `fix:`      | Issue fully resolved           | Status = Verifying/closing |
+| `refactor:` | Code improvement during fix    | Non-functional changes     |
+| `test:`     | Adding/updating tests          | Test files modified        |
+| `docs:`     | Documentation updates          | .md files only             |
 
-## 5. Stage Files
+## 5. Stage and Commit
 
-Show files and ask which to include:
+Automatically stage all changes and commit:
 
-- "Stage all changes? (y/n)"
-- Or: "Select files to stage (comma-separated numbers)"
-
-Stage selected files with `git add`.
-
-## 6. Create Commit
-
-Generate commit message based on type and context:
+1. Run `git add .` to stage all changes
+2. Generate commit message:
 
 ```
 {type}: {brief description} (OPS-XXX)
 
-{optional longer description}
+{optional longer description based on changes}
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```
 
-Show the commit message and ask for confirmation before committing.
+3. Run `git commit`
 
-## 7. Push (Optional)
+## 6. Push Automatically
 
-Ask: "Push to remote? (y/n)"
+Push immediately after commit:
 
-If yes:
-
-- Check current branch
-- If on main/master, warn: "You're on {branch}. Push directly? (y/n)"
 - Run `git push`
+- If no upstream, run `git push -u origin {branch}`
+- If push fails, report the error
 
-## 8. Update Ops Log
+## 7. Update Ops Log
 
 Add entry to the issue's Session Log:
 
 ```
-- [{timestamp}] Committed: {hash} - {commit message first line}
+- [{timestamp}] Committed and pushed: {hash} - {commit message first line}
 ```
 
-## 9. Report
+## 8. Report
 
 ```
-## Committed
+## Committed and Pushed
 
 **Issue**: [OPS-XXX]
 **Commit**: {hash}
 **Type**: {wip/fix/refactor/test/docs}
 **Files**: {count} files changed
-**Pushed**: {yes/no}
+**Branch**: {branch name}
 
 {commit message}
 ```
@@ -99,13 +91,14 @@ Add entry to the issue's Session Log:
 
 Support quick patterns:
 
-- `/ops-commit wip` - Quick WIP commit, all changes, current issue
-- `/ops-commit fix` - Fix commit, all changes, current issue
-- `/ops-commit OPS-003 wip` - WIP for specific issue
+- `/ops-commit` - Auto-detect type, all changes, current issue
+- `/ops-commit wip` - Force WIP commit
+- `/ops-commit fix` - Force fix commit
+- `/ops-commit OPS-003` - Commit for specific issue
 
 ## Important Rules
 
-- Always show what will be committed before committing
-- Never auto-push to main/master without explicit confirmation
+- Always commit and push automatically - no confirmation needed
 - Include issue ID in every commit for traceability
 - WIP commits are fine - they can be squashed later
+- If on main branch, still push (ops fixes often need to go direct)
