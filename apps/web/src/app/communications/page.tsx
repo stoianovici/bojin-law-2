@@ -8,15 +8,117 @@ import { AIDraftResponsePanel } from '../../components/communication/AIDraftResp
 import { ExtractedItemsSidebar } from '../../components/communication/ExtractedItemsSidebar';
 import { ComposeInterface } from '../../components/communication/ComposeInterface';
 import { useCommunicationStore } from '../../stores/communication.store';
-import { Plus } from 'lucide-react';
+import { useEmailSync, useEmailThreads } from '../../hooks/useEmailSync';
+import { Plus, RefreshCw, Mail, AlertCircle } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function CommunicationsPage() {
-  const { openCompose } = useCommunicationStore();
+  const { openCompose, setThreads } = useCommunicationStore();
+
+  // Email sync status and actions
+  const { syncStatus, syncing, startSync, loading: syncLoading } = useEmailSync();
+
+  // Fetch email threads from API
+  const {
+    threads: apiThreads,
+    loading: threadsLoading,
+    error: threadsError,
+    refetch,
+  } = useEmailThreads();
+
+  // Transform API threads to communication store format and update store
+  useEffect(() => {
+    if (apiThreads && apiThreads.length > 0) {
+      // Transform EmailThread[] to CommunicationThread[]
+      const communicationThreads = apiThreads.map((thread: any) => ({
+        id: thread.id || thread.conversationId,
+        conversationId: thread.conversationId,
+        subject: thread.subject || '(Fără subiect)',
+        caseId: thread.case?.id || '',
+        caseType: thread.case?.type || 'Other',
+        caseName: thread.case?.title || 'Neatribuit',
+        participants: [], // TODO: populate from thread participants
+        messages: (thread.emails || []).map((email: any) => ({
+          id: email.id,
+          threadId: thread.id || thread.conversationId,
+          senderId: email.from?.address || '',
+          senderName: email.from?.name || email.from?.address || 'Unknown',
+          senderEmail: email.from?.address || '',
+          recipientIds: (email.toRecipients || []).map((r: any) => r.address),
+          recipients: (email.toRecipients || []).map((r: any) => ({
+            id: r.address,
+            name: r.name || r.address,
+            email: r.address,
+          })),
+          subject: email.subject || '(Fără subiect)',
+          body: email.bodyContent || email.bodyPreview || '',
+          bodyFormat: email.bodyContentType === 'html' ? 'html' : 'text',
+          sentAt: new Date(email.sentDateTime || email.receivedDateTime),
+          receivedAt: new Date(email.receivedDateTime),
+          isRead: email.isRead ?? true,
+          attachments: (email.attachments || []).map((att: any) => ({
+            id: att.id,
+            name: att.name,
+            size: att.size || 0,
+            mimeType: att.contentType || 'application/octet-stream',
+            url: att.downloadUrl || '',
+          })),
+        })),
+        lastMessageDate: new Date(thread.lastMessageDate || Date.now()),
+        isUnread: thread.hasUnread ?? false,
+        hasAttachments: thread.hasAttachments ?? false,
+        isProcessed: false,
+        extractedItems: {
+          deadlines: [],
+          commitments: [],
+          actionItems: [],
+        },
+      }));
+      setThreads(communicationThreads);
+    }
+  }, [apiThreads, setThreads]);
+
+  const handleSync = async () => {
+    try {
+      await startSync();
+      // Refetch threads after sync completes
+      setTimeout(() => refetch(), 2000);
+    } catch (error) {
+      console.error('Email sync failed:', error);
+    }
+  };
+
+  const isLoading = syncLoading || threadsLoading;
+  const needsSync = !syncStatus || syncStatus.emailCount === 0;
 
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-gray-50">
       {/* Page Header - Controls only, title now in TopBar */}
-      <div className="border-b bg-white px-6 py-4 flex items-center justify-end">
+      <div className="border-b bg-white px-6 py-4 flex items-center justify-between">
+        {/* Left: Sync status and button */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleSync}
+            disabled={syncing || isLoading}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Sincronizare...' : 'Sincronizează email'}
+          </button>
+
+          {syncStatus && (
+            <span className="text-sm text-gray-500">
+              {syncStatus.emailCount} emailuri sincronizate
+              {syncStatus.lastSyncAt && (
+                <span className="ml-2">
+                  • Ultima sincronizare: {new Date(syncStatus.lastSyncAt).toLocaleString('ro-RO')}
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+
+        {/* Right: New message button */}
         <button
           onClick={() => openCompose('new')}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center gap-2"
@@ -25,6 +127,31 @@ export default function CommunicationsPage() {
           Mesaj nou
         </button>
       </div>
+
+      {/* Show sync prompt if no emails */}
+      {needsSync && !isLoading && !syncing && (
+        <div className="mx-6 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+          <Mail className="h-5 w-5 text-blue-500 mt-0.5" />
+          <div>
+            <h3 className="font-medium text-blue-900">Sincronizați emailurile</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Apăsați butonul &quot;Sincronizează email&quot; pentru a importa emailurile din contul
+              Microsoft.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Show error if any */}
+      {threadsError && (
+        <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+          <div>
+            <h3 className="font-medium text-red-900">Eroare la încărcarea emailurilor</h3>
+            <p className="text-sm text-red-700 mt-1">{threadsError.message}</p>
+          </div>
+        </div>
+      )}
 
       {/* Three-column layout */}
       <div className="flex flex-1 overflow-hidden">
