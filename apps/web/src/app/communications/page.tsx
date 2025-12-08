@@ -9,11 +9,15 @@ import { ExtractedItemsSidebar } from '../../components/communication/ExtractedI
 import { ComposeInterface } from '../../components/communication/ComposeInterface';
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useEmailSync, useEmailThreads } from '../../hooks/useEmailSync';
+import { useAuth } from '../../contexts/AuthContext';
 import { Plus, RefreshCw, Mail, AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function CommunicationsPage() {
   const { openCompose, setThreads } = useCommunicationStore();
+
+  // Auth context for Microsoft account status
+  const { hasMsalAccount, reconnectMicrosoft } = useAuth();
 
   // Email sync status and actions
   const { syncStatus, syncing, startSync, loading: syncLoading } = useEmailSync();
@@ -97,16 +101,26 @@ export default function CommunicationsPage() {
       <div className="border-b bg-white px-6 py-4 flex items-center justify-between">
         {/* Left: Sync status and button */}
         <div className="flex items-center gap-4">
-          <button
-            onClick={handleSync}
-            disabled={syncing || isLoading}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-            {syncing ? 'Sincronizare...' : 'Sincronizează email'}
-          </button>
+          {hasMsalAccount ? (
+            <button
+              onClick={handleSync}
+              disabled={syncing || isLoading}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Sincronizare...' : 'Sincronizează email'}
+            </button>
+          ) : (
+            <button
+              onClick={() => reconnectMicrosoft()}
+              className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              Conectează Microsoft
+            </button>
+          )}
 
-          {syncStatus && (
+          {hasMsalAccount && syncStatus && (
             <span className="text-sm text-gray-500">
               {syncStatus.emailCount} emailuri sincronizate
               {syncStatus.lastSyncAt && (
@@ -128,8 +142,22 @@ export default function CommunicationsPage() {
         </button>
       </div>
 
-      {/* Show sync prompt if no emails */}
-      {needsSync && !isLoading && !syncing && (
+      {/* Show Microsoft connection prompt if no MSAL account */}
+      {!hasMsalAccount && !isLoading && (
+        <div className="mx-6 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+          <Mail className="h-5 w-5 text-amber-500 mt-0.5" />
+          <div>
+            <h3 className="font-medium text-amber-900">Conectați contul Microsoft</h3>
+            <p className="text-sm text-amber-700 mt-1">
+              Apăsați butonul &quot;Conectează Microsoft&quot; pentru a vă autentifica și a importa
+              emailurile din Outlook.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Show sync prompt if connected but no emails */}
+      {hasMsalAccount && needsSync && !isLoading && !syncing && (
         <div className="mx-6 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
           <Mail className="h-5 w-5 text-blue-500 mt-0.5" />
           <div>

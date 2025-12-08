@@ -8,7 +8,7 @@
 | ID      | Title                                  | Type        | Priority    | Status        | Sessions |
 | ------- | -------------------------------------- | ----------- | ----------- | ------------- | -------- |
 | OPS-001 | Communications page not loading emails | Bug         | P0-Critical | Investigating | 4        |
-| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | New           | 1        |
+| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Verifying     | 2        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -70,17 +70,19 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-08] Session 3 - Found root cause: when user authenticated via session cookie only (no MSAL accounts cached), getAccessToken() returned null. Fixed by: (1) Enhanced getAccessToken to check for any MSAL accounts in browser, (2) Added hasMsalAccount and reconnectMicrosoft to AuthContext, (3) Updated EmailThreadList to show "Connect Microsoft" prompt when MSAL not available.
 - [2025-12-08] Session 4 started. Problem persisting after previous fix. Re-investigating.
 - [2025-12-08] Session 4 - Found root cause: `hasMsalAccount` was computed once at render time via `hasMsalAccount()` call, not as reactive state. When MSAL init completes with no accounts, the UI still showed "Sync" button because hasMsalAccount was evaluated before MSAL finished initializing. Fixed by: (1) Added `hasMsalAccountState` state variable, (2) Added `updateHasMsalAccount()` function called after MSAL init, (3) Changed context value to use state instead of computed function call.
+- [2025-12-08] Session 4 - Second issue found: The `/communications` page was a different component that didn't use `hasMsalAccount`. Updated to show "Conectează Microsoft" button when no MSAL account.
 
 #### Files Involved
 
 - `services/gateway/src/graphql/server.ts` - **FIXED** - Added emailResolvers import/merge + token extraction
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - Email resolver definitions
 - `services/gateway/src/graphql/resolvers/case.resolvers.ts` - **FIXED** - Added accessToken to Context type
-- `apps/web/src/lib/apollo-client.ts` - **FIXED v14** - Added auth link for MS token, version bump
+- `apps/web/src/lib/apollo-client.ts` - **FIXED v15** - Added auth link for MS token, version bump
 - `apps/web/src/contexts/AuthContext.tsx` - **FIXED v3** - Made hasMsalAccount reactive state instead of computed function
 - `apps/web/src/app/api/graphql/route.ts` - **FIXED** - Forward x-ms-access-token header
 - `apps/web/src/hooks/useEmailSync.ts` - Frontend email hooks/queries
 - `apps/web/src/components/email/EmailThreadList.tsx` - **FIXED** - Added "Connect Microsoft" prompt when MSAL not available
+- `apps/web/src/app/communications/page.tsx` - **FIXED** - Added hasMsalAccount check, shows "Conectează Microsoft" when needed
 
 ---
 
@@ -88,12 +90,12 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 
 | Field           | Value                |
 | --------------- | -------------------- |
-| **Status**      | New                  |
+| **Status**      | Verifying            |
 | **Type**        | Performance          |
 | **Priority**    | P1-High              |
 | **Created**     | 2025-12-08           |
-| **Sessions**    | 1                    |
-| **Last Active** | 2025-12-08 19:45 UTC |
+| **Sessions**    | 2                    |
+| **Last Active** | 2025-12-08 20:00 UTC |
 
 #### Description
 
@@ -119,19 +121,51 @@ Legacy document import process stalls/fails when processing approximately 8,000 
 
 #### Fix Applied
 
-TBD
+**Fix 1: Remove extractedText from batch query (reduce payload ~90%)**
+
+- File: `apps/legacy-import/src/app/api/get-batch/route.ts`
+- Removed `extractedText: true` from select - this large TEXT field was being loaded for all 8K docs
+- extractedText is now loaded lazily via the document-url endpoint when a document is selected
+
+**Fix 2: Add extractedText to document-url endpoint**
+
+- File: `apps/legacy-import/src/app/api/document-url/route.ts`
+- Added `extractedText` to the select and response
+- Frontend now fetches extractedText per-document when needed
+
+**Fix 3: Update frontend for lazy loading**
+
+- File: `apps/legacy-import/src/stores/documentStore.ts` - Added `extractedTexts` cache and `setExtractedText` action
+- File: `apps/legacy-import/src/components/Categorization/CategorizationWorkspace.tsx` - Fetch and cache extractedText with document URL
+
+**Fix 4: Add pagination to get-batch endpoint**
+
+- File: `apps/legacy-import/src/app/api/get-batch/route.ts`
+- Added `page` and `pageSize` query params (default 100, max 500)
+- Added `skip` and `take` to Prisma query
+- Added `pagination` object to response with page info
+
+**Fix 5: Add composite indexes for query performance**
+
+- File: `packages/database/prisma/schema.prisma`
+- Added `@@index([sessionId, batchId])` - used in get-batch query
+- Added `@@index([sessionId, status])` - used in analysis queries
 
 #### Session Log
 
 - [2025-12-08 19:45] Issue created. Initial triage identified critical pagination issue in get-batch endpoint. The endpoint loads ALL documents without pagination, and includes the large `extractedText` field unnecessarily.
+- [2025-12-08 20:00] Session 2 started. Continuing from: New. Beginning implementation of pagination fix.
+- [2025-12-08 20:15] Session 2 - Implemented 5 fixes: (1) Removed extractedText from batch query, (2) Added extractedText to document-url for lazy loading, (3) Updated frontend store and component for lazy text loading, (4) Added pagination with page/pageSize params, (5) Added composite indexes. Ready for deployment and verification.
 
 #### Files Involved
 
-- `apps/legacy-import/src/app/api/get-batch/route.ts` - **CRITICAL** - No pagination, includes extractedText
-- `apps/legacy-import/src/app/api/analyze-documents/route.ts` - Batch size limited to 100
-- `apps/legacy-import/src/app/api/extract-documents/route.ts` - Transaction handling
-- `apps/legacy-import/src/services/ai-document-analyzer.ts` - BATCH_SIZE = 25
-- `packages/database/prisma/schema.prisma` - Missing composite indexes
+- `apps/legacy-import/src/app/api/get-batch/route.ts` - **FIXED** - Added pagination, removed extractedText
+- `apps/legacy-import/src/app/api/document-url/route.ts` - **FIXED** - Added extractedText to response
+- `apps/legacy-import/src/stores/documentStore.ts` - **FIXED** - Added extractedTexts cache
+- `apps/legacy-import/src/components/Categorization/CategorizationWorkspace.tsx` - **FIXED** - Lazy load extractedText
+- `packages/database/prisma/schema.prisma` - **FIXED** - Added composite indexes
+- `apps/legacy-import/src/app/api/analyze-documents/route.ts` - Batch size limited to 100 (future optimization)
+- `apps/legacy-import/src/services/ai-document-analyzer.ts` - BATCH_SIZE = 25 (future optimization)
 
 ---
 
