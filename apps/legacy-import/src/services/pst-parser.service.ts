@@ -307,37 +307,24 @@ function processFolder(
 }
 
 /**
- * Counts total supported documents in a PST without loading content
- * This is a fast scan to determine total document count for progress tracking
+ * Counts total supported documents in a PST using FAST estimation
+ * Does NOT call getAttachment() which is very slow for large PST files
+ * Instead, counts messages with attachments and estimates based on average
  */
-function countDocumentsInFolder(folder: pst.PSTFolder): number {
+function countDocumentsInFolderFast(folder: pst.PSTFolder): number {
   let count = 0;
 
-  // Count in current folder
+  // Count in current folder - FAST: just count numberOfAttachments without loading them
   if (folder.contentCount > 0) {
     let email = folder.getNextChild();
 
     while (email !== null) {
       if (email instanceof pst.PSTMessage) {
         const message = email as pst.PSTMessage;
-        const attachmentCount = message.numberOfAttachments;
-
-        if (attachmentCount > 0) {
-          for (let i = 0; i < attachmentCount; i++) {
-            try {
-              const attachment = message.getAttachment(i);
-              if (attachment) {
-                const fileName = attachment.longFilename || attachment.filename || 'unnamed';
-                const extension = getFileExtension(fileName);
-                if (isSupportedExtension(extension)) {
-                  count++;
-                }
-              }
-            } catch {
-              // Skip problematic attachments in count
-            }
-          }
-        }
+        // Just use numberOfAttachments as estimate - much faster than loading each attachment
+        // This slightly overestimates since not all attachments are PDF/DOCX/DOC
+        // But it's fast and good enough for progress tracking
+        count += message.numberOfAttachments;
       }
       email = folder.getNextChild();
     }
@@ -347,7 +334,7 @@ function countDocumentsInFolder(folder: pst.PSTFolder): number {
   if (folder.hasSubfolders) {
     const subfolders = folder.getSubFolders();
     for (const subfolder of subfolders) {
-      count += countDocumentsInFolder(subfolder);
+      count += countDocumentsInFolderFast(subfolder);
     }
   }
 
@@ -355,14 +342,15 @@ function countDocumentsInFolder(folder: pst.PSTFolder): number {
 }
 
 /**
- * Counts total supported documents in a PST file (fast scan, no content loading)
+ * Counts total supported documents in a PST file (fast estimation)
+ * Uses fast counting that doesn't load attachment content
  */
 export async function countDocumentsInPST(pstFilePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
     try {
       const pstFile = new pst.PSTFile(pstFilePath);
       const rootFolder = pstFile.getRootFolder();
-      const count = countDocumentsInFolder(rootFolder);
+      const count = countDocumentsInFolderFast(rootFolder);
       resolve(count);
     } catch (error) {
       reject(error);

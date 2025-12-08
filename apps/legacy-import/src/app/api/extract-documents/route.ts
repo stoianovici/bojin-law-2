@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     // For existing sessions without extractionProgress, count existing documents
     let progress: ExtractionProgress;
     if (session.extractionProgress) {
-      progress = session.extractionProgress as ExtractionProgress;
+      progress = session.extractionProgress as unknown as ExtractionProgress;
     } else {
       // Count existing documents for this session (for backward compatibility)
       const existingDocCount = await prisma.extractedDocument.count({
@@ -92,12 +92,18 @@ export async function POST(request: NextRequest) {
     await streamFromR2ToFile(session.pstStoragePath, tempPstPath);
     console.log('PST download complete');
 
-    // First time: count total documents in PST
+    // First time: count total documents in PST (fast estimation)
+    // Skip if we already have a count from a previous session
     if (progress.totalInPst === 0) {
-      console.log('First extraction call - counting total documents in PST...');
+      console.log('First extraction call - counting total documents in PST (fast estimation)...');
+      const startTime = Date.now();
       const totalCount = await countDocumentsInPST(tempPstPath);
+      const countTime = Date.now() - startTime;
+      console.log(`Total attachments in PST: ${totalCount} (counted in ${countTime}ms)`);
+
+      // Note: This is an estimate - counts all attachments, not just supported types
+      // Actual supported doc count will be lower, but this gives good progress indication
       progress.totalInPst = totalCount;
-      console.log(`Total documents in PST: ${totalCount}`);
 
       // Save initial count
       await prisma.legacyImportSession.update({
@@ -309,7 +315,12 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Create audit log
+        // Create audit log - convert byMonth to counts only (not full attachment data)
+        const byMonthCounts: Record<string, number> = {};
+        for (const [month, attachments] of byMonth.entries()) {
+          byMonthCounts[month] = attachments.length;
+        }
+
         await tx.legacyImportAuditLog.create({
           data: {
             sessionId,
@@ -320,7 +331,7 @@ export async function POST(request: NextRequest) {
               totalExtracted: newExtractedCount,
               totalInPst: progress.totalInPst,
               isComplete,
-              byMonth: Object.fromEntries(byMonth.entries()),
+              byMonth: byMonthCounts,
             },
           },
         });
@@ -463,7 +474,7 @@ export async function GET(request: NextRequest) {
     let canContinue = false;
 
     if (session.extractionProgress) {
-      extractionProgress = session.extractionProgress as ExtractionProgress;
+      extractionProgress = session.extractionProgress as unknown as ExtractionProgress;
       canContinue =
         !extractionProgress.isComplete &&
         session.status !== 'Completed' &&
@@ -477,10 +488,7 @@ export async function GET(request: NextRequest) {
         isComplete: false, // Assume NOT complete for legacy sessions
       };
       // Allow continuation for InProgress or Extracting sessions without progress data
-      canContinue =
-        (session.status === 'InProgress' || session.status === 'Extracting') &&
-        session.status !== 'Completed' &&
-        session.status !== 'Exported';
+      canContinue = session.status === 'InProgress' || session.status === 'Extracting';
     }
 
     return NextResponse.json({

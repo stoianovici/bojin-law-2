@@ -8,7 +8,7 @@
 | ID      | Title                                  | Type        | Priority    | Status        | Sessions |
 | ------- | -------------------------------------- | ----------- | ----------- | ------------- | -------- |
 | OPS-001 | Communications page not loading emails | Bug         | P0-Critical | Investigating | 4        |
-| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Verifying     | 3        |
+| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Verifying     | 4        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -96,8 +96,8 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 | **Type**        | Performance          |
 | **Priority**    | P1-High              |
 | **Created**     | 2025-12-08           |
-| **Sessions**    | 3                    |
-| **Last Active** | 2025-12-08 15:00 UTC |
+| **Sessions**    | 4                    |
+| **Last Active** | 2025-12-08 18:20 UTC |
 
 #### Description
 
@@ -184,6 +184,7 @@ Legacy document import process stalls/fails when processing approximately 8,000 
 - [2025-12-08] Session 3 started. Problem persists - extraction stopping at ~8K docs.
 - [2025-12-08] Session 3 - Root cause found: extraction loads ALL documents into memory and processes sequentially. With 8K+ docs, this exceeds Render's 10-minute request timeout.
 - [2025-12-08] Session 3 - Implemented resumable batch extraction: PST parser now supports skip/take, API tracks progress in DB, frontend shows "Continue extraction" button. Extracts ~500 docs per batch to stay under timeout.
+- [2025-12-08] Session 4 - 502 errors on extract-documents. Root cause: `countDocumentsInPST()` was calling `getAttachment()` for every attachment to check file extension, which is extremely slow for 8K+ docs (causes Render timeout). Fixed by using fast estimation that just counts `numberOfAttachments` without loading attachment data. Also added `extractionProgress` field to legacy-import Prisma schema (was missing).
 
 #### Files Involved
 
