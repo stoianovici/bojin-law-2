@@ -20,3 +20,31 @@ devLoadAlwaysFiles:
 devDebugLog: .ai/debug-log.md
 devStoryLocation: docs/stories
 slashPrefix: BMad
+
+# Operations workflow configuration
+ops:
+  opsLogFile: docs/ops/operations-log.md
+  opsHandoffLocation: .ai
+  opsHandoffPattern: ops-{issue-id}-handoff.md
+  issueIdPrefix: OPS
+  statuses:
+    - New
+    - Triaging
+    - Investigating
+    - Root Cause Found
+    - Fixing
+    - Verifying
+    - Resolved
+    - Wont Fix
+  priorities:
+    - P0-Critical
+    - P1-High
+    - P2-Medium
+    - P3-Low
+  types:
+    - Bug
+    - Feature
+    - Performance
+    - Security
+    - Refactor
+    - Documentation

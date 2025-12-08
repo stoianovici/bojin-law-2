@@ -1,0 +1,87 @@
+meta:
+  id: ops-log-tmpl
+  name: Operations Log Template
+  version: 1.0.0
+  description: Template for tracking post-deployment issues, bugs, and feature requests across sessions
+  output_file: docs/ops/operations-log.md
+
+template: |
+  # Operations Log
+
+  > Persistent tracking of post-deployment issues, debugging sessions, and feature work.
+  > This file is the source of truth for all operations work across sessions.
+
+  ## Quick Reference
+
+  | ID | Title | Type | Priority | Status | Sessions |
+  |----|-------|------|----------|--------|----------|
+  <!-- AUTO-UPDATED: Issue index above -->
+
+  ---
+
+  ## Active Issues
+
+  <!-- New issues are added here -->
+
+  ---
+
+  ## In Progress
+
+  <!-- Issues being actively worked move here -->
+
+  ---
+
+  ## Resolved
+
+  <!-- Completed issues move here with resolution notes -->
+
+  ---
+
+  ## Session History
+
+  | Date | Issue | Duration | Summary |
+  |------|-------|----------|---------|
+  <!-- Session log entries -->
+
+issue_template: |
+  ### [{id}] {title}
+
+  | Field | Value |
+  |-------|-------|
+  | **Status** | {status} |
+  | **Type** | {type} |
+  | **Priority** | {priority} |
+  | **Created** | {created} |
+  | **Sessions** | {session_count} |
+  | **Last Active** | {last_active} |
+
+  #### Description
+  {description}
+
+  #### Reproduction Steps
+  {repro_steps}
+
+  #### Root Cause
+  {root_cause}
+
+  #### Fix Applied
+  {fix_applied}
+
+  #### Session Log
+  {session_log}
+
+  #### Files Involved
+  {files_involved}
+
+  ---
+
+field_definitions:
+  id:
+    format: 'OPS-{number:03d}'
+    description: Unique identifier, auto-incremented
+  status:
+    enum: [New, Triaging, Investigating, Root Cause Found, Fixing, Verifying, Resolved, Wont Fix]
+  type:
+    enum: [Bug, Feature, Performance, Security, Refactor, Documentation]
+  priority:
+    enum: [P0-Critical, P1-High, P2-Medium, P3-Low]
