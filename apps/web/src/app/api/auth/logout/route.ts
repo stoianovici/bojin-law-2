@@ -1,41 +1,28 @@
 /**
- * Logout endpoint proxy
- * Forwards logout request to gateway service
+ * Logout endpoint
+ * Clears the session cookie and optionally forwards to gateway
  */
 
 import { NextResponse } from 'next/server';
+import { SESSION_COOKIE_NAME } from '@/lib/auth';
 
-// Gateway URL - use environment variable or default to localhost for development
-const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:4000';
-
-export async function POST(request: Request) {
+export async function POST() {
   try {
-    // Forward logout request to gateway
-    const response = await fetch(`${GATEWAY_URL}/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward cookies to maintain session
-        cookie: request.headers.get('cookie') || '',
-      },
+    // Create response
+    const response = NextResponse.json({ success: true, message: 'Logged out successfully' });
+
+    // Clear the session cookie by setting it to expire immediately
+    response.cookies.set(SESSION_COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0, // Expire immediately
+      path: '/',
     });
 
-    const data = await response.json();
-
-    // Create response with appropriate status
-    const nextResponse = NextResponse.json(data, {
-      status: response.status,
-    });
-
-    // Forward set-cookie headers from gateway (to clear session)
-    const setCookieHeader = response.headers.get('set-cookie');
-    if (setCookieHeader) {
-      nextResponse.headers.set('Set-Cookie', setCookieHeader);
-    }
-
-    return nextResponse;
+    return response;
   } catch (error) {
-    console.error('Logout proxy error:', error);
+    console.error('Logout error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to logout' },
       { status: 500 }

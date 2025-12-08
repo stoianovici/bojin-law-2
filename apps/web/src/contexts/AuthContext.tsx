@@ -266,9 +266,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [msalInitialized]);
 
   /**
-   * Logout from Azure AD
+   * Logout from Azure AD and clear session cookie
    */
   const logout = useCallback(async () => {
+    // First, clear the session cookie via API
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      console.log('[AuthContext] Session cookie cleared');
+    } catch (error) {
+      console.error('[AuthContext] Failed to clear session cookie:', error);
+    }
+
     const msalInstance = getMsalInstance();
 
     if (!msalInstance) {
@@ -279,6 +290,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         error: null,
         msalAccount: null,
       });
+      // Redirect to login page
+      window.location.href = '/login';
       return;
     }
 
@@ -287,7 +300,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       await msalInstance.logoutRedirect({
         account: account || undefined,
-        postLogoutRedirectUri: window.location.origin,
+        postLogoutRedirectUri: window.location.origin + '/login',
       });
     } catch (error) {
       console.error('Logout error:', error);
@@ -298,6 +311,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         error: null,
         msalAccount: null,
       });
+      // Redirect to login page on error
+      window.location.href = '/login';
     }
   }, [state.msalAccount]);
 
