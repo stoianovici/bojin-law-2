@@ -75,7 +75,35 @@ Create/update `.ai/ops-{issue-id}-handoff.md`:
 {any useful commands, error messages, etc.}
 ```
 
-## 5. Confirm Save
+## 5. Git Commit (Optional)
+
+Check for uncommitted work:
+
+1. **Run `git status`** to check for changes
+
+2. **If there are changes**, ask user:
+   - "You have uncommitted changes. Commit before saving session? (y/n)"
+   - If yes, create a WIP commit:
+
+     ```
+     wip: {brief description} (OPS-XXX)
+
+     Work in progress for issue OPS-XXX.
+     Status: {current status}
+     Next steps: {brief next steps}
+
+     🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+     Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+     ```
+
+3. **Ask about pushing**:
+   - "Push WIP commit to remote? (y/n)"
+   - This ensures code is backed up even if local machine has issues
+
+4. **Record commit info** in handoff file under "Commands/Context to Remember"
+
+## 6. Confirm Save
 
 ```
 ## Session Saved
@@ -83,6 +111,8 @@ Create/update `.ai/ops-{issue-id}-handoff.md`:
 **Issue**: [OPS-XXX] {title}
 **Status**: {status}
 **Handoff**: .ai/ops-{issue-id}-handoff.md
+**Commit**: {hash or "no changes"}
+**Pushed**: {yes/no/n/a}
 
 To resume: `/ops-continue OPS-XXX`
 
@@ -95,3 +125,4 @@ Safe to `/clear` now - context is preserved.
 - Include specific file paths and line numbers where relevant
 - Include exact error messages if debugging
 - Next steps should be actionable and specific
+- Committing WIP ensures code isn't lost between sessions

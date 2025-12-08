@@ -83,7 +83,38 @@ If user mentioned follow-up work needed:
 - Ask if they want to create a new issue now
 - Offer to run `/ops-new` with suggested title
 
-## 11. Report Summary
+## 11. Git Commit and Push
+
+After documenting the resolution:
+
+1. **Check for uncommitted changes**:
+   - Run `git status` to see if there are changes related to this fix
+
+2. **If there are uncommitted changes**:
+   - Show the user what files have changed
+   - Ask: "Commit these changes for OPS-XXX? (y/n)"
+   - If yes, stage relevant files and commit with message:
+
+     ```
+     fix: {brief description} (OPS-XXX)
+
+     Root cause: {root cause summary}
+     Resolution: {fix summary}
+
+     🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+     Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+     ```
+
+3. **Ask about pushing**:
+   - "Push to remote? (y/n)"
+   - If yes: `git push`
+
+4. **Record in ops log**:
+   - Add commit hash to Fix Applied section
+   - Note push status
+
+## 12. Report Summary
 
 ```
 ## Issue Closed: [OPS-XXX] {title}
@@ -91,6 +122,8 @@ If user mentioned follow-up work needed:
 **Resolution**: {summary}
 **Total Sessions**: {n}
 **Duration**: {created date} to {today}
+**Commit**: {hash or "no changes"}
+**Pushed**: {yes/no/n/a}
 
 ### Lessons Learned
 {lessons}
@@ -105,3 +138,4 @@ If user mentioned follow-up work needed:
 - Root Cause and Fix Applied are required fields
 - Preserve the full history in the Resolved section
 - Lessons Learned help future debugging - encourage users to fill this in
+- Always offer to commit/push when closing - fixes should be tracked in git
