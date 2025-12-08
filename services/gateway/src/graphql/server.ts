@@ -214,6 +214,10 @@ const resolvers = {
   InlineSuggestionType: emailDraftingResolvers.InlineSuggestionType,
   // AI Learning resolvers (Story 5.6)
   SnippetCategory: aiLearningResolvers.SnippetCategory,
+  // Email resolvers (Story 5.1)
+  Email: emailResolvers.Email,
+  EmailThread: emailResolvers.EmailThread,
+  EmailAttachment: emailResolvers.EmailAttachment,
 };
 
 /**
@@ -242,6 +246,9 @@ export async function createApolloServer(httpServer: http.Server) {
 export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestHandler {
   return expressMiddleware(server, {
     context: async ({ req }: { req: Request }): Promise<Context> => {
+      // Extract MS access token from header (Story 5.1: Email Integration)
+      const msAccessToken = req.headers['x-ms-access-token'] as string | undefined;
+
       // Support for user context passed from web app proxy
       // The web app authenticates users via session cookie and passes context via x-mock-user header
       // This is trusted internal communication (browser -> web app -> gateway)
@@ -254,8 +261,7 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
               firmId: userContext.firmId,
               role: userContext.role,
               email: userContext.email,
-              // MS access token for Graph API operations (email sync, etc.)
-              accessToken: userContext.accessToken,
+              accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
             },
             // Story 2.11.1: Populate financial data scope based on role
             financialDataScope: getFinancialDataScopeFromRole(userContext.role),
@@ -275,6 +281,7 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
               firmId: user.firmId,
               role: user.role,
               email: user.email,
+              accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
             }
           : undefined,
         // Story 2.11.1: Populate financial data scope based on role

@@ -16,15 +16,14 @@ import { retainerService } from '../../services/retainer.service';
 
 // Types for GraphQL context
 // Story 2.11.1: Added BusinessOwner role and financialDataScope
-// Story 5.1: Added accessToken for MS Graph API operations
+// Story 5.1: Added accessToken for email operations
 export interface Context {
   user?: {
     id: string;
     firmId: string;
     role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     email: string;
-    // MS Graph API access token for email sync operations
-    accessToken?: string;
+    accessToken?: string; // Story 5.1: MS access token for email operations
   };
   // Story 2.11.1: Financial data scope for Partners and BusinessOwners
   financialDataScope?: 'own' | 'firm' | null;

@@ -1,47 +1,30 @@
 /**
  * Apollo Client Configuration
  * Story 2.8: Case CRUD Operations UI
+ * Story 5.1: Email Integration (MS access token pass-through)
  *
  * Configured to work with GraphQL gateway with session-based authentication
- * Version: 2025-12-08-v12 (Pass MS access token for email sync)
+ * Version: 2025-12-08-v13 (Fix: handle session-only auth without MSAL accounts)
  */
 
-import { ApolloClient, InMemoryCache, HttpLink, from, ApolloLink } from '@apollo/client';
-import { onError } from '@apollo/client/link/error';
+import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
-import { getMsalInstance, loginRequest } from './msal-config';
+import { onError } from '@apollo/client/link/error';
 
 // Log version on client load to verify cache is updated
 if (typeof window !== 'undefined') {
-  console.log('[Apollo] Client version: 2025-12-08-v12');
+  console.log('[Apollo] Client version: 2025-12-08-v13');
 }
 
+// Function to get MS access token - will be set by AuthProvider
+let getMsAccessToken: (() => Promise<string | null>) | null = null;
+
 /**
- * Get Microsoft access token for Graph API calls
- * This is needed for email sync operations
+ * Set the function to retrieve MS access token from auth context
+ * Called by AuthProvider during initialization
  */
-async function getMsAccessToken(): Promise<string | null> {
-  try {
-    const msalInstance = getMsalInstance();
-    if (!msalInstance) {
-      return null;
-    }
-
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length === 0) {
-      return null;
-    }
-
-    const response = await msalInstance.acquireTokenSilent({
-      ...loginRequest,
-      account: accounts[0],
-    });
-
-    return response.accessToken;
-  } catch (error) {
-    console.warn('[Apollo] Failed to get MS access token:', error);
-    return null;
-  }
+export function setMsAccessTokenGetter(getter: () => Promise<string | null>) {
+  getMsAccessToken = getter;
 }
 
 // GraphQL endpoint - use local proxy to avoid CORS/cookie issues in development
@@ -78,28 +61,25 @@ const httpLink = new HttpLink({
   },
 });
 
-// Auth link to include MS access token for operations that need it
-// This allows the gateway to make Microsoft Graph API calls on behalf of the user
-const authLink = setContext(async (operation, { headers }) => {
-  // Only fetch token for operations that need Graph API access
-  const operationsNeedingToken = [
-    'StartEmailSync',
-    'SyncEmailAttachments',
-    'CreateEmailSubscription',
-  ];
+// Auth link to add MS access token for email operations
+const authLink = setContext(async (_, { headers }) => {
+  // Only fetch token if getter is available
+  if (!getMsAccessToken) {
+    return { headers };
+  }
 
-  const operationName = operation.operationName || '';
-  if (operationsNeedingToken.includes(operationName)) {
-    const token = await getMsAccessToken();
-    if (token) {
-      console.log('[Apollo] Including MS access token for:', operationName);
+  try {
+    const msAccessToken = await getMsAccessToken();
+    if (msAccessToken) {
       return {
         headers: {
           ...headers,
-          'x-ms-access-token': token,
+          'x-ms-access-token': msAccessToken,
         },
       };
     }
+  } catch (error) {
+    console.warn('[Apollo] Failed to get MS access token:', error);
   }
 
   return { headers };

@@ -2,6 +2,7 @@
  * GraphQL Proxy Route
  * Proxies GraphQL requests to gateway service with session cookies
  * Authenticates user via session cookie and passes context to gateway
+ * Story 5.1: Pass MS access token for email operations
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -29,8 +30,11 @@ export async function POST(request: NextRequest) {
       headers['Cookie'] = cookieHeader;
     }
 
-    // Get MS access token if provided (for email sync operations)
+    // Forward MS access token if present (Story 5.1: Email Integration)
     const msAccessToken = request.headers.get('x-ms-access-token');
+    if (msAccessToken) {
+      headers['x-ms-access-token'] = msAccessToken;
+    }
 
     // Pass authenticated user context to gateway
     // In production, we authenticate via session cookie and pass user context
@@ -41,8 +45,6 @@ export async function POST(request: NextRequest) {
         firmId: user.firmId,
         role: user.role,
         email: user.email,
-        // Include MS access token for operations that need Graph API access
-        accessToken: msAccessToken || undefined,
       });
     } else if (process.env.NODE_ENV === 'development') {
       // Fallback to mock user only in development when no session exists
