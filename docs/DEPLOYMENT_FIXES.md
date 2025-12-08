@@ -1502,6 +1502,282 @@ After deployment:
 
 ---
 
+## 2025-12-08: Email Sync Not Fetching Emails from Microsoft
+
+### Issue Summary
+
+The `/communications` page was not retrieving actual emails from the user's Microsoft account. Two separate issues were identified:
+
+1. **MS Access Token not passed through GraphQL chain** - The Microsoft Graph API access token (needed to call Microsoft's API) was never being passed from the frontend to the gateway.
+
+2. **Communications page not connected to email API** - The page used a local Zustand store but never called the GraphQL API to fetch or sync emails.
+
+3. **GraphQL resolver returning null** - The `emailThreads` query returned null when no emails existed, causing a GraphQL error.
+
+### Root Cause Analysis
+
+#### Issue 1: Missing Access Token
+
+The authentication flow stored the user in a session cookie, but the MS access token was discarded after login:
+
+```
+Login Flow:
+1. User logs in via MSAL → gets access token
+2. Token used for provisioning only → then discarded
+3. Session cookie only stores: { userId, createdAt }
+4. GraphQL requests never include access token
+5. Email sync requires token → fails with "Authentication required with valid access token"
+```
+
+The GraphQL chain had no mechanism to pass the token:
+
+- `apps/web/src/lib/apollo-client.ts` - No auth link to include token
+- `apps/web/src/app/api/graphql/route.ts` - Only passed basic user info
+- `services/gateway/src/graphql/server.ts` - Context didn't include accessToken
+
+#### Issue 2: Communications Page Not Connected
+
+The `/communications` page (`apps/web/src/app/communications/page.tsx`):
+
+- Used `useCommunicationStore()` Zustand store
+- Store started with empty `threads: []`
+- Never called `useEmailSync()` or `useEmailThreads()` hooks
+- No sync button existed in the UI
+
+#### Issue 3: Null Return from Resolver
+
+When no email threads existed in the database, the resolver returned null instead of an empty array, causing:
+
+```
+Cannot return null for non-nullable field Query.emailThreads
+```
+
+### Fixes Applied
+
+#### Fix 1: Pass MS Access Token Through GraphQL Chain
+
+**File 1**: `apps/web/src/lib/apollo-client.ts`
+
+Added Apollo auth link to fetch and include MS access token for email operations:
+
+```typescript
+import { setContext } from '@apollo/client/link/context';
+import { getMsalInstance, loginRequest } from './msal-config';
+
+async function getMsAccessToken(): Promise<string | null> {
+  const msalInstance = getMsalInstance();
+  if (!msalInstance) return null;
+
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length === 0) return null;
+
+  const response = await msalInstance.acquireTokenSilent({
+    ...loginRequest,
+    account: accounts[0],
+  });
+  return response.accessToken;
+}
+
+const authLink = setContext(async (operation, { headers }) => {
+  const operationsNeedingToken = [
+    'StartEmailSync',
+    'SyncEmailAttachments',
+    'CreateEmailSubscription',
+  ];
+
+  if (operationsNeedingToken.includes(operation.operationName || '')) {
+    const token = await getMsAccessToken();
+    if (token) {
+      return {
+        headers: { ...headers, 'x-ms-access-token': token },
+      };
+    }
+  }
+  return { headers };
+});
+
+// Add authLink to chain
+link: from([errorLink, authLink, httpLink]),
+```
+
+**File 2**: `apps/web/src/app/api/graphql/route.ts`
+
+Forward the access token header to gateway:
+
+```typescript
+const msAccessToken = request.headers.get('x-ms-access-token');
+
+headers['x-mock-user'] = JSON.stringify({
+  userId: user.id,
+  firmId: user.firmId,
+  role: user.role,
+  email: user.email,
+  accessToken: msAccessToken || undefined, // NEW
+});
+```
+
+**File 3**: `services/gateway/src/graphql/server.ts`
+
+Include accessToken in GraphQL context:
+
+```typescript
+return {
+  user: {
+    id: userContext.userId,
+    firmId: userContext.firmId,
+    role: userContext.role,
+    email: userContext.email,
+    accessToken: userContext.accessToken, // NEW
+  },
+  // ...
+};
+```
+
+**File 4**: `services/gateway/src/graphql/resolvers/case.resolvers.ts`
+
+Update Context type:
+
+```typescript
+export interface Context {
+  user?: {
+    id: string;
+    firmId: string;
+    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
+    email: string;
+    accessToken?: string; // NEW
+  };
+  // ...
+}
+```
+
+#### Fix 2: Add Sync Button and Connect to API
+
+**File**: `apps/web/src/app/communications/page.tsx`
+
+Added:
+
+- "Sincronizează email" button to trigger sync
+- Connected to `useEmailSync()` and `useEmailThreads()` hooks
+- Transform API email threads to store format
+- Show sync status (count, last sync time)
+- Show helpful prompt when no emails synced
+- Show error messages
+
+```typescript
+const { syncStatus, syncing, startSync } = useEmailSync();
+const { threads: apiThreads, loading, error, refetch } = useEmailThreads();
+
+// Transform and populate store
+useEffect(() => {
+  if (apiThreads?.length > 0) {
+    const communicationThreads = apiThreads.map(thread => ({
+      // ... transform to CommunicationThread format
+    }));
+    setThreads(communicationThreads);
+  }
+}, [apiThreads]);
+
+// Sync button
+<button onClick={handleSync}>
+  <RefreshCw className={syncing ? 'animate-spin' : ''} />
+  {syncing ? 'Sincronizare...' : 'Sincronizează email'}
+</button>
+```
+
+#### Fix 3: Return Empty Array Instead of Null
+
+**File**: `services/gateway/src/graphql/resolvers/email.resolvers.ts`
+
+```typescript
+emailThreads: async (_, args, context) => {
+  // ...
+  try {
+    const result = await emailThreadService.getThreads(filters, pagination);
+    return result?.threads || []; // Always return array
+  } catch (error) {
+    console.error('Error fetching email threads:', error);
+    return []; // Return empty array on error
+  }
+},
+```
+
+#### Fix 4: Logout Now Clears Session Cookie
+
+**File 1**: `apps/web/src/app/api/auth/logout/route.ts`
+
+```typescript
+export async function POST() {
+  const response = NextResponse.json({ success: true });
+  response.cookies.set(SESSION_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0, // Expire immediately
+    path: '/',
+  });
+  return response;
+}
+```
+
+**File 2**: `apps/web/src/contexts/AuthContext.tsx`
+
+```typescript
+const logout = useCallback(async () => {
+  // Clear session cookie first
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+
+  // Then MSAL logout
+  await msalInstance.logoutRedirect({
+    postLogoutRedirectUri: window.location.origin + '/login',
+  });
+}, []);
+```
+
+### Token Flow After Fix
+
+```
+1. User clicks "Sincronizează email"
+2. Apollo detects StartEmailSync operation
+3. authLink calls getMsAccessToken()
+4. MSAL acquireTokenSilent() gets fresh token
+5. Token sent via x-ms-access-token header
+6. GraphQL proxy includes token in x-mock-user
+7. Gateway extracts token into context.user.accessToken
+8. Email resolver uses token to call MS Graph API
+9. Emails fetched and stored in database
+10. Frontend displays email threads
+```
+
+### Commits
+
+```
+7a804c9 fix: pass MS access token for email sync operations
+947039b feat: add email sync button and connect communications to API
+231c8e6 fix: logout now clears session cookie properly
+83899ca fix: emailThreads returns empty array instead of null
+```
+
+### Verification Steps
+
+After deployment:
+
+1. Console shows: `[Apollo] Client version: 2025-12-08-v12`
+2. Go to `/communications`
+3. Click "Sincronizează email"
+4. Console shows: `[Apollo] Including MS access token for: StartEmailSync`
+5. Emails should sync from Microsoft account
+6. Thread list should populate with synced emails
+
+### Known Limitations
+
+1. **MSAL Session Required**: If user is authenticated via session cookie fallback (MSAL sessionStorage empty), token acquisition may fail. User needs to log out and log back in to re-establish MSAL session.
+
+2. **Token Expiry**: Access tokens expire after ~1 hour. MSAL handles refresh automatically via `acquireTokenSilent()`, but if refresh token is also expired, user will need to re-authenticate.
+
+3. **Scopes**: The Azure AD app registration must have `Mail.Read` permission granted for email sync to work.
+
+---
+
 ## Summary Table (Updated)
 
 | Date       | Service       | Issue                           | Fix                                          |
@@ -1511,3 +1787,4 @@ After deployment:
 | 2025-12-08 | legacy-import | Wrong DATABASE_URL              | Update via Render API                        |
 | 2025-12-08 | legacy-import | Lost PST session                | Recovery endpoint + local extraction         |
 | 2025-12-08 | legacy-import | User IDs shown instead of names | Fetch user names from User table             |
+| 2025-12-08 | web + gateway | Email sync not fetching emails  | Pass MS token, add sync UI, fix null return  |
