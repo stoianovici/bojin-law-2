@@ -1,46 +1,46 @@
 # Handoff: [OPS-001] Communications page not loading emails
 
-**Session**: 2
+**Session**: 3
 **Date**: 2025-12-08
-**Status**: Fixing (code changes complete, ready for deployment)
+**Status**: Fixing (new code changes applied, ready for deployment)
 
 ## Work Completed This Session
 
-### Fix 1: Register emailResolvers in GraphQL server
+### Root Cause Identified
 
-- Added import for `emailResolvers` in `services/gateway/src/graphql/server.ts`
-- Merged email queries into Query resolvers (`emailResolvers.Query`)
-- Merged email mutations into Mutation resolvers (`emailResolvers.Mutation`)
-- Added Subscription resolvers (`emailResolvers.Subscription`)
-- Added type resolvers: `Email`, `EmailThread`, `EmailAttachment`
+When user is authenticated via session cookie only (no MSAL accounts cached in browser), `getAccessToken()` was returning null because it required `state.msalAccount` to be present. This meant:
 
-### Fix 2: Pass MS access token through GraphQL context
+1. User is logged in (session cookie valid)
+2. But no MSAL account in state
+3. `getAccessToken()` returns null
+4. No MS token sent to gateway
+5. `startEmailSync` mutation fails
 
-- **Apollo Client** (`apps/web/src/lib/apollo-client.ts`):
-  - Added `setContext` auth link to fetch and include MS access token as `x-ms-access-token` header
-  - Created `setMsAccessTokenGetter()` function for AuthProvider to register token getter
+### Fix 3: Handle session-only authentication
 
-- **AuthContext** (`apps/web/src/contexts/AuthContext.tsx`):
-  - Added import for `setMsAccessTokenGetter`
-  - Added useEffect to register `getAccessToken` function with Apollo client
+**AuthContext.tsx changes:**
 
-- **GraphQL Proxy** (`apps/web/src/app/api/graphql/route.ts`):
-  - Added code to forward `x-ms-access-token` header to gateway
+- Enhanced `getAccessToken()` to check for any MSAL accounts in browser storage even when `state.msalAccount` is null
+- Added `hasMsalAccount: boolean` property to check if MS Graph API access is available
+- Added `reconnectMicrosoft()` function to trigger MSAL re-authentication
 
-- **Gateway Context** (`services/gateway/src/graphql/server.ts`):
-  - Extract `x-ms-access-token` from request headers
-  - Include `accessToken` in user context object
+**EmailThreadList.tsx changes:**
 
-- **Context Type** (`services/gateway/src/graphql/resolvers/case.resolvers.ts`):
-  - Added `accessToken?: string` to Context.user type definition
+- Added conditional rendering based on `hasMsalAccount`
+- Shows "Connect Microsoft" button instead of "Sync" when no MSAL account
+- Shows informational message prompting user to connect their Microsoft account
+
+**apollo-client.ts changes:**
+
+- Updated version to v13 for cache busting
 
 ## Current State
 
 All code changes are complete. The fix needs to be:
 
 1. Committed to git
-2. Deployed to production (Render)
-3. Verified by testing /communications page
+2. Pushed to trigger deployment
+3. Verified by testing /emails page (or /communications if using that)
 
 ## Blockers/Questions
 
@@ -51,27 +51,25 @@ None - fix is ready for deployment.
 1. **Commit changes**: Run git add/commit with the changes
 2. **Push to remote**: Push to trigger deployment
 3. **Verify fix**:
-   - Navigate to https://legal-platform-web.onrender.com/communications
-   - Check browser Network tab for successful GraphQL responses
-   - Verify emails load in the UI
-   - Check console for any remaining errors
+   - Navigate to https://legal-platform-web.onrender.com/emails
+   - Check if "Connect Microsoft" button appears
+   - Click to re-authenticate with Microsoft
+   - Verify email sync works after re-auth
 4. **Update status**: Change status to "Resolved" once verified
 
-## Key Files Modified
+## Key Files Modified (Session 3)
 
-| File                                                       | Change                                          |
-| ---------------------------------------------------------- | ----------------------------------------------- |
-| `services/gateway/src/graphql/server.ts`                   | Import + merge emailResolvers, extract MS token |
-| `services/gateway/src/graphql/resolvers/case.resolvers.ts` | Add accessToken to Context type                 |
-| `apps/web/src/lib/apollo-client.ts`                        | Add auth link for MS token                      |
-| `apps/web/src/contexts/AuthContext.tsx`                    | Register token getter with Apollo               |
-| `apps/web/src/app/api/graphql/route.ts`                    | Forward x-ms-access-token header                |
+| File                                                | Change                                                             |
+| --------------------------------------------------- | ------------------------------------------------------------------ |
+| `apps/web/src/contexts/AuthContext.tsx`             | Enhanced getAccessToken, added hasMsalAccount + reconnectMicrosoft |
+| `apps/web/src/components/email/EmailThreadList.tsx` | Added "Connect Microsoft" prompt                                   |
+| `apps/web/src/lib/apollo-client.ts`                 | Version bump to v13                                                |
+| `docs/ops/operations-log.md`                        | Updated with session 3 progress                                    |
 
 ## Testing Checklist
 
-- [ ] Gateway builds without errors
-- [ ] Web app builds without errors
-- [ ] /communications page loads
-- [ ] Email sync starts successfully
-- [ ] Email threads are displayed
-- [ ] No console errors related to email operations
+- [ ] Web app builds without TypeScript errors in modified files
+- [ ] /emails page loads
+- [ ] "Connect Microsoft" button appears when no MSAL account
+- [ ] Clicking button triggers Microsoft login
+- [ ] After login, emails sync works

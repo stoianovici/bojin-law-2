@@ -5,9 +5,9 @@
 
 ## Quick Reference
 
-| ID      | Title                                  | Type | Priority    | Status | Sessions |
-| ------- | -------------------------------------- | ---- | ----------- | ------ | -------- |
-| OPS-001 | Communications page not loading emails | Bug  | P0-Critical | Fixing | 2        |
+| ID      | Title                                  | Type | Priority    | Status    | Sessions |
+| ------- | -------------------------------------- | ---- | ----------- | --------- | -------- |
+| OPS-001 | Communications page not loading emails | Bug  | P0-Critical | Verifying | 3        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -19,11 +19,11 @@
 
 | Field           | Value       |
 | --------------- | ----------- |
-| **Status**      | Fixing      |
+| **Status**      | Verifying   |
 | **Type**        | Bug         |
 | **Priority**    | P0-Critical |
 | **Created**     | 2025-12-08  |
-| **Sessions**    | 2           |
+| **Sessions**    | 3           |
 | **Last Active** | 2025-12-08  |
 
 #### Description
@@ -65,17 +65,19 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 
 - [2025-12-08] Issue created. Initial triage identified two critical bugs: (1) emailResolvers not merged into GraphQL server schema, (2) MS access token not passed through context.
 - [2025-12-08] Session 2 started. Implemented both fixes: registered emailResolvers in server.ts and set up MS access token pass-through from client to gateway.
+- [2025-12-08] Session 3 started. Continuing from: Fixing. Beginning verification of deployed fix.
+- [2025-12-08] Session 3 - Found root cause: when user authenticated via session cookie only (no MSAL accounts cached), getAccessToken() returned null. Fixed by: (1) Enhanced getAccessToken to check for any MSAL accounts in browser, (2) Added hasMsalAccount and reconnectMicrosoft to AuthContext, (3) Updated EmailThreadList to show "Connect Microsoft" prompt when MSAL not available.
 
 #### Files Involved
 
 - `services/gateway/src/graphql/server.ts` - **FIXED** - Added emailResolvers import/merge + token extraction
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - Email resolver definitions
 - `services/gateway/src/graphql/resolvers/case.resolvers.ts` - **FIXED** - Added accessToken to Context type
-- `apps/web/src/lib/apollo-client.ts` - **FIXED** - Added auth link for MS token
-- `apps/web/src/contexts/AuthContext.tsx` - **FIXED** - Register token getter
+- `apps/web/src/lib/apollo-client.ts` - **FIXED v13** - Added auth link for MS token, version bump
+- `apps/web/src/contexts/AuthContext.tsx` - **FIXED v2** - Enhanced getAccessToken to check all MSAL accounts, added hasMsalAccount and reconnectMicrosoft
 - `apps/web/src/app/api/graphql/route.ts` - **FIXED** - Forward x-ms-access-token header
 - `apps/web/src/hooks/useEmailSync.ts` - Frontend email hooks/queries
-- `apps/web/src/components/email/EmailThreadList.tsx` - Email list component
+- `apps/web/src/components/email/EmailThreadList.tsx` - **FIXED** - Added "Connect Microsoft" prompt when MSAL not available
 
 ---
 

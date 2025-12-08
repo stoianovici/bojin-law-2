@@ -12,6 +12,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { useEmailThreads, useEmailSync } from '@/hooks/useEmailSync';
 import { EmailThreadFilters } from './EmailThreadFilters';
 import { Spinner } from '@/components/ui/spinner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EmailThread {
   id: string;
@@ -53,6 +54,7 @@ export function EmailThreadList({
   );
 
   const { syncStatus, startSync, syncing } = useEmailSync();
+  const { hasMsalAccount, reconnectMicrosoft } = useAuth();
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
@@ -66,9 +68,7 @@ export function EmailThreadList({
 
   if (error) {
     return (
-      <div className="p-4 text-center text-red-600">
-        Error loading emails: {error.message}
-      </div>
+      <div className="p-4 text-center text-red-600">Error loading emails: {error.message}</div>
     );
   }
 
@@ -77,30 +77,48 @@ export function EmailThreadList({
       {/* Header with sync controls */}
       <div className="border-b border-gray-200 p-4 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Email Threads
-          </h2>
-          <button
-            onClick={() => startSync()}
-            disabled={syncing}
-            className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {syncing ? (
-              <>
-                <Spinner size="sm" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <SyncIcon />
-                Sync
-              </>
-            )}
-          </button>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Email Threads</h2>
+          {hasMsalAccount ? (
+            <button
+              onClick={() => startSync()}
+              disabled={syncing}
+              className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {syncing ? (
+                <>
+                  <Spinner size="sm" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <SyncIcon />
+                  Sync
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={() => reconnectMicrosoft()}
+              className="flex items-center gap-2 rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
+            >
+              <MicrosoftIcon />
+              Connect Microsoft
+            </button>
+          )}
         </div>
 
+        {/* Microsoft reconnection prompt */}
+        {!hasMsalAccount && (
+          <div className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            <p className="font-medium">Microsoft account not connected</p>
+            <p className="mt-1 text-xs">
+              Click &quot;Connect Microsoft&quot; to sync your emails from Outlook.
+            </p>
+          </div>
+        )}
+
         {/* Sync status */}
-        {syncStatus && (
+        {hasMsalAccount && syncStatus && (
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             {syncStatus.emailCount} emails
             {syncStatus.lastSyncAt && (
@@ -116,25 +134,16 @@ export function EmailThreadList({
       </div>
 
       {/* Filters */}
-      <EmailThreadFilters
-        filters={filters}
-        onChange={setFilters}
-        onRefresh={refetch}
-      />
+      <EmailThreadFilters filters={filters} onChange={setFilters} onRefresh={refetch} />
 
       {/* Thread list */}
-      <div
-        className="flex-1 overflow-y-auto"
-        onScroll={handleScroll}
-      >
+      <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
         {loading && threads.length === 0 ? (
           <div className="flex items-center justify-center p-8">
             <Spinner />
           </div>
         ) : threads.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No email threads found
-          </div>
+          <div className="p-8 text-center text-gray-500">No email threads found</div>
         ) : (
           <ul
             role="listbox"
@@ -257,6 +266,17 @@ function AttachmentIcon({ 'aria-label': ariaLabel }: { 'aria-label'?: string }) 
         strokeWidth={2}
         d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
       />
+    </svg>
+  );
+}
+
+function MicrosoftIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 21 21" fill="currentColor">
+      <rect x="1" y="1" width="9" height="9" />
+      <rect x="11" y="1" width="9" height="9" />
+      <rect x="1" y="11" width="9" height="9" />
+      <rect x="11" y="11" width="9" height="9" />
     </svg>
   );
 }

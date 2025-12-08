@@ -34,6 +34,10 @@ export interface AuthContextType extends AuthState {
   getAccessToken: () => Promise<string | null>;
   refreshToken: () => Promise<boolean>;
   clearError: () => void;
+  /** Whether an MSAL account is available for MS Graph API access */
+  hasMsalAccount: boolean;
+  /** Trigger Microsoft re-authentication (for email access) */
+  reconnectMicrosoft: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -305,31 +309,68 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   /**
    * Get access token for API calls
+   * This tries to acquire a token silently, falling back to checking for any MSAL accounts
+   * when the user was authenticated via session cookie only.
    */
   const getAccessToken = useCallback(async (): Promise<string | null> => {
     const msalInstance = getMsalInstance();
 
-    if (!msalInstance || !state.msalAccount) {
+    if (!msalInstance) {
+      console.log('[AuthContext] No MSAL instance available');
       return null;
     }
 
-    try {
-      const response = await msalInstance.acquireTokenSilent({
-        ...loginRequest,
-        account: state.msalAccount,
-      });
-
-      return response.accessToken;
-    } catch (error) {
-      if (error instanceof InteractionRequiredAuthError) {
-        try {
-          await msalInstance.acquireTokenRedirect(loginRequest);
-        } catch (redirectError) {
-          console.error('Token redirect error:', redirectError);
+    // If we have a cached msalAccount, use it directly
+    if (state.msalAccount) {
+      try {
+        const response = await msalInstance.acquireTokenSilent({
+          ...loginRequest,
+          account: state.msalAccount,
+        });
+        return response.accessToken;
+      } catch (error) {
+        if (error instanceof InteractionRequiredAuthError) {
+          try {
+            await msalInstance.acquireTokenRedirect(loginRequest);
+          } catch (redirectError) {
+            console.error('Token redirect error:', redirectError);
+          }
         }
+        return null;
       }
-      return null;
     }
+
+    // No cached msalAccount - try to find any MSAL accounts (may have been cached by browser)
+    // This handles the case where user is authenticated via session cookie but MSAL state wasn't persisted
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      console.log(
+        '[AuthContext] Found MSAL accounts despite no cached state, attempting token acquisition'
+      );
+      try {
+        const response = await msalInstance.acquireTokenSilent({
+          ...loginRequest,
+          account: accounts[0],
+        });
+        return response.accessToken;
+      } catch (error) {
+        console.warn(
+          '[AuthContext] Silent token acquisition failed for discovered account:',
+          error
+        );
+        if (error instanceof InteractionRequiredAuthError) {
+          // Token expired or requires interaction - user needs to re-authenticate
+          console.log('[AuthContext] Interaction required to get MS token');
+        }
+        return null;
+      }
+    }
+
+    // No MSAL accounts available - user needs to re-authenticate with Microsoft
+    console.log(
+      '[AuthContext] No MSAL accounts available - Microsoft re-authentication required for email access'
+    );
+    return null;
   }, [state.msalAccount]);
 
   /**
@@ -339,6 +380,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const token = await getAccessToken();
     return token !== null;
   }, [getAccessToken]);
+
+  /**
+   * Reconnect Microsoft account - triggers MSAL login to get fresh tokens
+   * Used when user is authenticated via session cookie but needs MS Graph access
+   */
+  const reconnectMicrosoft = useCallback(async () => {
+    const msalInstance = getMsalInstance();
+
+    if (!msalInstance) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Authentication not ready. Please refresh the page.',
+      }));
+      return;
+    }
+
+    try {
+      console.log('[AuthContext] Triggering Microsoft re-authentication...');
+      await msalInstance.loginRedirect(loginRequest);
+    } catch (error: unknown) {
+      console.error('Microsoft reconnect error:', error);
+      setState((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to connect Microsoft account.',
+      }));
+    }
+  }, []);
+
+  /**
+   * Check if any MSAL accounts are available
+   */
+  const hasMsalAccount = useCallback((): boolean => {
+    if (state.msalAccount) return true;
+    const msalInstance = getMsalInstance();
+    if (!msalInstance) return false;
+    return msalInstance.getAllAccounts().length > 0;
+  }, [state.msalAccount]);
 
   /**
    * Register MS access token getter with Apollo client
@@ -359,6 +437,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     getAccessToken,
     refreshToken,
     clearError,
+    hasMsalAccount: hasMsalAccount(),
+    reconnectMicrosoft,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
