@@ -83,12 +83,15 @@ export default function CommunicationsPage() {
   }, [apiThreads, setThreads]);
 
   const handleSync = async () => {
+    console.log('[Communications] handleSync called, hasMsalAccount:', hasMsalAccount);
     try {
-      await startSync();
+      console.log('[Communications] Calling startSync mutation...');
+      const result = await startSync();
+      console.log('[Communications] startSync result:', result);
       // Refetch threads after sync completes
       setTimeout(() => refetch(), 2000);
     } catch (error) {
-      console.error('Email sync failed:', error);
+      console.error('[Communications] Email sync failed:', error);
     }
   };
 
