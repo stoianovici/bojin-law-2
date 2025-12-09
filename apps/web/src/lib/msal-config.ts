@@ -58,9 +58,13 @@ export const msalConfig: Configuration = {
 /**
  * Scopes required for the application
  * Includes Mail.Read for email sync functionality (Story 5.1)
+ * Note: Mail.Read and Mail.ReadBasic require admin consent for organizational accounts.
+ * If admin has pre-granted consent in Azure AD, user won't be prompted.
  */
 export const loginRequest = {
   scopes: ['openid', 'profile', 'email', 'User.Read', 'Mail.Read', 'Mail.ReadBasic'],
+  // Don't force consent prompt - use pre-granted admin consent
+  prompt: 'select_account' as const,
 };
 
 /**

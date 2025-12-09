@@ -4,7 +4,7 @@
  * Story 5.1: Email Integration (MS access token pass-through)
  *
  * Configured to work with GraphQL gateway with session-based authentication
- * Version: 2025-12-08-v17 (Fix: set hasMsalAccount=false on InteractionRequiredAuthError)
+ * Version: 2025-12-09-v18 (Fix: show existing emails without MSAL, use SSO for reconnect)
  */
 
 import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
@@ -13,7 +13,7 @@ import { onError } from '@apollo/client/link/error';
 
 // Log version on client load to verify cache is updated
 if (typeof window !== 'undefined') {
-  console.log('[Apollo] Client version: 2025-12-08-v17');
+  console.log('[Apollo] Client version: 2025-12-09-v18');
 }
 
 // Function to get MS access token - will be set by AuthProvider

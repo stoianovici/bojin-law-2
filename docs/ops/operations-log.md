@@ -7,7 +7,7 @@
 
 | ID      | Title                                  | Type        | Priority    | Status        | Sessions |
 | ------- | -------------------------------------- | ----------- | ----------- | ------------- | -------- |
-| OPS-001 | Communications page not loading emails | Bug         | P0-Critical | Investigating | 4        |
+| OPS-001 | Communications page not loading emails | Bug         | P0-Critical | Investigating | 5        |
 | OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Verifying     | 4        |
 
 <!-- Issues will be indexed here automatically -->
@@ -24,8 +24,8 @@
 | **Type**        | Bug           |
 | **Priority**    | P0-Critical   |
 | **Created**     | 2025-12-08    |
-| **Sessions**    | 4             |
-| **Last Active** | 2025-12-08    |
+| **Sessions**    | 5             |
+| **Last Active** | 2025-12-09    |
 
 #### Description
 
@@ -72,6 +72,9 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-08] Session 4 - Found root cause: `hasMsalAccount` was computed once at render time via `hasMsalAccount()` call, not as reactive state. When MSAL init completes with no accounts, the UI still showed "Sync" button because hasMsalAccount was evaluated before MSAL finished initializing. Fixed by: (1) Added `hasMsalAccountState` state variable, (2) Added `updateHasMsalAccount()` function called after MSAL init, (3) Changed context value to use state instead of computed function call.
 - [2025-12-08] Session 4 - Second issue found: The `/communications` page was a different component that didn't use `hasMsalAccount`. Updated to show "Conectează Microsoft" button when no MSAL account.
 - [2025-12-08] Session 4 - Third issue found: MSAL `loginRequest` scopes did not include `Mail.Read`. User authenticated but had no permission to read emails. Added `Mail.Read` and `Mail.ReadBasic` to scopes.
+- [2025-12-09] Session 5 started. Continuing from: Investigating. All fixes deployed and live since ~17:30 UTC yesterday. Verifying fix.
+- [2025-12-09] Session 5 - Found root cause: The page was showing "Conectează Microsoft" banner even when emails exist in database. The MSAL token is only needed for SYNC operations, not for viewing already-synced emails. Additionally, clicking connect triggered full OAuth flow causing "Need admin approval" error.
+- [2025-12-09] Session 5 - Fixes applied: (1) Simplified communications page to always show sync button, only show connect prompt when no emails exist, (2) Added `prompt: 'select_account'` to MSAL config to avoid consent prompt, (3) Updated `reconnectMicrosoft()` to try SSO first before falling back to redirect.
 
 #### Files Involved
 

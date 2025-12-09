@@ -414,7 +414,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [getAccessToken]);
 
   /**
-   * Reconnect Microsoft account - triggers MSAL login to get fresh tokens
+   * Reconnect Microsoft account - tries SSO first, then falls back to redirect
    * Used when user is authenticated via session cookie but needs MS Graph access
    */
   const reconnectMicrosoft = useCallback(async () => {
@@ -429,7 +429,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      console.log('[AuthContext] Triggering Microsoft re-authentication...');
+      console.log('[AuthContext] Attempting Microsoft SSO...');
+
+      // Try SSO (silent login using existing browser session with Microsoft)
+      // This works when user is already logged into Microsoft in the browser
+      const ssoResult = await msalInstance.ssoSilent({
+        ...loginRequest,
+        loginHint: state.user?.email, // Use the user's email as hint
+      });
+
+      if (ssoResult && ssoResult.account) {
+        console.log('[AuthContext] SSO successful, got account:', ssoResult.account.username);
+        setHasMsalAccountState(true);
+        setState((prev) => ({
+          ...prev,
+          msalAccount: ssoResult.account,
+        }));
+        return;
+      }
+    } catch (ssoError) {
+      console.log('[AuthContext] SSO failed, falling back to redirect:', ssoError);
+    }
+
+    // SSO failed, use redirect login
+    try {
+      console.log('[AuthContext] Triggering Microsoft login redirect...');
       await msalInstance.loginRedirect(loginRequest);
     } catch (error: unknown) {
       console.error('Microsoft reconnect error:', error);
@@ -438,7 +462,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         error: error instanceof Error ? error.message : 'Failed to connect Microsoft account.',
       }));
     }
-  }, []);
+  }, [state.user?.email]);
 
   /**
    * Keep hasMsalAccountState in sync with state.msalAccount

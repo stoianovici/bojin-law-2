@@ -101,26 +101,26 @@ export default function CommunicationsPage() {
       <div className="border-b bg-white px-6 py-4 flex items-center justify-between">
         {/* Left: Sync status and button */}
         <div className="flex items-center gap-4">
-          {hasMsalAccount ? (
-            <button
-              onClick={handleSync}
-              disabled={syncing || isLoading}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Sincronizare...' : 'Sincronizează email'}
-            </button>
-          ) : (
-            <button
-              onClick={() => reconnectMicrosoft()}
-              className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors flex items-center gap-2"
-            >
-              <Mail className="h-4 w-4" />
-              Conectează Microsoft
-            </button>
-          )}
+          {/* Always show sync button - it will work if MSAL token available, or prompt to connect */}
+          <button
+            onClick={hasMsalAccount ? handleSync : () => reconnectMicrosoft()}
+            disabled={syncing || isLoading}
+            className={`px-4 py-2 rounded transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+              hasMsalAccount
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-amber-500 text-white hover:bg-amber-600'
+            }`}
+          >
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing
+              ? 'Sincronizare...'
+              : hasMsalAccount
+                ? 'Sincronizează email'
+                : 'Conectează pentru sincronizare'}
+          </button>
 
-          {hasMsalAccount && syncStatus && (
+          {/* Show sync status if available */}
+          {syncStatus && (
             <span className="text-sm text-gray-500">
               {syncStatus.emailCount} emailuri sincronizate
               {syncStatus.lastSyncAt && (
@@ -142,29 +142,18 @@ export default function CommunicationsPage() {
         </button>
       </div>
 
-      {/* Show Microsoft connection prompt if no MSAL account */}
-      {!hasMsalAccount && !isLoading && (
-        <div className="mx-6 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-          <Mail className="h-5 w-5 text-amber-500 mt-0.5" />
-          <div>
-            <h3 className="font-medium text-amber-900">Conectați contul Microsoft</h3>
-            <p className="text-sm text-amber-700 mt-1">
-              Apăsați butonul &quot;Conectează Microsoft&quot; pentru a vă autentifica și a importa
-              emailurile din Outlook.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Show sync prompt if connected but no emails */}
-      {hasMsalAccount && needsSync && !isLoading && !syncing && (
+      {/* Show sync prompt only if no emails exist yet */}
+      {needsSync && !isLoading && !syncing && (
         <div className="mx-6 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
           <Mail className="h-5 w-5 text-blue-500 mt-0.5" />
           <div>
-            <h3 className="font-medium text-blue-900">Sincronizați emailurile</h3>
+            <h3 className="font-medium text-blue-900">
+              {hasMsalAccount ? 'Sincronizați emailurile' : 'Conectați contul Microsoft'}
+            </h3>
             <p className="text-sm text-blue-700 mt-1">
-              Apăsați butonul &quot;Sincronizează email&quot; pentru a importa emailurile din contul
-              Microsoft.
+              {hasMsalAccount
+                ? 'Apăsați butonul "Sincronizează email" pentru a importa emailurile din contul Microsoft.'
+                : 'Apăsați butonul "Conectează pentru sincronizare" pentru a importa emailurile din Outlook.'}
             </p>
           </div>
         </div>
