@@ -14,6 +14,9 @@ import {
   AlertCircle,
   Download,
   ShieldAlert,
+  Shield,
+  Camera,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -79,6 +82,12 @@ interface DashboardData {
   };
 }
 
+interface SnapshotStatus {
+  lastSnapshotAt: string | null;
+  hasRecentSnapshot: boolean;
+  snapshotAgeMinutes: number | null;
+}
+
 interface PartnerDashboardProps {
   sessionId: string;
   onManageCategories: () => void;
@@ -98,6 +107,9 @@ export function PartnerDashboard({
   const [isReassigning, setIsReassigning] = useState(false);
   const [reassignmentMessage, setReassignmentMessage] = useState<string | null>(null);
   const [isExportingContacts, setIsExportingContacts] = useState(false);
+  const [snapshotStatus, setSnapshotStatus] = useState<SnapshotStatus | null>(null);
+  const [isCreatingSnapshot, setIsCreatingSnapshot] = useState(false);
+  const [snapshotMessage, setSnapshotMessage] = useState<string | null>(null);
 
   // Check if user has Partner/BusinessOwner role
   const isPartner = user?.role === 'Partner' || user?.role === 'Admin';
@@ -130,6 +142,46 @@ export function PartnerDashboard({
       console.error('Error fetching reassignment info:', err);
     }
   }, [sessionId]);
+
+  const fetchSnapshotStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/export-snapshot?sessionId=${sessionId}`);
+      if (res.ok) {
+        const status = await res.json();
+        setSnapshotStatus(status);
+      }
+    } catch (err) {
+      console.error('Error fetching snapshot status:', err);
+    }
+  }, [sessionId]);
+
+  const handleCreateSnapshot = useCallback(async () => {
+    if (isCreatingSnapshot) return;
+
+    try {
+      setIsCreatingSnapshot(true);
+      setSnapshotMessage(null);
+
+      const res = await fetch('/api/export-snapshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to create snapshot');
+      }
+
+      setSnapshotMessage(`Backup creat cu succes: ${result.stats.totalDocuments} documente`);
+      await fetchSnapshotStatus();
+    } catch (err) {
+      setSnapshotMessage(err instanceof Error ? err.message : 'Eroare la crearea backup-ului');
+    } finally {
+      setIsCreatingSnapshot(false);
+    }
+  }, [sessionId, isCreatingSnapshot, fetchSnapshotStatus]);
 
   const handleAutoReassign = useCallback(async () => {
     if (isReassigning) return;
@@ -197,13 +249,15 @@ export function PartnerDashboard({
   useEffect(() => {
     fetchDashboard();
     fetchReassignmentInfo();
+    fetchSnapshotStatus();
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchDashboard();
       fetchReassignmentInfo();
+      fetchSnapshotStatus();
     }, 30000);
     return () => clearInterval(interval);
-  }, [fetchDashboard, fetchReassignmentInfo]);
+  }, [fetchDashboard, fetchReassignmentInfo, fetchSnapshotStatus]);
 
   if (loading && !data) {
     return (
@@ -564,6 +618,121 @@ export function PartnerDashboard({
         </div>
       </div>
 
+      {/* Data Protection Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Shield className="h-5 w-5 text-green-600" />
+          Protecția datelor
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Snapshot Status */}
+          <div className="border border-gray-100 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Camera className="h-5 w-5 text-blue-600" />
+                <span className="font-medium text-gray-900">Backup categorizare</span>
+              </div>
+              {snapshotStatus?.hasRecentSnapshot ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                  <CheckCircle className="h-3 w-3" />
+                  Actualizat
+                </span>
+              ) : snapshotStatus?.lastSnapshotAt ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                  <Clock className="h-3 w-3" />
+                  Expirat
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                  <AlertCircle className="h-3 w-3" />
+                  Lipsă
+                </span>
+              )}
+            </div>
+
+            <p className="text-sm text-gray-600 mb-3">
+              {snapshotStatus?.lastSnapshotAt ? (
+                <>
+                  Ultimul backup:{' '}
+                  <span className="font-medium">
+                    {new Date(snapshotStatus.lastSnapshotAt).toLocaleString('ro-RO')}
+                  </span>
+                  {snapshotStatus.snapshotAgeMinutes !== null && (
+                    <span className="text-gray-500">
+                      {' '}
+                      (acum {snapshotStatus.snapshotAgeMinutes} minute)
+                    </span>
+                  )}
+                </>
+              ) : (
+                'Niciun backup creat. Creează un backup înainte de export.'
+              )}
+            </p>
+
+            <button
+              onClick={handleCreateSnapshot}
+              disabled={isCreatingSnapshot}
+              className="w-full px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isCreatingSnapshot ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4" />
+              )}
+              {isCreatingSnapshot ? 'Se creează...' : 'Creează backup acum'}
+            </button>
+
+            {snapshotMessage && (
+              <p
+                className={`mt-2 text-sm ${snapshotMessage.includes('succes') ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {snapshotMessage}
+              </p>
+            )}
+          </div>
+
+          {/* Export Info */}
+          <div className="border border-gray-100 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Trash2 className="h-5 w-5 text-amber-600" />
+              <span className="font-medium text-gray-900">Curățare R2 după export</span>
+            </div>
+
+            <div className="text-sm text-gray-600 space-y-2">
+              <p>
+                După export în OneDrive, fișierele R2 (PST + documente) vor fi{' '}
+                <span className="font-medium">păstrate 7 zile</span> ca backup.
+              </p>
+              <p>
+                Exportul necesită un backup de categorizare{' '}
+                <span className="font-medium">mai recent de 1 oră</span>.
+              </p>
+              {data.session.exportedAt && (
+                <div className="mt-3 p-2 bg-green-50 rounded text-green-700">
+                  <CheckCircle className="h-4 w-4 inline mr-1" />
+                  Exportat la: {new Date(data.session.exportedAt).toLocaleString('ro-RO')}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Warning if no recent snapshot and ready for export */}
+        {isReadyForExport && !snapshotStatus?.hasRecentSnapshot && (
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">Backup necesar înainte de export</p>
+              <p className="text-sm text-amber-700 mt-1">
+                Creează un backup de categorizare înainte de a exporta în OneDrive pentru a proteja
+                munca echipei.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-4">
         <button
@@ -586,14 +755,21 @@ export function PartnerDashboard({
         </button>
         <button
           onClick={onExport}
-          disabled={!isReadyForExport}
+          disabled={!isReadyForExport || !snapshotStatus?.hasRecentSnapshot}
           className={`px-6 py-3 rounded-lg font-medium ${
-            isReadyForExport
+            isReadyForExport && snapshotStatus?.hasRecentSnapshot
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
+          title={
+            !snapshotStatus?.hasRecentSnapshot ? 'Creează un backup înainte de export' : undefined
+          }
         >
-          {isReadyForExport ? 'Exportă în OneDrive' : 'Finalizează mai întâi categorizarea'}
+          {!isReadyForExport
+            ? 'Finalizează mai întâi categorizarea'
+            : !snapshotStatus?.hasRecentSnapshot
+              ? 'Creează backup pentru export'
+              : 'Exportă în OneDrive'}
         </button>
       </div>
     </div>
