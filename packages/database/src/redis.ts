@@ -80,9 +80,12 @@ const getRedisInstance = (): Redis => {
     } else {
       // ioredis accepts URL as first argument, config as second
       // The REDIS_URL should be passed directly, not as a config property
-      _redis = process.env.REDIS_URL
-        ? new Redis(process.env.REDIS_URL, redisConfig)
-        : new Redis(redisConfig);
+      const redisUrl = process.env.REDIS_URL;
+      console.log(
+        '[Redis] Initializing with URL:',
+        redisUrl ? redisUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') : 'none (using localhost)'
+      );
+      _redis = redisUrl ? new Redis(redisUrl, redisConfig) : new Redis(redisConfig);
 
       // Store in global for hot-reload in development
       if (process.env.NODE_ENV !== 'production') {
