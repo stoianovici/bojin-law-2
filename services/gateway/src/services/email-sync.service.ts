@@ -130,6 +130,13 @@ export class EmailSyncService {
   ): Promise<EmailSyncResult> {
     const { pageSize = DEFAULT_PAGE_SIZE, maxEmails = MAX_EMAILS_PER_SYNC } = options;
 
+    console.log(
+      '[EmailSyncService.syncUserEmails] Starting sync for user:',
+      userId,
+      'pageSize:',
+      pageSize
+    );
+
     try {
       // Get user's firm ID for storage
       const user = await this.prisma.user.findUnique({
@@ -137,12 +144,16 @@ export class EmailSyncService {
         select: { firmId: true },
       });
 
+      console.log('[EmailSyncService.syncUserEmails] User lookup result:', user);
+
       if (!user?.firmId) {
+        console.error('[EmailSyncService.syncUserEmails] User not found or has no firm');
         return { success: false, emailsSynced: 0, error: 'User not found or has no firm' };
       }
 
       // Update sync state to 'syncing'
       await this.updateSyncState(userId, { syncStatus: 'syncing' });
+      console.log('[EmailSyncService.syncUserEmails] Updated sync state to syncing');
 
       const client = this.graphService.getAuthenticatedClient(accessToken);
       let emailsSynced = 0;
@@ -150,7 +161,14 @@ export class EmailSyncService {
       let deltaLink: string | undefined;
 
       // Start with delta query to get delta token on first sync
+      console.log('[EmailSyncService.syncUserEmails] Fetching first page from Graph API...');
       let response = await this.fetchEmailsPage(client, pageSize, true);
+      console.log(
+        '[EmailSyncService.syncUserEmails] First page response - messages:',
+        response?.value?.length,
+        'hasNextLink:',
+        !!response?.['@odata.nextLink']
+      );
 
       do {
         const messages = response.value as Message[];
@@ -214,10 +232,7 @@ export class EmailSyncService {
    * @param accessToken - User's OAuth access token
    * @returns Sync result with count and new delta token
    */
-  async syncIncrementalEmails(
-    userId: string,
-    accessToken: string
-  ): Promise<EmailSyncResult> {
+  async syncIncrementalEmails(userId: string, accessToken: string): Promise<EmailSyncResult> {
     try {
       // Get current sync state
       const syncState = await this.prisma.emailSyncState.findUnique({
@@ -260,9 +275,7 @@ export class EmailSyncService {
         }
 
         // Handle deleted messages
-        const deletedMessages = response.value?.filter(
-          (m: any) => m['@removed']
-        ) as Message[];
+        const deletedMessages = response.value?.filter((m: any) => m['@removed']) as Message[];
         if (deletedMessages?.length > 0) {
           await this.handleDeletedEmails(
             deletedMessages.map((m) => m.id!),
@@ -358,9 +371,7 @@ export class EmailSyncService {
     return retryWithBackoff(
       async () => {
         try {
-          const endpoint = useDelta
-            ? '/me/messages/delta'
-            : graphEndpoints.messages;
+          const endpoint = useDelta ? '/me/messages/delta' : graphEndpoints.messages;
 
           const request = client
             .api(endpoint)
@@ -463,11 +474,7 @@ export class EmailSyncService {
   /**
    * Store emails in database (for initial sync)
    */
-  private async storeEmails(
-    emails: SyncedEmail[],
-    userId: string,
-    firmId: string
-  ): Promise<void> {
+  private async storeEmails(emails: SyncedEmail[], userId: string, firmId: string): Promise<void> {
     // Use createMany for efficiency, skip duplicates
     await this.prisma.email.createMany({
       data: emails.map((email) => ({
@@ -497,11 +504,7 @@ export class EmailSyncService {
   /**
    * Upsert emails in database (for incremental sync)
    */
-  private async upsertEmails(
-    emails: SyncedEmail[],
-    userId: string,
-    firmId: string
-  ): Promise<void> {
+  private async upsertEmails(emails: SyncedEmail[], userId: string, firmId: string): Promise<void> {
     // Use transaction for atomicity
     await this.prisma.$transaction(
       emails.map((email) =>
@@ -542,10 +545,7 @@ export class EmailSyncService {
   /**
    * Handle deleted emails from delta sync
    */
-  private async handleDeletedEmails(
-    graphMessageIds: string[],
-    userId: string
-  ): Promise<void> {
+  private async handleDeletedEmails(graphMessageIds: string[], userId: string): Promise<void> {
     await this.prisma.email.deleteMany({
       where: {
         graphMessageId: { in: graphMessageIds },

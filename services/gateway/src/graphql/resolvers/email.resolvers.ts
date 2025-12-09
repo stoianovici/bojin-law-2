@@ -245,16 +245,32 @@ export const emailResolvers = {
     startEmailSync: async (_: any, _args: any, context: Context) => {
       const { user } = context;
 
+      console.log('[startEmailSync] Called with user:', user?.id, 'hasToken:', !!user?.accessToken);
+
       if (!user || !user.accessToken) {
+        console.error(
+          '[startEmailSync] Missing user or accessToken. user:',
+          !!user,
+          'accessToken:',
+          !!user?.accessToken
+        );
         throw new GraphQLError('Authentication required with valid access token', {
           extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
+      console.log(
+        '[startEmailSync] Starting sync for user:',
+        user.id,
+        'token length:',
+        user.accessToken.length
+      );
+
       // Start sync in background
       emailSyncService
         .syncUserEmails(user.id, user.accessToken)
         .then((result) => {
+          console.log('[startEmailSync] Sync completed:', result);
           // Publish progress update
           pubsub.publish(EMAIL_SYNC_PROGRESS, {
             emailSyncProgress: {
@@ -266,11 +282,13 @@ export const emailResolvers = {
           });
         })
         .catch((error) => {
-          console.error('Email sync failed:', error);
+          console.error('[startEmailSync] Email sync failed:', error);
         });
 
       // Return current status
-      return await emailSyncService.getSyncStatus(user.id);
+      const status = await emailSyncService.getSyncStatus(user.id);
+      console.log('[startEmailSync] Returning status:', status);
+      return status;
     },
 
     /**
