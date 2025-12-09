@@ -7,13 +7,14 @@
  * - prisma: Singleton Prisma Client instance with connection pooling
  * - checkDatabaseHealth: Health check function for monitoring
  * - databaseConfig: Current database configuration
- * - redis: Singleton Redis client instance (via separate import)
- * - sessionManager: Redis session management utilities (via separate import)
- * - cacheManager: Redis cache management utilities (via separate import)
- * - checkRedisHealth: Redis health check function (via separate import)
+ * - redis: Singleton Redis client instance
+ * - sessionManager: Redis session management utilities
+ * - cacheManager: Redis cache management utilities
+ * - checkRedisHealth: Redis health check function
+ * - getRedisConfig: Redis configuration getter
  *
- * Note: Redis exports are in a separate file to avoid initialization during build.
- * Import Redis separately: import { redis } from '@legal-platform/database/redis';
+ * Usage:
+ *   import { prisma, redis, sessionManager, cacheManager } from '@legal-platform/database';
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -30,7 +31,8 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkRedisHealth = exports.cacheManager = exports.sessionManager = exports.redis = exports.databaseConfig = exports.checkDatabaseHealth = exports.prisma = void 0;
+exports.getRedisConfig = exports.checkRedisHealth = exports.cacheManager = exports.sessionManager = exports.redis = exports.databaseConfig = exports.checkDatabaseHealth = exports.prisma = void 0;
+exports.getConfidenceLevel = getConfidenceLevel;
 // PostgreSQL / Prisma exports
 var client_1 = require("./client");
 Object.defineProperty(exports, "prisma", { enumerable: true, get: function () { return client_1.prisma; } });
@@ -42,5 +44,22 @@ Object.defineProperty(exports, "redis", { enumerable: true, get: function () { r
 Object.defineProperty(exports, "sessionManager", { enumerable: true, get: function () { return redis_1.sessionManager; } });
 Object.defineProperty(exports, "cacheManager", { enumerable: true, get: function () { return redis_1.cacheManager; } });
 Object.defineProperty(exports, "checkRedisHealth", { enumerable: true, get: function () { return redis_1.checkRedisHealth; } });
+Object.defineProperty(exports, "getRedisConfig", { enumerable: true, get: function () { return redis_1.getRedisConfig; } });
 __exportStar(require("@prisma/client"), exports);
+/**
+ * Converts a Float confidence score (0.0-1.0) to an ExtractionConfidenceLevel
+ * - Low: confidence < 0.6
+ * - Medium: confidence 0.6 - 0.8
+ * - High: confidence > 0.8
+ *
+ * @param score - Float between 0.0 and 1.0
+ * @returns ExtractionConfidenceLevel string
+ */
+function getConfidenceLevel(score) {
+    if (score < 0.6)
+        return 'Low';
+    if (score <= 0.8)
+        return 'Medium';
+    return 'High';
+}
 //# sourceMappingURL=index.js.map
