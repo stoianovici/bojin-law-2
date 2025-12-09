@@ -219,7 +219,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching partner dashboard:', error);
-    return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch dashboard data',
+        details: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+      { status: 500 }
+    );
   }
 }
 
