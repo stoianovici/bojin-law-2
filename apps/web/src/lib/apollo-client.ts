@@ -62,14 +62,21 @@ const httpLink = new HttpLink({
 });
 
 // Auth link to add MS access token for email operations
-const authLink = setContext(async (_, { headers }) => {
+const authLink = setContext(async (operation, { headers }) => {
   // Only fetch token if getter is available
   if (!getMsAccessToken) {
+    console.log('[Apollo] No getMsAccessToken function set');
     return { headers };
   }
 
   try {
     const msAccessToken = await getMsAccessToken();
+    console.log(
+      '[Apollo] Got MS access token for operation:',
+      operation.operationName,
+      'token:',
+      msAccessToken ? `${msAccessToken.substring(0, 20)}...` : 'null'
+    );
     if (msAccessToken) {
       return {
         headers: {
