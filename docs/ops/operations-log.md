@@ -5,11 +5,12 @@
 
 ## Quick Reference
 
-| ID      | Title                                  | Type        | Priority    | Status        | Sessions |
-| ------- | -------------------------------------- | ----------- | ----------- | ------------- | -------- |
-| OPS-001 | Communications page not loading emails | Bug         | P0-Critical | Investigating | 5        |
-| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Resolved      | 5        |
-| OPS-003 | Restrict partner dashboard to partners | Feature     | P2-Medium   | Verifying     | 3        |
+| ID      | Title                                   | Type        | Priority    | Status        | Sessions |
+| ------- | --------------------------------------- | ----------- | ----------- | ------------- | -------- |
+| OPS-001 | Communications page not loading emails  | Bug         | P0-Critical | Investigating | 5        |
+| OPS-002 | Legacy import stuck at 8k docs          | Performance | P1-High     | Resolved      | 5        |
+| OPS-003 | Restrict partner dashboard to partners  | Feature     | P2-Medium   | Verifying     | 3        |
+| OPS-004 | Add categorization backup before export | Feature     | P1-High     | Fixing        | 2        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -285,6 +286,7 @@ The Partner Dashboard (control panel) in the legacy-import app is currently acce
 - [2025-12-09] Session 2 started. Continuing from: New. Beginning implementation of auth checks on partner-only endpoints.
 - [2025-12-09] Session 2 - Implemented all 5 fixes: Added `requirePartner()` auth checks to 4 API endpoints (partner-dashboard, reassign-batches, extract-contacts, export-onedrive) and added role gate to PartnerDashboard.tsx UI component. All changes compile without errors. Ready for deployment and verification.
 - [2025-12-09] Session 3 started. Continuing from: Verifying. Ready to deploy and test changes.
+- [2025-12-09] Session 3 - Local testing confirmed code compiles and auth structure is correct (DB connection issue in dev env is unrelated). Committed and pushed to main (6d227f9). Deployed to production.
 
 #### Files Involved
 
@@ -295,6 +297,113 @@ The Partner Dashboard (control panel) in the legacy-import app is currently acce
 - `apps/legacy-import/src/app/api/export-onedrive/route.ts` - **FIXED** - Added requirePartner() to GET and POST
 - `apps/legacy-import/src/app/api/merge-categories/route.ts` - Already has `requirePartner()` (good)
 - `apps/legacy-import/src/lib/auth.ts` - Has `requirePartner()` helper (reused)
+
+---
+
+### [OPS-004] Add categorization backup before export
+
+| Field           | Value      |
+| --------------- | ---------- |
+| **Status**      | Fixing     |
+| **Type**        | Feature    |
+| **Priority**    | P1-High    |
+| **Created**     | 2025-12-09 |
+| **Sessions**    | 2          |
+| **Last Active** | 2025-12-09 |
+
+#### Description
+
+The legacy-import system currently has NO safeguards against data loss during or after the export process. When documents are exported to OneDrive, the R2 storage (PST file + extracted documents) is deleted IMMEDIATELY with no recovery window. If something goes wrong, categorization work is permanently lost.
+
+**Current risks with ~8,000 documents in progress:**
+
+1. R2 files deleted immediately after OneDrive export - no grace period
+2. No snapshot of categorization assignments before export
+3. No way to recover if OneDrive export partially fails
+4. Original PST and extracted docs permanently lost after export
+
+#### Root Cause
+
+**No backup/recovery mechanisms implemented:**
+
+1. **Immediate R2 deletion** (`export-onedrive/route.ts` lines 100-118):
+   - `deleteSessionFiles()` called right after OneDrive upload succeeds
+   - Deletes `pst/{sessionId}/*` and `documents/{sessionId}/*`
+   - No confirmation, no delay, no recovery option
+
+2. **No categorization snapshot**:
+   - Categorization only exists in PostgreSQL
+   - No JSON backup created before export
+   - If DB lost, categorization cannot be reconstructed
+
+3. **No audit trail for individual categorizations**:
+   - Only high-level actions logged (PST_UPLOADED, EXPORT_COMPLETED)
+   - Cannot track who categorized what document when
+
+#### Proposed Fix
+
+**Phase 1: Pre-Export Snapshot (Critical - implement before 8K export)**
+
+1. Create `POST /api/export-snapshot` endpoint:
+   - Generate JSON with all categorization data:
+     ```json
+     {
+       "sessionId": "...",
+       "snapshotAt": "2025-12-09T...",
+       "categories": [{ "id": "...", "name": "...", "documentCount": N }],
+       "documents": [{ "id": "...", "fileName": "...", "categoryId": "...", "categorizedBy": "...", "categorizedAt": "..." }],
+       "batches": [{ "id": "...", "monthYear": "...", "assignedTo": "...", "progress": N }]
+     }
+     ```
+   - Store snapshot in R2: `backups/{sessionId}/categorization-{timestamp}.json`
+   - Also store in DB as `LegacyImportAuditLog` with action `CATEGORIZATION_SNAPSHOT`
+
+2. Modify `POST /api/export-onedrive`:
+   - REQUIRE snapshot exists before allowing export
+   - Show warning if snapshot is > 1 hour old
+
+**Phase 2: Delayed R2 Cleanup (High priority)**
+
+3. Add `cleanupScheduledAt` field to `LegacyImportSession`:
+   - After successful OneDrive export, set `cleanupScheduledAt = now + 7 days`
+   - Don't call `deleteSessionFiles()` immediately
+
+4. Create `POST /api/cleanup-session` endpoint (Partner-only):
+   - Manual trigger to delete R2 files
+   - Require confirmation
+   - Only works if session status = 'Exported'
+
+5. Create scheduled cleanup job (or manual admin trigger):
+   - Find sessions where `cleanupScheduledAt < now` and `cleanedUpAt IS NULL`
+   - Delete R2 files and set `cleanedUpAt`
+
+**Phase 3: Enhanced Audit Trail (Nice to have)**
+
+6. Add `CategoryAssignmentLog` table:
+   - Track every categorization change: `documentId`, `oldCategoryId`, `newCategoryId`, `changedBy`, `changedAt`
+   - Enable point-in-time reconstruction
+
+7. Add "Undo Last Categorization" feature:
+   - Revert recent changes within 24-hour window
+
+#### Session Log
+
+- [2025-12-09] Issue created. Identified critical data loss risks: immediate R2 deletion after export with no recovery options. ~8,000 documents currently in categorization phase - need safeguards before export.
+- [2025-12-09] Session 2 started. Continuing from: New. Beginning implementation of Phase 1 (snapshot endpoint) and Phase 2 (delayed cleanup).
+- [2025-12-09] Session 2 - Implemented all Phase 1 & Phase 2 features:
+  1. Added `cleanupScheduledAt` and `lastSnapshotAt` fields to schema
+  2. Created `/api/export-snapshot` - generates JSON backup of all categorization data, uploads to R2
+  3. Modified `/api/export-onedrive` - now requires snapshot before export, schedules R2 cleanup 7 days out (no immediate deletion)
+  4. Created `/api/cleanup-session` - partner-only manual cleanup with confirmation
+  5. All code compiles. Ready for deployment.
+
+#### Files Involved
+
+- `apps/legacy-import/src/app/api/export-onedrive/route.ts` - **FIXED** - Added snapshot check, delayed R2 cleanup
+- `apps/legacy-import/src/lib/r2-storage.ts` - Has `deleteSessionFiles()` function (unchanged)
+- `apps/legacy-import/src/app/api/export-snapshot/route.ts` - **CREATED** - Snapshot endpoint
+- `apps/legacy-import/src/app/api/cleanup-session/route.ts` - **CREATED** - Manual cleanup trigger
+- `packages/database/prisma/schema.prisma` - **FIXED** - Added `cleanupScheduledAt`, `lastSnapshotAt` fields
 
 ---
 

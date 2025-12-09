@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { deleteSessionFiles } from '@/lib/r2-storage';
 import { OneDriveExportService } from '@/services/onedrive-export.service';
 import type { DocumentToExport } from '@/services/onedrive-export.service';
 import { requirePartner, AuthError, authErrorResponse } from '@/lib/auth';
 
+// R2 cleanup delay: 7 days after successful export
+const CLEANUP_DELAY_DAYS = 7;
+
 interface ExportRequest {
   sessionId: string;
   accessToken: string; // Microsoft Graph access token from client
+  skipSnapshotCheck?: boolean; // Allow bypassing snapshot check (not recommended)
 }
 
 // POST /api/export-onedrive - Export categorized documents to OneDrive
@@ -24,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ExportRequest = await request.json();
-    const { sessionId, accessToken } = body;
+    const { sessionId, accessToken, skipSnapshotCheck } = body;
 
     // Validate request
     if (!sessionId) {
@@ -55,6 +58,47 @@ export async function POST(request: NextRequest) {
     // Check if already exported
     if (session.status === 'Exported') {
       return NextResponse.json({ error: 'Session has already been exported' }, { status: 400 });
+    }
+
+    // SAFETY CHECK: Require recent categorization snapshot before export
+    // Check audit log for recent snapshot since new field may not be in Prisma client yet
+    if (!skipSnapshotCheck) {
+      const lastSnapshot = await prisma.legacyImportAuditLog.findFirst({
+        where: {
+          sessionId,
+          action: 'CATEGORIZATION_SNAPSHOT',
+        },
+        orderBy: { timestamp: 'desc' },
+        select: { timestamp: true },
+      });
+
+      const lastSnapshotAt = lastSnapshot?.timestamp;
+      const snapshotAge = lastSnapshotAt ? Date.now() - lastSnapshotAt.getTime() : null;
+      const maxSnapshotAge = 60 * 60 * 1000; // 1 hour
+
+      if (!lastSnapshotAt) {
+        return NextResponse.json(
+          {
+            error: 'Snapshot required before export',
+            message:
+              'Please create a categorization snapshot before exporting. This backup protects your work in case of export issues.',
+            code: 'SNAPSHOT_REQUIRED',
+          },
+          { status: 400 }
+        );
+      }
+
+      if (snapshotAge && snapshotAge > maxSnapshotAge) {
+        return NextResponse.json(
+          {
+            error: 'Snapshot is too old',
+            message: `Your last snapshot is ${Math.round(snapshotAge / 60000)} minutes old. Please create a fresh snapshot before exporting.`,
+            code: 'SNAPSHOT_STALE',
+            lastSnapshotAt: lastSnapshotAt.toISOString(),
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Get all categorized documents (not skipped)
@@ -97,23 +141,29 @@ export async function POST(request: NextRequest) {
     const result = await exportService.exportToOneDrive(docsToExport, sessionId);
 
     if (result.success) {
-      // Update session status to Exported
+      // Calculate scheduled cleanup date (7 days from now)
+      const cleanupScheduledAt = new Date();
+      cleanupScheduledAt.setDate(cleanupScheduledAt.getDate() + CLEANUP_DELAY_DAYS);
+
+      // Get last snapshot timestamp for audit
+      const lastSnapshot = await prisma.legacyImportAuditLog.findFirst({
+        where: {
+          sessionId,
+          action: 'CATEGORIZATION_SNAPSHOT',
+        },
+        orderBy: { timestamp: 'desc' },
+        select: { timestamp: true },
+      });
+
+      // Update session status to Exported and schedule R2 cleanup
+      // NOTE: We no longer delete R2 files immediately - they are kept for 7 days as backup
       await prisma.legacyImportSession.update({
         where: { id: sessionId },
         data: {
           status: 'Exported',
           exportedAt: new Date(),
-        },
-      });
-
-      // Perform R2 cleanup (delete PST and extracted documents)
-      const cleanupResult = await deleteSessionFiles(sessionId);
-
-      // Update session with cleanup timestamp
-      await prisma.legacyImportSession.update({
-        where: { id: sessionId },
-        data: {
-          cleanedUpAt: new Date(),
+          // @ts-expect-error - Field added in schema, will work after prisma generate
+          cleanupScheduledAt, // R2 files will be deleted after this date
         },
       });
 
@@ -127,7 +177,8 @@ export async function POST(request: NextRequest) {
             categoriesExported: result.categoriesExported,
             documentsExported: result.documentsExported,
             oneDrivePath: result.oneDrivePath,
-            r2FilesDeleted: cleanupResult.deletedCount,
+            cleanupScheduledAt: cleanupScheduledAt.toISOString(),
+            snapshotAt: lastSnapshot?.timestamp?.toISOString() || null,
           },
         },
       });
@@ -137,8 +188,11 @@ export async function POST(request: NextRequest) {
         categoriesExported: result.categoriesExported,
         documentsExported: result.documentsExported,
         oneDrivePath: result.oneDrivePath,
-        cleanup: {
-          r2FilesDeleted: cleanupResult.deletedCount,
+        backup: {
+          snapshotAt: lastSnapshot?.timestamp?.toISOString() || null,
+          r2CleanupScheduledAt: cleanupScheduledAt.toISOString(),
+          r2RetentionDays: CLEANUP_DELAY_DAYS,
+          message: `R2 files retained for ${CLEANUP_DELAY_DAYS} days. Use /api/cleanup-session to delete earlier if needed.`,
         },
       });
     } else {

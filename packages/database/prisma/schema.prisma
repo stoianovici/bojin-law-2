@@ -979,7 +979,9 @@ model LegacyImportSession {
   createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz
   exportedAt       DateTime?           @map("exported_at") @db.Timestamptz
-  cleanedUpAt      DateTime?           @map("cleaned_up_at") @db.Timestamptz // When R2 files deleted
+  cleanupScheduledAt DateTime?         @map("cleanup_scheduled_at") @db.Timestamptz // When R2 cleanup is scheduled (7 days after export)
+  cleanedUpAt      DateTime?           @map("cleaned_up_at") @db.Timestamptz // When R2 files were actually deleted
+  lastSnapshotAt   DateTime?           @map("last_snapshot_at") @db.Timestamptz // When last categorization snapshot was taken
 
   // Relations
   batches        DocumentBatch[]
