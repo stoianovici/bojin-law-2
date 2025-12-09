@@ -31,10 +31,8 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || !process.env.REDIS_URL;
 
 // Redis configuration from environment variables
+// Note: REDIS_URL is passed as first argument to constructor, not in config
 const redisConfig: RedisOptions = {
-  // Connection string from Render auto-injection
-  ...(process.env.REDIS_URL && { url: process.env.REDIS_URL }),
-
   // Retry strategy - in development, use null to prevent max retries error
   // This allows the app to continue working without Redis (with degraded functionality)
   maxRetriesPerRequest: isDevelopment ? null : parseInt(process.env.REDIS_MAX_RETRIES || '3', 10),
@@ -80,7 +78,11 @@ const getRedisInstance = (): Redis => {
     if (global.redis) {
       _redis = global.redis;
     } else {
-      _redis = new Redis(redisConfig);
+      // ioredis accepts URL as first argument, config as second
+      // The REDIS_URL should be passed directly, not as a config property
+      _redis = process.env.REDIS_URL
+        ? new Redis(process.env.REDIS_URL, redisConfig)
+        : new Redis(redisConfig);
 
       // Store in global for hot-reload in development
       if (process.env.NODE_ENV !== 'production') {
