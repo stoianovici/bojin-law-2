@@ -8,7 +8,7 @@
 | ID      | Title                                  | Type        | Priority    | Status        | Sessions |
 | ------- | -------------------------------------- | ----------- | ----------- | ------------- | -------- |
 | OPS-001 | Communications page not loading emails | Bug         | P0-Critical | Investigating | 5        |
-| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Verifying     | 4        |
+| OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Resolved      | 5        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -95,12 +95,12 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 
 | Field           | Value                |
 | --------------- | -------------------- |
-| **Status**      | Verifying            |
+| **Status**      | Resolved             |
 | **Type**        | Performance          |
 | **Priority**    | P1-High              |
 | **Created**     | 2025-12-08           |
-| **Sessions**    | 4                    |
-| **Last Active** | 2025-12-08 18:20 UTC |
+| **Sessions**    | 5                    |
+| **Last Active** | 2025-12-09 07:35 UTC |
 
 #### Description
 
@@ -188,6 +188,10 @@ Legacy document import process stalls/fails when processing approximately 8,000 
 - [2025-12-08] Session 3 - Root cause found: extraction loads ALL documents into memory and processes sequentially. With 8K+ docs, this exceeds Render's 10-minute request timeout.
 - [2025-12-08] Session 3 - Implemented resumable batch extraction: PST parser now supports skip/take, API tracks progress in DB, frontend shows "Continue extraction" button. Extracts ~500 docs per batch to stay under timeout.
 - [2025-12-08] Session 4 - 502 errors on extract-documents. Root cause: `countDocumentsInPST()` was calling `getAttachment()` for every attachment to check file extension, which is extremely slow for 8K+ docs (causes Render timeout). Fixed by using fast estimation that just counts `numberOfAttachments` without loading attachment data. Also added `extractionProgress` field to legacy-import Prisma schema (was missing).
+- [2025-12-09] Session 5 started. "Failed to get batch assignment" and "Failed to fetch dashboard" errors.
+- [2025-12-09] Session 5 - Root cause: The `extraction_progress` column was missing from production database. Schema had the field but migration was never run. All API endpoints querying LegacyImportSession were failing with "The column legacy_import_sessions.extraction_progress does not exist".
+- [2025-12-09] Session 5 - Fix: Created temporary migration endpoint, deployed, ran `ALTER TABLE legacy_import_sessions ADD COLUMN IF NOT EXISTS extraction_progress JSONB`. All endpoints now working. 8000 documents visible in 120+ monthly batches (2013-03 to 2025-11).
+- [2025-12-09] Session 5 - **RESOLVED**. Categorization page and Dashboard now load successfully.
 
 #### Files Involved
 
