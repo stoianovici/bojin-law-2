@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePartner, AuthError, authErrorResponse } from '@/lib/auth';
 
 interface BatchWithProgress {
   id: string;
@@ -48,6 +49,16 @@ interface PartnerDashboardResponse {
 
 // GET /api/partner-dashboard - Get all batches and assistant progress for a session
 export async function GET(request: NextRequest) {
+  try {
+    // Require Partner/BusinessOwner role
+    await requirePartner(request);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return authErrorResponse(error);
+    }
+    throw error;
+  }
+
   const sessionId = request.nextUrl.searchParams.get('sessionId');
 
   if (!sessionId) {

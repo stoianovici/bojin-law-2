@@ -13,7 +13,9 @@ import {
   Shuffle,
   AlertCircle,
   Download,
+  ShieldAlert,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BatchWithProgress {
   id: string;
@@ -88,6 +90,7 @@ export function PartnerDashboard({
   onManageCategories,
   onExport,
 }: PartnerDashboardProps) {
+  const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +98,9 @@ export function PartnerDashboard({
   const [isReassigning, setIsReassigning] = useState(false);
   const [reassignmentMessage, setReassignmentMessage] = useState<string | null>(null);
   const [isExportingContacts, setIsExportingContacts] = useState(false);
+
+  // Check if user has Partner/BusinessOwner role
+  const isPartner = user?.role === 'Partner' || user?.role === 'Admin';
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -224,6 +230,19 @@ export function PartnerDashboard({
   }
 
   if (!data) return null;
+
+  // If not a partner, show access denied message
+  if (!isPartner) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-8 text-center">
+        <ShieldAlert className="h-12 w-12 text-amber-600 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-amber-900 mb-2">Acces restricționat</h3>
+        <p className="text-amber-700">
+          Panoul de control este disponibil doar pentru parteneri și administratori.
+        </p>
+      </div>
+    );
+  }
 
   const overallProgress =
     data.session.totalDocuments > 0

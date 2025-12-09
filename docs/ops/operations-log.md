@@ -9,6 +9,7 @@
 | ------- | -------------------------------------- | ----------- | ----------- | ------------- | -------- |
 | OPS-001 | Communications page not loading emails | Bug         | P0-Critical | Investigating | 5        |
 | OPS-002 | Legacy import stuck at 8k docs         | Performance | P1-High     | Resolved      | 5        |
+| OPS-003 | Restrict partner dashboard to partners | Feature     | P2-Medium   | Verifying     | 3        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -205,6 +206,95 @@ Legacy document import process stalls/fails when processing approximately 8,000 
 - `apps/legacy-import/src/app/page.tsx` - **FIXED** - ExtractStep with batch UI + ExtractionIncompleteBanner
 - `apps/legacy-import/src/app/api/analyze-documents/route.ts` - Batch size limited to 100 (future optimization)
 - `apps/legacy-import/src/services/ai-document-analyzer.ts` - BATCH_SIZE = 25 (future optimization)
+
+---
+
+### [OPS-003] Restrict partner dashboard to partners only
+
+| Field           | Value      |
+| --------------- | ---------- |
+| **Status**      | Verifying  |
+| **Type**        | Feature    |
+| **Priority**    | P2-Medium  |
+| **Created**     | 2025-12-09 |
+| **Sessions**    | 3          |
+| **Last Active** | 2025-12-09 |
+
+#### Description
+
+The Partner Dashboard (control panel) in the legacy-import app is currently accessible to ALL authenticated users. This dashboard allows viewing other users' progress, merging categories, reassigning batches, and exporting data - features that should be restricted to Partner/BusinessOwner roles only.
+
+**User note:** The PST document extraction is currently in progress (~8,000 docs). User requests that we evaluate risk before implementing to avoid disrupting the extraction process.
+
+#### Reproduction Steps
+
+1. Login as any user (Associate/Paralegal) to legacy-import app
+2. Navigate to dashboard/control panel
+3. Observe that partner-only features are visible and accessible
+
+#### Root Cause
+
+**Missing authorization checks on multiple endpoints and UI:**
+
+1. **No authentication at all on partner dashboard endpoints:**
+   - `GET /api/partner-dashboard` - No auth check
+   - `GET /api/reassign-batches` - No auth check
+   - `POST /api/reassign-batches` - No auth check
+   - `POST /api/extract-contacts` - No auth check
+   - `POST /api/export-onedrive` - No auth check
+
+2. **UI not gated by role:**
+   - `PartnerDashboard.tsx` renders for all authenticated users
+   - No role check before showing partner-only features
+
+3. **No firm validation:**
+   - Endpoints accept sessionId without validating user's firm owns that session
+   - Cross-firm data access possible if sessionId is known
+
+#### Fix Applied
+
+**Fix 1: Added `requirePartner()` auth check to `/api/partner-dashboard/route.ts`**
+
+- GET handler now requires Partner/BusinessOwner role
+- Returns 401/403 for unauthorized/forbidden requests
+
+**Fix 2: Added `requirePartner()` auth check to `/api/reassign-batches/route.ts`**
+
+- Both GET and POST handlers now require Partner/BusinessOwner role
+- Returns 401/403 for unauthorized/forbidden requests
+
+**Fix 3: Added `requirePartner()` auth check to `/api/extract-contacts/route.ts`**
+
+- Both GET and POST handlers now require Partner/BusinessOwner role
+- Returns 401/403 for unauthorized/forbidden requests
+
+**Fix 4: Added `requirePartner()` auth check to `/api/export-onedrive/route.ts`**
+
+- Both GET and POST handlers now require Partner/BusinessOwner role
+- Returns 401/403 for unauthorized/forbidden requests
+
+**Fix 5: Added role gate to `PartnerDashboard.tsx` UI component**
+
+- Component checks user role from AuthContext
+- Non-partner users see "Acces restricționat" (Access restricted) message
+- Partner-only features are hidden for non-partners
+
+#### Session Log
+
+- [2025-12-09 08:00] Issue created. Initial triage identified 5+ endpoints with missing auth checks and UI not gated by role. Key files: `PartnerDashboard.tsx`, `/api/partner-dashboard/route.ts`, `/api/reassign-batches/route.ts`, `/api/extract-contacts/route.ts`, `/api/export-onedrive/route.ts`. Note: PST extraction currently in progress - need to evaluate risk before implementing.
+- [2025-12-09] Session 2 started. Continuing from: New. Beginning implementation of auth checks on partner-only endpoints.
+- [2025-12-09] Session 2 - Implemented all 5 fixes: Added `requirePartner()` auth checks to 4 API endpoints (partner-dashboard, reassign-batches, extract-contacts, export-onedrive) and added role gate to PartnerDashboard.tsx UI component. All changes compile without errors. Ready for deployment and verification.
+- [2025-12-09] Session 3 started. Continuing from: Verifying. Ready to deploy and test changes.
+
+#### Files Involved
+
+- `apps/legacy-import/src/components/Dashboard/PartnerDashboard.tsx` - **FIXED** - Added role gate with useAuth hook
+- `apps/legacy-import/src/app/api/partner-dashboard/route.ts` - **FIXED** - Added requirePartner() check
+- `apps/legacy-import/src/app/api/reassign-batches/route.ts` - **FIXED** - Added requirePartner() to GET and POST
+- `apps/legacy-import/src/app/api/extract-contacts/route.ts` - **FIXED** - Added requirePartner() to GET and POST
+- `apps/legacy-import/src/app/api/export-onedrive/route.ts` - **FIXED** - Added requirePartner() to GET and POST
+- `apps/legacy-import/src/app/api/merge-categories/route.ts` - Already has `requirePartner()` (good)
+- `apps/legacy-import/src/lib/auth.ts` - Has `requirePartner()` helper (reused)
 
 ---
 

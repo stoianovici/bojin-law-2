@@ -8,11 +8,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { downloadFromR2 } from '@/lib/r2-storage';
 import { extractContactsToExcel } from '@/services/contact-extraction.service';
+import { requirePartner, AuthError, authErrorResponse } from '@/lib/auth';
 
 /**
  * POST - Extract contacts from PST and return Excel file
  */
 export async function POST(request: NextRequest) {
+  try {
+    // Require Partner/BusinessOwner role
+    await requirePartner(request);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return authErrorResponse(error);
+    }
+    throw error;
+  }
+
   try {
     const body = await request.json();
     const { sessionId } = body;
@@ -78,6 +89,16 @@ export async function POST(request: NextRequest) {
  * GET - Get contact extraction status/info
  */
 export async function GET(request: NextRequest) {
+  try {
+    // Require Partner/BusinessOwner role
+    await requirePartner(request);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return authErrorResponse(error);
+    }
+    throw error;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');

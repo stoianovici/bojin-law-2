@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { deleteSessionFiles } from '@/lib/r2-storage';
 import { OneDriveExportService } from '@/services/onedrive-export.service';
 import type { DocumentToExport } from '@/services/onedrive-export.service';
+import { requirePartner, AuthError, authErrorResponse } from '@/lib/auth';
 
 interface ExportRequest {
   sessionId: string;
@@ -12,15 +13,22 @@ interface ExportRequest {
 // POST /api/export-onedrive - Export categorized documents to OneDrive
 export async function POST(request: NextRequest) {
   try {
+    // Require Partner/BusinessOwner role
+    await requirePartner(request);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return authErrorResponse(error);
+    }
+    throw error;
+  }
+
+  try {
     const body: ExportRequest = await request.json();
     const { sessionId, accessToken } = body;
 
     // Validate request
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'sessionId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
     }
 
     if (!accessToken) {
@@ -41,18 +49,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // Check if already exported
     if (session.status === 'Exported') {
-      return NextResponse.json(
-        { error: 'Session has already been exported' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session has already been exported' }, { status: 400 });
     }
 
     // Get all categorized documents (not skipped)
@@ -68,14 +70,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (documents.length === 0) {
-      return NextResponse.json(
-        { error: 'No categorized documents to export' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No categorized documents to export' }, { status: 400 });
     }
 
     // Transform documents for export
-    const docsToExport: DocumentToExport[] = documents.map((doc: typeof documents[number]) => ({
+    const docsToExport: DocumentToExport[] = documents.map((doc: (typeof documents)[number]) => ({
       id: doc.id,
       fileName: doc.fileName,
       fileExtension: doc.fileExtension,
@@ -156,22 +155,26 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Error exporting to OneDrive:', error);
-    return NextResponse.json(
-      { error: 'Failed to export to OneDrive' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to export to OneDrive' }, { status: 500 });
   }
 }
 
 // GET /api/export-onedrive - Get export status for a session
 export async function GET(request: NextRequest) {
+  try {
+    // Require Partner/BusinessOwner role
+    await requirePartner(request);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return authErrorResponse(error);
+    }
+    throw error;
+  }
+
   const sessionId = request.nextUrl.searchParams.get('sessionId');
 
   if (!sessionId) {
-    return NextResponse.json(
-      { error: 'sessionId is required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
   }
 
   try {
@@ -189,10 +192,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     const isReadyForExport =
@@ -210,17 +210,11 @@ export async function GET(request: NextRequest) {
         totalDocuments: session.totalDocuments,
         categorizedCount: session.categorizedCount,
         skippedCount: session.skippedCount,
-        remainingCount:
-          session.totalDocuments -
-          session.categorizedCount -
-          session.skippedCount,
+        remainingCount: session.totalDocuments - session.categorizedCount - session.skippedCount,
       },
     });
   } catch (error) {
     console.error('Error getting export status:', error);
-    return NextResponse.json(
-      { error: 'Failed to get export status' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get export status' }, { status: 500 });
   }
 }

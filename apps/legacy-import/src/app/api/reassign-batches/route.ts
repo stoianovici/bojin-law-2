@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { autoReassignBatches } from '@/services/batch-allocation.service';
+import { requirePartner, AuthError, authErrorResponse } from '@/lib/auth';
 
 interface StalledBatchInfo {
   batchId: string;
@@ -24,16 +25,23 @@ const DEFAULT_STALLED_HOURS = 24;
 
 // GET /api/reassign-batches - Get stalled batches and finished users info
 export async function GET(request: NextRequest) {
+  try {
+    // Require Partner/BusinessOwner role
+    await requirePartner(request);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return authErrorResponse(error);
+    }
+    throw error;
+  }
+
   const sessionId = request.nextUrl.searchParams.get('sessionId');
   const stalledHours = parseInt(
     request.nextUrl.searchParams.get('stalledHours') || String(DEFAULT_STALLED_HOURS)
   );
 
   if (!sessionId) {
-    return NextResponse.json(
-      { error: 'sessionId is required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
   }
 
   try {
@@ -59,9 +67,7 @@ export async function GET(request: NextRequest) {
 
       // Check if batch is stalled
       const isComplete = batch.categorizedCount + batch.skippedCount >= batch.documentCount;
-      const isStalled = batch.assignedTo &&
-        !isComplete &&
-        batch.updatedAt < stalledThreshold;
+      const isStalled = batch.assignedTo && !isComplete && batch.updatedAt < stalledThreshold;
 
       if (isStalled) {
         const stalledMs = Date.now() - batch.updatedAt.getTime();
@@ -82,7 +88,8 @@ export async function GET(request: NextRequest) {
     // Find users who finished all their batches
     for (const [userId, userBatchList] of userBatches) {
       const allComplete = userBatchList.every(
-        (b: { categorizedCount: number; skippedCount: number; documentCount: number }) => b.categorizedCount + b.skippedCount >= b.documentCount
+        (b: { categorizedCount: number; skippedCount: number; documentCount: number }) =>
+          b.categorizedCount + b.skippedCount >= b.documentCount
       );
       if (allComplete) {
         finishedUsers.push(userId);
@@ -90,7 +97,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Count unassigned batches
-    const unassignedCount = batches.filter((b: { assignedTo: string | null }) => !b.assignedTo).length;
+    const unassignedCount = batches.filter(
+      (b: { assignedTo: string | null }) => !b.assignedTo
+    ).length;
 
     return NextResponse.json({
       stalledBatches,
@@ -100,24 +109,28 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error getting reassignment info:', error);
-    return NextResponse.json(
-      { error: 'Failed to get reassignment info' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get reassignment info' }, { status: 500 });
   }
 }
 
 // POST /api/reassign-batches - Trigger automatic batch reassignment
 export async function POST(request: NextRequest) {
   try {
+    // Require Partner/BusinessOwner role
+    await requirePartner(request);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return authErrorResponse(error);
+    }
+    throw error;
+  }
+
+  try {
     const body = await request.json();
     const { sessionId, targetUserId, stalledHours = DEFAULT_STALLED_HOURS } = body;
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'sessionId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
     }
 
     // Verify session exists
@@ -164,7 +177,8 @@ export async function POST(request: NextRequest) {
 
         // Filter to only incomplete batches
         batchesToAssign = stalledBatches.filter(
-          (b: { categorizedCount: number; skippedCount: number; documentCount: number }) => b.categorizedCount + b.skippedCount < b.documentCount
+          (b: { categorizedCount: number; skippedCount: number; documentCount: number }) =>
+            b.categorizedCount + b.skippedCount < b.documentCount
         );
       }
 
@@ -197,18 +211,22 @@ export async function POST(request: NextRequest) {
       where: { sessionId },
     });
 
-    const unassignedCount = updatedBatches.filter((b: { assignedTo: string | null }) => !b.assignedTo).length;
+    const unassignedCount = updatedBatches.filter(
+      (b: { assignedTo: string | null }) => !b.assignedTo
+    ).length;
     const completedCount = updatedBatches.filter(
-      (b: { categorizedCount: number; skippedCount: number; documentCount: number }) => b.categorizedCount + b.skippedCount >= b.documentCount
+      (b: { categorizedCount: number; skippedCount: number; documentCount: number }) =>
+        b.categorizedCount + b.skippedCount >= b.documentCount
     ).length;
 
     const result: ReassignmentResult = {
       reassignedCount,
       stalledBatches: [],
       finishedUsers: [],
-      message: reassignedCount > 0
-        ? `Successfully reassigned ${reassignedCount} batch(es)`
-        : 'No batches needed reassignment',
+      message:
+        reassignedCount > 0
+          ? `Successfully reassigned ${reassignedCount} batch(es)`
+          : 'No batches needed reassignment',
     };
 
     return NextResponse.json({
@@ -222,9 +240,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error reassigning batches:', error);
-    return NextResponse.json(
-      { error: 'Failed to reassign batches' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to reassign batches' }, { status: 500 });
   }
 }
