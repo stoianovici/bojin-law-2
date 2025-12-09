@@ -395,7 +395,9 @@ The legacy-import system currently has NO safeguards against data loss during or
   2. Created `/api/export-snapshot` - generates JSON backup of all categorization data, uploads to R2
   3. Modified `/api/export-onedrive` - now requires snapshot before export, schedules R2 cleanup 7 days out (no immediate deletion)
   4. Created `/api/cleanup-session` - partner-only manual cleanup with confirmation
-  5. All code compiles. Ready for deployment.
+  5. Added "Protecția datelor" UI section to Partner Dashboard with snapshot controls
+  6. Export button now disabled until recent snapshot exists
+  7. Deployed commits a1e0672 and daed780.
 
 #### Files Involved
 
@@ -403,6 +405,7 @@ The legacy-import system currently has NO safeguards against data loss during or
 - `apps/legacy-import/src/lib/r2-storage.ts` - Has `deleteSessionFiles()` function (unchanged)
 - `apps/legacy-import/src/app/api/export-snapshot/route.ts` - **CREATED** - Snapshot endpoint
 - `apps/legacy-import/src/app/api/cleanup-session/route.ts` - **CREATED** - Manual cleanup trigger
+- `apps/legacy-import/src/components/Dashboard/PartnerDashboard.tsx` - **FIXED** - Added data protection UI
 - `packages/database/prisma/schema.prisma` - **FIXED** - Added `cleanupScheduledAt`, `lastSnapshotAt` fields
 
 ---
