@@ -101,7 +101,9 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-09] Session 6 - Deployed commit `9b0c19c`. Gateway now live with Redis URL fix. Awaiting verification that emails sync correctly.
 - [2025-12-10] Session 7 started. Continuing from: Verifying. Redis URL fix deployed, verifying email sync functionality.
 - [2025-12-10] Session 7 - New root cause found: `TypeError: _this.provider is not a function`. The MS Graph SDK v3 `Client.init()` expects `authProvider` as a callback function `(done) => done(null, token)`, but code was passing a `TokenAuthenticationProvider` class instance.
-- [2025-12-10] Session 7 - Fix: Changed `graph.service.ts` to use callback pattern: `authProvider: (done) => { done(null, accessToken); }` instead of class instance. Deployed commit `f95121b`.
+- [2025-12-10] Session 7 - Fix 1: Changed `graph.service.ts` to use callback pattern: `authProvider: (done) => { done(null, accessToken); }` instead of class instance. Deployed commit `f95121b`.
+- [2025-12-10] Session 7 - New error after authProvider fix: `BadRequest: Change tracking is not supported against 'microsoft.graph.message'`. Delta sync (`/me/messages/delta`) is not supported for all mailbox types.
+- [2025-12-10] Session 7 - Fix 2: Changed `email-sync.service.ts` to use regular `/me/messages` endpoint instead of delta sync. Deployed commit `b09725e`.
 
 #### Files Involved
 
@@ -118,6 +120,7 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - `packages/database/src/redis.ts` - **FIXED (Session 6)** - Pass REDIS_URL as first constructor arg to ioredis
 - `packages/database/dist/redis.js` - **FIXED (Session 6)** - Rebuilt compiled JS (Dockerfile uses pre-built dist)
 - `services/gateway/src/services/graph.service.ts` - **FIXED (Session 7)** - Use callback pattern for authProvider
+- `services/gateway/src/services/email-sync.service.ts` - **FIXED (Session 7)** - Use regular messages endpoint instead of delta sync
 
 ---
 
