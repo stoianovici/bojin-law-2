@@ -109,7 +109,10 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-10] Session 8 started. Continuing from: Verifying. All pagination fixes deployed, verifying email sync works end-to-end.
 - [2025-12-10] Session 8 - New error found: "Cannot return null for non-nullable field Email.conversationId". Emails synced successfully (50 emails) but display failed.
 - [2025-12-10] Session 8 - Root cause: Some MS Graph emails have null conversationId (system messages, connector messages). GraphQL schema defined `conversationId: String!` (non-nullable).
-- [2025-12-10] Session 8 - Fix: Made conversationId nullable in GraphQL schema, added resolver fallback, skip null conversationIds in thread grouping. Deployed commit `e7a748f`.
+- [2025-12-10] Session 8 - Fix 1: Made conversationId nullable in GraphQL schema, added resolver fallback, skip null conversationIds in thread grouping. Deployed commit `e7a748f`.
+- [2025-12-10] Session 8 - New error: `RangeError: Invalid time value` when formatting dates in ThreadList component.
+- [2025-12-10] Session 8 - Root cause: Date objects serialized to localStorage as ISO strings. When restored, the store's sort function called `.getTime()` on strings instead of Date objects.
+- [2025-12-10] Session 8 - Fix 2: Made ThreadList validate dates before formatting, updated store's sort function to handle both Date objects and ISO strings. Deployed commit `d02bd9f`.
 
 #### Files Involved
 
@@ -117,6 +120,8 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - **FIXED (Session 8)** - Added conversationId resolver fallback
 - `services/gateway/src/graphql/schema/email.graphql` - **FIXED (Session 8)** - Made conversationId nullable
 - `services/gateway/src/services/email-thread.service.ts` - **FIXED (Session 8)** - Skip emails without conversationId in threading
+- `apps/web/src/components/communication/ThreadList.tsx` - **FIXED (Session 8)** - Validate dates before formatting
+- `apps/web/src/stores/communication.store.ts` - **FIXED (Session 8)** - Handle Date objects and ISO strings in sort
 - `services/gateway/src/graphql/resolvers/case.resolvers.ts` - **FIXED** - Added accessToken to Context type
 - `apps/web/src/lib/apollo-client.ts` - **FIXED v16** - Added auth link for MS token, version bump
 - `apps/web/src/lib/msal-config.ts` - **FIXED** - Added Mail.Read scope to loginRequest
