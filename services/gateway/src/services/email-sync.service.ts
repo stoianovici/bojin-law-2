@@ -424,9 +424,12 @@ export class EmailSyncService {
     return retryWithBackoff(
       async () => {
         try {
-          // nextLink is a full URL, need to extract path
+          // nextLink is a full URL like https://graph.microsoft.com/v1.0/me/messages?$skip=50
+          // We need to extract just the path after /v1.0 since client already has defaultVersion
           const url = new URL(nextLink);
-          const path = url.pathname + url.search;
+          let path = url.pathname + url.search;
+          // Remove /v1.0 or /beta prefix since client.api() adds it based on defaultVersion
+          path = path.replace(/^\/(v1\.0|beta)/, '');
           return await client.api(path).get();
         } catch (error: any) {
           const parsedError = parseGraphError(error);
