@@ -7,7 +7,7 @@
 
 | ID      | Title                                   | Type        | Priority    | Status    | Sessions |
 | ------- | --------------------------------------- | ----------- | ----------- | --------- | -------- |
-| OPS-001 | Communications page not loading emails  | Bug         | P0-Critical | Verifying | 6        |
+| OPS-001 | Communications page not loading emails  | Bug         | P0-Critical | Verifying | 7        |
 | OPS-002 | Legacy import stuck at 8k docs          | Performance | P1-High     | Resolved  | 5        |
 | OPS-003 | Restrict partner dashboard to partners  | Feature     | P2-Medium   | Verifying | 3        |
 | OPS-004 | Add categorization backup before export | Feature     | P1-High     | Fixing    | 2        |
@@ -26,8 +26,8 @@
 | **Type**        | Bug         |
 | **Priority**    | P0-Critical |
 | **Created**     | 2025-12-08  |
-| **Sessions**    | 6           |
-| **Last Active** | 2025-12-09  |
+| **Sessions**    | 7           |
+| **Last Active** | 2025-12-10  |
 
 #### Description
 
@@ -99,6 +99,7 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-09] Session 6 - Fix 1: Changed `packages/database/src/redis.ts` to pass URL as first arg: `new Redis(redisUrl, redisConfig)`.
 - [2025-12-09] Session 6 - Fix 2: Discovered Dockerfile uses pre-built `dist/` from git. TypeScript fixes weren't being compiled at build time. Rebuilt `packages/database/dist/redis.js` locally and committed.
 - [2025-12-09] Session 6 - Deployed commit `9b0c19c`. Gateway now live with Redis URL fix. Awaiting verification that emails sync correctly.
+- [2025-12-10] Session 7 started. Continuing from: Verifying. Redis URL fix deployed, verifying email sync functionality.
 
 #### Files Involved
 

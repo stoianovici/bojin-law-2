@@ -9,7 +9,7 @@
  * Ref: Graph API documentation - https://learn.microsoft.com/en-us/graph/api/overview
  */
 
-import { Client, ClientOptions, AuthenticationProvider } from '@microsoft/microsoft-graph-client';
+import { Client } from '@microsoft/microsoft-graph-client';
 import type { User, Message, DriveItem, Event } from '@microsoft/microsoft-graph-types';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { azureAdConfig, msalConfig } from '../config/auth.config';
@@ -17,20 +17,9 @@ import { graphConfig, graphEndpoints, graphScopes } from '../config/graph.config
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
 
-/**
- * Simple authentication provider that uses a static access token
- */
-class TokenAuthenticationProvider implements AuthenticationProvider {
-  private accessToken: string;
-
-  constructor(accessToken: string) {
-    this.accessToken = accessToken;
-  }
-
-  async getAccessToken(): Promise<string> {
-    return this.accessToken;
-  }
-}
+// Note: Client.init() expects authProvider as a callback function: (done) => done(null, token)
+// Client.initWithMiddleware() expects an AuthenticationProvider instance with getAccessToken()
+// We use Client.init() with callback pattern for simplicity
 
 /**
  * Microsoft Graph API Service
@@ -58,13 +47,14 @@ export class GraphService {
    * @returns Configured Microsoft Graph client instance
    */
   getAuthenticatedClient(accessToken: string): Client {
-    const authProvider = new TokenAuthenticationProvider(accessToken);
-
+    // Client.init() expects authProvider as a callback function, not an object
+    // The callback receives (done) and must call done(error, token)
     return Client.init({
       defaultVersion: 'v1.0',
       debugLogging: process.env.NODE_ENV === 'development',
-      authProvider: authProvider as any,
-      // Note: Timeout handled by retry utility (30s default)
+      authProvider: (done) => {
+        done(null, accessToken);
+      },
     });
   }
 
@@ -89,13 +79,15 @@ export class GraphService {
         throw new Error('Failed to acquire app-only access token from Azure AD');
       }
 
-      const authProvider = new TokenAuthenticationProvider(result.accessToken);
+      const accessToken = result.accessToken;
 
+      // Client.init() expects authProvider as a callback function, not an object
       return Client.init({
         defaultVersion: 'v1.0',
         debugLogging: process.env.NODE_ENV === 'development',
-        authProvider: authProvider as any,
-        // Note: Timeout handled by retry utility (30s default)
+        authProvider: (done) => {
+          done(null, accessToken);
+        },
       });
     } catch (error: any) {
       throw new Error(`Failed to initialize app-only Graph client: ${error.message}`);
