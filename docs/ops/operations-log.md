@@ -107,11 +107,16 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-10] Session 7 - New error: First page fetched 50 messages successfully, but pagination failed with `Resource not found for segment 'v1.0'`. The `nextLink` URL includes `/v1.0` but the client already adds it via `defaultVersion`.
 - [2025-12-10] Session 7 - Fix 3: Strip `/v1.0` or `/beta` prefix from `nextLink` path before calling `client.api()`. Deployed commit `fd645fe`.
 - [2025-12-10] Session 8 started. Continuing from: Verifying. All pagination fixes deployed, verifying email sync works end-to-end.
+- [2025-12-10] Session 8 - New error found: "Cannot return null for non-nullable field Email.conversationId". Emails synced successfully (50 emails) but display failed.
+- [2025-12-10] Session 8 - Root cause: Some MS Graph emails have null conversationId (system messages, connector messages). GraphQL schema defined `conversationId: String!` (non-nullable).
+- [2025-12-10] Session 8 - Fix: Made conversationId nullable in GraphQL schema, added resolver fallback, skip null conversationIds in thread grouping. Deployed commit `e7a748f`.
 
 #### Files Involved
 
 - `services/gateway/src/graphql/server.ts` - **FIXED** - Added emailResolvers import/merge + token extraction
-- `services/gateway/src/graphql/resolvers/email.resolvers.ts` - Email resolver definitions
+- `services/gateway/src/graphql/resolvers/email.resolvers.ts` - **FIXED (Session 8)** - Added conversationId resolver fallback
+- `services/gateway/src/graphql/schema/email.graphql` - **FIXED (Session 8)** - Made conversationId nullable
+- `services/gateway/src/services/email-thread.service.ts` - **FIXED (Session 8)** - Skip emails without conversationId in threading
 - `services/gateway/src/graphql/resolvers/case.resolvers.ts` - **FIXED** - Added accessToken to Context type
 - `apps/web/src/lib/apollo-client.ts` - **FIXED v16** - Added auth link for MS token, version bump
 - `apps/web/src/lib/msal-config.ts` - **FIXED** - Added Mail.Read scope to loginRequest
