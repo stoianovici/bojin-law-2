@@ -5,12 +5,12 @@
 
 ## Quick Reference
 
-| ID      | Title                                   | Type        | Priority    | Status        | Sessions |
-| ------- | --------------------------------------- | ----------- | ----------- | ------------- | -------- |
-| OPS-001 | Communications page not loading emails  | Bug         | P0-Critical | Investigating | 5        |
-| OPS-002 | Legacy import stuck at 8k docs          | Performance | P1-High     | Resolved      | 5        |
-| OPS-003 | Restrict partner dashboard to partners  | Feature     | P2-Medium   | Verifying     | 3        |
-| OPS-004 | Add categorization backup before export | Feature     | P1-High     | Fixing        | 2        |
+| ID      | Title                                   | Type        | Priority    | Status    | Sessions |
+| ------- | --------------------------------------- | ----------- | ----------- | --------- | -------- |
+| OPS-001 | Communications page not loading emails  | Bug         | P0-Critical | Verifying | 6        |
+| OPS-002 | Legacy import stuck at 8k docs          | Performance | P1-High     | Resolved  | 5        |
+| OPS-003 | Restrict partner dashboard to partners  | Feature     | P2-Medium   | Verifying | 3        |
+| OPS-004 | Add categorization backup before export | Feature     | P1-High     | Fixing    | 2        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -20,14 +20,14 @@
 
 ### [OPS-001] Communications page not loading emails
 
-| Field           | Value         |
-| --------------- | ------------- |
-| **Status**      | Investigating |
-| **Type**        | Bug           |
-| **Priority**    | P0-Critical   |
-| **Created**     | 2025-12-08    |
-| **Sessions**    | 5             |
-| **Last Active** | 2025-12-09    |
+| Field           | Value       |
+| --------------- | ----------- |
+| **Status**      | Verifying   |
+| **Type**        | Bug         |
+| **Priority**    | P0-Critical |
+| **Created**     | 2025-12-08  |
+| **Sessions**    | 6           |
+| **Last Active** | 2025-12-09  |
 
 #### Description
 
@@ -44,6 +44,8 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 **PRIMARY:** Email resolvers are NOT registered in the Apollo GraphQL server. The `emailResolvers` are defined in `services/gateway/src/graphql/resolvers/email.resolvers.ts` but are NOT imported or merged into `services/gateway/src/graphql/server.ts`. This causes all email-related GraphQL queries (emailThreads, emailThread, etc.) to fail silently.
 
 **SECONDARY:** The GraphQL context does not include the MS access token. Even if resolvers were registered, `startEmailSync` would fail because the resolver expects `user.accessToken` but the context only provides `{id, firmId, role, email}`.
+
+**TERTIARY (Session 6):** Redis connection failing - Gateway was connecting to `127.0.0.1:6379` instead of the Render Redis instance (`red-d4dk9fgdl3ps73d3d7i0:6379`). The `ioredis` library requires the URL as the first constructor argument, but the code was passing it as a config property. Additionally, the Dockerfile uses pre-built `dist/` from git rather than compiling TypeScript at build time, so TypeScript source fixes weren't being deployed.
 
 #### Fix Applied
 
@@ -64,6 +66,21 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - File: `services/gateway/src/graphql/server.ts` - Extract token from header and add to context
 - File: `services/gateway/src/graphql/resolvers/case.resolvers.ts` - Updated Context type to include `accessToken`
 
+**Fix 3: Redis URL connection (Session 6)**
+
+- File: `packages/database/src/redis.ts` - Changed ioredis constructor to pass URL as first argument:
+
+  ```typescript
+  // BEFORE (incorrect):
+  _redis = new Redis({ url: redisUrl, ...redisConfig });
+
+  // AFTER (correct):
+  _redis = redisUrl ? new Redis(redisUrl, redisConfig) : new Redis(redisConfig);
+  ```
+
+- File: `packages/database/dist/redis.js` - Rebuilt compiled JS to include the fix (Dockerfile uses pre-built dist from git)
+- Commits: `3b0a670` (source fix), `9b0c19c` (rebuilt dist)
+
 #### Session Log
 
 - [2025-12-08] Issue created. Initial triage identified two critical bugs: (1) emailResolvers not merged into GraphQL server schema, (2) MS access token not passed through context.
@@ -77,6 +94,11 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-09] Session 5 started. Continuing from: Investigating. All fixes deployed and live since ~17:30 UTC yesterday. Verifying fix.
 - [2025-12-09] Session 5 - Found root cause: The page was showing "Conectează Microsoft" banner even when emails exist in database. The MSAL token is only needed for SYNC operations, not for viewing already-synced emails. Additionally, clicking connect triggered full OAuth flow causing "Need admin approval" error.
 - [2025-12-09] Session 5 - Fixes applied: (1) Simplified communications page to always show sync button, only show connect prompt when no emails exist, (2) Added `prompt: 'select_account'` to MSAL config to avoid consent prompt, (3) Updated `reconnectMicrosoft()` to try SSO first before falling back to redirect.
+- [2025-12-09] Session 6 started. Continuing from: Investigating. User reported emails still not syncing despite fixes.
+- [2025-12-09] Session 6 - Root cause found: Redis connection error `ECONNREFUSED 127.0.0.1:6379`. The `REDIS_URL` environment variable was set correctly to `redis://red-d4dk9fgdl3ps73d3d7i0:6379` but ioredis wasn't receiving it. Investigation revealed the URL was being passed as a config property instead of as the first constructor argument (ioredis API requirement).
+- [2025-12-09] Session 6 - Fix 1: Changed `packages/database/src/redis.ts` to pass URL as first arg: `new Redis(redisUrl, redisConfig)`.
+- [2025-12-09] Session 6 - Fix 2: Discovered Dockerfile uses pre-built `dist/` from git. TypeScript fixes weren't being compiled at build time. Rebuilt `packages/database/dist/redis.js` locally and committed.
+- [2025-12-09] Session 6 - Deployed commit `9b0c19c`. Gateway now live with Redis URL fix. Awaiting verification that emails sync correctly.
 
 #### Files Involved
 
@@ -90,6 +112,8 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - `apps/web/src/hooks/useEmailSync.ts` - Frontend email hooks/queries
 - `apps/web/src/components/email/EmailThreadList.tsx` - **FIXED** - Added "Connect Microsoft" prompt when MSAL not available
 - `apps/web/src/app/communications/page.tsx` - **FIXED** - Added hasMsalAccount check, shows "Conectează Microsoft" when needed
+- `packages/database/src/redis.ts` - **FIXED (Session 6)** - Pass REDIS_URL as first constructor arg to ioredis
+- `packages/database/dist/redis.js` - **FIXED (Session 6)** - Rebuilt compiled JS (Dockerfile uses pre-built dist)
 
 ---
 
