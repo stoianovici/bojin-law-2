@@ -28,6 +28,11 @@ Perform quick triage:
 1. Use the Explore agent (Task tool with subagent_type=Explore) to search the codebase for related code
 2. Check for similar past issues in the ops log
 3. Identify potentially relevant files
+4. **Discover local dev environment** - Check for local development setup:
+   - Look for `.env` files in relevant services/apps
+   - Check `package.json` for `dev` scripts (e.g., `npm run dev`)
+   - Note any docker-compose files for local dependencies
+   - Document findings in the issue for faster iteration during fixes
 
 ## 4. Create Issue Entry
 
@@ -60,6 +65,10 @@ TBD
 #### Fix Applied
 
 TBD
+
+#### Local Dev Environment
+
+{document how to run locally, e.g., "cd services/gateway && npm run dev"}
 
 #### Session Log
 

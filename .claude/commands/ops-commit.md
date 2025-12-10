@@ -102,3 +102,4 @@ Support quick patterns:
 - Include issue ID in every commit for traceability
 - WIP commits are fine - they can be squashed later
 - If on main branch, still push (ops fixes often need to go direct)
+- **Verify locally before committing fixes** - If this is a `fix:` commit, ensure the fix was tested locally first. Pushing untested fixes to production wastes deploy cycles (each ~5 min).
