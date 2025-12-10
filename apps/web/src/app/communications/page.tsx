@@ -5,7 +5,7 @@ import { FilterBar } from '../../components/communication/FilterBar';
 import { ThreadList } from '../../components/communication/ThreadList';
 import { MessageView } from '../../components/communication/MessageView';
 import { AIDraftResponsePanel } from '../../components/communication/AIDraftResponsePanel';
-import { ExtractedItemsSidebar } from '../../components/communication/ExtractedItemsSidebar';
+import { ExtractedItemsPanel } from '../../components/communication/ExtractedItemsPanel';
 import { ComposeInterface } from '../../components/communication/ComposeInterface';
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useEmailSync, useEmailThreads } from '../../hooks/useEmailSync';
@@ -14,7 +14,8 @@ import { Plus, RefreshCw, Mail, AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function CommunicationsPage() {
-  const { openCompose, setThreads } = useCommunicationStore();
+  const { openCompose, setThreads, getSelectedThread } = useCommunicationStore();
+  const selectedThread = getSelectedThread();
 
   // Auth context for Microsoft account status
   const { hasMsalAccount, reconnectMicrosoft } = useAuth();
@@ -190,9 +191,15 @@ export default function CommunicationsPage() {
           <AIDraftResponsePanel />
         </div>
 
-        {/* Right Column: Extracted Items Sidebar (hidden on tablet, shown on lg+) */}
+        {/* Right Column: Extracted Items Panel (hidden on tablet, shown on lg+) */}
         <div className="hidden w-80 flex-col border-l bg-white lg:flex overflow-y-auto">
-          <ExtractedItemsSidebar />
+          {selectedThread?.caseId ? (
+            <ExtractedItemsPanel caseId={selectedThread.caseId} />
+          ) : (
+            <div className="p-4 text-sm text-gray-500">
+              Selectați o conversație pentru a vedea elementele extrase
+            </div>
+          )}
         </div>
       </div>
 
