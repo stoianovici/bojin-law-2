@@ -104,6 +104,8 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-10] Session 7 - Fix 1: Changed `graph.service.ts` to use callback pattern: `authProvider: (done) => { done(null, accessToken); }` instead of class instance. Deployed commit `f95121b`.
 - [2025-12-10] Session 7 - New error after authProvider fix: `BadRequest: Change tracking is not supported against 'microsoft.graph.message'`. Delta sync (`/me/messages/delta`) is not supported for all mailbox types.
 - [2025-12-10] Session 7 - Fix 2: Changed `email-sync.service.ts` to use regular `/me/messages` endpoint instead of delta sync. Deployed commit `b09725e`.
+- [2025-12-10] Session 7 - New error: First page fetched 50 messages successfully, but pagination failed with `Resource not found for segment 'v1.0'`. The `nextLink` URL includes `/v1.0` but the client already adds it via `defaultVersion`.
+- [2025-12-10] Session 7 - Fix 3: Strip `/v1.0` or `/beta` prefix from `nextLink` path before calling `client.api()`. Deployed commit `fd645fe`.
 
 #### Files Involved
 
