@@ -12,6 +12,7 @@ import { TodayTasksWidget } from './widgets/TodayTasksWidget';
 import { DeadlinesWidget } from './widgets/DeadlinesWidget';
 import { RecentDocumentsWidget } from './widgets/RecentDocumentsWidget';
 import { AISuggestionWidget } from './widgets/AISuggestionWidget';
+import { MorningBriefing } from './MorningBriefing';
 import type {
   WidgetPosition,
   CaseListWidget,
@@ -107,7 +108,10 @@ export function AssociateDashboard({ isEditing = false, onLayoutChange }: Associ
   }
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Morning Briefing - AI-generated daily summary */}
+      <MorningBriefing />
+
       <DashboardGrid
         layout={defaultLayout}
         onLayoutChange={handleLayoutChange}

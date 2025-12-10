@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useCaseWorkspaceStore } from '../../../stores/case-workspace.store';
@@ -23,7 +23,8 @@ import { AIInsightsPanel } from '../../../components/case/AIInsightsPanel';
 import { QuickActionsBar } from '../../../components/case/QuickActionsBar';
 import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
 import { useCase } from '../../../hooks/useCase';
-import type { Case, User, Document, Task, AISuggestion, DocumentNode } from '@legal-platform/types';
+import { useSuggestions } from '../../../hooks/useSuggestions';
+import type { Case, User, Document, Task, DocumentNode } from '@legal-platform/types';
 
 interface CaseWorkspacePageProps {
   params: Promise<{
@@ -62,7 +63,6 @@ interface CaseWorkspaceData {
     openTasks: number;
     billableHours: number;
   };
-  aiSuggestions: AISuggestion[];
 }
 
 /**
@@ -91,56 +91,95 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   const { caseId } = React.use(params);
   const router = useRouter();
   const { activeTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
-  const [caseData, setCaseData] = useState<CaseWorkspaceData | null>(null);
 
   // Use the real useCase hook to get actual case data
   const { case: realCaseData, loading, error } = useCase(caseId);
+
+  // Use AI suggestions hook with case context
+  const {
+    suggestions: aiSuggestions,
+    loading: suggestionsLoading,
+    acceptSuggestion,
+    dismissSuggestion,
+  } = useSuggestions({
+    currentScreen: 'case-workspace',
+    currentCaseId: caseId,
+  });
+
+  // Handlers for AI suggestions
+  const handleDismissSuggestion = useCallback(
+    async (suggestionId: string) => {
+      try {
+        await dismissSuggestion(suggestionId);
+      } catch (err) {
+        console.error('Failed to dismiss suggestion:', err);
+      }
+    },
+    [dismissSuggestion]
+  );
+
+  const handleTakeAction = useCallback(
+    async (suggestionId: string) => {
+      try {
+        await acceptSuggestion(suggestionId);
+      } catch (err) {
+        console.error('Failed to accept suggestion:', err);
+      }
+    },
+    [acceptSuggestion]
+  );
 
   // Handler for creating new document
   const handleNewDocument = useCallback(() => {
     router.push(`/cases/${caseId}/documents/new`);
   }, [router, caseId]);
 
-  // Load case data on mount
-  useEffect(() => {
-    // Set the selected case in store
-    setSelectedCase(caseId);
+  // Derive case workspace data from API response using useMemo
+  const caseData = useMemo<CaseWorkspaceData | null>(() => {
+    if (!realCaseData || loading) return null;
 
-    // Load workspace data when real case data is available
-    if (realCaseData && !loading) {
-      // Build workspace data from real case data (no mock data)
-      const workspaceData: CaseWorkspaceData = {
-        case: {
-          ...realCaseData,
-          openedDate: new Date(realCaseData.openedDate),
-          closedDate: realCaseData.closedDate ? new Date(realCaseData.closedDate) : null,
-        },
-        teamMembers: (realCaseData.teamMembers || []).map((member: any) => {
+    // Build workspace data from real case data (no mock data)
+    return {
+      case: {
+        ...realCaseData,
+        openedDate: new Date(realCaseData.openedDate),
+        closedDate: realCaseData.closedDate ? new Date(realCaseData.closedDate) : null,
+      },
+      teamMembers: (realCaseData.teamMembers || []).map(
+        (
+          member: {
+            user?: User;
+            createdAt?: string | Date;
+            lastActive?: string | Date;
+          } & Partial<User>
+        ) => {
           // Handle case where member has a nested user object
           const user = member.user || member;
           return {
             ...user,
-            createdAt: new Date(user.createdAt || Date.now()),
-            lastActive: new Date(user.lastActive || Date.now()),
-          };
-        }),
-        nextDeadline: undefined,
-        documents: [], // TODO: Fetch from API
-        tasks: [], // TODO: Fetch from API
-        folderTree: [], // TODO: Fetch from API
-        recentActivity: [], // TODO: Fetch from API
-        upcomingDeadlines: [], // TODO: Fetch from API
-        stats: {
-          totalDocuments: 0,
-          openTasks: 0,
-          billableHours: 0,
-        },
-        aiSuggestions: [], // TODO: Fetch from API
-      };
+            createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
+            lastActive: user.lastActive ? new Date(user.lastActive) : new Date(),
+          } as User;
+        }
+      ),
+      nextDeadline: undefined,
+      documents: [], // TODO: Fetch from API
+      tasks: [], // TODO: Fetch from API
+      folderTree: [], // TODO: Fetch from API
+      recentActivity: [], // TODO: Fetch from API
+      upcomingDeadlines: [], // TODO: Fetch from API
+      stats: {
+        totalDocuments: 0,
+        openTasks: 0,
+        billableHours: 0,
+      },
+    };
+  }, [realCaseData, loading]);
 
-      setCaseData(workspaceData);
-    }
-  }, [caseId, setSelectedCase, realCaseData, loading]);
+  // Set selected case in store on mount
+  useEffect(() => {
+    setSelectedCase(caseId);
+  }, [caseId, setSelectedCase]);
 
   // Set page title
   useEffect(() => {
@@ -201,7 +240,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
       case 'tasks':
         return <TasksTab tasks={caseData.tasks} users={caseData.teamMembers} />;
       case 'communications':
-        return <CommunicationsTab />;
+        return <CommunicationsTab caseId={caseId} />;
       case 'time-entries':
         return <TimeEntriesTab />;
       case 'notes':
@@ -239,7 +278,13 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         </div>
 
         {/* AI Insights Panel - Fixed position, starts below TopBar */}
-        <AIInsightsPanel caseName={caseData.case.title} suggestions={caseData.aiSuggestions} />
+        <AIInsightsPanel
+          caseName={caseData.case.title}
+          suggestions={aiSuggestions}
+          loading={suggestionsLoading}
+          onDismissSuggestion={handleDismissSuggestion}
+          onTakeAction={handleTakeAction}
+        />
 
         {/* Quick Actions Bar - Fixed at bottom */}
         <QuickActionsBar />

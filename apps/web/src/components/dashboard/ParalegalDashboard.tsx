@@ -14,6 +14,7 @@ import {
 } from './widgets/DocumentRequestsWidget';
 import { DeadlineCalendarWidget } from './widgets/DeadlineCalendarWidget';
 import { AISuggestionWidget } from './widgets/AISuggestionWidget';
+import { MorningBriefing } from './MorningBriefing';
 import type {
   WidgetPosition,
   KanbanWidget,
@@ -102,7 +103,10 @@ export function ParalegalDashboard({ isEditing = false, onLayoutChange }: Parale
   }
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Morning Briefing - AI-generated daily summary */}
+      <MorningBriefing />
+
       <DashboardGrid
         layout={defaultLayout}
         onLayoutChange={handleLayoutChange}

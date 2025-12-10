@@ -5,10 +5,10 @@
 
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
-import type {
-  AISuggestion,
-  SuggestionContext,
-} from '@legal-platform/types';
+import type { ProactiveAISuggestion } from '@legal-platform/types';
+
+// Re-export for convenience
+export type AISuggestion = ProactiveAISuggestion;
 
 // ====================
 // GraphQL Fragments
@@ -225,26 +225,6 @@ export function useAcceptSuggestion() {
     { suggestionId: string }
   >(ACCEPT_SUGGESTION, {
     refetchQueries: ['GetPendingSuggestions', 'GetContextualSuggestions'],
-    optimisticResponse: ({ suggestionId }) => ({
-      acceptSuggestion: {
-        __typename: 'AISuggestion',
-        id: suggestionId,
-        status: 'Accepted',
-        // These will be overwritten by server response
-        type: 'TaskSuggestion',
-        category: 'Task',
-        title: '',
-        description: '',
-        suggestedAction: null,
-        actionPayload: null,
-        confidence: 0,
-        priority: 'Normal',
-        case: null,
-        expiresAt: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    }),
   });
 
   const acceptSuggestion = async (suggestionId: string) => {
@@ -276,26 +256,6 @@ export function useDismissSuggestion() {
     { suggestionId: string; reason?: string }
   >(DISMISS_SUGGESTION, {
     refetchQueries: ['GetPendingSuggestions', 'GetContextualSuggestions'],
-    optimisticResponse: ({ suggestionId }) => ({
-      dismissSuggestion: {
-        __typename: 'AISuggestion',
-        id: suggestionId,
-        status: 'Dismissed',
-        // These will be overwritten by server response
-        type: 'TaskSuggestion',
-        category: 'Task',
-        title: '',
-        description: '',
-        suggestedAction: null,
-        actionPayload: null,
-        confidence: 0,
-        priority: 'Normal',
-        case: null,
-        expiresAt: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    }),
   });
 
   const dismissSuggestion = async (suggestionId: string, reason?: string) => {

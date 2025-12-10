@@ -17,6 +17,7 @@ import { FirmTasksOverviewWidget } from './widgets/FirmTasksOverviewWidget';
 import { EmployeeWorkloadWidget } from './widgets/EmployeeWorkloadWidget';
 import { AISuggestionWidget } from './widgets/AISuggestionWidget';
 import { TodayTasksWidget } from './widgets/TodayTasksWidget';
+import { MorningBriefing } from './MorningBriefing';
 import type {
   WidgetPosition,
   SupervisedCasesWidget as SupervisedCasesWidgetType,
@@ -172,7 +173,10 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
   }
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Morning Briefing - AI-generated daily summary */}
+      <MorningBriefing />
+
       <DashboardGrid
         layout={defaultLayout}
         onLayoutChange={handleLayoutChange}

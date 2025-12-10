@@ -8,6 +8,8 @@
  */
 
 import { useState, useMemo } from 'react';
+import { gql } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import {
   BarChart,
   Bar,
@@ -25,20 +27,94 @@ import {
 } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Empty state - TODO: Replace with real GraphQL API call
-const emptyUsageStats = {
+// GraphQL Queries
+const AI_USAGE_STATS_QUERY = gql`
+  query GetAIUsageStats($dateRange: DateRangeInput!, $firmId: ID!) {
+    aiUsageStats(dateRange: $dateRange, firmId: $firmId) {
+      totalTokens
+      totalCostCents
+      requestCount
+      avgLatencyMs
+      cacheHitRate
+      byModel {
+        model
+        tokens
+        costCents
+        requestCount
+      }
+      byOperation {
+        operation
+        tokens
+        costCents
+        requestCount
+      }
+    }
+  }
+`;
+
+const AI_DAILY_USAGE_QUERY = gql`
+  query GetAIDailyUsage($dateRange: DateRangeInput!, $firmId: ID!) {
+    aiDailyUsageTrend(dateRange: $dateRange, firmId: $firmId) {
+      date
+      tokens
+      costCents
+      requests
+    }
+  }
+`;
+
+const AI_PROVIDER_HEALTH_QUERY = gql`
+  query GetAIProviderHealth {
+    aiProviderHealth {
+      provider
+      status
+      latencyMs
+      lastChecked
+      consecutiveFailures
+    }
+  }
+`;
+
+// Types
+interface AIUsageStats {
+  totalTokens: number;
+  totalCostCents: number;
+  requestCount: number;
+  avgLatencyMs: number;
+  cacheHitRate: number;
+  byModel: { model: string; tokens: number; costCents: number; requestCount: number }[];
+  byOperation: { operation: string; tokens: number; costCents: number; requestCount: number }[];
+}
+
+interface DailyUsage {
+  date: string;
+  tokens: number;
+  costCents: number;
+  requests: number;
+}
+
+interface ProviderHealth {
+  provider: string;
+  status: 'HEALTHY' | 'DEGRADED' | 'UNAVAILABLE';
+  latencyMs: number;
+  lastChecked: string;
+  consecutiveFailures?: number;
+}
+
+// Empty state fallbacks
+const emptyUsageStats: AIUsageStats = {
   totalTokens: 0,
   totalCostCents: 0,
   requestCount: 0,
   avgLatencyMs: 0,
   cacheHitRate: 0,
-  byModel: [] as { model: string; tokens: number; costCents: number; requestCount: number }[],
-  byOperation: [] as { operation: string; tokens: number; costCents: number; requestCount: number }[],
+  byModel: [],
+  byOperation: [],
 };
 
-const emptyDailyTrend: { date: string; tokens: number; costCents: number; requests: number }[] = [];
+const emptyDailyTrend: DailyUsage[] = [];
 
-const emptyProviderHealth: { provider: string; status: string; latencyMs: number; lastChecked: Date }[] = [];
+const emptyProviderHealth: ProviderHealth[] = [];
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -78,18 +154,76 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+// Calculate date range from selection
+function getDateRange(range: '7d' | '30d' | '90d'): { start: string; end: string } {
+  const end = new Date();
+  const start = new Date();
+
+  switch (range) {
+    case '7d':
+      start.setDate(start.getDate() - 7);
+      break;
+    case '30d':
+      start.setDate(start.getDate() - 30);
+      break;
+    case '90d':
+      start.setDate(start.getDate() - 90);
+      break;
+  }
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+}
+
 export default function AIUsagePage() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('7d');
 
-  // TODO: Fetch from GraphQL API
-  const usageStats = emptyUsageStats;
-  const dailyTrend = emptyDailyTrend;
-  const providerHealth = emptyProviderHealth;
+  // Calculate date range
+  const dateRangeInput = useMemo(() => getDateRange(dateRange), [dateRange]);
+
+  // Get firm ID from user
+  const firmId = user?.firmId || '';
+
+  // Fetch AI usage stats
+  const { data: statsData, loading: statsLoading } = useQuery<{
+    aiUsageStats: AIUsageStats;
+  }>(AI_USAGE_STATS_QUERY, {
+    variables: {
+      dateRange: dateRangeInput,
+      firmId,
+    },
+    skip: !firmId,
+  });
+
+  // Fetch daily usage trend
+  const { data: trendData, loading: trendLoading } = useQuery<{
+    aiDailyUsageTrend: DailyUsage[];
+  }>(AI_DAILY_USAGE_QUERY, {
+    variables: {
+      dateRange: dateRangeInput,
+      firmId,
+    },
+    skip: !firmId,
+  });
+
+  // Fetch provider health
+  const { data: healthData, loading: healthLoading } = useQuery<{
+    aiProviderHealth: ProviderHealth[];
+  }>(AI_PROVIDER_HEALTH_QUERY);
+
+  // Use data or fallback to empty
+  const usageStats = statsData?.aiUsageStats ?? emptyUsageStats;
+  const dailyTrend = trendData?.aiDailyUsageTrend ?? emptyDailyTrend;
+  const providerHealth = healthData?.aiProviderHealth ?? emptyProviderHealth;
+
+  const isLoading = statsLoading || trendLoading || healthLoading;
 
   // Calculate model breakdown for pie chart
   const modelPieData = useMemo(() => {
-    return usageStats.byModel.map((m) => ({
+    return usageStats.byModel.map((m: { model: string; costCents: number }) => ({
       name: m.model.split('-').slice(1, 3).join(' '),
       value: m.costCents,
     }));
@@ -117,6 +251,7 @@ export default function AIUsagePage() {
           <h1 className="text-2xl font-bold text-gray-900">AI Usage Dashboard</h1>
           <p className="text-gray-500 text-sm mt-1">
             Monitor AI token usage, costs, and provider health
+            {isLoading && <span className="ml-2 text-blue-500">(Loading...)</span>}
           </p>
         </div>
 
@@ -126,11 +261,12 @@ export default function AIUsagePage() {
             <button
               key={range}
               onClick={() => setDateRange(range)}
+              disabled={isLoading}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 dateRange === range
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
             </button>
@@ -209,7 +345,7 @@ export default function AIUsagePage() {
                 dataKey="value"
                 label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
               >
-                {modelPieData.map((_, index) => (
+                {modelPieData.map((_: { name: string; value: number }, index: number) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
@@ -268,7 +404,7 @@ export default function AIUsagePage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {providerHealth.map((provider) => (
+              {providerHealth.map((provider: ProviderHealth) => (
                 <tr key={provider.provider}>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {provider.provider}
@@ -280,7 +416,7 @@ export default function AIUsagePage() {
                     {provider.latencyMs}ms
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {provider.lastChecked.toLocaleTimeString()}
+                    {new Date(provider.lastChecked).toLocaleTimeString()}
                   </td>
                 </tr>
               ))}

@@ -8,10 +8,58 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { gql } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { clsx } from 'clsx';
 import type { DocumentType } from '@legal-platform/types';
+
+// GraphQL Queries and Mutations
+const GENERATE_DOCUMENT_MUTATION = gql`
+  mutation GenerateDocumentWithAI($input: AIDocumentGenerationInput!) {
+    generateDocumentWithAI(input: $input) {
+      id
+      title
+      content
+      suggestedTitle
+      templateUsed {
+        id
+        name
+      }
+      tokensUsed
+      generationTimeMs
+    }
+  }
+`;
+
+const GET_CASE_CONTEXT_QUERY = gql`
+  query GetCaseForDocument($caseId: ID!) {
+    case(id: $caseId) {
+      id
+      caseNumber
+      title
+      caseType
+      openedDate
+      description
+      client {
+        id
+        name
+      }
+    }
+  }
+`;
+
+const SUGGEST_TEMPLATES_QUERY = gql`
+  query SuggestTemplates($caseId: ID!, $documentType: DocumentType!) {
+    suggestTemplates(caseId: $caseId, documentType: $documentType) {
+      id
+      name
+      category
+      qualityScore
+    }
+  }
+`;
 
 interface DocumentGenerationPageProps {
   params: Promise<{
@@ -39,14 +87,32 @@ const PROMPT_EXAMPLES: Record<DocumentType, string> = {
   Other: 'Descrie documentul pe care dorești să-l generezi...',
 };
 
-// Case context preview type
-interface CaseContext {
+// Types for GraphQL responses
+interface CaseData {
+  id: string;
   caseNumber: string;
   title: string;
-  clientName: string;
   caseType: string;
   openedDate: string;
-  description: string;
+  description?: string;
+  client?: { id: string; name: string };
+}
+
+interface TemplateData {
+  id: string;
+  name: string;
+  category: string;
+  qualityScore?: number;
+}
+
+interface GeneratedDocument {
+  id: string;
+  title: string;
+  content: string;
+  suggestedTitle: string;
+  templateUsed?: { id: string; name: string };
+  tokensUsed: number;
+  generationTimeMs: number;
 }
 
 /**
@@ -64,47 +130,41 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
   const [includeContext, setIncludeContext] = useState(true);
 
   // UI state
-  const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // Data state
-  const [caseContext, setCaseContext] = useState<CaseContext | null>(null);
-  const [templates, setTemplates] = useState<Array<{ id: string; name: string; category: string }>>([]);
-  const [isLoadingContext, setIsLoadingContext] = useState(true);
-
-  // Load case context on mount
-  useEffect(() => {
-    loadCaseContext();
-    loadTemplates();
-  }, [caseId, documentType]);
-
-  const loadCaseContext = async () => {
-    setIsLoadingContext(true);
-    try {
-      // TODO: Replace with actual GraphQL query to fetch case context
-      // const { data } = await getCaseContext({ variables: { caseId } });
-      // setCaseContext(data.case);
-      setCaseContext(null); // No mock data - should come from API
-    } catch (err) {
-      console.error('Failed to load case context:', err);
-    } finally {
-      setIsLoadingContext(false);
+  // Fetch case context
+  const { data: caseData, loading: caseLoading } = useQuery<{ case: CaseData }>(
+    GET_CASE_CONTEXT_QUERY,
+    {
+      variables: { caseId },
+      skip: !caseId,
     }
-  };
+  );
 
-  const loadTemplates = async () => {
-    try {
-      // TODO: Replace with actual GraphQL query for templates
-      // const { data } = await getDocumentTemplates({ variables: { documentType } });
-      // setTemplates(data.templates);
-      setTemplates([]); // No mock data - should come from API
-    } catch (err) {
-      console.error('Failed to load templates:', err);
-    }
-  };
+  // Fetch template suggestions
+  const { data: templatesData } = useQuery<{
+    suggestTemplates: TemplateData[];
+  }>(SUGGEST_TEMPLATES_QUERY, {
+    variables: { caseId, documentType },
+    skip: !caseId,
+  });
 
-  const handleGenerate = async () => {
+  // Document generation mutation
+  const [generateDocument, { loading: isGenerating }] = useMutation<{
+    generateDocumentWithAI: GeneratedDocument;
+  }>(GENERATE_DOCUMENT_MUTATION, {
+    onError: (err) => {
+      setError(err.message || 'A apărut o eroare la generarea documentului.');
+    },
+  });
+
+  // Extract data from queries
+  const caseContext = caseData?.case;
+  const templates = templatesData?.suggestTemplates ?? [];
+  const isLoadingContext = caseLoading;
+
+  const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
       setError('Vă rugăm să introduceți o descriere a documentului.');
       return;
@@ -115,70 +175,45 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
       return;
     }
 
-    setIsGenerating(true);
     setError(null);
     setProgress(0);
 
+    // Start progress simulation
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => Math.min(prev + 5, 90));
+    }, 200);
+
     try {
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => Math.min(prev + 10, 90));
-      }, 500);
-
-      // TODO: Replace with actual GraphQL mutation
-      // const { data } = await generateDocumentWithAI({
-      //   variables: {
-      //     input: {
-      //       caseId,
-      //       prompt,
-      //       documentType,
-      //       templateId,
-      //       includeContext,
-      //     },
-      //   },
-      // });
-
-      // TODO: Replace with actual API call to AI service for document generation
-      // const { data } = await generateDocumentWithAI({
-      //   variables: {
-      //     input: {
-      //       caseId,
-      //       prompt,
-      //       documentType,
-      //       templateId,
-      //       includeContext,
-      //     },
-      //   },
-      // });
-      // const { documentId, content } = data.generateDocument;
-
-      // Simulate API call - in production this would call the AI service
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await generateDocument({
+        variables: {
+          input: {
+            caseId,
+            prompt: prompt.trim(),
+            documentType,
+            templateId,
+            includeContext,
+          },
+        },
+      });
 
       clearInterval(progressInterval);
       setProgress(100);
 
-      // In production, documentId and content come from the API
-      const tempDocumentId = `doc-${Date.now()}`;
-      const generatedContent = ''; // Empty - content should come from AI service
-
-      // Navigate to document editor
-      const suggestedTitle = `${documentType}-${caseId}`;
-      const encodedContent = encodeURIComponent(generatedContent);
-      const encodedTitle = encodeURIComponent(suggestedTitle);
-      router.push(
-        `/cases/${caseId}/documents/${tempDocumentId}/edit?generated=true&type=${documentType}&content=${encodedContent}&title=${encodedTitle}`
-      );
+      const generated = result.data?.generateDocumentWithAI;
+      if (generated) {
+        // Navigate to document editor with generated content
+        const encodedContent = encodeURIComponent(generated.content);
+        const encodedTitle = encodeURIComponent(generated.suggestedTitle || generated.title);
+        router.push(
+          `/cases/${caseId}/documents/${generated.id}/edit?generated=true&type=${documentType}&content=${encodedContent}&title=${encodedTitle}`
+        );
+      }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'A apărut o eroare la generarea documentului.'
-      );
-    } finally {
-      setIsGenerating(false);
+      clearInterval(progressInterval);
+      setProgress(0);
+      setError(err instanceof Error ? err.message : 'A apărut o eroare la generarea documentului.');
     }
-  };
+  }, [caseId, prompt, documentType, templateId, includeContext, generateDocument, router]);
 
   const handleCancel = () => {
     router.back();
@@ -190,10 +225,7 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-4xl mx-auto">
           <nav className="text-sm text-gray-500 mb-2">
-            <button
-              onClick={handleCancel}
-              className="hover:text-gray-700"
-            >
+            <button onClick={handleCancel} className="hover:text-gray-700">
               Cazuri
             </button>
             <span className="mx-2">/</span>
@@ -201,9 +233,7 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
             <span className="mx-2">/</span>
             <span className="text-gray-900">Document Nou</span>
           </nav>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Generare Document cu AI
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Generare Document cu AI</h1>
           <p className="mt-1 text-sm text-gray-500">
             Descrieți documentul dorit și AI-ul va genera o versiune inițială
           </p>
@@ -217,9 +247,7 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
           <div className="col-span-2 space-y-6">
             {/* Document Type Selection */}
             <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Tip Document
-              </h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Tip Document</h2>
               <div className="grid grid-cols-2 gap-3">
                 {DOCUMENT_TYPES.map((type) => (
                   <button
@@ -232,12 +260,8 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     )}
                   >
-                    <span className="font-medium text-gray-900">
-                      {type.label}
-                    </span>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {type.description}
-                    </p>
+                    <span className="font-medium text-gray-900">{type.label}</span>
+                    <p className="text-sm text-gray-500 mt-1">{type.description}</p>
                   </button>
                 ))}
               </div>
@@ -245,9 +269,7 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
 
             {/* Prompt Input */}
             <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Descriere Document
-              </h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Descriere Document</h2>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -262,21 +284,15 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
                 )}
               />
               <div className="flex justify-between mt-2">
-                <p className="text-sm text-gray-500">
-                  {prompt.length} / 10,000 caractere
-                </p>
-                {error && (
-                  <p className="text-sm text-red-600">{error}</p>
-                )}
+                <p className="text-sm text-gray-500">{prompt.length} / 10,000 caractere</p>
+                {error && <p className="text-sm text-red-600">{error}</p>}
               </div>
             </section>
 
             {/* Template Selection (Optional) */}
             {templates.length > 0 && (
               <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">
-                  Șablon (Opțional)
-                </h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-4">Șablon (Opțional)</h2>
                 <select
                   value={templateId || ''}
                   onChange={(e) => setTemplateId(e.target.value || null)}
@@ -296,9 +312,7 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
 
             {/* Options */}
             <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Opțiuni
-              </h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Opțiuni</h2>
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -307,9 +321,7 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
                   className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <div>
-                  <span className="font-medium text-gray-900">
-                    Include context cazului
-                  </span>
+                  <span className="font-medium text-gray-900">Include context cazului</span>
                   <p className="text-sm text-gray-500">
                     AI-ul va folosi informațiile cazului pentru generare
                   </p>
@@ -371,9 +383,7 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
           <div className="col-span-1 space-y-6">
             {/* Case Context Preview */}
             <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Context Caz
-              </h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Context Caz</h2>
               {isLoadingContext ? (
                 <div className="space-y-3 animate-pulse">
                   <div className="h-4 bg-gray-200 rounded w-3/4" />
@@ -384,39 +394,31 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
                 <div className="space-y-3 text-sm">
                   <div>
                     <span className="text-gray-500">Număr caz:</span>
-                    <p className="font-medium text-gray-900">
-                      {caseContext.caseNumber}
-                    </p>
+                    <p className="font-medium text-gray-900">{caseContext.caseNumber}</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Client:</span>
-                    <p className="font-medium text-gray-900">
-                      {caseContext.clientName}
-                    </p>
+                    <p className="font-medium text-gray-900">{caseContext.client?.name || 'N/A'}</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Tip caz:</span>
-                    <p className="font-medium text-gray-900">
-                      {caseContext.caseType}
-                    </p>
+                    <p className="font-medium text-gray-900">{caseContext.caseType}</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Deschis:</span>
                     <p className="font-medium text-gray-900">
-                      {caseContext.openedDate}
+                      {new Date(caseContext.openedDate).toLocaleDateString('ro-RO')}
                     </p>
                   </div>
-                  <div>
-                    <span className="text-gray-500">Descriere:</span>
-                    <p className="text-gray-700 mt-1">
-                      {caseContext.description}
-                    </p>
-                  </div>
+                  {caseContext.description && (
+                    <div>
+                      <span className="text-gray-500">Descriere:</span>
+                      <p className="text-gray-700 mt-1">{caseContext.description}</p>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">
-                  Nu s-au putut încărca informațiile cazului.
-                </p>
+                <p className="text-gray-500 text-sm">Nu s-au putut încărca informațiile cazului.</p>
               )}
             </section>
 
@@ -437,13 +439,11 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
                   />
                 </svg>
                 <div>
-                  <h3 className="font-medium text-blue-900">
-                    Despre generarea AI
-                  </h3>
+                  <h3 className="font-medium text-blue-900">Despre generarea AI</h3>
                   <p className="text-sm text-blue-700 mt-1">
-                    Documentul generat este o versiune inițială care necesită
-                    revizuire. AI-ul folosește contextul cazului și
-                    șabloanele firmei pentru a crea documente relevante.
+                    Documentul generat este o versiune inițială care necesită revizuire. AI-ul
+                    folosește contextul cazului și șabloanele firmei pentru a crea documente
+                    relevante.
                   </p>
                 </div>
               </div>
@@ -451,19 +451,13 @@ export default function DocumentGenerationPage({ params }: DocumentGenerationPag
 
             {/* Quality Target */}
             <section className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-              <h3 className="font-medium text-gray-900 mb-2">
-                Obiectiv calitate
-              </h3>
+              <h3 className="font-medium text-gray-900 mb-2">Obiectiv calitate</h3>
               <p className="text-sm text-gray-600">
                 Documentele generate necesită în medie{' '}
-                <span className="font-semibold text-gray-900">&lt; 30%</span>{' '}
-                editare manuală.
+                <span className="font-semibold text-gray-900">&lt; 30%</span> editare manuală.
               </p>
               <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-green-500 rounded-full"
-                  style={{ width: '70%' }}
-                />
+                <div className="h-full bg-green-500 rounded-full" style={{ width: '70%' }} />
               </div>
             </section>
           </div>

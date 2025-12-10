@@ -10,24 +10,59 @@ import { formatDistanceToNow } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
 import { useCaseWorkspaceStore } from '../../stores/case-workspace.store';
-import type { AISuggestion } from '@legal-platform/types';
+import type { AISuggestion } from '../../hooks/useSuggestions';
+
+// Map GraphQL category to icon type
+type IconType = 'document' | 'deadline' | 'task' | 'precedent' | 'communication';
 
 export interface AIInsightsPanelProps {
   caseName: string;
   suggestions?: AISuggestion[];
+  loading?: boolean;
   onDismissSuggestion?: (suggestionId: string) => void;
   onTakeAction?: (suggestionId: string) => void;
   className?: string;
 }
 
 /**
+ * Map category/type to icon type
+ */
+function getIconType(category: string, type: string): IconType {
+  // Map by category first
+  switch (category) {
+    case 'Document':
+      return 'document';
+    case 'Communication':
+      return 'communication';
+    case 'Task':
+      return 'task';
+    case 'Calendar':
+      return 'deadline';
+    case 'Compliance':
+      return 'precedent';
+  }
+  // Fallback to type mapping
+  switch (type) {
+    case 'DeadlineWarning':
+      return 'deadline';
+    case 'TaskSuggestion':
+      return 'task';
+    case 'DocumentCheck':
+      return 'document';
+    case 'FollowUp':
+      return 'communication';
+    case 'RiskAlert':
+      return 'deadline';
+    default:
+      return 'task';
+  }
+}
+
+/**
  * Suggestion Icon Component
  */
-function SuggestionIcon({ type }: { type: AISuggestion['type'] }) {
-  const iconConfig: Record<
-    AISuggestion['type'],
-    { icon: JSX.Element; color: string }
-  > = {
+function SuggestionIcon({ type }: { type: IconType }) {
+  const iconConfig: Record<IconType, { icon: JSX.Element; color: string }> = {
     document: {
       icon: (
         <path
@@ -100,6 +135,20 @@ function SuggestionIcon({ type }: { type: AISuggestion['type'] }) {
 }
 
 /**
+ * Get priority color/badge
+ */
+function getPriorityBadge(priority: string): { color: string; label: string } | null {
+  switch (priority) {
+    case 'Urgent':
+      return { color: 'bg-red-100 text-red-800', label: 'Urgent' };
+    case 'High':
+      return { color: 'bg-orange-100 text-orange-800', label: 'Prioritar' };
+    default:
+      return null;
+  }
+}
+
+/**
  * Suggestion Item Component
  */
 interface SuggestionItemProps {
@@ -109,28 +158,52 @@ interface SuggestionItemProps {
 }
 
 function SuggestionItem({ suggestion, onDismiss, onAction }: SuggestionItemProps) {
+  const iconType = getIconType(suggestion.category, suggestion.type);
+  const priorityBadge = getPriorityBadge(suggestion.priority);
+  const timestamp = new Date(suggestion.createdAt);
+
   return (
     <div className="p-4 bg-white rounded-lg border border-purple-200 hover:border-purple-300 hover:shadow-sm transition-all">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
-          <SuggestionIcon type={suggestion.type} />
+          <SuggestionIcon type={iconType} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-900 mb-2">{suggestion.text}</p>
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h4 className="text-sm font-medium text-gray-900">{suggestion.title}</h4>
+            {priorityBadge && (
+              <span
+                className={clsx('px-1.5 py-0.5 text-xs font-medium rounded', priorityBadge.color)}
+              >
+                {priorityBadge.label}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-600 mb-2">{suggestion.description}</p>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-gray-500">
-              {formatDistanceToNow(suggestion.timestamp, {
-                addSuffix: true,
-                locale: ro,
-              })}
-            </span>
             <div className="flex items-center gap-2">
-              {suggestion.actionLabel && (
+              <span className="text-xs text-gray-500">
+                {formatDistanceToNow(timestamp, {
+                  addSuffix: true,
+                  locale: ro,
+                })}
+              </span>
+              {suggestion.confidence > 0.8 && (
+                <span
+                  className="text-xs text-green-600"
+                  title={`Încredere: ${Math.round(suggestion.confidence * 100)}%`}
+                >
+                  • Încredere înaltă
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {suggestion.suggestedAction && (
                 <button
                   onClick={onAction}
                   className="text-xs font-medium text-purple-600 hover:text-purple-700 hover:underline"
                 >
-                  {suggestion.actionLabel}
+                  {suggestion.suggestedAction}
                 </button>
               )}
               <button
@@ -138,12 +211,7 @@ function SuggestionItem({ suggestion, onDismiss, onAction }: SuggestionItemProps
                 className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                 aria-label="Respinge sugestie"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -171,13 +239,15 @@ function SuggestionItem({ suggestion, onDismiss, onAction }: SuggestionItemProps
 function AIInsightsPanelComponent({
   caseName,
   suggestions = [],
+  loading = false,
   onDismissSuggestion,
   onTakeAction,
   className,
 }: AIInsightsPanelProps) {
   const { aiPanelCollapsed, toggleAIPanel } = useCaseWorkspaceStore();
 
-  const visibleSuggestions = suggestions.filter((s) => !s.dismissed);
+  // Filter to show only pending suggestions (not dismissed/accepted/expired)
+  const visibleSuggestions = suggestions.filter((s) => s.status === 'Pending');
 
   return (
     <div
@@ -185,7 +255,7 @@ function AIInsightsPanelComponent({
         'fixed top-16 right-0 bg-white border-l border-gray-200 shadow-lg transition-all duration-300 z-40',
         'h-[calc(100vh-4rem)]', // Full height minus TopBar (4rem = 64px)
         aiPanelCollapsed ? 'w-12' : 'w-80',
-        className,
+        className
       )}
     >
       {/* Collapsed State - Toggle Button */}
@@ -201,12 +271,7 @@ function AIInsightsPanelComponent({
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       )}
@@ -231,21 +296,14 @@ function AIInsightsPanelComponent({
                     d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
                 </svg>
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Sugestii AI
-                </h3>
+                <h3 className="text-sm font-semibold text-gray-900">Sugestii AI</h3>
               </div>
               <button
                 onClick={toggleAIPanel}
                 className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-white transition-colors"
                 aria-label="Închide panoul"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -262,7 +320,27 @@ function AIInsightsPanelComponent({
 
           {/* Suggestions List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {visibleSuggestions.length > 0 ? (
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-3 animate-pulse">
+                  <svg
+                    className="w-8 h-8 text-purple-600 animate-spin"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-gray-900 mb-1">Se încarcă sugestiile...</p>
+                <p className="text-xs text-gray-600">AI analizează cazul dvs.</p>
+              </div>
+            ) : visibleSuggestions.length > 0 ? (
               visibleSuggestions.map((suggestion) => (
                 <SuggestionItem
                   key={suggestion.id}
@@ -288,9 +366,7 @@ function AIInsightsPanelComponent({
                     />
                   </svg>
                 </div>
-                <p className="text-sm font-medium text-gray-900 mb-1">
-                  Nicio sugestie disponibilă
-                </p>
+                <p className="text-sm font-medium text-gray-900 mb-1">Nicio sugestie disponibilă</p>
                 <p className="text-xs text-gray-600">
                   AI analizează cazul dvs. pentru a genera sugestii utile
                 </p>
@@ -301,8 +377,8 @@ function AIInsightsPanelComponent({
           {/* Footer Note */}
           <div className="px-4 py-3 border-t border-gray-200 bg-purple-50">
             <p className="text-xs text-purple-800">
-              <strong>Notă:</strong> Sugestiile AI sunt generate automat și ar trebui
-              verificate de un profesionist legal.
+              <strong>Notă:</strong> Sugestiile AI sunt generate automat și ar trebui verificate de
+              un profesionist legal.
             </p>
           </div>
         </>

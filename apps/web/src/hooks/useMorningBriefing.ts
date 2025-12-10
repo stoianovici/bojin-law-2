@@ -6,11 +6,14 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import type {
-  AISuggestion,
+  ProactiveAISuggestion,
   PrioritizedTask,
   DeadlineInfo,
   RiskAlert,
 } from '@legal-platform/types';
+
+// Use the correct AISuggestion type (GraphQL-compatible)
+type AISuggestion = ProactiveAISuggestion;
 import type { Task } from '@legal-platform/types';
 
 // ====================

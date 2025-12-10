@@ -8,7 +8,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { gql, useMutation } from '@apollo/client';
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { Spinner } from '@/components/ui/spinner';
 
 const SYNC_EMAIL_ATTACHMENTS = gql`
@@ -36,10 +37,7 @@ interface EmailAttachmentsPanelProps {
   emailId: string;
 }
 
-export function EmailAttachmentsPanel({
-  attachments,
-  emailId,
-}: EmailAttachmentsPanelProps) {
+export function EmailAttachmentsPanel({ attachments, emailId }: EmailAttachmentsPanelProps) {
   const [syncAttachments, { loading }] = useMutation(SYNC_EMAIL_ATTACHMENTS);
   const [syncedAttachments, setSyncedAttachments] = useState<Attachment[]>(attachments);
 
@@ -123,10 +121,8 @@ export function EmailAttachmentsPanel({
 function FileIcon({ contentType }: { contentType: string }) {
   const getIconColor = () => {
     if (contentType.includes('pdf')) return 'text-red-500';
-    if (contentType.includes('word') || contentType.includes('document'))
-      return 'text-blue-500';
-    if (contentType.includes('sheet') || contentType.includes('excel'))
-      return 'text-green-500';
+    if (contentType.includes('word') || contentType.includes('document')) return 'text-blue-500';
+    if (contentType.includes('sheet') || contentType.includes('excel')) return 'text-green-500';
     if (contentType.includes('image')) return 'text-purple-500';
     return 'text-gray-500';
   };

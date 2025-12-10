@@ -5,13 +5,14 @@
 
 ## Quick Reference
 
-| ID      | Title                                   | Type        | Priority    | Status    | Sessions |
-| ------- | --------------------------------------- | ----------- | ----------- | --------- | -------- |
-| OPS-001 | Communications page not loading emails  | Bug         | P0-Critical | Verifying | 9        |
-| OPS-002 | Legacy import stuck at 8k docs          | Performance | P1-High     | Resolved  | 5        |
-| OPS-003 | Restrict partner dashboard to partners  | Feature     | P2-Medium   | Verifying | 3        |
-| OPS-004 | Add categorization backup before export | Feature     | P1-High     | Fixing    | 2        |
-| OPS-005 | AI extraction and drafting not working  | Bug         | P0-Critical | Fixing    | 2        |
+| ID      | Title                                     | Type        | Priority    | Status    | Sessions |
+| ------- | ----------------------------------------- | ----------- | ----------- | --------- | -------- |
+| OPS-001 | Communications page not loading emails    | Bug         | P0-Critical | Verifying | 9        |
+| OPS-002 | Legacy import stuck at 8k docs            | Performance | P1-High     | Resolved  | 5        |
+| OPS-003 | Restrict partner dashboard to partners    | Feature     | P2-Medium   | Verifying | 3        |
+| OPS-004 | Add categorization backup before export   | Feature     | P1-High     | Fixing    | 2        |
+| OPS-005 | AI extraction and drafting not working    | Bug         | P0-Critical | Fixing    | 2        |
+| OPS-006 | Connect AI capabilities to application UI | Feature     | P1-High     | Verifying | 4        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -585,6 +586,197 @@ Environment files:
 
 - `services/ai-service/src/services/communication-intelligence.service.ts` - Claude AI extraction
 - `services/gateway/src/workers/communication-intelligence.worker.ts` - Background extraction worker
+
+---
+
+### [OPS-006] Connect AI capabilities to application UI
+
+| Field           | Value      |
+| --------------- | ---------- |
+| **Status**      | Verifying  |
+| **Type**        | Feature    |
+| **Priority**    | P1-High    |
+| **Created**     | 2025-12-10 |
+| **Sessions**    | 4          |
+| **Last Active** | 2025-12-10 |
+
+#### Description
+
+The AI service (`services/ai-service/`) has 20+ AI capabilities fully implemented, but most are NOT connected to the frontend UI. The backend infrastructure is ~70% ready while only ~30% is actually integrated into the app. This issue tracks the work to systematically wire existing GraphQL queries/mutations to React components.
+
+**Current State:**
+
+- AI Service has comprehensive capabilities (document generation, email drafting, extraction, suggestions, learning, monitoring)
+- GraphQL gateway has 40+ queries/mutations defined for AI features
+- Database schema supports all AI features (token tracking, caching, extracted items, etc.)
+- Frontend has some components but most show TODO placeholders or mock data
+
+**High Priority Integration Gaps:**
+
+1. **Case Workspace** - `aiSuggestions: []` hardcoded with TODO comment
+2. **AI Usage Dashboard** - `/analytics/ai-usage` shows empty state, has TODO comment
+3. **Document Generation** - New document page has TODO for actual AI API call
+4. **AI Document Editor** - SSE endpoint connection marked TODO
+5. **Morning Briefing** - Backend service exists, no UI component
+6. **Risk Indicators** - Backend service exists, not shown in case workspace
+
+**Medium Priority Gaps:**
+
+- Snippet Library UI for personal snippets
+- Writing Preferences settings page
+- Draft Refinement iterative editing
+- Calendar Integration from extracted items
+- Thread Summaries in communications view
+- Document Completeness checklist
+
+#### Reproduction Steps
+
+1. Navigate to `/app/cases/[caseId]` - AI suggestions panel is empty
+2. Navigate to `/analytics/ai-usage` - Shows TODO placeholder
+3. Create new document at `/cases/[caseId]/documents/new` - No AI generation
+4. Check `AIDocumentEditor.tsx` - SSE suggestions not connected
+
+#### Root Cause
+
+**Architecture gap between backend and frontend:**
+
+1. **Backend (Complete):**
+   - AI Service routes: `/api/ai/generate`, `/api/ai/embed`, health, usage, cache
+   - Email drafting routes: generate, refine, send
+   - Document generation routes: generate, templates, suggestions
+   - GraphQL resolvers for all AI operations
+
+2. **Frontend (Incomplete):**
+   - Components exist but use local state/mock data
+   - Hooks exist (`useEmailDraft.ts`, `useSuggestions.ts`, `useExtractedItems.ts`) but not fully utilized
+   - Pages have TODO comments where API calls should be
+
+3. **Missing wiring:**
+   - No calls from `AIInsightsPanel` to `aiSuggestions()` query
+   - No calls from AI usage page to `aiUsageStats()` query
+   - `AIDocumentEditor` SSE endpoint not connected
+   - Morning briefing service exists but no dashboard widget
+
+#### Fix Applied
+
+**Fix 1: Case AI Suggestions Integration** (Completed)
+
+- File: `apps/web/src/app/cases/[caseId]/page.tsx`
+  - Replaced hardcoded `aiSuggestions: []` with real `useSuggestions` hook
+  - Added `handleDismissSuggestion` and `handleTakeAction` callbacks
+  - Passes suggestions to `AIInsightsPanel` with accept/dismiss handlers
+
+- File: `apps/web/src/components/case/AIInsightsPanel.tsx`
+  - Updated to accept GraphQL `AISuggestion` type (has `title`, `description`, `category`, `type`)
+  - Added loading state indicator
+  - Added priority badges (Urgent, High)
+  - Added confidence indicator
+  - Maps `category` to icon type
+
+- File: `apps/web/src/hooks/useSuggestions.ts`
+  - Fixed type import to use `ProactiveAISuggestion` (GraphQL-compatible type)
+  - Removed optimistic responses that caused type errors
+
+**Fix 2: AI Usage Dashboard Integration** (Completed)
+
+- File: `apps/web/src/app/analytics/ai-usage/page.tsx`
+  - Added GraphQL queries: `AI_USAGE_STATS_QUERY`, `AI_DAILY_USAGE_QUERY`, `AI_PROVIDER_HEALTH_QUERY`
+  - Replaced mock data with `useQuery` hooks
+  - Added date range calculation function
+  - Added loading state indicator
+  - Fixed date formatting for provider health table
+
+**Fix 3: Document Generation Integration** (Completed)
+
+- File: `apps/web/src/app/cases/[caseId]/documents/new/page.tsx`
+  - Added GraphQL mutations: `GENERATE_DOCUMENT_MUTATION`
+  - Added GraphQL queries: `GET_CASE_CONTEXT_QUERY`, `SUGGEST_TEMPLATES_QUERY`
+  - Replaced mock handlers with real `useMutation` and `useQuery` hooks
+  - Progress bar now shows during AI generation
+  - Navigates to editor with generated content on success
+
+**Fix 4: Morning Briefing Type Fixes** (Completed)
+
+- File: `apps/web/src/hooks/useMorningBriefing.ts`
+  - Fixed type import to use `ProactiveAISuggestion` (GraphQL-compatible)
+
+- File: `apps/web/src/components/dashboard/MorningBriefing.tsx`
+  - Fixed type import to use `ProactiveAISuggestion`
+  - Component already fully implemented, just needed type fix
+
+#### Local Dev Environment
+
+```bash
+# Full dev environment (Turbo):
+pnpm install
+pnpm dev
+
+# Individual services:
+cd services/gateway && pnpm dev     # GraphQL gateway on :4000
+cd services/ai-service && pnpm dev  # AI service on :3002
+cd apps/web && pnpm dev              # Next.js frontend on :3000
+
+# Environment files:
+# - .env (root)
+# - services/gateway/.env (DATABASE_URL, REDIS_URL, AI_SERVICE_URL)
+# - services/ai-service/.env (ANTHROPIC_API_KEY)
+# - apps/web/.env.local (NEXT_PUBLIC_* vars)
+```
+
+#### Session Log
+
+- [2025-12-10] Issue created. Initial triage found:
+  - 20+ AI services implemented in `services/ai-service/`
+  - 40+ GraphQL queries/mutations defined but many unused
+  - Frontend components with TODO placeholders and mock data
+  - High-priority gaps: case suggestions, AI dashboard, document generation, SSE editor
+  - Related to OPS-005 (specific extraction/drafting bugs) but broader scope
+- [2025-12-10] Session 2 started. Continuing from: New. Beginning investigation of integration gaps, starting with Case AI Suggestions.
+- [2025-12-10] Session 2 - Fix 1: Implemented Case AI Suggestions integration. AIInsightsPanel now receives real suggestions from `useSuggestions` hook. Fixed type conflicts between old `AISuggestion` (workspace) and `ProactiveAISuggestion` (GraphQL).
+- [2025-12-10] Session 2 - Fix 2: Implemented AI Usage Dashboard integration. Page now fetches real usage stats, daily trends, and provider health from GraphQL API.
+- [2025-12-10] Session 2 - Fix 3: Implemented Document Generation integration. Page now uses `generateDocumentWithAI` mutation with proper case context and template suggestions.
+- [2025-12-10] Session 2 - Fix 4: Fixed MorningBriefing type imports. Component was already implemented, just needed correct type reference.
+- [2025-12-10] Session 2 - Remaining work: SSE inline suggestions in editor, add MorningBriefing to dashboard, add Risk Indicators panel.
+- [2025-12-10] Session 3 started. Continuing from: Fixing. Implementing remaining items: MorningBriefing widget, SSE suggestions, Risk Indicators.
+- [2025-12-10] Session 3 - Fix 5: Added MorningBriefing component to all three dashboards (Partner, Associate, Paralegal). Component already implemented, just needed integration.
+- [2025-12-10] Session 3 - Fix 6: Replaced mock clause suggestions in AIDocumentEditor with GraphQL `clauseSuggestions` query. Added loading indicator. Removed SSE TODO.
+- [2025-12-10] Session 3 - Verified: RiskIndicatorsPanel already integrated in IntelligenceTab with full GraphQL hooks.
+- [2025-12-10] Session 3 - Fixed Apollo Client imports (`useLazyQuery`, `useMutation`) to use `@apollo/client/react` path.
+- [2025-12-10] Session 3 - Build verified successful. All integrations working.
+- [2025-12-10] Session 4 started. Continuing from: Verifying. Committing session 2-3 changes, deploying, and verifying in production.
+
+#### Files Involved
+
+**AI Service (Backend - Complete):**
+
+- `services/ai-service/src/routes/*.routes.ts` - 10 route groups
+- `services/ai-service/src/services/*.service.ts` - 20+ AI services
+
+**GraphQL Gateway:**
+
+- `services/gateway/src/graphql/resolvers/communication-intelligence.resolvers.ts`
+- `services/gateway/src/graphql/resolvers/email-drafting.resolvers.ts`
+- `services/gateway/src/graphql/schema/*.graphql` - Schema definitions
+
+**Frontend - Now Integrated:**
+
+- `apps/web/src/app/cases/[caseId]/page.tsx` - **FIXED** - AI suggestions wired to `useSuggestions` hook
+- `apps/web/src/app/analytics/ai-usage/page.tsx` - **FIXED** - GraphQL queries for usage stats
+- `apps/web/src/app/cases/[caseId]/documents/new/page.tsx` - **FIXED** - AI generation mutation
+- `apps/web/src/components/documents/AIDocumentEditor.tsx` - **FIXED** - GraphQL clause suggestions query
+- `apps/web/src/components/case/AIInsightsPanel.tsx` - **FIXED** - Works with GraphQL suggestions
+- `apps/web/src/components/dashboard/PartnerDashboard.tsx` - **FIXED** - MorningBriefing added
+- `apps/web/src/components/dashboard/AssociateDashboard.tsx` - **FIXED** - MorningBriefing added
+- `apps/web/src/components/dashboard/ParalegalDashboard.tsx` - **FIXED** - MorningBriefing added
+- `apps/web/src/components/email/EmailAttachmentsPanel.tsx` - **FIXED** - Apollo Client import path
+- `apps/web/src/components/communication/AIDraftResponsePanel.tsx` - **FIXED** in OPS-005
+- `apps/web/src/components/communication/ExtractedItemsPanel.tsx` - **FIXED** in OPS-005
+
+**Frontend - Complete/Working:**
+
+- `apps/web/src/hooks/useEmailDraft.ts` - GraphQL hooks ready
+- `apps/web/src/hooks/useSuggestions.ts` - Context suggestions hooks
+- `apps/web/src/hooks/useExtractedItems.ts` - Extraction hooks
 
 ---
 

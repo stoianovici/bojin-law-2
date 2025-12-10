@@ -8,17 +8,40 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
 import { clsx } from 'clsx';
+import { gql } from '@apollo/client';
+import { useLazyQuery } from '@apollo/client/react';
 import type { ClauseSuggestion, DocumentType, ClauseSource } from '@legal-platform/types';
+
+// GraphQL query for clause suggestions
+const CLAUSE_SUGGESTIONS_QUERY = gql`
+  query ClauseSuggestions(
+    $currentText: String!
+    $documentType: DocumentType!
+    $cursorPosition: Int!
+  ) {
+    clauseSuggestions(
+      currentText: $currentText
+      documentType: $documentType
+      cursorPosition: $cursorPosition
+    ) {
+      id
+      text
+      source
+      confidence
+      category
+    }
+  }
+`;
 
 export interface AIDocumentEditorProps {
   /** Initial content for the editor */
   initialContent?: string;
   /** Document type for suggestions context */
   documentType: DocumentType;
-  /** Document ID (required for SSE suggestions) */
-  documentId: string;
+  /** Document ID (reserved for future SSE suggestions) */
+  _documentId?: string;
   /** Callback when content changes */
   onContentChange?: (content: string) => void;
   /** Callback when text is selected (for explain feature) */
@@ -47,8 +70,8 @@ const DEBOUNCE_MS = 300;
  */
 export function AIDocumentEditor({
   initialContent = '',
-  documentType: _documentType,
-  documentId,
+  documentType,
+  _documentId,
   onContentChange,
   onTextSelect,
   readOnly = false,
@@ -63,8 +86,10 @@ export function AIDocumentEditor({
   // Editor state - content is tracked but NOT rendered (to avoid cursor issues)
   const [content, setContent] = useState(initialContent);
   const [_cursorPosition, setCursorPosition] = useState(0);
-  const [lines, setLines] = useState<string[]>([]);
-  const [isEmpty, setIsEmpty] = useState(!initialContent);
+
+  // Derive lines and isEmpty from content (no state sync needed)
+  const lines = useMemo(() => content.split('\n'), [content]);
+  const isEmpty = useMemo(() => !content.trim(), [content]);
 
   // Suggestion state
   const [suggestion, setSuggestion] = useState<SuggestionState>({
@@ -74,123 +99,17 @@ export function AIDocumentEditor({
     selectedIndex: 0,
   });
 
-  // SSE connection for real-time suggestions
-  const sseRef = useRef<EventSource | null>(null);
-
-  // Initialize editor content only once
-  useEffect(() => {
-    if (editorRef.current && !isInitializedRef.current && initialContent) {
-      editorRef.current.innerText = initialContent;
-      isInitializedRef.current = true;
-      setIsEmpty(false);
-      // Also update content state so line numbers are correct
-      setContent(initialContent);
-    }
-  }, [initialContent]);
-
-  // Update lines when content changes
-  useEffect(() => {
-    const contentLines = content.split('\n');
-    setLines(contentLines);
-  }, [content]);
-
-  // Initialize SSE connection for suggestions
-  useEffect(() => {
-    if (!enableSuggestions || !documentId) return;
-
-    // TODO: Connect to SSE endpoint when backend is ready
-    // const eventSource = new EventSource(
-    //   `/api/ai/suggestions/stream?documentId=${documentId}&userId=${userId}&firmId=${firmId}`
-    // );
-    // eventSource.onmessage = handleSSEMessage;
-    // sseRef.current = eventSource;
-
-    return () => {
-      if (sseRef.current) {
-        sseRef.current.close();
-      }
-    };
-  }, [documentId, enableSuggestions]);
-
-  // Handle content changes
-  const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    const newContent = e.currentTarget.innerText || '';
-    setContent(newContent);
-    setIsEmpty(!newContent.trim());
-    onContentChange?.(newContent);
-
-    // Update cursor position
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(e.currentTarget);
-      preCaretRange.setEnd(range.endContainer, range.endOffset);
-      setCursorPosition(preCaretRange.toString().length);
-    }
-
-    // Debounce suggestion requests
-    if (enableSuggestions && !readOnly) {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-
-      debounceRef.current = setTimeout(() => {
-        fetchSuggestions(newContent);
-      }, DEBOUNCE_MS);
-    }
-  }, [onContentChange, enableSuggestions, readOnly]);
-
-  // Fetch suggestions from API
-  const fetchSuggestions = async (text: string) => {
-    // Only fetch if there's enough text context
-    if (text.length < 10) {
-      hideSuggestion();
-      return;
-    }
-
-    try {
-      // TODO: Replace with actual GraphQL query
-      // const { data } = await client.query({
-      //   query: CLAUSE_SUGGESTIONS_QUERY,
-      //   variables: {
-      //     currentText: text,
-      //     documentType,
-      //     cursorPosition,
-      //   },
-      // });
-
-      // Mock suggestions for demo
-      const mockSuggestions: ClauseSuggestion[] = [
-        {
-          id: '1',
-          text: ' în conformitate cu prevederile legale în vigoare',
-          source: 'FIRM_PATTERN' as ClauseSource,
-          confidence: 0.9,
-          category: 'Contract',
-        },
-        {
-          id: '2',
-          text: ', sub sancțiunea nulității absolute',
-          source: 'AI_GENERATED' as ClauseSource,
-          confidence: 0.75,
-          category: 'Contract',
-        },
-      ];
-
-      if (mockSuggestions.length > 0) {
-        showSuggestion(mockSuggestions);
-      } else {
-        hideSuggestion();
-      }
-    } catch (error) {
-      console.error('Failed to fetch suggestions:', error);
-      hideSuggestion();
-    }
-  };
+  // Hide suggestion popup
+  const hideSuggestion = useCallback(() => {
+    setSuggestion((prev) => ({
+      ...prev,
+      isVisible: false,
+      suggestions: [],
+    }));
+  }, []);
 
   // Show suggestion popup
-  const showSuggestion = (suggestions: ClauseSuggestion[]) => {
+  const showSuggestion = useCallback((suggestions: ClauseSuggestion[]) => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
@@ -209,16 +128,98 @@ export function AIDocumentEditor({
       },
       selectedIndex: 0,
     });
-  };
+  }, []);
 
-  // Hide suggestion popup
-  const hideSuggestion = () => {
-    setSuggestion((prev) => ({
-      ...prev,
-      isVisible: false,
-      suggestions: [],
-    }));
-  };
+  // GraphQL query for clause suggestions
+  const [fetchSuggestionsQuery, { loading: suggestionsLoading }] = useLazyQuery(
+    CLAUSE_SUGGESTIONS_QUERY,
+    {
+      fetchPolicy: 'network-only',
+      onCompleted: (data) => {
+        if (data?.clauseSuggestions && data.clauseSuggestions.length > 0) {
+          showSuggestion(data.clauseSuggestions);
+        } else {
+          hideSuggestion();
+        }
+      },
+      onError: (error) => {
+        console.error('Failed to fetch suggestions:', error);
+        hideSuggestion();
+      },
+    }
+  );
+
+  // Fetch suggestions from GraphQL API
+  const fetchSuggestions = useCallback(
+    (text: string, position: number) => {
+      // Only fetch if there's enough text context
+      if (text.length < 10 || !enableSuggestions) {
+        hideSuggestion();
+        return;
+      }
+
+      // Use GraphQL query to fetch suggestions
+      fetchSuggestionsQuery({
+        variables: {
+          currentText: text,
+          documentType,
+          cursorPosition: position,
+        },
+      });
+    },
+    [documentType, enableSuggestions, fetchSuggestionsQuery, hideSuggestion]
+  );
+
+  // Initialize editor DOM content only once (use useLayoutEffect to sync before paint)
+  // Note: content state is already initialized from initialContent prop
+  useLayoutEffect(() => {
+    if (editorRef.current && !isInitializedRef.current && initialContent) {
+      editorRef.current.innerText = initialContent;
+      isInitializedRef.current = true;
+    }
+  }, [initialContent]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
+  // Handle content changes
+  const handleInput = useCallback(
+    (e: React.FormEvent<HTMLDivElement>) => {
+      const newContent = e.currentTarget.innerText || '';
+      setContent(newContent);
+      onContentChange?.(newContent);
+
+      // Update cursor position
+      let newCursorPosition = 0;
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(e.currentTarget);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        newCursorPosition = preCaretRange.toString().length;
+        setCursorPosition(newCursorPosition);
+      }
+
+      // Debounce suggestion requests
+      if (enableSuggestions && !readOnly) {
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(() => {
+          fetchSuggestions(newContent, newCursorPosition);
+        }, DEBOUNCE_MS);
+      }
+    },
+    [onContentChange, enableSuggestions, readOnly, fetchSuggestions]
+  );
 
   // Accept the selected suggestion
   const acceptSuggestion = useCallback(() => {
@@ -251,47 +252,47 @@ export function AIDocumentEditor({
   }, [suggestion, onContentChange]);
 
   // Handle keyboard shortcuts
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!suggestion.isVisible) return;
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!suggestion.isVisible) return;
 
-    switch (e.key) {
-      case 'Tab':
-        e.preventDefault();
-        acceptSuggestion();
-        break;
-
-      case 'Escape':
-        e.preventDefault();
-        hideSuggestion();
-        break;
-
-      case 'ArrowUp':
-        if (suggestion.suggestions.length > 1) {
+      switch (e.key) {
+        case 'Tab':
           e.preventDefault();
-          setSuggestion((prev) => ({
-            ...prev,
-            selectedIndex: Math.max(0, prev.selectedIndex - 1),
-          }));
-        }
-        break;
+          acceptSuggestion();
+          break;
 
-      case 'ArrowDown':
-        if (suggestion.suggestions.length > 1) {
+        case 'Escape':
           e.preventDefault();
-          setSuggestion((prev) => ({
-            ...prev,
-            selectedIndex: Math.min(
-              prev.suggestions.length - 1,
-              prev.selectedIndex + 1
-            ),
-          }));
-        }
-        break;
+          hideSuggestion();
+          break;
 
-      default:
-        break;
-    }
-  }, [suggestion, acceptSuggestion]);
+        case 'ArrowUp':
+          if (suggestion.suggestions.length > 1) {
+            e.preventDefault();
+            setSuggestion((prev) => ({
+              ...prev,
+              selectedIndex: Math.max(0, prev.selectedIndex - 1),
+            }));
+          }
+          break;
+
+        case 'ArrowDown':
+          if (suggestion.suggestions.length > 1) {
+            e.preventDefault();
+            setSuggestion((prev) => ({
+              ...prev,
+              selectedIndex: Math.min(prev.suggestions.length - 1, prev.selectedIndex + 1),
+            }));
+          }
+          break;
+
+        default:
+          break;
+      }
+    },
+    [suggestion, acceptSuggestion]
+  );
 
   // Handle text selection for explain feature
   const handleSelect = useCallback(() => {
@@ -387,6 +388,15 @@ export function AIDocumentEditor({
         )}
 
         {/* Suggestion Popup */}
+        {/* Loading indicator for suggestions */}
+        {suggestionsLoading && (
+          <div className="absolute bottom-4 right-4 flex items-center gap-2 text-xs text-gray-500 bg-white/90 px-2 py-1 rounded shadow">
+            <div className="h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            Se caută sugestii...
+          </div>
+        )}
+
+        {/* Suggestion Popup */}
         {suggestion.isVisible && suggestion.suggestions.length > 0 && (
           <div
             className={clsx(
@@ -402,7 +412,9 @@ export function AIDocumentEditor({
             {/* Header */}
             <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
               <p className="text-xs text-gray-500">
-                Apăsați <kbd className="px-1 bg-gray-200 rounded text-xs">Tab</kbd> pentru a accepta, <kbd className="px-1 bg-gray-200 rounded text-xs">Esc</kbd> pentru a închide
+                Apăsați <kbd className="px-1 bg-gray-200 rounded text-xs">Tab</kbd> pentru a
+                accepta, <kbd className="px-1 bg-gray-200 rounded text-xs">Esc</kbd> pentru a
+                închide
               </p>
             </div>
 
@@ -414,9 +426,7 @@ export function AIDocumentEditor({
                   className={clsx(
                     'px-3 py-2 cursor-pointer transition-colors',
                     'flex items-start gap-2',
-                    index === suggestion.selectedIndex
-                      ? 'bg-blue-50'
-                      : 'hover:bg-gray-50'
+                    index === suggestion.selectedIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
                   )}
                   onClick={() => {
                     setSuggestion((prev) => ({
@@ -426,21 +436,14 @@ export function AIDocumentEditor({
                     acceptSuggestion();
                   }}
                 >
-                  <span className="flex-1 text-sm text-gray-700">
-                    {s.text}
-                  </span>
+                  <span className="flex-1 text-sm text-gray-700">{s.text}</span>
                   <span className="flex items-center gap-1.5 flex-shrink-0">
                     <span
-                      className={clsx(
-                        'text-xs px-1.5 py-0.5 rounded',
-                        getSourceColor(s.source)
-                      )}
+                      className={clsx('text-xs px-1.5 py-0.5 rounded', getSourceColor(s.source))}
                     >
                       {getSourceLabel(s.source)}
                     </span>
-                    <span className="text-xs text-gray-400">
-                      {Math.round(s.confidence * 100)}%
-                    </span>
+                    <span className="text-xs text-gray-400">{Math.round(s.confidence * 100)}%</span>
                   </span>
                 </li>
               ))}

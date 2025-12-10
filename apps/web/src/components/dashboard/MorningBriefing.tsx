@@ -9,14 +9,13 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { PrioritizedTaskCard } from './PrioritizedTaskCard';
 import { useMorningBriefing } from '@/hooks/useMorningBriefing';
-import type { DeadlineInfo, RiskAlert, AISuggestion } from '@legal-platform/types';
+import type { DeadlineInfo, RiskAlert, ProactiveAISuggestion } from '@legal-platform/types';
+
+// Use the correct AISuggestion type (GraphQL-compatible)
+type AISuggestion = ProactiveAISuggestion;
 
 // Icons (inline SVG for simplicity)
 const ChevronDownIcon = ({ className }: { className?: string }) => (
@@ -29,12 +28,7 @@ const ChevronDownIcon = ({ className }: { className?: string }) => (
     height="20"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M19 9l-7 7-7-7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
 
@@ -176,15 +170,11 @@ function CollapsibleSection({
             </Badge>
           </div>
           <ChevronDownIcon
-            className={`transition-transform duration-200 ${
-              isOpen ? 'rotate-180' : ''
-            }`}
+            className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           />
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="pt-2">
-        {children}
-      </CollapsibleContent>
+      <CollapsibleContent className="pt-2">{children}</CollapsibleContent>
     </Collapsible>
   );
 }
@@ -236,11 +226,7 @@ export function MorningBriefing({
 
   if (loading) {
     return (
-      <Card
-        role="region"
-        aria-label="Morning briefing"
-        aria-busy="true"
-      >
+      <Card role="region" aria-label="Morning briefing" aria-busy="true">
         <CardHeader className="flex flex-row items-center gap-3">
           <SparklesIcon className="text-primary animate-pulse" />
           <CardTitle>Briefing-ul de Dimineață</CardTitle>
@@ -328,10 +314,7 @@ export function MorningBriefing({
       <CardContent className="space-y-6">
         {/* AI Summary Section */}
         {summary && (
-          <div
-            className="p-4 bg-primary/5 rounded-lg border border-primary/10"
-            aria-live="polite"
-          >
+          <div className="p-4 bg-primary/5 rounded-lg border border-primary/10" aria-live="polite">
             <h3 className="sr-only">Rezumat AI</h3>
             <p className="text-sm leading-relaxed">{summary}</p>
           </div>
@@ -387,8 +370,8 @@ export function MorningBriefing({
                       {deadline.daysUntilDue <= 0
                         ? 'Depășit!'
                         : deadline.daysUntilDue === 1
-                        ? 'Mâine'
-                        : `În ${deadline.daysUntilDue} zile`}
+                          ? 'Mâine'
+                          : `În ${deadline.daysUntilDue} zile`}
                     </p>
                   </div>
                   <Badge
@@ -396,15 +379,15 @@ export function MorningBriefing({
                       deadline.severity === 'critical'
                         ? 'bg-red-600 text-white'
                         : deadline.severity === 'warning'
-                        ? 'bg-yellow-600 text-white'
-                        : 'bg-blue-600 text-white'
+                          ? 'bg-yellow-600 text-white'
+                          : 'bg-blue-600 text-white'
                     }
                   >
                     {deadline.severity === 'critical'
                       ? 'Critic'
                       : deadline.severity === 'warning'
-                      ? 'Atenție'
-                      : 'Info'}
+                        ? 'Atenție'
+                        : 'Info'}
                   </Badge>
                 </div>
               ))}
@@ -443,21 +426,20 @@ export function MorningBriefing({
                         alert.severity === 'high'
                           ? 'bg-red-600 text-white'
                           : alert.severity === 'medium'
-                          ? 'bg-yellow-600 text-white'
-                          : 'bg-blue-600 text-white'
+                            ? 'bg-yellow-600 text-white'
+                            : 'bg-blue-600 text-white'
                       }
                     >
                       {alert.severity === 'high'
                         ? 'Ridicat'
                         : alert.severity === 'medium'
-                        ? 'Mediu'
-                        : 'Scăzut'}
+                          ? 'Mediu'
+                          : 'Scăzut'}
                     </Badge>
                   </div>
                   {alert.suggestedAction && (
                     <p className="text-sm mt-2 text-muted-foreground">
-                      <span className="font-medium">Acțiune sugerată:</span>{' '}
-                      {alert.suggestedAction}
+                      <span className="font-medium">Acțiune sugerată:</span> {alert.suggestedAction}
                     </p>
                   )}
                 </div>
@@ -483,34 +465,27 @@ export function MorningBriefing({
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-purple-900">
-                        {suggestion.title}
-                      </p>
-                      <p className="text-sm mt-1 text-purple-700">
-                        {suggestion.description}
-                      </p>
+                      <p className="font-medium text-purple-900">{suggestion.title}</p>
+                      <p className="text-sm mt-1 text-purple-700">{suggestion.description}</p>
                     </div>
                     <Badge
                       className={
                         suggestion.priority === 'Urgent'
                           ? 'bg-red-600 text-white'
                           : suggestion.priority === 'High'
-                          ? 'bg-orange-600 text-white'
-                          : 'bg-purple-600 text-white'
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-purple-600 text-white'
                       }
                     >
                       {suggestion.priority === 'Urgent'
                         ? 'Urgent'
                         : suggestion.priority === 'High'
-                        ? 'Important'
-                        : 'Normal'}
+                          ? 'Important'
+                          : 'Normal'}
                     </Badge>
                   </div>
                   <div className="mt-3 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => onSuggestionAccept?.(suggestion)}
-                    >
+                    <Button size="sm" onClick={() => onSuggestionAccept?.(suggestion)}>
                       Acceptă
                     </Button>
                     <Button
