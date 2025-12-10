@@ -100,6 +100,8 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-09] Session 6 - Fix 2: Discovered Dockerfile uses pre-built `dist/` from git. TypeScript fixes weren't being compiled at build time. Rebuilt `packages/database/dist/redis.js` locally and committed.
 - [2025-12-09] Session 6 - Deployed commit `9b0c19c`. Gateway now live with Redis URL fix. Awaiting verification that emails sync correctly.
 - [2025-12-10] Session 7 started. Continuing from: Verifying. Redis URL fix deployed, verifying email sync functionality.
+- [2025-12-10] Session 7 - New root cause found: `TypeError: _this.provider is not a function`. The MS Graph SDK v3 `Client.init()` expects `authProvider` as a callback function `(done) => done(null, token)`, but code was passing a `TokenAuthenticationProvider` class instance.
+- [2025-12-10] Session 7 - Fix: Changed `graph.service.ts` to use callback pattern: `authProvider: (done) => { done(null, accessToken); }` instead of class instance. Deployed commit `f95121b`.
 
 #### Files Involved
 
@@ -115,6 +117,7 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - `apps/web/src/app/communications/page.tsx` - **FIXED** - Added hasMsalAccount check, shows "Conectează Microsoft" when needed
 - `packages/database/src/redis.ts` - **FIXED (Session 6)** - Pass REDIS_URL as first constructor arg to ioredis
 - `packages/database/dist/redis.js` - **FIXED (Session 6)** - Rebuilt compiled JS (Dockerfile uses pre-built dist)
+- `services/gateway/src/services/graph.service.ts` - **FIXED (Session 7)** - Use callback pattern for authProvider
 
 ---
 
