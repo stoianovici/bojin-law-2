@@ -22,7 +22,7 @@ Email message from Microsoft Graph
 type Email {
   id: ID!
   graphMessageId: String!
-  conversationId: String!
+  conversationId: String
   subject: String!
   bodyPreview: String!
   bodyContent: String!

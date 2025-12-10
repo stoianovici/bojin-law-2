@@ -97,9 +97,13 @@ export class EmailThreadService {
   groupEmailsIntoThreads(emails: Email[]): EmailThread[] {
     const threadMap = new Map<string, Email[]>();
 
-    // Group by conversationId
+    // Group by conversationId (skip emails without a valid conversationId)
     for (const email of emails) {
       const key = email.conversationId;
+      // Skip emails with null/empty conversationId - they can't be threaded
+      if (!key) {
+        continue;
+      }
       if (!threadMap.has(key)) {
         threadMap.set(key, []);
       }
@@ -143,9 +147,7 @@ export class EmailThreadService {
     }
 
     // Sort threads by last message date (newest first)
-    return threads.sort(
-      (a, b) => b.lastMessageDate.getTime() - a.lastMessageDate.getTime()
-    );
+    return threads.sort((a, b) => b.lastMessageDate.getTime() - a.lastMessageDate.getTime());
   }
 
   /**
@@ -226,10 +228,7 @@ export class EmailThreadService {
    * @param userId - User ID for access control
    * @returns Email thread or null
    */
-  async getThread(
-    conversationId: string,
-    userId: string
-  ): Promise<EmailThread | null> {
+  async getThread(conversationId: string, userId: string): Promise<EmailThread | null> {
     const emails = await this.prisma.email.findMany({
       where: { conversationId, userId },
       orderBy: { receivedDateTime: 'asc' },
@@ -290,10 +289,7 @@ export class EmailThreadService {
    * @param userId - User ID for access control
    * @returns Updated email count
    */
-  async markThreadAsRead(
-    conversationId: string,
-    userId: string
-  ): Promise<number> {
+  async markThreadAsRead(conversationId: string, userId: string): Promise<number> {
     const result = await this.prisma.email.updateMany({
       where: { conversationId, userId },
       data: { isRead: true },
@@ -430,10 +426,12 @@ export class EmailThreadService {
    * Normalize subject line (remove Re:, Fwd:, etc.)
    */
   private normalizeSubject(subject: string): string {
-    return subject
-      .replace(/^(re|fwd|fw):\s*/gi, '')
-      .replace(/^(re|fwd|fw)\[\d+\]:\s*/gi, '')
-      .trim() || '(No Subject)';
+    return (
+      subject
+        .replace(/^(re|fwd|fw):\s*/gi, '')
+        .replace(/^(re|fwd|fw)\[\d+\]:\s*/gi, '')
+        .trim() || '(No Subject)'
+    );
   }
 
   /**
@@ -499,9 +497,10 @@ export class EmailThreadService {
    * @param headers - Array of {name, value} header objects
    * @returns Related message IDs
    */
-  parseMessageHeaders(
-    headers: Array<{ name: string; value: string }>
-  ): { inReplyTo?: string; references: string[] } {
+  parseMessageHeaders(headers: Array<{ name: string; value: string }>): {
+    inReplyTo?: string;
+    references: string[];
+  } {
     let inReplyTo: string | undefined;
     const references: string[] = [];
 

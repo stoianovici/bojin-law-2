@@ -507,6 +507,7 @@ export const emailResolvers = {
 
   // Type resolvers
   Email: {
+    conversationId: (parent: any) => parent.conversationId || null,
     from: (parent: any) => parent.from || { address: '' },
     toRecipients: (parent: any) => parent.toRecipients || [],
     ccRecipients: (parent: any) => parent.ccRecipients || [],
