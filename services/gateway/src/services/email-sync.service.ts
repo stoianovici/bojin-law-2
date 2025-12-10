@@ -160,9 +160,10 @@ export class EmailSyncService {
       let nextLink: string | undefined;
       let deltaLink: string | undefined;
 
-      // Start with delta query to get delta token on first sync
+      // Use regular messages endpoint (delta query not supported for all mailbox types)
+      // Delta sync (/me/messages/delta) only works with organizational accounts with specific configs
       console.log('[EmailSyncService.syncUserEmails] Fetching first page from Graph API...');
-      let response = await this.fetchEmailsPage(client, pageSize, true);
+      let response = await this.fetchEmailsPage(client, pageSize, false);
       console.log(
         '[EmailSyncService.syncUserEmails] First page response - messages:',
         response?.value?.length,
@@ -312,8 +313,13 @@ export class EmailSyncService {
       const parsedError = parseGraphError(error);
       logGraphError(parsedError);
 
-      // Check if delta token is expired (requires full resync)
-      if (parsedError.errorCode === 'resyncRequired' || parsedError.statusCode === 410) {
+      // Check if delta token is expired or delta sync not supported (requires full resync)
+      // 410 = resyncRequired, 400 = BadRequest (delta not supported for this mailbox type)
+      if (
+        parsedError.errorCode === 'resyncRequired' ||
+        parsedError.statusCode === 410 ||
+        (parsedError.statusCode === 400 && parsedError.message?.includes('Change tracking'))
+      ) {
         // Clear delta token and perform full sync
         await this.updateSyncState(userId, { deltaToken: null });
         return this.syncUserEmails(userId, accessToken);
