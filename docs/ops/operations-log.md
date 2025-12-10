@@ -7,7 +7,7 @@
 
 | ID      | Title                                   | Type        | Priority    | Status    | Sessions |
 | ------- | --------------------------------------- | ----------- | ----------- | --------- | -------- |
-| OPS-001 | Communications page not loading emails  | Bug         | P0-Critical | Verifying | 8        |
+| OPS-001 | Communications page not loading emails  | Bug         | P0-Critical | Verifying | 9        |
 | OPS-002 | Legacy import stuck at 8k docs          | Performance | P1-High     | Resolved  | 5        |
 | OPS-003 | Restrict partner dashboard to partners  | Feature     | P2-Medium   | Verifying | 3        |
 | OPS-004 | Add categorization backup before export | Feature     | P1-High     | Fixing    | 2        |
@@ -26,7 +26,7 @@
 | **Type**        | Bug         |
 | **Priority**    | P0-Critical |
 | **Created**     | 2025-12-08  |
-| **Sessions**    | 8           |
+| **Sessions**    | 9           |
 | **Last Active** | 2025-12-10  |
 
 #### Description
@@ -113,6 +113,7 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-10] Session 8 - New error: `RangeError: Invalid time value` when formatting dates in ThreadList component.
 - [2025-12-10] Session 8 - Root cause: Date objects serialized to localStorage as ISO strings. When restored, the store's sort function called `.getTime()` on strings instead of Date objects.
 - [2025-12-10] Session 8 - Fix 2: Made ThreadList validate dates before formatting, updated store's sort function to handle both Date objects and ISO strings. Deployed commit `d02bd9f`.
+- [2025-12-10] Session 9 started. Continuing from: Verifying. All Session 8 fixes deployed, verifying email display works end-to-end.
 
 #### Files Involved
 

@@ -6,7 +6,13 @@ import { format } from 'date-fns';
 import type { CommunicationMessage } from '@legal-platform/types';
 import { Paperclip, Reply } from 'lucide-react';
 
-function Message({ message, threadId, isExpanded, onToggle, onReply }: {
+function Message({
+  message,
+  threadId,
+  isExpanded,
+  onToggle,
+  onReply,
+}: {
   message: CommunicationMessage;
   threadId: string;
   isExpanded: boolean;
@@ -28,10 +34,7 @@ function Message({ message, threadId, isExpanded, onToggle, onReply }: {
 
   return (
     <div className="border-b p-4">
-      <div
-        className="flex items-start justify-between cursor-pointer"
-        onClick={onToggle}
-      >
+      <div className="flex items-start justify-between cursor-pointer" onClick={onToggle}>
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm">
@@ -44,7 +47,9 @@ function Message({ message, threadId, isExpanded, onToggle, onReply }: {
           </div>
         </div>
         <div className="text-xs text-gray-500">
-          {format(message.sentDate, 'dd.MM.yyyy HH:mm')}
+          {message.sentDate && !isNaN(new Date(message.sentDate).getTime())
+            ? format(new Date(message.sentDate), 'dd.MM.yyyy HH:mm')
+            : '—'}
         </div>
       </div>
 
@@ -53,8 +58,11 @@ function Message({ message, threadId, isExpanded, onToggle, onReply }: {
           <div className="text-sm whitespace-pre-wrap">{message.body}</div>
           {message.attachments.length > 0 && (
             <div className="mt-3 space-y-1">
-              {message.attachments.map(att => (
-                <div key={att.id} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
+              {message.attachments.map((att) => (
+                <div
+                  key={att.id}
+                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 cursor-pointer"
+                >
                   <Paperclip className="h-4 w-4" />
                   <span>{att.filename}</span>
                   <span className="text-xs text-gray-500">
@@ -82,7 +90,16 @@ function Message({ message, threadId, isExpanded, onToggle, onReply }: {
 }
 
 export function MessageView() {
-  const { getSelectedThread, expandedMessageIds, toggleMessageExpanded, expandAllMessages, collapseAllMessages, openCompose, threads, setThreads } = useCommunicationStore();
+  const {
+    getSelectedThread,
+    expandedMessageIds,
+    toggleMessageExpanded,
+    expandAllMessages,
+    collapseAllMessages,
+    openCompose,
+    threads,
+    setThreads,
+  } = useCommunicationStore();
   const thread = getSelectedThread();
 
   if (!thread) {
@@ -93,7 +110,7 @@ export function MessageView() {
     );
   }
 
-  const allExpanded = thread.messages.every(m => expandedMessageIds.has(m.id));
+  const allExpanded = thread.messages.every((m) => expandedMessageIds.has(m.id));
 
   const handleReply = (threadId: string) => {
     openCompose('reply', threadId);
@@ -102,10 +119,8 @@ export function MessageView() {
   const handleMarkAsProcessed = () => {
     if (thread) {
       // Update thread to mark as processed
-      const updatedThreads = threads.map(t =>
-        t.id === thread.id
-          ? { ...t, isProcessed: true, processedAt: new Date() }
-          : t
+      const updatedThreads = threads.map((t) =>
+        t.id === thread.id ? { ...t, isProcessed: true, processedAt: new Date() } : t
       );
       setThreads(updatedThreads);
 
@@ -163,7 +178,7 @@ export function MessageView() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">
-        {thread.messages.map(message => (
+        {thread.messages.map((message) => (
           <Message
             key={message.id}
             message={message}

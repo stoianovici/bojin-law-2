@@ -57,8 +57,11 @@ export default function CommunicationsPage() {
           subject: email.subject || '(Fără subiect)',
           body: email.bodyContent || email.bodyPreview || '',
           bodyFormat: email.bodyContentType === 'html' ? 'html' : 'text',
-          sentAt: new Date(email.sentDateTime || email.receivedDateTime),
-          receivedAt: new Date(email.receivedDateTime),
+          // Use sentDate to match CommunicationMessage type, with fallback for invalid dates
+          sentDate:
+            email.sentDateTime || email.receivedDateTime
+              ? new Date(email.sentDateTime || email.receivedDateTime)
+              : new Date(),
           isRead: email.isRead ?? true,
           attachments: (email.attachments || []).map((att: any) => ({
             id: att.id,
