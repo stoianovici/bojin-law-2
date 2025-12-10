@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  CommunicationThread,
-  CommunicationFilters,
-  Task,
-} from '@legal-platform/types';
+import type { CommunicationThread, CommunicationFilters, Task } from '@legal-platform/types';
 
 /**
  * Communication Hub Store
@@ -89,7 +85,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
         // Auto-expand the latest message when thread is selected
         const state = get();
-        const thread = state.threads.find(t => t.id === threadId);
+        const thread = state.threads.find((t) => t.id === threadId);
         if (thread && thread.messages.length > 0) {
           const latestMessage = thread.messages[thread.messages.length - 1];
           if (latestMessage) {
@@ -112,7 +108,7 @@ export const useCommunicationStore = create<CommunicationState>()(
         const state = get();
         const thread = state.getSelectedThread();
         if (thread) {
-          const allMessageIds = new Set(thread.messages.map(m => m.id));
+          const allMessageIds = new Set(thread.messages.map((m) => m.id));
           set({ expandedMessageIds: allMessageIds });
         }
       },
@@ -122,7 +118,7 @@ export const useCommunicationStore = create<CommunicationState>()(
       },
 
       setFilters: (newFilters: Partial<CommunicationFilters>) => {
-        set(state => ({
+        set((state) => ({
           filters: { ...state.filters, ...newFilters },
         }));
       },
@@ -164,7 +160,7 @@ export const useCommunicationStore = create<CommunicationState>()(
         taskData: Partial<Task>
       ) => {
         const state = get();
-        const updatedThreads = state.threads.map(thread => {
+        const updatedThreads = state.threads.map((thread) => {
           if (thread.id !== threadId) return thread;
 
           // Create task ID (in production, this would come from task service)
@@ -186,15 +182,15 @@ export const useCommunicationStore = create<CommunicationState>()(
           // Update the extracted item to mark it as converted
           const updatedExtractedItems = { ...thread.extractedItems };
           if (extractedItemType === 'deadline') {
-            updatedExtractedItems.deadlines = thread.extractedItems.deadlines.map(item =>
+            updatedExtractedItems.deadlines = thread.extractedItems.deadlines.map((item) =>
               item.id === extractedItemId ? { ...item, convertedToTaskId: taskId } : item
             );
           } else if (extractedItemType === 'commitment') {
-            updatedExtractedItems.commitments = thread.extractedItems.commitments.map(item =>
+            updatedExtractedItems.commitments = thread.extractedItems.commitments.map((item) =>
               item.id === extractedItemId ? { ...item, convertedToTaskId: taskId } : item
             );
           } else if (extractedItemType === 'actionItem') {
-            updatedExtractedItems.actionItems = thread.extractedItems.actionItems.map(item =>
+            updatedExtractedItems.actionItems = thread.extractedItems.actionItems.map((item) =>
               item.id === extractedItemId ? { ...item, convertedToTaskId: taskId } : item
             );
           }
@@ -212,7 +208,7 @@ export const useCommunicationStore = create<CommunicationState>()(
         dismissReason?: string
       ) => {
         const state = get();
-        const updatedThreads = state.threads.map(thread => {
+        const updatedThreads = state.threads.map((thread) => {
           if (thread.id !== threadId) return thread;
 
           // Log dismissal for AI learning (in production, would send to AI training pipeline)
@@ -227,19 +223,19 @@ export const useCommunicationStore = create<CommunicationState>()(
           // Update the extracted item to mark it as dismissed
           const updatedExtractedItems = { ...thread.extractedItems };
           if (extractedItemType === 'deadline') {
-            updatedExtractedItems.deadlines = thread.extractedItems.deadlines.map(item =>
+            updatedExtractedItems.deadlines = thread.extractedItems.deadlines.map((item) =>
               item.id === extractedItemId
                 ? { ...item, isDismissed: true, dismissedAt: new Date(), dismissReason }
                 : item
             );
           } else if (extractedItemType === 'commitment') {
-            updatedExtractedItems.commitments = thread.extractedItems.commitments.map(item =>
+            updatedExtractedItems.commitments = thread.extractedItems.commitments.map((item) =>
               item.id === extractedItemId
                 ? { ...item, isDismissed: true, dismissedAt: new Date(), dismissReason }
                 : item
             );
           } else if (extractedItemType === 'actionItem') {
-            updatedExtractedItems.actionItems = thread.extractedItems.actionItems.map(item =>
+            updatedExtractedItems.actionItems = thread.extractedItems.actionItems.map((item) =>
               item.id === extractedItemId
                 ? { ...item, isDismissed: true, dismissedAt: new Date(), dismissReason }
                 : item
@@ -254,7 +250,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
       markThreadAsProcessed: (threadId: string) => {
         const state = get();
-        const updatedThreads = state.threads.map(thread =>
+        const updatedThreads = state.threads.map((thread) =>
           thread.id === threadId
             ? { ...thread, isProcessed: true, processedAt: new Date() }
             : thread
@@ -269,25 +265,25 @@ export const useCommunicationStore = create<CommunicationState>()(
 
         // Filter out processed threads by default (unless showProcessed is true)
         if (!state.showProcessed) {
-          filtered = filtered.filter(t => !t.isProcessed);
+          filtered = filtered.filter((t) => !t.isProcessed);
         }
 
         // Filter by case IDs
         if (state.filters.caseIds.length > 0) {
-          filtered = filtered.filter(t => state.filters.caseIds.includes(t.caseId));
+          filtered = filtered.filter((t) => state.filters.caseIds.includes(t.caseId));
         }
 
         // Filter by sender IDs
         if (state.filters.senderIds.length > 0) {
-          filtered = filtered.filter(t =>
-            t.messages.some(m => state.filters.senderIds.includes(m.senderId))
+          filtered = filtered.filter((t) =>
+            t.messages.some((m) => state.filters.senderIds.includes(m.senderId))
           );
         }
 
         // Filter by date range
         if (state.filters.dateRange) {
           const { start, end } = state.filters.dateRange;
-          filtered = filtered.filter(t => {
+          filtered = filtered.filter((t) => {
             const lastDate = t.lastMessageDate;
             return lastDate >= start && lastDate <= end;
           });
@@ -295,29 +291,38 @@ export const useCommunicationStore = create<CommunicationState>()(
 
         // Filter by has deadline
         if (state.filters.hasDeadline) {
-          filtered = filtered.filter(t => t.extractedItems.deadlines.length > 0);
+          filtered = filtered.filter((t) => t.extractedItems.deadlines.length > 0);
         }
 
         // Filter by has attachment
         if (state.filters.hasAttachment) {
-          filtered = filtered.filter(t => t.hasAttachments);
+          filtered = filtered.filter((t) => t.hasAttachments);
         }
 
         // Filter by unread only
         if (state.filters.unreadOnly) {
-          filtered = filtered.filter(t => t.isUnread);
+          filtered = filtered.filter((t) => t.isUnread);
         }
 
         // Sort by last message date (most recent first)
-        return filtered.sort(
-          (a, b) => b.lastMessageDate.getTime() - a.lastMessageDate.getTime()
-        );
+        // Handle both Date objects and ISO strings (from localStorage persistence)
+        return filtered.sort((a, b) => {
+          const dateA =
+            a.lastMessageDate instanceof Date
+              ? a.lastMessageDate.getTime()
+              : new Date(a.lastMessageDate).getTime() || 0;
+          const dateB =
+            b.lastMessageDate instanceof Date
+              ? b.lastMessageDate.getTime()
+              : new Date(b.lastMessageDate).getTime() || 0;
+          return dateB - dateA;
+        });
       },
 
       getSelectedThread: () => {
         const state = get();
         if (!state.selectedThreadId) return null;
-        return state.threads.find(t => t.id === state.selectedThreadId) || null;
+        return state.threads.find((t) => t.id === state.selectedThreadId) || null;
       },
     }),
     {

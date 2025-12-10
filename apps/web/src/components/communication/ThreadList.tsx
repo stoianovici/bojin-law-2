@@ -10,7 +10,11 @@ interface ThreadListProps {
   className?: string;
 }
 
-function ThreadItem({ thread, isSelected, onClick }: {
+function ThreadItem({
+  thread,
+  isSelected,
+  onClick,
+}: {
   thread: CommunicationThread;
   isSelected: boolean;
   onClick: () => void;
@@ -46,33 +50,31 @@ function ThreadItem({ thread, isSelected, onClick }: {
         <div className="flex-1 min-w-0">
           {/* Subject with case badge */}
           <div className="flex items-center gap-2 mb-1">
-            <span className={`inline-block w-2 h-2 rounded-full ${getCaseTypeColor(thread.caseType)}`} />
-            <h3 className="font-semibold text-sm truncate">
-              {truncate(thread.subject, 60)}
-            </h3>
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${getCaseTypeColor(thread.caseType)}`}
+            />
+            <h3 className="font-semibold text-sm truncate">{truncate(thread.subject, 60)}</h3>
           </div>
 
           {/* Sender and preview */}
           <div className="text-xs text-gray-600 mb-1">
             {latestMessage?.senderName || 'Unknown Sender'}
           </div>
-          <div className="text-xs text-gray-500 line-clamp-2">
-            {truncate(preview, 100)}
-          </div>
+          <div className="text-xs text-gray-500 line-clamp-2">{truncate(preview, 100)}</div>
         </div>
 
         {/* Date and indicators */}
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <span className="text-xs text-gray-500 whitespace-nowrap">
-            {format(thread.lastMessageDate, 'dd.MM.yyyy')}
+            {thread.lastMessageDate && !isNaN(new Date(thread.lastMessageDate).getTime())
+              ? format(new Date(thread.lastMessageDate), 'dd.MM.yyyy')
+              : '—'}
           </span>
           <div className="flex gap-1">
             {thread.isUnread && (
               <span className="inline-block w-2 h-2 rounded-full bg-blue-500" title="Unread" />
             )}
-            {thread.hasAttachments && (
-              <Paperclip className="h-3 w-3 text-gray-500" />
-            )}
+            {thread.hasAttachments && <Paperclip className="h-3 w-3 text-gray-500" />}
           </div>
         </div>
       </div>
@@ -101,7 +103,7 @@ export function ThreadList({ className = '' }: ThreadListProps) {
 
       {/* Thread list */}
       <div>
-        {threads.map(thread => (
+        {threads.map((thread) => (
           <ThreadItem
             key={thread.id}
             thread={thread}
