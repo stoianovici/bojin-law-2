@@ -36,8 +36,23 @@ function ThreadItem({
     return text.length > max ? text.substring(0, max) + '...' : text;
   };
 
+  // Strip HTML tags for plain text preview
+  const stripHtml = (html: string) => {
+    if (!html) return '';
+    // Remove HTML tags and decode common entities
+    return html
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const latestMessage = thread.messages[thread.messages.length - 1];
-  const preview = latestMessage?.body || '';
+  const preview = stripHtml(latestMessage?.body || '');
 
   return (
     <div

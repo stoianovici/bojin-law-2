@@ -55,7 +55,25 @@ function Message({
 
       {isExpanded && (
         <div className="mt-4 pl-10">
-          <div className="text-sm whitespace-pre-wrap">{message.body}</div>
+          {/* Render HTML content in an iframe for safety, or plain text */}
+          {message.body?.trim().startsWith('<') ? (
+            <iframe
+              srcDoc={message.body}
+              className="w-full min-h-[200px] border-0 bg-white"
+              sandbox="allow-same-origin"
+              title="Email content"
+              style={{ height: 'auto' }}
+              onLoad={(e) => {
+                // Auto-resize iframe to fit content
+                const iframe = e.target as HTMLIFrameElement;
+                if (iframe.contentDocument) {
+                  iframe.style.height = iframe.contentDocument.body.scrollHeight + 20 + 'px';
+                }
+              }}
+            />
+          ) : (
+            <div className="text-sm whitespace-pre-wrap">{message.body}</div>
+          )}
           {message.attachments.length > 0 && (
             <div className="mt-3 space-y-1">
               {message.attachments.map((att) => (
