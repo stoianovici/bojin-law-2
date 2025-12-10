@@ -114,6 +114,11 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - [2025-12-10] Session 8 - Root cause: Date objects serialized to localStorage as ISO strings. When restored, the store's sort function called `.getTime()` on strings instead of Date objects.
 - [2025-12-10] Session 8 - Fix 2: Made ThreadList validate dates before formatting, updated store's sort function to handle both Date objects and ISO strings. Deployed commit `d02bd9f`.
 - [2025-12-10] Session 9 started. Continuing from: Verifying. All Session 8 fixes deployed, verifying email display works end-to-end.
+- [2025-12-10] Session 9 - RangeError still occurring in production. Set up local dev environment to test fixes.
+- [2025-12-10] Session 9 - Root cause found: Field name mismatch in communications/page.tsx. Code set `sentAt` but `CommunicationMessage` type expects `sentDate`. This caused `message.sentDate` to be undefined in MessageView.tsx.
+- [2025-12-10] Session 9 - Fix 1: Changed `sentAt` to `sentDate` in page transformation, added date fallback. Deployed commit `f5f9541`.
+- [2025-12-10] Session 9 - Additional issue: Email body showing raw HTML instead of rendered content. Thread list preview also showing HTML tags.
+- [2025-12-10] Session 9 - Fix 2: MessageView now renders HTML emails in sandboxed iframe with auto-resize. ThreadList strips HTML tags from preview. Deployed commit `dd4cb87`.
 
 #### Files Involved
 
@@ -121,7 +126,7 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - **FIXED (Session 8)** - Added conversationId resolver fallback
 - `services/gateway/src/graphql/schema/email.graphql` - **FIXED (Session 8)** - Made conversationId nullable
 - `services/gateway/src/services/email-thread.service.ts` - **FIXED (Session 8)** - Skip emails without conversationId in threading
-- `apps/web/src/components/communication/ThreadList.tsx` - **FIXED (Session 8)** - Validate dates before formatting
+- `apps/web/src/components/communication/ThreadList.tsx` - **FIXED (Session 9)** - Validate dates, strip HTML from preview
 - `apps/web/src/stores/communication.store.ts` - **FIXED (Session 8)** - Handle Date objects and ISO strings in sort
 - `services/gateway/src/graphql/resolvers/case.resolvers.ts` - **FIXED** - Added accessToken to Context type
 - `apps/web/src/lib/apollo-client.ts` - **FIXED v16** - Added auth link for MS token, version bump
@@ -130,7 +135,8 @@ The /communications page at https://legal-platform-web.onrender.com/communicatio
 - `apps/web/src/app/api/graphql/route.ts` - **FIXED** - Forward x-ms-access-token header
 - `apps/web/src/hooks/useEmailSync.ts` - Frontend email hooks/queries
 - `apps/web/src/components/email/EmailThreadList.tsx` - **FIXED** - Added "Connect Microsoft" prompt when MSAL not available
-- `apps/web/src/app/communications/page.tsx` - **FIXED** - Added hasMsalAccount check, shows "Conectează Microsoft" when needed
+- `apps/web/src/app/communications/page.tsx` - **FIXED (Session 9)** - Fixed sentAt→sentDate field mismatch, added date fallback
+- `apps/web/src/components/communication/MessageView.tsx` - **FIXED (Session 9)** - Render HTML in sandboxed iframe, validate dates
 - `packages/database/src/redis.ts` - **FIXED (Session 6)** - Pass REDIS_URL as first constructor arg to ioredis
 - `packages/database/dist/redis.js` - **FIXED (Session 6)** - Rebuilt compiled JS (Dockerfile uses pre-built dist)
 - `services/gateway/src/services/graph.service.ts` - **FIXED (Session 7)** - Use callback pattern for authProvider
