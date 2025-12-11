@@ -149,17 +149,9 @@ class StyleLearningService {
   private analysisBatchSize: number;
 
   constructor() {
-    this.minSamplesForLearning = parseInt(
-      process.env.STYLE_LEARNING_MIN_SAMPLES || '5',
-      10
-    );
-    this.updateThreshold = parseFloat(
-      process.env.STYLE_LEARNING_UPDATE_THRESHOLD || '0.15'
-    );
-    this.analysisBatchSize = parseInt(
-      process.env.STYLE_LEARNING_ANALYSIS_BATCH_SIZE || '10',
-      10
-    );
+    this.minSamplesForLearning = parseInt(process.env.STYLE_LEARNING_MIN_SAMPLES || '5', 10);
+    this.updateThreshold = parseFloat(process.env.STYLE_LEARNING_UPDATE_THRESHOLD || '0.15');
+    this.analysisBatchSize = parseInt(process.env.STYLE_LEARNING_ANALYSIS_BATCH_SIZE || '10', 10);
   }
 
   /**
@@ -194,20 +186,18 @@ class StyleLearningService {
       const callbackHandler = new AICallbackHandler({
         userId: input.userId,
         firmId: input.firmId,
-        operationType: AIOperationType.STYLE_ANALYSIS,
+        operationType: AIOperationType.StyleAnalysis,
         operationId,
         metadata: { editLocation: input.editLocation },
       });
 
-      const model = createClaudeModel(ClaudeModel.SONNET, {
+      const model = createClaudeModel(ClaudeModel.Sonnet, {
         callbacks: [callbackHandler],
         maxTokens: 1024,
         temperature: 0.3,
       });
 
-      const chain = STYLE_ANALYSIS_PROMPT.pipe(model).pipe(
-        new StringOutputParser()
-      );
+      const chain = STYLE_ANALYSIS_PROMPT.pipe(model).pipe(new StringOutputParser());
 
       const response = await chain.invoke({
         original_text: input.originalText.substring(0, 2000),
@@ -225,11 +215,11 @@ class StyleLearningService {
       await tokenTracker.recordUsage({
         userId: input.userId,
         firmId: input.firmId,
-        operationType: AIOperationType.STYLE_ANALYSIS,
+        operationType: AIOperationType.StyleAnalysis,
         inputTokens: tokenInfo.inputTokens,
         outputTokens: tokenInfo.outputTokens,
         totalTokens: tokenInfo.totalTokens,
-        model: ClaudeModel.SONNET,
+        model: ClaudeModel.Sonnet,
         cost: tokenInfo.cost,
         latencyMs: Date.now() - startTime,
         metadata: { operationId },
@@ -285,11 +275,11 @@ class StyleLearningService {
       const callbackHandler = new AICallbackHandler({
         userId,
         firmId,
-        operationType: AIOperationType.STYLE_APPLICATION,
+        operationType: AIOperationType.StyleApplication,
         operationId,
       });
 
-      const model = createClaudeModel(ClaudeModel.SONNET, {
+      const model = createClaudeModel(ClaudeModel.Sonnet, {
         callbacks: [callbackHandler],
         maxTokens: 2048,
         temperature: 0.4,
@@ -310,9 +300,7 @@ class StyleLearningService {
         input_text: text,
       });
 
-      const chain = STYLE_APPLICATION_PROMPT.pipe(model).pipe(
-        new StringOutputParser()
-      );
+      const chain = STYLE_APPLICATION_PROMPT.pipe(model).pipe(new StringOutputParser());
 
       const styledText = await chain.invoke({
         formality_level: profile.formalityLevel.toFixed(2),
@@ -329,11 +317,11 @@ class StyleLearningService {
       await tokenTracker.recordUsage({
         userId,
         firmId,
-        operationType: AIOperationType.STYLE_APPLICATION,
+        operationType: AIOperationType.StyleApplication,
         inputTokens: tokenInfo.inputTokens,
         outputTokens: tokenInfo.outputTokens,
         totalTokens: tokenInfo.totalTokens,
-        model: ClaudeModel.SONNET,
+        model: ClaudeModel.Sonnet,
         cost: tokenInfo.cost,
         latencyMs: Date.now() - startTime,
         metadata: { operationId },
@@ -374,8 +362,7 @@ class StyleLearningService {
     return {
       ...existingProfile,
       formalityLevel:
-        (existingProfile.formalityLevel * existingWeight +
-          analysis.formalityScore * newWeight) /
+        (existingProfile.formalityLevel * existingWeight + analysis.formalityScore * newWeight) /
         totalWeight,
       averageSentenceLength:
         (existingProfile.averageSentenceLength * existingWeight +
@@ -386,13 +373,8 @@ class StyleLearningService {
           analysis.vocabularyLevel * newWeight) /
         totalWeight,
       preferredTone:
-        analysis.confidence > 0.7
-          ? analysis.detectedTone
-          : existingProfile.preferredTone,
-      commonPhrases: this.mergeCommonPhrases(
-        existingProfile.commonPhrases,
-        analysis.newPhrases
-      ),
+        analysis.confidence > 0.7 ? analysis.detectedTone : existingProfile.preferredTone,
+      commonPhrases: this.mergeCommonPhrases(existingProfile.commonPhrases, analysis.newPhrases),
       punctuationStyle: {
         ...existingProfile.punctuationStyle,
         ...analysis.punctuationPatterns,
@@ -451,10 +433,7 @@ class StyleLearningService {
 
       return {
         formalityScore: this.clamp(parsed.formalityScore || 0.5, 0, 1),
-        averageSentenceLength: Math.max(
-          parsed.averageSentenceLength || 15,
-          5
-        ),
+        averageSentenceLength: Math.max(parsed.averageSentenceLength || 15, 5),
         vocabularyLevel: this.clamp(parsed.vocabularyLevel || 0.5, 0, 1),
         detectedTone: parsed.detectedTone || 'Professional',
         newPhrases: Array.isArray(parsed.newPhrases) ? parsed.newPhrases : [],
@@ -506,10 +485,7 @@ class StyleLearningService {
     return intersection.size / union.size;
   }
 
-  private mergeCommonPhrases(
-    existing: CommonPhrase[],
-    newPhrases: CommonPhrase[]
-  ): CommonPhrase[] {
+  private mergeCommonPhrases(existing: CommonPhrase[], newPhrases: CommonPhrase[]): CommonPhrase[] {
     const phraseMap = new Map<string, CommonPhrase>();
 
     // Add existing phrases

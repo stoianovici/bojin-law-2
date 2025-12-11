@@ -811,9 +811,15 @@ importers:
       '@microsoft/microsoft-graph-types':
         specifier: ^2.43.1
         version: 2.43.1
+      '@types/diff':
+        specifier: ^8.0.0
+        version: 8.0.0
       bullmq:
         specifier: ^5.65.0
         version: 5.65.0
+      diff:
+        specifier: ^8.0.2
+        version: 8.0.2
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
@@ -869,6 +875,9 @@ importers:
       '@types/natural':
         specifier: ^6.0.1
         version: 6.0.1(@aws-sdk/credential-providers@3.934.0)(socks@2.8.7)
+      '@types/newrelic':
+        specifier: ^9.14.8
+        version: 9.14.8
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.25
@@ -4989,6 +4998,10 @@ packages:
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
+  '@types/diff@8.0.0':
+    resolution: {integrity: sha512-o7jqJM04gfaYrdCecCVMbZhNdG6T1MHg/oQoRFdERLV+4d+V7FijhiEAbFu0Usww84Yijk9yH58U4Jk4HbtzZw==}
+    deprecated: This is a stub types definition. diff provides its own type definitions, so you do not need this installed.
+
   '@types/doctrine@0.0.9':
     resolution: {integrity: sha512-eOIHzCUSH7SMfonMG1LsC2f8vxBFtho6NGBznK41R84YzPuvSBzrhEps33IsQiOW9+VL6NQ9DbjQJznk/S4uRA==}
 
@@ -5089,6 +5102,9 @@ packages:
   '@types/natural@6.0.1':
     resolution: {integrity: sha512-+f4QpMYE1IY9D5m+ortXYFdY+UlzjyLjPB2vLNSR51QbUCoC/6bzZXQ32VCE1MwWPWGzMFPJ6o5ob150b6yPVw==}
     deprecated: This is a stub types definition. natural provides its own type definitions, so you do not need this installed.
+
+  '@types/newrelic@9.14.8':
+    resolution: {integrity: sha512-rkOTEVR7Lui4TTEykDUxIxCbFkcI/yw3C8URLOWM84zjuHh9W35RAequHTEvGBbbrLCdn43FVTHMLji4uunDWQ==}
 
   '@types/node-cron@3.0.11':
     resolution: {integrity: sha512-0ikrnug3/IyneSHqCBeslAhlK2aBfYek1fGo4bP4QnZPmiqSGRK+Oy7ZMisLWkesffJvQ1cqAcBnJC+8+nxIAg==}
@@ -6830,6 +6846,10 @@ packages:
 
   diff@4.0.2:
     resolution: {integrity: sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==}
+    engines: {node: '>=0.3.1'}
+
+  diff@8.0.2:
+    resolution: {integrity: sha512-sSuxWU5j5SR9QQji/o2qMvqRNYRDOcBTgsJ/DeCf4iSN4gW+gNMXM7wFIP+fdXZxoNiAnHUTGjCr+TSWXdRDKg==}
     engines: {node: '>=0.3.1'}
 
   dingbat-to-unicode@1.0.1:
@@ -17358,6 +17378,10 @@ snapshots:
 
   '@types/deep-eql@4.0.2': {}
 
+  '@types/diff@8.0.0':
+    dependencies:
+      diff: 8.0.2
+
   '@types/doctrine@0.0.9': {}
 
   '@types/dompurify@3.2.0':
@@ -17488,6 +17512,8 @@ snapshots:
       - snappy
       - socks
       - supports-color
+
+  '@types/newrelic@9.14.8': {}
 
   '@types/node-cron@3.0.11': {}
 
@@ -19546,6 +19572,8 @@ snapshots:
   diff-sequences@29.6.3: {}
 
   diff@4.0.2: {}
+
+  diff@8.0.2: {}
 
   dingbat-to-unicode@1.0.1: {}
 

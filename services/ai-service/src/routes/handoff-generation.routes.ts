@@ -10,7 +10,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 
-const router = Router();
+const router: Router = Router();
 const prisma = new PrismaClient();
 
 // Request validation schema
@@ -122,9 +122,7 @@ router.post(
       const contextParts: string[] = [];
 
       if (body.includeCaseContext) {
-        contextParts.push(
-          `Case: ${caseData.caseNumber} - ${caseData.title} (${caseData.type})`
-        );
+        contextParts.push(`Case: ${caseData.caseNumber} - ${caseData.title} (${caseData.type})`);
         contextParts.push(`Client: ${caseData.client.name}`);
       }
 
@@ -136,12 +134,8 @@ router.post(
 
       // Subtasks status
       if (sourceTask.subtasks.length > 0) {
-        const completedCount = sourceTask.subtasks.filter(
-          (s) => s.status === 'Completed'
-        ).length;
-        contextParts.push(
-          `Subtasks: ${completedCount}/${sourceTask.subtasks.length} completed`
-        );
+        const completedCount = sourceTask.subtasks.filter((s) => s.status === 'Completed').length;
+        contextParts.push(`Subtasks: ${completedCount}/${sourceTask.subtasks.length} completed`);
       }
 
       // Build handoff notes
@@ -149,9 +143,7 @@ router.post(
 
       // Add delegator's notes if provided
       if (body.delegatorNotes) {
-        handoffParts.push(
-          `Notes from ${delegation.delegator.firstName}: ${body.delegatorNotes}`
-        );
+        handoffParts.push(`Notes from ${delegation.delegator.firstName}: ${body.delegatorNotes}`);
       }
 
       // Delegation reason

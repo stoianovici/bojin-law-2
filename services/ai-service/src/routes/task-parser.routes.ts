@@ -10,19 +10,21 @@ import { z } from 'zod';
 import { taskParser } from '../services/task-parser.service';
 import { taskClarification, ClarificationContext } from '../services/task-clarification.service';
 
-const router = Router();
+const router: Router = Router();
 
 // Request validation schemas
 const parseTaskRequestSchema = z.object({
   text: z.string().min(1).max(2000),
   language: z.enum(['ro', 'en', 'auto']).optional(),
-  context: z.object({
-    userId: z.string().uuid(),
-    firmId: z.string().uuid(),
-    activeCaseIds: z.array(z.string().uuid()).optional(),
-    teamMemberNames: z.array(z.string()).optional(),
-    recentTaskPatterns: z.array(z.string()).optional(),
-  }).optional(),
+  context: z
+    .object({
+      userId: z.string().uuid(),
+      firmId: z.string().uuid(),
+      activeCaseIds: z.array(z.string().uuid()).optional(),
+      teamMemberNames: z.array(z.string()).optional(),
+      recentTaskPatterns: z.array(z.string()).optional(),
+    })
+    .optional(),
 });
 
 const clarifyRequestSchema = z.object({
@@ -30,19 +32,29 @@ const clarifyRequestSchema = z.object({
   questionId: z.string().uuid(),
   answer: z.string().min(1).max(500),
   parsedResult: z.any(), // The current parsed result to update
-  context: z.object({
-    activeCases: z.array(z.object({
-      id: z.string().uuid(),
-      caseNumber: z.string(),
-      title: z.string(),
-      clientName: z.string(),
-    })).optional(),
-    teamMembers: z.array(z.object({
-      id: z.string().uuid(),
-      name: z.string(),
-      role: z.string(),
-    })).optional(),
-  }).optional(),
+  context: z
+    .object({
+      activeCases: z
+        .array(
+          z.object({
+            id: z.string().uuid(),
+            caseNumber: z.string(),
+            title: z.string(),
+            clientName: z.string(),
+          })
+        )
+        .optional(),
+      teamMembers: z
+        .array(
+          z.object({
+            id: z.string().uuid(),
+            name: z.string(),
+            role: z.string(),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
 });
 
 // Service-to-service authentication middleware
@@ -122,7 +134,7 @@ router.post(
         );
 
         // Merge clarifications (avoid duplicates)
-        const existingIds = new Set(result.clarificationsNeeded.map(q => q.id));
+        const existingIds = new Set(result.clarificationsNeeded.map((q) => q.id));
         for (const q of additionalClarifications) {
           if (!existingIds.has(q.id)) {
             result.clarificationsNeeded.push(q);
@@ -130,7 +142,8 @@ router.post(
         }
 
         // Update isComplete based on clarifications
-        result.isComplete = result.clarificationsNeeded.length === 0 && result.overallConfidence >= 0.5;
+        result.isComplete =
+          result.clarificationsNeeded.length === 0 && result.overallConfidence >= 0.5;
       }
 
       res.json(result);

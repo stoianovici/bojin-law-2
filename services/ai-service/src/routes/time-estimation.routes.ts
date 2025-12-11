@@ -11,17 +11,38 @@ import { z } from 'zod';
 import { timeEstimationService } from '../services/time-estimation.service';
 import type { TaskType, TimeEstimationRequest } from '@legal-platform/types';
 
-const router = Router();
+const router: Router = Router();
 
 // Valid task types matching the TaskType union
-const TASK_TYPES = ['Research', 'DocumentCreation', 'DocumentRetrieval', 'CourtDate', 'Meeting', 'BusinessTrip'] as const;
+const TASK_TYPES = [
+  'Research',
+  'DocumentCreation',
+  'DocumentRetrieval',
+  'CourtDate',
+  'Meeting',
+  'BusinessTrip',
+] as const;
 
 // Request validation schema
 const estimateTimeRequestSchema = z.object({
   taskType: z.enum(TASK_TYPES),
   taskTitle: z.string().min(1).max(500),
   taskDescription: z.string().max(2000).optional(),
-  caseType: z.enum(['Civil', 'Criminal', 'Family', 'Corporate', 'RealEstate', 'Immigration', 'Employment', 'Intellectual', 'Tax', 'Administrative', 'Other']).optional(),
+  caseType: z
+    .enum([
+      'Civil',
+      'Criminal',
+      'Family',
+      'Corporate',
+      'RealEstate',
+      'Immigration',
+      'Employment',
+      'Intellectual',
+      'Tax',
+      'Administrative',
+      'Other',
+    ])
+    .optional(),
   firmId: z.string().uuid(),
 });
 

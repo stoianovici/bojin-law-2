@@ -16,7 +16,7 @@ import {
 import { clauseSuggestionService } from '../services/clause-suggestion.service';
 import logger from '../lib/logger';
 
-const router = Router();
+const router: Router = Router();
 
 // Request validation schemas
 const suggestionRequestSchema = z.object({
@@ -82,73 +82,69 @@ function sendSSEEvent(res: Response, event: SSEClauseSuggestionEvent): void {
  * GET /api/ai/suggestions/stream
  * Server-Sent Events endpoint for real-time clause suggestions
  */
-router.get(
-  '/stream',
-  authenticateService,
-  async (req: Request, res: Response) => {
-    const connectionId = uuidv4();
-    const documentId = req.query.documentId as string;
-    const userId = req.query.userId as string;
-    const firmId = req.query.firmId as string;
+router.get('/stream', authenticateService, async (req: Request, res: Response) => {
+  const connectionId = uuidv4();
+  const documentId = req.query.documentId as string;
+  const userId = req.query.userId as string;
+  const firmId = req.query.firmId as string;
 
-    // Validate required params
-    if (!documentId || !userId || !firmId) {
-      return res.status(400).json({
-        error: 'Missing required query parameters: documentId, userId, firmId',
-      });
-    }
-
-    logger.info('SSE connection established', {
-      connectionId,
-      documentId,
-      userId,
-    });
-
-    // Set SSE headers
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
-
-    // Store connection
-    const connectionKey = `${documentId}-${userId}`;
-    activeConnections.set(connectionKey, res);
-
-    // Send initial connection event
-    sendSSEEvent(res, {
-      type: 'heartbeat',
-      timestamp: Date.now(),
-    });
-
-    // Set up heartbeat
-    const heartbeatInterval = setInterval(() => {
-      if (!res.writableEnded) {
-        sendSSEEvent(res, {
-          type: 'heartbeat',
-          timestamp: Date.now(),
-        });
-      }
-    }, HEARTBEAT_INTERVAL);
-
-    // Handle connection close
-    req.on('close', () => {
-      clearInterval(heartbeatInterval);
-      activeConnections.delete(connectionKey);
-      clauseSuggestionService.cancelPending(documentId, userId);
-      logger.info('SSE connection closed', { connectionId, documentId });
-    });
-
-    // Handle errors
-    res.on('error', (error) => {
-      clearInterval(heartbeatInterval);
-      activeConnections.delete(connectionKey);
-      logger.error('SSE connection error', {
-        connectionId,
-        error: error.message,
-      });
+  // Validate required params
+  if (!documentId || !userId || !firmId) {
+    return res.status(400).json({
+      error: 'Missing required query parameters: documentId, userId, firmId',
     });
   }
-);
+
+  logger.info('SSE connection established', {
+    connectionId,
+    documentId,
+    userId,
+  });
+
+  // Set SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+
+  // Store connection
+  const connectionKey = `${documentId}-${userId}`;
+  activeConnections.set(connectionKey, res);
+
+  // Send initial connection event
+  sendSSEEvent(res, {
+    type: 'heartbeat',
+    timestamp: Date.now(),
+  });
+
+  // Set up heartbeat
+  const heartbeatInterval = setInterval(() => {
+    if (!res.writableEnded) {
+      sendSSEEvent(res, {
+        type: 'heartbeat',
+        timestamp: Date.now(),
+      });
+    }
+  }, HEARTBEAT_INTERVAL);
+
+  // Handle connection close
+  req.on('close', () => {
+    clearInterval(heartbeatInterval);
+    activeConnections.delete(connectionKey);
+    clauseSuggestionService.cancelPending(documentId, userId);
+    logger.info('SSE connection closed', { connectionId, documentId });
+  });
+
+  // Handle errors
+  res.on('error', (error) => {
+    clearInterval(heartbeatInterval);
+    activeConnections.delete(connectionKey);
+    logger.error('SSE connection error', {
+      connectionId,
+      error: error.message,
+    });
+  });
+});
 
 /**
  * POST /api/ai/suggestions/request
@@ -223,43 +219,39 @@ router.post(
  * DELETE /api/ai/suggestions/connection
  * Close SSE connection for a document/user
  */
-router.delete(
-  '/connection',
-  authenticateService,
-  async (req: Request, res: Response) => {
-    const documentId = req.query.documentId as string;
-    const userId = req.query.userId as string;
+router.delete('/connection', authenticateService, async (req: Request, res: Response) => {
+  const documentId = req.query.documentId as string;
+  const userId = req.query.userId as string;
 
-    if (!documentId || !userId) {
-      return res.status(400).json({
-        error: 'Missing required query parameters: documentId, userId',
-      });
-    }
-
-    const connectionKey = `${documentId}-${userId}`;
-    const connection = activeConnections.get(connectionKey);
-
-    if (connection) {
-      // Send close event
-      sendSSEEvent(connection, {
-        type: 'error',
-        error: 'Connection closed by request',
-        timestamp: Date.now(),
-      });
-
-      // End the response
-      connection.end();
-      activeConnections.delete(connectionKey);
-
-      // Cancel pending suggestions
-      clauseSuggestionService.cancelPending(documentId, userId);
-
-      logger.info('SSE connection closed by request', { documentId, userId });
-    }
-
-    res.json({ status: 'connection_closed' });
+  if (!documentId || !userId) {
+    return res.status(400).json({
+      error: 'Missing required query parameters: documentId, userId',
+    });
   }
-);
+
+  const connectionKey = `${documentId}-${userId}`;
+  const connection = activeConnections.get(connectionKey);
+
+  if (connection) {
+    // Send close event
+    sendSSEEvent(connection, {
+      type: 'error',
+      error: 'Connection closed by request',
+      timestamp: Date.now(),
+    });
+
+    // End the response
+    connection.end();
+    activeConnections.delete(connectionKey);
+
+    // Cancel pending suggestions
+    clauseSuggestionService.cancelPending(documentId, userId);
+
+    logger.info('SSE connection closed by request', { documentId, userId });
+  }
+
+  res.json({ status: 'connection_closed' });
+});
 
 /**
  * GET /api/ai/suggestions/status

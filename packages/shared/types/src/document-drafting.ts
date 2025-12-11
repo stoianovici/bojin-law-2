@@ -30,6 +30,12 @@ export interface DocumentContext {
   teamMembers: TeamMemberContext[];
   relatedDocuments: RelatedDocumentContext[];
   firmContext?: FirmContext;
+  // Extended properties for AI services
+  documentId?: string;
+  firmId?: string;
+  language?: 'ro' | 'en';
+  caseType?: string;
+  firmStyleGuide?: string;
 }
 
 export interface CaseContext {

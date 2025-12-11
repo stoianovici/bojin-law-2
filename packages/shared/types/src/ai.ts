@@ -53,6 +53,11 @@ export enum AIOperationType {
   MorningBriefing = 'morning_briefing',
   PatternRecognition = 'pattern_recognition',
   DocumentCompleteness = 'document_completeness',
+  // Snippet and style operations
+  SnippetDetection = 'snippet_detection',
+  SnippetShortcut = 'snippet_shortcut',
+  StyleAnalysis = 'style_analysis',
+  StyleApplication = 'style_application',
 }
 
 // Generation request input

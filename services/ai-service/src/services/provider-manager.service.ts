@@ -26,6 +26,10 @@ export interface ProviderResponse {
   inputTokens: number;
   outputTokens: number;
   latencyMs: number;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 }
 
 interface CircuitBreakerState {
@@ -145,7 +149,10 @@ export class ProviderManagerService {
       this.recordSuccess(this.claudeCircuit);
 
       return {
-        content: typeof response.content === 'string' ? response.content : JSON.stringify(response.content),
+        content:
+          typeof response.content === 'string'
+            ? response.content
+            : JSON.stringify(response.content),
         provider: 'claude',
         model: request.model || ClaudeModel.Sonnet,
         inputTokens: metrics.inputTokens,
@@ -162,7 +169,11 @@ export class ProviderManagerService {
         throw error;
       }
 
-      throw new ProviderError('Claude', error instanceof Error ? error.message : 'Unknown error', latencyMs);
+      throw new ProviderError(
+        'Claude',
+        error instanceof Error ? error.message : 'Unknown error',
+        latencyMs
+      );
     }
   }
 
@@ -198,7 +209,11 @@ export class ProviderManagerService {
       const latencyMs = Date.now() - startTime;
       this.recordFailure(this.grokCircuit);
 
-      throw new ProviderError('Grok', error instanceof Error ? error.message : 'Unknown error', latencyMs);
+      throw new ProviderError(
+        'Grok',
+        error instanceof Error ? error.message : 'Unknown error',
+        latencyMs
+      );
     }
   }
 
@@ -236,11 +251,7 @@ export class ProviderManagerService {
             return await this.executeWithGrok(request);
           } catch (grokError) {
             console.error('Grok fallback also failed:', grokError);
-            throw new ProviderError(
-              'all',
-              'All providers unavailable',
-              0
-            );
+            throw new ProviderError('all', 'All providers unavailable', 0);
           }
         }
 

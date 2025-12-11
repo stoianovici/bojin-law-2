@@ -14,7 +14,7 @@ import { tokenTracker, initializePrisma, TokenUsageInput } from '../services/tok
 import { cacheService, initializeCachePrisma } from '../services/cache.service';
 import { config } from '../config';
 
-const router = Router();
+const router: Router = Router();
 
 // Request validation schemas
 const generateRequestSchema = z.object({

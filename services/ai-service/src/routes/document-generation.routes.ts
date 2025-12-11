@@ -8,7 +8,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate } from '@langchain/core/prompts';
+import {
+  ChatPromptTemplate,
+  SystemMessagePromptTemplate,
+  HumanMessagePromptTemplate,
+} from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import {
   DocumentType,
@@ -22,7 +26,7 @@ import { tokenTracker } from '../services/token-tracker.service';
 import logger from '../lib/logger';
 import { config } from '../config';
 
-const router = Router();
+const router: Router = Router();
 
 // Request validation schemas
 const generateDocumentSchema = z.object({

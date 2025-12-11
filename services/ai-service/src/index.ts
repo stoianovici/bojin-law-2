@@ -6,7 +6,7 @@
 // Load environment variables first
 import 'dotenv/config';
 
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { config } from './config';
 import { aiRoutes } from './routes/ai.routes';
@@ -20,7 +20,7 @@ import { initializeCachePrisma } from './services/cache.service';
 import { initializePatternLearningPrisma } from './services/task-pattern-learning.service';
 import { setupCronScheduler } from './lib/cron-scheduler';
 
-const app = express();
+const app: Application = express();
 
 // Initialize Prisma client
 const prisma = new PrismaClient();

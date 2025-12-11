@@ -6,7 +6,6 @@
  * and business metrics in New Relic APM.
  */
 
- 
 let newrelic: typeof import('newrelic') | null = null;
 
 // Only load New Relic if enabled
@@ -255,8 +254,7 @@ export function instrumentAsync<T extends (...args: unknown[]) => Promise<unknow
 ): T {
   if (!newrelic) return fn;
 
-  return ((...args: Parameters<T>) =>
-    newrelic!.startSegment(name, true, () => fn(...args))) as T;
+  return ((...args: Parameters<T>) => newrelic!.startSegment(name, true, () => fn(...args))) as T;
 }
 
 /**
@@ -297,7 +295,8 @@ export function setTransactionName(name: string): void {
  */
 export function ignoreTransaction(): void {
   if (!newrelic) return;
-  newrelic.setIgnoreTransaction(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (newrelic as any).setIgnoreTransaction?.(true);
 }
 
 /**

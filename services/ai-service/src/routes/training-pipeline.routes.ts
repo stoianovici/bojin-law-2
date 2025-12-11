@@ -10,7 +10,7 @@ import { trainingPipelineService } from '../services/training-pipeline.service';
 import { semanticSearchService } from '../services/semantic-search.service';
 import logger from '../lib/logger';
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * POST /api/ai/training-pipeline/trigger
@@ -35,13 +35,11 @@ router.post('/trigger', async (req: Request, res: Response) => {
     logger.info('Manual pipeline trigger requested', { categories });
 
     // Start pipeline asynchronously
-    trainingPipelineService
-      .runPipeline('manual', accessToken, categories)
-      .catch((error) => {
-        logger.error('Pipeline execution failed', {
-          error: error instanceof Error ? error.message : String(error),
-        });
+    trainingPipelineService.runPipeline('manual', accessToken, categories).catch((error) => {
+      logger.error('Pipeline execution failed', {
+        error: error instanceof Error ? error.message : String(error),
       });
+    });
 
     // Return immediately with run ID
     const recentRuns = await trainingPipelineService.getRecentRuns(1);
@@ -210,11 +208,7 @@ router.post('/knowledge-base/fulltext-search', async (req: Request, res: Respons
       });
     }
 
-    const results = await semanticSearchService.fullTextSearch(
-      query,
-      category,
-      limit || 10
-    );
+    const results = await semanticSearchService.fullTextSearch(query, category, limit || 10);
 
     res.json({
       results,

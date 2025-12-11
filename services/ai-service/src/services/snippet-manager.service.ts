@@ -130,16 +130,9 @@ class SnippetManagerService {
   private maxSnippetLength: number;
 
   constructor() {
-    this.autoDetectEnabled =
-      process.env.SNIPPET_AUTO_DETECT_ENABLED !== 'false';
-    this.minReuseCount = parseInt(
-      process.env.SNIPPET_MIN_REUSE_COUNT || '3',
-      10
-    );
-    this.maxSnippetLength = parseInt(
-      process.env.SNIPPET_MAX_LENGTH || '500',
-      10
-    );
+    this.autoDetectEnabled = process.env.SNIPPET_AUTO_DETECT_ENABLED !== 'false';
+    this.minReuseCount = parseInt(process.env.SNIPPET_MIN_REUSE_COUNT || '3', 10);
+    this.maxSnippetLength = parseInt(process.env.SNIPPET_MAX_LENGTH || '500', 10);
   }
 
   /**
@@ -176,19 +169,17 @@ class SnippetManagerService {
       const callbackHandler = new AICallbackHandler({
         userId: input.userId,
         firmId: input.firmId,
-        operationType: AIOperationType.SNIPPET_DETECTION,
+        operationType: AIOperationType.SnippetDetection,
         operationId,
       });
 
-      const model = createClaudeModel(ClaudeModel.HAIKU, {
+      const model = createClaudeModel(ClaudeModel.Haiku, {
         callbacks: [callbackHandler],
         maxTokens: 2048,
         temperature: 0.3,
       });
 
-      const chain = SNIPPET_DETECTION_PROMPT.pipe(model).pipe(
-        new StringOutputParser()
-      );
+      const chain = SNIPPET_DETECTION_PROMPT.pipe(model).pipe(new StringOutputParser());
 
       const response = await chain.invoke({
         context_type: input.contextType,
@@ -202,11 +193,11 @@ class SnippetManagerService {
       await tokenTracker.recordUsage({
         userId: input.userId,
         firmId: input.firmId,
-        operationType: AIOperationType.SNIPPET_DETECTION,
+        operationType: AIOperationType.SnippetDetection,
         inputTokens: tokenInfo.inputTokens,
         outputTokens: tokenInfo.outputTokens,
         totalTokens: tokenInfo.totalTokens,
-        model: ClaudeModel.HAIKU,
+        model: ClaudeModel.Haiku,
         cost: tokenInfo.cost,
         latencyMs: Date.now() - startTime,
         metadata: { operationId, suggestionsCount: suggestions.length },
@@ -243,19 +234,17 @@ class SnippetManagerService {
       const callbackHandler = new AICallbackHandler({
         userId,
         firmId,
-        operationType: AIOperationType.SNIPPET_SHORTCUT,
+        operationType: AIOperationType.SnippetShortcut,
         operationId: uuidv4(),
       });
 
-      const model = createClaudeModel(ClaudeModel.HAIKU, {
+      const model = createClaudeModel(ClaudeModel.Haiku, {
         callbacks: [callbackHandler],
         maxTokens: 50,
         temperature: 0.5,
       });
 
-      const chain = SHORTCUT_GENERATION_PROMPT.pipe(model).pipe(
-        new StringOutputParser()
-      );
+      const chain = SHORTCUT_GENERATION_PROMPT.pipe(model).pipe(new StringOutputParser());
 
       const response = await chain.invoke({
         content: content.substring(0, 200),
@@ -282,19 +271,13 @@ class SnippetManagerService {
   /**
    * Find snippets that match text being typed
    */
-  findMatchingSnippets(
-    text: string,
-    snippets: PersonalSnippet[]
-  ): SnippetMatchResult[] {
+  findMatchingSnippets(text: string, snippets: PersonalSnippet[]): SnippetMatchResult[] {
     const results: SnippetMatchResult[] = [];
     const lowerText = text.toLowerCase();
 
     for (const snippet of snippets) {
       // Check if user is typing a shortcut
-      if (
-        snippet.shortcut &&
-        lowerText.includes(snippet.shortcut.toLowerCase())
-      ) {
+      if (snippet.shortcut && lowerText.includes(snippet.shortcut.toLowerCase())) {
         const position = lowerText.indexOf(snippet.shortcut.toLowerCase());
         results.push({
           snippet,
@@ -330,17 +313,10 @@ class SnippetManagerService {
   /**
    * Expand a shortcut to its full content
    */
-  expandShortcut(
-    shortcut: string,
-    snippets: PersonalSnippet[]
-  ): PersonalSnippet | null {
+  expandShortcut(shortcut: string, snippets: PersonalSnippet[]): PersonalSnippet | null {
     const normalizedShortcut = shortcut.toLowerCase().trim();
 
-    return (
-      snippets.find(
-        (s) => s.shortcut.toLowerCase() === normalizedShortcut
-      ) || null
-    );
+    return snippets.find((s) => s.shortcut.toLowerCase() === normalizedShortcut) || null;
   }
 
   /**
@@ -350,15 +326,7 @@ class SnippetManagerService {
     const lowerContent = content.toLowerCase();
 
     // Check for greetings
-    const greetingPatterns = [
-      'dear',
-      'hello',
-      'hi',
-      'stimate',
-      'stimată',
-      'bună',
-      'salut',
-    ];
+    const greetingPatterns = ['dear', 'hello', 'hi', 'stimate', 'stimată', 'bună', 'salut'];
     if (greetingPatterns.some((p) => lowerContent.startsWith(p))) {
       return 'Greeting';
     }
@@ -423,10 +391,7 @@ class SnippetManagerService {
   // Private Methods
   // ============================================================================
 
-  private parseSnippetSuggestions(
-    response: string,
-    input: TextAnalysisInput
-  ): SnippetSuggestion[] {
+  private parseSnippetSuggestions(response: string, input: TextAnalysisInput): SnippetSuggestion[] {
     try {
       const jsonMatch = response.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {

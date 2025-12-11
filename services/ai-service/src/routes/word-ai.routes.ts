@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { wordAIService } from '../services/word-ai.service';
 import logger from '../lib/logger';
 
-const router = Router();
+const router: Router = Router();
 
 // Request validation schemas
 const suggestionRequestSchema = z.object({

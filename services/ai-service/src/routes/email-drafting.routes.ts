@@ -12,7 +12,7 @@ import { draftRefinementService } from '../services/draft-refinement.service';
 import { emailContextAggregatorService } from '../services/email-context-aggregator.service';
 import logger from '../lib/logger';
 
-const router = Router();
+const router: Router = Router();
 
 // Rate limiting map for draft generation (per user per hour)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -33,21 +33,31 @@ const generateDraftSchema = z.object({
       name: z.string().optional(),
       address: z.string(),
     }),
-    toRecipients: z.array(z.object({
-      name: z.string().optional(),
-      address: z.string(),
-    })),
-    ccRecipients: z.array(z.object({
-      name: z.string().optional(),
-      address: z.string(),
-    })).optional().default([]),
-    receivedDateTime: z.string().transform(s => new Date(s)),
-    sentDateTime: z.string().transform(s => new Date(s)),
+    toRecipients: z.array(
+      z.object({
+        name: z.string().optional(),
+        address: z.string(),
+      })
+    ),
+    ccRecipients: z
+      .array(
+        z.object({
+          name: z.string().optional(),
+          address: z.string(),
+        })
+      )
+      .optional()
+      .default([]),
+    receivedDateTime: z.string().transform((s) => new Date(s)),
+    sentDateTime: z.string().transform((s) => new Date(s)),
     hasAttachments: z.boolean(),
   }),
   caseId: z.string().nullable().optional(),
   tone: z.enum(['Formal', 'Professional', 'Brief', 'Detailed']).optional().default('Professional'),
-  recipientType: z.enum(['Client', 'OpposingCounsel', 'Court', 'ThirdParty', 'Internal']).optional().default('Client'),
+  recipientType: z
+    .enum(['Client', 'OpposingCounsel', 'Court', 'ThirdParty', 'Internal'])
+    .optional()
+    .default('Client'),
   firmId: z.string(),
   userId: z.string(),
 });
