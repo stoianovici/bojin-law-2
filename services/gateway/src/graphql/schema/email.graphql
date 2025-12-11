@@ -53,6 +53,16 @@ type EmailAttachment {
 }
 
 """
+Attachment content for direct download from MS Graph
+"""
+type AttachmentContent {
+  content: String! # Base64 encoded content
+  name: String!
+  contentType: String!
+  size: Int!
+}
+
+"""
 Email thread (conversation) grouping related messages
 """
 type EmailThread {
@@ -203,6 +213,11 @@ extend type Query {
   Get search suggestions based on email content
   """
   emailSearchSuggestions(prefix: String!): [String!]!
+
+  """
+  Get attachment content directly from MS Graph (for download)
+  """
+  emailAttachmentContent(emailId: ID!, attachmentId: ID!): AttachmentContent
 }
 
 # ============================================================================
@@ -249,6 +264,75 @@ extend type Mutation {
   Create or renew email webhook subscription
   """
   createEmailSubscription: EmailSyncStatus!
+
+  """
+  Ignore an email thread (mark as not case-related, hide from main view)
+  """
+  ignoreEmailThread(conversationId: String!): EmailThread!
+
+  """
+  Unignore an email thread (restore to main view)
+  """
+  unignoreEmailThread(conversationId: String!): EmailThread!
+
+  """
+  Send a new email via MS Graph API
+  """
+  sendNewEmail(input: SendEmailInput!): SendEmailResult!
+
+  """
+  Reply to an email thread via MS Graph API
+  """
+  replyToEmail(input: ReplyEmailInput!): SendEmailResult!
+}
+
+# ============================================================================
+# Input Types for Sending
+# ============================================================================
+
+"""
+Email attachment input for sending emails
+"""
+input EmailAttachmentInput {
+  name: String!
+  contentType: String!
+  contentBase64: String!
+}
+
+"""
+Input for sending a new email
+"""
+input SendEmailInput {
+  to: [String!]!
+  cc: [String!]
+  subject: String!
+  body: String!
+  isHtml: Boolean
+  caseId: ID
+  attachments: [EmailAttachmentInput!]
+}
+
+"""
+Input for replying to an email
+"""
+input ReplyEmailInput {
+  conversationId: String!
+  to: [String!]!
+  cc: [String!]
+  subject: String!
+  body: String!
+  isHtml: Boolean
+  includeOriginal: Boolean
+  attachments: [EmailAttachmentInput!]
+}
+
+"""
+Result of sending an email
+"""
+type SendEmailResult {
+  success: Boolean!
+  messageId: String
+  error: String
 }
 
 # ============================================================================

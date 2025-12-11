@@ -5,6 +5,7 @@ import type { CaseType } from './entities';
 
 export interface CommunicationThread {
   id: string; // UUID
+  conversationId?: string; // MS Graph conversation ID for email threads
   subject: string;
   caseId: string; // UUID
   caseName: string;

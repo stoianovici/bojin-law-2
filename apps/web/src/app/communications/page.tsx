@@ -10,15 +10,42 @@ import { ComposeInterface } from '../../components/communication/ComposeInterfac
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useEmailSync, useEmailThreads } from '../../hooks/useEmailSync';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, RefreshCw, Mail, AlertCircle } from 'lucide-react';
-import { useEffect } from 'react';
+import { Plus, RefreshCw, Mail, AlertCircle, Link2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
 
 export default function CommunicationsPage() {
-  const { openCompose, setThreads, getSelectedThread } = useCommunicationStore();
+  const { openCompose, setThreads, getSelectedThread, setUserEmail } = useCommunicationStore();
   const selectedThread = getSelectedThread();
 
-  // Auth context for Microsoft account status
-  const { hasMsalAccount, reconnectMicrosoft } = useAuth();
+  // Auth context for Microsoft account status and user email
+  const { hasMsalAccount, reconnectMicrosoft, user } = useAuth();
+
+  // State for MS token required error (shows reconnect prompt)
+  const [showMsReconnectPrompt, setShowMsReconnectPrompt] = useState(false);
+
+  // Set user email in store for sent/received filtering
+  useEffect(() => {
+    if (user?.email) {
+      setUserEmail(user.email);
+    }
+  }, [user?.email, setUserEmail]);
+
+  // Listen for MS_TOKEN_REQUIRED errors from Apollo client
+  useEffect(() => {
+    const handleMsTokenRequired = () => {
+      console.log('[Communications] MS token required event received');
+      setShowMsReconnectPrompt(true);
+    };
+
+    window.addEventListener('ms-token-required', handleMsTokenRequired);
+    return () => window.removeEventListener('ms-token-required', handleMsTokenRequired);
+  }, []);
+
+  // Handle Microsoft reconnect
+  const handleReconnectMicrosoft = useCallback(async () => {
+    setShowMsReconnectPrompt(false);
+    await reconnectMicrosoft();
+  }, [reconnectMicrosoft]);
 
   // Email sync status and actions
   const { syncStatus, syncing, startSync, loading: syncLoading } = useEmailSync();
@@ -35,14 +62,49 @@ export default function CommunicationsPage() {
   useEffect(() => {
     if (apiThreads && apiThreads.length > 0) {
       // Transform EmailThread[] to CommunicationThread[]
-      const communicationThreads = apiThreads.map((thread: any) => ({
+      const communicationThreads = apiThreads.map((thread: any) => {
+        // Build unique participants from all emails in thread
+        const participantMap = new Map<string, { id: string; name: string; email: string }>();
+
+        (thread.emails || []).forEach((email: any) => {
+          // Add sender
+          if (email.from?.address && !participantMap.has(email.from.address)) {
+            participantMap.set(email.from.address, {
+              id: email.from.address,
+              name: email.from.name || email.from.address,
+              email: email.from.address,
+            });
+          }
+          // Add recipients
+          (email.toRecipients || []).forEach((r: any) => {
+            if (r.address && !participantMap.has(r.address)) {
+              participantMap.set(r.address, {
+                id: r.address,
+                name: r.name || r.address,
+                email: r.address,
+              });
+            }
+          });
+          // Add CC recipients
+          (email.ccRecipients || []).forEach((r: any) => {
+            if (r.address && !participantMap.has(r.address)) {
+              participantMap.set(r.address, {
+                id: r.address,
+                name: r.name || r.address,
+                email: r.address,
+              });
+            }
+          });
+        });
+
+        return {
         id: thread.id || thread.conversationId,
         conversationId: thread.conversationId,
         subject: thread.subject || '(Fără subiect)',
         caseId: thread.case?.id || '',
         caseType: thread.case?.type || 'Other',
         caseName: thread.case?.title || 'Neatribuit',
-        participants: [], // TODO: populate from thread participants
+        participants: Array.from(participantMap.values()),
         messages: (thread.emails || []).map((email: any) => ({
           id: email.id,
           threadId: thread.id || thread.conversationId,
@@ -64,6 +126,7 @@ export default function CommunicationsPage() {
               ? new Date(email.sentDateTime || email.receivedDateTime)
               : new Date(),
           isRead: email.isRead ?? true,
+          hasAttachments: email.hasAttachments ?? false,
           attachments: (email.attachments || []).map((att: any) => ({
             id: att.id,
             name: att.name,
@@ -81,7 +144,8 @@ export default function CommunicationsPage() {
           commitments: [],
           actionItems: [],
         },
-      }));
+      };
+      });
       setThreads(communicationThreads);
     }
   }, [apiThreads, setThreads]);
@@ -149,8 +213,28 @@ export default function CommunicationsPage() {
         </button>
       </div>
 
+      {/* Show MS reconnect prompt when token is expired/missing */}
+      {showMsReconnectPrompt && (
+        <div className="mx-6 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+          <Link2 className="h-5 w-5 text-amber-600 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-medium text-amber-900">Reconectare Microsoft necesară</h3>
+            <p className="text-sm text-amber-700 mt-1">
+              Sesiunea Microsoft a expirat. Reconectați contul pentru a sincroniza emailuri și descărca atașamente.
+            </p>
+          </div>
+          <button
+            onClick={handleReconnectMicrosoft}
+            className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors flex items-center gap-2 text-sm"
+          >
+            <Link2 className="h-4 w-4" />
+            Reconectează
+          </button>
+        </div>
+      )}
+
       {/* Show sync prompt only if no emails exist yet */}
-      {needsSync && !isLoading && !syncing && (
+      {needsSync && !isLoading && !syncing && !showMsReconnectPrompt && (
         <div className="mx-6 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
           <Mail className="h-5 w-5 text-blue-500 mt-0.5" />
           <div>
@@ -186,9 +270,13 @@ export default function CommunicationsPage() {
         </div>
 
         {/* Center Column: Message View (hidden on mobile, shown on md+) */}
-        <div className="hidden flex-1 flex-col md:flex">
-          <MessageView />
-          <AIDraftResponsePanel />
+        <div className="hidden flex-1 flex-col md:flex overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <MessageView />
+          </div>
+          <div className="flex-shrink-0">
+            <AIDraftResponsePanel />
+          </div>
         </div>
 
         {/* Right Column: Extracted Items Panel (hidden on tablet, shown on lg+) */}

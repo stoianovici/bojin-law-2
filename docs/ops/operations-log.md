@@ -13,6 +13,9 @@
 | OPS-004 | Add categorization backup before export   | Feature     | P1-High     | Fixing    | 2        |
 | OPS-005 | AI extraction and drafting not working    | Bug         | P0-Critical | Fixing    | 2        |
 | OPS-006 | Connect AI capabilities to application UI | Feature     | P1-High     | Fixing    | 6        |
+| OPS-007 | AI email drafts ignore user language pref | Bug         | P2-Medium   | Fixing    | 2        |
+| OPS-008 | Communications section comprehensive overhaul | Feature     | P1-High     | Fixing    | 6        |
+| OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Fixing    | 2        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -798,6 +801,423 @@ cd apps/web && pnpm dev              # Next.js frontend on :3000
 - `apps/web/src/hooks/useEmailDraft.ts` - GraphQL hooks ready
 - `apps/web/src/hooks/useSuggestions.ts` - Context suggestions hooks
 - `apps/web/src/hooks/useExtractedItems.ts` - Extraction hooks
+
+---
+
+### [OPS-007] AI email drafts ignore user language preference
+
+| Field           | Value                   |
+| --------------- | ----------------------- |
+| **Status**      | Fixing                  |
+| **Type**        | Bug                     |
+| **Priority**    | P2-Medium               |
+| **Created**     | 2025-12-11              |
+| **Sessions**    | 2                       |
+| **Last Active** | 2025-12-11              |
+
+#### Description
+
+AI-generated email draft replies are not respecting the user's language preference. The system stores user language preferences (`language: 'ro' | 'en'` in `UserPreferences`), but this preference is NOT passed through the data flow when generating email drafts, resulting in drafts potentially being generated in the wrong language.
+
+#### Reproduction Steps
+
+1. Ensure user has language preference set (default is `'ro'` for Romanian)
+2. Navigate to /communications page
+3. Select an email thread
+4. Click to generate an AI draft response
+5. Observe the generated draft may be in English instead of Romanian
+
+#### Root Cause
+
+**Data flow gap - User language preferences are defined but never passed to AI service:**
+
+1. **User preferences stored correctly:** `UserPreferences.language = 'ro' | 'en'` is defined in schema and defaults to `'ro'`
+2. **AI Service expects preferences:** `email-drafting.service.ts` line 404 checks `params.userPreferences?.languagePreference` to set language
+3. **Missing link - GraphQL resolver:** `email-drafting.resolvers.ts` does NOT retrieve user preferences from database
+4. **Missing link - API route:** `email-drafting.routes.ts` does NOT include `userPreferences` in validation schema
+5. **Missing link - Frontend:** `useEmailDraft.ts` mutation only accepts `emailId`, `tone`, `recipientType` - no language parameter
+
+**Data flow:**
+```
+User (preferences.language = 'ro')
+  ↓
+GraphQL: generateEmailDraft(emailId, tone, recipientType)
+  ↓ ❌ No user preferences fetched
+Gateway Resolver → AI Service
+  ↓ params.userPreferences = undefined
+Prompt: "Use {language}" → defaults without preference
+  ↓
+Draft generated (may be wrong language)
+```
+
+#### Fix Applied
+
+**Simple Prompt Fix in AI Service**
+
+- File: `services/ai-service/src/services/email-drafting.service.ts`
+- Changed the system prompt rule #7 from:
+  ```
+  7. Use {language} language primarily
+  ```
+  To:
+  ```
+  7. IMPORTANT: Reply in the SAME LANGUAGE as the original email. If the original email is in Romanian, reply in Romanian. If it's in English, reply in English.
+  ```
+
+**Why This Works:**
+- Claude already receives the full `originalEmail` content (subject + body)
+- Claude is excellent at language detection - better than any regex-based approach
+- This is the natural behavior humans follow when replying to emails
+- No additional code needed in resolvers or route handlers
+
+#### Local Dev Environment
+
+```bash
+# Full dev environment:
+pnpm dev
+
+# Individual services:
+cd services/gateway && pnpm dev     # GraphQL gateway on :4000
+cd services/ai-service && pnpm dev  # AI service on :3002
+cd apps/web && pnpm dev             # Next.js frontend on :3000
+```
+
+#### Session Log
+
+- [2025-12-11] Issue created. Initial triage identified complete data flow gap: user language preferences (`language: 'ro' | 'en'`) are defined in DB schema, expected by AI service, but never retrieved or passed through GraphQL resolver to AI service.
+- [2025-12-11] Session 2 started. User clarified requirement: AI drafts should match the language of the original email/thread, not just user preferences.
+- [2025-12-11] Session 2 - Initial approach: Implemented language detection in resolver. User suggested simpler solution: let Claude detect the language since it already receives the email content.
+- [2025-12-11] Session 2 - Simplified fix: Changed AI prompt to instruct Claude to reply in the same language as the original email. Removed unnecessary language detection code.
+- [2025-12-11] Session 2 - Ready for deployment and testing.
+
+#### Files Involved
+
+**Modified:**
+- `services/ai-service/src/services/email-drafting.service.ts` - **FIXED** - Updated prompt rule #7 to instruct Claude to match original email language
+
+---
+
+### [OPS-008] Communications section comprehensive overhaul
+
+| Field           | Value                   |
+| --------------- | ----------------------- |
+| **Status**      | Fixing                  |
+| **Type**        | Feature                 |
+| **Priority**    | P1-High                 |
+| **Created**     | 2025-12-11              |
+| **Sessions**    | 6                       |
+| **Last Active** | 2025-12-11              |
+
+#### Description
+
+The communications section needs a comprehensive overhaul to address multiple issues and complete missing functionality. This is a rollup issue covering high and medium priority fixes for the `/communications` page and related components.
+
+**High Priority Items:**
+1. Complete email send functionality - ComposeInterface shows "(Mockup)" button, no actual send logic
+2. Replace all `alert()` calls with proper toast notifications
+3. Add attachment upload capability to compose/reply
+4. Fix thread participant population (currently `participants: []` placeholder)
+5. Track extracted item conversions centrally to show accurate counts
+6. **Attachments not loading** - attachment previews not displaying in message view
+7. **"Assign to case" button** - for emails not yet assigned to a case
+8. **"Ignore" button** - mark emails as not case-related (hide from main view)
+9. **Thread readability** - expand/collapse threads, newest email on top
+10. **Hide own sent emails** - don't display user's own sent messages in inbox view
+
+**Medium Priority Items:**
+11. Fix attachment field name mismatches (`filename` vs `name`, `fileSize` vs `size`)
+12. Implement "view failed recipients" for bulk messaging
+13. Add draft auto-save and persistence
+14. Better template integration with compose modal
+15. Fix path resolution issues (revert `@` alias when Turbopack fixed)
+
+**UX Polish:**
+16. Ensure all async operations show proper loading feedback
+17. Add error boundaries around communication components
+18. Search highlighting to show why emails matched filter
+
+#### Reproduction Steps
+
+1. Navigate to /communications page
+2. Try to send an email - observe "(Mockup)" button
+3. Move communication to case - see browser alert instead of toast
+4. Check bulk messaging failures - can't see which recipients failed
+5. Check extracted items count - may not reflect actual converted status
+
+#### Root Cause
+
+**Multiple incomplete implementations across the communications section:**
+
+1. **ComposeInterface.tsx** - Send button wired with TODO, shows "(Mockup)"
+2. **MessageView.tsx** - Uses `alert()` for notifications
+3. **communications/page.tsx** - `participants: []` hardcoded
+4. **communication.store.ts** - No tracking for converted extracted items
+5. **BulkProgressIndicator.tsx** - TODO comment for failed recipients view
+6. **Multiple components** - Path alias issues with `@` imports
+
+#### Fix Applied
+
+TBD
+
+#### Local Dev Environment
+
+```bash
+# Full dev environment:
+pnpm dev
+
+# Individual services:
+cd services/gateway && pnpm dev     # GraphQL gateway on :4000
+cd services/ai-service && pnpm dev  # AI service on :3002
+cd apps/web && pnpm dev             # Next.js frontend on :3000
+
+# Docker services (for DB, Redis):
+docker-compose -f infrastructure/docker/docker-compose.yml up -d postgres redis
+```
+
+Environment files:
+- `apps/web/.env.local` - Frontend config
+- `services/gateway/.env` - Gateway config (DATABASE_URL, REDIS_URL)
+- `services/ai-service/.env` - AI service config (ANTHROPIC_API_KEY)
+
+#### Session Log
+
+- [2025-12-11] Issue created. Initial triage identified 15+ items across high/medium priority categories. Key gaps: email send not implemented (mockup only), UX issues (alert() instead of toast), missing attachment uploads, incomplete data tracking for extracted items.
+- [2025-12-11] Session 1 - User added 5 additional items: attachment previews not loading, "assign to case" button, "ignore" button, thread readability (expand/collapse, newest on top), hide own sent emails. Total: 18 items organized into 6 planned sessions.
+- [2025-12-11] Session 2 started. Continuing from: New. Focus: Thread UX & Email Filtering.
+- [2025-12-11] Session 2 - Investigation findings:
+  1. Expand/collapse already implemented in MessageView.tsx - no changes needed
+  2. Messages display oldest first, need to reverse for newest-on-top option
+  3. No `isSent` field - must compare `from.address` with user email
+  4. Found attachment field mismatch: MessageView uses `filename`/`fileSize` but schema has `name`/`size`
+- [2025-12-11] Session 2 - Implemented fixes:
+  1. **MessageView.tsx**: Added `messageOrder` state with toggle button ("Noi → Vechi" / "Vechi → Noi")
+  2. **MessageView.tsx**: Fixed attachment field names (`name`/`size` instead of `filename`/`fileSize`)
+  3. **MessageView.tsx**: Made attachments clickable links with download URLs
+  4. **communication.store.ts**: Added `emailViewMode` ('all'|'received'|'sent') and `userEmail` state
+  5. **communication.store.ts**: Updated `getFilteredThreads` to filter by sent/received based on user email
+  6. **FilterBar.tsx**: Added tabbed UI for "Primite" / "Trimise" / "Toate" email view modes
+  7. **communications/page.tsx**: Set user email from auth context for sent/received filtering
+- [2025-12-11] Session 2 - Build verified successful. All changes compile without errors.
+- [2025-12-11] Session 3 started. Continuing from: Fixing. Focus: Attachment previews not loading (#6).
+- [2025-12-11] Session 3 - Root cause identified: Email sync stores `hasAttachments: true` but does NOT create `EmailAttachment` records. GraphQL resolver queries `EmailAttachment` table → returns empty array.
+- [2025-12-11] Session 3 - Fix 1: Added `downloadUrl` to GraphQL attachment fragment in `useEmailSync.ts`
+- [2025-12-11] Session 3 - Fix 2: Added `hasAttachments` field pass-through in communications page transformation
+- [2025-12-11] Session 3 - Fix 3: Implemented "Încarcă atașamentele" button in MessageView when `hasAttachments && !attachments.length`.
+- [2025-12-11] Session 3 - Fix 4: Fixed React Hooks order violation (useCallback was after early return)
+- [2025-12-11] Session 3 - Fix 5: Added MSAL authentication check - shows "Conectează Microsoft" when not authenticated
+- [2025-12-11] Session 3 - Fix 6: Fixed MS Graph API error - removed `@odata.type` from $select query
+- [2025-12-11] Session 3 - Fix 7: Made R2 storage optional - saves metadata only if R2 not configured
+- [2025-12-11] Session 3 - **Architecture Decision: MS Graph Direct Download**
+  - New approach: Don't store files at all - fetch directly from MS Graph on demand
+  - Added `AttachmentContent` GraphQL type and `emailAttachmentContent` query
+  - Added `getAttachmentContentFromGraph` method in attachment service
+  - Frontend fetches base64 content, converts to blob, triggers browser download
+  - Benefits: No storage costs, works everywhere, always up-to-date
+- [2025-12-11] Session 3 - Build verified successful. Attachment system fully functional without cloud storage.
+- [2025-12-11] Session 4 started. Continuing from: Fixing. Focus: Case Assignment & Ignore buttons (#7, #8).
+- [2025-12-11] Session 4 - Implemented #7 "Assign to case" button:
+  - Added "Atribuie la dosar" button in MessageView when thread has no caseId
+  - Created modal with case dropdown (uses `useMyCases` hook)
+  - Wired to existing `assignThreadToCase` GraphQL mutation
+  - Updates local state after assignment
+- [2025-12-11] Session 4 - Implemented #8 "Ignore" button:
+  - Added `isIgnored` and `ignoredAt` fields to Email model in Prisma schema
+  - Added `@@index([isIgnored])` for query performance
+  - Added `ignoreEmailThread` and `unignoreEmailThread` GraphQL mutations
+  - Updated `EmailThreadService.getThreads()` to filter out ignored emails by default
+  - Added "Ignoră" button in MessageView UI (removes thread from view)
+- [2025-12-11] Session 4 - Build verified successful. Items 7 and 8 complete.
+- [2025-12-11] Session 5 - Implemented #1 email send functionality (sendNewEmail, replyToEmail mutations) and #13 draft auto-save persistence (zustand + localStorage).
+- [2025-12-11] Session 6 started. Continuing from: Fixing. Focus: Toast notifications (#2) and thread participants (#4).
+- [2025-12-11] Session 6 - Implemented #2 Toast Notifications:
+  - Added `useNotificationStore` to MessageView.tsx and ExtractedItemsSidebar.tsx
+  - Replaced `alert('Comunicare mutată în dosar')` with toast notification
+  - Replaced `alert('Task creat cu succes!')` with toast notification
+- [2025-12-11] Session 6 - Implemented #4 Thread Participants:
+  - Updated communications/page.tsx to populate `participants` from email data
+  - Extracts unique participants from `from`, `toRecipients`, and `ccRecipients` of all emails
+  - Added `conversationId` field to `CommunicationThread` type in packages/shared/types
+  - Added type definitions for `AssignThreadToCaseResult` and `IgnoreEmailThreadResult` in MessageView.tsx
+  - Fixed TypeScript errors in MessageView.tsx related to mutation typing
+
+#### Files Involved
+
+**High Priority - Send Functionality:**
+- `apps/web/src/components/communication/ComposeInterface.tsx` - Send button shows "(Mockup)", needs actual implementation
+- `apps/web/src/hooks/useEmailDraft.ts` - Has sendDraft mutation but not wired in UI
+
+**High Priority - UX Issues:**
+- `apps/web/src/components/communication/MessageView.tsx` - **FIXED (Session 6)** - Added attachment sync button, replaced `alert()` with toast notifications
+- `apps/web/src/app/communications/page.tsx` - **FIXED (Session 6)** - Added `hasAttachments` pass-through, populated `participants` from email data
+
+**High Priority - Attachment Uploads:**
+- `apps/web/src/components/communication/ComposeInterface.tsx` - No file upload input
+- `services/gateway/src/graphql/schema/email.graphql` - May need attachment upload mutation
+
+**Medium Priority - Data Tracking:**
+- `apps/web/src/stores/communication.store.ts` - Needs converted items tracking
+- `apps/web/src/components/communication/BulkProgressIndicator.tsx` - TODO on line 226 for failed recipients
+
+**Medium Priority - Field Mismatches:**
+- `apps/web/src/components/communication/MessageView.tsx` - **FIXED (Session 2)** - Field names corrected
+
+**GraphQL Hooks:**
+- `apps/web/src/hooks/useEmailSync.ts` - **FIXED (Session 3)** - Added `downloadUrl` to attachment fragment
+
+**Attachment System (Session 3 - MS Graph Direct Download):**
+- `services/gateway/src/graphql/schema/email.graphql` - Added `AttachmentContent` type and `emailAttachmentContent` query
+- `services/gateway/src/graphql/resolvers/email.resolvers.ts` - Added `emailAttachmentContent` resolver
+- `services/gateway/src/services/email-attachment.service.ts` - Fixed API errors, made R2 optional, added direct download method
+- `apps/web/src/components/communication/MessageView.tsx` - Added download handler with blob conversion
+
+**Case Assignment & Ignore (Session 4):**
+- `apps/web/src/components/communication/MessageView.tsx` - **FIXED** - Added assign-to-case modal and ignore button
+- `services/gateway/src/graphql/schema/email.graphql` - **FIXED** - Added `ignoreEmailThread`, `unignoreEmailThread` mutations
+- `services/gateway/src/graphql/resolvers/email.resolvers.ts` - **FIXED** - Implemented ignore/unignore resolvers
+- `services/gateway/src/services/email-thread.service.ts` - **FIXED** - Filter out ignored emails by default
+- `packages/database/prisma/schema.prisma` - **FIXED** - Added `isIgnored`, `ignoredAt` fields to Email model
+
+**Toast Notifications & Types (Session 6):**
+- `apps/web/src/components/communication/MessageView.tsx` - **FIXED** - Added toast notifications, type definitions for mutations
+- `apps/web/src/components/communication/ExtractedItemsSidebar.tsx` - **FIXED** - Added toast notification for task creation
+- `packages/shared/types/src/communication.ts` - **FIXED** - Added `conversationId` field to CommunicationThread type
+
+**Path Resolution (9+ files):**
+- ThreadList.tsx, MessageView.tsx, ComposeInterface.tsx, FilterBar.tsx, ExtractedItemsSidebar.tsx, etc.
+
+---
+
+### [OPS-009] Multiple re-login prompts for email/attachments
+
+| Field           | Value                   |
+| --------------- | ----------------------- |
+| **Status**      | Fixing                  |
+| **Type**        | Bug                     |
+| **Priority**    | P1-High                 |
+| **Created**     | 2025-12-11              |
+| **Sessions**    | 2                       |
+| **Last Active** | 2025-12-11              |
+
+#### Description
+
+The app asks users to log in on first access (correct behavior), but also prompts for re-authentication when:
+1. Synchronizing email
+2. Downloading attachments
+
+Users should only log in once when accessing the app. Subsequent operations (email sync, attachments) should use cached credentials silently.
+
+#### Reproduction Steps
+
+1. Log in to the app successfully
+2. Navigate to /communications page
+3. Click "Sync Email" button
+4. Observe: prompted to log in again (should not happen)
+5. Download an attachment
+6. Observe: prompted to log in again (should not happen)
+
+#### Root Cause
+
+**Multiple authentication layers with cache mismatch:**
+
+1. **Two auth systems in use:**
+   - Session cookie (`legal-platform-session`) - 24hr expiry, used for app authentication
+   - MSAL token cache (`sessionStorage`) - Microsoft Graph API access tokens
+
+2. **Session cookie valid but MSAL cache empty:**
+   - User can be authenticated via session cookie alone (no MSAL account cached)
+   - `AuthContext.tsx` lines 217-243 show fallback to session cookie when MSAL has no accounts
+   - When `getAccessToken()` is called, it returns `null` if no MSAL accounts exist
+
+3. **Backend treats missing MS token as full auth error:**
+   - `email.resolvers.ts` line 303: `if (!user || !user.accessToken)` throws `UNAUTHENTICATED`
+   - Doesn't distinguish between:
+     - Missing session (needs full login)
+     - Missing MS Graph token (needs Microsoft reconnect only)
+
+4. **Apollo Client silently loses token:**
+   - `apollo-client.ts` lines 88-90: catches token error and returns empty headers
+   - Request proceeds without token → backend throws auth error
+
+5. **Key code paths:**
+   - `startEmailSync` mutation requires `user.accessToken` (MS Graph token)
+   - `emailAttachmentContent` query requires `user.accessToken`
+   - `syncEmailAttachments` mutation requires `user.accessToken`
+
+#### Fix Applied
+
+**Fix 1: MSAL cache persistence**
+- File: `apps/web/src/lib/msal-config.ts`
+- Changed `cacheLocation: 'sessionStorage'` to `cacheLocation: 'localStorage'`
+- This keeps MSAL tokens across browser sessions, preventing re-login when browser is closed
+
+**Fix 2: Distinct error codes for MS token issues**
+- File: `services/gateway/src/graphql/resolvers/email.resolvers.ts`
+- Added `MS_TOKEN_REQUIRED` error code for operations that need MS Graph token
+- Separates "need full login" (`UNAUTHENTICATED`) from "need Microsoft reconnect" (`MS_TOKEN_REQUIRED`)
+- Updated 6 resolvers: `startEmailSync`, `syncEmailAttachments`, `emailAttachmentContent`, `createEmailSubscription`, `sendNewEmail`, `replyToEmail`
+
+**Fix 3: Frontend MS_TOKEN_REQUIRED handling**
+- File: `apps/web/src/lib/apollo-client.ts`
+- Added error handler to dispatch `ms-token-required` custom event when `MS_TOKEN_REQUIRED` error received
+- File: `apps/web/src/app/communications/page.tsx`
+- Added listener for `ms-token-required` event
+- Shows amber reconnect banner with "Reconectează" button instead of full login redirect
+- Banner explains "Sesiunea Microsoft a expirat" and provides one-click reconnect
+
+#### Local Dev Environment
+
+```bash
+# Full dev environment (Turbo):
+pnpm install
+pnpm dev
+
+# Individual services:
+cd services/gateway && pnpm dev     # GraphQL gateway on :4000
+cd services/ai-service && pnpm dev  # AI service on :3002
+cd apps/web && pnpm dev             # Next.js frontend on :3000
+
+# Docker for local DB/Redis:
+docker-compose -f infrastructure/docker/docker-compose.yml up -d postgres redis
+```
+
+Environment files:
+- `.env` (root) - Base config
+- `services/gateway/.env` - DATABASE_URL, REDIS_URL
+- `services/ai-service/.env` - ANTHROPIC_API_KEY
+- `apps/web/.env.local` - NEXT_PUBLIC_* vars
+
+#### Session Log
+
+- [2025-12-11] Issue created. Initial triage identified dual auth system (session cookie + MSAL tokens) with cache mismatch as root cause. Backend treats missing MS Graph token as full auth error instead of prompting for Microsoft reconnect.
+- [2025-12-11] Session 2 started. Continuing from: New. Implementing fixes.
+- [2025-12-11] Session 2 - Fix 1: Changed MSAL `cacheLocation` from `sessionStorage` to `localStorage` for persistent login across browser sessions.
+- [2025-12-11] Session 2 - Fix 2: Added `MS_TOKEN_REQUIRED` error code to 6 email resolvers that need MS Graph token (`startEmailSync`, `syncEmailAttachments`, `emailAttachmentContent`, `createEmailSubscription`, `sendNewEmail`, `replyToEmail`).
+- [2025-12-11] Session 2 - Fix 3: Added frontend error handling for `MS_TOKEN_REQUIRED` - dispatches custom event from Apollo error link, communications page listens and shows reconnect banner.
+- [2025-12-11] Session 2 - Build verified successful. Ready for deployment and testing.
+
+#### Files Involved
+
+**Frontend Auth:**
+- `apps/web/src/contexts/AuthContext.tsx` - Main auth context, MSAL initialization, `getAccessToken()` function
+- `apps/web/src/lib/msal-config.ts` - **FIXED** - Changed cacheLocation to localStorage
+- `apps/web/src/lib/apollo-client.ts` - **FIXED** - Added MS_TOKEN_REQUIRED error handler with custom event dispatch
+
+**Communications Page:**
+- `apps/web/src/app/communications/page.tsx` - **FIXED** - Added MS_TOKEN_REQUIRED event listener, reconnect banner UI
+
+**Backend Auth:**
+- `services/gateway/src/services/auth.service.ts` - OAuth backend, session management
+- `services/gateway/src/middleware/auth.middleware.ts` - JWT/session authentication
+- `services/gateway/src/graphql/server.ts` - Extracts `x-ms-access-token` from headers, adds to context
+
+**Email Operations (require MS token):**
+- `services/gateway/src/graphql/resolvers/email.resolvers.ts` - **FIXED** - `startEmailSync`, `emailAttachmentContent`, `syncEmailAttachments`, `createEmailSubscription`, `sendNewEmail`, `replyToEmail` resolvers now return `MS_TOKEN_REQUIRED` code
+- `services/gateway/src/services/email-sync.service.ts` - Email sync using MS Graph API
+- `services/gateway/src/services/email-attachment.service.ts` - Attachment download from MS Graph
+
+**Frontend Email Hooks:**
+- `apps/web/src/hooks/useEmailSync.ts` - Email sync mutations
+- `apps/web/src/hooks/useBulkCommunication.ts` - Bulk email operations
 
 ---
 

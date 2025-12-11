@@ -53,6 +53,7 @@ const EMAIL_FRAGMENT = gql`
       name
       contentType
       size
+      downloadUrl
     }
   }
 `;

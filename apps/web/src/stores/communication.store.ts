@@ -7,6 +7,20 @@ import type { CommunicationThread, CommunicationFilters, Task } from '@legal-pla
  * Manages state for the communication hub interface including threads,
  * selected thread, filters, and compose modal state
  */
+// Email view mode for filtering sent/received emails
+type EmailViewMode = 'all' | 'received' | 'sent';
+
+// Draft data structure for persistence
+interface ComposeDraft {
+  to: string;
+  cc: string;
+  subject: string;
+  body: string;
+  threadId: string | null; // For replies
+  mode: 'new' | 'reply' | 'forward' | null;
+  lastSaved: Date;
+}
+
 interface CommunicationState {
   // Data
   threads: CommunicationThread[];
@@ -18,6 +32,15 @@ interface CommunicationState {
   composeMode: 'new' | 'reply' | 'forward' | null;
   composeThreadId: string | null;
   draftBody: string;
+  // Extended draft fields for persistence
+  draftTo: string;
+  draftCc: string;
+  draftSubject: string;
+  savedDraft: ComposeDraft | null; // Persisted draft
+  // Email view mode: 'all' shows everything, 'received' hides sent-only threads, 'sent' shows sent only
+  emailViewMode: EmailViewMode;
+  // User email for determining sent vs received
+  userEmail: string | null;
 
   // Actions
   setThreads: (threads: CommunicationThread[]) => void;
@@ -28,9 +51,16 @@ interface CommunicationState {
   setFilters: (filters: Partial<CommunicationFilters>) => void;
   clearFilters: () => void;
   setShowProcessed: (show: boolean) => void;
+  setEmailViewMode: (mode: EmailViewMode) => void;
+  setUserEmail: (email: string | null) => void;
   openCompose: (mode: 'new' | 'reply' | 'forward', threadId?: string) => void;
   closeCompose: () => void;
   updateDraft: (draft: string) => void;
+  updateDraftFields: (fields: { to?: string; cc?: string; subject?: string; body?: string }) => void;
+  saveDraft: () => void;
+  loadSavedDraft: () => ComposeDraft | null;
+  clearSavedDraft: () => void;
+  hasSavedDraft: () => boolean;
   createTaskFromExtractedItem: (
     threadId: string,
     extractedItemId: string,
@@ -74,6 +104,12 @@ export const useCommunicationStore = create<CommunicationState>()(
       composeMode: null,
       composeThreadId: null,
       draftBody: '',
+      draftTo: '',
+      draftCc: '',
+      draftSubject: '',
+      savedDraft: null,
+      emailViewMode: 'received' as EmailViewMode, // Default to received emails only
+      userEmail: null,
 
       // Actions
       setThreads: (threads: CommunicationThread[]) => {
@@ -128,20 +164,41 @@ export const useCommunicationStore = create<CommunicationState>()(
       },
 
       openCompose: (mode: 'new' | 'reply' | 'forward', threadId?: string) => {
+        // Check if there's a saved draft to restore
+        const state = get();
+        const savedDraft = state.savedDraft;
+
+        // If opening for a different context, start fresh
+        // Otherwise restore the saved draft if available
+        const shouldRestore = savedDraft &&
+          savedDraft.mode === mode &&
+          savedDraft.threadId === (threadId || null);
+
         set({
           isComposeOpen: true,
           composeMode: mode,
           composeThreadId: threadId || null,
-          draftBody: '',
+          draftBody: shouldRestore ? savedDraft.body : '',
+          draftTo: shouldRestore ? savedDraft.to : '',
+          draftCc: shouldRestore ? savedDraft.cc : '',
+          draftSubject: shouldRestore ? savedDraft.subject : '',
         });
       },
 
       closeCompose: () => {
+        // Auto-save before closing if there's content
+        const state = get();
+        if (state.draftBody.trim() || state.draftTo.trim() || state.draftSubject.trim()) {
+          state.saveDraft();
+        }
         set({
           isComposeOpen: false,
           composeMode: null,
           composeThreadId: null,
           draftBody: '',
+          draftTo: '',
+          draftCc: '',
+          draftSubject: '',
         });
       },
 
@@ -149,8 +206,52 @@ export const useCommunicationStore = create<CommunicationState>()(
         set({ draftBody: draft });
       },
 
+      updateDraftFields: (fields: { to?: string; cc?: string; subject?: string; body?: string }) => {
+        set((state) => ({
+          draftTo: fields.to !== undefined ? fields.to : state.draftTo,
+          draftCc: fields.cc !== undefined ? fields.cc : state.draftCc,
+          draftSubject: fields.subject !== undefined ? fields.subject : state.draftSubject,
+          draftBody: fields.body !== undefined ? fields.body : state.draftBody,
+        }));
+      },
+
+      saveDraft: () => {
+        const state = get();
+        const draft: ComposeDraft = {
+          to: state.draftTo,
+          cc: state.draftCc,
+          subject: state.draftSubject,
+          body: state.draftBody,
+          threadId: state.composeThreadId,
+          mode: state.composeMode,
+          lastSaved: new Date(),
+        };
+        set({ savedDraft: draft });
+      },
+
+      loadSavedDraft: () => {
+        return get().savedDraft;
+      },
+
+      clearSavedDraft: () => {
+        set({ savedDraft: null });
+      },
+
+      hasSavedDraft: () => {
+        const draft = get().savedDraft;
+        return draft !== null && (draft.body.trim() !== '' || draft.to.trim() !== '' || draft.subject.trim() !== '');
+      },
+
       setShowProcessed: (show: boolean) => {
         set({ showProcessed: show });
+      },
+
+      setEmailViewMode: (mode: EmailViewMode) => {
+        set({ emailViewMode: mode });
+      },
+
+      setUserEmail: (email: string | null) => {
+        set({ userEmail: email });
       },
 
       createTaskFromExtractedItem: (
@@ -268,6 +369,26 @@ export const useCommunicationStore = create<CommunicationState>()(
           filtered = filtered.filter((t) => !t.isProcessed);
         }
 
+        // Filter by email view mode (sent/received)
+        // 'received' = hide threads where ALL messages are from the user (sent-only threads)
+        // 'sent' = show only threads where the user sent at least one message
+        // 'all' = show everything
+        if (state.userEmail && state.emailViewMode !== 'all') {
+          const userEmailLower = state.userEmail.toLowerCase();
+
+          if (state.emailViewMode === 'received') {
+            // Show threads that have at least one message NOT from the user
+            filtered = filtered.filter((t) =>
+              t.messages.some((m) => m.senderEmail?.toLowerCase() !== userEmailLower)
+            );
+          } else if (state.emailViewMode === 'sent') {
+            // Show threads where the user sent at least one message
+            filtered = filtered.filter((t) =>
+              t.messages.some((m) => m.senderEmail?.toLowerCase() === userEmailLower)
+            );
+          }
+        }
+
         // Filter by case IDs
         if (state.filters.caseIds.length > 0) {
           filtered = filtered.filter((t) => state.filters.caseIds.includes(t.caseId));
@@ -328,8 +449,10 @@ export const useCommunicationStore = create<CommunicationState>()(
     {
       name: 'communication-filters', // localStorage key
       partialize: (state) => ({
-        // Only persist filters, not the full thread data or UI state
+        // Only persist filters and draft data, not the full thread data or UI state
         filters: state.filters,
+        emailViewMode: state.emailViewMode,
+        savedDraft: state.savedDraft, // Persist drafts
       }),
     }
   )

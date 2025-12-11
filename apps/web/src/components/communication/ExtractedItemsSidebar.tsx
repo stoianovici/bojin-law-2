@@ -3,6 +3,7 @@
 import { useState } from 'react';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useCommunicationStore } from '../../stores/communication.store';
+import { useNotificationStore } from '../../stores/notificationStore';
 import { format } from 'date-fns';
 import {
   Clock,
@@ -23,6 +24,7 @@ export function ExtractedItemsSidebar() {
   const [createdTasks, setCreatedTasks] = useState<Map<string, string>>(new Map()); // extractedItemId -> taskId
   const [dismissedItems, setDismissedItems] = useState<Set<string>>(new Set()); // Set of dismissed item IDs
   const { getSelectedThread } = useCommunicationStore();
+  const { addNotification } = useNotificationStore();
   const thread = getSelectedThread();
 
   const toggleSection = (section: string) => {
@@ -51,8 +53,12 @@ export function ExtractedItemsSidebar() {
     // Close the creator
     setCreatingItemId(null);
 
-    // Show success message (in production, this would be a toast)
-    alert('Task creat cu succes!');
+    // Show success toast notification
+    addNotification({
+      type: 'success',
+      title: 'Task creat',
+      message: 'Task-ul a fost creat cu succes',
+    });
   };
 
   const handleDismiss = (extractedItemId: string, reason?: string) => {

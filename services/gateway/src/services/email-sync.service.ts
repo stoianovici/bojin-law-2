@@ -377,7 +377,8 @@ export class EmailSyncService {
     return retryWithBackoff(
       async () => {
         try {
-          const endpoint = useDelta ? '/me/messages/delta' : graphEndpoints.messages;
+          // Use inbox-only endpoint to avoid syncing sent items
+          const endpoint = useDelta ? '/me/mailFolders/Inbox/messages/delta' : graphEndpoints.inboxMessages;
 
           const request = client
             .api(endpoint)

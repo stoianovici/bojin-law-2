@@ -105,6 +105,7 @@ export const graphEndpoints = {
 
   // Mail endpoints
   messages: '/me/messages',
+  inboxMessages: '/me/mailFolders/Inbox/messages',
   messageById: (messageId: string) => `/me/messages/${messageId}`,
   sendMail: '/me/sendMail',
 

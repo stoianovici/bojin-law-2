@@ -165,6 +165,35 @@ const Query = {
     };
   },
 
+  bulkCommunicationFailedRecipients: async (
+    _: any,
+    args: { id: string; limit?: number; offset?: number },
+    context: Context
+  ) => {
+    const { logs, total } = await bulkCommunicationService.getBulkCommunicationLogs(
+      args.id,
+      { userId: context.user.id, firmId: context.user.firmId },
+      { status: 'failed', limit: args.limit || 50, offset: args.offset || 0 }
+    );
+
+    const limit = args.limit || 50;
+    const offset = args.offset || 0;
+    const hasMore = offset + logs.length < total;
+
+    return {
+      logs: logs.map((log) => ({
+        id: log.id,
+        recipientEmail: log.recipientEmail,
+        recipientName: log.recipientName,
+        status: log.status,
+        errorMessage: log.errorMessage,
+        sentAt: log.sentAt,
+      })),
+      total,
+      hasMore,
+    };
+  },
+
   // Export Queries
   communicationExports: async (
     _: any,

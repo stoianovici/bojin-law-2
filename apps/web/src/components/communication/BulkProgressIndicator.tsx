@@ -7,11 +7,11 @@
 
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   useBulkCommunicationProgress,
   useCancelBulkCommunication,
-  useBulkCommunicationStatuses,
+  useBulkFailedRecipients,
   formatEstimatedTime,
 } from '@/hooks/useBulkCommunication';
 import {
@@ -20,9 +20,10 @@ import {
   Clock,
   AlertTriangle,
   Loader2,
-  Send,
   X,
-  Users,
+  ChevronDown,
+  ChevronUp,
+  Mail,
 } from 'lucide-react';
 
 // ============================================================================
@@ -48,10 +49,18 @@ export function BulkProgressIndicator({
   showCancelButton = true,
   className = '',
 }: BulkProgressIndicatorProps) {
+  // State
+  const [showFailedRecipients, setShowFailedRecipients] = useState(false);
+
   // Hooks
-  const { progress, loading, error, isPolling } = useBulkCommunicationProgress(id);
+  const { progress, loading, error } = useBulkCommunicationProgress(id);
   const { cancel, loading: cancelling } = useCancelBulkCommunication();
-  const { getStatusColor } = useBulkCommunicationStatuses();
+
+  // Fetch failed recipients when panel is expanded
+  const { failedRecipients, total: failedTotal, loading: loadingFailed } = useBulkFailedRecipients(
+    id,
+    { enabled: showFailedRecipients }
+  );
 
   // Handle cancel
   const handleCancel = useCallback(async () => {
@@ -73,6 +82,7 @@ export function BulkProgressIndicator({
       const timeout = setTimeout(onComplete, 2000);
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [isComplete, onComplete]);
 
   // Loading state
@@ -211,7 +221,7 @@ export function BulkProgressIndicator({
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-600" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-yellow-800">
                 {failedCount} message{failedCount !== 1 ? 's' : ''} failed to send
               </p>
@@ -221,16 +231,65 @@ export function BulkProgressIndicator({
               </p>
               {isComplete && (
                 <button
-                  className="mt-2 text-xs font-medium text-yellow-700 underline hover:text-yellow-800"
-                  onClick={() => {
-                    // TODO: Implement view failed recipients
-                  }}
+                  className="mt-2 flex items-center gap-1 text-xs font-medium text-yellow-700 hover:text-yellow-800"
+                  onClick={() => setShowFailedRecipients(!showFailedRecipients)}
                 >
-                  View failed recipients
+                  {showFailedRecipients ? (
+                    <>
+                      <ChevronUp className="h-3 w-3" />
+                      Hide failed recipients
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3 w-3" />
+                      View failed recipients ({failedCount})
+                    </>
+                  )}
                 </button>
               )}
             </div>
           </div>
+
+          {/* Failed Recipients List */}
+          {showFailedRecipients && isComplete && (
+            <div className="mt-3 border-t border-yellow-200 pt-3">
+              {loadingFailed ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                  <span className="ml-2 text-xs text-yellow-700">Loading failed recipients...</span>
+                </div>
+              ) : failedRecipients.length > 0 ? (
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {failedRecipients.map((recipient) => (
+                    <div
+                      key={recipient.id}
+                      className="rounded bg-white p-2 border border-yellow-100"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3 w-3 text-gray-400" />
+                        <span className="text-sm font-medium text-gray-900">
+                          {recipient.recipientName}
+                        </span>
+                      </div>
+                      <div className="ml-5 text-xs text-gray-600">{recipient.recipientEmail}</div>
+                      {recipient.errorMessage && (
+                        <div className="ml-5 mt-1 text-xs text-red-600">
+                          Error: {recipient.errorMessage}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {failedTotal > failedRecipients.length && (
+                    <p className="text-xs text-center text-yellow-700 mt-2">
+                      Showing {failedRecipients.length} of {failedTotal} failed recipients
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-yellow-700">No failed recipients found.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 

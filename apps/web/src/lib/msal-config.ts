@@ -22,7 +22,9 @@ export const msalConfig: Configuration = {
     navigateToLoginRequestUrl: true,
   },
   cache: {
-    cacheLocation: 'sessionStorage',
+    // Use localStorage for persistent login across browser sessions
+    // sessionStorage is cleared when browser closes, causing re-login prompts
+    cacheLocation: 'localStorage',
     // Enable cookie fallback to prevent auth state loss during redirect
     // This is critical for production where sessionStorage may be cleared
     storeAuthStateInCookie: true,

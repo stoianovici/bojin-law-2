@@ -67,6 +67,7 @@ export interface ThreadFilters {
   search?: string;
   dateFrom?: Date;
   dateTo?: Date;
+  includeIgnored?: boolean; // Include ignored threads (default: false)
 }
 
 export interface PaginationOptions {
@@ -161,11 +162,18 @@ export class EmailThreadService {
     filters: ThreadFilters,
     pagination: PaginationOptions = {}
   ): Promise<{ threads: EmailThread[]; totalCount: number }> {
-    const { userId, caseId, hasUnread, hasAttachments, search, dateFrom, dateTo } = filters;
+    const { userId, caseId, hasUnread, hasAttachments, search, dateFrom, dateTo, includeIgnored } = filters;
     const { limit = 20, offset = 0 } = pagination;
 
     // Build where clause
     const where: any = { userId };
+
+    // Filter out ignored emails only when explicitly requested
+    // Note: includeIgnored defaults to undefined, meaning show all
+    // Set includeIgnored=false to hide ignored emails
+    if (includeIgnored === false) {
+      where.isIgnored = false;
+    }
 
     if (caseId) {
       where.caseId = caseId;

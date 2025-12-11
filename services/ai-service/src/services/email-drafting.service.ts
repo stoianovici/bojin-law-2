@@ -239,7 +239,7 @@ CRITICAL RULES:
 4. Address all points from the original email
 5. Maintain appropriate legal formality
 6. Ensure the response is ready to send with minimal editing
-7. Use {language} language primarily
+7. IMPORTANT: Reply in the SAME LANGUAGE as the original email. If the original email is in Romanian, reply in Romanian. If it's in English, reply in English.
 
 RECIPIENT TYPE: {recipientType}
 {recipientAdaptation}
@@ -401,11 +401,9 @@ export class EmailDraftingService {
    * Build prompt variables from params
    */
   private buildPromptVariables(params: DraftGenerationParams): Record<string, string> {
-    const language = params.userPreferences?.languagePreference === 'en' ? 'English' : 'Romanian';
     const recipientAdapt = RECIPIENT_ADAPTATIONS[params.recipientType];
 
     return {
-      language,
       recipientType: params.recipientType,
       recipientAdaptation: `Language Level: ${recipientAdapt.languageLevel}
 Include Explanations: ${recipientAdapt.includeExplanations}

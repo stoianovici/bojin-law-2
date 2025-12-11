@@ -34,11 +34,24 @@ const GRAPHQL_URI = process.env.NEXT_PUBLIC_GRAPHQL_URI || '/api/graphql';
 // Note: UNAUTHENTICATED errors are handled by ConditionalLayout which checks auth state
 // and redirects to /login if needed. We don't redirect here to avoid race conditions
 // with auth initialization on page load.
+// MS_TOKEN_REQUIRED errors indicate user is logged in but needs to reconnect Microsoft account
 const errorLink = onError((error: any) => {
   if (error.graphQLErrors) {
     error.graphQLErrors.forEach((gqlError: any) => {
+      const errorCode = gqlError.extensions?.code;
+
       // Only log non-auth errors to avoid console spam during auth initialization
-      if (gqlError.extensions?.code !== 'UNAUTHENTICATED') {
+      if (errorCode === 'MS_TOKEN_REQUIRED') {
+        // User is authenticated but MS Graph token is missing
+        // This happens when session cookie is valid but MSAL cache is empty
+        console.warn('[GraphQL] MS token required - user needs to reconnect Microsoft account');
+        // Dispatch custom event for UI components to show reconnect prompt
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('ms-token-required', {
+            detail: { message: gqlError.message }
+          }));
+        }
+      } else if (errorCode !== 'UNAUTHENTICATED') {
         console.error(
           `[GraphQL error]: Message: ${gqlError.message}, Location: ${gqlError.locations}, Path: ${gqlError.path}`,
           gqlError.extensions

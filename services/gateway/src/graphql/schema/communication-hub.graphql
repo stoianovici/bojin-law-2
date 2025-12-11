@@ -178,6 +178,27 @@ type BulkCommunicationProgress {
   estimatedTimeRemaining: Int # seconds
 }
 
+"""
+Individual recipient log entry for bulk communication
+"""
+type BulkRecipientLog {
+  id: ID!
+  recipientEmail: String!
+  recipientName: String!
+  status: String!
+  errorMessage: String
+  sentAt: DateTime
+}
+
+"""
+Paginated list of bulk recipient logs
+"""
+type BulkRecipientLogList {
+  logs: [BulkRecipientLog!]!
+  total: Int!
+  hasMore: Boolean!
+}
+
 # ============================================================================
 # Types - Export
 # ============================================================================
@@ -299,6 +320,7 @@ extend type Query {
   # Bulk Communications
   bulkCommunications(caseId: ID, status: BulkCommunicationStatus): [BulkCommunication!]!
   bulkCommunicationProgress(id: ID!): BulkCommunicationProgress!
+  bulkCommunicationFailedRecipients(id: ID!, limit: Int, offset: Int): BulkRecipientLogList!
 
   # Exports
   communicationExports(caseId: ID!): [CommunicationExport!]!

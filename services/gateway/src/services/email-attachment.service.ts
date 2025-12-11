@@ -29,7 +29,7 @@ export interface SyncedAttachment {
   name: string;
   contentType: string;
   size: number;
-  storageUrl: string;
+  storageUrl: string | null; // null when storage (R2/OneDrive) is not configured
   documentId?: string;
 }
 
@@ -117,7 +117,7 @@ export class EmailAttachmentService {
     );
 
     // Determine storage location and store
-    let storageUrl: string;
+    let storageUrl: string | null = null;
     let documentId: string | undefined;
 
     const shouldUseR2 =
@@ -127,11 +127,21 @@ export class EmailAttachmentService {
 
     if (shouldUseR2) {
       // Store in R2 (uncategorized, large files, or OneDrive unavailable)
-      storageUrl = await this.storeInR2(
-        attachment,
-        email.id,
-        email.userId
-      );
+      // Check if R2 is configured first
+      if (this.r2Storage.isConfigured()) {
+        storageUrl = await this.storeInR2(
+          attachment,
+          email.id,
+          email.userId
+        );
+      } else {
+        // R2 not configured - save metadata only (for local dev)
+        logger.warn('R2 not configured - saving attachment metadata only', {
+          emailId,
+          attachmentName: attachment.name,
+        });
+        storageUrl = null;
+      }
     } else {
       // Store in OneDrive case folder
       const result = await this.storeInOneDrive(
@@ -211,11 +221,29 @@ export class EmailAttachmentService {
       accessToken
     );
 
+    logger.info('Attachments from Graph API', {
+      emailId,
+      graphMessageId: email.graphMessageId,
+      attachmentCount: attachments.length,
+      attachments: attachments.map(a => ({
+        id: a.id,
+        name: a.name,
+        type: a['@odata.type'],
+        isInline: (a as any).isInline,
+        contentType: a.contentType,
+      })),
+    });
+
     // Sync each attachment
     for (const attachment of attachments) {
       try {
         // Skip non-file attachments (e.g., item attachments, reference attachments)
+        // Note: inline images are fileAttachments with isInline=true, we include them
         if (attachment['@odata.type'] !== '#microsoft.graph.fileAttachment') {
+          logger.info('Skipping non-file attachment', {
+            name: attachment.name,
+            type: attachment['@odata.type'],
+          });
           continue;
         }
 
@@ -235,7 +263,7 @@ export class EmailAttachmentService {
             name: existing.name,
             contentType: existing.contentType,
             size: existing.size,
-            storageUrl: existing.storageUrl || '',
+            storageUrl: existing.storageUrl, // can be null if storage not configured
             documentId: existing.documentId || undefined,
           });
           continue;
@@ -367,6 +395,27 @@ export class EmailAttachmentService {
     });
   }
 
+  /**
+   * Get attachment content directly from MS Graph (for download without storage)
+   *
+   * @param graphMessageId - MS Graph message ID
+   * @param graphAttachmentId - MS Graph attachment ID
+   * @param accessToken - User's OAuth access token
+   * @returns Buffer containing attachment content
+   */
+  async getAttachmentContentFromGraph(
+    graphMessageId: string,
+    graphAttachmentId: string,
+    accessToken: string
+  ): Promise<Buffer> {
+    const result = await this.downloadAttachmentFromGraph(
+      graphMessageId,
+      graphAttachmentId,
+      accessToken
+    );
+    return result.content;
+  }
+
   // ============================================================================
   // Private Methods
   // ============================================================================
@@ -425,9 +474,10 @@ export class EmailAttachmentService {
         try {
           const client = createGraphClient(accessToken);
 
+          // Note: @odata.type is automatically included, don't request it in $select
           const response = await client
             .api(`/me/messages/${graphMessageId}/attachments`)
-            .select('id,name,contentType,size,@odata.type')
+            .select('id,name,contentType,size,isInline')
             .get();
 
           return response.value || [];

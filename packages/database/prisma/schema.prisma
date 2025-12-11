@@ -2464,6 +2464,8 @@ model Email {
   hasAttachments    Boolean  @map("has_attachments")
   importance        String   @db.VarChar(10) // low, normal, high
   isRead            Boolean  @map("is_read")
+  isIgnored         Boolean  @default(false) @map("is_ignored") // Marked as not case-related
+  ignoredAt         DateTime? @map("ignored_at") @db.Timestamptz // When the email was ignored
   userId            String   @map("user_id") // User who owns this email
   caseId            String?  @map("case_id") // Assigned case (nullable until categorized)
   firmId            String   @map("firm_id")
@@ -2492,6 +2494,7 @@ model Email {
   @@index([conversationId])
   @@index([receivedDateTime])
   @@index([firmId])
+  @@index([isIgnored])
   @@map("emails")
 }
 

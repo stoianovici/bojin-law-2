@@ -236,6 +236,65 @@ export const emailResolvers = {
 
       return await emailSearchService.getSuggestions(args.prefix, user.id);
     },
+
+    /**
+     * Get attachment content directly from MS Graph (for download)
+     */
+    emailAttachmentContent: async (
+      _: any,
+      args: { emailId: string; attachmentId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required for attachment download', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
+        });
+      }
+
+      // Get email to verify ownership and get graphMessageId
+      const email = await prisma.email.findFirst({
+        where: { id: args.emailId, userId: user.id },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Get attachment from database to get graphAttachmentId
+      const attachment = await prisma.emailAttachment.findUnique({
+        where: { id: args.attachmentId },
+      });
+
+      if (!attachment || attachment.emailId !== args.emailId) {
+        throw new GraphQLError('Attachment not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Fetch content directly from MS Graph
+      const content = await emailAttachmentService.getAttachmentContentFromGraph(
+        email.graphMessageId,
+        attachment.graphAttachmentId,
+        user.accessToken
+      );
+
+      return {
+        content: content.toString('base64'),
+        name: attachment.name,
+        contentType: attachment.contentType,
+        size: attachment.size,
+      };
+    },
   },
 
   Mutation: {
@@ -247,15 +306,19 @@ export const emailResolvers = {
 
       console.log('[startEmailSync] Called with user:', user?.id, 'hasToken:', !!user?.accessToken);
 
-      if (!user || !user.accessToken) {
-        console.error(
-          '[startEmailSync] Missing user or accessToken. user:',
-          !!user,
-          'accessToken:',
-          !!user?.accessToken
-        );
-        throw new GraphQLError('Authentication required with valid access token', {
+      // Check if user is authenticated (session valid)
+      if (!user) {
+        console.error('[startEmailSync] No user session - full login required');
+        throw new GraphQLError('Authentication required', {
           extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Check if MS Graph token is available (MSAL authenticated)
+      if (!user.accessToken) {
+        console.error('[startEmailSync] No MS access token - Microsoft reconnect required');
+        throw new GraphQLError('Microsoft account connection required for email sync', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
         });
       }
 
@@ -424,9 +487,15 @@ export const emailResolvers = {
     syncEmailAttachments: async (_: any, args: { emailId: string }, context: Context) => {
       const { user } = context;
 
-      if (!user || !user.accessToken) {
-        throw new GraphQLError('Authentication required with valid access token', {
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
           extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required for attachment sync', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
         });
       }
 
@@ -479,9 +548,15 @@ export const emailResolvers = {
     createEmailSubscription: async (_: any, _args: any, context: Context) => {
       const { user } = context;
 
-      if (!user || !user.accessToken) {
-        throw new GraphQLError('Authentication required with valid access token', {
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
           extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required for email subscription', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
         });
       }
 
@@ -490,6 +565,315 @@ export const emailResolvers = {
       await webhookService.createSubscription(user.id, user.accessToken);
 
       return await emailSyncService.getSyncStatus(user.id);
+    },
+
+    /**
+     * Ignore an email thread (mark all emails in thread as ignored)
+     */
+    ignoreEmailThread: async (_: any, args: { conversationId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Update all emails in the thread to be ignored
+      await prisma.email.updateMany({
+        where: {
+          conversationId: args.conversationId,
+          userId: user.id,
+        },
+        data: {
+          isIgnored: true,
+          ignoredAt: new Date(),
+        },
+      });
+
+      // Return the updated thread
+      return await emailThreadService.getThread(args.conversationId, user.id);
+    },
+
+    /**
+     * Unignore an email thread (restore all emails in thread)
+     */
+    unignoreEmailThread: async (_: any, args: { conversationId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Update all emails in the thread to be not ignored
+      await prisma.email.updateMany({
+        where: {
+          conversationId: args.conversationId,
+          userId: user.id,
+        },
+        data: {
+          isIgnored: false,
+          ignoredAt: null,
+        },
+      });
+
+      // Return the updated thread
+      return await emailThreadService.getThread(args.conversationId, user.id);
+    },
+
+    /**
+     * Send a new email via MS Graph API
+     */
+    sendNewEmail: async (
+      _: any,
+      args: {
+        input: {
+          to: string[];
+          cc?: string[];
+          subject: string;
+          body: string;
+          isHtml?: boolean;
+          caseId?: string;
+          attachments?: Array<{
+            name: string;
+            contentType: string;
+            contentBase64: string;
+          }>;
+        };
+      },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required to send email', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
+        });
+      }
+
+      const { to, cc, subject, body, isHtml, caseId, attachments } = args.input;
+
+      // Verify case access if caseId provided
+      if (caseId) {
+        const caseAccess = await prisma.caseTeam.findFirst({
+          where: { caseId, userId: user.id },
+        });
+
+        if (!caseAccess) {
+          throw new GraphQLError('Case not found or access denied', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+      }
+
+      try {
+        // Build recipients
+        const toRecipients = to.map((address) => ({
+          emailAddress: { address },
+        }));
+
+        const ccRecipients = cc
+          ? cc.map((address) => ({
+              emailAddress: { address },
+            }))
+          : [];
+
+        // Build attachments for MS Graph API
+        const graphAttachments = attachments
+          ? attachments.map((att) => ({
+              '@odata.type': '#microsoft.graph.fileAttachment',
+              name: att.name,
+              contentType: att.contentType,
+              contentBytes: att.contentBase64,
+            }))
+          : undefined;
+
+        // Send via MS Graph API
+        const response = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: {
+              subject,
+              body: {
+                contentType: isHtml ? 'HTML' : 'Text',
+                content: body,
+              },
+              toRecipients,
+              ccRecipients: ccRecipients.length > 0 ? ccRecipients : undefined,
+              attachments: graphAttachments,
+            },
+            saveToSentItems: true,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[sendNewEmail] Graph API error:', errorText);
+          return {
+            success: false,
+            error: `Failed to send email: ${response.status}`,
+          };
+        }
+
+        return {
+          success: true,
+          messageId: null, // sendMail doesn't return message ID
+        };
+      } catch (error: any) {
+        console.error('[sendNewEmail] Error:', error);
+        return {
+          success: false,
+          error: error.message || 'Failed to send email',
+        };
+      }
+    },
+
+    /**
+     * Reply to an email thread via MS Graph API
+     */
+    replyToEmail: async (
+      _: any,
+      args: {
+        input: {
+          conversationId: string;
+          to: string[];
+          cc?: string[];
+          subject: string;
+          body: string;
+          isHtml?: boolean;
+          includeOriginal?: boolean;
+          attachments?: Array<{
+            name: string;
+            contentType: string;
+            contentBase64: string;
+          }>;
+        };
+      },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required to send reply', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
+        });
+      }
+
+      const { conversationId, to, cc, subject, body, isHtml, includeOriginal, attachments } = args.input;
+
+      try {
+        // Get the last email in the thread to reply to
+        const lastEmail = await prisma.email.findFirst({
+          where: {
+            conversationId,
+            userId: user.id,
+          },
+          orderBy: {
+            receivedDateTime: 'desc',
+          },
+        });
+
+        if (!lastEmail) {
+          return {
+            success: false,
+            error: 'Thread not found',
+          };
+        }
+
+        // Build the reply body
+        let replyBody = body;
+        if (includeOriginal && lastEmail.bodyContent) {
+          const originalDate = lastEmail.sentDateTime
+            ? new Date(lastEmail.sentDateTime).toLocaleString('ro-RO')
+            : '';
+          const originalFrom =
+            (lastEmail.from as any)?.address || (lastEmail.from as any)?.emailAddress?.address || '';
+          replyBody = `${body}\n\n---\nÎn ${originalDate}, ${originalFrom} a scris:\n\n${lastEmail.bodyContent}`;
+        }
+
+        // Build recipients
+        const toRecipients = to.map((address) => ({
+          emailAddress: { address },
+        }));
+
+        const ccRecipients = cc
+          ? cc.map((address) => ({
+              emailAddress: { address },
+            }))
+          : [];
+
+        // Build attachments for MS Graph API
+        const graphAttachments = attachments
+          ? attachments.map((att) => ({
+              '@odata.type': '#microsoft.graph.fileAttachment',
+              name: att.name,
+              contentType: att.contentType,
+              contentBytes: att.contentBase64,
+            }))
+          : undefined;
+
+        // Send via MS Graph API
+        const response = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: {
+              subject,
+              body: {
+                contentType: isHtml ? 'HTML' : 'Text',
+                content: replyBody,
+              },
+              toRecipients,
+              ccRecipients: ccRecipients.length > 0 ? ccRecipients : undefined,
+              attachments: graphAttachments,
+              // Link to original conversation
+              conversationId: lastEmail.conversationId || conversationId,
+            },
+            saveToSentItems: true,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[replyToEmail] Graph API error:', errorText);
+          return {
+            success: false,
+            error: `Failed to send reply: ${response.status}`,
+          };
+        }
+
+        return {
+          success: true,
+          messageId: null,
+        };
+      } catch (error: any) {
+        console.error('[replyToEmail] Error:', error);
+        return {
+          success: false,
+          error: error.message || 'Failed to send reply',
+        };
+      }
     },
   },
 

@@ -23,7 +23,6 @@ import {
   Calendar,
   X,
   ExternalLink,
-  AlertTriangle,
   Loader2,
   Mail,
 } from 'lucide-react';
@@ -37,6 +36,7 @@ import {
   type ExtractionConfidence,
   type ExtractionType,
 } from '../../hooks/useExtractedItems';
+import { useNotificationStore } from '../../stores/notificationStore';
 
 // ============================================================================
 // Types
@@ -210,6 +210,9 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
   const [dismissingId, setDismissingId] = useState<string | null>(null);
   const [convertingId, setConvertingId] = useState<string | null>(null);
 
+  // Notifications
+  const { addNotification } = useNotificationStore();
+
   // Fetch data
   const { deadlines, commitments, actionItems, questions, loading, error, refetch } =
     usePendingExtractedItems(caseId);
@@ -237,19 +240,38 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
     async (extractionId: string, extractionType: ExtractionType) => {
       setConvertingId(extractionId);
       try {
-        await convertToTask({
+        const result = await convertToTask({
           variables: {
             input: { extractionId, extractionType },
           },
         });
+        const conversionResult = result.data?.convertExtractionToTask;
+        if (conversionResult?.success) {
+          addNotification({
+            type: 'success',
+            title: 'Task creat',
+            message: 'Elementul a fost convertit într-un task cu succes.',
+          });
+        } else if (conversionResult?.error) {
+          addNotification({
+            type: 'error',
+            title: 'Eroare',
+            message: conversionResult.error,
+          });
+        }
         refetch();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to convert extraction:', err);
+        addNotification({
+          type: 'error',
+          title: 'Eroare',
+          message: err.message || 'Nu s-a putut crea task-ul.',
+        });
       } finally {
         setConvertingId(null);
       }
     },
-    [convertToTask, refetch]
+    [convertToTask, refetch, addNotification]
   );
 
   // Handle dismiss
@@ -265,14 +287,24 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
             input: { extractionId, extractionType, reason: reason || undefined },
           },
         });
+        addNotification({
+          type: 'success',
+          title: 'Element respins',
+          message: 'Elementul a fost respins.',
+        });
         refetch();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to dismiss extraction:', err);
+        addNotification({
+          type: 'error',
+          title: 'Eroare',
+          message: err.message || 'Nu s-a putut respinge elementul.',
+        });
       } finally {
         setDismissingId(null);
       }
     },
-    [dismissExtraction, refetch]
+    [dismissExtraction, refetch, addNotification]
   );
 
   // Handle mark question answered
@@ -282,12 +314,22 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
         await markQuestionAnswered({
           variables: { input: { questionId } },
         });
+        addNotification({
+          type: 'success',
+          title: 'Întrebare marcată',
+          message: 'Întrebarea a fost marcată ca răspunsă.',
+        });
         refetch();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to mark question answered:', err);
+        addNotification({
+          type: 'error',
+          title: 'Eroare',
+          message: err.message || 'Nu s-a putut marca întrebarea.',
+        });
       }
     },
-    [markQuestionAnswered, refetch]
+    [markQuestionAnswered, refetch, addNotification]
   );
 
   // Loading state
@@ -300,19 +342,20 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
     );
   }
 
-  // Error state
+  // Error state - show graceful fallback instead of error
   if (error) {
+    console.warn('[ExtractedItemsPanel] Failed to load:', error.message);
     return (
-      <div className="p-4 bg-red-50 rounded-lg" role="alert">
-        <div className="flex items-center gap-2 text-red-800">
-          <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-          <span className="font-medium">Failed to load extracted items</span>
-        </div>
+      <div className="p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">Elemente extrase</h3>
+        <p className="text-sm text-gray-500 mb-3">
+          Nu s-au putut încărca elementele extrase.
+        </p>
         <button
           onClick={() => refetch()}
-          className="mt-2 text-sm text-red-600 hover:underline focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="text-sm text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          Try again
+          Încearcă din nou
         </button>
       </div>
     );
@@ -325,8 +368,8 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
     return (
       <div className="p-4 text-center text-gray-500">
         <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" aria-hidden="true" />
-        <p className="text-sm">No pending extracted items</p>
-        <p className="text-xs mt-1">All items have been processed or dismissed</p>
+        <p className="text-sm">Nu există elemente în așteptare</p>
+        <p className="text-xs mt-1">Toate elementele au fost procesate sau respinse</p>
       </div>
     );
   }

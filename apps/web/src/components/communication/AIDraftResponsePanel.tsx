@@ -39,7 +39,7 @@ const TONE_LABELS: Record<ToneOption, string> = {
 
 export function AIDraftResponsePanel() {
   const [tone, setTone] = useState<ToneOption>('professional');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // Default to expanded for discoverability
   const [generatedDraft, setGeneratedDraft] = useState<EmailDraft | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -123,14 +123,14 @@ export function AIDraftResponsePanel() {
           {loading && <Loader2 className="h-3 w-3 animate-spin text-purple-500" />}
         </span>
         {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-gray-500" />
-        ) : (
           <ChevronUp className="h-4 w-4 text-gray-500" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-gray-500" />
         )}
       </button>
 
       {isExpanded && (
-        <div className="p-4 border-t space-y-3">
+        <div className="p-4 border-t space-y-3 max-h-80 overflow-y-auto">
           {/* Tone selector */}
           <div className="flex gap-2">
             {(['formal', 'professional', 'brief'] as const).map((t) => (

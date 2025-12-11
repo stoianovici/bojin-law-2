@@ -73,6 +73,23 @@ const GET_BULK_COMMUNICATION_PROGRESS = gql`
   }
 `;
 
+const GET_BULK_FAILED_RECIPIENTS = gql`
+  query GetBulkFailedRecipients($id: ID!, $limit: Int, $offset: Int) {
+    bulkCommunicationFailedRecipients(id: $id, limit: $limit, offset: $offset) {
+      logs {
+        id
+        recipientEmail
+        recipientName
+        status
+        errorMessage
+        sentAt
+      }
+      total
+      hasMore
+    }
+  }
+`;
+
 // ============================================================================
 // Mutations
 // ============================================================================
@@ -163,6 +180,21 @@ export interface BulkCommunicationProgress {
   pendingCount: number;
   percentComplete: number;
   estimatedTimeRemaining?: number; // seconds
+}
+
+export interface FailedRecipient {
+  id: string;
+  recipientEmail: string;
+  recipientName: string;
+  status: string;
+  errorMessage?: string;
+  sentAt?: string;
+}
+
+export interface FailedRecipientsResult {
+  logs: FailedRecipient[];
+  total: number;
+  hasMore: boolean;
 }
 
 export interface CustomRecipient {
@@ -476,4 +508,31 @@ export function formatEstimatedTime(seconds?: number): string {
     const minutes = Math.ceil((seconds % 3600) / 60);
     return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
   }
+}
+
+/**
+ * Hook for fetching failed recipients of a bulk communication
+ */
+export function useBulkFailedRecipients(
+  id: string,
+  options?: { limit?: number; offset?: number; enabled?: boolean }
+) {
+  const { limit = 50, offset = 0, enabled = true } = options || {};
+
+  const { data, loading, error, refetch } = useQuery(GET_BULK_FAILED_RECIPIENTS, {
+    variables: { id, limit, offset },
+    skip: !id || !enabled,
+    fetchPolicy: 'network-only',
+  });
+
+  const result = data?.bulkCommunicationFailedRecipients as FailedRecipientsResult | undefined;
+
+  return {
+    failedRecipients: result?.logs || [],
+    total: result?.total || 0,
+    hasMore: result?.hasMore || false,
+    loading,
+    error,
+    refetch,
+  };
 }
