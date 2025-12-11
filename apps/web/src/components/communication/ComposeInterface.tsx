@@ -1,9 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useCommunicationStore } from '../../stores/communication.store';
-import { X, Sparkles } from 'lucide-react';
+import { useGenerateDraft, type EmailTone } from '../../hooks/useEmailDraft';
+import { X, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+
+// Map UI tone options to GraphQL enum values
+const TONE_MAP: Record<'formal' | 'professional' | 'brief', EmailTone> = {
+  formal: 'Formal',
+  professional: 'Professional',
+  brief: 'Brief',
+};
 
 export function ComposeInterface() {
   const {
@@ -23,6 +31,9 @@ export function ComposeInterface() {
     'professional'
   );
   const [showAIDraft, setShowAIDraft] = useState(false);
+  const [generatedDraftBody, setGeneratedDraftBody] = useState<string | null>(null);
+  const [generationCompleted, setGenerationCompleted] = useState(false);
+  const [hasAttemptedGeneration, setHasAttemptedGeneration] = useState(false);
 
   // Get the thread for reply mode
   const thread = composeThreadId ? threads.find((t) => t.id === composeThreadId) : null;
@@ -30,14 +41,15 @@ export function ComposeInterface() {
   // Get the last message for reply context
   const originalMessage = thread?.messages[thread.messages.length - 1];
 
-  // Mock AI draft based on tone (prototype only)
-  const aiDrafts = {
-    formal:
-      'Stimate Domnule/Stimată Doamnă,\n\nVă mulțumesc pentru mesajul dumneavoastră. Am luat la cunoștință informațiile transmise și vă voi răspunde în cel mai scurt timp posibil.\n\nCu deosebită stimă,',
-    professional:
-      'Bună ziua,\n\nVă mulțumesc pentru mesaj. Am primit informațiile și voi reveni cu un răspuns în curând.\n\nCu stimă,',
-    brief: 'Mulțumesc pentru mesaj. Voi răspunde în curând.\n\nCu stimă,',
-  };
+  // Email ID for AI draft generation
+  const emailId = originalMessage?.id || '';
+
+  // AI draft generation hook
+  const {
+    generate,
+    loading: aiLoading,
+    error: aiError,
+  } = useGenerateDraft(emailId, TONE_MAP[selectedTone]);
 
   // Auto-populate fields when in reply mode
   useEffect(() => {
@@ -48,26 +60,89 @@ export function ComposeInterface() {
       setSubject(`Re: ${thread?.subject || originalMessage.subject}`);
 
       setShowAIDraft(true); // Show AI draft panel for replies
+      setGeneratedDraftBody(null); // Reset generated draft when thread changes
+      setGenerationCompleted(false); // Reset completion state
     } else {
       setTo('');
 
       setSubject('');
 
       setShowAIDraft(false);
+      setGeneratedDraftBody(null);
+      setGenerationCompleted(false);
     }
   }, [composeMode, originalMessage, thread]);
 
-  // Build message body with optional quoted original
-  // const getFullMessageBody = () => {
-  //   let body = draftBody;
-  //   if (includeOriginal && originalMessage) {
-  //     body += `\n\n---\nDe la: ${originalMessage.senderName} <${originalMessage.senderEmail}>\nData: ${originalMessage.sentDate.toLocaleString('ro-RO')}\nSubiect: ${originalMessage.subject}\n\n${originalMessage.body}`;
-  //   }
-  //   return body;
-  // };
+  // Generate AI draft
+  const handleGenerateDraft = useCallback(async () => {
+    if (!emailId) {
+      console.warn('[ComposeInterface] No emailId available for draft generation');
+      return;
+    }
+
+    console.log(
+      '[ComposeInterface] Starting draft generation for emailId:',
+      emailId,
+      'tone:',
+      TONE_MAP[selectedTone]
+    );
+    setGenerationCompleted(false);
+
+    try {
+      const draft = await generate(TONE_MAP[selectedTone]);
+      console.log('[ComposeInterface] Draft result:', draft);
+
+      // Check if there was an error from the hook
+      if (aiError) {
+        console.error('[ComposeInterface] GraphQL error:', aiError.message, aiError.graphQLErrors);
+      }
+
+      setGenerationCompleted(true);
+      if (draft?.body) {
+        setGeneratedDraftBody(draft.body);
+      } else {
+        console.warn('[ComposeInterface] Draft returned but no body:', draft);
+        setGeneratedDraftBody(null);
+      }
+    } catch (err) {
+      console.error('[ComposeInterface] Failed to generate draft:', err);
+      setGenerationCompleted(true);
+    }
+  }, [emailId, generate, selectedTone, aiError]);
+
+  // Reset generation attempt when email or tone changes
+  useEffect(() => {
+    setHasAttemptedGeneration(false); // eslint-disable-line react-hooks/set-state-in-effect -- intentional: reset flag when dependencies change
+  }, [emailId, selectedTone]);
+
+  // Auto-generate draft when panel opens (only once per email/tone)
+  useEffect(() => {
+    if (
+      showAIDraft &&
+      emailId &&
+      !generatedDraftBody &&
+      !aiLoading &&
+      !hasAttemptedGeneration &&
+      !aiError
+    ) {
+      console.log('[ComposeInterface] Auto-triggering draft generation');
+      setHasAttemptedGeneration(true); // eslint-disable-line react-hooks/set-state-in-effect -- intentional: one-time trigger flag
+      handleGenerateDraft();
+    }
+  }, [
+    showAIDraft,
+    emailId,
+    generatedDraftBody,
+    aiLoading,
+    hasAttemptedGeneration,
+    aiError,
+    handleGenerateDraft,
+  ]);
 
   const handleUseAIDraft = () => {
-    updateDraft(aiDrafts[selectedTone]);
+    if (generatedDraftBody) {
+      updateDraft(generatedDraftBody);
+    }
   };
 
   if (!isComposeOpen) return null;
@@ -122,31 +197,92 @@ export function ComposeInterface() {
               <div className="font-semibold mb-2 flex items-center gap-2 text-sm">
                 <Sparkles className="h-4 w-4 text-purple-500" />
                 Răspuns generat de AI
+                {aiLoading && <Loader2 className="h-3 w-3 animate-spin text-purple-500" />}
               </div>
               <div className="space-y-2">
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center flex-wrap">
                   <label className="text-xs font-medium">Ton:</label>
                   <select
                     value={selectedTone}
-                    onChange={(e) =>
-                      setSelectedTone(e.target.value as 'formal' | 'professional' | 'brief')
-                    }
-                    className="text-xs border rounded px-2 py-1"
+                    onChange={(e) => {
+                      const newTone = e.target.value as 'formal' | 'professional' | 'brief';
+                      console.log('[ComposeInterface] Tone changed to:', newTone);
+                      setSelectedTone(newTone);
+                      setGeneratedDraftBody(null); // Reset to regenerate with new tone
+                      // hasAttemptedGeneration will reset via useEffect dependency on selectedTone
+                    }}
+                    disabled={aiLoading}
+                    className="text-xs border rounded px-2 py-1 disabled:opacity-50"
                   >
                     <option value="formal">Formal</option>
                     <option value="professional">Profesional</option>
                     <option value="brief">Scurt</option>
                   </select>
                   <button
+                    onClick={() => {
+                      console.log('[ComposeInterface] Manual regenerate clicked');
+                      setHasAttemptedGeneration(false);
+                      setGeneratedDraftBody(null);
+                      handleGenerateDraft();
+                    }}
+                    disabled={aiLoading || !emailId}
+                    className="px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${aiLoading ? 'animate-spin' : ''}`} />
+                    Regenerează
+                  </button>
+                  <button
                     onClick={handleUseAIDraft}
-                    className="ml-auto px-3 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                    disabled={!generatedDraftBody || aiLoading}
+                    className="ml-auto px-3 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Folosește draft AI
                   </button>
                 </div>
-                <div className="text-xs text-gray-600 bg-white p-2 rounded border max-h-32 overflow-y-auto whitespace-pre-wrap">
-                  {aiDrafts[selectedTone]}
-                </div>
+
+                {/* Error state */}
+                {aiError && (
+                  <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 flex items-start gap-2">
+                    <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-medium">Eroare:</span> {aiError.message}
+                    </div>
+                  </div>
+                )}
+
+                {/* Loading state */}
+                {aiLoading && !generatedDraftBody && (
+                  <div className="text-xs text-gray-500 bg-white p-3 rounded border text-center">
+                    <Loader2 className="h-4 w-4 animate-spin mx-auto mb-1" />
+                    Se generează răspunsul...
+                  </div>
+                )}
+
+                {/* Generated draft */}
+                {generatedDraftBody && (
+                  <div className="text-xs text-gray-600 bg-white p-2 rounded border max-h-32 overflow-y-auto whitespace-pre-wrap">
+                    {generatedDraftBody}
+                  </div>
+                )}
+
+                {/* No email ID warning */}
+                {!emailId && !aiLoading && (
+                  <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                    Nu se poate genera draft - emailul nu a fost găsit.
+                  </div>
+                )}
+
+                {/* Generation completed but no draft (server error or empty response) */}
+                {emailId &&
+                  !aiLoading &&
+                  !generatedDraftBody &&
+                  !aiError &&
+                  generationCompleted && (
+                    <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                      Nu s-a putut genera răspunsul. Apăsați &quot;Regenerează&quot; pentru a
+                      încerca din nou.
+                    </div>
+                  )}
               </div>
             </div>
           )}

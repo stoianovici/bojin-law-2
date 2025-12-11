@@ -3,6 +3,8 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Use webpack instead of Turbopack for dev (needed for custom webpack config)
+  turbopack: {},
   // Explicitly expose NEXT_PUBLIC_* env vars (needed for Docker builds)
   env: {
     NEXT_PUBLIC_AZURE_AD_CLIENT_ID: process.env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID,

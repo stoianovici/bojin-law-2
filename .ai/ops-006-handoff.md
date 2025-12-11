@@ -1,111 +1,132 @@
 # Handoff: [OPS-006] Connect AI capabilities to application UI
 
-**Session**: 3
+**Session**: 7
 **Date**: 2025-12-10
-**Status**: Verifying
+**Status**: Investigating - Root cause found
 
 ## Work Completed This Session
 
-### 1. MorningBriefing Integration (COMPLETE)
+### 1. Root Cause Analysis (COMPLETE)
 
-- Added MorningBriefing component to all three dashboards:
-  - `PartnerDashboard.tsx`
-  - `AssociateDashboard.tsx`
-  - `ParalegalDashboard.tsx`
-- Component displays at the top of each dashboard before the widget grid
+Traced the full flow of `generateEmailDraft` mutation:
 
-### 2. AIDocumentEditor Clause Suggestions (COMPLETE)
+1. **Frontend** → ComposeInterface.tsx uses `useGenerateDraft` hook
+2. **Hook** → Calls GraphQL mutation via Apollo Client
+3. **Proxy** → `/api/graphql/route.ts` forwards to gateway with `x-mock-user` header
+4. **Gateway** → Resolver finds email successfully, calls AI service
+5. **AI Service** → Fails with "Anthropic API key not found"
 
-- Replaced mock data with GraphQL `clauseSuggestions` query
-- Added loading indicator for suggestion fetches
-- Uses `useLazyQuery` with debouncing (300ms)
-- Removed SSE TODO comments
+### 2. Issues Found
 
-### 3. Apollo Client Import Fix (COMPLETE)
+**Issue 1: Port Conflict (Local Dev)**
 
-- Fixed imports for `useLazyQuery` and `useMutation` to use `@apollo/client/react` path
-- Fixed in `AIDocumentEditor.tsx` and `EmailAttachmentsPanel.tsx`
+- word-addin configured for port 3001
+- When legacy-import is running on 3001, word-addin falls back to 3002
+- AI service also uses port 3002
+- Result: gateway's fetch to AI service fails
 
-### 4. Risk Indicators Panel (Verified Already Complete)
+**Fix Applied**: Changed word-addin port from 3001 to 3005 in `apps/word-addin/vite.config.ts`
 
-- `RiskIndicatorsPanel` is already integrated in `IntelligenceTab`
-- Uses `useCaseRisks` hook with full GraphQL integration
-- No changes needed
+**Issue 2: Missing Anthropic API Key**
+
+- AI service at `/api/email-drafting/generate` returns: `{"error":"Anthropic API key not found"}`
+- Local `.env` has placeholder: `ANTHROPIC_API_KEY=placeholder-not-needed-for-basic-testing`
+- Production needs `ANTHROPIC_API_KEY` set in Render environment variables
+
+**Issue 3: Gateway Error Handling**
+
+- When AI service returns an error, gateway returns the error in GraphQL response
+- Frontend correctly receives error, but error message not shown to user
+- This is working as designed - the error IS being propagated
 
 ## Current State
 
-**All major integrations are now complete:**
+The mutation flow is now traced and understood:
 
-| Integration                  | Status   | Session      |
-| ---------------------------- | -------- | ------------ |
-| Case AI Suggestions          | COMPLETE | 2            |
-| AI Usage Dashboard           | COMPLETE | 2            |
-| Document Generation          | COMPLETE | 2            |
-| Morning Briefing Types       | COMPLETE | 2            |
-| MorningBriefing to Dashboard | COMPLETE | 3            |
-| AIDocumentEditor Suggestions | COMPLETE | 3            |
-| Risk Indicators Panel        | COMPLETE | 3 (verified) |
+1. Email lookup: WORKING (confirmed in gateway logs)
+2. AI service call: FAILING (missing API key)
+3. Error propagation: WORKING (GraphQL error returned)
 
-**Build Status:** SUCCESS
+**Test Proof:**
 
-## Remaining Optional Work
+```bash
+# AI service returns proper error:
+curl -X POST http://127.0.0.1:3002/api/email-drafting/generate -H 'Content-Type: application/json' -H 'Authorization: Bearer dev-api-key' -d '{"originalEmail":{...},"firmId":"test","userId":"test"}'
+# Returns: {"error":"Internal Server Error","message":"Anthropic API key not found"}
+```
 
-These are lower priority items that could be addressed in future sessions:
+## Next Steps for Production
 
-1. **SSE Real-time Suggestions** - Currently using GraphQL polling; could upgrade to SSE for faster response
-2. **Calendar Integration from Extracted Items** - Backend service exists, no direct calendar add UI
-3. **Snippet Library UI** - For managing personal snippets
-4. **Writing Preferences Settings** - User preferences page for AI writing style
-5. **Draft Refinement** - Iterative editing with AI
+1. **Verify Render Environment Variables**:
+   - AI Service needs: `ANTHROPIC_API_KEY` (real Anthropic key)
+   - Gateway needs: `AI_SERVICE_URL` (internal URL to AI service)
 
-## Blockers/Questions
+2. **Check AI Service on Render**:
+   - Is it running?
+   - What's in its environment?
+   - Is the endpoint responding?
 
-None - ready for production verification.
-
-## Next Steps
-
-1. **Deploy to Production** - Run `pnpm deploy:production` to deploy changes
-2. **Verify in Production** - Test all integrated features:
-   - MorningBriefing on dashboard (any role)
-   - AI Suggestions on case workspace page
-   - AI Usage Dashboard at `/analytics/ai-usage`
-   - Document Generation at `/cases/[caseId]/documents/new`
-   - Clause Suggestions in document editor
+3. **Test Production AI Service**:
+   - If `AI_SERVICE_URL` is set, what does the gateway hit?
+   - If not set, it defaults to localhost:3002 (wrong in production)
 
 ## Key Files Modified
 
-**Session 3:**
+| File                             | Changes                                          |
+| -------------------------------- | ------------------------------------------------ |
+| `apps/word-addin/vite.config.ts` | Changed port from 3001 to 3005 to avoid conflict |
 
-- `apps/web/src/components/dashboard/PartnerDashboard.tsx` - MorningBriefing added
-- `apps/web/src/components/dashboard/AssociateDashboard.tsx` - MorningBriefing added
-- `apps/web/src/components/dashboard/ParalegalDashboard.tsx` - MorningBriefing added
-- `apps/web/src/components/documents/AIDocumentEditor.tsx` - GraphQL clause suggestions
-- `apps/web/src/components/email/EmailAttachmentsPanel.tsx` - Apollo import fix
+## Key Files Reviewed
 
-**Session 2:**
+| File                                                                 | Purpose                                 |
+| -------------------------------------------------------------------- | --------------------------------------- |
+| `services/gateway/src/graphql/resolvers/email-drafting.resolvers.ts` | Gateway resolver - confirmed working    |
+| `services/ai-service/src/routes/email-drafting.routes.ts`            | AI endpoint - confirmed needs API key   |
+| `services/ai-service/src/index.ts`                                   | Routes mounted at `/api/email-drafting` |
+| `apps/web/src/hooks/useEmailDraft.ts`                                | Frontend hook - confirmed working       |
+| `apps/web/src/components/communication/ComposeInterface.tsx`         | UI component - confirmed working        |
 
-- `apps/web/src/app/cases/[caseId]/page.tsx` - AI suggestions
-- `apps/web/src/components/case/AIInsightsPanel.tsx` - Suggestion display
-- `apps/web/src/hooks/useSuggestions.ts` - Type fix
-- `apps/web/src/app/analytics/ai-usage/page.tsx` - AI Usage Dashboard
-- `apps/web/src/app/cases/[caseId]/documents/new/page.tsx` - Document Generation
-- `apps/web/src/hooks/useMorningBriefing.ts` - Type fix
-- `apps/web/src/components/dashboard/MorningBriefing.tsx` - Type fix
+## Port Assignments (Updated)
 
-## Local Development
+| Port | Service                      |
+| ---- | ---------------------------- |
+| 3000 | Web (Next.js)                |
+| 3001 | Legacy Import (Next.js)      |
+| 3002 | AI Service (Express)         |
+| 3005 | Word Add-in (Vite) - CHANGED |
+| 4000 | Gateway (Apollo)             |
 
-```bash
-# Full stack
-pnpm install && pnpm dev
+## Environment Variables Needed
 
-# Individual services
-cd services/gateway && pnpm dev     # Port 4000
-cd services/ai-service && pnpm dev  # Port 3002
-cd apps/web && pnpm dev              # Port 3000
+**AI Service (services/ai-service):**
+
+```
+ANTHROPIC_API_KEY=sk-ant-... (real key)
+PORT=3002
 ```
 
-## Related Issues
+**Gateway (services/gateway):**
 
-- **OPS-005**: AI extraction and drafting not working (specific communications page bugs)
-  - OPS-005 focuses on fixing specific broken features
-  - OPS-006 is broader: connecting ALL AI capabilities to UI
+```
+AI_SERVICE_URL=http://ai-service-internal:3002 (or render internal URL)
+AI_SERVICE_API_KEY=dev-api-key (or production key)
+```
+
+## Testing Commands
+
+```bash
+# Start dev environment (ports should now be clear)
+pnpm dev
+
+# Test AI service directly
+curl http://localhost:3002/api/email-drafting/generate \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dev-api-key" \
+  -d '{"originalEmail":{...}}'
+
+# Test gateway mutation
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -H "x-mock-user: {...}" \
+  -d '{"query":"mutation { generateEmailDraft(...) { id body } }"}'
+```

@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     // In production, we authenticate via session cookie and pass user context
     // In development without a session, use mock user for convenience
     if (user) {
+      console.log('[GraphQL Proxy] Using authenticated user:', user.email, user.id);
       headers['x-mock-user'] = JSON.stringify({
         userId: user.id,
         firmId: user.firmId,
@@ -48,12 +49,15 @@ export async function POST(request: NextRequest) {
       });
     } else if (process.env.NODE_ENV === 'development') {
       // Fallback to mock user only in development when no session exists
+      console.log('[GraphQL Proxy] No session, using mock user');
       headers['x-mock-user'] = JSON.stringify({
         userId: 'aa3992a2-4bb0-45e2-9bc5-15e75f6a5793', // Partner user from seed
         firmId: '99d685ee-1723-4d21-9634-ea414ceaba9b', // Demo firm from seed
         role: 'Partner',
         email: 'partner@demo.lawfirm.ro',
       });
+    } else {
+      console.log('[GraphQL Proxy] No session and not in development');
     }
 
     // Forward request to gateway GraphQL endpoint

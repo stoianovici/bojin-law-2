@@ -33,6 +33,7 @@ interface EmailDraftingLoaders {
 
 // AI Service URL (for proxying requests)
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 
 // ============================================================================
 // DataLoaders
@@ -153,11 +154,7 @@ export const emailDraftingResolvers = {
     /**
      * Get attachment suggestions for a draft
      */
-    attachmentSuggestions: async (
-      _: any,
-      args: { draftId: string },
-      context: Context
-    ) => {
+    attachmentSuggestions: async (_: any, args: { draftId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -205,6 +202,13 @@ export const emailDraftingResolvers = {
         });
       }
 
+      console.log(
+        '[generateEmailDraft] Looking for email:',
+        args.input.emailId,
+        'for user:',
+        user.id
+      );
+
       // Get the original email
       const email = await prisma.email.findFirst({
         where: {
@@ -221,16 +225,25 @@ export const emailDraftingResolvers = {
       });
 
       if (!email) {
+        console.log('[generateEmailDraft] Email not found for user:', user.id);
         throw new GraphQLError('Email not found', {
           extensions: { code: 'NOT_FOUND' },
         });
       }
+
+      console.log(
+        '[generateEmailDraft] Email found, calling AI service for email:',
+        email.id,
+        'subject:',
+        email.subject
+      );
 
       // Call AI service to generate draft
       const response = await fetch(`${AI_SERVICE_URL}/api/email-drafting/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
         },
         body: JSON.stringify({
           originalEmail: {
@@ -319,11 +332,7 @@ export const emailDraftingResolvers = {
     /**
      * Generate multiple drafts with different tones
      */
-    generateMultipleDrafts: async (
-      _: any,
-      args: { emailId: string },
-      context: Context
-    ) => {
+    generateMultipleDrafts: async (_: any, args: { emailId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -358,6 +367,7 @@ export const emailDraftingResolvers = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
         },
         body: JSON.stringify({
           originalEmail: {
@@ -460,6 +470,7 @@ export const emailDraftingResolvers = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
         },
         body: JSON.stringify({
           draftId: draft.id,
@@ -801,6 +812,7 @@ export const emailDraftingResolvers = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
         },
         body: JSON.stringify({
           partialText: args.input.partialText,

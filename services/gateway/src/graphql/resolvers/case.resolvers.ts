@@ -568,8 +568,6 @@ export const caseResolvers = {
           data: {
             firmId: user.firmId,
             name: args.input.clientName,
-            type: 'Individual', // Default type
-            status: 'Active',
           },
         });
       }

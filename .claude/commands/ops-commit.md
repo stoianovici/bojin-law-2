@@ -57,9 +57,19 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 3. Run `git commit`
 
-## 6. Push Automatically
+## 6. Ask About Push
 
-Push immediately after commit:
+**DO NOT automatically push.** Ask the user first:
+
+```
+Commit created: {hash}
+
+Would you like to push to remote?
+- This will NOT auto-deploy
+- Use `/ops-deploy` when ready to deploy
+```
+
+If user confirms, then push:
 
 - Run `git push`
 - If no upstream, run `git push -u origin {branch}`
@@ -96,10 +106,21 @@ Support quick patterns:
 - `/ops-commit fix` - Force fix commit
 - `/ops-commit OPS-003` - Commit for specific issue
 
+## 9. Deployment Reminder
+
+After pushing, remind the user:
+
+```
+**Note**: Pushing does NOT auto-deploy.
+
+To deploy: `pnpm deploy:production`
+To test locally first: `pnpm preview`
+```
+
 ## Important Rules
 
-- Always commit and push automatically - no confirmation needed
+- **DO NOT push automatically** - Always ask user before pushing
 - Include issue ID in every commit for traceability
 - WIP commits are fine - they can be squashed later
-- If on main branch, still push (ops fixes often need to go direct)
-- **Verify locally before committing fixes** - If this is a `fix:` commit, ensure the fix was tested locally first. Pushing untested fixes to production wastes deploy cycles (each ~5 min).
+- **Pushing does NOT deploy** - User must run `pnpm deploy:production` explicitly
+- **Verify locally before deploying** - Use `pnpm preview` to test production build locally before deploying

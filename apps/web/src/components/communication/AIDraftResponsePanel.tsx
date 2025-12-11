@@ -53,15 +53,21 @@ export function AIDraftResponsePanel() {
   const { generate, loading, error } = useGenerateDraft(emailId || '', TONE_MAP[tone]);
 
   const handleGenerateDraft = useCallback(async () => {
-    if (!emailId) return;
+    if (!emailId) {
+      console.warn('[AIDraft] No emailId available');
+      return;
+    }
+
+    console.log('[AIDraft] Generating draft for emailId:', emailId, 'tone:', TONE_MAP[tone]);
 
     try {
       const draft = await generate(TONE_MAP[tone]);
+      console.log('[AIDraft] Draft result:', draft);
       if (draft) {
         setGeneratedDraft(draft);
       }
     } catch (err) {
-      console.error('Failed to generate draft:', err);
+      console.error('[AIDraft] Failed to generate draft:', err);
     }
   }, [emailId, generate, tone]);
 

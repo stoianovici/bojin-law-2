@@ -43,7 +43,7 @@ services:
       - key: GRAPHQL_ENDPOINT
         value: https://legal-platform-gateway.onrender.com/graphql
     healthCheckPath: /api/health
-    autoDeploy: true # Auto-deploy on push to main
+    autoDeploy: false # Manual deploy only - use: npm run deploy:production
 
   ##############################################################################
   # Gateway Service - GraphQL API
@@ -90,8 +90,51 @@ services:
       # Session Secret (set in Render dashboard)
       - key: SESSION_SECRET
         sync: false
+      # AI Service Integration
+      - key: AI_SERVICE_URL
+        value: https://legal-platform-ai-service.onrender.com
+      - key: AI_SERVICE_API_KEY
+        sync: false
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeploy: false # Manual deploy only - use: npm run deploy:production
+
+  ##############################################################################
+  # AI Service - Email Drafting, Document Generation, Suggestions
+  ##############################################################################
+  - type: web
+    name: legal-platform-ai-service
+    runtime: node
+    repo: https://github.com/stoianovici/bojin-law-2.git
+    branch: main
+    buildCommand: npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm --filter @legal-platform/database build && pnpm --filter @legal-platform/ai-service build
+    startCommand: pnpm --filter @legal-platform/ai-service start
+    plan: starter # 512MB RAM
+    numInstances: 1
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: '3002'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: legal-platform-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: legal-platform-redis
+          property: connectionString
+      # Anthropic API Key (set in Render dashboard)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-3-5-sonnet-20241022
+      # API Key for service-to-service auth
+      - key: AI_SERVICE_API_KEY
+        sync: false
+    healthCheckPath: /api/ai/health
+    autoDeploy: false
 
   ##############################################################################
   # Cache - Redis for Session Management

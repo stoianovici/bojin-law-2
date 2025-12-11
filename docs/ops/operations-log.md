@@ -12,7 +12,7 @@
 | OPS-003 | Restrict partner dashboard to partners    | Feature     | P2-Medium   | Verifying | 3        |
 | OPS-004 | Add categorization backup before export   | Feature     | P1-High     | Fixing    | 2        |
 | OPS-005 | AI extraction and drafting not working    | Bug         | P0-Critical | Fixing    | 2        |
-| OPS-006 | Connect AI capabilities to application UI | Feature     | P1-High     | Verifying | 4        |
+| OPS-006 | Connect AI capabilities to application UI | Feature     | P1-High     | Fixing    | 6        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -593,11 +593,11 @@ Environment files:
 
 | Field           | Value      |
 | --------------- | ---------- |
-| **Status**      | Verifying  |
+| **Status**      | Fixing     |
 | **Type**        | Feature    |
 | **Priority**    | P1-High    |
 | **Created**     | 2025-12-10 |
-| **Sessions**    | 4          |
+| **Sessions**    | 6          |
 | **Last Active** | 2025-12-10 |
 
 #### Description
@@ -744,6 +744,27 @@ cd apps/web && pnpm dev              # Next.js frontend on :3000
 - [2025-12-10] Session 3 - Fixed Apollo Client imports (`useLazyQuery`, `useMutation`) to use `@apollo/client/react` path.
 - [2025-12-10] Session 3 - Build verified successful. All integrations working.
 - [2025-12-10] Session 4 started. Continuing from: Verifying. Committing session 2-3 changes, deploying, and verifying in production.
+- [2025-12-10] Session 4 - Fixed ESLint errors: replaced setState in effects with useMemo, fixed impure Date.now() calls, reorganized function declarations to avoid hoisting issues.
+- [2025-12-10] Session 4 - Committed and pushed `1d69f48`. **Manual deployment required** - `RENDER_DEPLOY_HOOK_PRODUCTION` not set. Deploy via Render dashboard.
+- [2025-12-10] Session 5 started. Continuing from: Verifying. Confirming deployment and code integration.
+- [2025-12-10] Session 5 - Production verified: Web (healthy), Gateway (healthy, 17min uptime indicates recent deployment). Commit `1d69f48` is on origin/main.
+- [2025-12-10] Session 5 - Code verification complete: All 6 high-priority integrations confirmed in codebase:
+  1. Case AI Suggestions: `useSuggestions` + `AIInsightsPanel` integrated
+  2. AI Usage Dashboard: GraphQL queries (`aiUsageStats`, `aiDailyUsageTrend`, `aiProviderHealth`)
+  3. Document Generation: `GENERATE_DOCUMENT_MUTATION` + `generateDocumentWithAI`
+  4. Morning Briefing: Types fixed, `useMorningBriefing` hook working
+  5. Dashboard Integration: `MorningBriefing` added to Partner/Associate/Paralegal dashboards
+  6. AIDocumentEditor: `CLAUSE_SUGGESTIONS_QUERY` GraphQL integration
+- [2025-12-10] Session 6 started. User reported communications page AI draft not working.
+- [2025-12-10] Session 6 - Fix 7: Fixed ExtractedItemsPanel 3-state conditional rendering (thread+case, thread+no-case, no-thread)
+- [2025-12-10] Session 6 - Fix 8: Added missing `Authorization: Bearer ${AI_SERVICE_API_KEY}` header to 4 gateway resolvers:
+  - `email-drafting.resolvers.ts` (4 fetch calls)
+  - `document-review.resolvers.ts`
+  - `time-entry.resolvers.ts`
+  - `semantic-version-control.resolvers.ts`
+- [2025-12-10] Session 6 - Fix 9: Rewrote ComposeInterface.tsx to use real `useGenerateDraft` hook instead of hardcoded mock drafts.
+- [2025-12-10] Session 6 - **Bug Found**: AI draft mutation returns `undefined`. Auth chain verified working (proxy sends correct user ID `86d03527-fed8-46df-8ca7-163d6b9d2c82`), email exists in DB with matching userId. Mystery: query should succeed but doesn't.
+- [2025-12-10] Session 6 - Added debug logging to gateway resolver (`[generateEmailDraft]`), proxy (`[GraphQL Proxy]`), and hook (`[useGenerateDraft]`). Next session should restart gateway to pick up logging and trace the issue.
 
 #### Files Involved
 

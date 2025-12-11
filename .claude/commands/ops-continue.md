@@ -87,9 +87,10 @@ Based on current status, proceed with appropriate workflow:
 - Review what's been done
 - **Check for local dev environment** in the issue's "Local Dev Environment" section
 - **ALWAYS test fixes locally first** before deploying:
-  1. Start the relevant service locally (e.g., `cd services/gateway && npm run dev`)
-  2. Test the fix with curl, browser, or logs
-  3. Iterate quickly on fixes (seconds) instead of waiting for deploys (minutes)
+  1. For quick iteration: `pnpm dev` (hot reload, development mode)
+  2. For production-like testing: `pnpm preview` (builds and runs production Docker)
+  3. Test the fix with curl, browser, or logs
+  4. Iterate quickly on fixes (seconds) instead of waiting for deploys (minutes)
 - Only deploy after local verification passes
 - Continue implementation
 - Run tests
@@ -155,4 +156,5 @@ When user says they're done, or before any `/clear`:
 - **Be methodical** - Follow the investigation stages, don't jump ahead
 - **Document everything** - Future sessions depend on good notes
 - **Use parallel tools** - Load multiple files simultaneously
-- **Test locally before deploying** - Local iteration is seconds vs minutes for deploys. Always check for local dev setup and test fixes locally before pushing to production.
+- **Test locally before deploying** - Use `pnpm dev` for quick iteration, `pnpm preview` for production-like testing
+- **Pushing does NOT deploy** - Use `pnpm deploy:production` to deploy after testing locally

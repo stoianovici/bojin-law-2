@@ -13,6 +13,7 @@ import { EstimateComparisonService } from '../../services/estimate-comparison.se
 import { TaskTypeEnum } from '@prisma/client';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 const SERVICE_SECRET = process.env.SERVICE_SECRET || 'dev-service-secret';
 
 interface Context {
@@ -130,11 +131,7 @@ export const timeEntryResolvers = {
     /**
      * Get all time entries for a specific task
      */
-    timeEntriesByTask: async (
-      _: any,
-      args: { taskId: string },
-      context: Context
-    ) => {
+    timeEntriesByTask: async (_: any, args: { taskId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -149,11 +146,7 @@ export const timeEntryResolvers = {
     /**
      * Get current user's time entries with optional filters
      */
-    myTimeEntries: async (
-      _: any,
-      args: { filters?: any },
-      context: Context
-    ) => {
+    myTimeEntries: async (_: any, args: { filters?: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -177,11 +170,7 @@ export const timeEntryResolvers = {
     /**
      * Get weekly summary for current user
      */
-    weeklySummary: async (
-      _: any,
-      args: { weekStart: string },
-      context: Context
-    ) => {
+    weeklySummary: async (_: any, args: { weekStart: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -190,20 +179,13 @@ export const timeEntryResolvers = {
         });
       }
 
-      return await timeSummaryService.getWeeklySummary(
-        user.id,
-        new Date(args.weekStart)
-      );
+      return await timeSummaryService.getWeeklySummary(user.id, new Date(args.weekStart));
     },
 
     /**
      * Get multi-week trend data for current user
      */
-    weeklyTrend: async (
-      _: any,
-      args: { weekCount: number },
-      context: Context
-    ) => {
+    weeklyTrend: async (_: any, args: { weekCount: number }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -242,20 +224,13 @@ export const timeEntryResolvers = {
         end: new Date(args.periodEnd),
       };
 
-      return await estimateComparisonService.getEstimateVsActualReport(
-        user.id,
-        period
-      );
+      return await estimateComparisonService.getEstimateVsActualReport(user.id, period);
     },
 
     /**
      * Get accuracy data for a specific task type
      */
-    taskTypeAccuracy: async (
-      _: any,
-      args: { taskType: TaskTypeEnum },
-      context: Context
-    ) => {
+    taskTypeAccuracy: async (_: any, args: { taskType: TaskTypeEnum }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -264,10 +239,7 @@ export const timeEntryResolvers = {
         });
       }
 
-      return await estimateComparisonService.getTaskTypeAccuracy(
-        user.id,
-        args.taskType
-      );
+      return await estimateComparisonService.getTaskTypeAccuracy(user.id, args.taskType);
     },
   },
 
@@ -275,11 +247,7 @@ export const timeEntryResolvers = {
     /**
      * Create a new time entry (manual time logging)
      */
-    createTimeEntry: async (
-      _: any,
-      args: { input: any },
-      context: Context
-    ) => {
+    createTimeEntry: async (_: any, args: { input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -300,11 +268,7 @@ export const timeEntryResolvers = {
     /**
      * Update an existing time entry
      */
-    updateTimeEntry: async (
-      _: any,
-      args: { id: string; input: any },
-      context: Context
-    ) => {
+    updateTimeEntry: async (_: any, args: { id: string; input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -325,11 +289,7 @@ export const timeEntryResolvers = {
     /**
      * Delete a time entry
      */
-    deleteTimeEntry: async (
-      _: any,
-      args: { id: string },
-      context: Context
-    ) => {
+    deleteTimeEntry: async (_: any, args: { id: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -393,11 +353,7 @@ export const timeEntryResolvers = {
     /**
      * Get AI-powered time estimation for task planning
      */
-    estimateTaskTime: async (
-      _: any,
-      args: { input: any },
-      context: Context
-    ) => {
+    estimateTaskTime: async (_: any, args: { input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -418,6 +374,7 @@ export const timeEntryResolvers = {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
             'x-service-secret': SERVICE_SECRET,
           },
           body: JSON.stringify(requestBody),
@@ -425,12 +382,9 @@ export const timeEntryResolvers = {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new GraphQLError(
-            errorData.error || 'AI service error',
-            {
-              extensions: { code: 'AI_SERVICE_ERROR' },
-            }
-          );
+          throw new GraphQLError(errorData.error || 'AI service error', {
+            extensions: { code: 'AI_SERVICE_ERROR' },
+          });
         }
 
         const data = await response.json();

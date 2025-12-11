@@ -14,6 +14,7 @@ import logger from '../../utils/logger';
 
 // AI Service base URL
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 
 // Context type
 export interface Context {
@@ -89,6 +90,7 @@ async function callAIService(endpoint: string, data: object): Promise<any> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
       },
       body: JSON.stringify(data),
     });
@@ -133,11 +135,7 @@ async function recordHistory(
 export const documentReviewResolvers = {
   Query: {
     // Get review by ID
-    documentReview: async (
-      _: unknown,
-      { id }: { id: string },
-      context: Context
-    ) => {
+    documentReview: async (_: unknown, { id }: { id: string }, context: Context) => {
       const user = requireAuth(context);
 
       if (!(await canAccessReview(id, user))) {
@@ -204,11 +202,7 @@ export const documentReviewResolvers = {
           submitter: true,
           reviewer: true,
         },
-        orderBy: [
-          { priority: 'desc' },
-          { dueDate: 'asc' },
-          { createdAt: 'asc' },
-        ],
+        orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'asc' }],
         take: limit,
         skip: offset,
       });
@@ -366,7 +360,9 @@ export const documentReviewResolvers = {
     // Submit document for review
     submitDocumentForReview: async (
       _: unknown,
-      { input }: {
+      {
+        input,
+      }: {
         input: {
           documentId: string;
           versionId: string;
@@ -497,16 +493,12 @@ export const documentReviewResolvers = {
       );
 
       // Notify assigned reviewer
-      await notificationService.notifyDocumentReviewRequested(
-        reviewerId,
-        user.firmId,
-        {
-          reviewId,
-          documentId: review.documentId,
-          documentTitle: review.document.fileName,
-          actorName: `${user.firstName} ${user.lastName}`,
-        }
-      );
+      await notificationService.notifyDocumentReviewRequested(reviewerId, user.firmId, {
+        reviewId,
+        documentId: review.documentId,
+        documentTitle: review.document.fileName,
+        actorName: `${user.firstName} ${user.lastName}`,
+      });
 
       return review;
     },
@@ -514,7 +506,9 @@ export const documentReviewResolvers = {
     // Add inline comment
     addReviewComment: async (
       _: unknown,
-      { input }: {
+      {
+        input,
+      }: {
         input: {
           reviewId: string;
           content: string;
@@ -552,11 +546,7 @@ export const documentReviewResolvers = {
       });
 
       // Record history
-      await recordHistory(
-        input.reviewId,
-        ReviewAction.COMMENT_ADDED,
-        user.id
-      );
+      await recordHistory(input.reviewId, ReviewAction.COMMENT_ADDED, user.id);
 
       // Get review for notification context
       const review = await prisma.documentReview.findUnique({
@@ -576,10 +566,7 @@ export const documentReviewResolvers = {
       }
 
       // Check for @mentions
-      const mentionedUserIds = await notificationService.parseMentions(
-        input.content,
-        user.firmId
-      );
+      const mentionedUserIds = await notificationService.parseMentions(input.content, user.firmId);
 
       for (const mentionedId of mentionedUserIds) {
         if (mentionedId !== user.id) {
@@ -630,11 +617,7 @@ export const documentReviewResolvers = {
     },
 
     // Resolve comment
-    resolveComment: async (
-      _: unknown,
-      { commentId }: { commentId: string },
-      context: Context
-    ) => {
+    resolveComment: async (_: unknown, { commentId }: { commentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       const comment = await prisma.reviewComment.findUnique({
@@ -663,11 +646,7 @@ export const documentReviewResolvers = {
       });
 
       // Record history
-      await recordHistory(
-        comment.reviewId,
-        ReviewAction.COMMENT_RESOLVED,
-        user.id
-      );
+      await recordHistory(comment.reviewId, ReviewAction.COMMENT_RESOLVED, user.id);
 
       return updated;
     },
@@ -675,7 +654,9 @@ export const documentReviewResolvers = {
     // Make review decision
     makeReviewDecision: async (
       _: unknown,
-      { input }: {
+      {
+        input,
+      }: {
         input: {
           reviewId: string;
           decision: string;
@@ -731,8 +712,8 @@ export const documentReviewResolvers = {
         newStatus === 'APPROVED'
           ? ReviewAction.APPROVED
           : newStatus === 'REJECTED'
-          ? ReviewAction.REJECTED
-          : ReviewAction.REVISION_REQUESTED;
+            ? ReviewAction.REJECTED
+            : ReviewAction.REVISION_REQUESTED;
 
       await recordHistory(
         input.reviewId,
@@ -753,15 +734,9 @@ export const documentReviewResolvers = {
       };
 
       if (newStatus === 'APPROVED') {
-        await notificationService.notifyDocumentApproved(
-          review.submittedBy,
-          notificationContext
-        );
+        await notificationService.notifyDocumentApproved(review.submittedBy, notificationContext);
       } else if (newStatus === 'REJECTED') {
-        await notificationService.notifyDocumentRejected(
-          review.submittedBy,
-          notificationContext
-        );
+        await notificationService.notifyDocumentRejected(review.submittedBy, notificationContext);
       } else if (newStatus === 'REVISION_REQUESTED') {
         await notificationService.notifyDocumentRevisionRequested(
           review.submittedBy,
@@ -838,17 +813,13 @@ export const documentReviewResolvers = {
 
       // Notify reviewer
       if (review.assignedTo) {
-        await notificationService.notifyDocumentReviewRequested(
-          review.assignedTo,
-          user.firmId,
-          {
-            reviewId,
-            documentId: review.documentId,
-            documentTitle: review.document.fileName,
-            actorName: `${user.firstName} ${user.lastName}`,
-            revisionNumber: updated.revisionNumber,
-          }
-        );
+        await notificationService.notifyDocumentReviewRequested(review.assignedTo, user.firmId, {
+          reviewId,
+          documentId: review.documentId,
+          documentTitle: review.document.fileName,
+          actorName: `${user.firstName} ${user.lastName}`,
+          revisionNumber: updated.revisionNumber,
+        });
       }
 
       return updated;
@@ -888,7 +859,9 @@ export const documentReviewResolvers = {
     // Batch review decision
     batchReviewDecision: async (
       _: unknown,
-      { input }: {
+      {
+        input,
+      }: {
         input: {
           reviewIds: string[];
           decision: string;
@@ -1043,35 +1016,26 @@ export const documentReviewResolvers = {
 
   // Type resolvers
   DocumentReview: {
-    document: (parent: any) =>
-      prisma.document.findUnique({ where: { id: parent.documentId } }),
+    document: (parent: any) => prisma.document.findUnique({ where: { id: parent.documentId } }),
     documentVersion: (parent: any) =>
       prisma.documentVersion.findUnique({ where: { id: parent.documentVersionId } }),
-    submittedBy: (parent: any) =>
-      prisma.user.findUnique({ where: { id: parent.submittedBy } }),
+    submittedBy: (parent: any) => prisma.user.findUnique({ where: { id: parent.submittedBy } }),
     assignedTo: (parent: any) =>
-      parent.assignedTo
-        ? prisma.user.findUnique({ where: { id: parent.assignedTo } })
-        : null,
+      parent.assignedTo ? prisma.user.findUnique({ where: { id: parent.assignedTo } }) : null,
   },
 
   ReviewComment: {
-    author: (parent: any) =>
-      prisma.user.findUnique({ where: { id: parent.authorId } }),
+    author: (parent: any) => prisma.user.findUnique({ where: { id: parent.authorId } }),
     resolvedBy: (parent: any) =>
-      parent.resolvedBy
-        ? prisma.user.findUnique({ where: { id: parent.resolvedBy } })
-        : null,
+      parent.resolvedBy ? prisma.user.findUnique({ where: { id: parent.resolvedBy } }) : null,
   },
 
   ReviewCommentReply: {
-    author: (parent: any) =>
-      prisma.user.findUnique({ where: { id: parent.authorId } }),
+    author: (parent: any) => prisma.user.findUnique({ where: { id: parent.authorId } }),
   },
 
   ReviewHistoryEntry: {
-    actor: (parent: any) =>
-      prisma.user.findUnique({ where: { id: parent.actorId } }),
+    actor: (parent: any) => prisma.user.findUnique({ where: { id: parent.actorId } }),
   },
 };
 

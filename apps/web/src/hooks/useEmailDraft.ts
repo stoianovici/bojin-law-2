@@ -6,7 +6,7 @@
  */
 
 import { gql } from '@apollo/client';
-import { useMutation, useQuery, useLazyQuery } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { useCallback, useState } from 'react';
 import { debounce } from 'lodash';
 
@@ -278,16 +278,30 @@ export function useGenerateDraft(emailId: string, tone?: EmailTone, recipientTyp
 
   const generate = useCallback(
     async (overrideTone?: EmailTone, overrideRecipientType?: RecipientType) => {
-      const result = await generateDraft({
-        variables: {
-          input: {
-            emailId,
-            tone: overrideTone || tone || 'Professional',
-            recipientType: overrideRecipientType || recipientType || 'Client',
+      try {
+        const result = await generateDraft({
+          variables: {
+            input: {
+              emailId,
+              tone: overrideTone || tone || 'Professional',
+              recipientType: overrideRecipientType || recipientType || 'Client',
+            },
           },
-        },
-      });
-      return result.data?.generateEmailDraft as EmailDraft | undefined;
+        });
+
+        // Log GraphQL errors if present
+        if (result.errors && result.errors.length > 0) {
+          console.error(
+            '[useGenerateDraft] GraphQL errors:',
+            result.errors.map((e) => e.message)
+          );
+        }
+
+        return result.data?.generateEmailDraft as EmailDraft | undefined;
+      } catch (err) {
+        console.error('[useGenerateDraft] Mutation failed:', err);
+        throw err;
+      }
     },
     [emailId, tone, recipientType, generateDraft]
   );
@@ -376,6 +390,7 @@ export function useUpdateDraft() {
   );
 
   // Debounced auto-save for draft editing
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce function is intentionally wrapped
   const debouncedUpdate = useCallback(
     debounce((draftId: string, body: string) => {
       update(draftId, { body, status: 'Editing' });
@@ -514,6 +529,7 @@ export function useInlineSuggestions(draftId: string) {
   const [suggestion, setSuggestion] = useState<InlineSuggestion | null>(null);
 
   // Debounced function to get suggestions
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce function is intentionally wrapped
   const debouncedGetSuggestion = useCallback(
     debounce(async (partialText: string) => {
       if (partialText.length < 10) {
@@ -577,9 +593,7 @@ export function useDraftWorkflow(emailId: string) {
     const result = await generateMultiple();
     if (result?.drafts?.length) {
       // Set the recommended draft as active
-      const recommended = result.drafts.find(
-        (d) => d.tone === result.recommendedTone
-      );
+      const recommended = result.drafts.find((d) => d.tone === result.recommendedTone);
       setActiveDraft(recommended?.draft || result.drafts[0].draft);
     }
     return result;
@@ -629,12 +643,9 @@ export function useDraftWorkflow(emailId: string) {
     return discarded;
   }, [activeDraft, discard, refetch]);
 
-  const selectDraft = useCallback(
-    (draft: EmailDraft) => {
-      setActiveDraft(draft);
-    },
-    []
-  );
+  const selectDraft = useCallback((draft: EmailDraft) => {
+    setActiveDraft(draft);
+  }, []);
 
   return {
     // State
@@ -645,9 +656,7 @@ export function useDraftWorkflow(emailId: string) {
     startMultipleDrafts,
     refineDraft,
     updateDraft,
-    autoSave: activeDraft
-      ? (body: string) => autoSave(activeDraft.id, body)
-      : undefined,
+    autoSave: activeDraft ? (body: string) => autoSave(activeDraft.id, body) : undefined,
     sendDraft,
     discardDraft,
     selectDraft,

@@ -193,8 +193,21 @@ export default function CommunicationsPage() {
 
         {/* Right Column: Extracted Items Panel (hidden on tablet, shown on lg+) */}
         <div className="hidden w-80 flex-col border-l bg-white lg:flex overflow-y-auto">
-          {selectedThread?.caseId ? (
-            <ExtractedItemsPanel caseId={selectedThread.caseId} />
+          {selectedThread ? (
+            selectedThread.caseId ? (
+              <ExtractedItemsPanel caseId={selectedThread.caseId} />
+            ) : (
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Elemente extrase</h3>
+                <p className="text-sm text-gray-500 mb-3">
+                  Această conversație nu este asociată cu un dosar.
+                </p>
+                <p className="text-xs text-gray-400">
+                  Asociați emailul cu un dosar pentru a extrage automat termene, angajamente și
+                  acțiuni folosind AI.
+                </p>
+              </div>
+            )
           ) : (
             <div className="p-4 text-sm text-gray-500">
               Selectați o conversație pentru a vedea elementele extrase

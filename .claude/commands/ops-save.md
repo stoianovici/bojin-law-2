@@ -75,33 +75,21 @@ Create/update `.ai/ops-{issue-id}-handoff.md`:
 {any useful commands, error messages, etc.}
 ```
 
-## 5. Git Commit and Push
+## 5. Check for Uncommitted Changes
 
-Automatically commit and push WIP to preserve work across sessions:
+**DO NOT automatically commit or push.** Just inform the user:
 
 1. **Run `git status`** to check for changes
 
-2. **If there are changes**:
-   - Stage all modified files with `git add`
-   - Create WIP commit:
+2. **If there are changes**, inform the user:
 
-     ```
-     wip: {brief description} (OPS-XXX)
+   ```
+   You have uncommitted changes. When ready:
+   - `/ops-commit` - to commit and push changes
+   - `/ops-deploy` - to deploy to production
+   ```
 
-     Work in progress for issue OPS-XXX.
-     Status: {current status}
-     Next steps: {brief next steps}
-
-     🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-     Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-     ```
-
-3. **Push automatically**:
-   - Run `git push` to backup work to remote
-   - If push fails, set upstream and retry
-
-4. **Record commit info** in handoff file under "Commands/Context to Remember"
+3. **Record status** in handoff file under "Commands/Context to Remember"
 
 ## 6. Confirm Save
 
@@ -125,4 +113,4 @@ Safe to `/clear` now - context is preserved.
 - Include specific file paths and line numbers where relevant
 - Include exact error messages if debugging
 - Next steps should be actionable and specific
-- Committing WIP ensures code isn't lost between sessions
+- **DO NOT automatically commit or push** - Let the user decide when to commit/deploy

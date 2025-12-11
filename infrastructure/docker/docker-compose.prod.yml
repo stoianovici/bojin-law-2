@@ -1,8 +1,15 @@
 name: legal-platform-prod
 
 # Production-like testing environment using production Docker images
-# This configuration mimics production deployment for local testing
-# NOTE: Actual production deployments are handled by Render.com (see infrastructure/DEPLOYMENT_GUIDE.md)
+# This is a PERFECT MIRROR of production - use this to test before deploying
+#
+# Usage:
+#   pnpm dev:prod        # Start production-like environment
+#   pnpm dev:prod:down   # Stop and remove containers
+#   pnpm preview         # Build all packages and start prod environment
+#
+# IMPORTANT: Stop dev environment first (pnpm dev:prod uses the same ports)
+# NOTE: Actual production deployments are handled by Render.com - use: pnpm deploy:production
 
 services:
   # PostgreSQL Database with pgvector extension
@@ -15,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: legal_platform_prod
     ports:
-      - '5433:5432' # Different port to avoid conflicts
+      - '5432:5432'
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
@@ -34,7 +41,7 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
     ports:
-      - '6380:6379' # Different port to avoid conflicts
+      - '6379:6379'
     volumes:
       - redis_prod_data:/data
     healthcheck:
@@ -66,7 +73,7 @@ services:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-changeme}@postgres:5432/legal_platform_prod
       REDIS_URL: redis://default:${REDIS_PASSWORD:-changeme}@redis:6379
     ports:
-      - '4010:4000' # Different port to avoid conflicts
+      - '4000:4000'
     networks:
       - legal-platform-prod
     healthcheck:
@@ -96,7 +103,7 @@ services:
       NODE_ENV: production
       PORT: 5001
     ports:
-      - '5011:5001'
+      - '5001:5001'
     networks:
       - legal-platform-prod
     healthcheck:
@@ -127,7 +134,7 @@ services:
       NODE_ENV: production
       PORT: 5003
     ports:
-      - '5013:5003'
+      - '5003:5003'
     networks:
       - legal-platform-prod
     healthcheck:
@@ -156,7 +163,7 @@ services:
       NODE_ENV: production
       PORT: 5002
     ports:
-      - '5012:5002'
+      - '5002:5002'
     networks:
       - legal-platform-prod
     healthcheck:
@@ -185,7 +192,7 @@ services:
       NODE_ENV: production
       PORT: 5004
     ports:
-      - '5014:5004'
+      - '5004:5004'
     networks:
       - legal-platform-prod
     healthcheck:
@@ -216,7 +223,7 @@ services:
       NODE_ENV: production
       PORT: 5005
     ports:
-      - '5015:5005'
+      - '5005:5005'
     networks:
       - legal-platform-prod
     healthcheck:
@@ -231,7 +238,7 @@ services:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile.web
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4010/graphql}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/graphql}
     image: legal-platform-web:latest
     container_name: legal-platform-web-prod
     restart: unless-stopped
@@ -242,7 +249,7 @@ services:
       NODE_ENV: production
       PORT: 3000
     ports:
-      - '3001:3000' # Different port to avoid conflicts
+      - '3000:3000'
     networks:
       - legal-platform-prod
     healthcheck:

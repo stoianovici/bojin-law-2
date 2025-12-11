@@ -83,34 +83,17 @@ If user mentioned follow-up work needed:
 - Ask if they want to create a new issue now
 - Offer to run `/ops-new` with suggested title
 
-## 11. Git Commit and Push
+## 11. Remind About Code Changes
 
-Automatically commit and push the fix (issue is resolved, ready for deployment):
+**DO NOT automatically commit or push.** Deployment should be on-demand only.
+
+If there are uncommitted code changes:
 
 1. **Run `git status`** to check for uncommitted changes
-
-2. **If there are changes**:
-   - Stage all relevant files with `git add`
-   - Commit with message:
-
-     ```
-     fix: {brief description} (OPS-XXX)
-
-     Root cause: {root cause summary}
-     Resolution: {fix summary}
-
-     🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-     Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-     ```
-
-3. **Push automatically**:
-   - Run `git push`
-   - If push fails (no upstream, etc.), set upstream and retry
-
-4. **Record in ops log**:
-   - Add commit hash to Fix Applied section
-   - Note: "Committed and pushed: {hash}"
+2. **Inform the user** about any uncommitted changes
+3. **Remind them** they can use:
+   - `/ops-commit` - to commit and push changes when ready
+   - `/ops-deploy` - to deploy to production when ready
 
 ## 12. Report Summary
 
@@ -122,6 +105,7 @@ Automatically commit and push the fix (issue is resolved, ready for deployment):
 **Duration**: {created date} to {today}
 **Commit**: {hash or "no changes"}
 **Pushed**: {yes/no/n/a}
+**Deployed**: {yes/no/pending}
 
 ### Lessons Learned
 {lessons}

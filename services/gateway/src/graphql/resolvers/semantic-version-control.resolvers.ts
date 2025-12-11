@@ -12,12 +12,10 @@ import logger from '../../utils/logger';
 
 // AI Service base URL
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 
 // Cache TTL in hours
-const COMPARISON_CACHE_TTL_HOURS = parseInt(
-  process.env.AI_COMPARISON_CACHE_TTL_HOURS || '24',
-  10
-);
+const COMPARISON_CACHE_TTL_HOURS = parseInt(process.env.AI_COMPARISON_CACHE_TTL_HOURS || '24', 10);
 
 // Context type
 export interface Context {
@@ -90,6 +88,7 @@ async function callAIService(endpoint: string, data: object): Promise<any> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
       },
       body: JSON.stringify(data),
     });
@@ -294,7 +293,9 @@ export const semanticVersionControlResolvers = {
     // Get filtered semantic changes
     semanticChanges: async (
       _: unknown,
-      { input }: {
+      {
+        input,
+      }: {
         input: {
           documentId: string;
           fromVersionId: string;
@@ -339,11 +340,7 @@ export const semanticVersionControlResolvers = {
     },
 
     // Get a single semantic change
-    semanticChange: async (
-      _: unknown,
-      { id }: { id: string },
-      context: Context
-    ) => {
+    semanticChange: async (_: unknown, { id }: { id: string }, context: Context) => {
       const user = requireAuth(context);
 
       const change = await prisma.semanticChange.findUnique({
