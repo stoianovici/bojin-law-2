@@ -98,10 +98,11 @@ export class EmailThreadService {
   groupEmailsIntoThreads(emails: Email[]): EmailThread[] {
     const threadMap = new Map<string, Email[]>();
 
-    // Group by conversationId (skip emails without a valid conversationId)
+    // Group by conversationId, fallback to graphMessageId for emails without conversationId
     for (const email of emails) {
-      const key = email.conversationId;
-      // Skip emails with null/empty conversationId - they can't be threaded
+      // Use conversationId if available, otherwise use graphMessageId as single-email "thread"
+      const key = email.conversationId || email.graphMessageId;
+      // Skip emails with neither (should never happen)
       if (!key) {
         continue;
       }
@@ -162,7 +163,8 @@ export class EmailThreadService {
     filters: ThreadFilters,
     pagination: PaginationOptions = {}
   ): Promise<{ threads: EmailThread[]; totalCount: number }> {
-    const { userId, caseId, hasUnread, hasAttachments, search, dateFrom, dateTo, includeIgnored } = filters;
+    const { userId, caseId, hasUnread, hasAttachments, search, dateFrom, dateTo, includeIgnored } =
+      filters;
     const { limit = 20, offset = 0 } = pagination;
 
     // Build where clause

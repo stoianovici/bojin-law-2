@@ -378,7 +378,9 @@ export class EmailSyncService {
       async () => {
         try {
           // Use inbox-only endpoint to avoid syncing sent items
-          const endpoint = useDelta ? '/me/mailFolders/Inbox/messages/delta' : graphEndpoints.inboxMessages;
+          const endpoint = useDelta
+            ? '/me/mailFolders/Inbox/messages/delta'
+            : graphEndpoints.inboxMessages;
 
           const request = client
             .api(endpoint)
@@ -451,7 +453,8 @@ export class EmailSyncService {
       .filter((m) => m.id && !('removed' in m))
       .map((message) => ({
         graphMessageId: message.id!,
-        conversationId: message.conversationId || '',
+        // Use conversationId from Graph API, or fallback to message ID for threading
+        conversationId: message.conversationId || message.id || '',
         internetMessageId: message.internetMessageId || undefined,
         subject: message.subject || '(No Subject)',
         bodyPreview: message.bodyPreview || '',
