@@ -1,7 +1,18 @@
 # Render.com Infrastructure Configuration
-# Legal Platform - Web Frontend Only (for now)
+# Legal Platform - Full Stack Deployment
 #
-# Backend services, database, and Redis will be added when implemented
+# ============================================================================
+# WARNING: DO NOT RE-IMPORT THIS FILE AS A NEW BLUEPRINT!
+# ============================================================================
+# This file was used for INITIAL SETUP ONLY. Re-importing creates duplicates.
+#
+# HOW TO DEPLOY:
+#   1. Go to Render Dashboard → Select the service → Click "Manual Deploy"
+#   2. OR enable "Auto-Deploy" on each service to deploy on git push
+#   3. To change settings, edit directly in Render Dashboard, not here
+#
+# This file is now DOCUMENTATION ONLY - changes here won't auto-apply.
+# ============================================================================
 
 services:
   ##############################################################################
