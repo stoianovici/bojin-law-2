@@ -106,7 +106,7 @@ services:
     runtime: node
     repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
-    buildCommand: npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm --filter @legal-platform/database build && pnpm --filter @legal-platform/ai-service build
+    buildCommand: npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm --filter @legal-platform/types build && pnpm --filter @legal-platform/database build && pnpm --filter @legal-platform/ai-service build
     startCommand: pnpm --filter @legal-platform/ai-service start
     plan: starter # 512MB RAM
     numInstances: 1
