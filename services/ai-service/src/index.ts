@@ -3,6 +3,9 @@
  * Story 3.1: AI Service Infrastructure
  */
 
+// Load environment variables first
+import 'dotenv/config';
+
 import express, { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { config } from './config';

@@ -219,8 +219,7 @@ const RECIPIENT_ADAPTATIONS: Record<
   [RecipientType.ThirdParty]: {
     languageLevel: 'professional',
     includeExplanations: true,
-    toneGuidance:
-      'Maintain neutrality. Be clear and professional. Avoid assuming legal knowledge.',
+    toneGuidance: 'Maintain neutrality. Be clear and professional. Avoid assuming legal knowledge.',
   },
   [RecipientType.Internal]: {
     languageLevel: 'casual-professional',
@@ -279,13 +278,13 @@ Generate a complete email response with:
 5. Proper salutation and closing
 
 Return your response as JSON with this exact structure:
-{
+{{
   "subject": "string",
   "body": "string (plain text)",
   "htmlBody": "string (formatted HTML with <p>, <br>, <ul>, etc.)",
   "keyPointsAddressed": ["string array of main points you addressed"],
   "confidence": number (0-1, your confidence in the quality of this response)
-}`;
+}}`;
 
 // Sanitize content for AI prompt injection protection (SEC-001)
 function sanitizeForPrompt(content: string): string {
@@ -504,7 +503,9 @@ Preview: ${preview}...`;
   /**
    * Format risk indicators
    */
-  private formatRisks(risks: Array<{ type: string; severity: string; description: string }>): string {
+  private formatRisks(
+    risks: Array<{ type: string; severity: string; description: string }>
+  ): string {
     if (!risks || risks.length === 0) return 'None identified';
     return risks.map((r) => `[${r.severity}] ${r.type}: ${r.description}`).join('; ');
   }
@@ -662,8 +663,7 @@ Preview: ${preview}...`;
     if (recipientType === RecipientType.OpposingCounsel) {
       return {
         tone: EmailTone.Professional,
-        reason:
-          'Correspondence with opposing counsel should maintain professional legal tone.',
+        reason: 'Correspondence with opposing counsel should maintain professional legal tone.',
       };
     }
 

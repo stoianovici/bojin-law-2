@@ -14,9 +14,9 @@ export const config = {
   claude: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
     models: {
-      haiku: process.env.CLAUDE_HAIKU_MODEL || 'claude-3-haiku-20240307',
-      sonnet: process.env.CLAUDE_SONNET_MODEL || 'claude-3-5-sonnet-20241022',
-      opus: process.env.CLAUDE_OPUS_MODEL || 'claude-3-opus-20240229',
+      haiku: process.env.CLAUDE_HAIKU_MODEL || 'claude-3-5-haiku-latest',
+      sonnet: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-20250514',
+      opus: process.env.CLAUDE_OPUS_MODEL || 'claude-3-opus-latest',
     },
     rateLimits: {
       haiku: { requestsPerMin: 1000, tokensPerMin: 100000 },
