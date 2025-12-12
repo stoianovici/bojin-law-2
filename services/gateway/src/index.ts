@@ -80,12 +80,16 @@ app.get('/health', (req: Request, res: Response) => {
 app.post('/admin/run-migration-is-ignored', async (req: Request, res: Response) => {
   const { prisma } = await import('@legal-platform/database');
   try {
-    // Add is_ignored column if it doesn't exist
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE emails ADD COLUMN IF NOT EXISTS is_ignored BOOLEAN DEFAULT false;
-      ALTER TABLE emails ADD COLUMN IF NOT EXISTS ignored_at TIMESTAMPTZ;
-      CREATE INDEX IF NOT EXISTS emails_is_ignored_idx ON emails(is_ignored);
-    `);
+    // Add is_ignored column if it doesn't exist (run each statement separately)
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE emails ADD COLUMN IF NOT EXISTS is_ignored BOOLEAN DEFAULT false`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE emails ADD COLUMN IF NOT EXISTS ignored_at TIMESTAMPTZ`
+    );
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS emails_is_ignored_idx ON emails(is_ignored)`
+    );
     res.json({ success: true, message: 'Migration applied successfully' });
   } catch (error: any) {
     console.error('[Migration] Error:', error);
