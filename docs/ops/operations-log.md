@@ -1327,6 +1327,7 @@ cd apps/web && pnpm dev             # Next.js frontend on :3000
 - [2025-12-12] Session 2 - Root cause confirmed: emailViewMode defaults to 'received' which filters out threads where all messages have senderEmail matching user's email. Additionally, the filter state is persisted in localStorage, so clearing localStorage may be required.
 - [2025-12-12] Session 2 - Fix: Changed default emailViewMode from 'received' to 'all' in communication.store.ts. Added debug logging to help diagnose future issues.
 - [2025-12-12] Session 2 - Build verified successful. Ready for deployment.
+- [2025-12-12] Session 2 - Committed and pushed `bfb5736`. Manual deployment required (RENDER_DEPLOY_HOOK_PRODUCTION not set).
 
 #### Files Involved
 
