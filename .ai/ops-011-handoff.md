@@ -1,12 +1,81 @@
 # Handoff: [OPS-011] Refocus /communications on Received Emails Only
 
-**Session**: 3
+**Session**: 4
 **Date**: 2025-12-12
 **Status**: Verifying
 
-## Work Completed This Session
+## Work Completed This Session (Session 4)
 
-### All Phases COMPLETE
+### Extracted Items Fix
+
+**Problem:** ExtractedItemsPanel failed with error:
+
+```
+Cannot read properties of undefined (reading 'extractedDeadline')
+```
+
+**Root Cause:** GraphQL resolvers weren't including relations (email, case, convertedTask) that the frontend queries expected.
+
+**Fix Applied:** Added `include` statements to all extracted items resolvers:
+
+- `extractedDeadlines`
+- `extractedCommitments`
+- `extractedActionItems`
+- `extractedQuestions`
+
+**File:** `services/gateway/src/graphql/resolvers/communication-intelligence.resolvers.ts`
+
+```typescript
+include: {
+  email: { select: { id: true, subject: true } },
+  case: { select: { id: true, title: true } },
+  convertedTask: { select: { id: true, title: true } },
+}
+```
+
+### Render Infrastructure Optimization
+
+**Finding:** Redis Pro tier is 52% of monthly costs (~$50/month)
+
+**Recommendation:** Downgrade Redis Pro → Starter ($10/month)
+
+- Current usage: sessions + caching (standard key-value)
+- Pro tier (256MB) is overkill for this use case
+- Starter (50MB) is sufficient
+
+**Workaround Required:** Render doesn't allow downgrades. Must:
+
+1. Create new Redis instance on Starter plan
+2. Update REDIS_URL on all services
+3. Delete old Pro instance
+4. Note: Sessions will be lost (users re-login)
+
+**Deferred:** User will handle Redis migration later.
+
+### Deploys Triggered
+
+- `dep-d4tvnlidbo4c73ajrvd0` - gateway (extracted items fix)
+- `dep-d4tvnmp5pdvs73ee3k20` - web
+
+## Next Session TODO
+
+1. **Verify extracted items fix works** after deploy completes
+2. **Test ExtractedItemsPanel** with case-assigned emails
+3. **If still broken:** Debug further - check:
+   - GraphQL response structure
+   - Frontend query expectations
+   - Whether emails are actually assigned to cases
+
+## All Commits (Sessions 3-4)
+
+| Commit    | Description                                       |
+| --------- | ------------------------------------------------- |
+| `8ed5b1f` | feat: integrate ThreadSummaryPanel                |
+| `f746efa` | feat: add NotifyStakeholdersModal                 |
+| `2568325` | fix: include relations in extracted items queries |
+| `9b689f2` | chore: remove debug logging                       |
+
+## Previous Sessions Summary
 
 | Phase     | Status  | What Was Done                                            |
 | --------- | ------- | -------------------------------------------------------- |
@@ -14,7 +83,7 @@
 | Phase 2   | ✅ DONE | AI extraction verified (not legacy, properly integrated) |
 | Phase 3   | ✅ DONE | Communication tools - all 4 features implemented         |
 
-### Phase 3 Communication Tools Summary
+## Phase 3 Communication Tools
 
 | Feature                  | Component                 | Location                                   |
 | ------------------------ | ------------------------- | ------------------------------------------ |
@@ -23,86 +92,32 @@
 | **Daily Email Digest**   | `MorningBriefing`         | All dashboards (OPS-006)                   |
 | **Follow-up Tracking**   | Proactive AI Suggestions  | `FollowUp` type in suggestions system      |
 
-### New Components This Session
-
-1. **NotifyStakeholdersModal** (`apps/web/src/components/communication/NotifyStakeholdersModal.tsx`)
-   - Modal for sending quick notifications to thread participants
-   - Shows thread context and case name
-   - Checkbox selection for recipients (thread participants)
-   - Custom recipient input
-   - "Sugerează mesaj" button for AI-assisted draft
-   - Sends via `sendNewEmail` GraphQL mutation
-
-2. **Button Integration** (`MessageView.tsx`)
-   - Purple "Notifică părțile" button in actions area
-   - Only appears when thread is assigned to a case
-   - Opens NotifyStakeholdersModal
-
-## Current State
-
-**All implementation is complete.** Status moved to **Verifying**.
-
-Ready for production testing:
-
-- [ ] Test FilterBar tabs (De procesat / Toate)
-- [ ] Test user message hiding in MessageView
-- [ ] Test Outlook link opens compose
-- [ ] Test ThreadSummaryPanel shows analysis
-- [ ] Test NotifyStakeholdersModal sends email
-- [ ] Test ExtractedItemsPanel shows extractions (needs case-assigned emails)
-
-## Commits This Session
-
-1. `8ed5b1f` - feat: integrate ThreadSummaryPanel
-2. `2a80a0e` - docs: update session log
-3. (pending) - feat: add NotifyStakeholdersModal
-
 ## Key Files Reference
-
-**New This Session:**
-
-- `apps/web/src/components/communication/NotifyStakeholdersModal.tsx`
 
 **Modified This Session:**
 
+- `services/gateway/src/graphql/resolvers/communication-intelligence.resolvers.ts` - Added include for relations
+
+**Session 3:**
+
+- `apps/web/src/components/communication/NotifyStakeholdersModal.tsx` - NEW
 - `apps/web/src/app/communications/page.tsx` - ThreadSummaryPanel integration
 - `apps/web/src/components/communication/MessageView.tsx` - Notify button
 
-**Previously Modified (Session 2):**
+## Render API Key
 
-- `apps/web/src/components/communication/FilterBar.tsx`
-- `apps/web/src/stores/communication.store.ts`
+Stored for future sessions: `rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0`
 
-## Architecture
+Services:
 
-**Communications Page Right Sidebar:**
-
-```
-┌─────────────────────────────────────┐
-│ ExtractedItemsPanel (if caseId)     │
-│ - Deadlines                         │
-│ - Commitments                       │
-│ - Action Items                      │
-│ - Questions                         │
-├─────────────────────────────────────┤
-│ ThreadSummaryPanel (if conversationId) │
-│ - Opposing counsel position         │
-│ - Key arguments                     │
-│ - Position changes                  │
-└─────────────────────────────────────┘
-```
-
-**MessageView Actions (when assigned to case):**
-
-```
-[Noi → Vechi] [Extinde tot] [Notifică părțile] [Marchează ca Procesat]
-                              ↑
-                         NEW: Purple button
-```
+- `srv-d4dk9fodl3ps73d3d7ig` - legal-platform-web
+- `srv-d4pkv8q4i8rc73fq3mvg` - legal-platform-gateway
+- `srv-d4t77pshg0os73cnebtg` - legal-platform-ai-service
+- `srv-d4k84gogjchc73a0lqo0` - bojin-legacy-import
 
 ---
 
 _Created: 2025-12-12_
-_Last Updated: 2025-12-12 (Session 3 - All phases complete)_
+_Last Updated: 2025-12-12 (Session 4)_
 _Status: Verifying_
 _Command to continue: `/ops-continue OPS-011`_
