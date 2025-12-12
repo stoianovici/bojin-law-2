@@ -1,0 +1,258 @@
+name: Selective Deploy to Render
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to deploy (comma-separated, or "all")'
+        required: false
+        default: 'all'
+        type: string
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+  # Service IDs on Render
+  SERVICE_ID_WEB: 'srv-d4dk9fodl3ps73d3d7ig'
+  SERVICE_ID_GATEWAY: 'srv-d4pkv8q4i8rc73fq3mvg'
+  SERVICE_ID_AI: 'srv-d4t77pshg0os73cnebtg'
+  SERVICE_ID_LEGACY: 'srv-d4k84gogjchc73a0lqo0'
+
+jobs:
+  # Job 1: Detect what changed
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.changes.outputs.web }}
+      gateway: ${{ steps.changes.outputs.gateway }}
+      ai-service: ${{ steps.changes.outputs.ai-service }}
+      legacy-import: ${{ steps.changes.outputs.legacy-import }}
+      any-service: ${{ steps.changes.outputs.any-service }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed files
+        id: changes
+        run: |
+          # Get changed files
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Manual trigger - check input
+            if [ "${{ github.event.inputs.services }}" == "all" ]; then
+              echo "web=true" >> $GITHUB_OUTPUT
+              echo "gateway=true" >> $GITHUB_OUTPUT
+              echo "ai-service=true" >> $GITHUB_OUTPUT
+              echo "legacy-import=true" >> $GITHUB_OUTPUT
+              echo "any-service=true" >> $GITHUB_OUTPUT
+              exit 0
+            else
+              # Parse comma-separated services
+              SERVICES="${{ github.event.inputs.services }}"
+              echo "web=$(echo $SERVICES | grep -q 'web' && echo true || echo false)" >> $GITHUB_OUTPUT
+              echo "gateway=$(echo $SERVICES | grep -q 'gateway' && echo true || echo false)" >> $GITHUB_OUTPUT
+              echo "ai-service=$(echo $SERVICES | grep -q 'ai' && echo true || echo false)" >> $GITHUB_OUTPUT
+              echo "legacy-import=$(echo $SERVICES | grep -q 'legacy' && echo true || echo false)" >> $GITHUB_OUTPUT
+              echo "any-service=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+
+          # Get changed files between commits
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Check which services are affected
+          WEB=false
+          GATEWAY=false
+          AI=false
+          LEGACY=false
+
+          # Shared packages affect all services
+          if echo "$CHANGED_FILES" | grep -qE "^packages/(database|types|config|shared)/"; then
+            echo "Shared packages changed - all services affected"
+            WEB=true
+            GATEWAY=true
+            AI=true
+            LEGACY=true
+          fi
+
+          # Check individual services
+          if echo "$CHANGED_FILES" | grep -qE "^apps/web/|^packages/ui/"; then
+            WEB=true
+          fi
+          if echo "$CHANGED_FILES" | grep -qE "^services/gateway/"; then
+            GATEWAY=true
+          fi
+          if echo "$CHANGED_FILES" | grep -qE "^services/ai-service/|^ai-service/"; then
+            AI=true
+          fi
+          if echo "$CHANGED_FILES" | grep -qE "^apps/legacy-import/"; then
+            LEGACY=true
+          fi
+
+          # Infrastructure changes affect Docker services
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/docker/Dockerfile.web"; then
+            WEB=true
+          fi
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/docker/Dockerfile.gateway"; then
+            GATEWAY=true
+          fi
+
+          echo "web=$WEB" >> $GITHUB_OUTPUT
+          echo "gateway=$GATEWAY" >> $GITHUB_OUTPUT
+          echo "ai-service=$AI" >> $GITHUB_OUTPUT
+          echo "legacy-import=$LEGACY" >> $GITHUB_OUTPUT
+
+          if [ "$WEB" == "true" ] || [ "$GATEWAY" == "true" ] || [ "$AI" == "true" ] || [ "$LEGACY" == "true" ]; then
+            echo "any-service=true" >> $GITHUB_OUTPUT
+          else
+            echo "any-service=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 2: Run tests (only if services changed)
+  pre-deployment-checks:
+    name: Pre-Deployment Checks
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any-service == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run TypeScript type checking
+        run: pnpm tsc --noEmit
+
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Run unit tests
+        run: pnpm test:ci
+
+  # Job 3: Deploy services (parallel, only changed ones)
+  deploy-web:
+    name: Deploy Web
+    runs-on: ubuntu-latest
+    needs: [detect-changes, pre-deployment-checks]
+    if: needs.detect-changes.outputs.web == 'true'
+    steps:
+      - name: Deploy to Render
+        run: |
+          echo "Deploying legal-platform-web..."
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            "https://api.render.com/v1/services/${{ env.SERVICE_ID_WEB }}/deploys")
+          echo "$RESPONSE" | jq .
+          DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "Deploy ID: $DEPLOY_ID"
+
+  deploy-gateway:
+    name: Deploy Gateway
+    runs-on: ubuntu-latest
+    needs: [detect-changes, pre-deployment-checks]
+    if: needs.detect-changes.outputs.gateway == 'true'
+    steps:
+      - name: Deploy to Render
+        run: |
+          echo "Deploying legal-platform-gateway..."
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            "https://api.render.com/v1/services/${{ env.SERVICE_ID_GATEWAY }}/deploys")
+          echo "$RESPONSE" | jq .
+          DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "Deploy ID: $DEPLOY_ID"
+
+  deploy-ai-service:
+    name: Deploy AI Service
+    runs-on: ubuntu-latest
+    needs: [detect-changes, pre-deployment-checks]
+    if: needs.detect-changes.outputs.ai-service == 'true'
+    steps:
+      - name: Deploy to Render
+        run: |
+          echo "Deploying legal-platform-ai-service..."
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            "https://api.render.com/v1/services/${{ env.SERVICE_ID_AI }}/deploys")
+          echo "$RESPONSE" | jq .
+          DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "Deploy ID: $DEPLOY_ID"
+
+  deploy-legacy-import:
+    name: Deploy Legacy Import
+    runs-on: ubuntu-latest
+    needs: [detect-changes, pre-deployment-checks]
+    if: needs.detect-changes.outputs.legacy-import == 'true'
+    steps:
+      - name: Deploy to Render
+        run: |
+          echo "Deploying bojin-legacy-import..."
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            "https://api.render.com/v1/services/${{ env.SERVICE_ID_LEGACY }}/deploys")
+          echo "$RESPONSE" | jq .
+          DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "Deploy ID: $DEPLOY_ID"
+
+  # Job 4: Summary
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-web, deploy-gateway, deploy-ai-service, deploy-legacy-import]
+    if: always() && needs.detect-changes.outputs.any-service == 'true'
+    steps:
+      - name: Generate summary
+        run: |
+          echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Deployed |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Web | ${{ needs.detect-changes.outputs.web == 'true' && (needs.deploy-web.result == 'success' && 'Yes' || 'Failed') || 'Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gateway | ${{ needs.detect-changes.outputs.gateway == 'true' && (needs.deploy-gateway.result == 'success' && 'Yes' || 'Failed') || 'Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| AI Service | ${{ needs.detect-changes.outputs.ai-service == 'true' && (needs.deploy-ai-service.result == 'success' && 'Yes' || 'Failed') || 'Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Legacy Import | ${{ needs.detect-changes.outputs.legacy-import == 'true' && (needs.deploy-legacy-import.result == 'success' && 'Yes' || 'Failed') || 'Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # Skip notification if nothing changed
+  no-deploy-needed:
+    name: No Deploy Needed
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any-service == 'false'
+    steps:
+      - name: Skip notification
+        run: |
+          echo "### No Deployment Needed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No service-related files were changed in this commit." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
