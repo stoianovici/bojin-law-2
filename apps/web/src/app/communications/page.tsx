@@ -296,6 +296,13 @@ export default function CommunicationsPage() {
         <div className="hidden w-80 flex-col border-l bg-white lg:flex overflow-y-auto">
           {selectedThread ? (
             <>
+              {/* Debug: Log caseId */}
+              {console.log(
+                '[Communications] selectedThread.caseId:',
+                selectedThread.caseId,
+                'conversationId:',
+                selectedThread.conversationId
+              )}
               {/* Extracted Items Section */}
               {selectedThread.caseId ? (
                 <ExtractedItemsPanel caseId={selectedThread.caseId} />
