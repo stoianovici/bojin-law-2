@@ -56,7 +56,12 @@ interface CommunicationState {
   openCompose: (mode: 'new' | 'reply' | 'forward', threadId?: string) => void;
   closeCompose: () => void;
   updateDraft: (draft: string) => void;
-  updateDraftFields: (fields: { to?: string; cc?: string; subject?: string; body?: string }) => void;
+  updateDraftFields: (fields: {
+    to?: string;
+    cc?: string;
+    subject?: string;
+    body?: string;
+  }) => void;
   saveDraft: () => void;
   loadSavedDraft: () => ComposeDraft | null;
   clearSavedDraft: () => void;
@@ -108,7 +113,7 @@ export const useCommunicationStore = create<CommunicationState>()(
       draftCc: '',
       draftSubject: '',
       savedDraft: null,
-      emailViewMode: 'received' as EmailViewMode, // Default to received emails only
+      emailViewMode: 'all' as EmailViewMode, // Default to all emails - users can filter if needed
       userEmail: null,
 
       // Actions
@@ -170,9 +175,8 @@ export const useCommunicationStore = create<CommunicationState>()(
 
         // If opening for a different context, start fresh
         // Otherwise restore the saved draft if available
-        const shouldRestore = savedDraft &&
-          savedDraft.mode === mode &&
-          savedDraft.threadId === (threadId || null);
+        const shouldRestore =
+          savedDraft && savedDraft.mode === mode && savedDraft.threadId === (threadId || null);
 
         set({
           isComposeOpen: true,
@@ -206,7 +210,12 @@ export const useCommunicationStore = create<CommunicationState>()(
         set({ draftBody: draft });
       },
 
-      updateDraftFields: (fields: { to?: string; cc?: string; subject?: string; body?: string }) => {
+      updateDraftFields: (fields: {
+        to?: string;
+        cc?: string;
+        subject?: string;
+        body?: string;
+      }) => {
         set((state) => ({
           draftTo: fields.to !== undefined ? fields.to : state.draftTo,
           draftCc: fields.cc !== undefined ? fields.cc : state.draftCc,
@@ -239,7 +248,10 @@ export const useCommunicationStore = create<CommunicationState>()(
 
       hasSavedDraft: () => {
         const draft = get().savedDraft;
-        return draft !== null && (draft.body.trim() !== '' || draft.to.trim() !== '' || draft.subject.trim() !== '');
+        return (
+          draft !== null &&
+          (draft.body.trim() !== '' || draft.to.trim() !== '' || draft.subject.trim() !== '')
+        );
       },
 
       setShowProcessed: (show: boolean) => {
@@ -364,9 +376,20 @@ export const useCommunicationStore = create<CommunicationState>()(
         const state = get();
         let filtered = state.threads;
 
+        // Debug logging for thread filtering issues
+        console.log(
+          '[getFilteredThreads] Initial threads:',
+          filtered.length,
+          'userEmail:',
+          state.userEmail,
+          'emailViewMode:',
+          state.emailViewMode
+        );
+
         // Filter out processed threads by default (unless showProcessed is true)
         if (!state.showProcessed) {
           filtered = filtered.filter((t) => !t.isProcessed);
+          console.log('[getFilteredThreads] After showProcessed filter:', filtered.length);
         }
 
         // Filter by email view mode (sent/received)
@@ -375,6 +398,7 @@ export const useCommunicationStore = create<CommunicationState>()(
         // 'all' = show everything
         if (state.userEmail && state.emailViewMode !== 'all') {
           const userEmailLower = state.userEmail.toLowerCase();
+          const beforeCount = filtered.length;
 
           if (state.emailViewMode === 'received') {
             // Show threads that have at least one message NOT from the user
@@ -387,6 +411,12 @@ export const useCommunicationStore = create<CommunicationState>()(
               t.messages.some((m) => m.senderEmail?.toLowerCase() === userEmailLower)
             );
           }
+          console.log(
+            '[getFilteredThreads] After emailViewMode filter:',
+            filtered.length,
+            '(was',
+            beforeCount + ')'
+          );
         }
 
         // Filter by case IDs

@@ -5,17 +5,18 @@
 
 ## Quick Reference
 
-| ID      | Title                                     | Type        | Priority    | Status    | Sessions |
-| ------- | ----------------------------------------- | ----------- | ----------- | --------- | -------- |
-| OPS-001 | Communications page not loading emails    | Bug         | P0-Critical | Verifying | 9        |
-| OPS-002 | Legacy import stuck at 8k docs            | Performance | P1-High     | Resolved  | 5        |
-| OPS-003 | Restrict partner dashboard to partners    | Feature     | P2-Medium   | Verifying | 3        |
-| OPS-004 | Add categorization backup before export   | Feature     | P1-High     | Fixing    | 2        |
-| OPS-005 | AI extraction and drafting not working    | Bug         | P0-Critical | Fixing    | 2        |
-| OPS-006 | Connect AI capabilities to application UI | Feature     | P1-High     | Fixing    | 6        |
-| OPS-007 | AI email drafts ignore user language pref | Bug         | P2-Medium   | Fixing    | 2        |
-| OPS-008 | Communications section comprehensive overhaul | Feature     | P1-High     | Fixing    | 6        |
+| ID      | Title                                           | Type        | Priority    | Status    | Sessions |
+| ------- | ----------------------------------------------- | ----------- | ----------- | --------- | -------- |
+| OPS-001 | Communications page not loading emails          | Bug         | P0-Critical | Verifying | 9        |
+| OPS-002 | Legacy import stuck at 8k docs                  | Performance | P1-High     | Resolved  | 5        |
+| OPS-003 | Restrict partner dashboard to partners          | Feature     | P2-Medium   | Verifying | 3        |
+| OPS-004 | Add categorization backup before export         | Feature     | P1-High     | Fixing    | 2        |
+| OPS-005 | AI extraction and drafting not working          | Bug         | P0-Critical | Fixing    | 2        |
+| OPS-006 | Connect AI capabilities to application UI       | Feature     | P1-High     | Fixing    | 6        |
+| OPS-007 | AI email drafts ignore user language pref       | Bug         | P2-Medium   | Fixing    | 2        |
+| OPS-008 | Communications section comprehensive overhaul   | Feature     | P1-High     | Fixing    | 6        |
 | OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Fixing    | 2        |
+| OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Fixing    | 2        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -806,14 +807,14 @@ cd apps/web && pnpm dev              # Next.js frontend on :3000
 
 ### [OPS-007] AI email drafts ignore user language preference
 
-| Field           | Value                   |
-| --------------- | ----------------------- |
-| **Status**      | Fixing                  |
-| **Type**        | Bug                     |
-| **Priority**    | P2-Medium               |
-| **Created**     | 2025-12-11              |
-| **Sessions**    | 2                       |
-| **Last Active** | 2025-12-11              |
+| Field           | Value      |
+| --------------- | ---------- |
+| **Status**      | Fixing     |
+| **Type**        | Bug        |
+| **Priority**    | P2-Medium  |
+| **Created**     | 2025-12-11 |
+| **Sessions**    | 2          |
+| **Last Active** | 2025-12-11 |
 
 #### Description
 
@@ -838,6 +839,7 @@ AI-generated email draft replies are not respecting the user's language preferen
 5. **Missing link - Frontend:** `useEmailDraft.ts` mutation only accepts `emailId`, `tone`, `recipientType` - no language parameter
 
 **Data flow:**
+
 ```
 User (preferences.language = 'ro')
   ↓
@@ -865,6 +867,7 @@ Draft generated (may be wrong language)
   ```
 
 **Why This Works:**
+
 - Claude already receives the full `originalEmail` content (subject + body)
 - Claude is excellent at language detection - better than any regex-based approach
 - This is the natural behavior humans follow when replying to emails
@@ -893,26 +896,28 @@ cd apps/web && pnpm dev             # Next.js frontend on :3000
 #### Files Involved
 
 **Modified:**
+
 - `services/ai-service/src/services/email-drafting.service.ts` - **FIXED** - Updated prompt rule #7 to instruct Claude to match original email language
 
 ---
 
 ### [OPS-008] Communications section comprehensive overhaul
 
-| Field           | Value                   |
-| --------------- | ----------------------- |
-| **Status**      | Fixing                  |
-| **Type**        | Feature                 |
-| **Priority**    | P1-High                 |
-| **Created**     | 2025-12-11              |
-| **Sessions**    | 6                       |
-| **Last Active** | 2025-12-11              |
+| Field           | Value      |
+| --------------- | ---------- |
+| **Status**      | Fixing     |
+| **Type**        | Feature    |
+| **Priority**    | P1-High    |
+| **Created**     | 2025-12-11 |
+| **Sessions**    | 6          |
+| **Last Active** | 2025-12-11 |
 
 #### Description
 
 The communications section needs a comprehensive overhaul to address multiple issues and complete missing functionality. This is a rollup issue covering high and medium priority fixes for the `/communications` page and related components.
 
 **High Priority Items:**
+
 1. Complete email send functionality - ComposeInterface shows "(Mockup)" button, no actual send logic
 2. Replace all `alert()` calls with proper toast notifications
 3. Add attachment upload capability to compose/reply
@@ -924,17 +929,9 @@ The communications section needs a comprehensive overhaul to address multiple is
 9. **Thread readability** - expand/collapse threads, newest email on top
 10. **Hide own sent emails** - don't display user's own sent messages in inbox view
 
-**Medium Priority Items:**
-11. Fix attachment field name mismatches (`filename` vs `name`, `fileSize` vs `size`)
-12. Implement "view failed recipients" for bulk messaging
-13. Add draft auto-save and persistence
-14. Better template integration with compose modal
-15. Fix path resolution issues (revert `@` alias when Turbopack fixed)
+**Medium Priority Items:** 11. Fix attachment field name mismatches (`filename` vs `name`, `fileSize` vs `size`) 12. Implement "view failed recipients" for bulk messaging 13. Add draft auto-save and persistence 14. Better template integration with compose modal 15. Fix path resolution issues (revert `@` alias when Turbopack fixed)
 
-**UX Polish:**
-16. Ensure all async operations show proper loading feedback
-17. Add error boundaries around communication components
-18. Search highlighting to show why emails matched filter
+**UX Polish:** 16. Ensure all async operations show proper loading feedback 17. Add error boundaries around communication components 18. Search highlighting to show why emails matched filter
 
 #### Reproduction Steps
 
@@ -975,6 +972,7 @@ docker-compose -f infrastructure/docker/docker-compose.yml up -d postgres redis
 ```
 
 Environment files:
+
 - `apps/web/.env.local` - Frontend config
 - `services/gateway/.env` - Gateway config (DATABASE_URL, REDIS_URL)
 - `services/ai-service/.env` - AI service config (ANTHROPIC_API_KEY)
@@ -1043,34 +1041,42 @@ Environment files:
 #### Files Involved
 
 **High Priority - Send Functionality:**
+
 - `apps/web/src/components/communication/ComposeInterface.tsx` - Send button shows "(Mockup)", needs actual implementation
 - `apps/web/src/hooks/useEmailDraft.ts` - Has sendDraft mutation but not wired in UI
 
 **High Priority - UX Issues:**
+
 - `apps/web/src/components/communication/MessageView.tsx` - **FIXED (Session 6)** - Added attachment sync button, replaced `alert()` with toast notifications
 - `apps/web/src/app/communications/page.tsx` - **FIXED (Session 6)** - Added `hasAttachments` pass-through, populated `participants` from email data
 
 **High Priority - Attachment Uploads:**
+
 - `apps/web/src/components/communication/ComposeInterface.tsx` - No file upload input
 - `services/gateway/src/graphql/schema/email.graphql` - May need attachment upload mutation
 
 **Medium Priority - Data Tracking:**
+
 - `apps/web/src/stores/communication.store.ts` - Needs converted items tracking
 - `apps/web/src/components/communication/BulkProgressIndicator.tsx` - TODO on line 226 for failed recipients
 
 **Medium Priority - Field Mismatches:**
+
 - `apps/web/src/components/communication/MessageView.tsx` - **FIXED (Session 2)** - Field names corrected
 
 **GraphQL Hooks:**
+
 - `apps/web/src/hooks/useEmailSync.ts` - **FIXED (Session 3)** - Added `downloadUrl` to attachment fragment
 
 **Attachment System (Session 3 - MS Graph Direct Download):**
+
 - `services/gateway/src/graphql/schema/email.graphql` - Added `AttachmentContent` type and `emailAttachmentContent` query
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - Added `emailAttachmentContent` resolver
 - `services/gateway/src/services/email-attachment.service.ts` - Fixed API errors, made R2 optional, added direct download method
 - `apps/web/src/components/communication/MessageView.tsx` - Added download handler with blob conversion
 
 **Case Assignment & Ignore (Session 4):**
+
 - `apps/web/src/components/communication/MessageView.tsx` - **FIXED** - Added assign-to-case modal and ignore button
 - `services/gateway/src/graphql/schema/email.graphql` - **FIXED** - Added `ignoreEmailThread`, `unignoreEmailThread` mutations
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - **FIXED** - Implemented ignore/unignore resolvers
@@ -1078,29 +1084,32 @@ Environment files:
 - `packages/database/prisma/schema.prisma` - **FIXED** - Added `isIgnored`, `ignoredAt` fields to Email model
 
 **Toast Notifications & Types (Session 6):**
+
 - `apps/web/src/components/communication/MessageView.tsx` - **FIXED** - Added toast notifications, type definitions for mutations
 - `apps/web/src/components/communication/ExtractedItemsSidebar.tsx` - **FIXED** - Added toast notification for task creation
 - `packages/shared/types/src/communication.ts` - **FIXED** - Added `conversationId` field to CommunicationThread type
 
 **Path Resolution (9+ files):**
+
 - ThreadList.tsx, MessageView.tsx, ComposeInterface.tsx, FilterBar.tsx, ExtractedItemsSidebar.tsx, etc.
 
 ---
 
 ### [OPS-009] Multiple re-login prompts for email/attachments
 
-| Field           | Value                   |
-| --------------- | ----------------------- |
-| **Status**      | Fixing                  |
-| **Type**        | Bug                     |
-| **Priority**    | P1-High                 |
-| **Created**     | 2025-12-11              |
-| **Sessions**    | 2                       |
-| **Last Active** | 2025-12-11              |
+| Field           | Value      |
+| --------------- | ---------- |
+| **Status**      | Fixing     |
+| **Type**        | Bug        |
+| **Priority**    | P1-High    |
+| **Created**     | 2025-12-11 |
+| **Sessions**    | 2          |
+| **Last Active** | 2025-12-11 |
 
 #### Description
 
 The app asks users to log in on first access (correct behavior), but also prompts for re-authentication when:
+
 1. Synchronizing email
 2. Downloading attachments
 
@@ -1146,17 +1155,20 @@ Users should only log in once when accessing the app. Subsequent operations (ema
 #### Fix Applied
 
 **Fix 1: MSAL cache persistence**
+
 - File: `apps/web/src/lib/msal-config.ts`
 - Changed `cacheLocation: 'sessionStorage'` to `cacheLocation: 'localStorage'`
 - This keeps MSAL tokens across browser sessions, preventing re-login when browser is closed
 
 **Fix 2: Distinct error codes for MS token issues**
+
 - File: `services/gateway/src/graphql/resolvers/email.resolvers.ts`
 - Added `MS_TOKEN_REQUIRED` error code for operations that need MS Graph token
 - Separates "need full login" (`UNAUTHENTICATED`) from "need Microsoft reconnect" (`MS_TOKEN_REQUIRED`)
 - Updated 6 resolvers: `startEmailSync`, `syncEmailAttachments`, `emailAttachmentContent`, `createEmailSubscription`, `sendNewEmail`, `replyToEmail`
 
 **Fix 3: Frontend MS_TOKEN_REQUIRED handling**
+
 - File: `apps/web/src/lib/apollo-client.ts`
 - Added error handler to dispatch `ms-token-required` custom event when `MS_TOKEN_REQUIRED` error received
 - File: `apps/web/src/app/communications/page.tsx`
@@ -1181,10 +1193,11 @@ docker-compose -f infrastructure/docker/docker-compose.yml up -d postgres redis
 ```
 
 Environment files:
+
 - `.env` (root) - Base config
 - `services/gateway/.env` - DATABASE_URL, REDIS_URL
 - `services/ai-service/.env` - ANTHROPIC_API_KEY
-- `apps/web/.env.local` - NEXT_PUBLIC_* vars
+- `apps/web/.env.local` - NEXT*PUBLIC*\* vars
 
 #### Session Log
 
@@ -1198,26 +1211,139 @@ Environment files:
 #### Files Involved
 
 **Frontend Auth:**
+
 - `apps/web/src/contexts/AuthContext.tsx` - Main auth context, MSAL initialization, `getAccessToken()` function
 - `apps/web/src/lib/msal-config.ts` - **FIXED** - Changed cacheLocation to localStorage
 - `apps/web/src/lib/apollo-client.ts` - **FIXED** - Added MS_TOKEN_REQUIRED error handler with custom event dispatch
 
 **Communications Page:**
+
 - `apps/web/src/app/communications/page.tsx` - **FIXED** - Added MS_TOKEN_REQUIRED event listener, reconnect banner UI
 
 **Backend Auth:**
+
 - `services/gateway/src/services/auth.service.ts` - OAuth backend, session management
 - `services/gateway/src/middleware/auth.middleware.ts` - JWT/session authentication
 - `services/gateway/src/graphql/server.ts` - Extracts `x-ms-access-token` from headers, adds to context
 
 **Email Operations (require MS token):**
+
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - **FIXED** - `startEmailSync`, `emailAttachmentContent`, `syncEmailAttachments`, `createEmailSubscription`, `sendNewEmail`, `replyToEmail` resolvers now return `MS_TOKEN_REQUIRED` code
 - `services/gateway/src/services/email-sync.service.ts` - Email sync using MS Graph API
 - `services/gateway/src/services/email-attachment.service.ts` - Attachment download from MS Graph
 
 **Frontend Email Hooks:**
+
 - `apps/web/src/hooks/useEmailSync.ts` - Email sync mutations
 - `apps/web/src/hooks/useBulkCommunication.ts` - Bulk email operations
+
+---
+
+### [OPS-010] Emails synced but not displayed (1049 emails)
+
+| Field           | Value       |
+| --------------- | ----------- |
+| **Status**      | Fixing      |
+| **Type**        | Bug         |
+| **Priority**    | P0-Critical |
+| **Created**     | 2025-12-12  |
+| **Sessions**    | 2           |
+| **Last Active** | 2025-12-12  |
+
+#### Description
+
+The /communications page shows "1049 emailuri sincronizate" in Render production, but no emails are displayed in the UI. User reports emails appeared in localhost before deployment, but now they don't appear locally either. This appears to be a regression from previous OPS-001 fixes.
+
+#### Reproduction Steps
+
+1. Navigate to /communications page (localhost or production)
+2. Observe that the sync indicator shows "1049 emailuri sincronizate"
+3. Observe that no email threads are displayed in the ThreadList
+4. Check browser console and network tab for errors
+
+#### Root Cause
+
+**CONFIRMED: emailViewMode filter hiding threads**
+
+1. `communication.store.ts` line 111: `emailViewMode` defaulted to `'received'`
+2. The filter at lines 376-390 hides threads where ALL messages have `senderEmail` matching user's email
+3. This filter state is persisted in localStorage under key `communication-filters`
+4. Users who previously visited the page have the old default persisted, hiding threads even after fix deployment
+
+**Why this happens:**
+
+- The 'received' mode uses: `t.messages.some((m) => m.senderEmail?.toLowerCase() !== userEmailLower)`
+- This shows threads with at least one message NOT from the user
+- If all messages in a thread have empty `senderEmail` or match the user's email, thread is hidden
+
+#### Fix Applied
+
+**Fix 1: Change default emailViewMode to 'all'**
+
+- File: `apps/web/src/stores/communication.store.ts`
+- Changed line 111 from `emailViewMode: 'received'` to `emailViewMode: 'all'`
+- New users will see all emails by default
+
+**Fix 2: Added debug logging**
+
+- File: `apps/web/src/stores/communication.store.ts`
+- Added console.log statements in `getFilteredThreads()` to diagnose filtering issues
+- Shows: initial thread count, userEmail, emailViewMode, and threads after each filter step
+
+**Fix 3: Debug logging in communications page**
+
+- File: `apps/web/src/app/communications/page.tsx`
+- Added logging for apiThreads count to verify data arrives from API
+
+**User Action Required (for existing users):**
+
+- Users with persisted localStorage must either:
+  1. Click "Toate" tab in FilterBar to show all emails, OR
+  2. Clear localStorage: `localStorage.removeItem('communication-filters')` then refresh
+
+#### Local Dev Environment
+
+```bash
+# Full dev environment:
+pnpm dev
+
+# Individual services:
+cd services/gateway && pnpm dev     # GraphQL gateway on :4000
+cd services/ai-service && pnpm dev  # AI service on :3002
+cd apps/web && pnpm dev             # Next.js frontend on :3000
+
+# Environment files exist at:
+# - .env (root)
+# - apps/web/.env.local
+# - services/gateway/.env
+# - services/ai-service/.env
+# - packages/database/.env
+```
+
+#### Session Log
+
+- [2025-12-12] Issue created. Related to OPS-001 (9 sessions of email sync fixes). Initial triage identified 4 potential root causes: (1) emailViewMode filter with default 'received' mode, (2) conversationId fallback changes, (3) data transformation issues, (4) isIgnored filter. Primary suspect is the emailViewMode filter in communication.store.ts which defaults to 'received' and may be filtering out all threads if userEmail is not properly set or if localStorage has a persisted filter state.
+- [2025-12-12] Session 2 started. Continuing from: New. Beginning investigation of filter logic and thread display.
+- [2025-12-12] Session 2 - Root cause confirmed: emailViewMode defaults to 'received' which filters out threads where all messages have senderEmail matching user's email. Additionally, the filter state is persisted in localStorage, so clearing localStorage may be required.
+- [2025-12-12] Session 2 - Fix: Changed default emailViewMode from 'received' to 'all' in communication.store.ts. Added debug logging to help diagnose future issues.
+- [2025-12-12] Session 2 - Build verified successful. Ready for deployment.
+
+#### Files Involved
+
+**Modified:**
+
+- `apps/web/src/stores/communication.store.ts` - **FIXED** - Changed default emailViewMode to 'all', added debug logging
+- `apps/web/src/app/communications/page.tsx` - **FIXED** - Added debug logging for apiThreads
+
+**Frontend - Display Components:**
+
+- `apps/web/src/components/communication/ThreadList.tsx` - Thread display
+- `apps/web/src/components/communication/FilterBar.tsx` - Email view mode tabs (contains "Toate" tab)
+
+**Backend - Data Retrieval (unchanged, verified working):**
+
+- `services/gateway/src/services/email-thread.service.ts` - Thread grouping
+- `services/gateway/src/graphql/resolvers/email.resolvers.ts` - GraphQL queries
 
 ---
 

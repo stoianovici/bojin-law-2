@@ -60,6 +60,14 @@ export default function CommunicationsPage() {
 
   // Transform API threads to communication store format and update store
   useEffect(() => {
+    console.log(
+      '[Communications] apiThreads received:',
+      apiThreads?.length,
+      'loading:',
+      threadsLoading,
+      'error:',
+      threadsError?.message
+    );
     if (apiThreads && apiThreads.length > 0) {
       // Transform EmailThread[] to CommunicationThread[]
       const communicationThreads = apiThreads.map((thread: any) => {
@@ -98,53 +106,53 @@ export default function CommunicationsPage() {
         });
 
         return {
-        id: thread.id || thread.conversationId,
-        conversationId: thread.conversationId,
-        subject: thread.subject || '(Fără subiect)',
-        caseId: thread.case?.id || '',
-        caseType: thread.case?.type || 'Other',
-        caseName: thread.case?.title || 'Neatribuit',
-        participants: Array.from(participantMap.values()),
-        messages: (thread.emails || []).map((email: any) => ({
-          id: email.id,
-          threadId: thread.id || thread.conversationId,
-          senderId: email.from?.address || '',
-          senderName: email.from?.name || email.from?.address || 'Unknown',
-          senderEmail: email.from?.address || '',
-          recipientIds: (email.toRecipients || []).map((r: any) => r.address),
-          recipients: (email.toRecipients || []).map((r: any) => ({
-            id: r.address,
-            name: r.name || r.address,
-            email: r.address,
+          id: thread.id || thread.conversationId,
+          conversationId: thread.conversationId,
+          subject: thread.subject || '(Fără subiect)',
+          caseId: thread.case?.id || '',
+          caseType: thread.case?.type || 'Other',
+          caseName: thread.case?.title || 'Neatribuit',
+          participants: Array.from(participantMap.values()),
+          messages: (thread.emails || []).map((email: any) => ({
+            id: email.id,
+            threadId: thread.id || thread.conversationId,
+            senderId: email.from?.address || '',
+            senderName: email.from?.name || email.from?.address || 'Unknown',
+            senderEmail: email.from?.address || '',
+            recipientIds: (email.toRecipients || []).map((r: any) => r.address),
+            recipients: (email.toRecipients || []).map((r: any) => ({
+              id: r.address,
+              name: r.name || r.address,
+              email: r.address,
+            })),
+            subject: email.subject || '(Fără subiect)',
+            body: email.bodyContent || email.bodyPreview || '',
+            bodyFormat: email.bodyContentType === 'html' ? 'html' : 'text',
+            // Use sentDate to match CommunicationMessage type, with fallback for invalid dates
+            sentDate:
+              email.sentDateTime || email.receivedDateTime
+                ? new Date(email.sentDateTime || email.receivedDateTime)
+                : new Date(),
+            isRead: email.isRead ?? true,
+            hasAttachments: email.hasAttachments ?? false,
+            attachments: (email.attachments || []).map((att: any) => ({
+              id: att.id,
+              name: att.name,
+              size: att.size || 0,
+              mimeType: att.contentType || 'application/octet-stream',
+              url: att.downloadUrl || '',
+            })),
           })),
-          subject: email.subject || '(Fără subiect)',
-          body: email.bodyContent || email.bodyPreview || '',
-          bodyFormat: email.bodyContentType === 'html' ? 'html' : 'text',
-          // Use sentDate to match CommunicationMessage type, with fallback for invalid dates
-          sentDate:
-            email.sentDateTime || email.receivedDateTime
-              ? new Date(email.sentDateTime || email.receivedDateTime)
-              : new Date(),
-          isRead: email.isRead ?? true,
-          hasAttachments: email.hasAttachments ?? false,
-          attachments: (email.attachments || []).map((att: any) => ({
-            id: att.id,
-            name: att.name,
-            size: att.size || 0,
-            mimeType: att.contentType || 'application/octet-stream',
-            url: att.downloadUrl || '',
-          })),
-        })),
-        lastMessageDate: new Date(thread.lastMessageDate || Date.now()),
-        isUnread: thread.hasUnread ?? false,
-        hasAttachments: thread.hasAttachments ?? false,
-        isProcessed: false,
-        extractedItems: {
-          deadlines: [],
-          commitments: [],
-          actionItems: [],
-        },
-      };
+          lastMessageDate: new Date(thread.lastMessageDate || Date.now()),
+          isUnread: thread.hasUnread ?? false,
+          hasAttachments: thread.hasAttachments ?? false,
+          isProcessed: false,
+          extractedItems: {
+            deadlines: [],
+            commitments: [],
+            actionItems: [],
+          },
+        };
       });
       setThreads(communicationThreads);
     }
@@ -220,7 +228,8 @@ export default function CommunicationsPage() {
           <div className="flex-1">
             <h3 className="font-medium text-amber-900">Reconectare Microsoft necesară</h3>
             <p className="text-sm text-amber-700 mt-1">
-              Sesiunea Microsoft a expirat. Reconectați contul pentru a sincroniza emailuri și descărca atașamente.
+              Sesiunea Microsoft a expirat. Reconectați contul pentru a sincroniza emailuri și
+              descărca atașamente.
             </p>
           </div>
           <button
