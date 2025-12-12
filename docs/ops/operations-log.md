@@ -15,7 +15,7 @@
 | OPS-006 | Connect AI capabilities to application UI       | Feature     | P1-High     | Fixing    | 6        |
 | OPS-007 | AI email drafts ignore user language pref       | Bug         | P2-Medium   | Fixing    | 2        |
 | OPS-008 | Communications section comprehensive overhaul   | Feature     | P1-High     | Fixing    | 6        |
-| OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Fixing    | 2        |
+| OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Verifying | 3        |
 | OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Fixing    | 2        |
 
 <!-- Issues will be indexed here automatically -->
@@ -1099,12 +1099,12 @@ Environment files:
 
 | Field           | Value      |
 | --------------- | ---------- |
-| **Status**      | Fixing     |
+| **Status**      | Verifying  |
 | **Type**        | Bug        |
 | **Priority**    | P1-High    |
 | **Created**     | 2025-12-11 |
-| **Sessions**    | 2          |
-| **Last Active** | 2025-12-11 |
+| **Sessions**    | 3          |
+| **Last Active** | 2025-12-12 |
 
 #### Description
 
@@ -1207,6 +1207,13 @@ Environment files:
 - [2025-12-11] Session 2 - Fix 2: Added `MS_TOKEN_REQUIRED` error code to 6 email resolvers that need MS Graph token (`startEmailSync`, `syncEmailAttachments`, `emailAttachmentContent`, `createEmailSubscription`, `sendNewEmail`, `replyToEmail`).
 - [2025-12-11] Session 2 - Fix 3: Added frontend error handling for `MS_TOKEN_REQUIRED` - dispatches custom event from Apollo error link, communications page listens and shows reconnect banner.
 - [2025-12-11] Session 2 - Build verified successful. Ready for deployment and testing.
+- [2025-12-12] Session 3 started. Continuing from: Fixing. Verifying deployed fixes.
+- [2025-12-12] Session 3 - All fixes confirmed deployed in commit `e716eb2`. Code verification:
+  - ✅ `msal-config.ts`: `cacheLocation: 'localStorage'` confirmed
+  - ✅ `email.resolvers.ts`: `MS_TOKEN_REQUIRED` error code in 6 resolvers confirmed
+  - ✅ `apollo-client.ts`: `ms-token-required` custom event dispatch confirmed
+  - ✅ `communications/page.tsx`: Event listener and reconnect banner confirmed
+- [2025-12-12] Session 3 - Gateway and web app responding in production. Status updated to Verifying.
 
 #### Files Involved
 

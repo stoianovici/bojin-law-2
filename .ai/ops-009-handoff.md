@@ -1,96 +1,85 @@
 # Handoff: [OPS-009] Multiple Re-login Prompts for Email/Attachments
 
-**Session**: 2
-**Date**: 2025-12-11
-**Status**: Fixing (ready for deployment)
+**Session**: 3
+**Date**: 2025-12-12
+**Status**: Verifying
 
 ## Work Completed This Session
 
-### Fix 1: MSAL Cache Persistence
-- Changed `cacheLocation` from `sessionStorage` to `localStorage` in `msal-config.ts`
-- This keeps MSAL tokens across browser sessions
-- Previously: closing browser cleared tokens → user prompted to login again
-- Now: tokens persist in localStorage → silent token refresh works
+### Code Verification
 
-### Fix 2: Distinct Error Codes (Backend)
-Added `MS_TOKEN_REQUIRED` error code to 6 email resolvers:
-- `startEmailSync`
-- `syncEmailAttachments`
-- `emailAttachmentContent`
-- `createEmailSubscription`
-- `sendNewEmail`
-- `replyToEmail`
+Confirmed all fixes are deployed in commit `e716eb2`:
 
-Now the backend distinguishes between:
-- `UNAUTHENTICATED` → Full login required (session expired)
-- `MS_TOKEN_REQUIRED` → Only Microsoft reconnect needed (MSAL cache empty)
+1. **MSAL Cache Persistence** ✅
+   - `apps/web/src/lib/msal-config.ts` line 27: `cacheLocation: 'localStorage'`
+   - Tokens persist across browser sessions
 
-### Fix 3: Frontend Error Handling
-- Apollo client error link dispatches `ms-token-required` custom event
-- Communications page listens for this event
-- Shows amber banner: "Reconectare Microsoft necesară" with "Reconectează" button
-- User clicks button → MSAL silent SSO attempted, or redirect if needed
+2. **MS_TOKEN_REQUIRED Error Code** ✅
+   - `services/gateway/src/graphql/resolvers/email.resolvers.ts`
+   - Found at lines 258, 321, 498, 559, 658, 776
+   - All 6 email resolvers have distinct error code
+
+3. **Frontend Error Handling** ✅
+   - `apps/web/src/lib/apollo-client.ts` line 50: dispatches `ms-token-required` custom event
+   - `apps/web/src/app/communications/page.tsx` lines 40-41: listens for event
+
+### Production Health Check
+
+- Gateway responding: `https://legal-platform-gateway.onrender.com/graphql` ✅
+- Web app responding: `https://legal-platform-web.onrender.com` ✅
 
 ## Current State
 
-- All fixes implemented and build verified
-- **Ready for deployment**
-- Need to deploy both web app and gateway service
+- **All fixes deployed and verified** in codebase
+- Status updated from "Fixing" to "Verifying"
+- Operations log updated with session 3 entries
 
-## Testing After Deployment
+## User Testing Required
 
-1. **Test localStorage persistence:**
-   - Log in to app
-   - Close browser completely
-   - Reopen and navigate to /communications
-   - Should NOT prompt for login again
+The fixes need manual testing by a user to confirm they work in practice:
 
-2. **Test MS_TOKEN_REQUIRED handling:**
-   - Clear localStorage only (keep session cookie)
-   - Navigate to /communications
-   - Click "Sync Email"
-   - Should see amber reconnect banner (not full login redirect)
+### Test 1: localStorage Persistence
 
-3. **Test attachment download:**
-   - With valid MSAL token: download should work
-   - Without MSAL token: should show reconnect prompt
+1. Log in to app at https://legal-platform-web.onrender.com
+2. Navigate to /communications page
+3. Close browser completely (all tabs/windows)
+4. Reopen browser and navigate to /communications
+5. **Expected**: Should NOT prompt for login again - MSAL tokens should persist
+
+### Test 2: MS_TOKEN_REQUIRED Banner
+
+1. Log in to app
+2. Navigate to /communications page
+3. Open DevTools Console
+4. Clear MSAL from localStorage: `Object.keys(localStorage).filter(k => k.includes('msal')).forEach(k => localStorage.removeItem(k))`
+5. Click "Sincronizează emailuri" button
+6. **Expected**: Should see amber reconnect banner "Sesiunea Microsoft a expirat" with "Reconectează" button
+7. **NOT Expected**: Should NOT redirect to full login page
+
+### Test 3: Attachment Download
+
+1. With valid MSAL token, download an attachment
+2. **Expected**: Should work without prompts
 
 ## Blockers/Questions
 
-None - ready for deployment and testing.
+None - ready for user verification testing.
 
 ## Next Steps
 
-1. Commit and push changes
-2. Deploy to production (gateway + web)
-3. Test in production:
-   - Verify localStorage persistence
-   - Verify reconnect banner appears when MS token missing
-   - Verify email sync works after reconnect
-4. Update status to "Verifying" after deployment
+1. User tests the 3 scenarios above
+2. If all pass → Update status to "Resolved"
+3. If issues found → Document and continue fixing
 
-## Key Files Changed
+## Key Files (All Deployed)
 
-**Frontend:**
 - `apps/web/src/lib/msal-config.ts` - localStorage cache
 - `apps/web/src/lib/apollo-client.ts` - MS_TOKEN_REQUIRED event dispatch
 - `apps/web/src/app/communications/page.tsx` - Reconnect banner UI
-
-**Backend:**
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - MS_TOKEN_REQUIRED error code
 
-## Commands to Deploy
+## Deployment Info
 
-```bash
-# Commit changes
-git add -A
-git commit -m "fix(OPS-009): localStorage MSAL cache + MS_TOKEN_REQUIRED error handling"
-
-# Push
-git push origin main
-
-# Deploy (if deploy hook configured)
-pnpm deploy:production
-
-# Or deploy via Render dashboard
-```
+- Commit: `e716eb2` (fix(OPS-007,008,009): communications improvements and auth fixes)
+- Deployed: 2025-12-11
+- Services: Gateway + Web both deployed
