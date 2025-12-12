@@ -90,6 +90,11 @@ export const communicationIntelligenceQueryResolvers = {
     return prisma.extractedDeadline.findMany({
       where,
       orderBy: { dueDate: 'asc' },
+      include: {
+        email: { select: { id: true, subject: true } },
+        case: { select: { id: true, title: true } },
+        convertedTask: { select: { id: true, title: true } },
+      },
     });
   },
 
@@ -103,6 +108,11 @@ export const communicationIntelligenceQueryResolvers = {
     return prisma.extractedCommitment.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        email: { select: { id: true, subject: true } },
+        case: { select: { id: true, title: true } },
+        convertedTask: { select: { id: true, title: true } },
+      },
     });
   },
 
@@ -116,6 +126,11 @@ export const communicationIntelligenceQueryResolvers = {
     return prisma.extractedActionItem.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        email: { select: { id: true, subject: true } },
+        case: { select: { id: true, title: true } },
+        convertedTask: { select: { id: true, title: true } },
+      },
     });
   },
 
@@ -129,6 +144,10 @@ export const communicationIntelligenceQueryResolvers = {
     return prisma.extractedQuestion.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        email: { select: { id: true, subject: true } },
+        case: { select: { id: true, title: true } },
+      },
     });
   },
 
@@ -160,17 +179,20 @@ export const communicationIntelligenceQueryResolvers = {
       where: { caseId, firmId },
     });
 
-    const highSeverityCount = risks.filter(r => r.severity === 'High').length;
-    const mediumSeverityCount = risks.filter(r => r.severity === 'Medium').length;
-    const lowSeverityCount = risks.filter(r => r.severity === 'Low').length;
-    const unresolvedCount = risks.filter(r => !r.isResolved).length;
+    const highSeverityCount = risks.filter((r) => r.severity === 'High').length;
+    const mediumSeverityCount = risks.filter((r) => r.severity === 'Medium').length;
+    const lowSeverityCount = risks.filter((r) => r.severity === 'Low').length;
+    const unresolvedCount = risks.filter((r) => !r.isResolved).length;
 
     // Count by type
     const risksByType = Object.entries(
-      risks.reduce((acc, r) => {
-        acc[r.type] = (acc[r.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
+      risks.reduce(
+        (acc, r) => {
+          acc[r.type] = (acc[r.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      )
     ).map(([type, count]) => ({ type, count }));
 
     return {
@@ -219,7 +241,7 @@ export const communicationIntelligenceQueryResolvers = {
       prisma.riskIndicator.findMany({ where: { caseId, firmId, isResolved: false } }),
     ]);
 
-    const highSeverityRisks = risks.filter(r => r.severity === 'High').length;
+    const highSeverityRisks = risks.filter((r) => r.severity === 'High').length;
     const hasHighPriorityItems = highSeverityRisks > 0 || deadlines > 0;
 
     // Get last analysis time
@@ -240,8 +262,8 @@ export const communicationIntelligenceQueryResolvers = {
       },
       riskSummary: {
         highSeverityCount: highSeverityRisks,
-        mediumSeverityCount: risks.filter(r => r.severity === 'Medium').length,
-        lowSeverityCount: risks.filter(r => r.severity === 'Low').length,
+        mediumSeverityCount: risks.filter((r) => r.severity === 'Medium').length,
+        lowSeverityCount: risks.filter((r) => r.severity === 'Low').length,
         unresolvedCount: risks.length,
         risksByType: [],
       },
@@ -293,11 +315,7 @@ export const communicationIntelligenceQueryResolvers = {
   },
 
   // Calendar Suggestions
-  calendarSuggestions: async (
-    _: unknown,
-    { caseId }: { caseId: string },
-    { prisma }: Context
-  ) => {
+  calendarSuggestions: async (_: unknown, { caseId }: { caseId: string }, { prisma }: Context) => {
     const calendarService = createCalendarSuggestionService(prisma);
     return calendarService.suggestForCase(caseId);
   },
@@ -490,8 +508,7 @@ export const communicationIntelligenceMutationResolvers = {
 
 export const communicationIntelligenceFieldResolvers = {
   ExtractedDeadline: {
-    confidenceLevel: (parent: { confidence: number }) =>
-      getConfidenceLevel(parent.confidence),
+    confidenceLevel: (parent: { confidence: number }) => getConfidenceLevel(parent.confidence),
     email: (parent: { emailId: string }) => {
       const loaders = getCommunicationIntelligenceLoaders();
       return loaders.emailLoader.load(parent.emailId);
@@ -509,8 +526,7 @@ export const communicationIntelligenceFieldResolvers = {
   },
 
   ExtractedCommitment: {
-    confidenceLevel: (parent: { confidence: number }) =>
-      getConfidenceLevel(parent.confidence),
+    confidenceLevel: (parent: { confidence: number }) => getConfidenceLevel(parent.confidence),
     email: (parent: { emailId: string }) => {
       const loaders = getCommunicationIntelligenceLoaders();
       return loaders.emailLoader.load(parent.emailId);
@@ -528,8 +544,7 @@ export const communicationIntelligenceFieldResolvers = {
   },
 
   ExtractedActionItem: {
-    confidenceLevel: (parent: { confidence: number }) =>
-      getConfidenceLevel(parent.confidence),
+    confidenceLevel: (parent: { confidence: number }) => getConfidenceLevel(parent.confidence),
     email: (parent: { emailId: string }) => {
       const loaders = getCommunicationIntelligenceLoaders();
       return loaders.emailLoader.load(parent.emailId);
@@ -547,8 +562,7 @@ export const communicationIntelligenceFieldResolvers = {
   },
 
   ExtractedQuestion: {
-    confidenceLevel: (parent: { confidence: number }) =>
-      getConfidenceLevel(parent.confidence),
+    confidenceLevel: (parent: { confidence: number }) => getConfidenceLevel(parent.confidence),
     email: (parent: { emailId: string }) => {
       const loaders = getCommunicationIntelligenceLoaders();
       return loaders.emailLoader.load(parent.emailId);
