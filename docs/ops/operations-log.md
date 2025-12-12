@@ -16,7 +16,7 @@
 | OPS-007 | AI email drafts ignore user language pref       | Bug         | P2-Medium   | Fixing    | 2        |
 | OPS-008 | Communications section comprehensive overhaul   | Feature     | P1-High     | Fixing    | 6        |
 | OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Verifying | 3        |
-| OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Fixing    | 2        |
+| OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Resolved  | 3        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -1250,11 +1250,11 @@ Environment files:
 
 | Field           | Value       |
 | --------------- | ----------- |
-| **Status**      | Fixing      |
+| **Status**      | Resolved    |
 | **Type**        | Bug         |
 | **Priority**    | P0-Critical |
 | **Created**     | 2025-12-12  |
-| **Sessions**    | 2           |
+| **Sessions**    | 3           |
 | **Last Active** | 2025-12-12  |
 
 #### Description
@@ -1270,18 +1270,20 @@ The /communications page shows "1049 emailuri sincronizate" in Render production
 
 #### Root Cause
 
-**CONFIRMED: emailViewMode filter hiding threads**
+**CONFIRMED: Two issues combined**
+
+**Issue 1: Missing database column (PRIMARY)**
+
+1. OPS-008 Session 4 added `isIgnored` and `ignoredAt` fields to Prisma schema
+2. The database migration was created but column didn't exist in production database
+3. When Prisma queried emails, it expected the `is_ignored` column but it was missing
+4. All email queries failed silently, returning 0 threads
+
+**Issue 2: emailViewMode filter (SECONDARY)**
 
 1. `communication.store.ts` line 111: `emailViewMode` defaulted to `'received'`
-2. The filter at lines 376-390 hides threads where ALL messages have `senderEmail` matching user's email
-3. This filter state is persisted in localStorage under key `communication-filters`
-4. Users who previously visited the page have the old default persisted, hiding threads even after fix deployment
-
-**Why this happens:**
-
-- The 'received' mode uses: `t.messages.some((m) => m.senderEmail?.toLowerCase() !== userEmailLower)`
-- This shows threads with at least one message NOT from the user
-- If all messages in a thread have empty `senderEmail` or match the user's email, thread is hidden
+2. The filter state is persisted in localStorage under key `communication-filters`
+3. Even after changing default to 'all', existing users had old 'received' value persisted
 
 #### Fix Applied
 
@@ -1301,6 +1303,13 @@ The /communications page shows "1049 emailuri sincronizate" in Render production
 
 - File: `apps/web/src/app/communications/page.tsx`
 - Added logging for apiThreads count to verify data arrives from API
+
+**Fix 4: Database migration for isIgnored fields (Session 3)**
+
+- File: `services/gateway/src/index.ts`
+- Added one-time migration endpoint `/admin/run-migration-is-ignored`
+- Fixed Prisma `$executeRawUnsafe()` to run each SQL statement separately (can't batch multiple statements)
+- Migration adds: `is_ignored BOOLEAN DEFAULT false`, `ignored_at TIMESTAMPTZ`, and index
 
 **User Action Required (for existing users):**
 
@@ -1335,6 +1344,11 @@ cd apps/web && pnpm dev             # Next.js frontend on :3000
 - [2025-12-12] Session 2 - Fix: Changed default emailViewMode from 'received' to 'all' in communication.store.ts. Added debug logging to help diagnose future issues.
 - [2025-12-12] Session 2 - Build verified successful. Ready for deployment.
 - [2025-12-12] Session 2 - Committed and pushed `bfb5736`. Manual deployment required (RENDER_DEPLOY_HOOK_PRODUCTION not set).
+- [2025-12-12] Session 3 started. Continuing from: Fixing. VSCode crashed during previous session.
+- [2025-12-12] Session 3 - Discovered primary root cause: `isIgnored` column missing from production database. Prisma schema has the field but DB column doesn't exist, causing all email queries to fail silently.
+- [2025-12-12] Session 3 - Fix: Split migration endpoint into separate SQL statements (Prisma can't batch multiple statements in `$executeRawUnsafe()`). Committed `556d67d`.
+- [2025-12-12] Session 3 - Deployed gateway via Render API, ran migration endpoint successfully.
+- [2025-12-12] Session 3 - **RESOLVED**. Emails now display correctly in /communications page after: (1) running isIgnored migration, (2) clearing localStorage filter.
 
 #### Files Involved
 
@@ -1342,16 +1356,17 @@ cd apps/web && pnpm dev             # Next.js frontend on :3000
 
 - `apps/web/src/stores/communication.store.ts` - **FIXED** - Changed default emailViewMode to 'all', added debug logging
 - `apps/web/src/app/communications/page.tsx` - **FIXED** - Added debug logging for apiThreads
+- `services/gateway/src/index.ts` - **FIXED** - Added migration endpoint, fixed Prisma statement batching
 
 **Frontend - Display Components:**
 
 - `apps/web/src/components/communication/ThreadList.tsx` - Thread display
 - `apps/web/src/components/communication/FilterBar.tsx` - Email view mode tabs (contains "Toate" tab)
 
-**Backend - Data Retrieval (unchanged, verified working):**
+**Backend - Data Retrieval:**
 
-- `services/gateway/src/services/email-thread.service.ts` - Thread grouping
-- `services/gateway/src/graphql/resolvers/email.resolvers.ts` - GraphQL queries
+- `services/gateway/src/services/email-thread.service.ts` - Thread grouping (uses isIgnored field)
+- `services/gateway/src/graphql/resolvers/email.resolvers.ts` - GraphQL queries with debug logging
 
 ---
 
