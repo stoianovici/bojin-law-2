@@ -17,7 +17,7 @@
 | OPS-008 | Communications section comprehensive overhaul   | Feature     | P1-High     | Fixing    | 6        |
 | OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Verifying | 3        |
 | OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Resolved  | 3        |
-| OPS-011 | Refocus /communications on received emails only | Feature     | P1-High     | Verifying | 3        |
+| OPS-011 | Refocus /communications on received emails only | Feature     | P1-High     | Resolved  | 5        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -1375,11 +1375,11 @@ cd apps/web && pnpm dev             # Next.js frontend on :3000
 
 | Field           | Value      |
 | --------------- | ---------- |
-| **Status**      | Verifying  |
+| **Status**      | Resolved   |
 | **Type**        | Feature    |
 | **Priority**    | P1-High    |
 | **Created**     | 2025-12-12 |
-| **Sessions**    | 3          |
+| **Sessions**    | 5          |
 | **Last Active** | 2025-12-12 |
 
 #### Description
@@ -1417,11 +1417,16 @@ The /communications section should focus exclusively on processing received emai
 
 #### Root Cause
 
-N/A - Feature enhancement, not a bug fix.
+N/A - Feature enhancement, not a bug fix. However, a bug was discovered in Session 5: GraphQL resolvers in `communication-intelligence.resolvers.ts` expected `prisma` to be in the context, but the actual GraphQL context only provides `user` object.
 
 #### Fix Applied
 
-TBD
+**Session 5 Fix (ExtractedItemsPanel error):**
+
+- Changed `communication-intelligence.resolvers.ts` to import `prisma` directly from `@legal-platform/database`
+- Updated Context interface from `{ prisma, userId, firmId }` to `{ user?: { id, firmId, role, email } }`
+- Updated all resolvers to get firmId from `context.user?.firmId`
+- Commit: `f9ca082`
 
 #### Local Dev Environment
 
@@ -1495,6 +1500,12 @@ For the /communications page focused on processing received messages:
 - [2025-12-12] Session 3 - Build verified successful. Committed `8ed5b1f`, pushed to origin/main.
 - [2025-12-12] Session 3 - Phase 3 complete: Implemented `NotifyStakeholdersModal` - "Notifică părțile" button in MessageView actions.
 - [2025-12-12] Session 3 - All phases complete (0+1, 2, 3). Status: Verifying.
+- [2025-12-12] Session 4 started. ExtractedItemsPanel failing with "Cannot read properties of undefined (reading 'extractedDeadline')".
+- [2025-12-12] Session 4 - Root cause: GraphQL resolvers not including relations (email, case, convertedTask). Added `include` statements. Deployed.
+- [2025-12-12] Session 5 started. Continuing from: Verifying. Testing extracted items fix.
+- [2025-12-12] Session 5 - Error persisted. Found real root cause: `communication-intelligence.resolvers.ts` expected `prisma` in GraphQL context, but context only provides `user` object. The resolver was trying to access `context.prisma.extractedDeadline` but `context.prisma` was undefined.
+- [2025-12-12] Session 5 - Fix: Changed resolver to import `prisma` directly from `@legal-platform/database` instead of expecting it in context. Updated Context interface to match actual structure. Committed `f9ca082`.
+- [2025-12-12] Session 5 - Deployed and verified. All extracted items queries (deadlines, commitments, actionItems, questions) now return data correctly. **RESOLVED**.
 
 #### Files Involved
 
@@ -1518,10 +1529,11 @@ For the /communications page focused on processing received messages:
 - `apps/web/src/components/communication/ExtractedItemsPanel.tsx` - AI extraction panel (verify integration)
 - `apps/web/src/hooks/useExtractedItems.ts` - GraphQL hooks for extraction
 
-**Backend - Already Inbox-Only (No changes needed):**
+**Backend - Gateway:**
 
 - `services/gateway/src/services/email-sync.service.ts` - Syncs `/me/mailFolders/Inbox` only
 - `services/gateway/src/graphql/resolvers/email-drafting.resolvers.ts` - AI draft generation
+- `services/gateway/src/graphql/resolvers/communication-intelligence.resolvers.ts` - **FIXED (Session 5)** - Changed to import prisma directly
 
 **AI Service (No changes needed):**
 

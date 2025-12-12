@@ -1,123 +1,90 @@
 # Handoff: [OPS-011] Refocus /communications on Received Emails Only
 
-**Session**: 4
+**Session**: 5
 **Date**: 2025-12-12
-**Status**: Verifying
+**Status**: RESOLVED
 
-## Work Completed This Session (Session 4)
+## Work Completed This Session (Session 5)
 
-### Extracted Items Fix
+### Root Cause Found
 
-**Problem:** ExtractedItemsPanel failed with error:
+**Error:** `Cannot read properties of undefined (reading 'extractedDeadline')`
 
-```
-Cannot read properties of undefined (reading 'extractedDeadline')
-```
+**Real Root Cause:** The `communication-intelligence.resolvers.ts` file expected `prisma` to be passed in the GraphQL context (`{ prisma, userId, firmId }`), but the actual context from `server.ts` only provides a `user` object (`{ user: { id, firmId, role, email } }`).
 
-**Root Cause:** GraphQL resolvers weren't including relations (email, case, convertedTask) that the frontend queries expected.
+When resolvers tried to access `context.prisma.extractedDeadline`, `context.prisma` was `undefined`.
 
-**Fix Applied:** Added `include` statements to all extracted items resolvers:
+### Fix Applied
 
-- `extractedDeadlines`
-- `extractedCommitments`
-- `extractedActionItems`
-- `extractedQuestions`
+Changed `communication-intelligence.resolvers.ts`:
 
-**File:** `services/gateway/src/graphql/resolvers/communication-intelligence.resolvers.ts`
+1. Import `prisma` directly from `@legal-platform/database` instead of expecting it in context
+2. Updated Context interface to match actual structure:
+   ```typescript
+   interface Context {
+     user?: {
+       id: string;
+       firmId: string;
+       role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
+       email: string;
+     };
+   }
+   ```
+3. Updated all resolvers to get firmId from `context.user?.firmId`
 
-```typescript
-include: {
-  email: { select: { id: true, subject: true } },
-  case: { select: { id: true, title: true } },
-  convertedTask: { select: { id: true, title: true } },
-}
-```
+### Deploy Status
 
-### Render Infrastructure Optimization
+- Commit: `f9ca082`
+- Deploy: Live on Render
+- Verified: All extracted items queries working
 
-**Finding:** Redis Pro tier is 52% of monthly costs (~$50/month)
+## All Sessions Summary
 
-**Recommendation:** Downgrade Redis Pro → Starter ($10/month)
+| Session | Status     | What Was Done                                           |
+| ------- | ---------- | ------------------------------------------------------- |
+| 1       | ✅ Done    | Investigation - found sent emails in inbox issue        |
+| 2       | ✅ Done    | Phase 0+1 - UI simplified, user messages filtered       |
+| 3       | ✅ Done    | Phase 2+3 - AI extraction verified, communication tools |
+| 4       | ⚠️ Partial | First attempt at fixing extracted items error           |
+| 5       | ✅ Done    | Found real root cause, fixed, deployed, verified        |
 
-- Current usage: sessions + caching (standard key-value)
-- Pro tier (256MB) is overkill for this use case
-- Starter (50MB) is sufficient
+## All Commits
 
-**Workaround Required:** Render doesn't allow downgrades. Must:
+| Commit    | Description                                             |
+| --------- | ------------------------------------------------------- |
+| `9c19202` | Phase 0+1: Filter user messages, simplify UI            |
+| `8ed5b1f` | Phase 3: Integrate ThreadSummaryPanel                   |
+| `f746efa` | Phase 3: Add NotifyStakeholdersModal                    |
+| `2568325` | Add include for relations (partial fix, not enough)     |
+| `9b689f2` | Remove debug logging                                    |
+| `f9ca082` | **FIX**: Import prisma directly instead of from context |
 
-1. Create new Redis instance on Starter plan
-2. Update REDIS_URL on all services
-3. Delete old Pro instance
-4. Note: Sessions will be lost (users re-login)
+## Features Delivered
 
-**Deferred:** User will handle Redis migration later.
+1. **UI Simplification**
+   - Removed "Sent" tab, simplified to "To Process" / "All"
+   - Filter out user's own messages in thread view
+   - Replaced "New Message" with "Open in Outlook" link
 
-### Deploys Triggered
+2. **AI Extraction Integration**
+   - ExtractedItemsPanel properly integrated
+   - GraphQL resolvers now working correctly
 
-- `dep-d4tvnlidbo4c73ajrvd0` - gateway (extracted items fix)
-- `dep-d4tvnmp5pdvs73ee3k20` - web
+3. **Communication Tools**
+   - NotifyStakeholdersModal - appears when thread assigned to case
+   - ThreadSummaryPanel - shows in right sidebar
+   - MorningBriefing - daily email digest (from OPS-006)
+   - Follow-up tracking - via proactive AI suggestions
 
-## Next Session TODO
+## Key Files
 
-1. **Verify extracted items fix works** after deploy completes
-2. **Test ExtractedItemsPanel** with case-assigned emails
-3. **If still broken:** Debug further - check:
-   - GraphQL response structure
-   - Frontend query expectations
-   - Whether emails are actually assigned to cases
-
-## All Commits (Sessions 3-4)
-
-| Commit    | Description                                       |
-| --------- | ------------------------------------------------- |
-| `8ed5b1f` | feat: integrate ThreadSummaryPanel                |
-| `f746efa` | feat: add NotifyStakeholdersModal                 |
-| `2568325` | fix: include relations in extracted items queries |
-| `9b689f2` | chore: remove debug logging                       |
-
-## Previous Sessions Summary
-
-| Phase     | Status  | What Was Done                                            |
-| --------- | ------- | -------------------------------------------------------- |
-| Phase 0+1 | ✅ DONE | Filter user messages, UI simplified, Outlook link        |
-| Phase 2   | ✅ DONE | AI extraction verified (not legacy, properly integrated) |
-| Phase 3   | ✅ DONE | Communication tools - all 4 features implemented         |
-
-## Phase 3 Communication Tools
-
-| Feature                  | Component                 | Location                                   |
-| ------------------------ | ------------------------- | ------------------------------------------ |
-| **Notify Stakeholders**  | `NotifyStakeholdersModal` | Button in MessageView when thread has case |
-| **Thread Summary/TL;DR** | `ThreadSummaryPanel`      | Right sidebar in /communications           |
-| **Daily Email Digest**   | `MorningBriefing`         | All dashboards (OPS-006)                   |
-| **Follow-up Tracking**   | Proactive AI Suggestions  | `FollowUp` type in suggestions system      |
-
-## Key Files Reference
-
-**Modified This Session:**
-
-- `services/gateway/src/graphql/resolvers/communication-intelligence.resolvers.ts` - Added include for relations
-
-**Session 3:**
-
-- `apps/web/src/components/communication/NotifyStakeholdersModal.tsx` - NEW
-- `apps/web/src/app/communications/page.tsx` - ThreadSummaryPanel integration
+- `services/gateway/src/graphql/resolvers/communication-intelligence.resolvers.ts` - **FIXED**
+- `apps/web/src/app/communications/page.tsx` - Main page with features
+- `apps/web/src/components/communication/NotifyStakeholdersModal.tsx` - New component
 - `apps/web/src/components/communication/MessageView.tsx` - Notify button
-
-## Render API Key
-
-Stored for future sessions: `rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0`
-
-Services:
-
-- `srv-d4dk9fodl3ps73d3d7ig` - legal-platform-web
-- `srv-d4pkv8q4i8rc73fq3mvg` - legal-platform-gateway
-- `srv-d4t77pshg0os73cnebtg` - legal-platform-ai-service
-- `srv-d4k84gogjchc73a0lqo0` - bojin-legacy-import
 
 ---
 
 _Created: 2025-12-12_
-_Last Updated: 2025-12-12 (Session 4)_
-_Status: Verifying_
-_Command to continue: `/ops-continue OPS-011`_
+_Last Updated: 2025-12-12 (Session 5)_
+_Status: RESOLVED_
