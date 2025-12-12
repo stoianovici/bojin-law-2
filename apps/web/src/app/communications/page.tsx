@@ -6,6 +6,7 @@ import { ThreadList } from '../../components/communication/ThreadList';
 import { MessageView } from '../../components/communication/MessageView';
 import { AIDraftResponsePanel } from '../../components/communication/AIDraftResponsePanel';
 import { ExtractedItemsPanel } from '../../components/communication/ExtractedItemsPanel';
+import { ThreadSummaryPanel } from '../../components/communication/ThreadSummaryPanel';
 import { ComposeInterface } from '../../components/communication/ComposeInterface';
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useEmailSync, useEmailThreads } from '../../hooks/useEmailSync';
@@ -291,23 +292,39 @@ export default function CommunicationsPage() {
           </div>
         </div>
 
-        {/* Right Column: Extracted Items Panel (hidden on tablet, shown on lg+) */}
+        {/* Right Column: AI Insights Panel (hidden on tablet, shown on lg+) */}
         <div className="hidden w-80 flex-col border-l bg-white lg:flex overflow-y-auto">
           {selectedThread ? (
-            selectedThread.caseId ? (
-              <ExtractedItemsPanel caseId={selectedThread.caseId} />
-            ) : (
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Elemente extrase</h3>
-                <p className="text-sm text-gray-500 mb-3">
-                  Această conversație nu este asociată cu un dosar.
-                </p>
-                <p className="text-xs text-gray-400">
-                  Asociați emailul cu un dosar pentru a extrage automat termene, angajamente și
-                  acțiuni folosind AI.
-                </p>
-              </div>
-            )
+            <>
+              {/* Extracted Items Section */}
+              {selectedThread.caseId ? (
+                <ExtractedItemsPanel caseId={selectedThread.caseId} />
+              ) : (
+                <div className="p-4 border-b">
+                  <h3 className="font-semibold text-gray-900 mb-2">Elemente extrase</h3>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Această conversație nu este asociată cu un dosar.
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Asociați emailul cu un dosar pentru a extrage automat termene, angajamente și
+                    acțiuni folosind AI.
+                  </p>
+                </div>
+              )}
+
+              {/* Thread Summary Section */}
+              {selectedThread.conversationId && (
+                <div className="p-4 border-t">
+                  <ThreadSummaryPanel
+                    conversationId={selectedThread.conversationId}
+                    onEmailClick={(emailId) => {
+                      // Could scroll to or highlight the email in MessageView
+                      console.log('Navigate to email:', emailId);
+                    }}
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <div className="p-4 text-sm text-gray-500">
               Selectați o conversație pentru a vedea elementele extrase
