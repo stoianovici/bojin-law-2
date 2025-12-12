@@ -2,116 +2,107 @@
 
 **Session**: 3
 **Date**: 2025-12-12
-**Status**: Fixing (near completion)
+**Status**: Verifying
 
 ## Work Completed This Session
 
-### Phase 2: AI Extraction Investigation - COMPLETE
+### All Phases COMPLETE
 
-User noted "extracted items implementation isn't in /ops but in the legacy codebase". After investigation:
+| Phase     | Status  | What Was Done                                            |
+| --------- | ------- | -------------------------------------------------------- |
+| Phase 0+1 | ✅ DONE | Filter user messages, UI simplified, Outlook link        |
+| Phase 2   | ✅ DONE | AI extraction verified (not legacy, properly integrated) |
+| Phase 3   | ✅ DONE | Communication tools - all 4 features implemented         |
 
-**Finding: AI extraction IS properly implemented in the main codebase, not legacy.**
+### Phase 3 Communication Tools Summary
 
-| Component           | Location                                  | Status                  |
-| ------------------- | ----------------------------------------- | ----------------------- |
-| **UI - Production** | `ExtractedItemsPanel.tsx`                 | GraphQL-connected       |
-| **UI - Legacy**     | `ExtractedItemsSidebar.tsx`               | Mock data only (unused) |
-| **GraphQL Hooks**   | `useExtractedItems.ts`                    | Complete                |
-| **Backend**         | `communication-intelligence.resolvers.ts` | Complete                |
-| **AI Service**      | `communication-intelligence.service.ts`   | Claude-powered          |
-| **Worker**          | `communication-intelligence.worker.ts`    | Background processing   |
+| Feature                  | Component                 | Location                                   |
+| ------------------------ | ------------------------- | ------------------------------------------ |
+| **Notify Stakeholders**  | `NotifyStakeholdersModal` | Button in MessageView when thread has case |
+| **Thread Summary/TL;DR** | `ThreadSummaryPanel`      | Right sidebar in /communications           |
+| **Daily Email Digest**   | `MorningBriefing`         | All dashboards (OPS-006)                   |
+| **Follow-up Tracking**   | Proactive AI Suggestions  | `FollowUp` type in suggestions system      |
 
-### Phase 3: Communication Tools - 3 of 4 COMPLETE
+### New Components This Session
 
-| Feature              | Status   | Details                                              |
-| -------------------- | -------- | ---------------------------------------------------- |
-| Thread Summary/TL;DR | **DONE** | `ThreadSummaryPanel` integrated into /communications |
-| Daily Email Digest   | **DONE** | `MorningBriefing` in all dashboards (OPS-006)        |
-| Follow-up Tracking   | **DONE** | Part of proactive AI suggestions (`FollowUp` type)   |
-| Notify Stakeholders  | **TODO** | Not yet implemented                                  |
+1. **NotifyStakeholdersModal** (`apps/web/src/components/communication/NotifyStakeholdersModal.tsx`)
+   - Modal for sending quick notifications to thread participants
+   - Shows thread context and case name
+   - Checkbox selection for recipients (thread participants)
+   - Custom recipient input
+   - "Sugerează mesaj" button for AI-assisted draft
+   - Sends via `sendNewEmail` GraphQL mutation
 
-### Code Changes This Session
-
-**File: `apps/web/src/app/communications/page.tsx`**
-
-- Added import: `ThreadSummaryPanel`
-- Added to right sidebar: Thread analysis panel shows when thread has conversationId
-- Panel displays opposing counsel position, key arguments, position changes
+2. **Button Integration** (`MessageView.tsx`)
+   - Purple "Notifică părțile" button in actions area
+   - Only appears when thread is assigned to a case
+   - Opens NotifyStakeholdersModal
 
 ## Current State
 
-**All Phases**:
+**All implementation is complete.** Status moved to **Verifying**.
 
-- Phase 0 (filter user messages): COMPLETE
-- Phase 1 (UI simplification): COMPLETE
-- Phase 2 (AI extraction): COMPLETE (investigation confirmed working)
-- Phase 3 (communication tools): 3 of 4 complete
+Ready for production testing:
 
-**Only remaining item**: "Notify stakeholders" button
+- [ ] Test FilterBar tabs (De procesat / Toate)
+- [ ] Test user message hiding in MessageView
+- [ ] Test Outlook link opens compose
+- [ ] Test ThreadSummaryPanel shows analysis
+- [ ] Test NotifyStakeholdersModal sends email
+- [ ] Test ExtractedItemsPanel shows extractions (needs case-assigned emails)
 
-## Blockers/Questions
+## Commits This Session
 
-**For "Notify Stakeholders" feature**:
+1. `8ed5b1f` - feat: integrate ThreadSummaryPanel
+2. `2a80a0e` - docs: update session log
+3. (pending) - feat: add NotifyStakeholdersModal
 
-- Need to define what "stakeholders" means in context of an email thread
-- Options: case participants, recipients, assignees, or custom selection
-- Need UI design: button location, confirmation modal, draft preview
+## Key Files Reference
 
-**Question for User**: Would you like to:
+**New This Session:**
 
-- A) Implement "Notify stakeholders" feature now
-- B) Mark OPS-011 as Verifying (consider feature complete enough)
-- C) Something else
+- `apps/web/src/components/communication/NotifyStakeholdersModal.tsx`
 
-## Next Steps
+**Modified This Session:**
 
-1. **Option A - Implement Notify Stakeholders**:
-   - Add "Notifică părțile interesate" button to MessageView or ThreadSummaryPanel
-   - Create modal with stakeholder selection
-   - Use AI to draft update message
-   - Wire to email send mutation
+- `apps/web/src/app/communications/page.tsx` - ThreadSummaryPanel integration
+- `apps/web/src/components/communication/MessageView.tsx` - Notify button
 
-2. **Option B - Move to Verifying**:
-   - Test current features in production
-   - Verify ThreadSummaryPanel works with real threads
-   - Create follow-up issue for "Notify stakeholders" if needed
+**Previously Modified (Session 2):**
 
-## Key Files Modified This Session
+- `apps/web/src/components/communication/FilterBar.tsx`
+- `apps/web/src/stores/communication.store.ts`
 
-| File                      | Change                                 |
-| ------------------------- | -------------------------------------- |
-| `communications/page.tsx` | Added ThreadSummaryPanel integration   |
-| `ops-011-handoff.md`      | Updated with session 3 findings        |
-| `operations-log.md`       | Updated session log and Phase 3 status |
+## Architecture
 
-## Architecture Reference
-
-**Thread Summary Flow**:
+**Communications Page Right Sidebar:**
 
 ```
-User selects thread with conversationId
-    ↓
-ThreadSummaryPanel renders
-    ↓
-useThreadSummary(conversationId) GraphQL query
-    ↓
-communication-intelligence.resolvers.ts
-    ↓
-thread-analysis.service.ts (AI)
-    ↓
-Returns: opposingCounselPosition, keyArguments, positionChanges
+┌─────────────────────────────────────┐
+│ ExtractedItemsPanel (if caseId)     │
+│ - Deadlines                         │
+│ - Commitments                       │
+│ - Action Items                      │
+│ - Questions                         │
+├─────────────────────────────────────┤
+│ ThreadSummaryPanel (if conversationId) │
+│ - Opposing counsel position         │
+│ - Key arguments                     │
+│ - Position changes                  │
+└─────────────────────────────────────┘
 ```
 
-**Existing Communication Tools**:
+**MessageView Actions (when assigned to case):**
 
-- `MorningBriefing` - Dashboard widget with daily priorities, deadlines, risks
-- `ExtractedItemsPanel` - Deadlines, commitments, action items from emails
-- `ThreadSummaryPanel` - Opposing counsel position, key arguments, position changes
-- `AIDraftResponsePanel` - AI-generated reply suggestions
-- Proactive AI Suggestions - Follow-up reminders via `FollowUp` suggestion type
+```
+[Noi → Vechi] [Extinde tot] [Notifică părțile] [Marchează ca Procesat]
+                              ↑
+                         NEW: Purple button
+```
 
 ---
 
 _Created: 2025-12-12_
-_Last Updated: 2025-12-12 (Session 3 - Phase 3 mostly complete)_
+_Last Updated: 2025-12-12 (Session 3 - All phases complete)_
+_Status: Verifying_
 _Command to continue: `/ops-continue OPS-011`_

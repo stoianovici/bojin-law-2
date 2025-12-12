@@ -17,7 +17,7 @@
 | OPS-008 | Communications section comprehensive overhaul   | Feature     | P1-High     | Fixing    | 6        |
 | OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Verifying | 3        |
 | OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Resolved  | 3        |
-| OPS-011 | Refocus /communications on received emails only | Feature     | P1-High     | Fixing    | 3        |
+| OPS-011 | Refocus /communications on received emails only | Feature     | P1-High     | Verifying | 3        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -1375,7 +1375,7 @@ cd apps/web && pnpm dev             # Next.js frontend on :3000
 
 | Field           | Value      |
 | --------------- | ---------- |
-| **Status**      | Fixing     |
+| **Status**      | Verifying  |
 | **Type**        | Feature    |
 | **Priority**    | P1-High    |
 | **Created**     | 2025-12-12 |
@@ -1408,10 +1408,10 @@ The /communications section should focus exclusively on processing received emai
 - [x] Document current state - fully integrated, minor type gap noted
 - [ ] Test extraction E2E in production (requires synced emails assigned to a case)
 
-**Phase 3: Communication Tools** (Partially Complete)
+**Phase 3: Communication Tools** ✅ COMPLETED (Session 3)
 
-- [ ] "Notify stakeholders" button - auto-draft updates to case participants (NOT YET IMPLEMENTED)
-- [x] Thread summary/TL;DR - `ThreadSummaryPanel` integrated into /communications (Session 3)
+- [x] "Notify stakeholders" button - `NotifyStakeholdersModal` component, appears when thread assigned to case
+- [x] Thread summary/TL;DR - `ThreadSummaryPanel` integrated into /communications
 - [x] Daily email digest - `MorningBriefing` component already in all dashboards (OPS-006)
 - [x] Follow-up tracking - Part of proactive AI suggestions system (`FollowUp` type)
 
@@ -1493,12 +1493,16 @@ For the /communications page focused on processing received messages:
   3. **Follow-up tracking verified**: Part of proactive AI suggestions (`FollowUp` type in proactive-suggestions.graphql)
   4. **Notify stakeholders**: NOT yet implemented - only Phase 3 item remaining
 - [2025-12-12] Session 3 - Build verified successful. Committed `8ed5b1f`, pushed to origin/main.
+- [2025-12-12] Session 3 - Phase 3 complete: Implemented `NotifyStakeholdersModal` - "Notifică părțile" button in MessageView actions.
+- [2025-12-12] Session 3 - All phases complete (0+1, 2, 3). Status: Verifying.
 
 #### Files Involved
 
 **Frontend - Main Page:**
 
 - `apps/web/src/app/communications/page.tsx` - **FIXED (Session 2+3)** - Replaced "Mesaj nou" with Outlook link, added ThreadSummaryPanel
+- `apps/web/src/components/communication/NotifyStakeholdersModal.tsx` - **NEW (Session 3)** - Notify stakeholders modal
+- `apps/web/src/components/communication/MessageView.tsx` - **FIXED (Session 3)** - Added "Notifică părțile" button
 
 **Frontend - Components Modified:**
 

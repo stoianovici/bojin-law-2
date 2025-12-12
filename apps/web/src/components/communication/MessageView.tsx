@@ -17,7 +17,9 @@ import {
   FolderInput,
   EyeOff,
   X,
+  Users,
 } from 'lucide-react';
+import { NotifyStakeholdersModal } from './NotifyStakeholdersModal';
 import { useState, useCallback } from 'react';
 import { gql } from '@apollo/client';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
@@ -411,6 +413,9 @@ export function MessageView() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string>('');
 
+  // Modal state for notifying stakeholders
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+
   // Mutations
   const [assignThreadToCase, { loading: assigning }] =
     useMutation<AssignThreadToCaseResult>(ASSIGN_THREAD_TO_CASE);
@@ -635,6 +640,17 @@ export function MessageView() {
           >
             {allExpanded ? 'Restrânge tot' : 'Extinde tot'}
           </button>
+          {/* Notify stakeholders button - only when assigned to a case */}
+          {!isUnassigned && (
+            <button
+              onClick={() => setShowNotifyModal(true)}
+              className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1.5"
+              title="Trimite o notificare părților interesate"
+            >
+              <Users className="h-4 w-4" />
+              Notifică părțile
+            </button>
+          )}
           <button
             onClick={handleMarkAsProcessed}
             className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
@@ -726,6 +742,11 @@ export function MessageView() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Notify Stakeholders Modal */}
+      {showNotifyModal && (
+        <NotifyStakeholdersModal thread={thread} onClose={() => setShowNotifyModal(false)} />
       )}
     </div>
   );
