@@ -5,7 +5,7 @@
  * GraphQL resolvers for extracted items, risk indicators, and thread summaries.
  */
 
-import { PrismaClient, ExtractionStatus } from '@legal-platform/database';
+import { prisma, ExtractionStatus } from '@legal-platform/database';
 import { getConfidenceLevel } from '@legal-platform/database';
 import { createCalendarSuggestionService } from '../../services/calendar-suggestion.service';
 import { createExtractionConversionService } from '../../services/extraction-conversion.service';
@@ -16,9 +16,12 @@ import { getCommunicationIntelligenceLoaders } from '../dataloaders/communicatio
 // ============================================================================
 
 interface Context {
-  prisma: PrismaClient;
-  userId: string;
-  firmId: string;
+  user?: {
+    id: string;
+    firmId: string;
+    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
+    email: string;
+  };
 }
 
 interface ExtractedItemsFilter {
@@ -84,8 +87,9 @@ export const communicationIntelligenceQueryResolvers = {
   extractedDeadlines: async (
     _: unknown,
     { filter }: { filter?: ExtractedItemsFilter },
-    { prisma, firmId }: Context
+    context: Context
   ) => {
+    const firmId = context.user?.firmId;
     const where = buildWhereClause(filter, firmId);
     return prisma.extractedDeadline.findMany({
       where,
@@ -102,8 +106,9 @@ export const communicationIntelligenceQueryResolvers = {
   extractedCommitments: async (
     _: unknown,
     { filter }: { filter?: ExtractedItemsFilter },
-    { prisma, firmId }: Context
+    context: Context
   ) => {
+    const firmId = context.user?.firmId;
     const where = buildWhereClause(filter, firmId);
     return prisma.extractedCommitment.findMany({
       where,
@@ -120,8 +125,9 @@ export const communicationIntelligenceQueryResolvers = {
   extractedActionItems: async (
     _: unknown,
     { filter }: { filter?: ExtractedItemsFilter },
-    { prisma, firmId }: Context
+    context: Context
   ) => {
+    const firmId = context.user?.firmId;
     const where = buildWhereClause(filter, firmId);
     return prisma.extractedActionItem.findMany({
       where,
@@ -138,8 +144,9 @@ export const communicationIntelligenceQueryResolvers = {
   extractedQuestions: async (
     _: unknown,
     { filter }: { filter?: ExtractedItemsFilter },
-    { prisma, firmId }: Context
+    context: Context
   ) => {
+    const firmId = context.user?.firmId;
     const where = buildWhereClause(filter, firmId);
     return prisma.extractedQuestion.findMany({
       where,
@@ -155,8 +162,9 @@ export const communicationIntelligenceQueryResolvers = {
   riskIndicators: async (
     _: unknown,
     { filter }: { filter?: RiskIndicatorsFilter },
-    { prisma, firmId }: Context
+    context: Context
   ) => {
+    const firmId = context.user?.firmId;
     const where: Record<string, unknown> = { firmId };
     if (filter?.caseId) where.caseId = filter.caseId;
     if (filter?.type) where.type = filter.type;
@@ -170,11 +178,8 @@ export const communicationIntelligenceQueryResolvers = {
   },
 
   // Case Risk Summary
-  caseRiskSummary: async (
-    _: unknown,
-    { caseId }: { caseId: string },
-    { prisma, firmId }: Context
-  ) => {
+  caseRiskSummary: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
+    const firmId = context.user?.firmId;
     const risks = await prisma.riskIndicator.findMany({
       where: { caseId, firmId },
     });
@@ -205,22 +210,15 @@ export const communicationIntelligenceQueryResolvers = {
   },
 
   // Thread Summary
-  threadSummary: async (
-    _: unknown,
-    { conversationId }: { conversationId: string },
-    { prisma }: Context
-  ) => {
+  threadSummary: async (_: unknown, { conversationId }: { conversationId: string }) => {
     return prisma.threadSummary.findUnique({
       where: { conversationId },
     });
   },
 
   // Case Thread Summaries
-  caseThreadSummaries: async (
-    _: unknown,
-    { caseId }: { caseId: string },
-    { prisma, firmId }: Context
-  ) => {
+  caseThreadSummaries: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
+    const firmId = context.user?.firmId;
     return prisma.threadSummary.findMany({
       where: { caseId, firmId },
       orderBy: { lastAnalyzedAt: 'desc' },
@@ -228,11 +226,8 @@ export const communicationIntelligenceQueryResolvers = {
   },
 
   // Case Intelligence Summary
-  caseIntelligenceSummary: async (
-    _: unknown,
-    { caseId }: { caseId: string },
-    { prisma, firmId }: Context
-  ) => {
+  caseIntelligenceSummary: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
+    const firmId = context.user?.firmId;
     const [deadlines, commitments, actionItems, questions, risks] = await Promise.all([
       prisma.extractedDeadline.count({ where: { caseId, firmId, status: 'Pending' } }),
       prisma.extractedCommitment.count({ where: { caseId, firmId, status: 'Pending' } }),
@@ -273,11 +268,8 @@ export const communicationIntelligenceQueryResolvers = {
   },
 
   // Extracted Items Counts
-  extractedItemsCounts: async (
-    _: unknown,
-    { caseId }: { caseId: string },
-    { prisma, firmId }: Context
-  ) => {
+  extractedItemsCounts: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
+    const firmId = context.user?.firmId;
     const [deadlines, commitments, actionItems, questions] = await Promise.all([
       prisma.extractedDeadline.count({ where: { caseId, firmId, status: 'Pending' } }),
       prisma.extractedCommitment.count({ where: { caseId, firmId, status: 'Pending' } }),
@@ -297,8 +289,7 @@ export const communicationIntelligenceQueryResolvers = {
   // Conversion Suggestion
   conversionSuggestion: async (
     _: unknown,
-    { extractionId, extractionType }: { extractionId: string; extractionType: string },
-    { prisma }: Context
+    { extractionId, extractionType }: { extractionId: string; extractionType: string }
   ) => {
     const conversionService = createExtractionConversionService(prisma);
 
@@ -315,7 +306,7 @@ export const communicationIntelligenceQueryResolvers = {
   },
 
   // Calendar Suggestions
-  calendarSuggestions: async (_: unknown, { caseId }: { caseId: string }, { prisma }: Context) => {
+  calendarSuggestions: async (_: unknown, { caseId }: { caseId: string }) => {
     const calendarService = createCalendarSuggestionService(prisma);
     return calendarService.suggestForCase(caseId);
   },
@@ -330,8 +321,10 @@ export const communicationIntelligenceMutationResolvers = {
   convertExtractionToTask: async (
     _: unknown,
     { input }: { input: ConvertToTaskInput },
-    { prisma, userId, firmId }: Context
+    context: Context
   ) => {
+    const userId = context.user?.id;
+    const firmId = context.user?.firmId;
     const conversionService = createExtractionConversionService(prisma);
 
     return conversionService.convertToTask({
@@ -351,11 +344,7 @@ export const communicationIntelligenceMutationResolvers = {
   },
 
   // Dismiss Extraction
-  dismissExtraction: async (
-    _: unknown,
-    { input }: { input: DismissExtractionInput },
-    { prisma }: Context
-  ) => {
+  dismissExtraction: async (_: unknown, { input }: { input: DismissExtractionInput }) => {
     const conversionService = createExtractionConversionService(prisma);
     return conversionService.dismissExtraction(
       input.extractionId,
@@ -365,11 +354,7 @@ export const communicationIntelligenceMutationResolvers = {
   },
 
   // Mark Question Answered
-  markQuestionAnswered: async (
-    _: unknown,
-    { input }: { input: { questionId: string } },
-    { prisma }: Context
-  ) => {
+  markQuestionAnswered: async (_: unknown, { input }: { input: { questionId: string } }) => {
     return prisma.extractedQuestion.update({
       where: { id: input.questionId },
       data: {
@@ -381,11 +366,8 @@ export const communicationIntelligenceMutationResolvers = {
   },
 
   // Resolve Risk
-  resolveRisk: async (
-    _: unknown,
-    { input }: { input: { riskId: string } },
-    { prisma, userId }: Context
-  ) => {
+  resolveRisk: async (_: unknown, { input }: { input: { riskId: string } }, context: Context) => {
+    const userId = context.user?.id;
     return prisma.riskIndicator.update({
       where: { id: input.riskId },
       data: {
@@ -397,11 +379,7 @@ export const communicationIntelligenceMutationResolvers = {
   },
 
   // Trigger Email Analysis (manual)
-  triggerEmailAnalysis: async (
-    _: unknown,
-    { emailId }: { emailId: string },
-    { prisma }: Context
-  ) => {
+  triggerEmailAnalysis: async (_: unknown, { emailId }: { emailId: string }) => {
     // This would call the AI service to analyze the email
     // For now, just verify the email exists
     const email = await prisma.email.findUnique({
@@ -416,11 +394,7 @@ export const communicationIntelligenceMutationResolvers = {
   },
 
   // Trigger Thread Analysis (manual)
-  triggerThreadAnalysis: async (
-    _: unknown,
-    { conversationId }: { conversationId: string },
-    { prisma }: Context
-  ) => {
+  triggerThreadAnalysis: async (_: unknown, { conversationId }: { conversationId: string }) => {
     // This would call the thread analysis service
     // For now, return existing summary if any
     const summary = await prisma.threadSummary.findUnique({
@@ -436,8 +410,9 @@ export const communicationIntelligenceMutationResolvers = {
   createCalendarEvent: async (
     _: unknown,
     { suggestionId }: { suggestionId: string },
-    { prisma, userId }: Context
+    context: Context
   ) => {
+    const userId = context.user?.id;
     const calendarService = createCalendarSuggestionService(prisma);
 
     // Parse suggestion ID to get source type and extraction ID
