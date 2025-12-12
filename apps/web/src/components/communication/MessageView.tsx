@@ -7,7 +7,17 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useMyCases } from '../../hooks/useMyCases';
 import { format } from 'date-fns';
 import type { CommunicationMessage } from '@legal-platform/types';
-import { Paperclip, Reply, ArrowUpDown, Download, Loader2, Link2, FolderInput, EyeOff, X } from 'lucide-react';
+import {
+  Paperclip,
+  Reply,
+  ArrowUpDown,
+  Download,
+  Loader2,
+  Link2,
+  FolderInput,
+  EyeOff,
+  X,
+} from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { gql } from '@apollo/client';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
@@ -115,124 +125,127 @@ function Message({
   });
 
   // Handle attachment download - fetches from MS Graph and triggers browser download
-  const handleDownloadAttachment = useCallback(async (
-    e: React.MouseEvent,
-    attachmentId: string,
-    attachmentName: string
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDownloadAttachment = useCallback(
+    async (e: React.MouseEvent, attachmentId: string, attachmentName: string) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (downloadingId) return; // Already downloading
-    setDownloadingId(attachmentId);
+      if (downloadingId) return; // Already downloading
+      setDownloadingId(attachmentId);
 
-    try {
-      const result = await fetchAttachmentContent({
-        variables: { emailId: message.id, attachmentId },
-      });
+      try {
+        const result = await fetchAttachmentContent({
+          variables: { emailId: message.id, attachmentId },
+        });
 
-      const data = (result.data as any)?.emailAttachmentContent;
-      if (data?.content) {
-        // Convert base64 to blob and trigger download
-        const byteCharacters = atob(data.content);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        const data = (result.data as any)?.emailAttachmentContent;
+        if (data?.content) {
+          // Convert base64 to blob and trigger download
+          const byteCharacters = atob(data.content);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: data.contentType });
+
+          // Create download link
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = data.name || attachmentName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: data.contentType });
-
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = data.name || attachmentName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Failed to download attachment:', error);
+        setSyncError('Nu s-a putut descărca fișierul');
+      } finally {
+        setDownloadingId(null);
       }
-    } catch (error) {
-      console.error('Failed to download attachment:', error);
-      setSyncError('Nu s-a putut descărca fișierul');
-    } finally {
-      setDownloadingId(null);
-    }
-  }, [message.id, fetchAttachmentContent, downloadingId]);
+    },
+    [message.id, fetchAttachmentContent, downloadingId]
+  );
 
-  const handleSyncAttachments = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (syncingAttachments) return;
+  const handleSyncAttachments = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (syncingAttachments) return;
 
-    setSyncingAttachments(true);
-    setSyncError(null);
+      setSyncingAttachments(true);
+      setSyncError(null);
 
-    try {
-      console.log('[MessageView] Syncing attachments for email:', message.id);
-      const result = await syncEmailAttachments({
-        variables: { emailId: message.id },
-      });
+      try {
+        console.log('[MessageView] Syncing attachments for email:', message.id);
+        const result = await syncEmailAttachments({
+          variables: { emailId: message.id },
+        });
 
-      console.log('[MessageView] Sync result:', result);
-      const syncedData = result.data as { syncEmailAttachments: any[] } | null | undefined;
+        console.log('[MessageView] Sync result:', result);
+        const syncedData = result.data as { syncEmailAttachments: any[] } | null | undefined;
 
-      // Check for errors in result
-      const resultError = (result as any).error;
-      if ((result as any).errors || resultError) {
-        const errorObj = (result as any).errors?.[0] || resultError;
-        console.error('[MessageView] GraphQL errors:', errorObj);
-        // Try to extract a meaningful message
-        let errorMsg = 'Eroare la sincronizare';
-        if (errorObj?.message) {
-          errorMsg = errorObj.message;
-        } else if (errorObj?.graphQLErrors?.[0]?.message) {
-          errorMsg = errorObj.graphQLErrors[0].message;
+        // Check for errors in result
+        const resultError = (result as any).error;
+        if ((result as any).errors || resultError) {
+          const errorObj = (result as any).errors?.[0] || resultError;
+          console.error('[MessageView] GraphQL errors:', errorObj);
+          // Try to extract a meaningful message
+          let errorMsg = 'Eroare la sincronizare';
+          if (errorObj?.message) {
+            errorMsg = errorObj.message;
+          } else if (errorObj?.graphQLErrors?.[0]?.message) {
+            errorMsg = errorObj.graphQLErrors[0].message;
+          }
+          // Check for MS Graph specific errors
+          if (errorMsg.includes('404') || errorMsg.includes('NotFound')) {
+            errorMsg = 'Email-ul nu mai există în Outlook';
+          } else if (errorMsg.includes('400')) {
+            errorMsg = 'Email-ul nu mai este accesibil în Outlook';
+          }
+          setSyncError(errorMsg);
+          return;
         }
-        // Check for MS Graph specific errors
-        if (errorMsg.includes('404') || errorMsg.includes('NotFound')) {
-          errorMsg = 'Email-ul nu mai există în Outlook';
-        } else if (errorMsg.includes('400')) {
-          errorMsg = 'Email-ul nu mai este accesibil în Outlook';
-        }
-        setSyncError(errorMsg);
-        return;
-      }
 
-      if (syncedData?.syncEmailAttachments) {
-        console.log('[MessageView] Synced attachments:', syncedData.syncEmailAttachments);
-        // Transform synced attachments to local format
-        const syncedAttachments = syncedData.syncEmailAttachments.map((att: any) => ({
-          id: att.id,
-          name: att.name,
-          size: att.size || 0,
-          mimeType: att.contentType || 'application/octet-stream',
-          url: att.downloadUrl || '',
-        }));
-        console.log('[MessageView] Transformed attachments:', syncedAttachments);
-        if (syncedAttachments.length === 0) {
-          setSyncError('Nu s-au găsit atașamente');
+        if (syncedData?.syncEmailAttachments) {
+          console.log('[MessageView] Synced attachments:', syncedData.syncEmailAttachments);
+          // Transform synced attachments to local format
+          const syncedAttachments = syncedData.syncEmailAttachments.map((att: any) => ({
+            id: att.id,
+            name: att.name,
+            size: att.size || 0,
+            mimeType: att.contentType || 'application/octet-stream',
+            url: att.downloadUrl || '',
+          }));
+          console.log('[MessageView] Transformed attachments:', syncedAttachments);
+          if (syncedAttachments.length === 0) {
+            setSyncError('Nu s-au găsit atașamente');
+          } else {
+            onAttachmentsSynced?.(message.id, syncedAttachments);
+          }
         } else {
-          onAttachmentsSynced?.(message.id, syncedAttachments);
+          console.log('[MessageView] No attachments in response');
+          setSyncError('Nu s-au găsit atașamente');
         }
-      } else {
-        console.log('[MessageView] No attachments in response');
-        setSyncError('Nu s-au găsit atașamente');
+      } catch (error: any) {
+        console.error('[MessageView] Failed to sync attachments:', error);
+        // Try to extract meaningful error message
+        const graphqlError = error?.graphQLErrors?.[0];
+        const errorMessage =
+          graphqlError?.message || error?.message || 'Nu s-au putut descărca atașamentele';
+        console.error('[MessageView] Error details:', {
+          graphqlError,
+          message: errorMessage,
+          fullError: JSON.stringify(error, null, 2),
+        });
+        setSyncError(errorMessage);
+      } finally {
+        setSyncingAttachments(false);
       }
-    } catch (error: any) {
-      console.error('[MessageView] Failed to sync attachments:', error);
-      // Try to extract meaningful error message
-      const graphqlError = error?.graphQLErrors?.[0];
-      const errorMessage = graphqlError?.message || error?.message || 'Nu s-au putut descărca atașamentele';
-      console.error('[MessageView] Error details:', {
-        graphqlError,
-        message: errorMessage,
-        fullError: JSON.stringify(error, null, 2)
-      });
-      setSyncError(errorMessage);
-    } finally {
-      setSyncingAttachments(false);
-    }
-  }, [message.id, syncEmailAttachments, syncingAttachments, onAttachmentsSynced]);
+    },
+    [message.id, syncEmailAttachments, syncingAttachments, onAttachmentsSynced]
+  );
 
   const handleReplyClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -351,9 +364,7 @@ function Message({
                   <span>Conectează Microsoft pentru atașamente</span>
                 </button>
               )}
-              {syncError && (
-                <p className="text-xs text-red-500 mt-1">{syncError}</p>
-              )}
+              {syncError && <p className="text-xs text-red-500 mt-1">{syncError}</p>}
             </div>
           )}
           <div className="mt-4 flex items-center gap-2">
@@ -384,6 +395,7 @@ export function MessageView() {
     threads,
     setThreads,
     selectThread,
+    userEmail,
   } = useCommunicationStore();
   const { addNotification } = useNotificationStore();
   const { hasMsalAccount, reconnectMicrosoft } = useAuth();
@@ -400,30 +412,35 @@ export function MessageView() {
   const [selectedCaseId, setSelectedCaseId] = useState<string>('');
 
   // Mutations
-  const [assignThreadToCase, { loading: assigning }] = useMutation<AssignThreadToCaseResult>(ASSIGN_THREAD_TO_CASE);
-  const [ignoreEmailThread, { loading: ignoring }] = useMutation<IgnoreEmailThreadResult>(IGNORE_EMAIL_THREAD);
+  const [assignThreadToCase, { loading: assigning }] =
+    useMutation<AssignThreadToCaseResult>(ASSIGN_THREAD_TO_CASE);
+  const [ignoreEmailThread, { loading: ignoring }] =
+    useMutation<IgnoreEmailThreadResult>(IGNORE_EMAIL_THREAD);
 
   // Handle when attachments are synced for a message
   // IMPORTANT: This hook must be called before any early returns to satisfy Rules of Hooks
-  const handleAttachmentsSynced = useCallback((messageId: string, attachments: any[]) => {
-    const currentThread = getSelectedThread();
-    if (!currentThread) return;
+  const handleAttachmentsSynced = useCallback(
+    (messageId: string, attachments: any[]) => {
+      const currentThread = getSelectedThread();
+      if (!currentThread) return;
 
-    const updatedThreads = threads.map((t) => {
-      if (t.id !== currentThread.id) return t;
-      return {
-        ...t,
-        messages: t.messages.map((m) => {
-          if (m.id !== messageId) return m;
-          return { ...m, attachments };
-        }),
-      };
-    });
-    setThreads(updatedThreads);
-  }, [threads, getSelectedThread, setThreads]);
+      const updatedThreads = threads.map((t) => {
+        if (t.id !== currentThread.id) return t;
+        return {
+          ...t,
+          messages: t.messages.map((m) => {
+            if (m.id !== messageId) return m;
+            return { ...m, attachments };
+          }),
+        };
+      });
+      setThreads(updatedThreads);
+    },
+    [threads, getSelectedThread, setThreads]
+  );
 
   // Handle assigning thread to case
-  const handleAssignToCase = useCallback(async () => {
+  const handleAssignToCase = async () => {
     const currentThread = getSelectedThread();
     if (!currentThread || !selectedCaseId) return;
 
@@ -451,10 +468,10 @@ export function MessageView() {
     } catch (error) {
       console.error('Failed to assign thread to case:', error);
     }
-  }, [getSelectedThread, selectedCaseId, assignThreadToCase, threads, setThreads]);
+  };
 
   // Handle ignoring a thread (marking as not case-related)
-  const handleIgnoreThread = useCallback(async () => {
+  const handleIgnoreThread = async () => {
     const currentThread = getSelectedThread();
     if (!currentThread) return;
 
@@ -474,7 +491,7 @@ export function MessageView() {
     } catch (error) {
       console.error('Failed to ignore thread:', error);
     }
-  }, [getSelectedThread, ignoreEmailThread, threads, setThreads, selectThread]);
+  };
 
   if (!thread) {
     return (
@@ -484,14 +501,25 @@ export function MessageView() {
     );
   }
 
+  // Filter out user's own messages (the /communications page is for processing received emails only)
+  // User's sent messages (including replies) are filtered out to keep the view focused on incoming mail
+  const receivedMessages = userEmail
+    ? thread.messages.filter((m) => m.senderEmail?.toLowerCase() !== userEmail.toLowerCase())
+    : thread.messages;
+
   // Sort messages based on user preference
-  const sortedMessages = [...thread.messages].sort((a, b) => {
-    const dateA = a.sentDate instanceof Date ? a.sentDate.getTime() : new Date(a.sentDate).getTime() || 0;
-    const dateB = b.sentDate instanceof Date ? b.sentDate.getTime() : new Date(b.sentDate).getTime() || 0;
+  const sortedMessages = [...receivedMessages].sort((a, b) => {
+    const dateA =
+      a.sentDate instanceof Date ? a.sentDate.getTime() : new Date(a.sentDate).getTime() || 0;
+    const dateB =
+      b.sentDate instanceof Date ? b.sentDate.getTime() : new Date(b.sentDate).getTime() || 0;
     return messageOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
-  const allExpanded = thread.messages.every((m) => expandedMessageIds.has(m.id));
+  // Count how many messages were hidden (user's own messages)
+  const hiddenMessageCount = thread.messages.length - receivedMessages.length;
+
+  const allExpanded = receivedMessages.every((m) => expandedMessageIds.has(m.id));
   const isUnassigned = !thread.caseId;
 
   const handleReply = (threadId: string) => {
@@ -516,7 +544,7 @@ export function MessageView() {
   };
 
   const toggleMessageOrder = () => {
-    setMessageOrder(prev => prev === 'newest' ? 'oldest' : 'newest');
+    setMessageOrder((prev) => (prev === 'newest' ? 'oldest' : 'newest'));
   };
 
   // Calculate stats for processed decision
@@ -536,7 +564,14 @@ export function MessageView() {
         <div>
           <h2 className="font-semibold text-lg mb-1">{thread.subject}</h2>
           <div className="text-sm text-gray-600">
-            {thread.caseName} • {thread.messages.length} mesaje
+            {thread.caseName} • {receivedMessages.length} mesaje primite
+            {hiddenMessageCount > 0 && (
+              <span className="text-gray-400 ml-1">
+                ({hiddenMessageCount}{' '}
+                {hiddenMessageCount === 1 ? 'răspuns propriu ascuns' : 'răspunsuri proprii ascunse'}
+                )
+              </span>
+            )}
           </div>
         </div>
 
@@ -585,7 +620,11 @@ export function MessageView() {
           <button
             onClick={toggleMessageOrder}
             className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
-            title={messageOrder === 'newest' ? 'Sortare: cele mai noi primele' : 'Sortare: cele mai vechi primele'}
+            title={
+              messageOrder === 'newest'
+                ? 'Sortare: cele mai noi primele'
+                : 'Sortare: cele mai vechi primele'
+            }
           >
             <ArrowUpDown className="h-4 w-4" />
             {messageOrder === 'newest' ? 'Noi → Vechi' : 'Vechi → Noi'}

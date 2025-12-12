@@ -6,9 +6,13 @@ import type { CommunicationThread, CommunicationFilters, Task } from '@legal-pla
  * Communication Hub Store
  * Manages state for the communication hub interface including threads,
  * selected thread, filters, and compose modal state
+ *
+ * Note: The /communications section focuses on received emails only.
+ * User's own messages are filtered out at the MessageView level.
+ * The EmailViewMode is kept for backwards compatibility but 'sent' mode is deprecated.
  */
-// Email view mode for filtering sent/received emails
-type EmailViewMode = 'all' | 'received' | 'sent';
+// Email view mode - 'sent' is deprecated since /communications now shows received only
+type EmailViewMode = 'all' | 'received';
 
 // Draft data structure for persistence
 interface ComposeDraft {
@@ -392,25 +396,19 @@ export const useCommunicationStore = create<CommunicationState>()(
           console.log('[getFilteredThreads] After showProcessed filter:', filtered.length);
         }
 
-        // Filter by email view mode (sent/received)
+        // Filter by email view mode
         // 'received' = hide threads where ALL messages are from the user (sent-only threads)
-        // 'sent' = show only threads where the user sent at least one message
-        // 'all' = show everything
-        if (state.userEmail && state.emailViewMode !== 'all') {
+        // 'all' = show all threads (user's messages still filtered in MessageView)
+        // Note: Individual messages from user are filtered at MessageView level, not here
+        if (state.userEmail && state.emailViewMode === 'received') {
           const userEmailLower = state.userEmail.toLowerCase();
           const beforeCount = filtered.length;
 
-          if (state.emailViewMode === 'received') {
-            // Show threads that have at least one message NOT from the user
-            filtered = filtered.filter((t) =>
-              t.messages.some((m) => m.senderEmail?.toLowerCase() !== userEmailLower)
-            );
-          } else if (state.emailViewMode === 'sent') {
-            // Show threads where the user sent at least one message
-            filtered = filtered.filter((t) =>
-              t.messages.some((m) => m.senderEmail?.toLowerCase() === userEmailLower)
-            );
-          }
+          // Show threads that have at least one message NOT from the user
+          filtered = filtered.filter((t) =>
+            t.messages.some((m) => m.senderEmail?.toLowerCase() !== userEmailLower)
+          );
+
           console.log(
             '[getFilteredThreads] After emailViewMode filter:',
             filtered.length,

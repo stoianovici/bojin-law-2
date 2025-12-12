@@ -10,11 +10,11 @@ import { ComposeInterface } from '../../components/communication/ComposeInterfac
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useEmailSync, useEmailThreads } from '../../hooks/useEmailSync';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, RefreshCw, Mail, AlertCircle, Link2 } from 'lucide-react';
+import { RefreshCw, Mail, AlertCircle, Link2 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 
 export default function CommunicationsPage() {
-  const { openCompose, setThreads, getSelectedThread, setUserEmail } = useCommunicationStore();
+  const { setThreads, getSelectedThread, setUserEmail } = useCommunicationStore();
   const selectedThread = getSelectedThread();
 
   // Auth context for Microsoft account status and user email
@@ -211,14 +211,17 @@ export default function CommunicationsPage() {
           )}
         </div>
 
-        {/* Right: New message button */}
-        <button
-          onClick={() => openCompose('new')}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center gap-2"
+        {/* Right: Open Outlook for new messages */}
+        <a
+          href="https://outlook.office.com/mail/0/deeplink/compose"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-2"
+          title="Deschide Outlook pentru mesaje noi"
         >
-          <Plus className="h-4 w-4" />
-          Mesaj nou
-        </button>
+          <Mail className="h-4 w-4" />
+          Outlook
+        </a>
       </div>
 
       {/* Show MS reconnect prompt when token is expired/missing */}

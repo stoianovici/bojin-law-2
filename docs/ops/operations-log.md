@@ -17,6 +17,7 @@
 | OPS-008 | Communications section comprehensive overhaul   | Feature     | P1-High     | Fixing    | 6        |
 | OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Verifying | 3        |
 | OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Resolved  | 3        |
+| OPS-011 | Refocus /communications on received emails only | Feature     | P1-High     | New       | 1        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -1367,6 +1368,151 @@ cd apps/web && pnpm dev             # Next.js frontend on :3000
 
 - `services/gateway/src/services/email-thread.service.ts` - Thread grouping (uses isIgnored field)
 - `services/gateway/src/graphql/resolvers/email.resolvers.ts` - GraphQL queries with debug logging
+
+---
+
+### [OPS-011] Refocus /communications on received emails only
+
+| Field           | Value      |
+| --------------- | ---------- |
+| **Status**      | Fixing     |
+| **Type**        | Feature    |
+| **Priority**    | P1-High    |
+| **Created**     | 2025-12-12 |
+| **Sessions**    | 2          |
+| **Last Active** | 2025-12-12 |
+
+#### Description
+
+The /communications section should focus exclusively on processing received emails. Sent items will be handled via Outlook directly. The goal is to streamline the workflow for:
+
+1. **Quick replies** - AI-generated responses to received emails
+2. **Extraction of actionable elements** - deadlines, tasks, commitments, questions
+3. **Composing update messages** - notifying relevant actors based on received info
+
+**Current architecture note:** The system already syncs inbox-only from Microsoft Graph API (`/me/mailFolders/Inbox`), so the backend is naturally aligned with this goal. The main work is UI simplification and feature enhancement.
+
+#### Planned Work
+
+**Phase 1: UI Simplification**
+
+- [ ] Remove "Trimise" (Sent) tab from FilterBar - irrelevant since sync excludes sent items
+- [ ] Simplify emailViewMode to `'all' | 'received'` (remove 'sent')
+- [ ] Update ComposeInterface to be reply-focused only
+- [ ] Add "Open in Outlook" button for complex email operations
+
+**Phase 2: Quick Reply Enhancements**
+
+- [ ] One-click quick reply templates ("Am primit", "Mulțumesc, revin", "Analizez și revin")
+- [ ] Quick acknowledgment button - auto-send confirmation
+- [ ] Context-aware reply suggestions based on case history
+
+**Phase 3: Extraction Enhancements**
+
+- [ ] Batch extraction from multiple unread emails at once
+- [ ] Auto-categorize extracted items by urgency (today/this week/later)
+- [ ] Link extracted items to existing tasks if matched
+- [ ] Calendar integration for extracted deadlines
+
+**Phase 4: Communication Tools**
+
+- [ ] "Notify stakeholders" button - auto-draft updates to case participants
+- [ ] Thread summary/TL;DR for long email threads
+- [ ] Daily email digest - "X emails today, Y need action"
+- [ ] Follow-up tracking - emails awaiting response
+
+#### Root Cause
+
+N/A - Feature enhancement, not a bug fix.
+
+#### Fix Applied
+
+TBD
+
+#### Local Dev Environment
+
+```bash
+# Full dev environment:
+pnpm dev
+
+# Individual services:
+cd services/gateway && pnpm dev     # GraphQL gateway on :4000
+cd services/ai-service && pnpm dev  # AI service on :3002
+cd apps/web && pnpm dev             # Next.js frontend on :3000
+```
+
+#### Investigation Findings (Session 1)
+
+**Why sent emails appear in "Primite" (Received) view:**
+
+1. **Sync is inbox-only** - `email-sync.service.ts` uses `/me/mailFolders/Inbox/messages` endpoint
+2. **But Exchange stores sent replies in Inbox** - When you reply to an email, Microsoft Exchange stores a copy of your reply in the Inbox folder as part of conversation threading (common with "Conversation View" enabled)
+3. **Thread-level filtering** - Current "Primite" filter shows threads that have at least one message NOT from user, but displays ALL messages in the thread including user's sent replies
+4. **Webhook subscription** - Uses `/me/messages` (all messages) but only queues sync which still uses inbox endpoint
+
+**Data flow confirmed:**
+
+```
+MS Graph /me/mailFolders/Inbox/messages
+    ↓ (includes user's replies due to Exchange behavior)
+Prisma Email table (no folder tracking)
+    ↓
+Thread grouping by conversationId
+    ↓
+"Primite" filter: threads.some(msg => msg.sender !== user) ✓
+    ↓
+Thread display: ALL messages shown (including user's replies) ✗
+```
+
+**Decision: Option A - Filter out user's messages from thread view**
+
+For the /communications page focused on processing received messages:
+
+- Only display messages NOT from the current user in MessageView
+- Full conversation threads will be viewable in Case Details
+- This keeps the view clean for fast processing of incoming messages
+
+#### Session Log
+
+- [2025-12-12 22:30] Issue created. Initial triage: Backend already syncs inbox-only from MS Graph, so architecture aligns with received-mail-only goal. Key work areas: (1) Remove sent tab and simplify UI, (2) Enhance quick reply features, (3) Improve extraction workflow, (4) Add communication tools.
+- [2025-12-12 23:00] Investigation: Why sent emails appear in "Primite". Root cause: Exchange stores sent replies in Inbox as part of conversation threading. The sync is correct (inbox-only), but inbox contains user's replies. Decision: Filter out user's messages at display level in MessageView (Option A).
+- [2025-12-12] Session 2 started. Continuing from: New. Implementing Phase 0 (filter user's messages) and Phase 1 (remove Sent tab).
+- [2025-12-12] Session 2 - **Phase 0 completed**: Added user message filtering to MessageView. Messages where sender matches user email are hidden. Shows "X răspunsuri proprii ascunse" indicator.
+- [2025-12-12] Session 2 - **Phase 1 completed**:
+  1. FilterBar: Replaced "Primite/Trimise/Toate" tabs with "De procesat/Toate" tabs (based on showProcessed state)
+  2. communication.store.ts: Simplified EmailViewMode type to `'all' | 'received'` (removed 'sent')
+  3. communications/page.tsx: Replaced "Mesaj nou" button with "Outlook" link to open Outlook Web compose
+- [2025-12-12] Session 2 - Build verified successful. All Phase 0+1 changes compile without errors.
+
+#### Files Involved
+
+**Frontend - Main Page:**
+
+- `apps/web/src/app/communications/page.tsx` - **FIXED (Session 2)** - Replaced "Mesaj nou" button with Outlook link
+
+**Frontend - Components Modified:**
+
+- `apps/web/src/components/communication/FilterBar.tsx` - **FIXED (Session 2)** - Replaced sent/received tabs with processing status tabs
+- `apps/web/src/components/communication/MessageView.tsx` - **FIXED (Session 2)** - Filters out user's own messages, shows hidden count
+
+**Frontend - State Management:**
+
+- `apps/web/src/stores/communication.store.ts` - **FIXED (Session 2)** - Simplified EmailViewMode to 'all'|'received'
+
+**Frontend - Remaining Work:**
+
+- `apps/web/src/components/communication/ComposeInterface.tsx` - Can be simplified further (low priority)
+- `apps/web/src/components/communication/MessageView.tsx` - Phase 2: Add quick reply buttons
+
+**Backend - Already Inbox-Only (No changes needed):**
+
+- `services/gateway/src/services/email-sync.service.ts` - Syncs `/me/mailFolders/Inbox` only
+- `services/gateway/src/graphql/resolvers/email-drafting.resolvers.ts` - AI draft generation
+
+**AI Service (No changes needed):**
+
+- `services/ai-service/src/services/email-drafting.service.ts` - Reply generation
+- `services/ai-service/src/services/communication-intelligence.service.ts` - Extraction
 
 ---
 
