@@ -19,7 +19,10 @@ import { graphRouter } from './routes/graph.routes';
 import webhookRouter from './routes/webhook.routes';
 import { createApolloServer, createGraphQLMiddleware } from './graphql/server';
 import { startTaskReminderWorker, stopTaskReminderWorker } from './workers/task-reminder.worker';
-import { startOOOReassignmentWorker, stopOOOReassignmentWorker } from './workers/ooo-reassignment.worker';
+import {
+  startOOOReassignmentWorker,
+  stopOOOReassignmentWorker,
+} from './workers/ooo-reassignment.worker';
 import { startDailyDigestWorker, stopDailyDigestWorker } from './workers/daily-digest.worker';
 
 // Create Express app
@@ -72,6 +75,24 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// One-time migration endpoint for adding isIgnored fields to emails table
+// TODO: Remove after migration is applied to production
+app.post('/admin/run-migration-is-ignored', async (req: Request, res: Response) => {
+  const { prisma } = await import('@legal-platform/database');
+  try {
+    // Add is_ignored column if it doesn't exist
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE emails ADD COLUMN IF NOT EXISTS is_ignored BOOLEAN DEFAULT false;
+      ALTER TABLE emails ADD COLUMN IF NOT EXISTS ignored_at TIMESTAMPTZ;
+      CREATE INDEX IF NOT EXISTS emails_is_ignored_idx ON emails(is_ignored);
+    `);
+    res.json({ success: true, message: 'Migration applied successfully' });
+  } catch (error: any) {
+    console.error('[Migration] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Initialize Apollo Server and GraphQL endpoint
 async function startServer() {
   // Create Apollo Server
@@ -111,17 +132,11 @@ async function startServer() {
     });
 
     // Story 4.4: Start task reminder worker
-    const reminderIntervalMs = parseInt(
-      process.env.TASK_REMINDER_INTERVAL_MS || '3600000',
-      10
-    ); // Default: 1 hour
+    const reminderIntervalMs = parseInt(process.env.TASK_REMINDER_INTERVAL_MS || '3600000', 10); // Default: 1 hour
     startTaskReminderWorker(reminderIntervalMs);
 
     // Story 4.5: Start OOO reassignment worker
-    const oooIntervalMs = parseInt(
-      process.env.OOO_WORKER_INTERVAL_MS || '3600000',
-      10
-    ); // Default: 1 hour
+    const oooIntervalMs = parseInt(process.env.OOO_WORKER_INTERVAL_MS || '3600000', 10); // Default: 1 hour
     startOOOReassignmentWorker({ checkIntervalMs: oooIntervalMs });
 
     // Story 4.6: Start daily digest worker
