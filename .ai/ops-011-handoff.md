@@ -47,22 +47,25 @@ The /communications page now:
 
 Build verified successful - all changes compile without errors.
 
-## Remaining Work (Future Sessions)
+## Remaining Work
 
-### Phase 2: Quick Reply Enhancements
+### Phase 2: AI Extraction Integration (Next Session)
 
-- [ ] One-click quick reply templates ("Am primit", "Mulțumesc, revin", "Analizez și revin")
-- [ ] Quick acknowledgment button - auto-send confirmation
-- [ ] Context-aware reply suggestions based on case history
+**NOTE**: AI extraction was implemented in OPS-005 and OPS-006. Need to investigate current state.
 
-### Phase 3: Extraction Enhancements
+- [ ] Investigate existing AI extraction implementation
+- [ ] Verify `ExtractedItemsPanel` integration with communications page
+- [ ] Test extraction of deadlines, commitments, action items, questions
+- [ ] Document current state and any gaps
 
-- [ ] Batch extraction from multiple unread emails at once
-- [ ] Auto-categorize extracted items by urgency (today/this week/later)
-- [ ] Link extracted items to existing tasks if matched
-- [ ] Calendar integration for extracted deadlines
+**Key files to investigate:**
 
-### Phase 4: Communication Tools
+- `apps/web/src/components/communication/ExtractedItemsPanel.tsx`
+- `apps/web/src/hooks/useExtractedItems.ts`
+- `services/ai-service/src/services/communication-intelligence.service.ts`
+- `services/gateway/src/graphql/resolvers/communication-intelligence.resolvers.ts`
+
+### Phase 3: Communication Tools
 
 - [ ] "Notify stakeholders" button - auto-draft updates to case participants
 - [ ] Thread summary/TL;DR for long email threads
@@ -80,10 +83,9 @@ Build verified successful - all changes compile without errors.
 
 ## Next Steps
 
-1. **Deploy changes** - Commit and push to main, deploy to production
+1. **Deploy** - Changes already pushed (`9c19202`), will auto-deploy via Render
 2. **Verify in production** - Check that user messages are properly filtered
-3. **Clear localStorage** - Users may need to clear `communication-filters` key if old `emailViewMode: 'sent'` is persisted
-4. **Phase 2 (next session)** - Implement quick reply templates
+3. **Phase 2 (next session)** - Investigate existing AI extraction implementation
 
 ## Local Development
 

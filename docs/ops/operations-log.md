@@ -1394,27 +1394,21 @@ The /communications section should focus exclusively on processing received emai
 
 #### Planned Work
 
-**Phase 1: UI Simplification**
+**Phase 1: UI Simplification** ✅ COMPLETED (Session 2)
 
-- [ ] Remove "Trimise" (Sent) tab from FilterBar - irrelevant since sync excludes sent items
-- [ ] Simplify emailViewMode to `'all' | 'received'` (remove 'sent')
-- [ ] Update ComposeInterface to be reply-focused only
-- [ ] Add "Open in Outlook" button for complex email operations
+- [x] Remove "Trimise" (Sent) tab from FilterBar
+- [x] Simplify emailViewMode to `'all' | 'received'` (remove 'sent')
+- [x] Filter user's own messages in MessageView
+- [x] Replace "Mesaj nou" with "Open in Outlook" button
 
-**Phase 2: Quick Reply Enhancements**
+**Phase 2: AI Extraction Integration** (Next Session)
 
-- [ ] One-click quick reply templates ("Am primit", "Mulțumesc, revin", "Analizez și revin")
-- [ ] Quick acknowledgment button - auto-send confirmation
-- [ ] Context-aware reply suggestions based on case history
+- [ ] Investigate existing AI extraction (implemented in OPS-005, OPS-006)
+- [ ] Verify ExtractedItemsPanel integration with communications page
+- [ ] Test extraction of deadlines, commitments, action items, questions
+- [ ] Document current state and any gaps
 
-**Phase 3: Extraction Enhancements**
-
-- [ ] Batch extraction from multiple unread emails at once
-- [ ] Auto-categorize extracted items by urgency (today/this week/later)
-- [ ] Link extracted items to existing tasks if matched
-- [ ] Calendar integration for extracted deadlines
-
-**Phase 4: Communication Tools**
+**Phase 3: Communication Tools**
 
 - [ ] "Notify stakeholders" button - auto-draft updates to case participants
 - [ ] Thread summary/TL;DR for long email threads
@@ -1483,6 +1477,8 @@ For the /communications page focused on processing received messages:
   2. communication.store.ts: Simplified EmailViewMode type to `'all' | 'received'` (removed 'sent')
   3. communications/page.tsx: Replaced "Mesaj nou" button with "Outlook" link to open Outlook Web compose
 - [2025-12-12] Session 2 - Build verified successful. All Phase 0+1 changes compile without errors.
+- [2025-12-12] Session 2 - Committed `9c19202`, pushed to origin/main.
+- [2025-12-12] Session 2 - Updated roadmap: Removed quick reply templates. Phase 2 now focuses on investigating existing AI extraction (from OPS-005/006). Phase 3 is Communication Tools.
 
 #### Files Involved
 
@@ -1499,10 +1495,10 @@ For the /communications page focused on processing received messages:
 
 - `apps/web/src/stores/communication.store.ts` - **FIXED (Session 2)** - Simplified EmailViewMode to 'all'|'received'
 
-**Frontend - Remaining Work:**
+**Frontend - To Investigate (Phase 2):**
 
-- `apps/web/src/components/communication/ComposeInterface.tsx` - Can be simplified further (low priority)
-- `apps/web/src/components/communication/MessageView.tsx` - Phase 2: Add quick reply buttons
+- `apps/web/src/components/communication/ExtractedItemsPanel.tsx` - AI extraction panel (verify integration)
+- `apps/web/src/hooks/useExtractedItems.ts` - GraphQL hooks for extraction
 
 **Backend - Already Inbox-Only (No changes needed):**
 
