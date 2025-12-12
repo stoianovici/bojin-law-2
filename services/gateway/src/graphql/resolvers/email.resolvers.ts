@@ -115,16 +115,34 @@ export const emailResolvers = {
         ...args.filters,
       };
 
+      console.log(
+        '[emailThreads] Query with userId:',
+        user.id,
+        'filters:',
+        JSON.stringify(args.filters)
+      );
+
       try {
+        // First, check how many emails exist for this user
+        const emailCount = await prisma.email.count({ where: { userId: user.id } });
+        console.log('[emailThreads] Email count for user:', emailCount);
+
         const result = await emailThreadService.getThreads(filters, {
           limit: args.limit || 20,
           offset: args.offset || 0,
         });
 
+        console.log(
+          '[emailThreads] Result: threads=',
+          result?.threads?.length,
+          'totalCount=',
+          result?.totalCount
+        );
+
         // Always return an array, even if empty
         return result?.threads || [];
       } catch (error) {
-        console.error('Error fetching email threads:', error);
+        console.error('[emailThreads] Error fetching email threads:', error);
         // Return empty array on error to avoid null issues
         return [];
       }
@@ -777,7 +795,8 @@ export const emailResolvers = {
         });
       }
 
-      const { conversationId, to, cc, subject, body, isHtml, includeOriginal, attachments } = args.input;
+      const { conversationId, to, cc, subject, body, isHtml, includeOriginal, attachments } =
+        args.input;
 
       try {
         // Get the last email in the thread to reply to
@@ -805,7 +824,9 @@ export const emailResolvers = {
             ? new Date(lastEmail.sentDateTime).toLocaleString('ro-RO')
             : '';
           const originalFrom =
-            (lastEmail.from as any)?.address || (lastEmail.from as any)?.emailAddress?.address || '';
+            (lastEmail.from as any)?.address ||
+            (lastEmail.from as any)?.emailAddress?.address ||
+            '';
           replyBody = `${body}\n\n---\nÎn ${originalDate}, ${originalFrom} a scris:\n\n${lastEmail.bodyContent}`;
         }
 
