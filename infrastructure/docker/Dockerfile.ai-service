@@ -94,13 +94,14 @@ RUN PRISMA_PNPM_PATH=$(find node_modules/.pnpm -type d -name "@prisma+client@*" 
 
 USER aiservice
 
-EXPOSE 3002
+EXPOSE 10000
 
-ENV PORT=3002
+ENV PORT=10000
 ENV HOSTNAME="0.0.0.0"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3002) + '/api/ai/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+# Health check - use PORT env var (Render injects this)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 10000) + '/api/ai/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["node", "services/ai-service/dist/index.js"]
+# Run with diagnostic wrapper to capture startup errors
+CMD ["sh", "-c", "echo '=== Container Starting ===' && echo 'PORT='$PORT && echo 'NODE_ENV='$NODE_ENV && echo 'Working dir:' && pwd && echo 'Files:' && ls -la services/ai-service/dist/ && echo '=== Starting Node ===' && node services/ai-service/dist/index.js 2>&1"]
