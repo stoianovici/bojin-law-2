@@ -2,12 +2,16 @@
  * Personalization Dashboard Page
  * Story 5.6: AI Learning and Personalization (Task 37)
  * Settings page for AI learning and personalization features
+ *
+ * OPS-014: Restricted to Partners only
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useNavigationStore } from '@/stores/navigation.store';
 import {
   Dialog,
   DialogContent,
@@ -16,18 +20,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  LearningProgressIndicator,
-} from '@/components/personalization/LearningProgressIndicator';
+import { LearningProgressIndicator } from '@/components/personalization/LearningProgressIndicator';
 import { WritingStyleCard } from '@/components/personalization/WritingStyleCard';
 import { SnippetLibrary } from '@/components/personalization/SnippetLibrary';
-import {
-  SnippetSuggestionPanel,
-} from '@/components/personalization/SnippetSuggestionPanel';
+import { SnippetSuggestionPanel } from '@/components/personalization/SnippetSuggestionPanel';
 import { TaskPatternsManager } from '@/components/personalization/TaskPatternsManager';
-import {
-  DocumentPreferencesManager,
-} from '@/components/personalization/DocumentPreferencesManager';
+import { DocumentPreferencesManager } from '@/components/personalization/DocumentPreferencesManager';
 import { ResponsePatternsCard } from '@/components/personalization/ResponsePatternsCard';
 import { useResetWritingStyle } from '@/hooks/useWritingStyle';
 import { useResetTaskPatterns } from '@/hooks/useTaskPatterns';
@@ -59,13 +57,7 @@ const SettingsIcon = ({ className }: { className?: string }) => (
 );
 
 const TrashIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -93,9 +85,7 @@ function ResetAllDialog({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-destructive">
-            Resetează toată personalizarea
-          </DialogTitle>
+          <DialogTitle className="text-destructive">Resetează toată personalizarea</DialogTitle>
           <DialogDescription>
             Ești sigur că vrei să ștergi toate datele de personalizare? Aceasta include:
           </DialogDescription>
@@ -125,19 +115,15 @@ function ResetAllDialog({
         </ul>
 
         <p className="text-sm text-muted-foreground">
-          Această acțiune nu poate fi anulată. AI-ul va trebui să reînvețe
-          preferințele tale de la zero.
+          Această acțiune nu poate fi anulată. AI-ul va trebui să reînvețe preferințele tale de la
+          zero.
         </p>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Anulează
           </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
             {loading ? 'Se resetează...' : 'Resetează tot'}
           </Button>
         </DialogFooter>
@@ -201,9 +187,10 @@ function SectionNav({
           }}
           className={`
             w-full text-left px-3 py-2 text-sm rounded-md transition-colors
-            ${activeSection === section.id
-              ? 'bg-primary/10 text-primary font-medium'
-              : 'text-muted-foreground hover:bg-muted'
+            ${
+              activeSection === section.id
+                ? 'bg-primary/10 text-primary font-medium'
+                : 'text-muted-foreground hover:bg-muted'
             }
           `}
         >
@@ -216,14 +203,29 @@ function SectionNav({
 
 /**
  * Main Personalization Dashboard Page
+ * OPS-014: Restricted to Partners only - redirects other roles to dashboard
  */
 export default function PersonalizationPage() {
+  const router = useRouter();
+  const { currentRole } = useNavigationStore();
   const [activeSection, setActiveSection] = useState('progress');
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
   const { resetWritingStyle } = useResetWritingStyle();
   const { resetPatterns } = useResetTaskPatterns();
+
+  // OPS-014: Redirect non-Partners to dashboard
+  useEffect(() => {
+    if (currentRole !== 'Partner') {
+      router.replace('/');
+    }
+  }, [currentRole, router]);
+
+  // Don't render anything while redirecting
+  if (currentRole !== 'Partner') {
+    return null;
+  }
 
   const handleResetAll = async () => {
     setIsResetting(true);
@@ -275,10 +277,7 @@ export default function PersonalizationPage() {
           {/* Sidebar navigation */}
           <aside className="w-48 shrink-0 hidden lg:block">
             <div className="sticky top-24">
-              <SectionNav
-                activeSection={activeSection}
-                onSectionChange={setActiveSection}
-              />
+              <SectionNav activeSection={activeSection} onSectionChange={setActiveSection} />
             </div>
           </aside>
 

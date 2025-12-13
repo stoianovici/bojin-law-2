@@ -19,7 +19,8 @@
 | OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Resolved  | [archive/ops-010.md](archive/ops-010.md) |
 | OPS-011 | Refocus /communications on received emails only | Feature     | P1-High     | Resolved  | [archive/ops-011.md](archive/ops-011.md) |
 | OPS-012 | Legacy import can't advance past first 100 docs | Bug         | P1-High     | Fixing    | [issues/ops-012.md](issues/ops-012.md)   |
-| OPS-013 | New logins don't show up in user management     | Bug         | P1-High     | Verifying | [issues/ops-013.md](issues/ops-013.md)   |
+| OPS-013 | New logins don't show up in user management     | Bug         | P1-High     | Resolved  | [archive/ops-013.md](archive/ops-013.md) |
+| OPS-014 | Role-based menu visibility refinement           | Bug         | P2-Medium   | Resolved  | [archive/ops-014.md](archive/ops-014.md) |
 
 ---
 
@@ -37,7 +38,6 @@
 - **OPS-008** (Fixing) - Communications section overhaul
 - **OPS-009** (Verifying) - Re-login prompts for MS Graph operations
 - **OPS-012** (Fixing) - Legacy import pagination
-- **OPS-013** (Verifying) - User management not showing new logins
 
 ### P2-Medium
 
@@ -67,12 +67,12 @@ docs/ops/
 │   ├── ops-007.md
 │   ├── ops-008.md
 │   ├── ops-009.md
-│   ├── ops-012.md
-│   └── ops-013.md
+│   └── ops-012.md
 └── archive/             # Resolved issues
     ├── ops-002.md
     ├── ops-010.md
-    └── ops-011.md
+    ├── ops-011.md
+    └── ops-013.md
 ```
 
 ---

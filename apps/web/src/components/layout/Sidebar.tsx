@@ -13,6 +13,7 @@ import * as NavigationMenu from '@radix-ui/react-navigation-menu';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useNavigationStore } from '../../stores/navigation.store';
 import { usePendingCases } from '../../hooks/usePendingCases';
+import { useAuth } from '../../contexts/AuthContext';
 import { QuickActions } from './QuickActions';
 import type { NavigationItem, NavigationSection } from '@legal-platform/types';
 import {
@@ -28,7 +29,7 @@ import {
   Briefcase,
   Brain,
   Settings,
-  type LucideIcon
+  type LucideIcon,
 } from 'lucide-react';
 import { useSnippetSuggestions } from '@/hooks/usePersonalSnippets';
 
@@ -141,7 +142,7 @@ const navigationItems: NavigationItem[] = [
     icon: 'ai-personalization',
     href: '/settings/personalization',
     section: 'settings',
-    roles: ['Partner', 'Associate', 'Paralegal'],
+    roles: ['Partner'], // OPS-014: Partner-only feature
   },
 ];
 
@@ -163,27 +164,24 @@ export interface SidebarProps {
  */
 export function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
-  const {
-    currentRole,
-    currentSection,
-    isSidebarCollapsed,
-    setCurrentSection,
-    toggleSidebar,
-  } = useNavigationStore();
+  const { currentSection, isSidebarCollapsed, setCurrentSection, toggleSidebar } =
+    useNavigationStore();
+
+  // Get the actual authenticated user's role for menu filtering
+  const { user } = useAuth();
+  const userRole = user?.role || 'Associate'; // Default to Associate (most restrictive) if not authenticated
 
   // Story 2.8.2 Task 22: Fetch pending cases count for badge (Partners only)
   // Always call hook (hooks must be unconditional), but skip query for non-Partners
-  const skipPendingQuery = currentRole !== 'Partner';
+  const skipPendingQuery = userRole !== 'Partner';
   const { cases: pendingCases = [] } = usePendingCases(skipPendingQuery);
   const pendingCount = pendingCases.length;
 
   // Story 5.6 Task 39: Fetch snippet suggestions count for AI Personalization badge
   const { count: snippetSuggestionsCount = 0 } = useSnippetSuggestions();
 
-  // Filter navigation items by current role
-  const visibleItems = navigationItems.filter((item) =>
-    item.roles.includes(currentRole)
-  );
+  // Filter navigation items by authenticated user's role (OPS-014)
+  const visibleItems = navigationItems.filter((item) => item.roles.includes(userRole));
 
   // Determine if a navigation item is active
   const isActive = (item: NavigationItem): boolean => {
@@ -224,23 +222,20 @@ export function Sidebar({ className = '' }: SidebarProps) {
         `}
         aria-label="Main navigation"
       >
-      <div className="flex-1 p-4">
-        <NavigationMenu.Root
-          orientation="vertical"
-          className="flex flex-col gap-2"
-        >
-          <NavigationMenu.List className="flex flex-col gap-2">
-            {visibleItems.map((item) => {
-              const active = isActive(item);
-              const IconComponent = iconMap[item.icon];
-              return (
-                <NavigationMenu.Item key={item.id} value={item.id}>
-                  <NavigationMenu.Link asChild>
-                    <Link
-                      href={item.href}
-                      onClick={() => handleItemClick(item.section)}
-                      data-active={active}
-                      className={`
+        <div className="flex-1 p-4">
+          <NavigationMenu.Root orientation="vertical" className="flex flex-col gap-2">
+            <NavigationMenu.List className="flex flex-col gap-2">
+              {visibleItems.map((item) => {
+                const active = isActive(item);
+                const IconComponent = iconMap[item.icon];
+                return (
+                  <NavigationMenu.Item key={item.id} value={item.id}>
+                    <NavigationMenu.Link asChild>
+                      <Link
+                        href={item.href}
+                        onClick={() => handleItemClick(item.section)}
+                        data-active={active}
+                        className={`
                         flex items-center gap-3 px-3 py-2 rounded-lg
                         transition-colors duration-200
                         ${
@@ -251,46 +246,48 @@ export function Sidebar({ className = '' }: SidebarProps) {
                         ${isSidebarCollapsed ? 'justify-center' : ''}
                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                       `}
-                      aria-current={active ? 'page' : undefined}
-                      title={isSidebarCollapsed ? item.label : undefined}
-                    >
-                      {IconComponent && (
-                        <IconComponent
-                          className="w-5 h-5 flex-shrink-0"
-                          aria-hidden="true"
-                        />
-                      )}
-                      {!isSidebarCollapsed && (
-                        <span className="truncate flex-1">{item.label}</span>
-                      )}
-                      {/* Show badge count for pending approvals on Cases link for Partners */}
-                      {item.id === 'cases' && currentRole === 'Partner' && pendingCount > 0 && !isSidebarCollapsed && (
-                        <span className="ml-auto bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {pendingCount}
-                        </span>
-                      )}
-                      {/* Story 5.6: Show badge count for snippet suggestions on AI Personalization */}
-                      {item.id === 'ai-personalization' && snippetSuggestionsCount > 0 && !isSidebarCollapsed && (
-                        <span className="ml-auto bg-purple-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {snippetSuggestionsCount}
-                        </span>
-                      )}
-                    </Link>
-                  </NavigationMenu.Link>
-                </NavigationMenu.Item>
-              );
-            })}
-          </NavigationMenu.List>
-        </NavigationMenu.Root>
-      </div>
-
-      {/* Quick Actions */}
-      {!isSidebarCollapsed && (
-        <div className="border-t border-gray-200 pb-4">
-          <QuickActions mode="sidebar" />
+                        aria-current={active ? 'page' : undefined}
+                        title={isSidebarCollapsed ? item.label : undefined}
+                      >
+                        {IconComponent && (
+                          <IconComponent className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                        )}
+                        {!isSidebarCollapsed && (
+                          <span className="truncate flex-1">{item.label}</span>
+                        )}
+                        {/* Show badge count for pending approvals on Cases link for Partners */}
+                        {item.id === 'cases' &&
+                          userRole === 'Partner' &&
+                          pendingCount > 0 &&
+                          !isSidebarCollapsed && (
+                            <span className="ml-auto bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                              {pendingCount}
+                            </span>
+                          )}
+                        {/* Story 5.6: Show badge count for snippet suggestions on AI Personalization */}
+                        {item.id === 'ai-personalization' &&
+                          snippetSuggestionsCount > 0 &&
+                          !isSidebarCollapsed && (
+                            <span className="ml-auto bg-purple-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                              {snippetSuggestionsCount}
+                            </span>
+                          )}
+                      </Link>
+                    </NavigationMenu.Link>
+                  </NavigationMenu.Item>
+                );
+              })}
+            </NavigationMenu.List>
+          </NavigationMenu.Root>
         </div>
-      )}
-    </aside>
+
+        {/* Quick Actions */}
+        {!isSidebarCollapsed && (
+          <div className="border-t border-gray-200 pb-4">
+            <QuickActions mode="sidebar" />
+          </div>
+        )}
+      </aside>
     </>
   );
 }

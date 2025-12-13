@@ -90,37 +90,21 @@ const tabs: { id: PlatformTab; label: string; icon: React.ReactNode }[] = [
 ];
 
 // ============================================================================
-// Access Denied Component
+// Redirect Component - OPS-014
 // ============================================================================
 
-function AccessDenied() {
+/**
+ * Redirect component for unauthorized users - OPS-014
+ * Immediately redirects to dashboard instead of showing "Acces restricționat"
+ */
+function RedirectToDashboard() {
   const router = useRouter();
 
-  return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-          />
-        </svg>
-      </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">Acces restricționat</h2>
-      <p className="text-gray-500 max-w-sm mb-6">
-        Panoul de Inteligență Platformă este disponibil doar pentru Parteneri și Proprietari de
-        firmă.
-      </p>
-      <button
-        onClick={() => router.push('/analytics')}
-        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        Înapoi la Analize
-      </button>
-    </div>
-  );
+  React.useEffect(() => {
+    router.replace('/');
+  }, [router]);
+
+  return null;
 }
 
 // ============================================================================
@@ -671,10 +655,7 @@ function PlatformIntelligenceDashboard() {
 
           {/* Communication Tab (AC: 2) */}
           {activeTab === 'communication' && (
-            <ResponseTimeAnalyticsPanel
-              data={data?.communication ?? undefined}
-              loading={loading}
-            />
+            <ResponseTimeAnalyticsPanel data={data?.communication ?? undefined} loading={loading} />
           )}
 
           {/* Document Quality Tab (AC: 3) */}
@@ -769,7 +750,7 @@ function PlatformIntelligenceDashboard() {
 
 export default function PlatformIntelligencePage() {
   return (
-    <FinancialData fallback={<AccessDenied />}>
+    <FinancialData fallback={<RedirectToDashboard />}>
       <PlatformIntelligenceDashboard />
     </FinancialData>
   );

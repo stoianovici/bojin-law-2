@@ -164,18 +164,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (response && response.account) {
           const token = response.accessToken;
-          const user = await provisionUser(response.account, token);
+          try {
+            const user = await provisionUser(response.account, token);
 
-          if (isMounted && user) {
-            setState({
-              user,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null,
-              msalAccount: response.account,
-            });
+            if (isMounted && user) {
+              setState({
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+                msalAccount: response.account,
+              });
+              return;
+            }
+          } catch (error) {
+            console.warn(
+              '[AuthContext] Provisioning failed after redirect, checking session cookie...',
+              error
+            );
+            const sessionUser = await checkSessionCookie();
+            if (isMounted && sessionUser) {
+              console.log('[AuthContext] Session cookie valid after provision failure');
+              setState({
+                user: sessionUser,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+                msalAccount: null,
+              });
+              return;
+            }
           }
-          return;
         }
 
         // Check for existing accounts
@@ -203,14 +222,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
             }
           } catch (error) {
             console.warn('Silent token acquisition failed:', error);
+            // Fall back to session cookie when MSAL fails
+            console.log('[AuthContext] MSAL failed, falling back to session cookie...');
+            const sessionUser = await checkSessionCookie();
             if (isMounted) {
-              setState({
-                user: null,
-                isAuthenticated: false,
-                isLoading: false,
-                error: null,
-                msalAccount: null,
-              });
+              if (sessionUser) {
+                console.log('[AuthContext] Session cookie valid after MSAL failure');
+                setState({
+                  user: sessionUser,
+                  isAuthenticated: true,
+                  isLoading: false,
+                  error: null,
+                  msalAccount: null,
+                });
+              } else {
+                setState({
+                  user: null,
+                  isAuthenticated: false,
+                  isLoading: false,
+                  error: null,
+                  msalAccount: null,
+                });
+              }
             }
           }
         } else {
