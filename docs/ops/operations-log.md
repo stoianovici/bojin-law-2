@@ -24,17 +24,13 @@
 | OPS-015 | Translate English UI sections to Romanian         | Feature     | P2-Medium   | Resolved | [archive/ops-015.md](archive/ops-015.md) |
 | OPS-016 | Redesign Communications Tab in Case Details       | Feature     | P1-High     | Resolved | [archive/ops-016.md](archive/ops-016.md) |
 | OPS-017 | AI service TypeScript compilation errors          | Bug         | P1-High     | Resolved | [archive/ops-017.md](archive/ops-017.md) |
-| OPS-018 | AI Service Deployment Failure & Render Duplicates | Bug/Infra   | P1-High     | Active   | [issues/ops-018.md](issues/ops-018.md)   |
+| OPS-018 | AI Service Deployment Failure & Render Duplicates | Bug/Infra   | P1-High     | Resolved | [archive/ops-018.md](archive/ops-018.md) |
 
 ---
 
 ## Active Issues Summary
 
-### OPS-018: AI Service Deployment Failure & Render Duplicates
-
-- **Problem**: AI service failing to deploy (nonZeroExit: 1) + duplicate services created by blueprint autoSync
-- **Solution**: Switched AI service to Docker runtime, disabled blueprint autoSync, cleaned up duplicates
-- **Status**: Docker build in progress, monitoring for completion
+_No active issues._
 
 ---
 
