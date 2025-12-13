@@ -19,6 +19,7 @@ import {
   ClaudeModel,
   AIOperationType,
   LanguageExplanation,
+  DocumentGenerationInput,
 } from '@legal-platform/types';
 import { documentGenerationService } from '../services/document-generation.service';
 import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
@@ -124,7 +125,7 @@ router.post(
   validate(generateDocumentSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const body = req.body as z.infer<typeof generateDocumentSchema>;
+      const body = req.body as DocumentGenerationInput;
 
       // Validate input
       const validation = documentGenerationService.validateInput(body);

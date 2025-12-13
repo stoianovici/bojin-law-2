@@ -22,12 +22,14 @@
 | OPS-013 | New logins don't show up in user management     | Bug         | P1-High     | Resolved | [archive/ops-013.md](archive/ops-013.md) |
 | OPS-014 | Role-based menu visibility refinement           | Bug         | P2-Medium   | Resolved | [archive/ops-014.md](archive/ops-014.md) |
 | OPS-015 | Translate English UI sections to Romanian       | Feature     | P2-Medium   | Resolved | [archive/ops-015.md](archive/ops-015.md) |
+| OPS-016 | Redesign Communications Tab in Case Details     | Feature     | P1-High     | Resolved | [archive/ops-016.md](archive/ops-016.md) |
+| OPS-017 | AI service TypeScript compilation errors        | Bug         | P1-High     | Resolved | [archive/ops-017.md](archive/ops-017.md) |
 
 ---
 
 ## Active Issues Summary
 
-No active issues. All tracked issues have been resolved.
+_No active issues._
 
 ---
 
@@ -45,21 +47,7 @@ docs/ops/
 ├── deployment-flows.md  # Deployment procedures and scripts
 ├── issues/              # Active issues (empty)
 └── archive/             # Resolved issues
-    ├── ops-001.md
-    ├── ops-002.md
-    ├── ops-003.md
-    ├── ops-004.md
-    ├── ops-005.md
-    ├── ops-006.md
-    ├── ops-007.md
-    ├── ops-008.md
-    ├── ops-009.md
-    ├── ops-010.md
-    ├── ops-011.md
-    ├── ops-012.md
-    ├── ops-013.md
-    ├── ops-014.md
-    └── ops-015.md
+    ├── ops-001.md through ops-017.md
 ```
 
 ---

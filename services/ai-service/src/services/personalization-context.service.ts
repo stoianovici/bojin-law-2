@@ -7,8 +7,30 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { cacheService } from './cache.service';
 import logger from '../lib/logger';
+
+// Simple in-memory cache for personalization contexts
+const personalizationCache = new Map<
+  string,
+  { context: PersonalizationContext; expiresAt: Date }
+>();
+
+const simpleCacheService = {
+  async get(key: string): Promise<PersonalizationContext | null> {
+    const cached = personalizationCache.get(key);
+    if (cached && cached.expiresAt > new Date()) {
+      return cached.context;
+    }
+    return null;
+  },
+  async set(key: string, context: PersonalizationContext, ttlSeconds: number): Promise<void> {
+    const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+    personalizationCache.set(key, { context, expiresAt });
+  },
+  async delete(key: string): Promise<void> {
+    personalizationCache.delete(key);
+  },
+};
 
 // ============================================================================
 // Types
@@ -94,30 +116,16 @@ export interface PersonalizationSettings {
 }
 
 export interface DataProviders {
-  getWritingStyleProfile: (
-    userId: string,
-    firmId: string
-  ) => Promise<WritingStyleProfile | null>;
-  getPersonalSnippets: (
-    userId: string,
-    firmId: string
-  ) => Promise<PersonalSnippet[]>;
-  getTaskPatterns: (
-    userId: string,
-    firmId: string
-  ) => Promise<TaskCreationPattern[]>;
+  getWritingStyleProfile: (userId: string, firmId: string) => Promise<WritingStyleProfile | null>;
+  getPersonalSnippets: (userId: string, firmId: string) => Promise<PersonalSnippet[]>;
+  getTaskPatterns: (userId: string, firmId: string) => Promise<TaskCreationPattern[]>;
   getDocumentPreference: (
     userId: string,
     firmId: string,
     documentType: string
   ) => Promise<DocumentStructurePreference | null>;
-  getResponseTimePatterns: (
-    userId: string,
-    firmId: string
-  ) => Promise<ResponseTimePattern[]>;
-  getPersonalizationSettings: (
-    userId: string
-  ) => Promise<PersonalizationSettings | null>;
+  getResponseTimePatterns: (userId: string, firmId: string) => Promise<ResponseTimePattern[]>;
+  getPersonalizationSettings: (userId: string) => Promise<PersonalizationSettings | null>;
 }
 
 // ============================================================================
@@ -130,12 +138,8 @@ class PersonalizationContextService {
   private dataProviders: DataProviders | null = null;
 
   constructor() {
-    this.cacheTtlSeconds = parseInt(
-      process.env.PERSONALIZATION_CACHE_TTL_SECONDS || '3600',
-      10
-    );
-    this.preloadEnabled =
-      process.env.PERSONALIZATION_PRELOAD_ENABLED !== 'false';
+    this.cacheTtlSeconds = parseInt(process.env.PERSONALIZATION_CACHE_TTL_SECONDS || '3600', 10);
+    this.preloadEnabled = process.env.PERSONALIZATION_PRELOAD_ENABLED !== 'false';
   }
 
   /**
@@ -165,8 +169,8 @@ class PersonalizationContextService {
     try {
       // Check cache first
       if (!options?.forceRefresh) {
-        const cached = await cacheService.get<PersonalizationContext>(cacheKey);
-        if (cached && new Date(cached.expiresAt) > new Date()) {
+        const cached = await simpleCacheService.get(cacheKey);
+        if (cached) {
           logger.debug('Returning cached personalization context', { userId });
           return cached;
         }
@@ -178,17 +182,11 @@ class PersonalizationContextService {
       }
 
       // Load settings first to check what's enabled
-      const settings =
-        await this.dataProviders.getPersonalizationSettings(userId);
-      const context = await this.loadContext(
-        userId,
-        firmId,
-        settings,
-        options
-      );
+      const settings = await this.dataProviders.getPersonalizationSettings(userId);
+      const context = await this.loadContext(userId, firmId, settings, options);
 
       // Cache the context
-      await cacheService.set(cacheKey, context, this.cacheTtlSeconds);
+      await simpleCacheService.set(cacheKey, context, this.cacheTtlSeconds);
 
       logger.debug('Built personalization context', {
         userId,
@@ -247,17 +245,13 @@ class PersonalizationContextService {
       additions.push(`- Consider using familiar phrases: ${phrases}`);
     }
 
-    return additions.length > 0
-      ? `\n\n**User Style Preferences:**\n${additions.join('\n')}`
-      : '';
+    return additions.length > 0 ? `\n\n**User Style Preferences:**\n${additions.join('\n')}` : '';
   }
 
   /**
    * Get document structure additions for AI requests
    */
-  getDocumentStructureAdditions(
-    context: PersonalizationContext
-  ): string {
+  getDocumentStructureAdditions(context: PersonalizationContext): string {
     if (!context.documentPreferences) {
       return '';
     }
@@ -299,16 +293,11 @@ class PersonalizationContextService {
     }
 
     try {
-      const patterns =
-        await this.dataProviders.getResponseTimePatterns(userId, firmId);
+      const patterns = await this.dataProviders.getResponseTimePatterns(userId, firmId);
 
       // Find matching pattern
-      const exactMatch = patterns.find(
-        (p) => p.taskType === taskType && p.caseType === caseType
-      );
-      const typeMatch = patterns.find(
-        (p) => p.taskType === taskType && !p.caseType
-      );
+      const exactMatch = patterns.find((p) => p.taskType === taskType && p.caseType === caseType);
+      const typeMatch = patterns.find((p) => p.taskType === taskType && !p.caseType);
       const pattern = exactMatch || typeMatch;
 
       if (!pattern || pattern.sampleCount < 3) {
@@ -397,10 +386,7 @@ class PersonalizationContextService {
         }
       }
 
-      if (
-        pattern.triggerType === 'document_type' &&
-        triggerContext.documentType
-      ) {
+      if (pattern.triggerType === 'document_type' && triggerContext.documentType) {
         if (trigger.matchValue === triggerContext.documentType) {
           matchScore = pattern.confidence;
         }
@@ -409,13 +395,10 @@ class PersonalizationContextService {
       if (pattern.triggerType === 'email_keyword' && triggerContext.emailKeywords) {
         const keywords = (trigger.keywords as string[]) || [];
         const matchingKeywords = keywords.filter((k) =>
-          triggerContext.emailKeywords?.some(
-            (ek) => ek.toLowerCase().includes(k.toLowerCase())
-          )
+          triggerContext.emailKeywords?.some((ek) => ek.toLowerCase().includes(k.toLowerCase()))
         );
         if (matchingKeywords.length > 0) {
-          matchScore =
-            pattern.confidence * (matchingKeywords.length / keywords.length);
+          matchScore = pattern.confidence * (matchingKeywords.length / keywords.length);
         }
       }
 
@@ -440,11 +423,11 @@ class PersonalizationContextService {
     }
   ): Promise<void> {
     const cacheKey = this.getCacheKey(userId, firmId, options);
-    await cacheService.delete(cacheKey);
+    await simpleCacheService.delete(cacheKey);
 
     // Also invalidate the generic cache
     if (options) {
-      await cacheService.delete(this.getCacheKey(userId, firmId));
+      await simpleCacheService.delete(this.getCacheKey(userId, firmId));
     }
 
     logger.debug('Invalidated personalization context cache', {
@@ -470,21 +453,20 @@ class PersonalizationContextService {
     const providers = this.dataProviders!;
     const effectiveSettings = settings || this.getDefaultSettings(userId);
 
-    const [writingStyle, snippets, taskPatterns, documentPreference] =
-      await Promise.all([
-        effectiveSettings.styleAdaptationEnabled
-          ? providers.getWritingStyleProfile(userId, firmId)
-          : null,
-        effectiveSettings.snippetSuggestionsEnabled
-          ? providers.getPersonalSnippets(userId, firmId)
-          : [],
-        effectiveSettings.taskPatternSuggestionsEnabled
-          ? providers.getTaskPatterns(userId, firmId)
-          : [],
-        effectiveSettings.documentPreferencesEnabled && options?.documentType
-          ? providers.getDocumentPreference(userId, firmId, options.documentType)
-          : null,
-      ]);
+    const [writingStyle, snippets, taskPatterns, documentPreference] = await Promise.all([
+      effectiveSettings.styleAdaptationEnabled
+        ? providers.getWritingStyleProfile(userId, firmId)
+        : null,
+      effectiveSettings.snippetSuggestionsEnabled
+        ? providers.getPersonalSnippets(userId, firmId)
+        : [],
+      effectiveSettings.taskPatternSuggestionsEnabled
+        ? providers.getTaskPatterns(userId, firmId)
+        : [],
+      effectiveSettings.documentPreferencesEnabled && options?.documentType
+        ? providers.getDocumentPreference(userId, firmId, options.documentType)
+        : null,
+    ]);
 
     const now = new Date();
     const expiresAt = new Date(now.getTime() + this.cacheTtlSeconds * 1000);
@@ -501,10 +483,7 @@ class PersonalizationContextService {
     };
   }
 
-  private createEmptyContext(
-    userId: string,
-    firmId: string
-  ): PersonalizationContext {
+  private createEmptyContext(userId: string, firmId: string): PersonalizationContext {
     const now = new Date();
     return {
       userId,
@@ -544,6 +523,5 @@ class PersonalizationContextService {
   }
 }
 
-export const personalizationContextService =
-  new PersonalizationContextService();
+export const personalizationContextService = new PersonalizationContextService();
 export default personalizationContextService;

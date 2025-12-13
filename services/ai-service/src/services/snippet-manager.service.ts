@@ -196,11 +196,8 @@ class SnippetManagerService {
         operationType: AIOperationType.SnippetDetection,
         inputTokens: tokenInfo.inputTokens,
         outputTokens: tokenInfo.outputTokens,
-        totalTokens: tokenInfo.totalTokens,
-        model: ClaudeModel.Haiku,
-        cost: tokenInfo.cost,
+        modelUsed: ClaudeModel.Haiku,
         latencyMs: Date.now() - startTime,
-        metadata: { operationId, suggestionsCount: suggestions.length },
       });
 
       logger.info('Snippet detection completed', {

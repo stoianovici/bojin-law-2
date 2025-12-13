@@ -172,11 +172,8 @@ class StyleLearningService {
       const cacheKey = `style_analysis:${input.userId}:${this.hashText(
         input.originalText + input.editedText
       )}`;
-      const cached = await cacheService.get<StyleAnalysisResult>(cacheKey);
-      if (cached) {
-        logger.debug('Returning cached style analysis', { operationId });
-        return cached;
-      }
+      // Note: cacheService is for AI responses, not generic cache
+      // Skip cache lookup for style analysis
 
       // Skip trivial edits
       if (this.isTrivialEdit(input.originalText, input.editedText)) {
@@ -188,7 +185,6 @@ class StyleLearningService {
         firmId: input.firmId,
         operationType: AIOperationType.StyleAnalysis,
         operationId,
-        metadata: { editLocation: input.editLocation },
       });
 
       const model = createClaudeModel(ClaudeModel.Sonnet, {
@@ -207,9 +203,6 @@ class StyleLearningService {
 
       const result = this.parseAnalysisResponse(response);
 
-      // Cache the result
-      await cacheService.set(cacheKey, result, 3600); // 1 hour
-
       // Track token usage
       const tokenInfo = await callbackHandler.getTokenInfo();
       await tokenTracker.recordUsage({
@@ -218,11 +211,8 @@ class StyleLearningService {
         operationType: AIOperationType.StyleAnalysis,
         inputTokens: tokenInfo.inputTokens,
         outputTokens: tokenInfo.outputTokens,
-        totalTokens: tokenInfo.totalTokens,
-        model: ClaudeModel.Sonnet,
-        cost: tokenInfo.cost,
+        modelUsed: ClaudeModel.Sonnet,
         latencyMs: Date.now() - startTime,
-        metadata: { operationId },
       });
 
       logger.info('Style analysis completed', {
@@ -320,11 +310,8 @@ class StyleLearningService {
         operationType: AIOperationType.StyleApplication,
         inputTokens: tokenInfo.inputTokens,
         outputTokens: tokenInfo.outputTokens,
-        totalTokens: tokenInfo.totalTokens,
-        model: ClaudeModel.Sonnet,
-        cost: tokenInfo.cost,
+        modelUsed: ClaudeModel.Sonnet,
         latencyMs: Date.now() - startTime,
-        metadata: { operationId },
       });
 
       logger.info('Style applied successfully', {

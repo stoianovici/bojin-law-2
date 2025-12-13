@@ -11,7 +11,7 @@ import Redis from 'ioredis';
 import {
   SuggestionContext,
   GeneratedSuggestion,
-  SuggestionType,
+  ProactiveSuggestionType,
   SuggestionCategory,
   SuggestionPriority,
   CONTEXTUAL_SUGGESTION_PROMPT,
@@ -91,7 +91,8 @@ export class ProactiveSuggestionService {
 
       // Call AI to generate suggestions
       const request: ProviderRequest = {
-        systemPrompt: 'You are an AI assistant for a Romanian law firm platform. Generate helpful, actionable suggestions based on the user context. Always respond with valid JSON.',
+        systemPrompt:
+          'You are an AI assistant for a Romanian law firm platform. Generate helpful, actionable suggestions based on the user context. Always respond with valid JSON.',
         prompt,
         model: ClaudeModel.Haiku, // Use Haiku for fast suggestions (< 500ms target)
         maxTokens: 1000,
@@ -104,7 +105,7 @@ export class ProactiveSuggestionService {
       // Filter suggestions based on user preference
       const confidenceThreshold = CONFIDENCE_THRESHOLDS[context.userPreferences.aiSuggestionLevel];
       const filteredSuggestions = suggestions
-        .filter(s => s.confidence >= confidenceThreshold)
+        .filter((s) => s.confidence >= confidenceThreshold)
         .slice(0, MAX_SUGGESTIONS_PER_CONTEXT);
 
       // Cache the results
@@ -150,7 +151,7 @@ export class ProactiveSuggestionService {
         title: suggestion.title,
         description: suggestion.description,
         suggestedAction: suggestion.suggestedAction,
-        actionPayload: suggestion.actionPayload,
+        actionPayload: JSON.parse(JSON.stringify(suggestion.actionPayload)),
         confidence: suggestion.confidence,
         priority: suggestion.priority,
         expiresAt: suggestion.expiresAt,
@@ -182,15 +183,9 @@ export class ProactiveSuggestionService {
         userId,
         firmId,
         status: 'Pending',
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: new Date() } },
-        ],
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       skip: offset,
       include: {
@@ -264,7 +259,7 @@ export class ProactiveSuggestionService {
    */
   private async getPendingTasks(userId: string, firmId: string, caseId?: string) {
     const where: Record<string, unknown> = {
-      assignedToId: userId,
+      assignedTo: userId,
       firmId,
       status: { in: ['Pending', 'InProgress'] },
     };
@@ -275,10 +270,7 @@ export class ProactiveSuggestionService {
 
     return prisma.task.findMany({
       where,
-      orderBy: [
-        { dueDate: 'asc' },
-        { priority: 'desc' },
-      ],
+      orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }],
       take: 10,
       select: {
         id: true,
@@ -287,6 +279,12 @@ export class ProactiveSuggestionService {
         priority: true,
         status: true,
         type: true,
+        case: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
     });
   }
@@ -300,7 +298,7 @@ export class ProactiveSuggestionService {
 
     return prisma.task.findMany({
       where: {
-        assignedToId: userId,
+        assignedTo: userId,
         firmId,
         status: { in: ['Pending', 'InProgress'] },
         dueDate: {
@@ -359,26 +357,56 @@ export class ProactiveSuggestionService {
   private buildPrompt(
     context: SuggestionContext,
     data: {
-      pendingTasks: Array<{ id: string; title: string; dueDate: Date | null; priority: string; status: string; type: string }>;
-      upcomingDeadlines: Array<{ id: string; title: string; dueDate: Date | null; priority: string; case: { id: string; title: string } | null }>;
+      pendingTasks: Array<{
+        id: string;
+        title: string;
+        dueDate: Date | null;
+        priority: string;
+        status: string;
+        type: string;
+      }>;
+      upcomingDeadlines: Array<{
+        id: string;
+        title: string;
+        dueDate: Date | null;
+        priority: string;
+        case: { id: string; title: string } | null;
+      }>;
       unreadEmailCount: number;
       userPatterns: Array<{ patternType: string; confidence: number }>;
     }
   ): string {
     const now = new Date();
-    const timeOfDay = now.getHours() < 12 ? 'morning' : now.getHours() < 17 ? 'afternoon' : 'evening';
+    const timeOfDay =
+      now.getHours() < 12 ? 'morning' : now.getHours() < 17 ? 'afternoon' : 'evening';
 
-    const pendingTasksSummary = data.pendingTasks.length > 0
-      ? data.pendingTasks.map(t => `- ${t.title} (${t.priority}, due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'no date'})`).join('\n')
-      : 'No pending tasks';
+    const pendingTasksSummary =
+      data.pendingTasks.length > 0
+        ? data.pendingTasks
+            .map(
+              (t) =>
+                `- ${t.title} (${t.priority}, due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'no date'})`
+            )
+            .join('\n')
+        : 'No pending tasks';
 
-    const upcomingDeadlinesSummary = data.upcomingDeadlines.length > 0
-      ? data.upcomingDeadlines.map(d => `- ${d.title} (${d.case?.title || 'No case'}, due: ${d.dueDate ? new Date(d.dueDate).toLocaleDateString() : 'no date'})`).join('\n')
-      : 'No upcoming deadlines';
+    const upcomingDeadlinesSummary =
+      data.upcomingDeadlines.length > 0
+        ? data.upcomingDeadlines
+            .map(
+              (d) =>
+                `- ${d.title} (${d.case?.title || 'No case'}, due: ${d.dueDate ? new Date(d.dueDate).toLocaleDateString() : 'no date'})`
+            )
+            .join('\n')
+        : 'No upcoming deadlines';
 
-    const recentActionsSummary = context.recentActions.length > 0
-      ? context.recentActions.slice(0, 5).map(a => `- ${a.type}`).join('\n')
-      : 'No recent actions';
+    const recentActionsSummary =
+      context.recentActions.length > 0
+        ? context.recentActions
+            .slice(0, 5)
+            .map((a) => `- ${a.type}`)
+            .join('\n')
+        : 'No recent actions';
 
     return `
 USER CONTEXT:
@@ -400,7 +428,7 @@ ${upcomingDeadlinesSummary}
 - Unread emails: ${data.unreadEmailCount}
 
 USER PATTERNS:
-${data.userPatterns.length > 0 ? data.userPatterns.map(p => `- ${p.patternType} (confidence: ${p.confidence.toFixed(2)})`).join('\n') : 'No learned patterns yet'}
+${data.userPatterns.length > 0 ? data.userPatterns.map((p) => `- ${p.patternType} (confidence: ${p.confidence.toFixed(2)})`).join('\n') : 'No learned patterns yet'}
 
 Generate 1-3 relevant suggestions. Each suggestion should:
 1. Be actionable and specific
@@ -432,7 +460,10 @@ Respond ONLY with the JSON array, no additional text.
       // Extract JSON from response (handle markdown code blocks)
       let jsonStr = response.trim();
       if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+        jsonStr = jsonStr
+          .replace(/```json?\n?/g, '')
+          .replace(/```/g, '')
+          .trim();
       }
 
       const parsed = JSON.parse(jsonStr);
@@ -442,8 +473,8 @@ Respond ONLY with the JSON array, no additional text.
         return [];
       }
 
-      return parsed.map(s => ({
-        type: s.type as SuggestionType,
+      return parsed.map((s) => ({
+        type: s.type as ProactiveSuggestionType,
         category: s.category as SuggestionCategory,
         title: String(s.title || ''),
         description: String(s.description || ''),

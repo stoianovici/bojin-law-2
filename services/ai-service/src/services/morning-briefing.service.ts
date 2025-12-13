@@ -32,7 +32,7 @@ const MAX_SUGGESTIONS = 5;
 
 // Priority weight factors (must sum to 1.0)
 const PRIORITY_WEIGHTS = {
-  dueDate: 0.30,
+  dueDate: 0.3,
   priority: 0.25,
   clientImportance: 0.15,
   dependencies: 0.15,
@@ -177,10 +177,10 @@ export class MorningBriefingService {
 
     if (existing) {
       return {
-        prioritizedTasks: existing.prioritizedTasks as PrioritizedTask[],
-        keyDeadlines: existing.keyDeadlines as DeadlineInfo[],
-        riskAlerts: existing.riskAlerts as RiskAlert[],
-        suggestions: existing.suggestions as GeneratedSuggestion[],
+        prioritizedTasks: existing.prioritizedTasks as unknown as PrioritizedTask[],
+        keyDeadlines: existing.keyDeadlines as unknown as DeadlineInfo[],
+        riskAlerts: existing.riskAlerts as unknown as RiskAlert[],
+        suggestions: existing.suggestions as unknown as GeneratedSuggestion[],
         summary: existing.summary,
         tokensUsed: existing.tokensUsed,
       };
@@ -232,7 +232,7 @@ export class MorningBriefingService {
 
     return prisma.task.findMany({
       where: {
-        assignedToId: userId,
+        assignedTo: userId,
         firmId,
         status: { in: ['Pending', 'InProgress'] },
         dueDate: {
@@ -250,10 +250,7 @@ export class MorningBriefingService {
           },
         },
       },
-      orderBy: [
-        { priority: 'desc' },
-        { dueDate: 'asc' },
-      ],
+      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
       take: 20,
     });
   }
@@ -268,7 +265,7 @@ export class MorningBriefingService {
 
     return prisma.task.findMany({
       where: {
-        assignedToId: userId,
+        assignedTo: userId,
         firmId,
         status: { in: ['Pending', 'InProgress'] },
         dueDate: {
@@ -298,7 +295,7 @@ export class MorningBriefingService {
 
     return prisma.task.findMany({
       where: {
-        assignedToId: userId,
+        assignedTo: userId,
         firmId,
         status: { in: ['Pending', 'InProgress'] },
         dueDate: { lt: startOfDay },
@@ -326,17 +323,14 @@ export class MorningBriefingService {
 
     return prisma.task.findMany({
       where: {
-        assignedToId: userId,
+        assignedTo: userId,
         firmId,
         status: { in: ['Pending', 'InProgress'] },
         dueDate: {
           gte: this.startOfDay(date),
           lte: twoWeeksFromNow,
         },
-        OR: [
-          { priority: 'Urgent' },
-          { type: 'CourtDate' },
-        ],
+        OR: [{ priority: 'Urgent' }, { type: 'CourtDate' }],
       },
       include: {
         case: {
@@ -360,12 +354,12 @@ export class MorningBriefingService {
     const [deadlines, actionItems] = await Promise.all([
       prisma.extractedDeadline.findMany({
         where: { firmId, status: 'Pending' },
-        orderBy: { deadlineDate: 'asc' },
+        orderBy: { dueDate: 'asc' },
         take: 5,
         select: {
           id: true,
           description: true,
-          deadlineDate: true,
+          dueDate: true,
           confidence: true,
         },
       }),
@@ -393,7 +387,7 @@ export class MorningBriefingService {
       where: {
         firmId,
         isResolved: false,
-        severity: { in: ['Medium', 'High', 'Critical'] },
+        severity: { in: ['Medium', 'High'] },
       },
       orderBy: { severity: 'desc' },
       take: MAX_RISK_ALERTS,
@@ -415,37 +409,98 @@ export class MorningBriefingService {
     date: Date;
     userName: string;
     userRole: string;
-    tasksDueToday: Array<{ id: string; title: string; priority: string; case: { title: string; client?: { name: string } | null } | null }>;
-    tasksDueThisWeek: Array<{ id: string; title: string; dueDate: Date | null; case: { title: string } | null }>;
-    overdueTasks: Array<{ id: string; title: string; dueDate: Date | null; case: { title: string } | null }>;
-    upcomingDeadlines: Array<{ id: string; title: string; dueDate: Date | null; type: string; case: { title: string } | null }>;
-    pendingExtractions: { deadlines: Array<{ description: string; deadlineDate: Date | null }>; actionItems: Array<{ description: string; priority: string }> };
-    activeRisks: Array<{ type: string; description: string; severity: string; case: { title: string } | null }>;
+    tasksDueToday: Array<{
+      id: string;
+      title: string;
+      priority: string;
+      case: { title: string; client?: { name: string } | null } | null;
+    }>;
+    tasksDueThisWeek: Array<{
+      id: string;
+      title: string;
+      dueDate: Date | null;
+      case: { title: string } | null;
+    }>;
+    overdueTasks: Array<{
+      id: string;
+      title: string;
+      dueDate: Date | null;
+      case: { title: string } | null;
+    }>;
+    upcomingDeadlines: Array<{
+      id: string;
+      title: string;
+      dueDate: Date | null;
+      type: string;
+      case: { title: string } | null;
+    }>;
+    pendingExtractions: {
+      deadlines: Array<{ description: string; dueDate: Date | null }>;
+      actionItems: Array<{ description: string; priority: string }>;
+    };
+    activeRisks: Array<{
+      type: string;
+      description: string;
+      severity: string;
+      case: { title: string } | null;
+    }>;
   }): string {
-    const tasksDueTodayStr = data.tasksDueToday.length > 0
-      ? data.tasksDueToday.map(t => `- ${t.title} (${t.priority}) - ${t.case?.title || 'No case'}`).join('\n')
-      : 'No tasks due today';
+    const tasksDueTodayStr =
+      data.tasksDueToday.length > 0
+        ? data.tasksDueToday
+            .map((t) => `- ${t.title} (${t.priority}) - ${t.case?.title || 'No case'}`)
+            .join('\n')
+        : 'No tasks due today';
 
-    const tasksDueThisWeekStr = data.tasksDueThisWeek.length > 0
-      ? data.tasksDueThisWeek.map(t => `- ${t.title} (${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'no date'}) - ${t.case?.title || 'No case'}`).join('\n')
-      : 'No tasks due this week';
+    const tasksDueThisWeekStr =
+      data.tasksDueThisWeek.length > 0
+        ? data.tasksDueThisWeek
+            .map(
+              (t) =>
+                `- ${t.title} (${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'no date'}) - ${t.case?.title || 'No case'}`
+            )
+            .join('\n')
+        : 'No tasks due this week';
 
-    const overdueTasksStr = data.overdueTasks.length > 0
-      ? data.overdueTasks.map(t => `- ${t.title} (due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'unknown'}) - ${t.case?.title || 'No case'}`).join('\n')
-      : 'No overdue tasks';
+    const overdueTasksStr =
+      data.overdueTasks.length > 0
+        ? data.overdueTasks
+            .map(
+              (t) =>
+                `- ${t.title} (due: ${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : 'unknown'}) - ${t.case?.title || 'No case'}`
+            )
+            .join('\n')
+        : 'No overdue tasks';
 
-    const upcomingDeadlinesStr = data.upcomingDeadlines.length > 0
-      ? data.upcomingDeadlines.map(d => `- ${d.title} (${d.type}, ${d.dueDate ? new Date(d.dueDate).toLocaleDateString() : 'no date'}) - ${d.case?.title || 'No case'}`).join('\n')
-      : 'No urgent deadlines';
+    const upcomingDeadlinesStr =
+      data.upcomingDeadlines.length > 0
+        ? data.upcomingDeadlines
+            .map(
+              (d) =>
+                `- ${d.title} (${d.type}, ${d.dueDate ? new Date(d.dueDate).toLocaleDateString() : 'no date'}) - ${d.case?.title || 'No case'}`
+            )
+            .join('\n')
+        : 'No urgent deadlines';
 
-    const pendingExtractionsStr = [
-      ...data.pendingExtractions.deadlines.map(d => `- Deadline: ${d.description} (${d.deadlineDate ? new Date(d.deadlineDate).toLocaleDateString() : 'no date'})`),
-      ...data.pendingExtractions.actionItems.map(a => `- Action: ${a.description} (${a.priority})`),
-    ].join('\n') || 'No pending extractions';
+    const pendingExtractionsStr =
+      [
+        ...data.pendingExtractions.deadlines.map(
+          (d) =>
+            `- Deadline: ${d.description} (${d.dueDate ? new Date(d.dueDate).toLocaleDateString() : 'no date'})`
+        ),
+        ...data.pendingExtractions.actionItems.map(
+          (a) => `- Action: ${a.description} (${a.priority})`
+        ),
+      ].join('\n') || 'No pending extractions';
 
-    const activeRisksStr = data.activeRisks.length > 0
-      ? data.activeRisks.map(r => `- ${r.type}: ${r.description} (${r.severity}) - ${r.case?.title || 'General'}`).join('\n')
-      : 'No active risk indicators';
+    const activeRisksStr =
+      data.activeRisks.length > 0
+        ? data.activeRisks
+            .map(
+              (r) => `- ${r.type}: ${r.description} (${r.severity}) - ${r.case?.title || 'General'}`
+            )
+            .join('\n')
+        : 'No active risk indicators';
 
     return `
 Generate a morning briefing for a legal professional. Prioritize their tasks and highlight key items for today.
@@ -514,7 +569,10 @@ Respond ONLY with the JSON object, no additional text.
       // Extract JSON from response
       let jsonStr = response.trim();
       if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+        jsonStr = jsonStr
+          .replace(/```json?\n?/g, '')
+          .replace(/```/g, '')
+          .trim();
       }
 
       const parsed = JSON.parse(jsonStr);
@@ -528,49 +586,91 @@ Respond ONLY with the JSON object, no additional text.
 
       const prioritizedTasks: PrioritizedTask[] = (parsed.prioritizedTasks || [])
         .slice(0, MAX_PRIORITIZED_TASKS)
-        .map((pt: { taskId?: string; priority?: number; priorityReason?: string; suggestedTimeSlot?: string }, index: number) => {
-          // Try to match task ID or use from actual data
-          const task = allTasks[index];
-          return {
-            taskId: pt.taskId || task?.id || `unknown-${index}`,
-            priority: Number(pt.priority) || (10 - index),
-            priorityReason: pt.priorityReason || 'Based on due date and priority',
-            suggestedTimeSlot: pt.suggestedTimeSlot,
-          };
-        });
+        .map(
+          (
+            pt: {
+              taskId?: string;
+              priority?: number;
+              priorityReason?: string;
+              suggestedTimeSlot?: string;
+            },
+            index: number
+          ) => {
+            // Try to match task ID or use from actual data
+            const task = allTasks[index];
+            return {
+              taskId: pt.taskId || task?.id || `unknown-${index}`,
+              priority: Number(pt.priority) || 10 - index,
+              priorityReason: pt.priorityReason || 'Based on due date and priority',
+              suggestedTimeSlot: pt.suggestedTimeSlot,
+            };
+          }
+        );
 
       const keyDeadlines: DeadlineInfo[] = (parsed.keyDeadlines || [])
         .slice(0, MAX_DEADLINES)
-        .map((d: { id?: string; title?: string; dueDate?: string; daysUntilDue?: number; severity?: string; suggestedActions?: Array<{ action: string; description: string; actionType: string; payload: Record<string, unknown> }> }) => ({
-          id: d.id || '',
-          title: d.title || '',
-          dueDate: d.dueDate ? new Date(d.dueDate) : new Date(),
-          daysUntilDue: d.daysUntilDue || 0,
-          severity: (d.severity || 'info') as 'info' | 'warning' | 'critical',
-          suggestedActions: d.suggestedActions || [],
-        }));
+        .map(
+          (d: {
+            id?: string;
+            title?: string;
+            dueDate?: string;
+            daysUntilDue?: number;
+            severity?: string;
+            suggestedActions?: Array<{
+              action: string;
+              description: string;
+              actionType: string;
+              payload: Record<string, unknown>;
+            }>;
+          }) => ({
+            id: d.id || '',
+            title: d.title || '',
+            dueDate: d.dueDate ? new Date(d.dueDate) : new Date(),
+            daysUntilDue: d.daysUntilDue || 0,
+            severity: (d.severity || 'info') as 'info' | 'warning' | 'critical',
+            suggestedActions: d.suggestedActions || [],
+          })
+        );
 
       const riskAlerts: RiskAlert[] = (parsed.riskAlerts || [])
         .slice(0, MAX_RISK_ALERTS)
-        .map((r: { type?: string; description?: string; suggestedAction?: string; severity?: string }) => ({
-          type: r.type || '',
-          description: r.description || '',
-          suggestedAction: r.suggestedAction || '',
-          severity: (r.severity || 'medium') as 'low' | 'medium' | 'high',
-        }));
+        .map(
+          (r: {
+            type?: string;
+            description?: string;
+            suggestedAction?: string;
+            severity?: string;
+          }) => ({
+            type: r.type || '',
+            description: r.description || '',
+            suggestedAction: r.suggestedAction || '',
+            severity: (r.severity || 'medium') as 'low' | 'medium' | 'high',
+          })
+        );
 
       const suggestions: GeneratedSuggestion[] = (parsed.suggestions || [])
         .slice(0, MAX_SUGGESTIONS)
-        .map((s: { type?: string; category?: string; title?: string; description?: string; suggestedAction?: string; actionPayload?: Record<string, unknown>; confidence?: number; priority?: string }) => ({
-          type: (s.type || 'TaskSuggestion') as GeneratedSuggestion['type'],
-          category: (s.category || 'Task') as GeneratedSuggestion['category'],
-          title: s.title || '',
-          description: s.description || '',
-          suggestedAction: s.suggestedAction || '',
-          actionPayload: s.actionPayload || {},
-          confidence: Number(s.confidence) || 0.7,
-          priority: (s.priority || 'Normal') as GeneratedSuggestion['priority'],
-        }));
+        .map(
+          (s: {
+            type?: string;
+            category?: string;
+            title?: string;
+            description?: string;
+            suggestedAction?: string;
+            actionPayload?: Record<string, unknown>;
+            confidence?: number;
+            priority?: string;
+          }) => ({
+            type: (s.type || 'TaskSuggestion') as GeneratedSuggestion['type'],
+            category: (s.category || 'Task') as GeneratedSuggestion['category'],
+            title: s.title || '',
+            description: s.description || '',
+            suggestedAction: s.suggestedAction || '',
+            actionPayload: s.actionPayload || {},
+            confidence: Number(s.confidence) || 0.7,
+            priority: (s.priority || 'Normal') as GeneratedSuggestion['priority'],
+          })
+        );
 
       return {
         prioritizedTasks,
@@ -592,7 +692,8 @@ Respond ONLY with the JSON object, no additional text.
         keyDeadlines: [],
         riskAlerts: [],
         suggestions: [],
-        summary: 'Good morning! Unable to generate full briefing. Please check your tasks manually.',
+        summary:
+          'Good morning! Unable to generate full briefing. Please check your tasks manually.',
         tokensUsed: 0,
       };
     }
@@ -620,18 +721,18 @@ Respond ONLY with the JSON object, no additional text.
         firmId,
         userId,
         briefingDate,
-        prioritizedTasks: briefing.prioritizedTasks,
-        keyDeadlines: briefing.keyDeadlines,
-        riskAlerts: briefing.riskAlerts,
-        suggestions: briefing.suggestions,
+        prioritizedTasks: JSON.parse(JSON.stringify(briefing.prioritizedTasks)),
+        keyDeadlines: JSON.parse(JSON.stringify(briefing.keyDeadlines)),
+        riskAlerts: JSON.parse(JSON.stringify(briefing.riskAlerts)),
+        suggestions: JSON.parse(JSON.stringify(briefing.suggestions)),
         summary: briefing.summary,
         tokensUsed: briefing.tokensUsed,
       },
       update: {
-        prioritizedTasks: briefing.prioritizedTasks,
-        keyDeadlines: briefing.keyDeadlines,
-        riskAlerts: briefing.riskAlerts,
-        suggestions: briefing.suggestions,
+        prioritizedTasks: JSON.parse(JSON.stringify(briefing.prioritizedTasks)),
+        keyDeadlines: JSON.parse(JSON.stringify(briefing.keyDeadlines)),
+        riskAlerts: JSON.parse(JSON.stringify(briefing.riskAlerts)),
+        suggestions: JSON.parse(JSON.stringify(briefing.suggestions)),
         summary: briefing.summary,
         tokensUsed: briefing.tokensUsed,
       },

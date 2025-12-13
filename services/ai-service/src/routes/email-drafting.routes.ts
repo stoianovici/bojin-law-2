@@ -7,8 +7,13 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { emailDraftingService, EmailTone, RecipientType } from '../services/email-drafting.service';
-import { draftRefinementService } from '../services/draft-refinement.service';
+import {
+  emailDraftingService,
+  EmailTone,
+  RecipientType,
+  Email,
+} from '../services/email-drafting.service';
+import { draftRefinementService, DraftContext } from '../services/draft-refinement.service';
 import { emailContextAggregatorService } from '../services/email-context-aggregator.service';
 import logger from '../lib/logger';
 
@@ -186,13 +191,13 @@ router.post(
       const threadHistory: any[] = [];
 
       const result = await emailDraftingService.generateEmailDraft({
-        originalEmail: body.originalEmail,
+        originalEmail: body.originalEmail as Email,
         caseContext,
         threadHistory,
         tone: body.tone as EmailTone,
         recipientType: body.recipientType as RecipientType,
-        firmId: body.firmId,
-        userId: body.userId,
+        firmId: body.firmId!,
+        userId: body.userId!,
       });
 
       res.json(result);
@@ -247,12 +252,12 @@ router.post(
       const threadHistory: any[] = [];
 
       const result = await emailDraftingService.generateMultipleDrafts({
-        originalEmail: body.originalEmail,
+        originalEmail: body.originalEmail as Email,
         caseContext,
         threadHistory,
         recipientType: body.recipientType as RecipientType,
-        firmId: body.firmId,
-        userId: body.userId,
+        firmId: body.firmId!,
+        userId: body.userId!,
       });
 
       res.json(result);
@@ -342,9 +347,9 @@ router.post(
 
       const result = await draftRefinementService.getInlineSuggestions(
         body.partialText,
-        body.context,
-        body.firmId,
-        body.userId
+        body.context as DraftContext,
+        body.firmId!,
+        body.userId!
       );
 
       if (!result) {

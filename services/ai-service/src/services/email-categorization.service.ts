@@ -8,11 +8,7 @@
  * [Source: docs/architecture/external-apis.md#anthropic-claude-api]
  */
 
-import {
-  AIOperationType,
-  ClaudeModel,
-  TaskComplexity,
-} from '@legal-platform/types';
+import { AIOperationType, ClaudeModel, TaskComplexity } from '@legal-platform/types';
 import { providerManager, ProviderRequest } from './provider-manager.service';
 import { modelRouter } from './model-router.service';
 import { tokenTracker } from './token-tracker.service';
@@ -132,11 +128,9 @@ export class EmailCategorizationService {
 
     // Make API request
     const request: ProviderRequest = {
-      messages: [
-        { role: 'system', content: EMAIL_CATEGORIZATION_SYSTEM_PROMPT },
-        { role: 'user', content: prompt },
-      ],
-      model: routing.modelName,
+      systemPrompt: EMAIL_CATEGORIZATION_SYSTEM_PROMPT,
+      prompt,
+      model: routing.model,
       maxTokens: 500,
       temperature: 0.1, // Low temperature for consistent results
     };
@@ -146,14 +140,14 @@ export class EmailCategorizationService {
       const result = this.parseCategorizationResponse(response.content, email.id);
 
       // Track token usage
-      const tokensUsed = response.usage?.totalTokens || 0;
+      const tokensUsed = response.inputTokens + response.outputTokens;
       await tokenTracker.recordUsage({
         userId,
         firmId,
         operationType: AIOperationType.Classification,
         modelUsed: routing.modelName,
-        inputTokens: response.usage?.promptTokens || 0,
-        outputTokens: response.usage?.completionTokens || 0,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         latencyMs: Date.now() - startTime,
       });
 
@@ -279,23 +273,22 @@ export class EmailCategorizationService {
   /**
    * Build categorization prompt with email and case context
    */
-  private buildCategorizationPrompt(
-    email: EmailForCategorization,
-    cases: CaseContext[]
-  ): string {
+  private buildCategorizationPrompt(email: EmailForCategorization, cases: CaseContext[]): string {
     // Format cases for prompt
-    const casesContext = cases.map((c) => {
-      const actors = c.actors
-        .map((a) => `${a.role}: ${a.name}${a.email ? ` <${a.email}>` : ''}`)
-        .join(', ');
+    const casesContext = cases
+      .map((c) => {
+        const actors = c.actors
+          .map((a) => `${a.role}: ${a.name}${a.email ? ` <${a.email}>` : ''}`)
+          .join(', ');
 
-      return `- Case ID: ${c.id}
+        return `- Case ID: ${c.id}
   Title: ${c.title}
   Case Number: ${c.caseNumber}
   Client: ${c.clientName}${c.clientEmail ? ` <${c.clientEmail}>` : ''}
   ${c.description ? `Description: ${c.description.substring(0, 200)}...` : ''}
   Actors: ${actors || 'None specified'}`;
-    }).join('\n\n');
+      })
+      .join('\n\n');
 
     // Format email
     const recipients = [
@@ -319,7 +312,10 @@ Determine which case this email belongs to and provide your confidence level.`;
   /**
    * Parse AI response safely
    */
-  private parseCategorizationResponse(content: string, emailId: string): Omit<CategorizationResult, 'tokensUsed'> {
+  private parseCategorizationResponse(
+    content: string,
+    emailId: string
+  ): Omit<CategorizationResult, 'tokensUsed'> {
     try {
       // Extract JSON from response
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -384,11 +380,9 @@ Determine which case this email belongs to and provide your confidence level.`;
     });
 
     const request: ProviderRequest = {
-      messages: [
-        { role: 'system', content: EMAIL_CATEGORIZATION_SYSTEM_PROMPT },
-        { role: 'user', content: enhancedPrompt },
-      ],
-      model: routing.modelName,
+      systemPrompt: EMAIL_CATEGORIZATION_SYSTEM_PROMPT,
+      prompt: enhancedPrompt,
+      model: routing.model,
       maxTokens: 500,
       temperature: 0.1,
     };
@@ -397,14 +391,14 @@ Determine which case this email belongs to and provide your confidence level.`;
       const response = await providerManager.execute(request);
       const result = this.parseCategorizationResponse(response.content, email.id);
 
-      const tokensUsed = response.usage?.totalTokens || 0;
+      const tokensUsed = response.inputTokens + response.outputTokens;
       await tokenTracker.recordUsage({
         userId,
         firmId,
         operationType: AIOperationType.Classification,
         modelUsed: routing.modelName,
-        inputTokens: response.usage?.promptTokens || 0,
-        outputTokens: response.usage?.completionTokens || 0,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         latencyMs: Date.now() - startTime,
       });
 

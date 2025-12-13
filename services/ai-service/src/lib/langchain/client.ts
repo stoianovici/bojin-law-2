@@ -8,6 +8,27 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { config } from '../../config';
 import { ClaudeModel } from '@legal-platform/types';
 
+// Callback handler options
+export interface AICallbackHandlerOptions {
+  userId?: string;
+  firmId?: string;
+  operationType?: string;
+  operationId?: string;
+}
+
+// Token usage input for tracking
+export interface TokenUsageInput {
+  userId: string;
+  firmId: string;
+  operationType: string;
+  inputTokens: number;
+  outputTokens: number;
+  model: string;
+  cost: number;
+  latencyMs: number;
+  metadata?: Record<string, unknown>;
+}
+
 // Callback handler for logging and monitoring
 export class AICallbackHandler extends BaseCallbackHandler {
   name = 'AICallbackHandler';
@@ -15,12 +36,20 @@ export class AICallbackHandler extends BaseCallbackHandler {
   private startTime: number = 0;
   private inputTokens: number = 0;
   private outputTokens: number = 0;
+  private options: AICallbackHandlerOptions;
+
+  constructor(options?: AICallbackHandlerOptions) {
+    super();
+    this.options = options || {};
+  }
 
   handleLLMStart(): void {
     this.startTime = Date.now();
   }
 
-  handleLLMEnd(output: { llmOutput?: { tokenUsage?: { promptTokens?: number; completionTokens?: number } } }): void {
+  handleLLMEnd(output: {
+    llmOutput?: { tokenUsage?: { promptTokens?: number; completionTokens?: number } };
+  }): void {
     const latencyMs = Date.now() - this.startTime;
     const tokenUsage = output?.llmOutput?.tokenUsage;
 
@@ -32,6 +61,7 @@ export class AICallbackHandler extends BaseCallbackHandler {
     console.log(`LLM call completed in ${latencyMs}ms`, {
       inputTokens: this.inputTokens,
       outputTokens: this.outputTokens,
+      ...this.options,
     });
   }
 
@@ -44,6 +74,21 @@ export class AICallbackHandler extends BaseCallbackHandler {
       latencyMs: Date.now() - this.startTime,
       inputTokens: this.inputTokens,
       outputTokens: this.outputTokens,
+    };
+  }
+
+  // Method to get token info for services
+  async getTokenInfo(): Promise<{
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    cost: number;
+  }> {
+    return {
+      inputTokens: this.inputTokens,
+      outputTokens: this.outputTokens,
+      totalTokens: this.inputTokens + this.outputTokens,
+      cost: 0, // Cost calculation would need model-specific pricing
     };
   }
 }

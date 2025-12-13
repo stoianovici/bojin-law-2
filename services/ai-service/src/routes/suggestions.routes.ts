@@ -162,12 +162,16 @@ router.post(
 
       // If no active SSE connection, return suggestions directly
       if (!connection) {
-        const suggestions = await clauseSuggestionService.getSuggestions(body);
+        const suggestions = await clauseSuggestionService.getSuggestions(
+          body as ClauseSuggestionRequest
+        );
         return res.json({ suggestions });
       }
 
       // Request suggestions via debounced method
-      const suggestions = await clauseSuggestionService.getDebouncedSuggestions(body);
+      const suggestions = await clauseSuggestionService.getDebouncedSuggestions(
+        body as ClauseSuggestionRequest
+      );
 
       // Send suggestions via SSE
       for (const suggestion of suggestions) {
@@ -201,7 +205,9 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const body = suggestionRequestSchema.parse(req.body);
-      const suggestions = await clauseSuggestionService.getSuggestions(body);
+      const suggestions = await clauseSuggestionService.getSuggestions(
+        body as ClauseSuggestionRequest
+      );
       res.json({ suggestions });
     } catch (error) {
       if (error instanceof z.ZodError) {

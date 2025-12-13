@@ -7,11 +7,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  PatternAnalysisResult,
-  DetectedPattern,
-  ActionStep,
-} from '@legal-platform/types';
+import { PatternAnalysisResult, DetectedPattern, ActionStep } from '@legal-platform/types';
 import { ClaudeModel } from '@legal-platform/types';
 import logger from '../lib/logger';
 import { config } from '../config';
@@ -55,12 +51,7 @@ export class PatternRecognitionService {
       lookbackDate.setDate(lookbackDate.getDate() - lookbackDays);
 
       // Gather historical data in parallel
-      const [
-        taskHistory,
-        emailHistory,
-        documentHistory,
-        existingPatterns,
-      ] = await Promise.all([
+      const [taskHistory, emailHistory, documentHistory, existingPatterns] = await Promise.all([
         this.getTaskHistory(userId, lookbackDate),
         this.getEmailHistory(userId, lookbackDate),
         this.getDocumentHistory(userId, lookbackDate),
@@ -132,7 +123,7 @@ export class PatternRecognitionService {
     const matchingPatterns: DetectedPattern[] = [];
 
     for (const pattern of patterns) {
-      const triggerContext = pattern.triggerContext as Record<string, unknown>;
+      const triggerContext = pattern.triggerContext as unknown as Record<string, unknown>;
 
       // Check if trigger matches current context
       const matches = this.matchesTriggerContext(triggerContext, currentContext);
@@ -142,7 +133,7 @@ export class PatternRecognitionService {
           patternType: pattern.patternType,
           description: this.getPatternDescription(pattern.patternType),
           triggerContext: triggerContext,
-          actionSequence: pattern.actionSequence as ActionStep[],
+          actionSequence: pattern.actionSequence as unknown as ActionStep[],
           occurrenceCount: pattern.occurrenceCount,
           confidence: pattern.confidence,
           suggestable: true,
@@ -177,8 +168,8 @@ export class PatternRecognitionService {
     });
 
     for (const pattern of patterns) {
-      const actionSequence = pattern.actionSequence as ActionStep[];
-      const triggerContext = pattern.triggerContext as Record<string, unknown>;
+      const actionSequence = pattern.actionSequence as unknown as ActionStep[];
+      const triggerContext = pattern.triggerContext as unknown as Record<string, unknown>;
 
       // Check if this action is part of an existing pattern
       if (this.actionMatchesPattern(action, triggerContext, actionSequence)) {
@@ -188,7 +179,10 @@ export class PatternRecognitionService {
           data: {
             occurrenceCount: { increment: 1 },
             lastOccurrence: new Date(),
-            confidence: this.calculateNewConfidence(pattern.confidence, pattern.occurrenceCount + 1),
+            confidence: this.calculateNewConfidence(
+              pattern.confidence,
+              pattern.occurrenceCount + 1
+            ),
           },
         });
 
@@ -232,16 +226,14 @@ export class PatternRecognitionService {
     return prisma.email.findMany({
       where: {
         userId,
-        sentAt: { gte: since },
-        direction: 'Outbound',
+        sentDateTime: { gte: since },
       },
-      orderBy: { sentAt: 'asc' },
+      orderBy: { sentDateTime: 'asc' },
       select: {
         id: true,
         subject: true,
         caseId: true,
-        sentAt: true,
-        recipientType: true,
+        sentDateTime: true,
       },
     });
   }
@@ -281,7 +273,11 @@ export class PatternRecognitionService {
   private async detectPatternsWithAI(
     userId: string,
     taskHistory: Array<{ task: { type: string; caseId: string | null } | null; createdAt: Date }>,
-    emailHistory: Array<{ subject: string | null; caseId: string | null; sentAt: Date | null }>,
+    emailHistory: Array<{
+      subject: string | null;
+      caseId: string | null;
+      sentDateTime: Date | null;
+    }>,
     documentHistory: Array<{ action: string; caseId: string | null; timestamp: Date }>
   ): Promise<DetectedPattern[]> {
     // Build a summary of user actions for AI analysis
@@ -324,7 +320,8 @@ Respond ONLY with the JSON array.
 
     try {
       const request: ProviderRequest = {
-        systemPrompt: 'You are an AI assistant analyzing user behavior patterns in a legal platform. Identify meaningful, actionable patterns that can help improve the user\'s workflow.',
+        systemPrompt:
+          "You are an AI assistant analyzing user behavior patterns in a legal platform. Identify meaningful, actionable patterns that can help improve the user's workflow.",
         prompt,
         model: ClaudeModel.Sonnet, // Use Sonnet for comprehensive analysis
         maxTokens: 2000,
@@ -348,24 +345,28 @@ Respond ONLY with the JSON array.
    */
   private buildActionSummary(
     taskHistory: Array<{ task: { type: string; caseId: string | null } | null; createdAt: Date }>,
-    emailHistory: Array<{ subject: string | null; caseId: string | null; sentAt: Date | null }>,
+    emailHistory: Array<{
+      subject: string | null;
+      caseId: string | null;
+      sentDateTime: Date | null;
+    }>,
     documentHistory: Array<{ action: string; caseId: string | null; timestamp: Date }>
   ): string {
     const actions: string[] = [];
 
     // Combine all actions chronologically
     const allActions: Array<{ type: string; timestamp: Date; details: string }> = [
-      ...taskHistory.map(t => ({
+      ...taskHistory.map((t) => ({
         type: 'task',
         timestamp: new Date(t.createdAt),
         details: `Task ${t.task?.type || 'unknown'} on case ${t.task?.caseId || 'none'}`,
       })),
-      ...emailHistory.map(e => ({
+      ...emailHistory.map((e) => ({
         type: 'email',
-        timestamp: e.sentAt ? new Date(e.sentAt) : new Date(),
+        timestamp: e.sentDateTime ? new Date(e.sentDateTime) : new Date(),
         details: `Email "${e.subject?.substring(0, 50) || 'no subject'}" on case ${e.caseId || 'none'}`,
       })),
-      ...documentHistory.map(d => ({
+      ...documentHistory.map((d) => ({
         type: 'document',
         timestamp: new Date(d.timestamp),
         details: `Document ${d.action} on case ${d.caseId || 'none'}`,
@@ -391,7 +392,10 @@ Respond ONLY with the JSON array.
     try {
       let jsonStr = response.trim();
       if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+        jsonStr = jsonStr
+          .replace(/```json?\n?/g, '')
+          .replace(/```/g, '')
+          .trim();
       }
 
       const parsed = JSON.parse(jsonStr);
@@ -401,15 +405,17 @@ Respond ONLY with the JSON array.
       }
 
       return parsed
-        .filter(p => p.occurrenceCount >= MIN_PATTERN_OCCURRENCES)
-        .map(p => ({
+        .filter((p) => p.occurrenceCount >= MIN_PATTERN_OCCURRENCES)
+        .map((p) => ({
           patternType: String(p.patternType || ''),
           description: String(p.description || ''),
           triggerContext: p.triggerContext || {},
-          actionSequence: (p.actionSequence || []).map((a: { action?: string; context?: Record<string, unknown> }) => ({
-            action: String(a.action || ''),
-            context: a.context || {},
-          })),
+          actionSequence: (p.actionSequence || []).map(
+            (a: { action?: string; context?: Record<string, unknown> }) => ({
+              action: String(a.action || ''),
+              context: a.context || {},
+            })
+          ),
           occurrenceCount: Number(p.occurrenceCount) || MIN_PATTERN_OCCURRENCES,
           confidence: Math.min(1, Math.max(0, Number(p.confidence) || 0.5)),
           suggestable: Boolean(p.suggestable),
@@ -430,10 +436,10 @@ Respond ONLY with the JSON array.
     detected: DetectedPattern[],
     existing: Array<{ patternType: string; confidence: number; occurrenceCount: number }>
   ): { newPatterns: DetectedPattern[]; updatedPatterns: DetectedPattern[] } {
-    const existingTypes = new Set(existing.map(p => p.patternType));
+    const existingTypes = new Set(existing.map((p) => p.patternType));
 
-    const newPatterns = detected.filter(p => !existingTypes.has(p.patternType));
-    const updatedPatterns = detected.filter(p => existingTypes.has(p.patternType));
+    const newPatterns = detected.filter((p) => !existingTypes.has(p.patternType));
+    const updatedPatterns = detected.filter((p) => existingTypes.has(p.patternType));
 
     return { newPatterns, updatedPatterns };
   }
@@ -463,8 +469,8 @@ Respond ONLY with the JSON array.
           firmId: user.firmId,
           userId,
           patternType: pattern.patternType,
-          triggerContext: pattern.triggerContext,
-          actionSequence: pattern.actionSequence,
+          triggerContext: JSON.parse(JSON.stringify(pattern.triggerContext)),
+          actionSequence: JSON.parse(JSON.stringify(pattern.actionSequence)),
           occurrenceCount: pattern.occurrenceCount,
           lastOccurrence: new Date(),
           confidence: pattern.confidence,
@@ -481,8 +487,8 @@ Respond ONLY with the JSON array.
           patternType: pattern.patternType,
         },
         data: {
-          triggerContext: pattern.triggerContext,
-          actionSequence: pattern.actionSequence,
+          triggerContext: JSON.parse(JSON.stringify(pattern.triggerContext)),
+          actionSequence: JSON.parse(JSON.stringify(pattern.actionSequence)),
           occurrenceCount: pattern.occurrenceCount,
           lastOccurrence: new Date(),
           confidence: pattern.confidence,
@@ -554,7 +560,10 @@ Respond ONLY with the JSON array.
     const maxConfidence = 0.95;
     const growthRate = 0.1;
 
-    const newConfidence = maxConfidence - (maxConfidence - baseConfidence) * Math.exp(-growthRate * (newCount - MIN_PATTERN_OCCURRENCES));
+    const newConfidence =
+      maxConfidence -
+      (maxConfidence - baseConfidence) *
+        Math.exp(-growthRate * (newCount - MIN_PATTERN_OCCURRENCES));
     return Math.min(maxConfidence, Math.max(currentConfidence, newConfidence));
   }
 
@@ -563,8 +572,10 @@ Respond ONLY with the JSON array.
    */
   private getPatternDescription(patternType: string): string {
     const descriptions: Record<string, string> = {
-      [PATTERN_TYPES.POST_FILING_CLIENT_UPDATE]: 'You usually send a client update after filing documents',
-      [PATTERN_TYPES.MORNING_EMAIL_CHECK]: 'You typically check and respond to emails in the morning',
+      [PATTERN_TYPES.POST_FILING_CLIENT_UPDATE]:
+        'You usually send a client update after filing documents',
+      [PATTERN_TYPES.MORNING_EMAIL_CHECK]:
+        'You typically check and respond to emails in the morning',
       [PATTERN_TYPES.POST_MEETING_NOTES]: 'You usually create meeting notes after client meetings',
       [PATTERN_TYPES.WEEKLY_STATUS_UPDATE]: 'You send weekly status updates to clients',
       [PATTERN_TYPES.DOCUMENT_REVIEW_FOLLOWUP]: 'You follow up after document reviews',

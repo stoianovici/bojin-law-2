@@ -35,6 +35,11 @@ const operationComplexityMap: Record<AIOperationType, TaskComplexity> = {
   [AIOperationType.MorningBriefing]: TaskComplexity.Standard,
   [AIOperationType.PatternRecognition]: TaskComplexity.Standard,
   [AIOperationType.DocumentCompleteness]: TaskComplexity.Simple,
+  // Snippet and style operations
+  [AIOperationType.SnippetDetection]: TaskComplexity.Simple,
+  [AIOperationType.SnippetShortcut]: TaskComplexity.Simple,
+  [AIOperationType.StyleAnalysis]: TaskComplexity.Standard,
+  [AIOperationType.StyleApplication]: TaskComplexity.Standard,
 };
 
 // Complexity to model mapping
@@ -186,10 +191,7 @@ export class ModelRouterService {
     if (input.hasMultipleDocuments) {
       return 'Multi-document analysis';
     }
-    if (
-      input.promptLength !== undefined &&
-      input.promptLength < SIMPLE_TOKEN_THRESHOLD
-    ) {
+    if (input.promptLength !== undefined && input.promptLength < SIMPLE_TOKEN_THRESHOLD) {
       return `Short prompt (${input.promptLength} tokens)`;
     }
 

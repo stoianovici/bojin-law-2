@@ -9,6 +9,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { taskParser } from '../services/task-parser.service';
 import { taskClarification, ClarificationContext } from '../services/task-clarification.service';
+import { TaskParseContext } from '@legal-platform/types';
 
 const router: Router = Router();
 
@@ -112,9 +113,9 @@ router.post(
         {
           text: body.text,
           language: body.language,
-          context: body.context,
+          context: body.context as TaskParseContext | undefined,
         },
-        body.context
+        body.context as TaskParseContext | undefined
       );
 
       // Detect additional clarifications if needed
@@ -171,7 +172,7 @@ router.post(
         body.parsedResult,
         body.questionId,
         body.answer,
-        body.context
+        body.context as ClarificationContext | undefined
       );
 
       res.json(updatedResult);
