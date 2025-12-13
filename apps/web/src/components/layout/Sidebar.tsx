@@ -58,7 +58,7 @@ const iconMap: Record<string, LucideIcon> = {
 const navigationItems: NavigationItem[] = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Tablou de Bord',
     icon: 'dashboard',
     href: '/',
     section: 'dashboard',
@@ -66,7 +66,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     id: 'analytics',
-    label: 'Analytics',
+    label: 'Analiză',
     icon: 'analytics',
     href: '/analytics',
     section: 'analytics',
@@ -90,7 +90,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     id: 'my-cases',
-    label: 'My Cases',
+    label: 'Cazurile Mele',
     icon: 'my-cases',
     href: '/cases/my-cases',
     section: 'cases',

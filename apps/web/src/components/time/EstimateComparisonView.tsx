@@ -22,7 +22,15 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Target, AlertTriangle, CheckCircle, Lightbulb } from 'lucide-react';
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Target,
+  AlertTriangle,
+  CheckCircle,
+  Lightbulb,
+} from 'lucide-react';
 import type { EstimateVsActualReport, TaskTypeComparison } from '@legal-platform/types';
 
 export interface EstimateComparisonViewProps {
@@ -52,11 +60,12 @@ export function EstimateComparisonView({
         periodStart = startOfMonth(today);
         periodEnd = endOfMonth(today);
         break;
-      case 'last_month':
+      case 'last_month': {
         const lastMonth = subMonths(today, 1);
         periodStart = startOfMonth(lastMonth);
         periodEnd = endOfMonth(lastMonth);
         break;
+      }
       case 'last_3_months':
         periodStart = startOfMonth(subMonths(today, 2));
         periodEnd = endOfMonth(today);
@@ -78,8 +87,10 @@ export function EstimateComparisonView({
   };
 
   const getAccuracyIcon = (accuracy: number) => {
-    if (accuracy >= 80 && accuracy <= 120) return <CheckCircle className="h-5 w-5 text-green-600" />;
-    if (accuracy >= 60 && accuracy <= 140) return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+    if (accuracy >= 80 && accuracy <= 120)
+      return <CheckCircle className="h-5 w-5 text-green-600" />;
+    if (accuracy >= 60 && accuracy <= 140)
+      return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
     return <AlertTriangle className="h-5 w-5 text-red-600" />;
   };
 
@@ -138,7 +149,9 @@ export function EstimateComparisonView({
     return (
       <div className="text-center py-12">
         <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">No completed tasks with estimates for this period</p>
+        <p className="text-gray-600">
+          Nu există sarcini finalizate cu estimări pentru această perioadă
+        </p>
       </div>
     );
   }
@@ -148,21 +161,24 @@ export function EstimateComparisonView({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Estimate vs Actual Analysis</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Analiză Estimat vs Real</h2>
           <p className="text-sm text-gray-600">
             {format(new Date(report.periodStart), 'MMM d, yyyy')} -{' '}
             {format(new Date(report.periodEnd), 'MMM d, yyyy')}
           </p>
         </div>
-        <Select value={selectedPeriod} onValueChange={(value: string) => handlePeriodChange(value as PeriodOption)}>
+        <Select
+          value={selectedPeriod}
+          onValueChange={(value: string) => handlePeriodChange(value as PeriodOption)}
+        >
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select period" />
+            <SelectValue placeholder="Selectează perioada" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="this_month">This Month</SelectItem>
-            <SelectItem value="last_month">Last Month</SelectItem>
-            <SelectItem value="last_3_months">Last 3 Months</SelectItem>
-            <SelectItem value="last_6_months">Last 6 Months</SelectItem>
+            <SelectItem value="this_month">Luna Aceasta</SelectItem>
+            <SelectItem value="last_month">Luna Trecută</SelectItem>
+            <SelectItem value="last_3_months">Ultimele 3 Luni</SelectItem>
+            <SelectItem value="last_6_months">Ultimele 6 Luni</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -171,7 +187,7 @@ export function EstimateComparisonView({
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-2">Overall Accuracy</p>
+            <p className="text-sm font-medium text-gray-600 mb-2">Acuratețe Generală</p>
             <div className="flex items-center space-x-3">
               {getAccuracyIcon(report.overallAccuracy)}
               <p className="text-4xl font-bold text-gray-900">
@@ -179,13 +195,17 @@ export function EstimateComparisonView({
               </p>
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {report.overallAccuracy > 100 ? 'Overestimating' : report.overallAccuracy < 100 ? 'Underestimating' : 'On target'}
+              {report.overallAccuracy > 100
+                ? 'Supraestimează'
+                : report.overallAccuracy < 100
+                  ? 'Subestimează'
+                  : 'La țintă'}
             </p>
           </div>
           <div className={`flex flex-col items-end ${trendColor}`}>
             <div className="flex items-center space-x-1">
               <TrendIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">Improvement Trend</span>
+              <span className="text-sm font-medium">Tendință Îmbunătățire</span>
             </div>
             <p className="text-xs text-gray-600 mt-1">vs previous period</p>
           </div>
@@ -216,12 +236,8 @@ export function EstimateComparisonView({
                   return (
                     <div className="bg-white p-3 border rounded shadow-lg">
                       <p className="font-semibold text-sm mb-2">{data.taskType}</p>
-                      <p className="text-sm text-blue-600">
-                        Estimated: {data['Estimated Hours']}h
-                      </p>
-                      <p className="text-sm text-purple-600">
-                        Actual: {data['Actual Hours']}h
-                      </p>
+                      <p className="text-sm text-blue-600">Estimated: {data['Estimated Hours']}h</p>
+                      <p className="text-sm text-purple-600">Actual: {data['Actual Hours']}h</p>
                       <p className="text-sm text-gray-700 font-semibold mt-1">
                         Accuracy: {data.accuracy.toFixed(0)}%
                       </p>
@@ -274,7 +290,9 @@ export function EstimateComparisonView({
                     </td>
                     <td className="text-right py-3 px-2">
                       <span className={item.variance >= 0 ? 'text-red-600' : 'text-green-600'}>
-                        {varianceSign}{item.variance.toFixed(1)}h ({varianceSign}{item.variancePercent.toFixed(0)}%)
+                        {varianceSign}
+                        {item.variance.toFixed(1)}h ({varianceSign}
+                        {item.variancePercent.toFixed(0)}%)
                       </span>
                     </td>
                   </tr>

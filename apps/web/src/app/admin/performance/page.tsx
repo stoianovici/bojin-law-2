@@ -60,14 +60,35 @@ const emptyPerformanceSnapshot = {
     avgResponseTime: 0,
     p95ResponseTime: 0,
     errorRate: 0,
-    byEndpoint: [] as Array<{ endpoint: string; method: string; requestCount: number; avgResponseTime: number; p95ResponseTime: number; errorCount: number; status: string }>,
+    byEndpoint: [] as Array<{
+      endpoint: string;
+      method: string;
+      requestCount: number;
+      avgResponseTime: number;
+      p95ResponseTime: number;
+      errorCount: number;
+      status: string;
+    }>,
   },
   ai: {
     totalOperations: 0,
     avgLatency: 0,
     p95Latency: 0,
-    byModel: [] as Array<{ model: string; requestCount: number; avgTTFT: number; avgTotalLatency: number; errorCount: number; status: string }>,
-    byOperation: [] as Array<{ operation: string; count: number; avgLatency: number; p95Latency: number; successRate: number }>,
+    byModel: [] as Array<{
+      model: string;
+      requestCount: number;
+      avgTTFT: number;
+      avgTotalLatency: number;
+      errorCount: number;
+      status: string;
+    }>,
+    byOperation: [] as Array<{
+      operation: string;
+      count: number;
+      avgLatency: number;
+      p95Latency: number;
+      successRate: number;
+    }>,
   },
   database: {
     queryCount: 0,
@@ -96,10 +117,26 @@ const emptyPerformanceSnapshot = {
 };
 
 // Empty historical data - should be fetched from API
-const emptyHistoricalData: Array<{ timestamp: string; apiResponseTime: number; aiLatency: number; dbQueryTime: number; cacheHitRate: number }> = [];
+const emptyHistoricalData: Array<{
+  timestamp: string;
+  apiResponseTime: number;
+  aiLatency: number;
+  dbQueryTime: number;
+  cacheHitRate: number;
+}> = [];
 
 // Empty alerts - should be fetched from API
-const emptyAlerts: Array<{ id: string; type: string; severity: string; metric: string; currentValue: number; threshold: number; message: string; timestamp: string; acknowledged: boolean }> = [];
+const emptyAlerts: Array<{
+  id: string;
+  type: string;
+  severity: string;
+  metric: string;
+  currentValue: number;
+  threshold: number;
+  message: string;
+  timestamp: string;
+  acknowledged: boolean;
+}> = [];
 
 // Helper functions
 function formatBytes(bytes: number): string {
@@ -138,7 +175,9 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
+    <span
+      className={`px-2 py-1 text-xs font-medium rounded-full ${colors[status] || 'bg-gray-100 text-gray-800'}`}
+    >
       {status}
     </span>
   );
@@ -153,14 +192,26 @@ function SeverityBadge({ severity }: { severity: string }) {
   };
 
   return (
-    <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[severity] || 'bg-gray-100 text-gray-800'}`}>
+    <span
+      className={`px-2 py-1 text-xs font-medium rounded-full ${colors[severity] || 'bg-gray-100 text-gray-800'}`}
+    >
       {severity}
     </span>
   );
 }
 
 // KPI Card component
-function KPICard({ title, value, subtitle, status }: { title: string; value: string; subtitle?: string; status?: 'good' | 'warning' | 'critical' }) {
+function KPICard({
+  title,
+  value,
+  subtitle,
+  status,
+}: {
+  title: string;
+  value: string;
+  subtitle?: string;
+  status?: 'good' | 'warning' | 'critical';
+}) {
   const borderColors = {
     good: 'border-l-green-500',
     warning: 'border-l-yellow-500',
@@ -168,7 +219,9 @@ function KPICard({ title, value, subtitle, status }: { title: string; value: str
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow p-4 border-l-4 ${status ? borderColors[status] : 'border-l-gray-200'}`}>
+    <div
+      className={`bg-white rounded-lg shadow p-4 border-l-4 ${status ? borderColors[status] : 'border-l-gray-200'}`}
+    >
       <p className="text-sm text-gray-500">{title}</p>
       <p className="text-2xl font-bold text-gray-900">{value}</p>
       {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
@@ -178,7 +231,9 @@ function KPICard({ title, value, subtitle, status }: { title: string; value: str
 
 export default function PerformanceDashboardPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'api' | 'ai' | 'database' | 'alerts'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'api' | 'ai' | 'database' | 'alerts'>(
+    'overview'
+  );
   const [refreshInterval, setRefreshInterval] = useState<number>(30);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
@@ -214,9 +269,10 @@ export default function PerformanceDashboardPage() {
     return (
       <div className="p-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h2 className="text-red-800 font-semibold">Access Denied</h2>
+          <h2 className="text-red-800 font-semibold">Acces Interzis</h2>
           <p className="text-red-600 text-sm">
-            This page is only accessible to Partners, Business Owners, and Admins.
+            Această pagină este accesibilă doar Partenerilor, Proprietarilor de Afaceri și
+            Administratorilor.
           </p>
         </div>
       </div>
@@ -228,22 +284,22 @@ export default function PerformanceDashboardPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Performance Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Tablou Performanță</h1>
           <p className="text-gray-500 text-sm mt-1">
-            System performance monitoring and alerting
+            Monitorizarea performanței sistemului și alerte
           </p>
         </div>
 
         <div className="flex items-center gap-4">
           {/* System Status */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">System Status:</span>
+            <span className="text-sm text-gray-500">Stare Sistem:</span>
             <StatusBadge status={systemStatus} />
           </div>
 
           {/* Refresh Controls */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Refresh:</span>
+            <span className="text-sm text-gray-500">Reîmprospătare:</span>
             <select
               value={refreshInterval}
               onChange={(e) => setRefreshInterval(Number(e.target.value))}
@@ -256,9 +312,7 @@ export default function PerformanceDashboardPage() {
             </select>
           </div>
 
-          <span className="text-xs text-gray-400">
-            Last: {lastRefresh.toLocaleTimeString()}
-          </span>
+          <span className="text-xs text-gray-400">Ultima: {lastRefresh.toLocaleTimeString()}</span>
         </div>
       </div>
 
@@ -295,13 +349,25 @@ export default function PerformanceDashboardPage() {
               title="API Requests"
               value={formatNumber(snapshot.api.totalRequests)}
               subtitle={`${formatPercent(snapshot.api.errorRate)} errors`}
-              status={snapshot.api.errorRate < 0.01 ? 'good' : snapshot.api.errorRate < 0.05 ? 'warning' : 'critical'}
+              status={
+                snapshot.api.errorRate < 0.01
+                  ? 'good'
+                  : snapshot.api.errorRate < 0.05
+                    ? 'warning'
+                    : 'critical'
+              }
             />
             <KPICard
               title="API p95"
               value={`${snapshot.api.p95ResponseTime}ms`}
               subtitle="Response time"
-              status={snapshot.api.p95ResponseTime < 200 ? 'good' : snapshot.api.p95ResponseTime < 500 ? 'warning' : 'critical'}
+              status={
+                snapshot.api.p95ResponseTime < 200
+                  ? 'good'
+                  : snapshot.api.p95ResponseTime < 500
+                    ? 'warning'
+                    : 'critical'
+              }
             />
             <KPICard
               title="AI Operations"
@@ -311,13 +377,25 @@ export default function PerformanceDashboardPage() {
             <KPICard
               title="Cache Hit Rate"
               value={formatPercent(snapshot.cache.hitRate)}
-              status={snapshot.cache.hitRate >= 0.7 ? 'good' : snapshot.cache.hitRate >= 0.5 ? 'warning' : 'critical'}
+              status={
+                snapshot.cache.hitRate >= 0.7
+                  ? 'good'
+                  : snapshot.cache.hitRate >= 0.5
+                    ? 'warning'
+                    : 'critical'
+              }
             />
             <KPICard
               title="DB Queries"
               value={formatNumber(snapshot.database.queryCount)}
               subtitle={`${snapshot.database.slowQueries} slow`}
-              status={snapshot.database.slowQueries < 10 ? 'good' : snapshot.database.slowQueries < 50 ? 'warning' : 'critical'}
+              status={
+                snapshot.database.slowQueries < 10
+                  ? 'good'
+                  : snapshot.database.slowQueries < 50
+                    ? 'warning'
+                    : 'critical'
+              }
             />
             <KPICard
               title="Uptime"
@@ -330,7 +408,9 @@ export default function PerformanceDashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Response Time Trend */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Response Time Trend (24h)</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Tendință Timp Răspuns (24h)
+              </h3>
               <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={historicalData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -358,7 +438,9 @@ export default function PerformanceDashboardPage() {
 
             {/* Cache Hit Rate Trend */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Cache Hit Rate (24h)</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Rată Utilizare Cache (24h)
+              </h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={historicalData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -391,43 +473,52 @@ export default function PerformanceDashboardPage() {
 
           {/* System Resources */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">System Resources</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Resurse Sistem</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <p className="text-sm text-gray-500">CPU Usage</p>
+                <p className="text-sm text-gray-500">Utilizare CPU</p>
                 <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className={`h-full ${snapshot.system.cpuUsage < 0.7 ? 'bg-green-500' : snapshot.system.cpuUsage < 0.9 ? 'bg-yellow-500' : 'bg-red-500'}`}
                     style={{ width: `${snapshot.system.cpuUsage * 100}%` }}
                   />
                 </div>
-                <p className="mt-1 text-sm font-medium">{formatPercent(snapshot.system.cpuUsage)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Heap Memory</p>
-                <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500"
-                    style={{ width: `${(snapshot.system.memoryUsage.heapUsed / snapshot.system.memoryUsage.heapTotal) * 100}%` }}
-                  />
-                </div>
                 <p className="mt-1 text-sm font-medium">
-                  {formatBytes(snapshot.system.memoryUsage.heapUsed)} / {formatBytes(snapshot.system.memoryUsage.heapTotal)}
+                  {formatPercent(snapshot.system.cpuUsage)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Cache Memory</p>
-                <p className="mt-2 text-xl font-medium">{formatBytes(snapshot.cache.memoryUsage)}</p>
+                <p className="text-sm text-gray-500">Memorie Heap</p>
+                <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500"
+                    style={{
+                      width: `${(snapshot.system.memoryUsage.heapUsed / snapshot.system.memoryUsage.heapTotal) * 100}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-1 text-sm font-medium">
+                  {formatBytes(snapshot.system.memoryUsage.heapUsed)} /{' '}
+                  {formatBytes(snapshot.system.memoryUsage.heapTotal)}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">DB Pool Usage</p>
+                <p className="text-sm text-gray-500">Memorie Cache</p>
+                <p className="mt-2 text-xl font-medium">
+                  {formatBytes(snapshot.cache.memoryUsage)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Utilizare Pool BD</p>
                 <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className={`h-full ${snapshot.database.connectionPoolUsage < 0.7 ? 'bg-green-500' : snapshot.database.connectionPoolUsage < 0.9 ? 'bg-yellow-500' : 'bg-red-500'}`}
                     style={{ width: `${snapshot.database.connectionPoolUsage * 100}%` }}
                   />
                 </div>
-                <p className="mt-1 text-sm font-medium">{formatPercent(snapshot.database.connectionPoolUsage)}</p>
+                <p className="mt-1 text-sm font-medium">
+                  {formatPercent(snapshot.database.connectionPoolUsage)}
+                </p>
               </div>
             </div>
           </div>
@@ -440,34 +531,60 @@ export default function PerformanceDashboardPage() {
           {/* Endpoint Performance Table */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Endpoint Performance</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Performanță Endpoint-uri</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Endpoint</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Requests</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Avg (ms)</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">p95 (ms)</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Errors</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Endpoint
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Metodă
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cereri
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Medie (ms)
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      p95 (ms)
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Erori
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Stare
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {snapshot.api.byEndpoint.map((endpoint, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{endpoint.endpoint}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                        {endpoint.endpoint}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 text-xs rounded ${endpoint.method === 'GET' ? 'bg-blue-100 text-blue-800' : endpoint.method === 'POST' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                        <span
+                          className={`px-2 py-1 text-xs rounded ${endpoint.method === 'GET' ? 'bg-blue-100 text-blue-800' : endpoint.method === 'POST' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                        >
                           {endpoint.method}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(endpoint.requestCount)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{endpoint.avgResponseTime}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{endpoint.p95ResponseTime}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-right">{endpoint.errorCount}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {formatNumber(endpoint.requestCount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {endpoint.avgResponseTime}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {endpoint.p95ResponseTime}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-right">
+                        {endpoint.errorCount}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <StatusBadge status={endpoint.status} />
                       </td>
@@ -480,7 +597,7 @@ export default function PerformanceDashboardPage() {
 
           {/* Response Time Distribution */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Response Time by Endpoint</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Timp Răspuns per Endpoint</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={snapshot.api.byEndpoint} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
@@ -508,28 +625,50 @@ export default function PerformanceDashboardPage() {
           {/* Model Performance */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">AI Model Performance</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Performanță Modele AI</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Requests</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Avg TTFT (ms)</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Latency (ms)</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Errors</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Model
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cereri
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      TTFT Medie (ms)
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Latență Medie (ms)
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Erori
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Stare
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {snapshot.ai.byModel.map((model, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{model.model}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatNumber(model.requestCount)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{model.avgTTFT.toFixed(0)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{model.avgTotalLatency.toFixed(0)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-right">{model.errorCount}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {model.model}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {formatNumber(model.requestCount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {model.avgTTFT.toFixed(0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {model.avgTotalLatency.toFixed(0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-right">
+                        {model.errorCount}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <StatusBadge status={model.status} />
                       </td>
@@ -542,7 +681,7 @@ export default function PerformanceDashboardPage() {
 
           {/* Operation Performance */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Operations</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Operațiuni AI</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={snapshot.ai.byOperation}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -554,7 +693,10 @@ export default function PerformanceDashboardPage() {
                 <YAxis tickFormatter={(value) => `${value}ms`} fontSize={12} />
                 <Tooltip
                   labelFormatter={(value) => value.toString().replace(/_/g, ' ')}
-                  formatter={(value: number, name: string) => [`${value}ms`, name === 'avgLatency' ? 'Average' : 'p95']}
+                  formatter={(value: number, name: string) => [
+                    `${value}ms`,
+                    name === 'avgLatency' ? 'Average' : 'p95',
+                  ]}
                 />
                 <Legend />
                 <Bar dataKey="avgLatency" fill="#0088FE" name="Average" />
@@ -565,14 +707,20 @@ export default function PerformanceDashboardPage() {
 
           {/* Thresholds Reference */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Thresholds</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Praguri de Performanță</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {Object.entries(THRESHOLDS.ai).map(([model, values]) => (
                 <div key={model} className="border rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">{model.charAt(0).toUpperCase() + model.slice(1)}</h4>
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    {model.charAt(0).toUpperCase() + model.slice(1)}
+                  </h4>
                   <div className="space-y-1 text-sm">
-                    <p className="text-gray-500">TTFT Target: <span className="text-gray-900">{values.ttft}ms</span></p>
-                    <p className="text-gray-500">Total Latency: <span className="text-gray-900">{values.total}ms</span></p>
+                    <p className="text-gray-500">
+                      TTFT Target: <span className="text-gray-900">{values.ttft}ms</span>
+                    </p>
+                    <p className="text-gray-500">
+                      Total Latency: <span className="text-gray-900">{values.total}ms</span>
+                    </p>
                   </div>
                 </div>
               ))}
@@ -586,31 +734,48 @@ export default function PerformanceDashboardPage() {
         <div className="space-y-6">
           {/* Database KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KPICard
-              title="Total Queries"
-              value={formatNumber(snapshot.database.queryCount)}
-            />
+            <KPICard title="Total Queries" value={formatNumber(snapshot.database.queryCount)} />
             <KPICard
               title="Average Query Time"
               value={`${snapshot.database.avgQueryTime}ms`}
-              status={snapshot.database.avgQueryTime < 50 ? 'good' : snapshot.database.avgQueryTime < 100 ? 'warning' : 'critical'}
+              status={
+                snapshot.database.avgQueryTime < 50
+                  ? 'good'
+                  : snapshot.database.avgQueryTime < 100
+                    ? 'warning'
+                    : 'critical'
+              }
             />
             <KPICard
               title="p95 Query Time"
               value={`${snapshot.database.p95QueryTime}ms`}
-              status={snapshot.database.p95QueryTime < 100 ? 'good' : snapshot.database.p95QueryTime < 200 ? 'warning' : 'critical'}
+              status={
+                snapshot.database.p95QueryTime < 100
+                  ? 'good'
+                  : snapshot.database.p95QueryTime < 200
+                    ? 'warning'
+                    : 'critical'
+              }
             />
             <KPICard
               title="Slow Queries"
               value={snapshot.database.slowQueries.toString()}
               subtitle="> 100ms"
-              status={snapshot.database.slowQueries < 10 ? 'good' : snapshot.database.slowQueries < 50 ? 'warning' : 'critical'}
+              status={
+                snapshot.database.slowQueries < 10
+                  ? 'good'
+                  : snapshot.database.slowQueries < 50
+                    ? 'warning'
+                    : 'critical'
+              }
             />
           </div>
 
           {/* Query Time Trend */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Query Time Trend (24h)</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Tendință Timp Interogare (24h)
+            </h3>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={historicalData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -624,7 +789,12 @@ export default function PerformanceDashboardPage() {
                   labelFormatter={(value) => new Date(value).toLocaleTimeString()}
                   formatter={(value: number) => [`${value.toFixed(0)}ms`, 'Query Time']}
                 />
-                <ReferenceLine y={100} stroke="#ff7300" strokeDasharray="3 3" label="p95 Threshold" />
+                <ReferenceLine
+                  y={100}
+                  stroke="#ff7300"
+                  strokeDasharray="3 3"
+                  label="p95 Threshold"
+                />
                 <ReferenceLine y={50} stroke="#00C49F" strokeDasharray="3 3" label="Target" />
                 <Area
                   type="monotone"
@@ -639,21 +809,25 @@ export default function PerformanceDashboardPage() {
 
           {/* Connection Pool */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Connection Pool</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Pool de Conexiuni</h3>
             <div className="flex items-center gap-8">
               <div className="flex-1">
-                <p className="text-sm text-gray-500 mb-2">Pool Usage</p>
+                <p className="text-sm text-gray-500 mb-2">Utilizare Pool</p>
                 <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className={`h-full ${snapshot.database.connectionPoolUsage < 0.7 ? 'bg-green-500' : snapshot.database.connectionPoolUsage < 0.9 ? 'bg-yellow-500' : 'bg-red-500'}`}
                     style={{ width: `${snapshot.database.connectionPoolUsage * 100}%` }}
                   />
                 </div>
-                <p className="mt-2 text-sm text-gray-600">{formatPercent(snapshot.database.connectionPoolUsage)} of pool capacity</p>
+                <p className="mt-2 text-sm text-gray-600">
+                  {formatPercent(snapshot.database.connectionPoolUsage)} din capacitatea pool-ului
+                </p>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-gray-900">{snapshot.system.activeConnections}</p>
-                <p className="text-sm text-gray-500">Active Connections</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {snapshot.system.activeConnections}
+                </p>
+                <p className="text-sm text-gray-500">Conexiuni Active</p>
               </div>
             </div>
           </div>
@@ -667,7 +841,7 @@ export default function PerformanceDashboardPage() {
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">
-                Active Alerts ({alerts.filter((a) => !a.acknowledged).length})
+                Alerte Active ({alerts.filter((a) => !a.acknowledged).length})
               </h3>
               <button
                 onClick={() => {
@@ -676,43 +850,46 @@ export default function PerformanceDashboardPage() {
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Acknowledge All
+                Confirmă Toate
               </button>
             </div>
             <div className="divide-y divide-gray-200">
               {alerts.filter((a) => !a.acknowledged).length === 0 ? (
-                <div className="px-6 py-8 text-center text-gray-500">
-                  No active alerts
-                </div>
+                <div className="px-6 py-8 text-center text-gray-500">Nu există alerte active</div>
               ) : (
-                alerts.filter((a) => !a.acknowledged).map((alert) => (
-                  <div key={alert.id} className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <SeverityBadge severity={alert.severity} />
-                          <span className="text-sm font-medium text-gray-900">{alert.type.replace(/_/g, ' ')}</span>
+                alerts
+                  .filter((a) => !a.acknowledged)
+                  .map((alert) => (
+                    <div key={alert.id} className="px-6 py-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <SeverityBadge severity={alert.severity} />
+                            <span className="text-sm font-medium text-gray-900">
+                              {alert.type.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">{alert.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {alert.metric}: {alert.currentValue.toFixed(2)} (threshold:{' '}
+                            {alert.threshold})
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(alert.timestamp).toLocaleString()}
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-600">{alert.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {alert.metric}: {alert.currentValue.toFixed(2)} (threshold: {alert.threshold})
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {new Date(alert.timestamp).toLocaleString()}
-                        </p>
+                        <button
+                          onClick={() => {
+                            // In production: call mutation to acknowledge
+                            alert(`Acknowledge alert ${alert.id}`);
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          Confirmă
+                        </button>
                       </div>
-                      <button
-                        onClick={() => {
-                          // In production: call mutation to acknowledge
-                          alert(`Acknowledge alert ${alert.id}`);
-                        }}
-                        className="text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        Acknowledge
-                      </button>
                     </div>
-                  </div>
-                ))
+                  ))
               )}
             </div>
           </div>
@@ -720,26 +897,30 @@ export default function PerformanceDashboardPage() {
           {/* Alert History */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Alert History</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Istoric Alerte</h3>
             </div>
             <div className="divide-y divide-gray-200">
-              {alerts.filter((a) => a.acknowledged).map((alert) => (
-                <div key={alert.id} className="px-6 py-4 opacity-60">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <SeverityBadge severity={alert.severity} />
-                        <span className="text-sm font-medium text-gray-900">{alert.type.replace(/_/g, ' ')}</span>
-                        <span className="text-xs text-green-600">Acknowledged</span>
+              {alerts
+                .filter((a) => a.acknowledged)
+                .map((alert) => (
+                  <div key={alert.id} className="px-6 py-4 opacity-60">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <SeverityBadge severity={alert.severity} />
+                          <span className="text-sm font-medium text-gray-900">
+                            {alert.type.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-xs text-green-600">Confirmat</span>
+                        </div>
+                        <p className="text-sm text-gray-600">{alert.message}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(alert.timestamp).toLocaleString()}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-600">{alert.message}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(alert.timestamp).toLocaleString()}
-                      </p>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>

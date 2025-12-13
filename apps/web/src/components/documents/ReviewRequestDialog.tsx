@@ -98,20 +98,23 @@ export function ReviewRequestDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-5 w-5" />
-            Request Review
+            Solicită Revizuire
           </DialogTitle>
           <DialogDescription>
-            Submit &quot;{documentName}&quot; for review and approval.
+            Trimiteți &quot;{documentName}&quot; pentru revizuire și aprobare.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Priority Selection */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Priority</label>
-            <Select value={priority} onValueChange={(val: string) => setPriority(val as ReviewRequestData['priority'])}>
+            <label className="text-sm font-medium">Prioritate</label>
+            <Select
+              value={priority}
+              onValueChange={(val: string) => setPriority(val as ReviewRequestData['priority'])}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
+                <SelectValue placeholder="Selectează prioritatea" />
               </SelectTrigger>
               <SelectContent>
                 {priorityOptions.map((option) => (
@@ -121,9 +124,7 @@ export function ReviewRequestDialog({
                         <AlertTriangle className="h-4 w-4 text-destructive" />
                       )}
                       <span>{option.label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        - {option.description}
-                      </span>
+                      <span className="text-xs text-muted-foreground">- {option.description}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -133,15 +134,13 @@ export function ReviewRequestDialog({
 
           {/* Reviewer Selection (Optional) */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Assign to (Optional)
-            </label>
+            <label className="text-sm font-medium">Atribuie către (Opțional)</label>
             <Select value={assignedTo} onValueChange={setAssignedTo}>
               <SelectTrigger>
-                <SelectValue placeholder="All Partners will be notified" />
+                <SelectValue placeholder="Toți Partenerii vor fi notificați" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Partners</SelectItem>
+                <SelectItem value="">Toți Partenerii</SelectItem>
                 {reviewers.map((reviewer) => (
                   <SelectItem key={reviewer.id} value={reviewer.id}>
                     {reviewer.name}
@@ -171,9 +170,7 @@ export function ReviewRequestDialog({
 
           {/* Message (Optional) */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Message (Optional)
-            </label>
+            <label className="text-sm font-medium">Message (Optional)</label>
             <Textarea
               value={message}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
@@ -184,17 +181,10 @@ export function ReviewRequestDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? (
               <>Submitting...</>
             ) : (

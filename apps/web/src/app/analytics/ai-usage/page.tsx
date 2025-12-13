@@ -248,10 +248,10 @@ export default function AIUsagePage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Usage Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Tablou Utilizare AI</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Monitor AI token usage, costs, and provider health
-            {isLoading && <span className="ml-2 text-blue-500">(Loading...)</span>}
+            Monitorizați utilizarea token-urilor AI, costuri și starea providerilor
+            {isLoading && <span className="ml-2 text-blue-500">(Se încarcă...)</span>}
           </p>
         </div>
 
@@ -268,7 +268,7 @@ export default function AIUsagePage() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
+              {range === '7d' ? '7 Zile' : range === '30d' ? '30 Zile' : '90 Zile'}
             </button>
           ))}
         </div>
@@ -277,11 +277,11 @@ export default function AIUsagePage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500">Total Tokens</p>
+          <p className="text-sm text-gray-500">Total Tokeni</p>
           <p className="text-2xl font-bold text-gray-900">{formatNumber(usageStats.totalTokens)}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500">Total Cost</p>
+          <p className="text-sm text-gray-500">Cost Total</p>
           <p className="text-2xl font-bold text-gray-900">
             {formatCurrency(usageStats.totalCostCents)}
           </p>

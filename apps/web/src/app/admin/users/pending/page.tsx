@@ -179,7 +179,7 @@ export default function UserManagementPage() {
   if (authLoading || !authorized) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">Se încarcă...</div>
       </div>
     );
   }
@@ -187,8 +187,8 @@ export default function UserManagementPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
-        <p className="text-gray-600">Manage users, roles, and access to the platform</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestionare Utilizatori</h1>
+        <p className="text-gray-600">Gestionați utilizatorii, rolurile și accesul la platformă</p>
       </div>
 
       {/* Filter tabs */}
@@ -201,7 +201,7 @@ export default function UserManagementPage() {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          All Users ({users.length})
+          Toți Utilizatorii ({users.length})
         </button>
         <button
           onClick={() => setFilter('pending')}
@@ -211,7 +211,7 @@ export default function UserManagementPage() {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Pending ({pendingCount})
+          În Așteptare ({pendingCount})
         </button>
         <button
           onClick={() => setFilter('active')}
@@ -221,7 +221,7 @@ export default function UserManagementPage() {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Active ({activeCount})
+          Activi ({activeCount})
         </button>
       </div>
 
@@ -233,16 +233,16 @@ export default function UserManagementPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="text-gray-600">Loading users...</div>
+          <div className="text-gray-600">Se încarcă utilizatorii...</div>
         </div>
       ) : filteredUsers.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
           <p className="text-gray-500">
             {filter === 'pending'
-              ? 'No pending users at this time.'
+              ? 'Nu există utilizatori în așteptare momentan.'
               : filter === 'active'
-                ? 'No active users.'
-                : 'No users found.'}
+                ? 'Nu există utilizatori activi.'
+                : 'Nu s-au găsit utilizatori.'}
           </p>
         </div>
       ) : (
@@ -251,22 +251,22 @@ export default function UserManagementPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
+                  Nume
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Stare
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
+                  Rol
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Active
+                  Ultima Activitate
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  Acțiuni
                 </th>
               </tr>
             </thead>
@@ -282,11 +282,11 @@ export default function UserManagementPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     {user.isPending ? (
                       <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                        Pending
+                        În Așteptare
                       </span>
                     ) : (
                       <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                        Active
+                        Activ
                       </span>
                     )}
                   </td>
@@ -315,17 +315,17 @@ export default function UserManagementPage() {
                         onClick={() => openActivationModal(user)}
                         className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
                       >
-                        Activate
+                        Activează
                       </button>
                     ) : user.id !== currentUser?.id ? (
                       <button
                         onClick={() => openDeactivationModal(user)}
                         className="text-red-600 hover:text-red-800 font-medium"
                       >
-                        Deactivate
+                        Dezactivează
                       </button>
                     ) : (
-                      <span className="text-gray-400 text-xs">You</span>
+                      <span className="text-gray-400 text-xs">Tu</span>
                     )}
                   </td>
                 </tr>
@@ -341,12 +341,12 @@ export default function UserManagementPage() {
           <Dialog.Overlay className="fixed inset-0 bg-black/50" />
           <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <Dialog.Title className="text-xl font-semibold text-gray-900 mb-4">
-              Activate User
+              Activează Utilizator
             </Dialog.Title>
 
             {userToActivate && (
               <div className="mb-6">
-                <p className="text-sm text-gray-600 mb-1">Activating:</p>
+                <p className="text-sm text-gray-600 mb-1">Se activează:</p>
                 <p className="font-medium text-gray-900">
                   {userToActivate.firstName} {userToActivate.lastName}
                 </p>
@@ -356,7 +356,7 @@ export default function UserManagementPage() {
 
             <div className="mb-6">
               <label htmlFor="role-select" className="block text-sm font-medium text-gray-700 mb-2">
-                Assign Role
+                Atribuie Rol
               </label>
               <select
                 id="role-select"
@@ -377,14 +377,14 @@ export default function UserManagementPage() {
                 disabled={isActivating}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
               >
-                Cancel
+                Anulează
               </button>
               <button
                 onClick={handleActivate}
                 disabled={isActivating}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                {isActivating ? 'Activating...' : 'Activate User'}
+                {isActivating ? 'Se activează...' : 'Activează Utilizator'}
               </button>
             </div>
           </Dialog.Content>
@@ -400,21 +400,23 @@ export default function UserManagementPage() {
           <Dialog.Overlay className="fixed inset-0 bg-black/50" />
           <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <Dialog.Title className="text-xl font-semibold text-gray-900 mb-4">
-              Confirm Deactivation
+              Confirmă Dezactivarea
             </Dialog.Title>
 
             {userToDeactivate && (
               <div className="mb-6">
-                <p className="text-gray-700 mb-4">Are you sure you want to deactivate this user?</p>
+                <p className="text-gray-700 mb-4">
+                  Sunteți sigur că doriți să dezactivați acest utilizator?
+                </p>
                 <div className="bg-gray-50 p-4 rounded">
                   <p className="font-medium text-gray-900">
                     {userToDeactivate.firstName} {userToDeactivate.lastName}
                   </p>
                   <p className="text-sm text-gray-600">{userToDeactivate.email}</p>
-                  <p className="text-sm text-gray-600">Role: {userToDeactivate.role}</p>
+                  <p className="text-sm text-gray-600">Rol: {userToDeactivate.role}</p>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
-                  This user will lose access to the platform.
+                  Acest utilizator va pierde accesul la platformă.
                 </p>
               </div>
             )}
@@ -425,14 +427,14 @@ export default function UserManagementPage() {
                 disabled={isDeactivating}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
               >
-                Cancel
+                Anulează
               </button>
               <button
                 onClick={handleDeactivate}
                 disabled={isDeactivating}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
               >
-                {isDeactivating ? 'Deactivating...' : 'Deactivate User'}
+                {isDeactivating ? 'Se dezactivează...' : 'Dezactivează Utilizator'}
               </button>
             </div>
           </Dialog.Content>

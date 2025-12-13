@@ -26,7 +26,7 @@ export default function HomePage() {
       return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
           <div className="text-center">
-            <p className="text-gray-600">Invalid role configuration</p>
+            <p className="text-gray-600">Configurație rol invalidă</p>
           </div>
         </div>
       );

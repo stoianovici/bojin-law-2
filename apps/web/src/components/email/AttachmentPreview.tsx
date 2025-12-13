@@ -128,11 +128,11 @@ export function AttachmentPreview({
             >
               {isLoading ? (
                 <>
-                  <Spinner size="xs" /> Loading...
+                  <Spinner size="xs" /> Se încarcă...
                 </>
               ) : (
                 <>
-                  <EyeIcon className="h-3 w-3" /> Preview
+                  <EyeIcon className="h-3 w-3" /> Previzualizare
                 </>
               )}
             </button>
@@ -153,7 +153,7 @@ function RelevanceScore({ score }: { score: number }) {
 
   return (
     <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${color}`}>
-      {score}% match
+      {score}% potrivire
     </span>
   );
 }
@@ -164,7 +164,9 @@ function FileTypeIcon({ type }: { type: string }) {
   switch (type) {
     case 'pdf':
       return (
-        <div className={`${baseClasses} bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400`}>
+        <div
+          className={`${baseClasses} bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400`}
+        >
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 15.5h1a.5.5 0 01.5.5v2a.5.5 0 01-.5.5h-1a.5.5 0 01-.5-.5v-2a.5.5 0 01.5-.5zm6 0h1a.5.5 0 01.5.5v2a.5.5 0 01-.5.5h-1a.5.5 0 01-.5-.5v-2a.5.5 0 01.5-.5zm-3 0h1a.5.5 0 01.5.5v2a.5.5 0 01-.5.5h-1a.5.5 0 01-.5-.5v-2a.5.5 0 01.5-.5z" />
           </svg>
@@ -172,7 +174,9 @@ function FileTypeIcon({ type }: { type: string }) {
       );
     case 'doc':
       return (
-        <div className={`${baseClasses} bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400`}>
+        <div
+          className={`${baseClasses} bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400`}
+        >
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8 13h8v1H8v-1zm0 3h8v1H8v-1zm0-6h4v1H8v-1z" />
           </svg>
@@ -180,7 +184,9 @@ function FileTypeIcon({ type }: { type: string }) {
       );
     case 'spreadsheet':
       return (
-        <div className={`${baseClasses} bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400`}>
+        <div
+          className={`${baseClasses} bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400`}
+        >
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8 13h2v2H8v-2zm0 3h2v2H8v-2zm3-3h2v2h-2v-2zm0 3h2v2h-2v-2zm3-3h2v2h-2v-2zm0 3h2v2h-2v-2z" />
           </svg>
@@ -188,7 +194,9 @@ function FileTypeIcon({ type }: { type: string }) {
       );
     case 'image':
       return (
-        <div className={`${baseClasses} bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400`}>
+        <div
+          className={`${baseClasses} bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400`}
+        >
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-1 14H6l4-4 2 2 4-5 4 5V5H6v10l4-4 2 2 4-5z" />
           </svg>
@@ -196,7 +204,9 @@ function FileTypeIcon({ type }: { type: string }) {
       );
     default:
       return (
-        <div className={`${baseClasses} bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400`}>
+        <div
+          className={`${baseClasses} bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400`}
+        >
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4z" />
           </svg>

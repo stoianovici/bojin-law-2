@@ -172,8 +172,8 @@ function AuthCallbackContent() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="text-center">
         <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-        <p className="mt-4 text-lg font-medium text-gray-900">Authenticating...</p>
-        <p className="mt-2 text-sm text-gray-600">Please wait while we sign you in</p>
+        <p className="mt-4 text-lg font-medium text-gray-900">Se autentifică...</p>
+        <p className="mt-2 text-sm text-gray-600">Vă rugăm să așteptați în timp ce vă conectăm</p>
       </div>
     </div>
   );
@@ -186,7 +186,7 @@ export default function AuthCallbackPage() {
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
           <div className="text-center">
             <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-            <p className="mt-4 text-lg font-medium text-gray-900">Loading...</p>
+            <p className="mt-4 text-lg font-medium text-gray-900">Se încarcă...</p>
           </div>
         </div>
       }

@@ -82,7 +82,7 @@ function LoginPageContent() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Se încarcă...</p>
         </div>
       </div>
     );
@@ -95,7 +95,9 @@ function LoginPageContent() {
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Legal Platform
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">Sign in to access your workspace</p>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Conectați-vă pentru a accesa spațiul de lucru
+          </p>
         </div>
 
         {error && (
@@ -126,7 +128,7 @@ function LoginPageContent() {
                     onClick={clearError}
                     className="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-red-50"
                   >
-                    <span className="sr-only">Dismiss</span>
+                    <span className="sr-only">Închide</span>
                     <svg
                       className="h-5 w-5"
                       xmlns="http://www.w3.org/2000/svg"
@@ -164,18 +166,18 @@ function LoginPageContent() {
                 />
               </svg>
             </span>
-            Sign in with Microsoft 365
+            Conectare cu Microsoft 365
           </button>
 
           <p className="mt-2 text-center text-xs text-gray-500">
-            This application uses Microsoft 365 for secure authentication.
+            Această aplicație folosește Microsoft 365 pentru autentificare securizată.
             <br />
-            Please use your organization email to sign in.
+            Vă rugăm să folosiți email-ul organizației pentru a vă conecta.
           </p>
         </div>
 
         <div className="mt-6 text-center text-xs text-gray-400">
-          <p>Powered by Azure Active Directory</p>
+          <p>Alimentat de Azure Active Directory</p>
         </div>
       </div>
     </div>
@@ -189,7 +191,7 @@ export default function LoginPage() {
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
+            <p className="mt-4 text-gray-600">Se încarcă...</p>
           </div>
         </div>
       }

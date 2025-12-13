@@ -119,7 +119,7 @@ export default function ActiveUsersPage() {
   if (authLoading || !authorized) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">Se încarcă...</div>
       </div>
     );
   }
@@ -127,11 +127,9 @@ export default function ActiveUsersPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Active Users
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Utilizatori Activi</h1>
         <p className="text-gray-600">
-          Manage roles and access for active users in your firm
+          Gestionați rolurile și accesul pentru utilizatorii activi din firma dvs.
         </p>
       </div>
 
@@ -143,11 +141,11 @@ export default function ActiveUsersPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="text-gray-600">Loading active users...</div>
+          <div className="text-gray-600">Se încarcă utilizatorii activi...</div>
         </div>
       ) : users.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
-          <p className="text-gray-500">No active users found.</p>
+          <p className="text-gray-500">Nu s-au găsit utilizatori activi.</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -155,22 +153,22 @@ export default function ActiveUsersPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
+                  Nume
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
+                  Rol
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Firm
+                  Firmă
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Active
+                  Ultima Activitate
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  Acțiuni
                 </th>
               </tr>
             </thead>
@@ -186,9 +184,7 @@ export default function ActiveUsersPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <select
                       value={user.role}
-                      onChange={(e) =>
-                        handleRoleChange(user.id, e.target.value as UserRole)
-                      }
+                      onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                       className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="Paralegal">Paralegal</option>
@@ -208,7 +204,7 @@ export default function ActiveUsersPage() {
                       onClick={() => openDeactivationModal(user)}
                       className="text-red-600 hover:text-red-800 font-medium"
                     >
-                      Deactivate
+                      Dezactivează
                     </button>
                   </td>
                 </tr>
@@ -227,28 +223,24 @@ export default function ActiveUsersPage() {
           <Dialog.Overlay className="fixed inset-0 bg-black/50" />
           <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <Dialog.Title className="text-xl font-semibold text-gray-900 mb-4">
-              Confirm Deactivation
+              Confirmă Dezactivarea
             </Dialog.Title>
 
             {userToDeactivate && (
               <div className="mb-6">
                 <p className="text-gray-700 mb-4">
-                  Are you sure you want to deactivate this user?
+                  Sunteți sigur că doriți să dezactivați acest utilizator?
                 </p>
                 <div className="bg-gray-50 p-4 rounded">
                   <p className="font-medium text-gray-900">
                     {userToDeactivate.firstName} {userToDeactivate.lastName}
                   </p>
-                  <p className="text-sm text-gray-600">
-                    {userToDeactivate.email}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Role: {userToDeactivate.role}
-                  </p>
+                  <p className="text-sm text-gray-600">{userToDeactivate.email}</p>
+                  <p className="text-sm text-gray-600">Rol: {userToDeactivate.role}</p>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
-                  This user will lose access to the platform and can only be
-                  reactivated by a Partner.
+                  Acest utilizator va pierde accesul la platformă și poate fi reactivat doar de
+                  către un Partener.
                 </p>
               </div>
             )}
@@ -259,14 +251,14 @@ export default function ActiveUsersPage() {
                 disabled={isDeactivating}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
               >
-                Cancel
+                Anulează
               </button>
               <button
                 onClick={handleDeactivate}
                 disabled={isDeactivating}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
               >
-                {isDeactivating ? 'Deactivating...' : 'Deactivate User'}
+                {isDeactivating ? 'Se dezactivează...' : 'Dezactivează Utilizator'}
               </button>
             </div>
           </Dialog.Content>

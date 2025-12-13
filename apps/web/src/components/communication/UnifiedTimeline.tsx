@@ -39,15 +39,10 @@ export function UnifiedTimeline({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const {
-    entries,
-    totalCount,
-    hasMore,
-    loading,
-    error,
-    loadMore,
-    refetch,
-  } = useCaseTimeline(caseId, filter);
+  const { entries, totalCount, hasMore, loading, error, loadMore, refetch } = useCaseTimeline(
+    caseId,
+    filter
+  );
 
   const { isChannelDisabled } = useChannelMetadata();
 
@@ -79,15 +74,12 @@ export function UnifiedTimeline({
     };
   }, [loading, hasMore, loadMore]);
 
-  const handleFilterChange = useCallback(
-    (newFilter: Partial<TimelineFilter>) => {
-      setFilter((prev) => ({
-        ...prev,
-        ...newFilter,
-      }));
-    },
-    []
-  );
+  const handleFilterChange = useCallback((newFilter: Partial<TimelineFilter>) => {
+    setFilter((prev) => ({
+      ...prev,
+      ...newFilter,
+    }));
+  }, []);
 
   const handleClearFilters = useCallback(() => {
     setFilter({});
@@ -105,9 +97,7 @@ export function UnifiedTimeline({
   if (error) {
     return (
       <div className={`rounded-lg border border-red-200 bg-red-50 p-4 ${className}`}>
-        <p className="text-sm text-red-600">
-          Failed to load timeline: {error.message}
-        </p>
+        <p className="text-sm text-red-600">Failed to load timeline: {error.message}</p>
         <button
           onClick={() => refetch()}
           className="mt-2 text-sm text-red-700 underline hover:no-underline"
@@ -123,9 +113,7 @@ export function UnifiedTimeline({
       {/* Header */}
       <div className="flex items-center justify-between border-b pb-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            Communication Timeline
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">Communication Timeline</h2>
           <p className="text-sm text-gray-500">
             {totalCount} {totalCount === 1 ? 'entry' : 'entries'}
             {activeFilterCount > 0 && ` (filtered)`}
@@ -146,11 +134,7 @@ export function UnifiedTimeline({
 
       {/* Note Composer */}
       {showComposer && (
-        <InternalNoteComposer
-          caseId={caseId}
-          onNoteCreated={handleNoteCreated}
-          className="mt-4"
-        />
+        <InternalNoteComposer caseId={caseId} onNoteCreated={handleNoteCreated} className="mt-4" />
       )}
 
       {/* Timeline Feed */}
@@ -196,15 +180,13 @@ export function UnifiedTimeline({
         {loading && (
           <div className="flex items-center justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-            <span className="ml-2 text-sm text-gray-500">Loading...</span>
+            <span className="ml-2 text-sm text-gray-500">Se încarcă...</span>
           </div>
         )}
 
         {/* End of list */}
         {!hasMore && entries.length > 0 && !loading && (
-          <p className="py-4 text-center text-sm text-gray-400">
-            End of timeline
-          </p>
+          <p className="py-4 text-center text-sm text-gray-400">Sfârșitul cronologiei</p>
         )}
       </div>
     </div>
@@ -218,10 +200,7 @@ export function UnifiedTimelineSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="animate-pulse rounded-lg border border-gray-200 p-4"
-        >
+        <div key={i} className="animate-pulse rounded-lg border border-gray-200 p-4">
           <div className="flex items-start gap-3">
             <div className="h-10 w-10 rounded-full bg-gray-200" />
             <div className="flex-1">

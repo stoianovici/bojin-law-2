@@ -21,9 +21,9 @@ export default function DiscoveryDashboardPage() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Discovery Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Tablou Descoperire</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Monitor and manage document type discovery and template creation
+              Monitorizați și gestionați descoperirea tipurilor de documente și crearea șabloanelor
             </p>
           </div>
         </div>
@@ -44,7 +44,7 @@ export default function DiscoveryDashboardPage() {
                 }
               `}
             >
-              Discovery Status
+              Status Descoperire
             </button>
             <button
               onClick={() => setActiveTab('mapping')}
@@ -57,7 +57,7 @@ export default function DiscoveryDashboardPage() {
                 }
               `}
             >
-              Manual Mapping
+              Mapare Manuală
             </button>
             <button
               onClick={() => setActiveTab('roi')}
@@ -70,7 +70,7 @@ export default function DiscoveryDashboardPage() {
                 }
               `}
             >
-              ROI Analysis
+              Analiză ROI
             </button>
           </nav>
         </div>

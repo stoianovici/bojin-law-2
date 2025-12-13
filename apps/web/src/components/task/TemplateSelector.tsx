@@ -51,9 +51,7 @@ export function TemplateSelector({
   onApply,
 }: TemplateSelectorProps) {
   const [selectedTemplate, setSelectedTemplate] = React.useState<TaskTemplate | null>(null);
-  const [startDate, setStartDate] = React.useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [startDate, setStartDate] = React.useState<string>(new Date().toISOString().split('T')[0]);
   const [assignees, setAssignees] = React.useState<Record<string, string>>({});
   const [isApplying, setIsApplying] = React.useState(false);
   const [step, setStep] = React.useState<'select' | 'configure'>('select');
@@ -79,7 +77,7 @@ export function TemplateSelector({
 
     // Pre-populate assignees with empty values
     const defaultAssignees: Record<string, string> = {};
-    template.steps.forEach((step: typeof selectedTemplate.steps[number]) => {
+    template.steps.forEach((step: (typeof selectedTemplate.steps)[number]) => {
       defaultAssignees[step.id] = '';
     });
     setAssignees(defaultAssignees);
@@ -94,7 +92,11 @@ export function TemplateSelector({
   };
 
   const calculateTotalHours = (template: TaskTemplate): number => {
-    return template.steps.reduce((sum: number, step: typeof selectedTemplate.steps[number]) => sum + (step.estimatedHours || 0), 0);
+    return template.steps.reduce(
+      (sum: number, step: (typeof selectedTemplate.steps)[number]) =>
+        sum + (step.estimatedHours || 0),
+      0
+    );
   };
 
   const handleApply = async () => {
@@ -129,7 +131,7 @@ export function TemplateSelector({
 
       <ScrollArea className="max-h-[500px] pr-4">
         <div className="space-y-3 py-4">
-          {filteredTemplates.map((template: typeof templates[number]) => {
+          {filteredTemplates.map((template: (typeof templates)[number]) => {
             const duration = calculateTotalDuration(template);
             const totalHours = calculateTotalHours(template);
 
@@ -165,12 +167,9 @@ export function TemplateSelector({
                       {totalHours}h total
                     </div>
                     <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      ~{duration} days
+                      <Calendar className="h-4 w-4" />~{duration} days
                     </div>
-                    {template.caseType && (
-                      <Badge variant="secondary">{template.caseType}</Badge>
-                    )}
+                    {template.caseType && <Badge variant="secondary">{template.caseType}</Badge>}
                   </div>
                 </CardContent>
               </Card>
@@ -197,15 +196,15 @@ export function TemplateSelector({
   const renderConfiguration = () => {
     if (!selectedTemplate) return null;
 
-    const allStepsAssigned = selectedTemplate.steps.every((step: typeof selectedTemplate.steps[number]) => assignees[step.id]);
+    const allStepsAssigned = selectedTemplate.steps.every(
+      (step: (typeof selectedTemplate.steps)[number]) => assignees[step.id]
+    );
 
     return (
       <>
         <DialogHeader>
           <DialogTitle>Configure Template: {selectedTemplate.name}</DialogTitle>
-          <DialogDescription>
-            Set start date and assign team members to each step
-          </DialogDescription>
+          <DialogDescription>Set start date and assign team members to each step</DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-6">
@@ -234,66 +233,64 @@ export function TemplateSelector({
             </label>
             <ScrollArea className="max-h-[300px] border rounded-md p-4">
               <div className="space-y-4">
-                {selectedTemplate.steps.map((step: typeof selectedTemplate.steps[number], idx: number) => (
-                  <div key={step.id} className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-                        {idx + 1}
+                {selectedTemplate.steps.map(
+                  (step: (typeof selectedTemplate.steps)[number], idx: number) => (
+                    <div key={step.id} className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{step.title}</div>
+                          <div className="text-xs text-gray-500">{step.taskType}</div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{step.title}</div>
-                        <div className="text-xs text-gray-500">{step.taskType}</div>
-                      </div>
+                      <Select
+                        value={assignees[step.id] || ''}
+                        onValueChange={(userId: string) =>
+                          setAssignees((prev) => ({ ...prev, [step.id]: userId }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selectează responsabil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.name} ({user.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Select
-                      value={assignees[step.id] || ''}
-                      onValueChange={(userId: string) =>
-                        setAssignees((prev) => ({ ...prev, [step.id]: userId }))
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select assignee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name} ({user.email})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </ScrollArea>
           </div>
 
           {/* Summary */}
           <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-            <h4 className="font-medium text-sm mb-2">Summary</h4>
+            <h4 className="font-medium text-sm mb-2">Sumar</h4>
             <div className="text-sm text-gray-700 space-y-1">
               <div className="flex justify-between">
-                <span>Total steps:</span>
+                <span>Total pași:</span>
                 <span className="font-medium">{selectedTemplate.steps.length}</span>
               </div>
               <div className="flex justify-between">
-                <span>Estimated duration:</span>
+                <span>Durată estimată:</span>
                 <span className="font-medium">
-                  ~{calculateTotalDuration(selectedTemplate)} days
+                  ~{calculateTotalDuration(selectedTemplate)} zile
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Total hours:</span>
-                <span className="font-medium">
-                  {calculateTotalHours(selectedTemplate)}h
-                </span>
+                <span>Total ore:</span>
+                <span className="font-medium">{calculateTotalHours(selectedTemplate)}h</span>
               </div>
               <div className="flex justify-between">
                 <span>Assigned:</span>
                 <span
-                  className={
-                    allStepsAssigned ? 'text-green-600 font-medium' : 'text-orange-600'
-                  }
+                  className={allStepsAssigned ? 'text-green-600 font-medium' : 'text-orange-600'}
                 >
                   {Object.values(assignees).filter(Boolean).length} /{' '}
                   {selectedTemplate.steps.length}
