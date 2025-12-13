@@ -5,6 +5,17 @@
 
 set -euo pipefail
 
+# Get script directory and project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Source .env.render if it exists (contains deploy hooks)
+if [[ -f "$PROJECT_ROOT/.env.render" ]]; then
+  set -a
+  source "$PROJECT_ROOT/.env.render"
+  set +a
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -15,12 +26,18 @@ NC='\033[0m' # No Color
 # Function to display usage
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [staging|production] [OPTIONS]
+Usage: $(basename "$0") [ENVIRONMENT|SERVICE] [OPTIONS]
 
-Deploy the application to Render environment.
+Deploy the application to Render.
 
 Arguments:
-  staging|production    Target environment (required)
+  production           Deploy web service to production (default)
+  staging              Deploy web service to staging
+  web                  Deploy web service only
+  gateway              Deploy gateway service only
+  ai-service           Deploy AI service only
+  legacy-import        Deploy legacy import service only
+  all                  Deploy ALL services (web, gateway, ai-service, legacy-import)
 
 Options:
   -h, --help           Show this help message
@@ -28,14 +45,18 @@ Options:
   -t, --timeout SECS   Timeout for waiting (default: 600)
 
 Examples:
-  $(basename "$0") staging
-  $(basename "$0") production --wait
-  $(basename "$0") staging --wait --timeout 900
+  $(basename "$0")                    # Deploy web (production)
+  $(basename "$0") production         # Deploy web (production)
+  $(basename "$0") gateway            # Deploy gateway only
+  $(basename "$0") all                # Deploy all services
+  $(basename "$0") all --wait         # Deploy all and wait
 
-Environment Variables:
-  RENDER_DEPLOY_HOOK_STAGING       Render deploy hook URL for staging
-  RENDER_DEPLOY_HOOK_PRODUCTION    Render deploy hook URL for production
-  RENDER_API_KEY                   Render API key for checking status
+Environment Variables (auto-loaded from .env.render):
+  RENDER_DEPLOY_HOOK_WEB             Web service deploy hook
+  RENDER_DEPLOY_HOOK_GATEWAY         Gateway service deploy hook
+  RENDER_DEPLOY_HOOK_AI_SERVICE      AI service deploy hook
+  RENDER_DEPLOY_HOOK_LEGACY_IMPORT   Legacy import deploy hook
+  RENDER_API_KEY                     Render API key for checking status
 
 EOF
   exit 1
@@ -59,7 +80,7 @@ log_warning() {
 }
 
 # Parse arguments
-ENVIRONMENT=""
+TARGET="production"  # Default to production (web)
 WAIT=false
 TIMEOUT=600
 
@@ -76,8 +97,8 @@ while [[ $# -gt 0 ]]; do
       TIMEOUT="$2"
       shift 2
       ;;
-    staging|production)
-      ENVIRONMENT="$1"
+    staging|production|web|gateway|ai-service|legacy-import|all)
+      TARGET="$1"
       shift
       ;;
     *)
@@ -87,65 +108,113 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Validate environment
-if [[ -z "$ENVIRONMENT" ]]; then
-  log_error "Environment is required (staging or production)"
-  usage
-fi
+# Function to deploy a single service
+deploy_service() {
+  local service_name="$1"
+  local hook_url="$2"
 
-# Get deploy hook URL
-if [[ "$ENVIRONMENT" == "staging" ]]; then
-  DEPLOY_HOOK="${RENDER_DEPLOY_HOOK_STAGING:-}"
-  if [[ -z "$DEPLOY_HOOK" ]]; then
-    log_error "RENDER_DEPLOY_HOOK_STAGING environment variable is not set"
-    log_warning "Set it in GitHub secrets or export it locally"
-    exit 1
+  if [[ -z "$hook_url" ]]; then
+    log_error "Deploy hook for $service_name is not set"
+    log_warning "Check .env.render file in project root"
+    return 1
   fi
-elif [[ "$ENVIRONMENT" == "production" ]]; then
-  DEPLOY_HOOK="${RENDER_DEPLOY_HOOK_PRODUCTION:-}"
-  if [[ -z "$DEPLOY_HOOK" ]]; then
-    log_error "RENDER_DEPLOY_HOOK_PRODUCTION environment variable is not set"
-    log_warning "Set it in GitHub secrets or export it locally"
-    exit 1
+
+  log "Deploying $service_name..."
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$hook_url")
+
+  if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
+    log_success "$service_name deployment triggered (HTTP $HTTP_CODE)"
+    return 0
+  else
+    log_error "$service_name deployment failed (HTTP $HTTP_CODE)"
+    return 1
   fi
-else
-  log_error "Invalid environment: $ENVIRONMENT (must be 'staging' or 'production')"
-  exit 1
+}
+
+# Get hook URL for a service
+get_hook_url() {
+  local service="$1"
+  case "$service" in
+    web) echo "${RENDER_DEPLOY_HOOK_WEB:-${RENDER_DEPLOY_HOOK_PRODUCTION:-}}" ;;
+    gateway) echo "${RENDER_DEPLOY_HOOK_GATEWAY:-}" ;;
+    ai-service) echo "${RENDER_DEPLOY_HOOK_AI_SERVICE:-}" ;;
+    legacy-import) echo "${RENDER_DEPLOY_HOOK_LEGACY_IMPORT:-}" ;;
+    *) echo "" ;;
+  esac
+}
+
+# Build list of services to deploy based on target
+SERVICES_TO_DEPLOY=""
+case "$TARGET" in
+  production|web)
+    SERVICES_TO_DEPLOY="web"
+    ;;
+  staging)
+    SERVICES_TO_DEPLOY="web"
+    ;;
+  gateway)
+    SERVICES_TO_DEPLOY="gateway"
+    ;;
+  ai-service)
+    SERVICES_TO_DEPLOY="ai-service"
+    ;;
+  legacy-import)
+    SERVICES_TO_DEPLOY="legacy-import"
+    ;;
+  all)
+    SERVICES_TO_DEPLOY="web gateway ai-service legacy-import"
+    ;;
+  *)
+    log_error "Invalid target: $TARGET"
+    usage
+    ;;
+esac
+
+# Deploy all services
+log "Deploying to: $SERVICES_TO_DEPLOY"
+FAILED=0
+SUCCEEDED=0
+
+for service in $SERVICES_TO_DEPLOY; do
+  hook_url=$(get_hook_url "$service")
+  if deploy_service "$service" "$hook_url"; then
+    SUCCEEDED=$((SUCCEEDED + 1))
+  else
+    FAILED=$((FAILED + 1))
+  fi
+done
+
+# Summary
+log ""
+log "=== Deployment Summary ==="
+log_success "Triggered: $SUCCEEDED service(s)"
+if [[ $FAILED -gt 0 ]]; then
+  log_error "Failed: $FAILED service(s)"
 fi
+log "Dashboard: https://dashboard.render.com/"
 
-# Trigger deployment
-log "Triggering deployment to $ENVIRONMENT..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$DEPLOY_HOOK")
+# Wait for deployment if requested
+if [[ "$WAIT" == true && $SUCCEEDED -gt 0 ]]; then
+  log "Waiting for deployment to complete (timeout: ${TIMEOUT}s)..."
+  log_warning "Note: Checking deployment status requires RENDER_API_KEY"
 
-if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
-  log_success "Deployment triggered successfully (HTTP $HTTP_CODE)"
-  log "Deployment URL: https://dashboard.render.com/"
-
-  if [[ "$WAIT" == true ]]; then
-    log "Waiting for deployment to complete (timeout: ${TIMEOUT}s)..."
-    log_warning "Note: Checking deployment status requires RENDER_API_KEY"
-
-    if [[ -z "${RENDER_API_KEY:-}" ]]; then
-      log_error "RENDER_API_KEY not set, cannot check deployment status"
-      exit 1
-    fi
-
-    # Simple polling loop (production version would use Render API)
+  if [[ -z "${RENDER_API_KEY:-}" ]]; then
+    log_warning "RENDER_API_KEY not set, cannot check deployment status"
+    log "Please check Render dashboard for deployment progress"
+  else
+    # Simple polling loop
     ELAPSED=0
     while [[ $ELAPSED -lt $TIMEOUT ]]; do
       sleep 10
       ELAPSED=$((ELAPSED + 10))
-      log "Checking deployment status... (${ELAPSED}s / ${TIMEOUT}s)"
-
-      # TODO: Implement actual Render API status check
-      # For now, just wait for timeout or user can check dashboard
+      log "Waiting... (${ELAPSED}s / ${TIMEOUT}s)"
     done
-
     log_warning "Deployment monitoring timeout reached. Check Render dashboard for status."
   fi
-else
-  log_error "Deployment failed (HTTP $HTTP_CODE)"
-  log_error "Check deploy hook URL and try again"
+fi
+
+# Exit with error if any deployments failed
+if [[ $FAILED -gt 0 ]]; then
   exit 1
 fi
 
