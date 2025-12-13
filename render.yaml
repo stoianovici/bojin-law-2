@@ -1,18 +1,29 @@
 # Render.com Infrastructure Configuration
 # Legal Platform - Full Stack Deployment
 #
-# ============================================================================
-# WARNING: DO NOT RE-IMPORT THIS FILE AS A NEW BLUEPRINT!
-# ============================================================================
-# This file was used for INITIAL SETUP ONLY. Re-importing creates duplicates.
+# ############################################################################
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#                    DO NOT IMPORT THIS FILE AS A BLUEPRINT
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+# Services ALREADY EXIST on Render. Re-importing will create DUPLICATES that
+# waste money and cause confusion. This has happened before - don't do it again.
+#
+# EXISTING SERVICE IDs (DO NOT RECREATE):
+#   - legal-platform-web:        srv-d4dk9fodl3ps73d3d7ig
+#   - legal-platform-gateway:    srv-d4pkv8q4i8rc73fq3mvg
+#   - legal-platform-ai-service: srv-d4uor5be5dus73a0hs3g
+#   - bojin-legacy-import:       srv-d4k84gogjchc73a0lqo0
 #
 # HOW TO DEPLOY:
-#   1. Go to Render Dashboard → Select the service → Click "Manual Deploy"
-#   2. OR enable "Auto-Deploy" on each service to deploy on git push
-#   3. To change settings, edit directly in Render Dashboard, not here
+#   1. Run: pnpm deploy:production (triggers deploy via API)
+#   2. OR: Go to Render Dashboard → Select service → Manual Deploy
 #
-# This file is now DOCUMENTATION ONLY - changes here won't auto-apply.
-# ============================================================================
+# TO CHANGE SERVICE SETTINGS:
+#   Edit directly in Render Dashboard, not in this file.
+#   This file is DOCUMENTATION ONLY - changes here won't auto-apply.
+#
+# ############################################################################
 
 services:
   ##############################################################################

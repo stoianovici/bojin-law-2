@@ -84,19 +84,23 @@ curl -X POST \
 
 ## Service IDs
 
-Current active services:
+**IMPORTANT: DO NOT create new services - these already exist!**
 
-- **Web Frontend**: `srv-d4dk9fodl3ps73d3d7ig`
-  - URL: https://legal-platform-web.onrender.com
-  - Health Check: https://legal-platform-web.onrender.com/api/health
+Active services:
 
-Suspended services (backend - not yet implemented):
+| Service           | ID                         | URL                                            |
+| ----------------- | -------------------------- | ---------------------------------------------- |
+| Web Frontend      | `srv-d4dk9fodl3ps73d3d7ig` | https://legal-platform-web.onrender.com        |
+| Gateway (GraphQL) | `srv-d4pkv8q4i8rc73fq3mvg` | https://legal-platform-gateway.onrender.com    |
+| AI Service        | `srv-d4uor5be5dus73a0hs3g` | https://legal-platform-ai-service.onrender.com |
+| Legacy Import     | `srv-d4k84gogjchc73a0lqo0` | https://bojin-legacy-import.onrender.com       |
 
-- Document Service: `srv-d4e1rj9r0fns73be7bn0`
-- Integration Service: `srv-d4e1rj9r0fns73be7bk0`
-- AI Service: `srv-d4e1rj9r0fns73be7blg`
-- Notification Service: `srv-d4e1rj9r0fns73be7bkg`
-- Task Service: `srv-d4e1rj9r0fns73be7bjg`
+Health Check endpoints:
+
+- Web: `/api/health`
+- Gateway: `/health`
+- AI Service: `/api/ai/health`
+- Legacy Import: `/api/health`
 
 ## Deployment Statuses
 
