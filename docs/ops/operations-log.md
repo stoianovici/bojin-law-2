@@ -18,6 +18,7 @@
 | OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Verifying | 3        |
 | OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Resolved  | 3        |
 | OPS-011 | Refocus /communications on received emails only | Feature     | P1-High     | Resolved  | 5        |
+| OPS-012 | Legacy import can't advance past first 100 docs | Bug         | P1-High     | New       | 1        |
 
 <!-- Issues will be indexed here automatically -->
 
@@ -1539,6 +1540,89 @@ For the /communications page focused on processing received messages:
 
 - `services/ai-service/src/services/email-drafting.service.ts` - Reply generation
 - `services/ai-service/src/services/communication-intelligence.service.ts` - Extraction
+
+---
+
+### [OPS-012] Legacy import can't advance past first 100 docs
+
+| Field           | Value      |
+| --------------- | ---------- |
+| **Status**      | Fixing     |
+| **Type**        | Bug        |
+| **Priority**    | P1-High    |
+| **Created**     | 2025-12-13 |
+| **Sessions**    | 2          |
+| **Last Active** | 2025-12-13 |
+
+#### Description
+
+In the legacy-import application, users cannot advance past the first 100 documents during categorization. After finishing the first batch of 100 documents, there's no way to navigate to the next batch - the UI lacks pagination controls.
+
+#### Reproduction Steps
+
+1. Upload a PST file with more than 100 documents
+2. Complete extraction (documents are processed in batches of 500)
+3. Enter the categorization workspace
+4. Categorize documents - only 100 are visible
+5. After categorizing all 100, attempt to proceed to the next batch
+6. **Expected:** Pagination controls to load next 100 docs
+7. **Actual:** No way to advance; user is stuck
+
+#### Root Cause
+
+**PRIMARY:** The categorization UI has no pagination controls. The API `/api/get-batch` properly supports pagination (returns `hasNextPage`, `totalPages`, etc.), but the `CategorizationWorkspace.tsx` component:
+
+- Fetches only the first page (line 61)
+- Stores documents without pagination state (line 67)
+- Has no "next page" button or pagination UI
+- Navigation buttons only move within the current 100 docs
+
+**SECONDARY:** The document store (`documentStore.ts`) has no pagination state variables (`page`, `totalPages`, `hasNextPage`, etc.), confirming pagination was never connected to the UI layer.
+
+#### Fix Applied
+
+**Fix 1: Add pagination state to document store**
+
+- File: `apps/legacy-import/src/stores/documentStore.ts`
+- Added `PaginationState` interface with `page`, `pageSize`, `totalDocumentsInBatches`, `totalPages`, `hasNextPage`, `hasPreviousPage`
+- Added `pagination` state to `DocumentState`
+- Added actions: `setPagination`, `goToNextPage`, `goToPreviousPage`, `goToPage`
+
+**Fix 2: Update CategorizationWorkspace with pagination UI**
+
+- File: `apps/legacy-import/src/components/Categorization/CategorizationWorkspace.tsx`
+- Store pagination data from API response
+- Added effect to refetch documents when page changes
+- Added page navigation buttons ("Pagina anterioară" / "Pagina următoare")
+- Added keyboard shortcuts: PageUp/PageDown for page navigation
+- Shows total document count across all pages
+
+**Fix 3: Update ProgressBar with page indicator**
+
+- File: `apps/legacy-import/src/components/Categorization/ProgressBar.tsx`
+- Shows current page indicator when multiple pages exist (e.g., "Pagina 2/9")
+
+#### Local Dev Environment
+
+```bash
+cd apps/legacy-import && npm run dev  # Runs on port 3001
+```
+
+Environment: `.env` file at `apps/legacy-import/.env`
+
+#### Session Log
+
+- [2025-12-13] Issue created. Initial triage: Root cause identified - CategorizationWorkspace.tsx lacks pagination controls despite API supporting pagination. The API returns 100 docs per page (DEFAULT_PAGE_SIZE) with proper pagination metadata, but the UI only renders the first page with no way to advance. Document store also lacks pagination state management.
+- [2025-12-13] Session 2 started. Implementing pagination: adding state to documentStore.ts and UI controls to CategorizationWorkspace.tsx.
+- [2025-12-13] Implementation complete: Added PaginationState to documentStore, pagination UI to CategorizationWorkspace (page navigation buttons + PageUp/PageDown shortcuts), and page indicator to ProgressBar. TypeScript compiles, build succeeds. Ready for local testing and deployment.
+
+#### Files Involved
+
+- `apps/legacy-import/src/components/Categorization/CategorizationWorkspace.tsx` - Main categorization UI (needs pagination controls)
+- `apps/legacy-import/src/stores/documentStore.ts` - State management (needs pagination state)
+- `apps/legacy-import/src/app/api/get-batch/route.ts` - API endpoint (already supports pagination, returns page/totalPages/hasNextPage)
+- `apps/legacy-import/src/components/Categorization/ProgressBar.tsx` - Progress display (may need update for multi-page progress)
+- `apps/legacy-import/src/components/Categorization/FilterBar.tsx` - Filter controls (could house pagination UI)
 
 ---
 

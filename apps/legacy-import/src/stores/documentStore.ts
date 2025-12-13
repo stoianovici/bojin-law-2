@@ -54,6 +54,15 @@ export interface SessionProgress {
   analyzedCount: number;
 }
 
+export interface PaginationState {
+  page: number;
+  pageSize: number;
+  totalDocumentsInBatches: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export type FilterType = 'all' | 'categorized' | 'uncategorized' | 'skipped' | 'sent' | 'received';
 
 export interface DocumentState {
@@ -65,6 +74,9 @@ export interface DocumentState {
   batch: BatchInfo | null;
   batchRange: string | null;
   sessionProgress: SessionProgress | null;
+
+  // Pagination
+  pagination: PaginationState | null;
 
   // Documents
   documents: DocumentMetadata[];
@@ -87,6 +99,7 @@ export interface DocumentState {
   setSession: (sessionId: string, status: string) => void;
   setBatch: (batch: BatchInfo, batchRange?: string | null) => void;
   setSessionProgress: (progress: SessionProgress) => void;
+  setPagination: (pagination: PaginationState) => void;
   setDocuments: (documents: DocumentMetadata[]) => void;
   setCategories: (categories: Category[]) => void;
   addCategory: (category: Category) => void;
@@ -104,6 +117,9 @@ export interface DocumentState {
   // Navigation
   goToNextDocument: () => void;
   goToPreviousDocument: () => void;
+  goToNextPage: () => void;
+  goToPreviousPage: () => void;
+  goToPage: (page: number) => void;
 
   // Computed
   getFilteredDocuments: () => DocumentMetadata[];
@@ -120,6 +136,7 @@ const initialState = {
   batch: null,
   batchRange: null,
   sessionProgress: null,
+  pagination: null,
   documents: [],
   currentDocumentIndex: 0,
   isLoading: false,
@@ -138,6 +155,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   setBatch: (batch, batchRange) => set({ batch, batchRange: batchRange ?? null }),
 
   setSessionProgress: (progress) => set({ sessionProgress: progress }),
+
+  setPagination: (pagination) => set({ pagination }),
 
   setDocuments: (documents) => set({ documents, currentDocumentIndex: 0 }),
 
@@ -207,6 +226,48 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const state = get();
     if (state.currentDocumentIndex > 0) {
       set({ currentDocumentIndex: state.currentDocumentIndex - 1 });
+    }
+  },
+
+  goToNextPage: () => {
+    const state = get();
+    if (state.pagination?.hasNextPage) {
+      set({
+        pagination: {
+          ...state.pagination,
+          page: state.pagination.page + 1,
+          hasNextPage: state.pagination.page + 1 < state.pagination.totalPages - 1,
+          hasPreviousPage: true,
+        },
+      });
+    }
+  },
+
+  goToPreviousPage: () => {
+    const state = get();
+    if (state.pagination?.hasPreviousPage) {
+      set({
+        pagination: {
+          ...state.pagination,
+          page: state.pagination.page - 1,
+          hasNextPage: true,
+          hasPreviousPage: state.pagination.page - 1 > 0,
+        },
+      });
+    }
+  },
+
+  goToPage: (page: number) => {
+    const state = get();
+    if (state.pagination && page >= 0 && page < state.pagination.totalPages) {
+      set({
+        pagination: {
+          ...state.pagination,
+          page,
+          hasNextPage: page < state.pagination.totalPages - 1,
+          hasPreviousPage: page > 0,
+        },
+      });
     }
   },
 

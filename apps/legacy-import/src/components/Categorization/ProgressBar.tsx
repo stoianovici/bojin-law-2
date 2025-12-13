@@ -7,6 +7,7 @@ export function ProgressBar() {
   const batch = useDocumentStore((s: DocumentState) => s.batch);
   const batchRange = useDocumentStore((s: DocumentState) => s.batchRange);
   const sessionProgress = useDocumentStore((s: DocumentState) => s.sessionProgress);
+  const pagination = useDocumentStore((s: DocumentState) => s.pagination);
   const getBatchProgress = useDocumentStore((s: DocumentState) => s.getBatchProgress);
 
   const batchProgress = getBatchProgress();
@@ -17,6 +18,10 @@ export function ProgressBar() {
 
   // Show range if multiple batches, otherwise single month
   const batchLabel = batchRange || batch.monthYear;
+  const pageLabel =
+    pagination && pagination.totalPages > 1
+      ? ` (Pagina ${pagination.page + 1}/${pagination.totalPages})`
+      : '';
 
   const batchPercent =
     batchProgress.total > 0 ? Math.round((batchProgress.done / batchProgress.total) * 100) : 0;
@@ -35,7 +40,10 @@ export function ProgressBar() {
       {/* Batch Progress */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm font-medium text-gray-700">Loturile tale: {batchLabel}</span>
+          <span className="text-sm font-medium text-gray-700">
+            Loturile tale: {batchLabel}
+            {pageLabel}
+          </span>
           <span className="text-sm text-gray-500">
             {batchProgress.done} / {batchProgress.total} ({batchPercent}%)
           </span>

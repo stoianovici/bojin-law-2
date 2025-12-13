@@ -1,7 +1,14 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
-import { ChevronLeft, ChevronRight, SkipForward, Loader2 } from 'lucide-react';
+import { useEffect, useCallback, useState, useRef } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  SkipForward,
+  Loader2,
+} from 'lucide-react';
 import { DocumentViewer } from '@/components/DocumentViewer';
 import { CategorySelector } from './CategorySelector';
 import { DocumentMetadataPanel } from './DocumentMetadataPanel';
@@ -20,11 +27,13 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const prevPageRef = useRef<number | null>(null);
 
   // Store selectors
   const setSession = useDocumentStore((s: DocumentState) => s.setSession);
   const setBatch = useDocumentStore((s: DocumentState) => s.setBatch);
   const setSessionProgress = useDocumentStore((s: DocumentState) => s.setSessionProgress);
+  const setPagination = useDocumentStore((s: DocumentState) => s.setPagination);
   const setDocuments = useDocumentStore((s: DocumentState) => s.setDocuments);
   const setCategories = useDocumentStore((s: DocumentState) => s.setCategories);
   const addCategory = useDocumentStore((s: DocumentState) => s.addCategory);
@@ -39,9 +48,12 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
 
   const goToNextDocument = useDocumentStore((s: DocumentState) => s.goToNextDocument);
   const goToPreviousDocument = useDocumentStore((s: DocumentState) => s.goToPreviousDocument);
+  const goToNextPage = useDocumentStore((s: DocumentState) => s.goToNextPage);
+  const goToPreviousPage = useDocumentStore((s: DocumentState) => s.goToPreviousPage);
   const categorizeDocument = useDocumentStore((s: DocumentState) => s.categorizeDocument);
   const skipDocument = useDocumentStore((s: DocumentState) => s.skipDocument);
 
+  const pagination = useDocumentStore((s: DocumentState) => s.pagination);
   const filteredDocuments = getFilteredDocuments();
 
   // Initialize workspace data
@@ -67,6 +79,9 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         setDocuments(batchData.documents);
         setCategories(batchData.categories);
         setSessionProgress(batchData.sessionProgress);
+        if (batchData.pagination) {
+          setPagination(batchData.pagination);
+        }
       } catch (err) {
         setInitError(err instanceof Error ? err.message : 'Failed to initialize');
       } finally {
@@ -75,7 +90,52 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
     }
 
     initialize();
-  }, [sessionId, user?.id, setSession, setBatch, setDocuments, setCategories, setSessionProgress]);
+  }, [
+    sessionId,
+    user?.id,
+    setSession,
+    setBatch,
+    setDocuments,
+    setCategories,
+    setSessionProgress,
+    setPagination,
+  ]);
+
+  // Refetch documents when page changes
+  useEffect(() => {
+    async function fetchPage() {
+      if (!user?.id || pagination === null) return;
+
+      // Only fetch if page actually changed (not on initial mount)
+      if (prevPageRef.current === null) {
+        prevPageRef.current = pagination.page;
+        return;
+      }
+
+      if (prevPageRef.current === pagination.page) return;
+      prevPageRef.current = pagination.page;
+
+      try {
+        setIsInitializing(true);
+        const batchRes = await fetch(
+          `/api/get-batch?sessionId=${sessionId}&userId=${user.id}&page=${pagination.page}`
+        );
+        if (!batchRes.ok) throw new Error('Failed to fetch page');
+        const batchData = await batchRes.json();
+
+        setDocuments(batchData.documents);
+        if (batchData.pagination) {
+          setPagination(batchData.pagination);
+        }
+      } catch (err) {
+        console.error('Failed to fetch page:', err);
+      } finally {
+        setIsInitializing(false);
+      }
+    }
+
+    fetchPage();
+  }, [pagination?.page, sessionId, user?.id, setDocuments, setPagination]);
 
   // Fetch document URL and extracted text when current document changes
   useEffect(() => {
@@ -136,6 +196,14 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
           event.preventDefault();
           goToPreviousDocument();
           break;
+        case 'PageDown':
+          event.preventDefault();
+          goToNextPage();
+          break;
+        case 'PageUp':
+          event.preventDefault();
+          goToPreviousPage();
+          break;
         case 's':
         case 'S':
           event.preventDefault();
@@ -146,7 +214,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [goToNextDocument, goToPreviousDocument, currentDocument]);
+  }, [goToNextDocument, goToPreviousDocument, goToNextPage, goToPreviousPage, currentDocument]);
 
   // Handle category selection
   const handleCategorySelect = useCallback(
@@ -329,6 +397,38 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
               <SkipForward className="h-4 w-4" />
               Sari peste document (S)
             </button>
+
+            {/* Page Navigation */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={!pagination.hasPreviousPage}
+                    className="flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                    Pagina anterioară
+                  </button>
+
+                  <span className="text-sm font-medium text-gray-700">
+                    Pagina {pagination.page + 1} / {pagination.totalPages}
+                  </span>
+
+                  <button
+                    onClick={goToNextPage}
+                    disabled={!pagination.hasNextPage}
+                    className="flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                  >
+                    Pagina următoare
+                    <ChevronsRight className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-center text-gray-500">
+                  Total: {pagination.totalDocumentsInBatches} documente
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Document Metadata */}
@@ -357,6 +457,16 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
               <div>
                 <kbd className="px-1.5 py-0.5 bg-white border rounded">1-9</kbd> Atribuire rapidă
               </div>
+              {pagination && pagination.totalPages > 1 && (
+                <>
+                  <div>
+                    <kbd className="px-1.5 py-0.5 bg-white border rounded">PgUp</kbd> Pagina ant.
+                  </div>
+                  <div>
+                    <kbd className="px-1.5 py-0.5 bg-white border rounded">PgDn</kbd> Pagina urm.
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
