@@ -23,10 +23,11 @@ ENV DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public"
 RUN pnpm build --filter=@legal-platform/types
 
 # 2. Database package - compile TypeScript fresh (ensures parity with local dev)
+# Note: Using tsc --build because composite: true requires project references mode
 RUN echo "=== Building database package ===" && \
     cd packages/database && \
     pnpm prisma generate --schema=./prisma/schema.prisma && \
-    pnpm exec tsc && \
+    pnpm exec tsc --build --force && \
     echo "Database package built:" && \
     ls -la dist/ && \
     echo "=== Finding and copying Prisma client ===" && \
