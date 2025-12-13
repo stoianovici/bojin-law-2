@@ -5,31 +5,36 @@
 
 ## Quick Reference
 
-| ID      | Title                                           | Type        | Priority    | Status   | File                                     |
-| ------- | ----------------------------------------------- | ----------- | ----------- | -------- | ---------------------------------------- |
-| OPS-001 | Communications page not loading emails          | Bug         | P0-Critical | Resolved | [archive/ops-001.md](archive/ops-001.md) |
-| OPS-002 | Legacy import stuck at 8k docs                  | Performance | P1-High     | Resolved | [archive/ops-002.md](archive/ops-002.md) |
-| OPS-003 | Restrict partner dashboard to partners          | Feature     | P2-Medium   | Resolved | [archive/ops-003.md](archive/ops-003.md) |
-| OPS-004 | Add categorization backup before export         | Feature     | P1-High     | Resolved | [archive/ops-004.md](archive/ops-004.md) |
-| OPS-005 | AI extraction and drafting not working          | Bug         | P0-Critical | Resolved | [archive/ops-005.md](archive/ops-005.md) |
-| OPS-006 | Connect AI capabilities to application UI       | Feature     | P1-High     | Resolved | [archive/ops-006.md](archive/ops-006.md) |
-| OPS-007 | AI email drafts ignore user language pref       | Bug         | P2-Medium   | Resolved | [archive/ops-007.md](archive/ops-007.md) |
-| OPS-008 | Communications section comprehensive overhaul   | Feature     | P1-High     | Resolved | [archive/ops-008.md](archive/ops-008.md) |
-| OPS-009 | Multiple re-login prompts for email/attachments | Bug         | P1-High     | Resolved | [archive/ops-009.md](archive/ops-009.md) |
-| OPS-010 | Emails synced but not displayed (1049 emails)   | Bug         | P0-Critical | Resolved | [archive/ops-010.md](archive/ops-010.md) |
-| OPS-011 | Refocus /communications on received emails only | Feature     | P1-High     | Resolved | [archive/ops-011.md](archive/ops-011.md) |
-| OPS-012 | Legacy import can't advance past first 100 docs | Bug         | P1-High     | Resolved | [archive/ops-012.md](archive/ops-012.md) |
-| OPS-013 | New logins don't show up in user management     | Bug         | P1-High     | Resolved | [archive/ops-013.md](archive/ops-013.md) |
-| OPS-014 | Role-based menu visibility refinement           | Bug         | P2-Medium   | Resolved | [archive/ops-014.md](archive/ops-014.md) |
-| OPS-015 | Translate English UI sections to Romanian       | Feature     | P2-Medium   | Resolved | [archive/ops-015.md](archive/ops-015.md) |
-| OPS-016 | Redesign Communications Tab in Case Details     | Feature     | P1-High     | Resolved | [archive/ops-016.md](archive/ops-016.md) |
-| OPS-017 | AI service TypeScript compilation errors        | Bug         | P1-High     | Resolved | [archive/ops-017.md](archive/ops-017.md) |
+| ID      | Title                                             | Type        | Priority    | Status   | File                                     |
+| ------- | ------------------------------------------------- | ----------- | ----------- | -------- | ---------------------------------------- |
+| OPS-001 | Communications page not loading emails            | Bug         | P0-Critical | Resolved | [archive/ops-001.md](archive/ops-001.md) |
+| OPS-002 | Legacy import stuck at 8k docs                    | Performance | P1-High     | Resolved | [archive/ops-002.md](archive/ops-002.md) |
+| OPS-003 | Restrict partner dashboard to partners            | Feature     | P2-Medium   | Resolved | [archive/ops-003.md](archive/ops-003.md) |
+| OPS-004 | Add categorization backup before export           | Feature     | P1-High     | Resolved | [archive/ops-004.md](archive/ops-004.md) |
+| OPS-005 | AI extraction and drafting not working            | Bug         | P0-Critical | Resolved | [archive/ops-005.md](archive/ops-005.md) |
+| OPS-006 | Connect AI capabilities to application UI         | Feature     | P1-High     | Resolved | [archive/ops-006.md](archive/ops-006.md) |
+| OPS-007 | AI email drafts ignore user language pref         | Bug         | P2-Medium   | Resolved | [archive/ops-007.md](archive/ops-007.md) |
+| OPS-008 | Communications section comprehensive overhaul     | Feature     | P1-High     | Resolved | [archive/ops-008.md](archive/ops-008.md) |
+| OPS-009 | Multiple re-login prompts for email/attachments   | Bug         | P1-High     | Resolved | [archive/ops-009.md](archive/ops-009.md) |
+| OPS-010 | Emails synced but not displayed (1049 emails)     | Bug         | P0-Critical | Resolved | [archive/ops-010.md](archive/ops-010.md) |
+| OPS-011 | Refocus /communications on received emails only   | Feature     | P1-High     | Resolved | [archive/ops-011.md](archive/ops-011.md) |
+| OPS-012 | Legacy import can't advance past first 100 docs   | Bug         | P1-High     | Resolved | [archive/ops-012.md](archive/ops-012.md) |
+| OPS-013 | New logins don't show up in user management       | Bug         | P1-High     | Resolved | [archive/ops-013.md](archive/ops-013.md) |
+| OPS-014 | Role-based menu visibility refinement             | Bug         | P2-Medium   | Resolved | [archive/ops-014.md](archive/ops-014.md) |
+| OPS-015 | Translate English UI sections to Romanian         | Feature     | P2-Medium   | Resolved | [archive/ops-015.md](archive/ops-015.md) |
+| OPS-016 | Redesign Communications Tab in Case Details       | Feature     | P1-High     | Resolved | [archive/ops-016.md](archive/ops-016.md) |
+| OPS-017 | AI service TypeScript compilation errors          | Bug         | P1-High     | Resolved | [archive/ops-017.md](archive/ops-017.md) |
+| OPS-018 | AI Service Deployment Failure & Render Duplicates | Bug/Infra   | P1-High     | Active   | [issues/ops-018.md](issues/ops-018.md)   |
 
 ---
 
 ## Active Issues Summary
 
-_No active issues._
+### OPS-018: AI Service Deployment Failure & Render Duplicates
+
+- **Problem**: AI service failing to deploy (nonZeroExit: 1) + duplicate services created by blueprint autoSync
+- **Solution**: Switched AI service to Docker runtime, disabled blueprint autoSync, cleaned up duplicates
+- **Status**: Docker build in progress, monitoring for completion
 
 ---
 
