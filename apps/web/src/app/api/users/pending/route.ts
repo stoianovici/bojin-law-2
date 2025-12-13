@@ -4,52 +4,58 @@
  * Story 2.4.1: Partner User Management
  */
 
-import { NextResponse } from 'next/server';
-import type { User } from '@legal-platform/types';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@legal-platform/database';
+import { getAuthUser } from '@/lib/auth';
 
-export async function GET() {
-  // Mock pending users data
-  const pendingUsers: User[] = [
-    {
-      id: '123e4567-e89b-12d3-a456-426614174001',
-      email: 'maria.ionescu@example.com',
-      firstName: 'Maria',
-      lastName: 'Ionescu',
-      role: 'Paralegal',
-      status: 'Pending',
-      firmId: null,
-      azureAdId: '00000000-0000-0000-0001-000000000001',
-      preferences: {},
-      createdAt: new Date('2024-11-15'),
-      lastActive: new Date('2024-11-15'),
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174002',
-      email: 'ion.dumitru@example.com',
-      firstName: 'Ion',
-      lastName: 'Dumitru',
-      role: 'Associate',
-      status: 'Pending',
-      firmId: null,
-      azureAdId: '00000000-0000-0000-0001-000000000002',
-      preferences: {},
-      createdAt: new Date('2024-11-18'),
-      lastActive: new Date('2024-11-18'),
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174003',
-      email: 'elena.constantinescu@example.com',
-      firstName: 'Elena',
-      lastName: 'Constantinescu',
-      role: 'Paralegal',
-      status: 'Pending',
-      firmId: null,
-      azureAdId: '00000000-0000-0000-0001-000000000003',
-      preferences: {},
-      createdAt: new Date('2024-11-19'),
-      lastActive: new Date('2024-11-19'),
-    },
-  ];
+export async function GET(request: NextRequest) {
+  try {
+    // Verify the requester is authenticated and is a Partner
+    const { user: sessionUser, error } = await getAuthUser(request);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: error || 'Authentication required' },
+        { status: 401 }
+      );
+    }
 
-  return NextResponse.json(pendingUsers);
+    if (sessionUser.role !== 'Partner') {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'Only Partners can view pending users' },
+        { status: 403 }
+      );
+    }
+
+    // Query for pending users in the same firm
+    const pendingUsers = await prisma.user.findMany({
+      where: {
+        status: 'Pending',
+        firmId: sessionUser.firmId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        firmId: true,
+        azureAdId: true,
+        preferences: true,
+        createdAt: true,
+        lastActive: true,
+      },
+    });
+
+    return NextResponse.json(pendingUsers);
+  } catch (error) {
+    console.error('Error fetching pending users:', error);
+    return NextResponse.json(
+      { error: 'Internal Server Error', message: 'Failed to fetch pending users' },
+      { status: 500 }
+    );
+  }
 }

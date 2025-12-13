@@ -92,7 +92,11 @@ export async function POST(request: NextRequest) {
         where: { firmId: firm.id },
       });
 
-      const role = existingUsersCount === 0 ? 'Partner' : 'Associate';
+      // First user in a firm is auto-activated as Partner
+      // Subsequent users are Pending and require Partner activation
+      const isFirstUser = existingUsersCount === 0;
+      const role = isFirstUser ? 'Partner' : 'Associate';
+      const status = isFirstUser ? 'Active' : 'Pending';
 
       user = await prisma.user.create({
         data: {
@@ -101,7 +105,7 @@ export async function POST(request: NextRequest) {
           firstName: firstName || 'User',
           lastName: lastName || '',
           role,
-          status: 'Active',
+          status,
           firmId: firm.id,
           lastActive: new Date(),
         },
