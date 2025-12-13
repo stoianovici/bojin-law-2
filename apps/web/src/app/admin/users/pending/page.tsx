@@ -1,6 +1,6 @@
 /**
- * Pending Users Page
- * Allows Partners to view and activate pending users
+ * User Management Page
+ * Allows Partners to view all users, activate pending users, and manage roles
  * Story 2.4.1: Partner User Management
  */
 
@@ -8,100 +8,172 @@
 
 import { useState, useEffect } from 'react';
 import { useRequireRole } from '../../../../hooks/useAuthorization';
-import { getPendingUsers, activateUser } from '../../../../lib/services/userManagementApi';
+import {
+  getPendingUsers,
+  getActiveUsers,
+  activateUser,
+  updateUserRole,
+  deactivateUser,
+} from '../../../../lib/services/userManagementApi';
+import { useAuth } from '../../../../lib/hooks/useAuth';
 import type { User, UserRole } from '@legal-platform/types';
-
-// TODO: Replace with actual firm fetching from API
-interface Firm {
-  id: string;
-  name: string;
-}
 import * as Dialog from '@radix-ui/react-dialog';
 
-export default function PendingUsersPage() {
+type UserWithActions = User & { isPending: boolean };
+
+export default function UserManagementPage() {
   const { authorized, isLoading: authLoading } = useRequireRole('Partner');
-  const [users, setUsers] = useState<User[]>([]);
-  const [firms, setFirms] = useState<Firm[]>([]);
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState<UserWithActions[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Activation modal state
+  const [userToActivate, setUserToActivate] = useState<User | null>(null);
+  const [selectedRole, setSelectedRole] = useState<UserRole>('Paralegal');
   const [isActivating, setIsActivating] = useState(false);
+
+  // Deactivation modal state
+  const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+
+  // Toast state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
-  // Form state
-  const [selectedFirmId, setSelectedFirmId] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('Paralegal');
+  // Filter state
+  const [filter, setFilter] = useState<'all' | 'pending' | 'active'>('all');
 
-  // Fetch pending users on mount
+  // Fetch all users on mount
   useEffect(() => {
-    if (authorized) {
-      loadPendingUsers();
-      // TODO: Fetch firms from API instead of empty array
-      setFirms([]);
+    if (authorized && currentUser) {
+      loadAllUsers();
     }
-  }, [authorized]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorized, currentUser]);
 
-  async function loadPendingUsers() {
+  async function loadAllUsers() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getPendingUsers();
-      setUsers(data);
+
+      // Fetch both pending and active users in parallel
+      const [pendingData, activeData] = await Promise.all([
+        getPendingUsers(),
+        getActiveUsers(currentUser?.firmId || undefined),
+      ]);
+
+      // Combine and mark users
+      const allUsers: UserWithActions[] = [
+        ...pendingData.map((u) => ({ ...u, isPending: true })),
+        ...activeData.map((u) => ({ ...u, isPending: false })),
+      ];
+
+      // Sort: pending first, then by name
+      allUsers.sort((a, b) => {
+        if (a.isPending && !b.isPending) return -1;
+        if (!a.isPending && b.isPending) return 1;
+        return `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`);
+      });
+
+      setUsers(allUsers);
     } catch (err) {
-      console.error('Failed to load pending users:', err);
-      setError('Failed to load pending users. Please try again.');
+      console.error('Failed to load users:', err);
+      setError('Failed to load users. Please try again.');
     } finally {
       setIsLoading(false);
     }
   }
 
-  function openActivationModal(user: User) {
-    setSelectedUser(user);
-    setSelectedFirmId(firms[0]?.id || '');
-    setSelectedRole('Paralegal');
-    setIsModalOpen(true);
+  function showToastMessage(message: string, type: 'success' | 'error') {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   }
 
-  function closeModal() {
-    setIsModalOpen(false);
-    setSelectedUser(null);
-    setSelectedFirmId('');
+  // Activation handlers
+  function openActivationModal(user: User) {
+    setUserToActivate(user);
+    setSelectedRole('Paralegal');
+  }
+
+  function closeActivationModal() {
+    setUserToActivate(null);
     setSelectedRole('Paralegal');
   }
 
   async function handleActivate() {
-    if (!selectedUser || !selectedFirmId) {
-      return;
-    }
+    if (!userToActivate || !currentUser?.firmId) return;
 
     try {
       setIsActivating(true);
-      await activateUser(selectedUser.id, selectedFirmId, selectedRole);
-
-      // Show success toast
-      setToastMessage(
-        `User ${selectedUser.firstName} ${selectedUser.lastName} has been activated successfully.`
+      await activateUser(userToActivate.id, currentUser.firmId, selectedRole);
+      showToastMessage(
+        `${userToActivate.firstName} ${userToActivate.lastName} has been activated as ${selectedRole}.`,
+        'success'
       );
-      setToastType('success');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-
-      // Close modal and refresh list
-      closeModal();
-      await loadPendingUsers();
+      closeActivationModal();
+      await loadAllUsers();
     } catch (err) {
       console.error('Failed to activate user:', err);
-      setToastMessage('Failed to activate user. Please try again.');
-      setToastType('error');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showToastMessage('Failed to activate user. Please try again.', 'error');
     } finally {
       setIsActivating(false);
     }
   }
+
+  // Role change handler
+  async function handleRoleChange(userId: string, newRole: UserRole) {
+    try {
+      await updateUserRole(userId, newRole);
+      showToastMessage('User role updated successfully.', 'success');
+      await loadAllUsers();
+    } catch (err) {
+      console.error('Failed to update user role:', err);
+      showToastMessage('Failed to update user role. Please try again.', 'error');
+    }
+  }
+
+  // Deactivation handlers
+  function openDeactivationModal(user: User) {
+    setUserToDeactivate(user);
+  }
+
+  function closeDeactivationModal() {
+    setUserToDeactivate(null);
+  }
+
+  async function handleDeactivate() {
+    if (!userToDeactivate) return;
+
+    try {
+      setIsDeactivating(true);
+      await deactivateUser(userToDeactivate.id);
+      showToastMessage(
+        `${userToDeactivate.firstName} ${userToDeactivate.lastName} has been deactivated.`,
+        'success'
+      );
+      closeDeactivationModal();
+      await loadAllUsers();
+    } catch (err) {
+      console.error('Failed to deactivate user:', err);
+      showToastMessage('Failed to deactivate user. Please try again.', 'error');
+    } finally {
+      setIsDeactivating(false);
+    }
+  }
+
+  // Filter users
+  const filteredUsers = users.filter((user) => {
+    if (filter === 'pending') return user.isPending;
+    if (filter === 'active') return !user.isPending;
+    return true;
+  });
+
+  const pendingCount = users.filter((u) => u.isPending).length;
+  const activeCount = users.filter((u) => !u.isPending).length;
 
   // Show loading spinner while checking authorization
   if (authLoading || !authorized) {
@@ -115,12 +187,42 @@ export default function PendingUsersPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Pending Users
-        </h1>
-        <p className="text-gray-600">
-          Review and activate new users awaiting access to the platform
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
+        <p className="text-gray-600">Manage users, roles, and access to the platform</p>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            filter === 'all'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          All Users ({users.length})
+        </button>
+        <button
+          onClick={() => setFilter('pending')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            filter === 'pending'
+              ? 'bg-yellow-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Pending ({pendingCount})
+        </button>
+        <button
+          onClick={() => setFilter('active')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            filter === 'active'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Active ({activeCount})
+        </button>
       </div>
 
       {error && (
@@ -131,11 +233,17 @@ export default function PendingUsersPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="text-gray-600">Loading pending users...</div>
+          <div className="text-gray-600">Loading users...</div>
         </div>
-      ) : users.length === 0 ? (
+      ) : filteredUsers.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
-          <p className="text-gray-500">No pending users at this time.</p>
+          <p className="text-gray-500">
+            {filter === 'pending'
+              ? 'No pending users at this time.'
+              : filter === 'active'
+                ? 'No active users.'
+                : 'No users found.'}
+          </p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -149,10 +257,13 @@ export default function PendingUsersPage() {
                   Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Azure AD ID
+                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created At
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Active
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -160,7 +271,7 @@ export default function PendingUsersPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {user.firstName} {user.lastName}
@@ -168,19 +279,54 @@ export default function PendingUsersPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {user.email}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                    {user.azureAdId.substring(0, 16)}...
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(user.createdAt).toLocaleDateString('ro-RO')}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {user.isPending ? (
+                      <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                        Pending
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                        Active
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
-                      onClick={() => openActivationModal(user)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-                    >
-                      Activate
-                    </button>
+                    {user.isPending ? (
+                      <span className="text-gray-400">—</span>
+                    ) : (
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                        disabled={user.id === currentUser?.id}
+                        className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="Paralegal">Paralegal</option>
+                        <option value="Associate">Associate</option>
+                        <option value="Partner">Partner</option>
+                      </select>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(user.lastActive).toLocaleDateString('ro-RO')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                    {user.isPending ? (
+                      <button
+                        onClick={() => openActivationModal(user)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Activate
+                      </button>
+                    ) : user.id !== currentUser?.id ? (
+                      <button
+                        onClick={() => openDeactivationModal(user)}
+                        className="text-red-600 hover:text-red-800 font-medium"
+                      >
+                        Deactivate
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 text-xs">You</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -190,7 +336,7 @@ export default function PendingUsersPage() {
       )}
 
       {/* Activation Modal */}
-      <Dialog.Root open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog.Root open={!!userToActivate} onOpenChange={(open) => !open && closeActivationModal()}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50" />
           <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
@@ -198,63 +344,36 @@ export default function PendingUsersPage() {
               Activate User
             </Dialog.Title>
 
-            {selectedUser && (
+            {userToActivate && (
               <div className="mb-6">
                 <p className="text-sm text-gray-600 mb-1">Activating:</p>
                 <p className="font-medium text-gray-900">
-                  {selectedUser.firstName} {selectedUser.lastName}
+                  {userToActivate.firstName} {userToActivate.lastName}
                 </p>
-                <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                <p className="text-sm text-gray-600">{userToActivate.email}</p>
               </div>
             )}
 
-            <div className="space-y-4 mb-6">
-              <div>
-                <label
-                  htmlFor="firm-select"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Assign to Firm
-                </label>
-                <select
-                  id="firm-select"
-                  value={selectedFirmId}
-                  onChange={(e) => setSelectedFirmId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isActivating}
-                >
-                  {firms.map((firm) => (
-                    <option key={firm.id} value={firm.id}>
-                      {firm.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="role-select"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Assign Role
-                </label>
-                <select
-                  id="role-select"
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isActivating}
-                >
-                  <option value="Paralegal">Paralegal</option>
-                  <option value="Associate">Associate</option>
-                  <option value="Partner">Partner</option>
-                </select>
-              </div>
+            <div className="mb-6">
+              <label htmlFor="role-select" className="block text-sm font-medium text-gray-700 mb-2">
+                Assign Role
+              </label>
+              <select
+                id="role-select"
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isActivating}
+              >
+                <option value="Paralegal">Paralegal</option>
+                <option value="Associate">Associate</option>
+                <option value="Partner">Partner</option>
+              </select>
             </div>
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={closeModal}
+                onClick={closeActivationModal}
                 disabled={isActivating}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
               >
@@ -262,10 +381,58 @@ export default function PendingUsersPage() {
               </button>
               <button
                 onClick={handleActivate}
-                disabled={isActivating || !selectedFirmId}
+                disabled={isActivating}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
                 {isActivating ? 'Activating...' : 'Activate User'}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* Deactivation Modal */}
+      <Dialog.Root
+        open={!!userToDeactivate}
+        onOpenChange={(open) => !open && closeDeactivationModal()}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <Dialog.Title className="text-xl font-semibold text-gray-900 mb-4">
+              Confirm Deactivation
+            </Dialog.Title>
+
+            {userToDeactivate && (
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">Are you sure you want to deactivate this user?</p>
+                <div className="bg-gray-50 p-4 rounded">
+                  <p className="font-medium text-gray-900">
+                    {userToDeactivate.firstName} {userToDeactivate.lastName}
+                  </p>
+                  <p className="text-sm text-gray-600">{userToDeactivate.email}</p>
+                  <p className="text-sm text-gray-600">Role: {userToDeactivate.role}</p>
+                </div>
+                <p className="text-sm text-gray-600 mt-4">
+                  This user will lose access to the platform.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={closeDeactivationModal}
+                disabled={isDeactivating}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeactivate}
+                disabled={isDeactivating}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isDeactivating ? 'Deactivating...' : 'Deactivate User'}
               </button>
             </div>
           </Dialog.Content>
