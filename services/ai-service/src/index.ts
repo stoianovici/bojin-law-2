@@ -3,6 +3,25 @@
  * Story 3.1: AI Service Infrastructure
  */
 
+// Catch any uncaught errors during startup - must be first
+process.on('uncaughtException', (err) => {
+  console.error('FATAL: Uncaught exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('FATAL: Unhandled rejection:', reason);
+  process.exit(1);
+});
+
+console.log('=== AI Service Bootstrap ===');
+console.log('Node version:', process.version);
+console.log('Platform:', process.platform);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DATABASE_URL set:', !!process.env.DATABASE_URL);
+console.log('REDIS_URL set:', !!process.env.REDIS_URL);
+console.log('ANTHROPIC_API_KEY set:', !!process.env.ANTHROPIC_API_KEY);
+
 // Load environment variables first
 import 'dotenv/config';
 
@@ -20,13 +39,17 @@ import { initializeCachePrisma } from './services/cache.service';
 import { initializePatternLearningPrisma } from './services/task-pattern-learning.service';
 import { setupCronScheduler } from './lib/cron-scheduler';
 
+console.log('All modules loaded');
+
 const app: Application = express();
 
 // Initialize Prisma client
+console.log('Initializing Prisma client...');
 const prisma = new PrismaClient();
 initializePrisma(prisma);
 initializeCachePrisma(prisma);
 initializePatternLearningPrisma(prisma);
+console.log('Prisma client initialized');
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -67,6 +90,7 @@ process.on('SIGTERM', async () => {
 const PORT = config.server.port;
 const HOST = config.server.host;
 
+console.log(`Starting server on ${HOST}:${PORT}...`);
 app.listen(PORT, HOST, () => {
   console.log(`AI Service running on http://${HOST}:${PORT}`);
   console.log('Environment:', process.env.NODE_ENV || 'development');
