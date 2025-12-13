@@ -46,11 +46,18 @@
 
 ---
 
+## Standard Procedures
+
+- **[Deployment Flows](deployment-flows.md)** - Preflight checks, smoke tests, avoiding "works locally breaks in prod"
+
+---
+
 ## Folder Structure
 
 ```
 docs/ops/
 ├── operations-log.md    # This index file
+├── deployment-flows.md  # Deployment procedures and scripts
 ├── issues/              # Active issues
 │   ├── ops-001.md
 │   ├── ops-003.md

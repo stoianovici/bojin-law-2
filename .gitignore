@@ -67,5 +67,5 @@ tmp/
 .cache/
 .parcel-cache/
 
-# Allow database package dist (needed for Docker builds)
-!packages/database/dist/
+# Note: packages/database/dist/ is NOT committed to git
+# Dockerfiles compile TypeScript at build time to ensure parity with local dev

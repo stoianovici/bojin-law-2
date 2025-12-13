@@ -48,7 +48,12 @@
     "logs:web": "scripts/render/logs.sh web",
     "logs:api": "scripts/render/logs.sh gateway",
     "render:setup": "scripts/render/setup.sh",
-    "render:status": "scripts/render/status.sh"
+    "render:status": "scripts/render/status.sh",
+    "preflight": "scripts/preflight.sh",
+    "preflight:quick": "scripts/preflight.sh --quick",
+    "preflight:fix": "scripts/preflight.sh --fix",
+    "smoke-test": "scripts/render/smoke-test.sh",
+    "smoke-test:staging": "scripts/render/smoke-test.sh --staging"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

@@ -18,15 +18,16 @@ RUN pnpm install --frozen-lockfile --prod=false
 # Set dummy DATABASE_URL for Prisma client generation
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public"
 
-# Build workspace packages
+# Build workspace packages (all compiled fresh - no pre-built dist in git)
 # 1. Types package
 RUN pnpm build --filter=@legal-platform/types
 
-# 2. Database package - use pre-built dist from git, just generate Prisma client
-RUN echo "=== Setting up database package ===" && \
+# 2. Database package - compile TypeScript fresh (ensures parity with local dev)
+RUN echo "=== Building database package ===" && \
     cd packages/database && \
     pnpm prisma generate --schema=./prisma/schema.prisma && \
-    echo "Prisma client generated. Using pre-built dist:" && \
+    pnpm exec tsc && \
+    echo "Database package built:" && \
     ls -la dist/ && \
     echo "=== Finding and copying Prisma client ===" && \
     PRISMA_PATH=$(find /app -path "*/.prisma/client" -type d 2>/dev/null | head -1) && \
