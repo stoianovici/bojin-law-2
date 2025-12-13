@@ -43,6 +43,7 @@ import { taskCollaborationResolvers } from './resolvers/task-collaboration.resol
 import { taskAnalyticsResolvers } from './resolvers/task-analytics.resolvers';
 import { caseTypeResolvers } from './resolvers/case-type.resolvers';
 import { communicationIntelligenceResolvers } from './resolvers/communication-intelligence.resolvers';
+import { communicationHubResolvers } from './resolvers/communication-hub.resolvers';
 import { emailDraftingResolvers } from './resolvers/email-drafting.resolvers';
 import { emailResolvers } from './resolvers/email.resolvers';
 import { aiLearningResolvers } from './resolvers/ai-learning.resolvers';
@@ -86,6 +87,7 @@ const resolvers = {
     ...taskAnalyticsResolvers.Query,
     ...caseTypeResolvers.Query,
     ...communicationIntelligenceResolvers.Query,
+    ...communicationHubResolvers.Query,
     ...emailDraftingResolvers.Query,
     ...emailResolvers.Query,
     ...aiLearningResolvers.Query,
@@ -109,6 +111,7 @@ const resolvers = {
     ...taskAnalyticsResolvers.Mutation,
     ...caseTypeResolvers.Mutation,
     ...communicationIntelligenceResolvers.Mutation,
+    ...communicationHubResolvers.Mutation,
     ...emailDraftingResolvers.Mutation,
     ...emailResolvers.Mutation,
     ...aiLearningResolvers.Mutation,
@@ -218,6 +221,11 @@ const resolvers = {
   Email: emailResolvers.Email,
   EmailThread: emailResolvers.EmailThread,
   EmailAttachment: emailResolvers.EmailAttachment,
+  // Communication Hub resolvers (Story 5.5)
+  TimelineEntry: communicationHubResolvers.TimelineEntry,
+  CommunicationTemplate: communicationHubResolvers.CommunicationTemplate,
+  BulkCommunication: communicationHubResolvers.BulkCommunication,
+  CommunicationExport: communicationHubResolvers.CommunicationExport,
 };
 
 /**

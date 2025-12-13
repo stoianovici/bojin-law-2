@@ -17,6 +17,7 @@ import {
 } from '../../services/email-attachment.service';
 import { EmailWebhookService, getEmailWebhookService } from '../../services/email-webhook.service';
 import { triggerProcessing } from '../../workers/email-categorization.worker';
+import { unifiedTimelineService } from '../../services/unified-timeline.service';
 import Redis from 'ioredis';
 
 // ============================================================================
@@ -411,11 +412,21 @@ export const emailResolvers = {
       }
 
       // Update email
-      return await prisma.email.update({
+      const updatedEmail = await prisma.email.update({
         where: { id: args.emailId },
         data: { caseId: args.caseId },
         include: { case: true, attachments: true },
       });
+
+      // Sync to CommunicationEntry for unified timeline (Story 5.5)
+      try {
+        await unifiedTimelineService.syncEmailToCommunicationEntry(args.emailId);
+      } catch (syncError) {
+        console.error('[assignEmailToCase] Failed to sync to timeline:', syncError);
+        // Don't fail the assignment if sync fails - email is still assigned
+      }
+
+      return updatedEmail;
     },
 
     /**
@@ -447,6 +458,20 @@ export const emailResolvers = {
 
       // Update all emails in thread
       await emailThreadService.assignThreadToCase(args.conversationId, args.caseId, user.id);
+
+      // Sync all emails in thread to CommunicationEntry for unified timeline (Story 5.5)
+      try {
+        const threadEmails = await prisma.email.findMany({
+          where: { conversationId: args.conversationId, userId: user.id },
+          select: { id: true },
+        });
+        await Promise.all(
+          threadEmails.map((e) => unifiedTimelineService.syncEmailToCommunicationEntry(e.id))
+        );
+      } catch (syncError) {
+        console.error('[assignThreadToCase] Failed to sync to timeline:', syncError);
+        // Don't fail the assignment if sync fails
+      }
 
       // Return updated thread
       return await emailThreadService.getThread(args.conversationId, user.id);

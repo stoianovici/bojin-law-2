@@ -102,30 +102,19 @@ export function TimelineEntryCard({
           {/* Meta line */}
           <div className="flex flex-wrap items-center gap-2 text-sm">
             {/* Direction */}
-            <span
-              className="flex items-center gap-1 text-gray-500"
-              title={entry.direction}
-            >
+            <span className="flex items-center gap-1 text-gray-500" title={entry.direction}>
               {directionIcon}
             </span>
 
             {/* Sender */}
-            <span className="font-medium text-gray-900">
-              {entry.senderName}
-            </span>
+            <span className="font-medium text-gray-900">{entry.senderName}</span>
 
             {entry.senderEmail && (
-              <span className="text-gray-500">
-                &lt;{entry.senderEmail}&gt;
-              </span>
+              <span className="text-gray-500">&lt;{entry.senderEmail}&gt;</span>
             )}
 
             {/* Timestamp */}
-            <time
-              dateTime={entry.sentAt}
-              title={fullDate}
-              className="text-gray-400"
-            >
+            <time dateTime={entry.sentAt} title={fullDate} className="text-gray-400">
               {timeAgo}
             </time>
 
@@ -151,33 +140,33 @@ export function TimelineEntryCard({
             {/* Disabled indicator for future channels */}
             {isDisabled && (
               <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500">
-                Coming Soon
+                În curând
               </span>
             )}
           </div>
 
           {/* Subject */}
-          {entry.subject && (
-            <h3 className="mt-1 font-medium text-gray-900">
-              {entry.subject}
-            </h3>
-          )}
+          {entry.subject && <h3 className="mt-1 font-medium text-gray-900">{entry.subject}</h3>}
 
           {/* Recipients */}
           {entry.recipients.length > 0 && (
             <div className="mt-1 text-sm text-gray-500">
-              To: {entry.recipients.slice(0, 3).map((r) => r.name || r.email).join(', ')}
-              {entry.recipients.length > 3 && (
-                <span> +{entry.recipients.length - 3} more</span>
-              )}
+              To:{' '}
+              {entry.recipients
+                .slice(0, 3)
+                .map((r) => r.name || r.email)
+                .join(', ')}
+              {entry.recipients.length > 3 && <span> +{entry.recipients.length - 3} more</span>}
             </div>
           )}
 
           {/* Body */}
           <div className="mt-2">
-            {entry.htmlBody && isExpanded ? (
+            {entry.htmlBody ? (
               <div
-                className="prose prose-sm max-w-none text-gray-700"
+                className={`prose prose-sm max-w-none text-gray-700 ${
+                  !isExpanded ? 'line-clamp-3 max-h-20 overflow-hidden' : ''
+                }`}
                 dangerouslySetInnerHTML={{ __html: entry.htmlBody }}
               />
             ) : (
@@ -197,12 +186,12 @@ export function TimelineEntryCard({
                 {isExpanded ? (
                   <>
                     <ChevronUp className="h-4 w-4" />
-                    Show less
+                    Arată mai puțin
                   </>
                 ) : (
                   <>
                     <ChevronDown className="h-4 w-4" />
-                    Show more
+                    Arată mai mult
                   </>
                 )}
               </button>
@@ -212,9 +201,7 @@ export function TimelineEntryCard({
           {/* Attachments */}
           {isExpanded && entry.attachments.length > 0 && (
             <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <h4 className="mb-2 text-xs font-medium uppercase text-gray-500">
-                Attachments
-              </h4>
+              <h4 className="mb-2 text-xs font-medium uppercase text-gray-500">Atașamente</h4>
               <ul className="space-y-1">
                 {entry.attachments.map((att) => (
                   <li key={att.id} className="flex items-center gap-2 text-sm">
@@ -228,9 +215,7 @@ export function TimelineEntryCard({
                     >
                       {att.fileName}
                     </a>
-                    <span className="text-gray-400">
-                      ({formatFileSize(att.fileSize)})
-                    </span>
+                    <span className="text-gray-400">({formatFileSize(att.fileSize)})</span>
                   </li>
                 ))}
               </ul>
@@ -240,7 +225,7 @@ export function TimelineEntryCard({
           {/* Thread indicator */}
           {entry.childCount > 0 && (
             <div className="mt-2 text-sm text-gray-500">
-              {entry.childCount} {entry.childCount === 1 ? 'reply' : 'replies'} in thread
+              {entry.childCount} {entry.childCount === 1 ? 'răspuns' : 'răspunsuri'} în conversație
             </div>
           )}
         </div>

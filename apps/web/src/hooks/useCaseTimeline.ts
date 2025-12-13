@@ -253,10 +253,7 @@ export function useCaseTimeline(caseId: string, filter?: Omit<TimelineFilter, 'c
           return {
             caseTimeline: {
               ...fetchMoreResult.caseTimeline,
-              entries: [
-                ...prev.caseTimeline.entries,
-                ...fetchMoreResult.caseTimeline.entries,
-              ],
+              entries: [...prev.caseTimeline.entries, ...fetchMoreResult.caseTimeline.entries],
             },
           };
         },
@@ -466,18 +463,15 @@ export function useCaseTimelineWithPolling(
     ...filter,
   };
 
-  const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(
-    GET_CASE_TIMELINE,
-    {
-      variables: {
-        filter: timelineFilter,
-        first: 20,
-      },
-      skip: !caseId,
-      fetchPolicy: 'cache-and-network',
-      pollInterval: pollIntervalMs,
-    }
-  );
+  const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(GET_CASE_TIMELINE, {
+    variables: {
+      filter: timelineFilter,
+      first: 20,
+    },
+    skip: !caseId,
+    fetchPolicy: 'cache-and-network',
+    pollInterval: pollIntervalMs,
+  });
 
   const entries = data?.caseTimeline?.entries || [];
   const totalCount = data?.caseTimeline?.totalCount || 0;
@@ -542,17 +536,17 @@ export function useChannelMetadata() {
       case 'Email':
         return 'Email';
       case 'InternalNote':
-        return 'Internal Note';
+        return 'Notă Internă';
       case 'WhatsApp':
         return 'WhatsApp';
       case 'Phone':
-        return 'Phone Call';
+        return 'Apel Telefonic';
       case 'Meeting':
-        return 'Meeting';
+        return 'Întâlnire';
       case 'SMS':
         return 'SMS';
       default:
-        return 'Unknown';
+        return 'Necunoscut';
     }
   }, []);
 
@@ -606,15 +600,15 @@ export function usePrivacyMetadata() {
   const getPrivacyLabel = useCallback((level: PrivacyLevel): string => {
     switch (level) {
       case 'Normal':
-        return 'All team members';
+        return 'Toți membrii echipei';
       case 'Confidential':
-        return 'Selected viewers only';
+        return 'Doar selectați';
       case 'AttorneyOnly':
-        return 'Attorneys only';
+        return 'Doar avocați';
       case 'PartnerOnly':
-        return 'Partners only';
+        return 'Doar parteneri';
       default:
-        return 'Unknown';
+        return 'Necunoscut';
     }
   }, []);
 

@@ -8,10 +8,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import {
-  useCreateInternalNote,
-  type PrivacyLevel,
-} from '@/hooks/useCaseTimeline';
+import { useCreateInternalNote, type PrivacyLevel } from '@/hooks/useCaseTimeline';
 import {
   FileText,
   Lock,
@@ -35,29 +32,34 @@ interface InternalNoteComposerProps {
   className?: string;
 }
 
-const PRIVACY_OPTIONS: { value: PrivacyLevel; label: string; description: string; icon: React.ReactNode }[] = [
+const PRIVACY_OPTIONS: {
+  value: PrivacyLevel;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}[] = [
   {
     value: 'Normal',
-    label: 'All Team',
-    description: 'Visible to all case team members',
+    label: 'Toată Echipa',
+    description: 'Vizibil pentru toți membrii echipei',
     icon: <Eye className="h-4 w-4" />,
   },
   {
     value: 'Confidential',
-    label: 'Selected Only',
-    description: 'Visible to selected users only',
+    label: 'Doar Selectați',
+    description: 'Vizibil doar pentru utilizatorii selectați',
     icon: <Lock className="h-4 w-4" />,
   },
   {
     value: 'AttorneyOnly',
-    label: 'Attorneys Only',
-    description: 'Visible to Partners and Associates only',
+    label: 'Doar Avocați',
+    description: 'Vizibil doar pentru Parteneri și Asociați',
     icon: <Briefcase className="h-4 w-4" />,
   },
   {
     value: 'PartnerOnly',
-    label: 'Partners Only',
-    description: 'Visible to Partners only',
+    label: 'Doar Parteneri',
+    description: 'Vizibil doar pentru Parteneri',
     icon: <Crown className="h-4 w-4" />,
   },
 ];
@@ -122,10 +124,7 @@ export function InternalNoteComposer({
       // Restore cursor position
       setTimeout(() => {
         textarea.focus();
-        textarea.setSelectionRange(
-          start + prefix.length,
-          end + prefix.length
-        );
+        textarea.setSelectionRange(start + prefix.length, end + prefix.length);
       }, 0);
     },
     [body]
@@ -145,7 +144,7 @@ export function InternalNoteComposer({
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-2">
           <FileText className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-700">Internal Note</span>
+          <span className="text-sm font-medium text-gray-700">Notă Internă</span>
         </div>
 
         {/* Toolbar */}
@@ -194,7 +193,7 @@ export function InternalNoteComposer({
               }
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Add an internal note..."
+            placeholder="Adaugă o notă internă..."
             className="w-full resize-none border-0 p-0 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
             rows={isFocused ? 4 : 2}
             aria-label="Note content"
@@ -248,12 +247,8 @@ export function InternalNoteComposer({
                       >
                         <span className="mt-0.5">{option.icon}</span>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {option.label}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {option.description}
-                          </div>
+                          <div className="text-sm font-medium text-gray-900">{option.label}</div>
+                          <div className="text-xs text-gray-500">{option.description}</div>
                         </div>
                       </button>
                     ))}
@@ -281,7 +276,7 @@ export function InternalNoteComposer({
                 }}
                 className="text-sm text-gray-500 hover:text-gray-700"
               >
-                Cancel
+                Anulează
               </button>
               <button
                 type="button"
@@ -294,7 +289,7 @@ export function InternalNoteComposer({
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
-                Save Note
+                Salvează
               </button>
             </div>
           </div>
@@ -304,8 +299,8 @@ export function InternalNoteComposer({
       {/* Keyboard shortcut hint */}
       {isFocused && (
         <div className="border-t border-gray-100 px-3 py-1 text-xs text-gray-400">
-          Press <kbd className="rounded bg-gray-100 px-1">Ctrl</kbd>+
-          <kbd className="rounded bg-gray-100 px-1">Enter</kbd> to save
+          Apasă <kbd className="rounded bg-gray-100 px-1">Ctrl</kbd>+
+          <kbd className="rounded bg-gray-100 px-1">Enter</kbd> pentru a salva
         </div>
       )}
     </div>

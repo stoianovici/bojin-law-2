@@ -30,7 +30,9 @@ interface TimelineEntry {
   channelType: CommunicationChannel;
   direction: CommunicationDirection;
   subject?: string;
+  body: string;
   bodyPreview: string;
+  htmlBody?: string;
   senderName: string;
   senderEmail?: string;
   recipients: RecipientInfo[];
@@ -173,10 +175,7 @@ export class UnifiedTimelineService {
   /**
    * Build privacy filter based on user role
    */
-  private buildPrivacyFilter(
-    userContext: UserContext,
-    includePrivate?: boolean
-  ): any | null {
+  private buildPrivacyFilter(userContext: UserContext, includePrivate?: boolean): any | null {
     const { userId, role } = userContext;
 
     // Partners can see everything
@@ -192,10 +191,7 @@ export class UnifiedTimelineService {
           { privacyLevel: PrivacyLevel.Normal },
           { privacyLevel: PrivacyLevel.AttorneyOnly },
           {
-            AND: [
-              { privacyLevel: PrivacyLevel.Confidential },
-              { allowedViewers: { has: userId } },
-            ],
+            AND: [{ privacyLevel: PrivacyLevel.Confidential }, { allowedViewers: { has: userId } }],
           },
         ],
       };
@@ -280,9 +276,7 @@ export class UnifiedTimelineService {
     const fromAddress = (email.from as any)?.address?.toLowerCase() || '';
     const userEmail = email.user?.email?.toLowerCase() || '';
     const direction =
-      fromAddress === userEmail
-        ? CommunicationDirection.Outbound
-        : CommunicationDirection.Inbound;
+      fromAddress === userEmail ? CommunicationDirection.Outbound : CommunicationDirection.Inbound;
 
     // Map recipients
     const recipients: RecipientInfo[] = [];
@@ -326,7 +320,7 @@ export class UnifiedTimelineService {
         channelType: CommunicationChannel.Email,
         direction,
         subject: email.subject,
-        body: email.bodyContent,
+        body: email.bodyContent || '', // Ensure body is never null
         htmlBody: email.bodyContentType === 'html' ? email.bodyContent : null,
         senderId: email.userId,
         senderName: (email.from as any)?.name || (email.from as any)?.address || 'Unknown',
@@ -520,18 +514,21 @@ export class UnifiedTimelineService {
    */
   private mapToTimelineEntry(entry: any): TimelineEntry {
     const recipients = (entry.recipients as RecipientInfo[]) || [];
-    const bodyPreview = entry.body?.substring(0, 200) || '';
+    const body = entry.body || '';
+    const bodyPreview = body.substring(0, 200) + (body.length > 200 ? '...' : '');
 
     return {
       id: entry.id,
       channelType: entry.channelType,
       direction: entry.direction,
       subject: entry.subject || undefined,
-      bodyPreview: bodyPreview + (entry.body?.length > 200 ? '...' : ''),
+      body, // Full body content
+      bodyPreview,
+      htmlBody: entry.htmlBody || undefined, // HTML version if available
       senderName: entry.senderName,
       senderEmail: entry.senderEmail || undefined,
       recipients,
-      hasAttachments: entry.hasAttachments || (entry.attachments?.length > 0),
+      hasAttachments: entry.hasAttachments || entry.attachments?.length > 0,
       isPrivate: entry.isPrivate,
       privacyLevel: entry.privacyLevel,
       sentAt: entry.sentAt,

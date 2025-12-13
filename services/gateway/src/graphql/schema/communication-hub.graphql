@@ -8,26 +8,25 @@
 # ============================================================================
 
 enum CommunicationChannel {
-  EMAIL
-  PHONE
-  INTERNAL_NOTE
+  Email
+  Phone
+  InternalNote
   SMS
-  FAX
-  MEETING
-  LETTER
+  WhatsApp
+  Meeting
 }
 
 enum CommunicationDirection {
-  INBOUND
-  OUTBOUND
-  INTERNAL
+  Inbound
+  Outbound
+  Internal
 }
 
 enum PrivacyLevel {
-  PUBLIC
-  INTERNAL
-  CONFIDENTIAL
-  PRIVILEGED
+  Normal
+  Confidential
+  AttorneyOnly
+  PartnerOnly
 }
 
 enum TemplateCategory {

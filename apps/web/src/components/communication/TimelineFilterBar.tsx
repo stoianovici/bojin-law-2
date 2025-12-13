@@ -45,10 +45,10 @@ const ALL_CHANNELS: CommunicationChannel[] = [
 ];
 
 const ALL_DIRECTIONS: { value: CommunicationDirection | undefined; label: string }[] = [
-  { value: undefined, label: 'All' },
-  { value: 'Inbound', label: 'Inbound' },
-  { value: 'Outbound', label: 'Outbound' },
-  { value: 'Internal', label: 'Internal' },
+  { value: undefined, label: 'Toate' },
+  { value: 'Inbound', label: 'Primite' },
+  { value: 'Outbound', label: 'Trimise' },
+  { value: 'Internal', label: 'Interne' },
 ];
 
 export function TimelineFilterBar({
@@ -113,7 +113,7 @@ export function TimelineFilterBar({
           aria-controls="filter-panel"
         >
           <Filter className="h-4 w-4" />
-          Filters
+          Filtre
           {activeCount > 0 && (
             <span className="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
               {activeCount}
@@ -126,16 +126,20 @@ export function TimelineFilterBar({
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search communications..."
+            placeholder="Caută comunicări..."
             value={filter.searchTerm || ''}
             onChange={handleSearchChange}
             className="w-full rounded-lg border border-gray-300 bg-white py-1.5 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            aria-label="Search communications"
+            aria-label="Caută comunicări"
           />
         </div>
 
         {/* Quick channel filters */}
-        <div className="hidden items-center gap-1 md:flex" role="group" aria-label="Channel filters">
+        <div
+          className="hidden items-center gap-1 md:flex"
+          role="group"
+          aria-label="Channel filters"
+        >
           {ALL_CHANNELS.slice(0, 4).map((channel) => {
             const isSelected = selectedChannels.includes(channel);
             const disabled = isChannelDisabled(channel);
@@ -150,7 +154,7 @@ export function TimelineFilterBar({
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
                 } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
-                title={disabled ? 'Coming Soon' : getChannelLabel(channel)}
+                title={disabled ? 'În curând' : getChannelLabel(channel)}
                 aria-pressed={isSelected}
               >
                 {getChannelIcon(channel)}
@@ -167,7 +171,7 @@ export function TimelineFilterBar({
             className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
           >
             <X className="h-4 w-4" />
-            Clear
+            Șterge
           </button>
         )}
       </div>
@@ -183,9 +187,7 @@ export function TimelineFilterBar({
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Channel Types */}
             <fieldset>
-              <legend className="mb-2 text-xs font-medium uppercase text-gray-500">
-                Channels
-              </legend>
+              <legend className="mb-2 text-xs font-medium uppercase text-gray-500">Canale</legend>
               <div className="flex flex-wrap gap-2">
                 {ALL_CHANNELS.map((channel) => {
                   const isSelected = selectedChannels.includes(channel);
@@ -211,7 +213,7 @@ export function TimelineFilterBar({
                       {getChannelLabel(channel)}
                       {disabled && (
                         <span className="rounded bg-gray-200 px-1 text-[10px] text-gray-500">
-                          Soon
+                          În curând
                         </span>
                       )}
                     </label>
@@ -222,9 +224,7 @@ export function TimelineFilterBar({
 
             {/* Direction */}
             <fieldset>
-              <legend className="mb-2 text-xs font-medium uppercase text-gray-500">
-                Direction
-              </legend>
+              <legend className="mb-2 text-xs font-medium uppercase text-gray-500">Direcție</legend>
               <div className="flex gap-2">
                 {ALL_DIRECTIONS.map(({ value, label }) => (
                   <label
@@ -251,7 +251,7 @@ export function TimelineFilterBar({
             {/* Date Range */}
             <fieldset>
               <legend className="mb-2 text-xs font-medium uppercase text-gray-500">
-                Date Range
+                Interval Date
               </legend>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -261,10 +261,10 @@ export function TimelineFilterBar({
                     value={filter.dateFrom?.toISOString().split('T')[0] || ''}
                     onChange={handleDateFromChange}
                     className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    aria-label="From date"
+                    aria-label="De la data"
                   />
                 </div>
-                <span className="text-gray-400">to</span>
+                <span className="text-gray-400">până la</span>
                 <div className="relative flex-1">
                   <CalendarDays className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <input
@@ -272,7 +272,7 @@ export function TimelineFilterBar({
                     value={filter.dateTo?.toISOString().split('T')[0] || ''}
                     onChange={handleDateToChange}
                     className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    aria-label="To date"
+                    aria-label="Până la data"
                   />
                 </div>
               </div>
@@ -281,7 +281,7 @@ export function TimelineFilterBar({
             {/* Privacy Toggle */}
             <fieldset>
               <legend className="mb-2 text-xs font-medium uppercase text-gray-500">
-                Privacy
+                Confidențialitate
               </legend>
               <label className="flex cursor-pointer items-center gap-2">
                 <input
@@ -290,7 +290,7 @@ export function TimelineFilterBar({
                   onChange={handlePrivacyToggle}
                   className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Show private communications</span>
+                <span className="text-sm text-gray-700">Afișează comunicările private</span>
               </label>
             </fieldset>
           </div>
@@ -299,9 +299,7 @@ export function TimelineFilterBar({
 
       {/* Screen reader announcement for filter state */}
       <div className="sr-only" role="status" aria-live="polite">
-        {activeCount > 0
-          ? `${activeCount} filters active`
-          : 'No filters active'}
+        {activeCount > 0 ? `${activeCount} filtre active` : 'Niciun filtru activ'}
       </div>
     </div>
   );

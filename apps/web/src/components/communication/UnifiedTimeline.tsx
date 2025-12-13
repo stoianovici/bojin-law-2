@@ -97,12 +97,12 @@ export function UnifiedTimeline({
   if (error) {
     return (
       <div className={`rounded-lg border border-red-200 bg-red-50 p-4 ${className}`}>
-        <p className="text-sm text-red-600">Failed to load timeline: {error.message}</p>
+        <p className="text-sm text-red-600">Eroare la încărcarea cronologiei: {error.message}</p>
         <button
           onClick={() => refetch()}
           className="mt-2 text-sm text-red-700 underline hover:no-underline"
         >
-          Try again
+          Încearcă din nou
         </button>
       </div>
     );
@@ -113,10 +113,10 @@ export function UnifiedTimeline({
       {/* Header */}
       <div className="flex items-center justify-between border-b pb-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Communication Timeline</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Cronologie Comunicări</h2>
           <p className="text-sm text-gray-500">
-            {totalCount} {totalCount === 1 ? 'entry' : 'entries'}
-            {activeFilterCount > 0 && ` (filtered)`}
+            {totalCount} {totalCount === 1 ? 'înregistrare' : 'înregistrări'}
+            {activeFilterCount > 0 && ` (filtrat)`}
           </p>
         </div>
       </div>
@@ -148,15 +148,15 @@ export function UnifiedTimeline({
           <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
             <p className="text-sm text-gray-500">
               {activeFilterCount > 0
-                ? 'No communications match your filters'
-                : 'No communications yet'}
+                ? 'Nicio comunicare nu corespunde filtrelor'
+                : 'Nu există comunicări încă'}
             </p>
             {activeFilterCount > 0 && (
               <button
                 onClick={handleClearFilters}
                 className="mt-2 text-sm text-blue-600 hover:underline"
               >
-                Clear filters
+                Șterge filtrele
               </button>
             )}
           </div>
