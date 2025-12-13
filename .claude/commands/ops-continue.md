@@ -7,6 +7,7 @@ You are resuming work on an operations issue. This is a cross-session workflow -
 Read these files in parallel:
 
 - `docs/ops/operations-log.md` - Source of truth for all issues
+- `docs/project-conventions.md` - Code patterns and implementation standards
 - `.ai/ops-*-handoff.md` - Find the most recent handoff file(s)
 
 ## 2. Identify Target Issue
@@ -60,6 +61,8 @@ Update the ops log:
   ```
 
 ## 5. Begin Investigation/Work
+
+**Important**: Before writing any code, review `docs/project-conventions.md` to ensure your implementation follows established patterns (component structure, hook patterns, service patterns, Romanian UI text, etc.).
 
 Based on current status, proceed with appropriate workflow:
 
