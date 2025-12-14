@@ -30,6 +30,7 @@
 | OPS-021 | Ensure dev/production parity                      | Infra       | P2-Medium   | Resolved    | [archive/ops-021.md](archive/ops-021.md) |
 | OPS-022 | Email-to-Case Timeline Integration                | Feature     | P1-High     | In Progress | [issues/ops-022.md](issues/ops-022.md)   |
 | OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug         | P1-High     | Open        | [issues/ops-023.md](issues/ops-023.md)   |
+| OPS-024 | Email Import Not Completing                       | Bug         | P1-High     | Fixing      | [issues/ops-024.md](issues/ops-024.md)   |
 
 ---
 
@@ -58,6 +59,20 @@ Gateway service has ~50+ TypeScript errors preventing build. Issues include:
 - Type incompatibilities accumulated over multiple features
 
 Web app builds independently and deploys fine. Gateway deployment blocked.
+
+### [OPS-024] Email Import Not Completing - Emails/Docs Not Imported
+
+**Status:** Fixing | **Priority:** P1-High | **Type:** Bug | **Last Active:** 2025-12-14
+
+Email Import Wizard (OPS-022 feature) displays preview data correctly but fails to import:
+
+- Preview shows email count, contacts, attachments - **works**
+- Actual import completes with nothing imported - **broken**
+- Email search may not be searching entire mailbox
+
+**Root Cause:** Prisma JSON `array_contains` query mismatch - searching To/CC recipients fails because query sends `{ address }` but DB stores `{ address, name }`.
+
+**Session 2 (2025-12-14):** Fixed `findEmailsByParticipants()` with raw PostgreSQL JSONB query using `jsonb_array_elements()`. Gateway compiles, dev server running. Ready for testing.
 
 ---
 

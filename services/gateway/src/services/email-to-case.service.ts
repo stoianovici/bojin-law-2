@@ -288,24 +288,59 @@ export class EmailToCaseService {
       }
 
       // 4. Import attachments if requested and access token available
+      logger.info('[EmailToCaseService.executeEmailImport] Attachment import check', {
+        importAttachments,
+        hasAccessToken: !!accessToken,
+        willImportAttachments: !!(importAttachments && accessToken),
+      });
+
       if (importAttachments && accessToken) {
         const emailsWithAttachments = emails.filter((e) => e.hasAttachments);
+        logger.info('[EmailToCaseService.executeEmailImport] Starting attachment import', {
+          emailsWithAttachments: emailsWithAttachments.length,
+          emailIds: emailsWithAttachments.map((e) => e.id),
+        });
         const attachmentService = getEmailAttachmentService(prisma);
 
         for (const email of emailsWithAttachments) {
           try {
+            logger.info('[EmailToCaseService.executeEmailImport] Syncing attachments for email', {
+              emailId: email.id,
+              subject: email.subject?.substring(0, 50),
+            });
             const syncResult = await attachmentService.syncAllAttachments(email.id, accessToken);
+            logger.info('[EmailToCaseService.executeEmailImport] Attachment sync result', {
+              emailId: email.id,
+              success: syncResult.success,
+              attachmentsSynced: syncResult.attachmentsSynced,
+              totalAttachments: syncResult.attachments.length,
+              errors: syncResult.errors,
+              attachmentDetails: syncResult.attachments.map((a) => ({
+                name: a.name,
+                documentId: a.documentId,
+                storageUrl: a.storageUrl ? 'set' : 'null',
+              })),
+            });
             result.attachmentsImported += syncResult.attachmentsSynced;
 
             if (syncResult.errors.length > 0) {
               result.errors.push(...syncResult.errors);
             }
           } catch (error: any) {
+            logger.error('[EmailToCaseService.executeEmailImport] Attachment sync failed', {
+              emailId: email.id,
+              error: error.message,
+              stack: error.stack,
+            });
             result.errors.push(
               `Failed to sync attachments for email ${email.id}: ${error.message}`
             );
           }
         }
+      } else {
+        logger.warn('[EmailToCaseService.executeEmailImport] Skipping attachment import', {
+          reason: !importAttachments ? 'importAttachments=false' : 'no accessToken',
+        });
       }
 
       // Set success based on whether critical operations succeeded

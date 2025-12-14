@@ -8,6 +8,7 @@
 import { GraphQLError } from 'graphql';
 import { emailToCaseService } from '../../services/email-to-case.service';
 import type { CaseActorRole } from '@prisma/client';
+import logger from '../../utils/logger';
 
 // ============================================================================
 // Types
@@ -126,9 +127,20 @@ export const emailImportResolvers = {
         }
       }
 
+      // Log access token status for debugging attachment imports
+      logger.info('[executeEmailImport] Starting import', {
+        caseId,
+        emailAddressCount: emailAddresses.length,
+        importAttachments,
+        hasAccessToken: !!user.accessToken,
+        accessTokenPreview: user.accessToken ? `${user.accessToken.substring(0, 20)}...` : 'null',
+      });
+
       // Warn if importing attachments without access token
       if (importAttachments && !user.accessToken) {
-        console.warn('[executeEmailImport] Attachments requested but no access token available');
+        logger.warn(
+          '[executeEmailImport] Attachments requested but no access token available - attachments will NOT be imported'
+        );
       }
 
       const result = await emailToCaseService.executeEmailImport(
