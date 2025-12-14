@@ -53,6 +53,11 @@ const EMAIL_IMPORT_RESULT_FRAGMENT = gql`
     contactsCreated
     attachmentsImported
     errors
+    _debug {
+      hadAccessToken
+      importAttachmentsRequested
+      emailsWithAttachmentsCount
+    }
   }
 `;
 
@@ -113,12 +118,19 @@ export interface ContactRoleAssignment {
   role: 'Client' | 'OpposingParty' | 'OpposingCounsel' | 'Witness' | 'Expert';
 }
 
+export interface EmailImportDebugInfo {
+  hadAccessToken: boolean;
+  importAttachmentsRequested: boolean;
+  emailsWithAttachmentsCount: number;
+}
+
 export interface EmailImportResult {
   success: boolean;
   emailsLinked: number;
   contactsCreated: number;
   attachmentsImported: number;
   errors: string[];
+  _debug?: EmailImportDebugInfo;
 }
 
 export interface EmailImportState {
@@ -283,6 +295,16 @@ export function useEmailImport(caseId: string) {
       });
 
       const importResult = result.data?.executeEmailImport ?? null;
+
+      // Log debug info to help diagnose attachment import issues
+      console.log('[useEmailImport] Import result:', {
+        success: importResult?.success,
+        emailsLinked: importResult?.emailsLinked,
+        attachmentsImported: importResult?.attachmentsImported,
+        errors: importResult?.errors,
+        _debug: importResult?._debug,
+      });
+
       setState((prev) => ({
         ...prev,
         step: 'complete',

@@ -58,6 +58,20 @@ type EmailImportPreview {
 }
 
 """
+Debug info for diagnosing attachment import issues
+"""
+type EmailImportDebugInfo {
+  """Whether MS access token was available"""
+  hadAccessToken: Boolean!
+
+  """Whether user requested attachment import"""
+  importAttachmentsRequested: Boolean!
+
+  """Number of emails that had attachments"""
+  emailsWithAttachmentsCount: Int!
+}
+
+"""
 Result of executing an email import
 """
 type EmailImportResult {
@@ -75,6 +89,9 @@ type EmailImportResult {
 
   """Any errors that occurred during import"""
   errors: [String!]!
+
+  """Debug info for diagnosing issues (temporary)"""
+  _debug: EmailImportDebugInfo
 }
 
 # ============================================================================

@@ -58,6 +58,12 @@ export interface EmailImportResult {
   contactsCreated: number;
   attachmentsImported: number;
   errors: string[];
+  /** Diagnostic info for debugging attachment import issues */
+  _debug?: {
+    hadAccessToken: boolean;
+    importAttachmentsRequested: boolean;
+    emailsWithAttachmentsCount: number;
+  };
 }
 
 export interface UserContext {
@@ -288,14 +294,23 @@ export class EmailToCaseService {
       }
 
       // 4. Import attachments if requested and access token available
+      const emailsWithAttachments = emails.filter((e) => e.hasAttachments);
+
+      // Add debug info to result
+      result._debug = {
+        hadAccessToken: !!accessToken,
+        importAttachmentsRequested: importAttachments,
+        emailsWithAttachmentsCount: emailsWithAttachments.length,
+      };
+
       logger.info('[EmailToCaseService.executeEmailImport] Attachment import check', {
         importAttachments,
         hasAccessToken: !!accessToken,
         willImportAttachments: !!(importAttachments && accessToken),
+        emailsWithAttachments: emailsWithAttachments.length,
       });
 
       if (importAttachments && accessToken) {
-        const emailsWithAttachments = emails.filter((e) => e.hasAttachments);
         logger.info('[EmailToCaseService.executeEmailImport] Starting attachment import', {
           emailsWithAttachments: emailsWithAttachments.length,
           emailIds: emailsWithAttachments.map((e) => e.id),
