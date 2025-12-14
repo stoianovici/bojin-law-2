@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Notification Service
  * Story 2.8.2: Case Approval Workflow

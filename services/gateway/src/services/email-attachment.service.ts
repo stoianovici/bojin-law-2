@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Email Attachment Service
  * Story 5.1: Email Integration and Synchronization

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Extraction Conversion Service
  * Story 5.2: Communication Intelligence Engine

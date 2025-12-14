@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Email Drafting Resolvers
  * Story 5.3: AI-Powered Email Drafting

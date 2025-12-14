@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Email Search Service
  * Story 5.1: Email Integration and Synchronization

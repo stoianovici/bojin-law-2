@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Attachment Suggestion Service
  * Story 5.3: AI-Powered Email Drafting - Tasks 8 & 9

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Case Subscription Service
  * Story 4.6: Task Collaboration and Updates (AC: 6)

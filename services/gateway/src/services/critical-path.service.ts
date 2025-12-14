@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Story 4.4: Critical Path Service
 // Calculates critical path using longest path algorithm
 

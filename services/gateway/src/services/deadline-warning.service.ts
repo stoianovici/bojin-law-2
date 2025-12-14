@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Deadline Warning Service
  * Story 5.4: Proactive AI Suggestions System

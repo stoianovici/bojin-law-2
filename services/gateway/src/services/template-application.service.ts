@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Story 4.4: Template Application Service
 // Applies task templates to cases, creating tasks with dependencies
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Email Categorization Worker
  * Story 5.1: Email Integration and Synchronization

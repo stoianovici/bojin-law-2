@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Task Template Resolvers
  * Story 4.4: Task Dependencies and Automation

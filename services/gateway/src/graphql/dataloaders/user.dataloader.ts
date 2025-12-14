@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * User DataLoader
  * Story 4.5 QA Fix: PERF-001

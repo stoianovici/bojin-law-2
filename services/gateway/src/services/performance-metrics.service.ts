@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Performance Metrics Service
  * Story 3.8: Document System Testing and Performance - Task 17

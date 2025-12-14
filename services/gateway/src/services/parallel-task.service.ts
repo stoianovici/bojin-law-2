@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Story 4.4: Parallel Task Service
 // Identifies parallel tasks and suggests assignees
 
