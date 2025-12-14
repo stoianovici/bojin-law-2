@@ -13,6 +13,7 @@ import {
   PrivacyLevel,
   UserRole,
 } from '@prisma/client';
+import logger from '../utils/logger';
 
 // ============================================================================
 // Types
@@ -260,13 +261,19 @@ export class UnifiedTimelineService {
     });
 
     if (!email) {
-      console.log('[syncEmailToCommunicationEntry] Email not found:', emailId);
+      logger.warn('[syncEmailToCommunicationEntry] Email not found', { emailId });
       return null;
     }
 
     // Must have caseId to sync
     if (!email.caseId) {
-      console.log('[syncEmailToCommunicationEntry] Email has no caseId:', emailId);
+      logger.warn(
+        '[syncEmailToCommunicationEntry] Email has no caseId - this should not happen after updateMany',
+        {
+          emailId,
+          subject: email.subject?.substring(0, 50),
+        }
+      );
       return null;
     }
 
@@ -278,7 +285,7 @@ export class UnifiedTimelineService {
     if (existing) {
       // If existing entry has different caseId, update it
       if (existing.caseId !== email.caseId) {
-        console.log('[syncEmailToCommunicationEntry] Updating existing entry caseId:', {
+        logger.info('[syncEmailToCommunicationEntry] Updating existing entry caseId', {
           entryId: existing.id,
           oldCaseId: existing.caseId,
           newCaseId: email.caseId,
@@ -289,9 +296,10 @@ export class UnifiedTimelineService {
         });
         return this.mapToTimelineEntry(updated);
       }
-      console.log('[syncEmailToCommunicationEntry] Already synced:', {
+      logger.info('[syncEmailToCommunicationEntry] Already synced', {
         emailId,
         entryId: existing.id,
+        caseId: existing.caseId,
       });
       return this.mapToTimelineEntry(existing);
     }
@@ -337,6 +345,14 @@ export class UnifiedTimelineService {
     }
 
     // Create CommunicationEntry
+    logger.info('[syncEmailToCommunicationEntry] Creating new CommunicationEntry', {
+      emailId,
+      caseId: email.caseId,
+      firmId: email.firmId,
+      subject: email.subject?.substring(0, 50),
+      direction,
+    });
+
     const entry = await prisma.communicationEntry.create({
       data: {
         firmId: email.firmId,
@@ -366,6 +382,12 @@ export class UnifiedTimelineService {
       include: {
         attachments: { select: { id: true } },
       },
+    });
+
+    logger.info('[syncEmailToCommunicationEntry] CommunicationEntry created successfully', {
+      emailId,
+      entryId: entry.id,
+      caseId: entry.caseId,
     });
 
     // Sync attachments
