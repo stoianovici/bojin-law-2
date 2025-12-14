@@ -243,7 +243,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
       case 'tasks':
         return <TasksTab tasks={caseData.tasks} users={caseData.teamMembers} />;
       case 'communications':
-        return <CommunicationsTab caseId={caseId} />;
+        return <CommunicationsTab caseId={caseId} caseTitle={caseData.case.title} />;
       case 'time-entries':
         return <TimeEntriesTab />;
       case 'notes':

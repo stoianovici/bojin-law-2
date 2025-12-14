@@ -1,0 +1,20 @@
+{
+  "name": "yahoo-mail-reader",
+  "version": "1.0.0",
+  "description": "Read emails from Yahoo Mail via IMAP",
+  "type": "module",
+  "scripts": {
+    "read": "tsx src/read-emails.ts",
+    "search": "tsx src/read-emails.ts --search"
+  },
+  "dependencies": {
+    "imapflow": "^1.0.164",
+    "mailparser": "^3.7.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

@@ -45,18 +45,12 @@ export function loadSchema(): string {
     join(schemaDir, 'document-drafting.graphql'),
     'utf-8'
   );
-  const wordIntegrationSchema = readFileSync(
-    join(schemaDir, 'word-integration.graphql'),
-    'utf-8'
-  );
+  const wordIntegrationSchema = readFileSync(join(schemaDir, 'word-integration.graphql'), 'utf-8');
   const semanticVersionControlSchema = readFileSync(
     join(schemaDir, 'semantic-version-control.graphql'),
     'utf-8'
   );
-  const documentReviewSchema = readFileSync(
-    join(schemaDir, 'document-review.graphql'),
-    'utf-8'
-  );
+  const documentReviewSchema = readFileSync(join(schemaDir, 'document-review.graphql'), 'utf-8');
   const documentIntelligenceSchema = readFileSync(
     join(schemaDir, 'document-intelligence.graphql'),
     'utf-8'
@@ -66,29 +60,14 @@ export function loadSchema(): string {
     'utf-8'
   );
   // Story 4.1: Natural Language Task Parser
-  const taskParserSchema = readFileSync(
-    join(schemaDir, 'task-parser.graphql'),
-    'utf-8'
-  );
+  const taskParserSchema = readFileSync(join(schemaDir, 'task-parser.graphql'), 'utf-8');
   // Story 4.2: Task Type System Implementation
-  const taskSchema = readFileSync(
-    join(schemaDir, 'task.graphql'),
-    'utf-8'
-  );
+  const taskSchema = readFileSync(join(schemaDir, 'task.graphql'), 'utf-8');
   // Story 4.3: Time Estimation & Manual Time Logging
-  const timeEntrySchema = readFileSync(
-    join(schemaDir, 'time-entry.graphql'),
-    'utf-8'
-  );
+  const timeEntrySchema = readFileSync(join(schemaDir, 'time-entry.graphql'), 'utf-8');
   // Story 4.4: Task Dependencies and Automation
-  const taskTemplateSchema = readFileSync(
-    join(schemaDir, 'task-template.graphql'),
-    'utf-8'
-  );
-  const taskDependencySchema = readFileSync(
-    join(schemaDir, 'task-dependency.graphql'),
-    'utf-8'
-  );
+  const taskTemplateSchema = readFileSync(join(schemaDir, 'task-template.graphql'), 'utf-8');
+  const taskDependencySchema = readFileSync(join(schemaDir, 'task-dependency.graphql'), 'utf-8');
   // Story 4.5: Team Workload Management
   const workloadManagementSchema = readFileSync(
     join(schemaDir, 'workload-management.graphql'),
@@ -100,30 +79,18 @@ export function loadSchema(): string {
     'utf-8'
   );
   // Story 4.7: Task Analytics and Optimization
-  const taskAnalyticsSchema = readFileSync(
-    join(schemaDir, 'task-analytics.graphql'),
-    'utf-8'
-  );
+  const taskAnalyticsSchema = readFileSync(join(schemaDir, 'task-analytics.graphql'), 'utf-8');
   // Dynamic case types per firm
-  const caseTypeSchema = readFileSync(
-    join(schemaDir, 'case-type.graphql'),
-    'utf-8'
-  );
+  const caseTypeSchema = readFileSync(join(schemaDir, 'case-type.graphql'), 'utf-8');
   // Story 5.1: Email Integration and Synchronization
-  const emailSchema = readFileSync(
-    join(schemaDir, 'email.graphql'),
-    'utf-8'
-  );
+  const emailSchema = readFileSync(join(schemaDir, 'email.graphql'), 'utf-8');
   // Story 5.2: Communication Intelligence Engine
   const communicationIntelligenceSchema = readFileSync(
     join(schemaDir, 'communication-intelligence.graphql'),
     'utf-8'
   );
   // Story 5.3: AI-Powered Email Drafting
-  const emailDraftingSchema = readFileSync(
-    join(schemaDir, 'email-drafting.graphql'),
-    'utf-8'
-  );
+  const emailDraftingSchema = readFileSync(join(schemaDir, 'email-drafting.graphql'), 'utf-8');
   // Story 5.4: Proactive AI Suggestions - may already exist
   const proactiveSuggestionsSchema = readFileSync(
     join(schemaDir, 'proactive-suggestions.graphql'),
@@ -135,10 +102,7 @@ export function loadSchema(): string {
     'utf-8'
   );
   // Story 5.6: AI Learning and Personalization
-  const aiLearningSchema = readFileSync(
-    join(schemaDir, 'ai-learning.graphql'),
-    'utf-8'
-  );
+  const aiLearningSchema = readFileSync(join(schemaDir, 'ai-learning.graphql'), 'utf-8');
   // Story 5.7: Platform Intelligence Dashboard
   const platformIntelligenceSchema = readFileSync(
     join(schemaDir, 'platform-intelligence.graphql'),
@@ -149,6 +113,8 @@ export function loadSchema(): string {
     join(schemaDir, 'natural-language-commands.graphql'),
     'utf-8'
   );
+  // OPS-022: Email-to-Case Timeline Integration
+  const emailImportSchema = readFileSync(join(schemaDir, 'email-import.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -189,6 +155,7 @@ export function loadSchema(): string {
     aiLearningSchema,
     platformIntelligenceSchema,
     naturalLanguageCommandsSchema,
+    emailImportSchema,
   ].join('\n\n');
 }
 

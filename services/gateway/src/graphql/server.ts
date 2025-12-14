@@ -49,6 +49,7 @@ import { emailResolvers } from './resolvers/email.resolvers';
 import { aiLearningResolvers } from './resolvers/ai-learning.resolvers';
 import { platformIntelligenceResolvers } from './resolvers/platform-intelligence.resolvers';
 import { naturalLanguageCommandsResolvers } from './resolvers/natural-language-commands.resolvers';
+import { emailImportResolvers } from './resolvers/email-import.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -93,6 +94,7 @@ const resolvers = {
     ...emailResolvers.Query,
     ...aiLearningResolvers.Query,
     ...platformIntelligenceResolvers.Query,
+    ...emailImportResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -118,6 +120,7 @@ const resolvers = {
     ...aiLearningResolvers.Mutation,
     ...platformIntelligenceResolvers.Mutation,
     ...naturalLanguageCommandsResolvers.Mutation,
+    ...emailImportResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -231,6 +234,10 @@ const resolvers = {
   // Natural Language Commands resolvers (Story 1.5)
   CommandIntent: naturalLanguageCommandsResolvers.CommandIntent,
   CommandStatus: naturalLanguageCommandsResolvers.CommandStatus,
+  // Email Import resolvers (OPS-022)
+  EmailImportPreview: emailImportResolvers.EmailImportPreview,
+  DateRange: emailImportResolvers.DateRange,
+  ContactCandidate: emailImportResolvers.ContactCandidate,
 };
 
 /**

@@ -1,0 +1,140 @@
+# Email Import GraphQL Schema
+# OPS-022: Email-to-Case Timeline Integration
+#
+# Provides types and operations for importing emails into a case
+# based on contact email addresses, with contact auto-discovery
+# and attachment import.
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+A contact discovered from email participants
+"""
+type ContactCandidate {
+  """Contact's email address"""
+  email: String!
+
+  """Contact's display name from email headers"""
+  name: String
+
+  """Number of emails this contact appears in"""
+  occurrences: Int!
+
+  """AI-suggested role based on email patterns"""
+  suggestedRole: CaseActorRole
+
+  """Whether this contact is already a CaseActor for the target case"""
+  isExistingActor: Boolean!
+}
+
+"""
+Date range for email import preview
+"""
+type DateRange {
+  start: DateTime
+  end: DateTime
+}
+
+"""
+Preview of what will be imported before executing
+"""
+type EmailImportPreview {
+  """Total number of emails that match the contact addresses"""
+  emailCount: Int!
+
+  """Date range of matching emails"""
+  dateRange: DateRange!
+
+  """Unique contacts discovered from email participants"""
+  contacts: [ContactCandidate!]!
+
+  """Number of emails with attachments"""
+  attachmentCount: Int!
+
+  """Number of unique email threads"""
+  threadCount: Int!
+}
+
+"""
+Result of executing an email import
+"""
+type EmailImportResult {
+  """Whether the import completed successfully"""
+  success: Boolean!
+
+  """Number of emails linked to the case"""
+  emailsLinked: Int!
+
+  """Number of new CaseActors created"""
+  contactsCreated: Int!
+
+  """Number of attachments imported as documents"""
+  attachmentsImported: Int!
+
+  """Any errors that occurred during import"""
+  errors: [String!]!
+}
+
+# ============================================================================
+# Inputs
+# ============================================================================
+
+"""
+Contact role assignment for import
+"""
+input ContactRoleAssignmentInput {
+  """Contact's email address"""
+  email: String!
+
+  """Contact's display name"""
+  name: String
+
+  """Role to assign to this contact"""
+  role: CaseActorRole!
+}
+
+"""
+Input for executing email import
+"""
+input ExecuteEmailImportInput {
+  """ID of the case to import emails into"""
+  caseId: ID!
+
+  """Email addresses to search for"""
+  emailAddresses: [String!]!
+
+  """Role assignments for discovered contacts"""
+  contactAssignments: [ContactRoleAssignmentInput!]!
+
+  """Whether to import email attachments as documents"""
+  importAttachments: Boolean!
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Preview what will be imported for given email addresses.
+  Returns email count, date range, discovered contacts, and attachment count.
+  """
+  previewEmailImport(
+    """Email addresses to search for in email participants"""
+    emailAddresses: [String!]!
+  ): EmailImportPreview!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Execute the email import.
+  Links emails to case, creates CaseActors for contacts, and imports attachments.
+  """
+  executeEmailImport(input: ExecuteEmailImportInput!): EmailImportResult!
+}
