@@ -1,0 +1,124 @@
+# Story 1.5: Natural Language Commands for QuickActionsBar
+# GraphQL schema for processing natural language input and executing actions
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+enum CommandIntent {
+  CREATE_TASK
+  ADD_DOCUMENT
+  SCHEDULE_DEADLINE
+  EMAIL_CLIENT
+  LOG_TIME
+  UNKNOWN
+}
+
+enum CommandStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
+  CLARIFICATION_NEEDED
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+type NaturalLanguageCommandResult {
+  """Whether the command was successfully processed"""
+  success: Boolean!
+
+  """Processing status"""
+  status: CommandStatus!
+
+  """Detected intent from the natural language input"""
+  intent: CommandIntent!
+
+  """Confidence score for intent detection (0-1)"""
+  confidence: Float!
+
+  """User-facing message in Romanian"""
+  message: String!
+
+  """ID of the created/modified entity (if applicable)"""
+  entityId: ID
+
+  """Type of entity created (task, document, timeEntry, etc.)"""
+  entityType: String
+
+  """Extracted parameters from the command"""
+  extractedParams: CommandParams
+
+  """Suggested follow-up actions"""
+  suggestedActions: [SuggestedAction!]
+}
+
+type CommandParams {
+  """Task/action title"""
+  title: String
+
+  """Description or notes"""
+  description: String
+
+  """Due date if mentioned"""
+  dueDate: Date
+
+  """Due time if mentioned"""
+  dueTime: String
+
+  """Priority level if mentioned"""
+  priority: TaskPriority
+
+  """Task type if applicable"""
+  taskType: TaskType
+
+  """Duration in minutes (for time logging)"""
+  durationMinutes: Int
+
+  """Email recipient info"""
+  recipientEmail: String
+
+  """Document type if mentioned"""
+  documentType: String
+}
+
+type SuggestedAction {
+  """Action type"""
+  type: String!
+
+  """Display label in Romanian"""
+  label: String!
+
+  """Action parameters"""
+  params: JSON
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+input ProcessCommandInput {
+  """Natural language input from user (Romanian)"""
+  input: String!
+
+  """Case context for the command"""
+  caseId: ID!
+
+  """Optional: pre-selected intent from quick action chips"""
+  preselectedIntent: CommandIntent
+}
+
+# ============================================================================
+# Mutation Extensions
+# ============================================================================
+
+extend type Mutation {
+  """
+  Process a natural language command and execute the appropriate action.
+  Supports Romanian language input.
+  """
+  processNaturalLanguageCommand(
+    input: ProcessCommandInput!
+  ): NaturalLanguageCommandResult!
+}

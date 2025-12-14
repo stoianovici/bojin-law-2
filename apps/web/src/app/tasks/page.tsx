@@ -16,10 +16,13 @@ import { TaskCreationBar } from '../../components/task/TaskCreationBar';
 import { TaskDetailModal } from '../../components/task/TaskDetailModal';
 import { TaskFilterBar } from '../../components/task/TaskFilterBar';
 import { useTaskManagementStore, useFilteredTasks } from '../../stores/task-management.store';
+import { useSetAIContext } from '../../contexts/AIAssistantContext';
 import type { Task } from '@legal-platform/types';
 
 
 export default function TasksPage() {
+  // Set AI assistant context to tasks
+  useSetAIContext('tasks');
   const {
     activeView,
     setActiveView,

@@ -48,6 +48,7 @@ import { emailDraftingResolvers } from './resolvers/email-drafting.resolvers';
 import { emailResolvers } from './resolvers/email.resolvers';
 import { aiLearningResolvers } from './resolvers/ai-learning.resolvers';
 import { platformIntelligenceResolvers } from './resolvers/platform-intelligence.resolvers';
+import { naturalLanguageCommandsResolvers } from './resolvers/natural-language-commands.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -116,6 +117,7 @@ const resolvers = {
     ...emailResolvers.Mutation,
     ...aiLearningResolvers.Mutation,
     ...platformIntelligenceResolvers.Mutation,
+    ...naturalLanguageCommandsResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -226,6 +228,9 @@ const resolvers = {
   CommunicationTemplate: communicationHubResolvers.CommunicationTemplate,
   BulkCommunication: communicationHubResolvers.BulkCommunication,
   CommunicationExport: communicationHubResolvers.CommunicationExport,
+  // Natural Language Commands resolvers (Story 1.5)
+  CommandIntent: naturalLanguageCommandsResolvers.CommandIntent,
+  CommandStatus: naturalLanguageCommandsResolvers.CommandStatus,
 };
 
 /**

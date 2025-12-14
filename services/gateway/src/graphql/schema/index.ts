@@ -144,6 +144,11 @@ export function loadSchema(): string {
     join(schemaDir, 'platform-intelligence.graphql'),
     'utf-8'
   );
+  // Story 1.5: Natural Language Commands (QuickActionsBar)
+  const naturalLanguageCommandsSchema = readFileSync(
+    join(schemaDir, 'natural-language-commands.graphql'),
+    'utf-8'
+  );
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -183,6 +188,7 @@ export function loadSchema(): string {
     communicationHubSchema,
     aiLearningSchema,
     platformIntelligenceSchema,
+    naturalLanguageCommandsSchema,
   ].join('\n\n');
 }
 

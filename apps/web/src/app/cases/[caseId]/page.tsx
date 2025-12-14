@@ -20,10 +20,10 @@ import { TimeEntriesTab } from '../../../components/case/tabs/TimeEntriesTab';
 import { NotesTab } from '../../../components/case/tabs/NotesTab';
 import { IntelligenceTab } from '../../../components/case/tabs/IntelligenceTab';
 import { AIInsightsPanel } from '../../../components/case/AIInsightsPanel';
-import { QuickActionsBar } from '../../../components/case/QuickActionsBar';
 import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
 import { useCase } from '../../../hooks/useCase';
 import { useSuggestions } from '../../../hooks/useSuggestions';
+import { useSetAIContext } from '../../../contexts/AIAssistantContext';
 import type { Case, User, Document, Task, DocumentNode } from '@legal-platform/types';
 
 interface CaseWorkspacePageProps {
@@ -181,6 +181,9 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
     setSelectedCase(caseId);
   }, [caseId, setSelectedCase]);
 
+  // Set AI assistant context to case mode
+  useSetAIContext('case', caseId, caseData?.case?.title);
+
   // Set page title
   useEffect(() => {
     if (caseData?.case) {
@@ -266,7 +269,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         {/* Workspace Tabs */}
         <WorkspaceTabs />
 
-        {/* Tab Content Area - Add right padding when AI panel is expanded, bottom padding for QuickActionsBar */}
+        {/* Tab Content Area - Add right padding when AI panel is expanded */}
         <div
           className={clsx(
             'flex-1 overflow-hidden relative pb-32 transition-all duration-300',
@@ -285,9 +288,6 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           onDismissSuggestion={handleDismissSuggestion}
           onTakeAction={handleTakeAction}
         />
-
-        {/* Quick Actions Bar - Fixed at bottom */}
-        <QuickActionsBar />
       </div>
     </ErrorBoundary>
   );

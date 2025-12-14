@@ -11,10 +11,13 @@ import { ComposeInterface } from '../../components/communication/ComposeInterfac
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useEmailSync, useEmailThreads } from '../../hooks/useEmailSync';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSetAIContext } from '../../contexts/AIAssistantContext';
 import { RefreshCw, Mail, AlertCircle, Link2 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 
 export default function CommunicationsPage() {
+  // Set AI assistant context to communications
+  useSetAIContext('communications');
   const { setThreads, getSelectedThread, setUserEmail } = useCommunicationStore();
   const selectedThread = getSelectedThread();
 

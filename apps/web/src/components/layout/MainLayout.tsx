@@ -11,6 +11,8 @@ import { TopBar } from './TopBar';
 import { CommandPalette } from './CommandPalette';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { UserProvider, useUser } from '../../contexts/UserContext';
+import { AIAssistantProvider } from '../../contexts/AIAssistantContext';
+import { QuickActionsBar } from '../case/QuickActionsBar';
 import { useAuth } from '../../lib/hooks/useAuth';
 
 interface MainLayoutContentProps {
@@ -51,6 +53,9 @@ function MainLayoutContent({ children }: MainLayoutContentProps) {
 
       {/* Command Palette Modal */}
       <CommandPalette />
+
+      {/* Global AI Assistant */}
+      <QuickActionsBar />
     </div>
   );
 }
@@ -66,12 +71,15 @@ export interface MainLayoutProps {
  * - Sidebar with collapse/expand
  * - Top bar navigation
  * - Command palette
+ * - AI assistant bar
  * - User context provider
  */
 export function MainLayout({ children }: MainLayoutProps) {
   return (
     <UserProvider>
-      <MainLayoutContent>{children}</MainLayoutContent>
+      <AIAssistantProvider>
+        <MainLayoutContent>{children}</MainLayoutContent>
+      </AIAssistantProvider>
     </UserProvider>
   );
 }

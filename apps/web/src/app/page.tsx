@@ -10,9 +10,13 @@ import { AssociateDashboard } from '../components/dashboard/AssociateDashboard';
 import { ParalegalDashboard } from '../components/dashboard/ParalegalDashboard';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useNavigationStore } from '../stores/navigation.store';
+import { useSetAIContext } from '../contexts/AIAssistantContext';
 
 export default function HomePage() {
   const { currentRole } = useNavigationStore();
+
+  // Set AI assistant context to dashboard
+  useSetAIContext('dashboard');
 
   // Render appropriate dashboard based on role
   switch (currentRole) {

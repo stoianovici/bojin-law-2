@@ -11,6 +11,7 @@ import { useDocumentsStore } from '../../stores/documents.store';
 import { DocumentFilters } from '../../components/documents/DocumentFilters';
 import { DocumentSortMenu } from '../../components/documents/DocumentSortMenu';
 import { DocumentSearchBar } from '../../components/documents/DocumentSearchBar';
+import { useSetAIContext } from '../../contexts/AIAssistantContext';
 import type { DocumentOverview } from '@legal-platform/types';
 
 // Documents should be fetched from API - empty array for clean state
@@ -26,6 +27,8 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function DocumentsPage() {
+  // Set AI assistant context to documents
+  useSetAIContext('documents');
   const {
     filteredDocuments,
     totalItems,

@@ -34,7 +34,7 @@ export const useCaseWorkspaceStore = create<CaseWorkspaceState>()(
       // Initial state
       activeTab: 'overview',
       aiPanelCollapsed: false,
-      quickActionsVisible: true,
+      quickActionsVisible: false, // Collapsed by default
       selectedCaseId: null,
 
       // Switch between workspace tabs
