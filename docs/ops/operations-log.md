@@ -29,6 +29,7 @@
 | OPS-020 | Redesign AI Bar - Floating Pill Design            | Feature     | P2-Medium   | Resolved    | [archive/ops-020.md](archive/ops-020.md) |
 | OPS-021 | Ensure dev/production parity                      | Infra       | P2-Medium   | Resolved    | [archive/ops-021.md](archive/ops-021.md) |
 | OPS-022 | Email-to-Case Timeline Integration                | Feature     | P1-High     | In Progress | [issues/ops-022.md](issues/ops-022.md)   |
+| OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug         | P1-High     | Open        | [issues/ops-023.md](issues/ops-023.md)   |
 
 ---
 
@@ -45,6 +46,18 @@ When creating a new case and adding contact emails:
 3. Auto-discover contacts and assign roles (Client, Opposing Party, etc.)
 
 **Session 2 (2025-12-14):** Full implementation complete - backend service, GraphQL schema, resolvers, frontend hook, and EmailImportWizard component. Integrated into CommunicationsTab. All compiles without errors. Ready for local testing.
+
+### [OPS-023] Gateway Service TypeScript Compilation Errors
+
+**Status:** Open | **Priority:** P1-High | **Type:** Bug | **Created:** 2025-12-14
+
+Gateway service has ~50+ TypeScript errors preventing build. Issues include:
+
+- Prisma schema mismatches (field names changed)
+- Missing service exports/methods
+- Type incompatibilities accumulated over multiple features
+
+Web app builds independently and deploys fine. Gateway deployment blocked.
 
 ---
 

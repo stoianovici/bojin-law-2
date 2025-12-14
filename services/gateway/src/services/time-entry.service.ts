@@ -102,11 +102,7 @@ export class TimeEntryService {
     }
 
     // Calculate hourly rate
-    const hourlyRate = this.calculateHourlyRate(
-      user as User,
-      caseData as Case,
-      firm?.firm as Firm
-    );
+    const hourlyRate = this.calculateHourlyRate(user as User, caseData as Case, firm?.firm as Firm);
 
     // Create time entry
     const timeEntry = await this.prisma.timeEntry.create({
@@ -247,17 +243,14 @@ export class TimeEntryService {
    * @param dateRange - Optional date range filter
    * @returns Array of time entries
    */
-  async getTimeEntriesByUser(
-    userId: string,
-    dateRange?: TimeEntryDateRange
-  ): Promise<TimeEntry[]> {
+  async getTimeEntriesByUser(userId: string, dateRange?: TimeEntryDateRange): Promise<TimeEntry[]> {
     const entries = await this.prisma.timeEntry.findMany({
       where: {
         userId,
         ...(dateRange && {
           date: {
-            gte: new Date(dateRange.start),
-            lte: new Date(dateRange.end),
+            ...(dateRange.start && { gte: new Date(dateRange.start) }),
+            ...(dateRange.end && { lte: new Date(dateRange.end) }),
           },
         }),
       },

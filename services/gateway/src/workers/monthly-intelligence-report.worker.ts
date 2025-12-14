@@ -8,9 +8,8 @@
 
 import { prisma } from '@legal-platform/database';
 import * as cron from 'node-cron';
-import { platformIntelligenceService } from '../services/platform-intelligence.service';
-import { dashboardExportService } from '../services/dashboard-export.service';
-import { notificationService } from '../services/notification.service';
+import { getPlatformIntelligenceService } from '../services/platform-intelligence.service';
+import { getDashboardExportService } from '../services/dashboard-export.service';
 
 // ============================================================================
 // Configuration
@@ -188,11 +187,12 @@ async function generateMonthlyReports(
       try {
         console.log(`[Monthly Intelligence Report Worker] Processing firm: ${firm.name}`);
 
+        // Get services
+        const platformIntelligenceService = getPlatformIntelligenceService();
+        const dashboardExportService = getDashboardExportService();
+
         // Generate dashboard data
-        const dashboardData = await platformIntelligenceService.getDashboard(
-          firm.id,
-          dateRange
-        );
+        const dashboardData = await platformIntelligenceService.getDashboard(firm.id, dateRange);
 
         // Generate PDF export
         const exportResult = await dashboardExportService.exportDashboard(firm.id, {
@@ -220,26 +220,20 @@ async function generateMonthlyReports(
         // Send notifications to Partners
         for (const partner of partners) {
           try {
-            await notificationService.createNotification({
-              userId: partner.id,
-              type: 'REPORT_READY',
-              title: `Raport lunar inteligență platformă - ${monthKey}`,
-              message: `Raportul de inteligență platformă pentru ${firm.name} este disponibil pentru descărcare.`,
+            // Create notification directly using prisma
+            // Note: Using CasePendingApproval as a generic notification type
+            // TODO: Add REPORT_READY to NotificationType enum when needed
+            await prisma.notification.create({
               data: {
-                reportUrl: exportResult.url,
-                expiresAt: exportResult.expiresAt.toISOString(),
-                firmId: firm.id,
-                month: monthKey,
-                platformHealthScore: dashboardData.platformHealthScore,
-                totalTimeSaved: dashboardData.efficiency.totalTimeSavedHours,
-                roiValue: dashboardData.roi.totalValueSaved,
+                userId: partner.id,
+                type: 'CasePendingApproval', // Using existing type as placeholder
+                title: `Raport lunar inteligență platformă - ${monthKey}`,
+                message: `Raportul de inteligență platformă pentru ${firm.name} este disponibil pentru descărcare.`,
+                link: '/analytics/platform-intelligence',
               },
-              link: '/analytics/platform-intelligence',
             });
 
-            console.log(
-              `[Monthly Intelligence Report Worker] Notified partner: ${partner.email}`
-            );
+            console.log(`[Monthly Intelligence Report Worker] Notified partner: ${partner.email}`);
           } catch (notifyError) {
             console.error(
               `[Monthly Intelligence Report Worker] Failed to notify ${partner.email}:`,

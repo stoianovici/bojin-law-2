@@ -300,7 +300,12 @@ async function getUncategorizedEmailsByUser(
 async function processUserEmails(
   userId: string,
   emails: EmailForCategorization[]
-): Promise<{ processed: number; assigned: number; flaggedForReview: number; totalTokensUsed: number }> {
+): Promise<{
+  processed: number;
+  assigned: number;
+  flaggedForReview: number;
+  totalTokensUsed: number;
+}> {
   const stats = {
     processed: 0,
     assigned: 0,
@@ -359,30 +364,14 @@ async function processUserEmails(
 /**
  * Get user's active cases with actors
  */
-async function getUserCases(userId: string, firmId: string): Promise<CaseContext[]> {
+async function getUserCases(userId: string, _firmId: string): Promise<CaseContext[]> {
   const caseTeams = await prisma.caseTeam.findMany({
     where: { userId },
-    select: {
+    include: {
       case: {
-        select: {
-          id: true,
-          title: true,
-          caseNumber: true,
-          description: true,
-          status: true,
-          client: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-          actors: {
-            select: {
-              name: true,
-              email: true,
-              role: true,
-            },
-          },
+        include: {
+          client: true,
+          actors: true,
         },
       },
     },
@@ -390,19 +379,23 @@ async function getUserCases(userId: string, firmId: string): Promise<CaseContext
 
   return caseTeams
     .filter((ct) => ct.case.status === 'Active' || ct.case.status === 'Pending')
-    .map((ct) => ({
-      id: ct.case.id,
-      title: ct.case.title,
-      caseNumber: ct.case.caseNumber,
-      clientName: ct.case.client?.name || 'Unknown',
-      clientEmail: ct.case.client?.email || undefined,
-      description: ct.case.description || undefined,
-      actors: ct.case.actors.map((a) => ({
-        name: a.name,
-        email: a.email || undefined,
-        role: a.role,
-      })),
-    }));
+    .map((ct) => {
+      // Extract email from client's contactInfo JSON field
+      const clientContactInfo = ct.case.client?.contactInfo as { email?: string } | null;
+      return {
+        id: ct.case.id,
+        title: ct.case.title,
+        caseNumber: ct.case.caseNumber,
+        clientName: ct.case.client?.name || 'Unknown',
+        clientEmail: clientContactInfo?.email || undefined,
+        description: ct.case.description || undefined,
+        actors: ct.case.actors.map((a) => ({
+          name: a.name,
+          email: a.email || undefined,
+          role: a.role,
+        })),
+      };
+    });
 }
 
 /**
@@ -445,9 +438,7 @@ function categorizeByHeuristics(
     const reasons: string[] = [];
 
     // Check sender email against case actors
-    const matchingActor = caseCtx.actors.find(
-      (a) => a.email?.toLowerCase() === senderEmail
-    );
+    const matchingActor = caseCtx.actors.find((a) => a.email?.toLowerCase() === senderEmail);
     if (matchingActor) {
       confidence = 0.95;
       reasons.push(`Sender matches case actor: ${matchingActor.role}`);
@@ -473,7 +464,10 @@ function categorizeByHeuristics(
     }
 
     // Check case title keywords
-    const titleWords = caseCtx.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+    const titleWords = caseCtx.title
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 3);
     const matchingWords = titleWords.filter(
       (w) => subjectLower.includes(w) || bodyLower.includes(w)
     );
@@ -540,13 +534,15 @@ export async function triggerProcessing(): Promise<WorkerStats> {
   const startStats = await getWorkerStats();
   await processCategorizationBatch();
   const endStats = await getWorkerStats();
-  return endStats || {
-    processed: 0,
-    assigned: 0,
-    flaggedForReview: 0,
-    errors: 0,
-    totalTokensUsed: 0,
-    avgConfidence: 0,
-    processingTimeMs: 0,
-  };
+  return (
+    endStats || {
+      processed: 0,
+      assigned: 0,
+      flaggedForReview: 0,
+      errors: 0,
+      totalTokensUsed: 0,
+      avgConfidence: 0,
+      processingTimeMs: 0,
+    }
+  );
 }
