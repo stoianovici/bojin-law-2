@@ -3,7 +3,7 @@ packages:
   - packages/*
   - packages/shared/*
   - services/*
-  - scripts/*
+  # Note: scripts/* excluded - standalone utilities with own dependencies
 
 ignoredBuiltDependencies:
   - sharp
