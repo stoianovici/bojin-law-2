@@ -13,6 +13,7 @@ import { prisma } from '@legal-platform/database';
 import { CaseActorRole } from '@prisma/client';
 import { getEmailAttachmentService } from './email-attachment.service';
 import { caseActivityService } from './case-activity.service';
+import { unifiedTimelineService } from './unified-timeline.service';
 import logger from '../utils/logger';
 
 // ============================================================================
@@ -192,6 +193,59 @@ export class EmailToCaseService {
 
         result.emailsLinked = linkedResult.count;
 
+        // Sync emails to CommunicationEntry for unified timeline display
+        // This is critical - without this, emails won't appear in the Communications tab
+        logger.info('[EmailToCaseService.executeEmailImport] Syncing emails to timeline', {
+          emailCount: emails.length,
+          emailIds: emails.map((e) => e.id),
+        });
+
+        let syncedCount = 0;
+        let syncErrors: string[] = [];
+
+        for (const email of emails) {
+          try {
+            logger.info('[EmailToCaseService.executeEmailImport] Syncing email', {
+              emailId: email.id,
+              subject: email.subject?.substring(0, 50),
+            });
+            const syncResult = await unifiedTimelineService.syncEmailToCommunicationEntry(email.id);
+            if (syncResult) {
+              syncedCount++;
+              logger.info('[EmailToCaseService.executeEmailImport] Email synced successfully', {
+                emailId: email.id,
+                communicationEntryId: syncResult.id,
+              });
+            } else {
+              logger.warn('[EmailToCaseService.executeEmailImport] Sync returned null', {
+                emailId: email.id,
+              });
+            }
+          } catch (syncError: any) {
+            const errorMsg = `Email ${email.id}: ${syncError.message}`;
+            syncErrors.push(errorMsg);
+            logger.error(
+              '[EmailToCaseService.executeEmailImport] Failed to sync email to timeline',
+              {
+                emailId: email.id,
+                error: syncError.message,
+                stack: syncError.stack,
+              }
+            );
+          }
+        }
+
+        logger.info('[EmailToCaseService.executeEmailImport] Timeline sync complete', {
+          syncedCount,
+          errorCount: syncErrors.length,
+          errors: syncErrors,
+        });
+
+        // Add sync errors to result
+        if (syncErrors.length > 0) {
+          result.errors.push(...syncErrors.map((e) => `Timeline sync: ${e}`));
+        }
+
         // Record activity for the import
         await caseActivityService.recordActivity(
           caseId,
@@ -272,47 +326,81 @@ export class EmailToCaseService {
 
   /**
    * Find emails where any of the given addresses appear as sender or recipient
+   * Uses raw SQL with PostgreSQL JSONB operators for reliable array element matching
    */
   private async findEmailsByParticipants(
     emailAddresses: string[],
     userId: string,
     firmId: string
   ): Promise<any[]> {
-    // Build a query that checks from, toRecipients, and ccRecipients JSON fields
-    // PostgreSQL JSON containment query
-    const emails = await prisma.email.findMany({
-      where: {
-        userId,
-        firmId,
-        isIgnored: false,
-        OR: emailAddresses.flatMap((address) => [
-          // Check 'from' field - it's a JSON object with 'address' property
-          {
-            from: {
-              path: ['address'],
-              string_contains: address,
-            },
-          },
-          // Check toRecipients array - each element has 'address' property
-          {
-            toRecipients: {
-              array_contains: [{ address }],
-            },
-          },
-          // Check ccRecipients array
-          {
-            ccRecipients: {
-              array_contains: [{ address }],
-            },
-          },
-        ]),
-      },
-      orderBy: {
-        receivedDateTime: 'desc',
-      },
-    });
+    if (emailAddresses.length === 0) {
+      return [];
+    }
 
-    return emails;
+    // Build dynamic OR conditions for each email address
+    // Uses PostgreSQL JSONB operators to search within JSON arrays:
+    // - "from"->>'address' for the from field (JSON object)
+    // - jsonb_array_elements for toRecipients/ccRecipients (JSON arrays)
+    const addressConditions = emailAddresses
+      .map(
+        (_, idx) => `(
+          LOWER("from"->>'address') LIKE LOWER($${idx + 4})
+          OR EXISTS (
+            SELECT 1 FROM jsonb_array_elements("to_recipients") AS r
+            WHERE LOWER(r->>'address') LIKE LOWER($${idx + 4})
+          )
+          OR EXISTS (
+            SELECT 1 FROM jsonb_array_elements("cc_recipients") AS r
+            WHERE LOWER(r->>'address') LIKE LOWER($${idx + 4})
+          )
+        )`
+      )
+      .join(' OR ');
+
+    // Build parameter array: [userId, firmId, false, ...addresses]
+    const params = [userId, firmId, false, ...emailAddresses.map((addr) => `%${addr}%`)];
+
+    const emails = await prisma.$queryRawUnsafe<any[]>(
+      `
+      SELECT *
+      FROM "emails"
+      WHERE "user_id" = $1
+        AND "firm_id" = $2
+        AND "is_ignored" = $3
+        AND (${addressConditions})
+      ORDER BY "received_date_time" DESC
+      `,
+      ...params
+    );
+
+    // Map snake_case columns to camelCase for consistency with Prisma
+    return emails.map((email) => ({
+      id: email.id,
+      graphMessageId: email.graph_message_id,
+      conversationId: email.conversation_id,
+      internetMessageId: email.internet_message_id,
+      subject: email.subject,
+      bodyPreview: email.body_preview,
+      bodyContent: email.body_content,
+      bodyContentType: email.body_content_type,
+      from: email.from,
+      toRecipients: email.to_recipients,
+      ccRecipients: email.cc_recipients,
+      bccRecipients: email.bcc_recipients,
+      receivedDateTime: email.received_date_time,
+      sentDateTime: email.sent_date_time,
+      hasAttachments: email.has_attachments,
+      importance: email.importance,
+      isRead: email.is_read,
+      isIgnored: email.is_ignored,
+      ignoredAt: email.ignored_at,
+      userId: email.user_id,
+      caseId: email.case_id,
+      firmId: email.firm_id,
+      syncedAt: email.synced_at,
+      createdAt: email.created_at,
+      updatedAt: email.updated_at,
+    }));
   }
 
   /**

@@ -260,6 +260,13 @@ export class UnifiedTimelineService {
     });
 
     if (!email) {
+      console.log('[syncEmailToCommunicationEntry] Email not found:', emailId);
+      return null;
+    }
+
+    // Must have caseId to sync
+    if (!email.caseId) {
+      console.log('[syncEmailToCommunicationEntry] Email has no caseId:', emailId);
       return null;
     }
 
@@ -269,6 +276,23 @@ export class UnifiedTimelineService {
     });
 
     if (existing) {
+      // If existing entry has different caseId, update it
+      if (existing.caseId !== email.caseId) {
+        console.log('[syncEmailToCommunicationEntry] Updating existing entry caseId:', {
+          entryId: existing.id,
+          oldCaseId: existing.caseId,
+          newCaseId: email.caseId,
+        });
+        const updated = await prisma.communicationEntry.update({
+          where: { id: existing.id },
+          data: { caseId: email.caseId },
+        });
+        return this.mapToTimelineEntry(updated);
+      }
+      console.log('[syncEmailToCommunicationEntry] Already synced:', {
+        emailId,
+        entryId: existing.id,
+      });
       return this.mapToTimelineEntry(existing);
     }
 
