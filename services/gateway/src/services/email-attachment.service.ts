@@ -563,7 +563,7 @@ export class EmailAttachmentService {
         uploadedBy: userId,
         oneDriveId: uploadResult.id,
         oneDrivePath: uploadResult.parentPath + '/' + attachment.name,
-        status: DocumentStatus.ACTIVE,
+        status: DocumentStatus.FINAL,
         metadata: {
           source: 'email_attachment',
           category: 'Email Attachment',
