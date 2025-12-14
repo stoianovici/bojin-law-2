@@ -576,7 +576,9 @@ export class EmailAttachmentService {
       data: {
         caseId,
         documentId: document.id,
-        addedBy: userId,
+        linkedBy: userId,
+        firmId,
+        isOriginal: true,
       },
     });
 
