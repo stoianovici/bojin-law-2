@@ -11,13 +11,13 @@ export async function GET() {
   // In production, this would validate the session and return real user data
 
   const mockUser = {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    email: 'alexandru.popescu@example.com',
-    firstName: 'Alexandru',
-    lastName: 'Popescu',
+    id: '86d03527-fed8-46df-8ca7-163d6b9d2c82',
+    email: 'lucian.bojin@bojin-law.com',
+    firstName: 'Lucian',
+    lastName: 'Bojin',
     role: 'Partner',
     status: 'Active',
-    firmId: '550e8400-e29b-41d4-a716-446655440001',
+    firmId: 'dc5231a5-1b00-4542-87c4-0117ac876423',
     azureAdId: 'azure-ad-id-12345',
     preferences: {},
     createdAt: new Date('2024-01-01').toISOString(),
