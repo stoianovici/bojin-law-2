@@ -6,17 +6,22 @@ Deploy the current code to Render services.
 
 Run these checks before deploying:
 
-1. **Check git status**:
+1. **Run parity check**:
+   - Run `pnpm check-parity`
+   - This validates dev/production alignment (Node versions, Dockerfiles, etc.)
+   - If it fails, fix the issues before deploying
+
+2. **Check git status**:
    - Run `git status`
    - Ensure working directory is clean (no uncommitted changes)
    - If dirty, ask user: "Uncommitted changes detected. Commit first with `/ops-commit`?"
 
-2. **Check current branch**:
+3. **Check current branch**:
    - Run `git branch --show-current`
    - Should be on `main` for production deploys
    - If not on main, warn user
 
-3. **Check if pushed**:
+4. **Check if pushed**:
    - Run `git status` to check if ahead of origin
    - If unpushed commits, run `git push` first
 

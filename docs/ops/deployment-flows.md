@@ -6,9 +6,10 @@
 ## TL;DR - Before You Push
 
 ```bash
-pnpm preflight        # Full check (includes Docker build)
-# or
+pnpm preflight:full   # Full check (parity + Docker build) - RECOMMENDED
+pnpm preflight        # Standard check (includes Docker build)
 pnpm preflight:quick  # Fast check (skips Docker)
+pnpm check-parity     # Just check dev/prod alignment
 ```
 
 After deploy:
@@ -54,8 +55,10 @@ This runs:
 
 Options:
 
+- `pnpm preflight:full` - Parity check + full preflight (recommended before important deploys)
 - `pnpm preflight:quick` - Skip Docker build (faster, for rapid iteration)
 - `pnpm preflight:fix` - Auto-fix formatting then check
+- `pnpm check-parity` - Just validate dev/prod environment alignment
 
 ### 2. After Deploying: Smoke Test
 
@@ -86,6 +89,30 @@ This checks:
 2. Check Render logs: `pnpm logs:web` or `pnpm logs:api`
 3. Create an issue in `docs/ops/issues/ops-XXX.md`
 4. Document the fix for future reference
+
+---
+
+## Dev/Production Parity
+
+Parity checks ensure your local development environment matches production. Run `pnpm check-parity` to validate:
+
+### What It Checks
+
+1. **Node.js Version** - All Dockerfiles and CI workflows use the same Node version (currently Node 22)
+2. **pnpm Version** - Local pnpm matches package.json's packageManager field
+3. **Docker Compose** - Config files are valid and parseable
+4. **Dockerfile Structure** - Production Dockerfiles have required directives
+5. **Environment Variables** - Templates exist and render.yaml is configured
+
+### Known Differences (Documented)
+
+| Aspect              | Local Dev                 | Production          |
+| ------------------- | ------------------------- | ------------------- |
+| Database migrations | Manual (`prisma migrate`) | Auto-run at startup |
+| Auth validation     | Can skip with env var     | Always validated    |
+| Redis               | Optional                  | Required            |
+
+These differences are intentional and documented. The parity check focuses on catching _accidental_ drift.
 
 ---
 
@@ -120,18 +147,20 @@ Use `pnpm dev:prod` to run production Docker builds locally for testing.
 
 ## Scripts Reference
 
-| Script                    | Purpose                               |
-| ------------------------- | ------------------------------------- |
-| `pnpm preflight`          | Full pre-push validation              |
-| `pnpm preflight:quick`    | Fast check (no Docker)                |
-| `pnpm preflight:fix`      | Auto-fix then check                   |
-| `pnpm smoke-test`         | Post-deploy verification (production) |
-| `pnpm smoke-test:staging` | Post-deploy verification (staging)    |
-| `pnpm dev:prod`           | Run production Docker locally         |
-| `pnpm deploy:staging`     | Trigger staging deploy                |
-| `pnpm deploy:production`  | Trigger production deploy             |
-| `pnpm logs:web`           | Stream web app logs                   |
-| `pnpm logs:api`           | Stream gateway logs                   |
+| Script                    | Purpose                                         |
+| ------------------------- | ----------------------------------------------- |
+| `pnpm preflight:full`     | Parity + full pre-push validation (recommended) |
+| `pnpm preflight`          | Standard pre-push validation                    |
+| `pnpm preflight:quick`    | Fast check (no Docker)                          |
+| `pnpm preflight:fix`      | Auto-fix then check                             |
+| `pnpm check-parity`       | Validate dev/prod environment alignment         |
+| `pnpm smoke-test`         | Post-deploy verification (production)           |
+| `pnpm smoke-test:staging` | Post-deploy verification (staging)              |
+| `pnpm dev:prod`           | Run production Docker locally                   |
+| `pnpm deploy:staging`     | Trigger staging deploy                          |
+| `pnpm deploy:production`  | Trigger production deploy                       |
+| `pnpm logs:web`           | Stream web app logs                             |
+| `pnpm logs:api`           | Stream gateway logs                             |
 
 ---
 

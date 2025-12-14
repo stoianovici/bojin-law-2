@@ -52,6 +52,8 @@
     "preflight": "scripts/preflight.sh",
     "preflight:quick": "scripts/preflight.sh --quick",
     "preflight:fix": "scripts/preflight.sh --fix",
+    "check-parity": "scripts/check-parity.sh",
+    "preflight:full": "pnpm check-parity && pnpm preflight",
     "smoke-test": "scripts/render/smoke-test.sh",
     "smoke-test:staging": "scripts/render/smoke-test.sh --staging"
   },

@@ -25,14 +25,15 @@
 | OPS-016 | Redesign Communications Tab in Case Details       | Feature     | P1-High     | Resolved | [archive/ops-016.md](archive/ops-016.md) |
 | OPS-017 | AI service TypeScript compilation errors          | Bug         | P1-High     | Resolved | [archive/ops-017.md](archive/ops-017.md) |
 | OPS-018 | AI Service Deployment Failure & Render Duplicates | Bug/Infra   | P1-High     | Resolved | [archive/ops-018.md](archive/ops-018.md) |
-| OPS-019 | Activate AI Chat Bar (QuickActionsBar)             | Feature     | P1-High     | Resolved | [archive/ops-019.md](archive/ops-019.md) |
-| OPS-020 | Redesign AI Bar - Floating Pill Design             | Feature     | P2-Medium   | Resolved | [archive/ops-020.md](archive/ops-020.md) |
+| OPS-019 | Activate AI Chat Bar (QuickActionsBar)            | Feature     | P1-High     | Resolved | [archive/ops-019.md](archive/ops-019.md) |
+| OPS-020 | Redesign AI Bar - Floating Pill Design            | Feature     | P2-Medium   | Resolved | [archive/ops-020.md](archive/ops-020.md) |
+| OPS-021 | Ensure dev/production parity                      | Infra       | P2-Medium   | Resolved | [archive/ops-021.md](archive/ops-021.md) |
 
 ---
 
 ## Active Issues Summary
 
-_No active issues._
+No active issues.
 
 ---
 
