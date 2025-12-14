@@ -11,7 +11,7 @@
 
 import { Client } from '@microsoft/microsoft-graph-client';
 import type { Attachment, FileAttachment } from '@microsoft/microsoft-graph-types';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, DocumentStatus } from '@prisma/client';
 import { createGraphClient, graphEndpoints } from '../config/graph.config';
 import { OneDriveService, oneDriveService } from './onedrive.service';
 import { R2StorageService, r2StorageService } from './r2-storage.service';
@@ -96,12 +96,12 @@ export class EmailAttachmentService {
     graphAttachmentId: string,
     accessToken: string
   ): Promise<SyncedAttachment> {
-    // Get email with case info
+    // Get email with case info (including clientId for Document creation)
     const email = await this.prisma.email.findUnique({
       where: { id: emailId },
       include: {
         case: {
-          select: { id: true, caseNumber: true },
+          select: { id: true, caseNumber: true, clientId: true, firmId: true },
         },
       },
     });
@@ -149,6 +149,9 @@ export class EmailAttachmentService {
         attachment,
         email.case!.id,
         email.case!.caseNumber,
+        email.case!.clientId,
+        email.case!.firmId,
+        email.userId,
         email.receivedDateTime,
         accessToken
       );
@@ -355,7 +358,7 @@ export class EmailAttachmentService {
 
     const caseInfo = await this.prisma.case.findUnique({
       where: { id: caseId },
-      select: { caseNumber: true },
+      select: { caseNumber: true, clientId: true, firmId: true },
     });
 
     if (!caseInfo) {
@@ -376,6 +379,9 @@ export class EmailAttachmentService {
       },
       caseId,
       caseInfo.caseNumber,
+      caseInfo.clientId,
+      caseInfo.firmId,
+      attachment.email.userId,
       attachment.email.receivedDateTime,
       accessToken
     );
@@ -500,6 +506,9 @@ export class EmailAttachmentService {
     attachment: AttachmentDownloadResult,
     caseId: string,
     caseNumber: string,
+    clientId: string,
+    firmId: string,
+    userId: string,
     emailDate: Date,
     accessToken: string
   ): Promise<{ storageUrl: string; documentId?: string }> {
@@ -542,20 +551,39 @@ export class EmailAttachmentService {
       }
     );
 
-    // Create Document record if needed
+    // Create Document record with required relations
     const document = await this.prisma.document.create({
       data: {
-        title: attachment.name,
+        clientId,
+        firmId,
         fileName: attachment.name,
         fileType: attachment.contentType,
         fileSize: attachment.size,
-        caseId,
-        oneDriveId: uploadResult.id,
         storagePath: uploadResult.parentPath + '/' + attachment.name,
-        status: 'active',
-        category: 'Email Attachment',
-        createdBy: 'system',
+        uploadedBy: userId,
+        oneDriveId: uploadResult.id,
+        oneDrivePath: uploadResult.parentPath + '/' + attachment.name,
+        status: DocumentStatus.ACTIVE,
+        metadata: {
+          source: 'email_attachment',
+          category: 'Email Attachment',
+        },
       },
+    });
+
+    // Link document to case via CaseDocument junction table
+    await this.prisma.caseDocument.create({
+      data: {
+        caseId,
+        documentId: document.id,
+        addedBy: userId,
+      },
+    });
+
+    logger.info('Document created from email attachment', {
+      documentId: document.id,
+      caseId,
+      fileName: attachment.name,
     });
 
     return {
