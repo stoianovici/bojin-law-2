@@ -1,120 +1,141 @@
-# OPS-024 Handoff Notes: Email Import Not Completing
+# Handoff: [OPS-024] Email Import - Attachments Not Importing
 
-**Session**: 4
-**Date**: 2025-12-14 19:40
-**Status**: Verifying (attachment fix deployed, awaiting test)
+**Session**: 5
+**Date**: 2025-12-15 09:30
+**Status**: Investigating
 
 ## Summary
 
-Email import to Communications tab is **FIXED**. Attachment import to Documents panel has multiple bugs being fixed incrementally.
+- **Emails**: WORKING (23 emails imported, appear in Communications tab)
+- **Attachments**: NOT WORKING (0 imported despite 9 detected in preview)
+- **Token**: Confirmed sent from frontend via Apollo logs
 
-## Bugs Fixed This Session
+## Work Completed This Session
 
-### Bug 3: Invisible Logging (Fixed 18:42) ✅ VERIFIED WORKING
+1. Verified Bug 6 fix deployed and live (`fef9f8f`)
+2. Tested email import - emails work (23), attachments don't (0)
+3. Confirmed MS access token IS being sent from frontend:
+   ```
+   [Apollo] Got MS access token for operation: ExecuteEmailImport token: eyJ0eXAiOiJKV1QiLCJu...
+   ```
+4. Added diagnostic `_debug` field to `EmailImportResult` (commits `1670257`, `9bb4d78`)
+5. Added server-side logging throughout attachment import flow
+6. Added client-side console logging of import result
 
-`unified-timeline.service.ts` used `console.log` instead of `logger` utility, causing sync logs to be invisible in Render production logs.
+## Diagnostic Infrastructure Added
 
-**Fix**: Replaced all `console.log` with `logger.info/warn`.
-**Result**: Emails now appear in Communications tab.
+### GraphQL `_debug` field:
 
-### Bug 4: Missing Document Fields (Fixed 18:59)
-
-`storeInOneDrive()` in `email-attachment.service.ts` was missing required Document fields:
-
-- `clientId` - required relation to Client
-- `firmId` - required relation to Firm
-- `uploadedBy` - was incorrectly using non-existent `createdBy`
-
-**Fix**: Added all required fields, fetch clientId/firmId from case.
-
-### Bug 5: Invalid DocumentStatus Enum (Fixed 19:23)
-
-Used `DocumentStatus.ACTIVE` which doesn't exist. Valid values are only: `DRAFT`, `FINAL`, `ARCHIVED`.
-
-**Fix**: Changed to `DocumentStatus.FINAL`.
-
-### Bug 6: CaseDocument Missing Fields (Fixed 19:40) ⏳ DEPLOYING
-
-CaseDocument junction table requires:
-
-- `linkedBy` (not `addedBy` as I used)
-- `firmId` (was missing entirely)
-
-**Fix**:
-
-```typescript
-await this.prisma.caseDocument.create({
-  data: {
-    caseId,
-    documentId: document.id,
-    linkedBy: userId, // was: addedBy
-    firmId, // was: missing
-    isOriginal: true,
-  },
-});
+```graphql
+type EmailImportDebugInfo {
+  hadAccessToken: Boolean!
+  importAttachmentsRequested: Boolean!
+  emailsWithAttachmentsCount: Int!
+}
 ```
 
-## Current Deployment
+### Files modified:
 
-**Commit**: `fef9f8f` - CaseDocument fix
-**Triggered**: 19:40
-**Status**: Building/deploying (takes ~8 minutes)
+- `services/gateway/src/graphql/resolvers/email-import.resolvers.ts` - Logger, diagnostic logging
+- `services/gateway/src/services/email-to-case.service.ts` - `_debug` field, logging
+- `services/gateway/src/graphql/schema/email-import.graphql` - `EmailImportDebugInfo` type
+- `apps/web/src/hooks/useEmailImport.ts` - `_debug` in fragment, console logging
 
-## Known Issues
+## Current State / Blockers
 
-### Redis Infrastructure Problem
+Need to see `_debug` values to determine root cause. User should expand the `[useEmailImport] Import result: Object` in browser console to see:
 
-Redis instance `red-d4uooc24d50c73bhse0g` is unreachable (ENOTFOUND). This floods logs with errors but shouldn't block functionality. Needs to be fixed in Render dashboard.
+- `hadAccessToken` - Did token reach the server?
+- `emailsWithAttachmentsCount` - Are emails marked with `hasAttachments=true`?
 
-## Files Modified
+### Possible causes:
 
-1. `services/gateway/src/services/unified-timeline.service.ts`
-   - Added `import logger from '../utils/logger'`
-   - Replaced all `console.log` with `logger.info/warn`
+1. Database `has_attachments` field is false for emails that actually have attachments
+2. Attachment sync failing silently (OneDrive API errors?)
+3. Graph API returning empty attachment lists
 
-2. `services/gateway/src/services/email-attachment.service.ts`
-   - Added `DocumentStatus` import
-   - Updated `storeInOneDrive()` signature to accept clientId, firmId, userId
-   - Fixed Document creation with all required fields
-   - Fixed DocumentStatus to use `FINAL` (not `ACTIVE`)
-   - Fixed CaseDocument creation with `linkedBy` and `firmId`
+## Next Steps
 
-## Commits This Session
+### 1. Get `_debug` values
+
+Expand console Object to see diagnostic info.
+
+### 2. Based on results:
+
+- If `emailsWithAttachmentsCount = 0`:
+  - Check how `hasAttachments` is populated during email sync
+  - Look for email sync code that sets this field from Graph API
+
+- If `emailsWithAttachmentsCount > 0` but 0 imported:
+  - Check Render logs for attachment sync errors
+  - May be OneDrive API failures
+
+### 3. If `_debug` is null/undefined:
+
+Web app might not have latest code deployed. Check/redeploy web service.
+
+### 4. Alternative approach:
+
+Add attachment sync errors to result.errors array for client visibility.
+
+## Key Files
+
+### Attachment sync logic:
+
+- `services/gateway/src/services/email-attachment.service.ts`
+  - `syncAllAttachments()` - Entry point
+  - `syncAttachment()` - Per-attachment sync
+  - `storeInOneDrive()` - Creates Document + CaseDocument
+
+### Email sync (where hasAttachments comes from):
+
+- Search for where emails are synced from Graph API to database
+- Look for code setting `hasAttachments` or `has_attachments`
+
+## All Commits This Issue
+
+### Session 4 (2025-12-14)
 
 1. `7b9ffb5` - fix: use logger instead of console.log in timeline sync
 2. `3c11300` - fix: add required Document fields for email attachment import
 3. `2e017e2` - fix: use valid DocumentStatus enum value (FINAL, not ACTIVE)
 4. `fef9f8f` - fix: fix CaseDocument fields (linkedBy + firmId required)
 
-## Testing
+### Session 5 (2025-12-15)
 
-After deployment is live:
+5. `1670257` - fix(gateway): add diagnostic logging for attachment import
+6. `9bb4d78` - fix(gateway): add debug info to EmailImportResult for diagnosis
 
-1. Go to a case's Communications tab
-2. Click "Importă din Email"
-3. Import emails with attachments
-4. **Check Communications tab** - emails should appear ✅
-5. **Check Documents panel** - attachments should appear (testing this)
+## Console Output to Look For
 
-## Next Steps
-
-1. Wait for `fef9f8f` deployment to go live (~19:48)
-2. Test email import with attachments
-3. If attachments appear in Documents panel → Close OPS-024
-4. If still failing → Check logs for Prisma errors
+```
+[useEmailImport] Import result: {
+  success: true,
+  emailsLinked: 23,
+  attachmentsImported: 0,
+  errors: [],
+  _debug: {
+    hadAccessToken: ???,              // KEY VALUE #1
+    importAttachmentsRequested: true,
+    emailsWithAttachmentsCount: ???   // KEY VALUE #2
+  }
+}
+```
 
 ## Useful Commands
 
 ```bash
+# Resume this issue
+/ops-continue 024
+
+# Deploy gateway
+./scripts/render/deploy.sh gateway
+
 # Check deployment status
 curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
   "https://api.render.com/v1/services/srv-d4pkv8q4i8rc73fq3mvg/deploys?limit=1" \
   | jq '.[0].deploy | {status, commit: .commit.id[0:7]}'
 
-# Get logs (warning: flooded with Redis errors)
-curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
-  "https://api.render.com/v1/logs?ownerId=tea-d4dir3vdiees73cklbs0&resource=srv-d4pkv8q4i8rc73fq3mvg&limit=100"
-
-# Deploy gateway
-./scripts/render/deploy.sh gateway
+# Build gateway locally
+pnpm --filter gateway build
 ```
