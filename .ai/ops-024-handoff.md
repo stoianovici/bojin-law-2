@@ -1,126 +1,86 @@
 # Handoff: [OPS-024] Email Import - Attachments Not Importing
 
-**Session**: 5
-**Date**: 2025-12-15 09:30
-**Status**: Investigating
+**Session**: 6
+**Date**: 2025-12-15 10:55
+**Status**: Root Cause Found
 
 ## Summary
 
 - **Emails**: WORKING (23 emails imported, appear in Communications tab)
 - **Attachments**: NOT WORKING (0 imported despite 9 detected in preview)
-- **Token**: Confirmed sent from frontend via Apollo logs
+- **Root Cause**: MS access token is `null` when ExecuteEmailImport runs
+
+## ROOT CAUSE IDENTIFIED
+
+**The MS access token is `null` when the ExecuteEmailImport mutation runs.**
+
+Console logs show:
+
+```
+[Apollo] Got MS access token for operation: ExecuteEmailImport token: null
+```
+
+The MSAL session has expired and silent token refresh fails with:
+
+- `InteractionRequiredAuthError: AADSTS160021: Application requested a user session which does not exist`
+- `BrowserAuthError: monitor_window_timeout: Token acquisition in iframe failed due to timeout`
+
+The app falls back to session cookie auth (which works for platform features) but has no Graph API token for Microsoft operations like fetching attachment content from Outlook.
+
+## Solution
+
+User needs to re-authenticate with Microsoft to get fresh tokens:
+
+1. Log out from the application
+2. Log back in through the Microsoft authentication flow
+3. Try the email import again
+
+After re-authentication, the MSAL tokens will be refreshed and the ExecuteEmailImport mutation should receive a valid token.
 
 ## Work Completed This Session
 
-1. Verified Bug 6 fix deployed and live (`fef9f8f`)
-2. Tested email import - emails work (23), attachments don't (0)
-3. Confirmed MS access token IS being sent from frontend:
-   ```
-   [Apollo] Got MS access token for operation: ExecuteEmailImport token: eyJ0eXAiOiJKV1QiLCJu...
-   ```
-4. Added diagnostic `_debug` field to `EmailImportResult` (commits `1670257`, `9bb4d78`)
-5. Added server-side logging throughout attachment import flow
-6. Added client-side console logging of import result
+1. Analyzed console logs from user's email import attempt
+2. Identified that `[Apollo] Got MS access token for operation: ExecuteEmailImport token: null`
+3. Found MSAL errors showing session expiration (`AADSTS160021`)
+4. Documented root cause and solution
+5. Updated issue status to "Root Cause Found"
 
-## Diagnostic Infrastructure Added
-
-### GraphQL `_debug` field:
-
-```graphql
-type EmailImportDebugInfo {
-  hadAccessToken: Boolean!
-  importAttachmentsRequested: Boolean!
-  emailsWithAttachmentsCount: Int!
-}
-```
-
-### Files modified:
-
-- `services/gateway/src/graphql/resolvers/email-import.resolvers.ts` - Logger, diagnostic logging
-- `services/gateway/src/services/email-to-case.service.ts` - `_debug` field, logging
-- `services/gateway/src/graphql/schema/email-import.graphql` - `EmailImportDebugInfo` type
-- `apps/web/src/hooks/useEmailImport.ts` - `_debug` in fragment, console logging
-
-## Current State / Blockers
-
-Need to see `_debug` values to determine root cause. User should expand the `[useEmailImport] Import result: Object` in browser console to see:
-
-- `hadAccessToken` - Did token reach the server?
-- `emailsWithAttachmentsCount` - Are emails marked with `hasAttachments=true`?
-
-### Possible causes:
-
-1. Database `has_attachments` field is false for emails that actually have attachments
-2. Attachment sync failing silently (OneDrive API errors?)
-3. Graph API returning empty attachment lists
-
-## Next Steps
-
-### 1. Get `_debug` values
-
-Expand console Object to see diagnostic info.
-
-### 2. Based on results:
-
-- If `emailsWithAttachmentsCount = 0`:
-  - Check how `hasAttachments` is populated during email sync
-  - Look for email sync code that sets this field from Graph API
-
-- If `emailsWithAttachmentsCount > 0` but 0 imported:
-  - Check Render logs for attachment sync errors
-  - May be OneDrive API failures
-
-### 3. If `_debug` is null/undefined:
-
-Web app might not have latest code deployed. Check/redeploy web service.
-
-### 4. Alternative approach:
-
-Add attachment sync errors to result.errors array for client visibility.
-
-## Key Files
-
-### Attachment sync logic:
-
-- `services/gateway/src/services/email-attachment.service.ts`
-  - `syncAllAttachments()` - Entry point
-  - `syncAttachment()` - Per-attachment sync
-  - `storeInOneDrive()` - Creates Document + CaseDocument
-
-### Email sync (where hasAttachments comes from):
-
-- Search for where emails are synced from Graph API to database
-- Look for code setting `hasAttachments` or `has_attachments`
-
-## All Commits This Issue
-
-### Session 4 (2025-12-14)
-
-1. `7b9ffb5` - fix: use logger instead of console.log in timeline sync
-2. `3c11300` - fix: add required Document fields for email attachment import
-3. `2e017e2` - fix: use valid DocumentStatus enum value (FINAL, not ACTIVE)
-4. `fef9f8f` - fix: fix CaseDocument fields (linkedBy + firmId required)
+## Previous Sessions Summary
 
 ### Session 5 (2025-12-15)
 
-5. `1670257` - fix(gateway): add diagnostic logging for attachment import
-6. `9bb4d78` - fix(gateway): add debug info to EmailImportResult for diagnosis
+- Added diagnostic `_debug` field to `EmailImportResult`
+- Added server-side logging for attachment import flow
+- Added client-side console logging of import result
 
-## Console Output to Look For
+### Session 4 (2025-12-14)
 
-```
-[useEmailImport] Import result: {
-  success: true,
-  emailsLinked: 23,
-  attachmentsImported: 0,
-  errors: [],
-  _debug: {
-    hadAccessToken: ???,              // KEY VALUE #1
-    importAttachmentsRequested: true,
-    emailsWithAttachmentsCount: ???   // KEY VALUE #2
-  }
-}
-```
+- Fixed CaseDocument fields (linkedBy + firmId required)
+- Fixed invalid DocumentStatus enum (ACTIVE → FINAL)
+
+### Earlier Sessions
+
+- Fixed Prisma JSON query issues
+- Fixed timeline sync for emails
+- Fixed Document fields for attachment import
+
+## Next Steps
+
+1. **Verify fix**: After user re-authenticates with Microsoft, test email import again
+2. **If still failing**: Check server-side logs for attachment sync errors
+3. **Consider UX improvement**: Add clear message when MSAL token is unavailable, prompting re-authentication
+
+## Key Files
+
+### Token handling:
+
+- `apps/web/src/contexts/AuthContext.tsx` - MSAL authentication context
+- `apps/web/src/lib/apollo-client.ts` - Apollo link that adds MS token to requests
+
+### Attachment import:
+
+- `services/gateway/src/services/email-attachment.service.ts` - Attachment sync logic
+- `services/gateway/src/services/email-to-case.service.ts` - Email import orchestration
 
 ## Useful Commands
 
@@ -128,14 +88,6 @@ Add attachment sync errors to result.errors array for client visibility.
 # Resume this issue
 /ops-continue 024
 
-# Deploy gateway
-./scripts/render/deploy.sh gateway
-
-# Check deployment status
-curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
-  "https://api.render.com/v1/services/srv-d4pkv8q4i8rc73fq3mvg/deploys?limit=1" \
-  | jq '.[0].deploy | {status, commit: .commit.id[0:7]}'
-
-# Build gateway locally
-pnpm --filter gateway build
+# After fix is verified, close the issue
+/ops-close 024
 ```

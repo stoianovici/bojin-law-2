@@ -4,17 +4,11 @@
  * Story 5.1: Email Integration (MS access token pass-through)
  *
  * Configured to work with GraphQL gateway with session-based authentication
- * Version: 2025-12-09-v18 (Fix: show existing emails without MSAL, use SSO for reconnect)
  */
 
 import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
-
-// Log version on client load to verify cache is updated
-if (typeof window !== 'undefined') {
-  console.log('[Apollo] Client version: 2025-12-09-v18');
-}
 
 // Function to get MS access token - will be set by AuthProvider
 let getMsAccessToken: (() => Promise<string | null>) | null = null;
@@ -47,9 +41,11 @@ const errorLink = onError((error: any) => {
         console.warn('[GraphQL] MS token required - user needs to reconnect Microsoft account');
         // Dispatch custom event for UI components to show reconnect prompt
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('ms-token-required', {
-            detail: { message: gqlError.message }
-          }));
+          window.dispatchEvent(
+            new CustomEvent('ms-token-required', {
+              detail: { message: gqlError.message },
+            })
+          );
         }
       } else if (errorCode !== 'UNAUTHENTICATED') {
         console.error(
@@ -78,18 +74,11 @@ const httpLink = new HttpLink({
 const authLink = setContext(async (operation, { headers }) => {
   // Only fetch token if getter is available
   if (!getMsAccessToken) {
-    console.log('[Apollo] No getMsAccessToken function set');
     return { headers };
   }
 
   try {
     const msAccessToken = await getMsAccessToken();
-    console.log(
-      '[Apollo] Got MS access token for operation:',
-      operation.operationName,
-      'token:',
-      msAccessToken ? `${msAccessToken.substring(0, 20)}...` : 'null'
-    );
     if (msAccessToken) {
       return {
         headers: {
@@ -99,6 +88,7 @@ const authLink = setContext(async (operation, { headers }) => {
       };
     }
   } catch (error) {
+    // Only log errors, not every operation
     console.warn('[Apollo] Failed to get MS access token:', error);
   }
 

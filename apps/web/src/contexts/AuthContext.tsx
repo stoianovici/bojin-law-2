@@ -68,9 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
     const accounts = msalInstance.getAllAccounts();
-    const hasAccounts = accounts.length > 0;
-    console.log('[AuthContext] updateHasMsalAccount:', hasAccounts, 'accounts:', accounts.length);
-    setHasMsalAccountState(hasAccounts);
+    setHasMsalAccountState(accounts.length > 0);
   }, []);
 
   const clearError = useCallback(() => {
@@ -93,7 +91,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const data = await response.json();
       if (data.authenticated && data.user) {
-        console.log('[AuthContext] Session cookie valid, user:', data.user.email);
         return data.user;
       }
       return null;
@@ -143,14 +140,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function initialize() {
       try {
-        console.log('[AuthContext] Starting initialization...');
-
         // Use singleton handleMsalRedirect to prevent duplicate processing
         const response = await handleMsalRedirect();
 
         const msalInstance = getMsalInstance();
         if (!msalInstance || !isMounted) {
-          console.log('[AuthContext] No MSAL instance or unmounted');
           setState((prev) => ({ ...prev, isLoading: false }));
           return;
         }
@@ -160,8 +154,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         updateHasMsalAccount();
 
         // Handle redirect response (if returning from Azure AD)
-        console.log('[AuthContext] Redirect response:', response ? 'received' : 'null');
-
         if (response && response.account) {
           const token = response.accessToken;
           try {
@@ -178,13 +170,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               return;
             }
           } catch (error) {
-            console.warn(
-              '[AuthContext] Provisioning failed after redirect, checking session cookie...',
-              error
-            );
+            // Provisioning failed, check session cookie as fallback
             const sessionUser = await checkSessionCookie();
             if (isMounted && sessionUser) {
-              console.log('[AuthContext] Session cookie valid after provision failure');
               setState({
                 user: sessionUser,
                 isAuthenticated: true,
@@ -221,13 +209,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
               });
             }
           } catch (error) {
-            console.warn('Silent token acquisition failed:', error);
             // Fall back to session cookie when MSAL fails
-            console.log('[AuthContext] MSAL failed, falling back to session cookie...');
             const sessionUser = await checkSessionCookie();
             if (isMounted) {
               if (sessionUser) {
-                console.log('[AuthContext] Session cookie valid after MSAL failure');
                 setState({
                   user: sessionUser,
                   isAuthenticated: true,
@@ -248,13 +233,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         } else {
           // No MSAL accounts - check session cookie as fallback
-          console.log('[AuthContext] No MSAL accounts, checking session cookie...');
           const sessionUser = await checkSessionCookie();
 
           if (isMounted) {
             if (sessionUser) {
-              // Session cookie is valid - user is authenticated
-              console.log('[AuthContext] Session cookie valid, user authenticated');
               setState({
                 user: sessionUser,
                 isAuthenticated: true,
@@ -332,9 +314,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         method: 'POST',
         credentials: 'include',
       });
-      console.log('[AuthContext] Session cookie cleared');
     } catch (error) {
-      console.error('[AuthContext] Failed to clear session cookie:', error);
+      // Ignore logout errors - redirect will clear state anyway
     }
 
     const msalInstance = getMsalInstance();
@@ -382,7 +363,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const msalInstance = getMsalInstance();
 
     if (!msalInstance) {
-      console.log('[AuthContext] No MSAL instance available');
       return null;
     }
 
@@ -396,8 +376,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return response.accessToken;
       } catch (error) {
         if (error instanceof InteractionRequiredAuthError) {
-          // User needs to re-authenticate (e.g., consent to new scopes like Mail.Read)
-          console.log('[AuthContext] Interaction required - setting hasMsalAccount to false');
           setHasMsalAccountState(false);
         }
         return null;
@@ -405,12 +383,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     // No cached msalAccount - try to find any MSAL accounts (may have been cached by browser)
-    // This handles the case where user is authenticated via session cookie but MSAL state wasn't persisted
     const accounts = msalInstance.getAllAccounts();
     if (accounts.length > 0) {
-      console.log(
-        '[AuthContext] Found MSAL accounts despite no cached state, attempting token acquisition'
-      );
       try {
         const response = await msalInstance.acquireTokenSilent({
           ...loginRequest,
@@ -418,13 +392,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
         return response.accessToken;
       } catch (error) {
-        console.warn(
-          '[AuthContext] Silent token acquisition failed for discovered account:',
-          error
-        );
         if (error instanceof InteractionRequiredAuthError) {
-          // User needs to re-authenticate (e.g., consent to new scopes like Mail.Read)
-          console.log('[AuthContext] Interaction required - setting hasMsalAccount to false');
           setHasMsalAccountState(false);
         }
         return null;
@@ -432,9 +400,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     // No MSAL accounts available - user needs to re-authenticate with Microsoft
-    console.log(
-      '[AuthContext] No MSAL accounts available - Microsoft re-authentication required for email access'
-    );
     return null;
   }, [state.msalAccount]);
 
@@ -462,17 +427,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      console.log('[AuthContext] Attempting Microsoft SSO...');
-
       // Try SSO (silent login using existing browser session with Microsoft)
-      // This works when user is already logged into Microsoft in the browser
       const ssoResult = await msalInstance.ssoSilent({
         ...loginRequest,
-        loginHint: state.user?.email, // Use the user's email as hint
+        loginHint: state.user?.email,
       });
 
       if (ssoResult && ssoResult.account) {
-        console.log('[AuthContext] SSO successful, got account:', ssoResult.account.username);
         setHasMsalAccountState(true);
         setState((prev) => ({
           ...prev,
@@ -481,12 +442,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
     } catch (ssoError) {
-      console.log('[AuthContext] SSO failed, falling back to redirect:', ssoError);
+      // SSO failed, will try redirect
     }
 
     // SSO failed, use redirect login
     try {
-      console.log('[AuthContext] Triggering Microsoft login redirect...');
       await msalInstance.loginRedirect(loginRequest);
     } catch (error: unknown) {
       console.error('Microsoft reconnect error:', error);

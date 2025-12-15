@@ -33,26 +33,14 @@ export const msalConfig: Configuration = {
     loggerOptions: {
       loggerCallback: (level, message, containsPii) => {
         if (containsPii) return;
-        switch (level) {
-          case LogLevel.Error:
-            console.error('[MSAL]', message);
-            break;
-          case LogLevel.Warning:
-            console.warn('[MSAL]', message);
-            break;
-          case LogLevel.Info:
-            if (process.env.NODE_ENV === 'development') {
-              console.info('[MSAL]', message);
-            }
-            break;
-          case LogLevel.Verbose:
-            if (process.env.NODE_ENV === 'development') {
-              console.debug('[MSAL]', message);
-            }
-            break;
+        // Only log errors and warnings to reduce console noise
+        if (level === LogLevel.Error) {
+          console.error('[MSAL]', message);
+        } else if (level === LogLevel.Warning) {
+          console.warn('[MSAL]', message);
         }
       },
-      logLevel: process.env.NODE_ENV === 'development' ? LogLevel.Info : LogLevel.Warning,
+      logLevel: LogLevel.Warning,
     },
   },
 };
@@ -106,7 +94,6 @@ export async function initializeMsal(): Promise<PublicClientApplication | null> 
   if (instance && !msalInitialized) {
     await instance.initialize();
     msalInitialized = true;
-    console.log('[MSAL] Instance initialized');
   }
   return instance;
 }
@@ -124,10 +111,6 @@ export async function handleMsalRedirect(): Promise<Awaited<
 
   // Return cached result if already processed
   if (redirectPromiseProcessed) {
-    console.log(
-      '[MSAL] Returning cached redirect result:',
-      redirectPromiseResult ? 'success' : 'null'
-    );
     return redirectPromiseResult;
   }
 
@@ -136,25 +119,9 @@ export async function handleMsalRedirect(): Promise<Awaited<
     return null;
   }
 
-  // Log URL hash for debugging (without sensitive data)
-  const hasHash = window.location.hash.length > 1;
-  const hasCode =
-    window.location.hash.includes('code=') || window.location.search.includes('code=');
-  console.log('[MSAL] Processing redirect promise, hasHash:', hasHash, 'hasCode:', hasCode);
-
   try {
     redirectPromiseResult = await instance.handleRedirectPromise();
     redirectPromiseProcessed = true;
-
-    if (redirectPromiseResult) {
-      console.log(
-        '[MSAL] Redirect promise returned account:',
-        redirectPromiseResult.account?.username
-      );
-    } else {
-      console.log('[MSAL] Redirect promise returned null');
-    }
-
     return redirectPromiseResult;
   } catch (error) {
     console.error('[MSAL] Error handling redirect promise:', error);

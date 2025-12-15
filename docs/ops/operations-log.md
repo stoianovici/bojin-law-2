@@ -5,32 +5,32 @@
 
 ## Quick Reference
 
-| ID      | Title                                             | Type        | Priority    | Status        | File                                     |
-| ------- | ------------------------------------------------- | ----------- | ----------- | ------------- | ---------------------------------------- |
-| OPS-001 | Communications page not loading emails            | Bug         | P0-Critical | Resolved      | [archive/ops-001.md](archive/ops-001.md) |
-| OPS-002 | Legacy import stuck at 8k docs                    | Performance | P1-High     | Resolved      | [archive/ops-002.md](archive/ops-002.md) |
-| OPS-003 | Restrict partner dashboard to partners            | Feature     | P2-Medium   | Resolved      | [archive/ops-003.md](archive/ops-003.md) |
-| OPS-004 | Add categorization backup before export           | Feature     | P1-High     | Resolved      | [archive/ops-004.md](archive/ops-004.md) |
-| OPS-005 | AI extraction and drafting not working            | Bug         | P0-Critical | Resolved      | [archive/ops-005.md](archive/ops-005.md) |
-| OPS-006 | Connect AI capabilities to application UI         | Feature     | P1-High     | Resolved      | [archive/ops-006.md](archive/ops-006.md) |
-| OPS-007 | AI email drafts ignore user language pref         | Bug         | P2-Medium   | Resolved      | [archive/ops-007.md](archive/ops-007.md) |
-| OPS-008 | Communications section comprehensive overhaul     | Feature     | P1-High     | Resolved      | [archive/ops-008.md](archive/ops-008.md) |
-| OPS-009 | Multiple re-login prompts for email/attachments   | Bug         | P1-High     | Resolved      | [archive/ops-009.md](archive/ops-009.md) |
-| OPS-010 | Emails synced but not displayed (1049 emails)     | Bug         | P0-Critical | Resolved      | [archive/ops-010.md](archive/ops-010.md) |
-| OPS-011 | Refocus /communications on received emails only   | Feature     | P1-High     | Resolved      | [archive/ops-011.md](archive/ops-011.md) |
-| OPS-012 | Legacy import can't advance past first 100 docs   | Bug         | P1-High     | Resolved      | [archive/ops-012.md](archive/ops-012.md) |
-| OPS-013 | New logins don't show up in user management       | Bug         | P1-High     | Resolved      | [archive/ops-013.md](archive/ops-013.md) |
-| OPS-014 | Role-based menu visibility refinement             | Bug         | P2-Medium   | Resolved      | [archive/ops-014.md](archive/ops-014.md) |
-| OPS-015 | Translate English UI sections to Romanian         | Feature     | P2-Medium   | Resolved      | [archive/ops-015.md](archive/ops-015.md) |
-| OPS-016 | Redesign Communications Tab in Case Details       | Feature     | P1-High     | Resolved      | [archive/ops-016.md](archive/ops-016.md) |
-| OPS-017 | AI service TypeScript compilation errors          | Bug         | P1-High     | Resolved      | [archive/ops-017.md](archive/ops-017.md) |
-| OPS-018 | AI Service Deployment Failure & Render Duplicates | Bug/Infra   | P1-High     | Resolved      | [archive/ops-018.md](archive/ops-018.md) |
-| OPS-019 | Activate AI Chat Bar (QuickActionsBar)            | Feature     | P1-High     | Resolved      | [archive/ops-019.md](archive/ops-019.md) |
-| OPS-020 | Redesign AI Bar - Floating Pill Design            | Feature     | P2-Medium   | Resolved      | [archive/ops-020.md](archive/ops-020.md) |
-| OPS-021 | Ensure dev/production parity                      | Infra       | P2-Medium   | Resolved      | [archive/ops-021.md](archive/ops-021.md) |
-| OPS-022 | Email-to-Case Timeline Integration                | Feature     | P1-High     | In Progress   | [issues/ops-022.md](issues/ops-022.md)   |
-| OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug         | P1-High     | Open          | [issues/ops-023.md](issues/ops-023.md)   |
-| OPS-024 | Email Import - Attachments Not Importing          | Bug         | P1-High     | Investigating | [issues/ops-024.md](issues/ops-024.md)   |
+| ID      | Title                                             | Type        | Priority    | Status           | File                                     |
+| ------- | ------------------------------------------------- | ----------- | ----------- | ---------------- | ---------------------------------------- |
+| OPS-001 | Communications page not loading emails            | Bug         | P0-Critical | Resolved         | [archive/ops-001.md](archive/ops-001.md) |
+| OPS-002 | Legacy import stuck at 8k docs                    | Performance | P1-High     | Resolved         | [archive/ops-002.md](archive/ops-002.md) |
+| OPS-003 | Restrict partner dashboard to partners            | Feature     | P2-Medium   | Resolved         | [archive/ops-003.md](archive/ops-003.md) |
+| OPS-004 | Add categorization backup before export           | Feature     | P1-High     | Resolved         | [archive/ops-004.md](archive/ops-004.md) |
+| OPS-005 | AI extraction and drafting not working            | Bug         | P0-Critical | Resolved         | [archive/ops-005.md](archive/ops-005.md) |
+| OPS-006 | Connect AI capabilities to application UI         | Feature     | P1-High     | Resolved         | [archive/ops-006.md](archive/ops-006.md) |
+| OPS-007 | AI email drafts ignore user language pref         | Bug         | P2-Medium   | Resolved         | [archive/ops-007.md](archive/ops-007.md) |
+| OPS-008 | Communications section comprehensive overhaul     | Feature     | P1-High     | Resolved         | [archive/ops-008.md](archive/ops-008.md) |
+| OPS-009 | Multiple re-login prompts for email/attachments   | Bug         | P1-High     | Resolved         | [archive/ops-009.md](archive/ops-009.md) |
+| OPS-010 | Emails synced but not displayed (1049 emails)     | Bug         | P0-Critical | Resolved         | [archive/ops-010.md](archive/ops-010.md) |
+| OPS-011 | Refocus /communications on received emails only   | Feature     | P1-High     | Resolved         | [archive/ops-011.md](archive/ops-011.md) |
+| OPS-012 | Legacy import can't advance past first 100 docs   | Bug         | P1-High     | Resolved         | [archive/ops-012.md](archive/ops-012.md) |
+| OPS-013 | New logins don't show up in user management       | Bug         | P1-High     | Resolved         | [archive/ops-013.md](archive/ops-013.md) |
+| OPS-014 | Role-based menu visibility refinement             | Bug         | P2-Medium   | Resolved         | [archive/ops-014.md](archive/ops-014.md) |
+| OPS-015 | Translate English UI sections to Romanian         | Feature     | P2-Medium   | Resolved         | [archive/ops-015.md](archive/ops-015.md) |
+| OPS-016 | Redesign Communications Tab in Case Details       | Feature     | P1-High     | Resolved         | [archive/ops-016.md](archive/ops-016.md) |
+| OPS-017 | AI service TypeScript compilation errors          | Bug         | P1-High     | Resolved         | [archive/ops-017.md](archive/ops-017.md) |
+| OPS-018 | AI Service Deployment Failure & Render Duplicates | Bug/Infra   | P1-High     | Resolved         | [archive/ops-018.md](archive/ops-018.md) |
+| OPS-019 | Activate AI Chat Bar (QuickActionsBar)            | Feature     | P1-High     | Resolved         | [archive/ops-019.md](archive/ops-019.md) |
+| OPS-020 | Redesign AI Bar - Floating Pill Design            | Feature     | P2-Medium   | Resolved         | [archive/ops-020.md](archive/ops-020.md) |
+| OPS-021 | Ensure dev/production parity                      | Infra       | P2-Medium   | Resolved         | [archive/ops-021.md](archive/ops-021.md) |
+| OPS-022 | Email-to-Case Timeline Integration                | Feature     | P1-High     | In Progress      | [issues/ops-022.md](issues/ops-022.md)   |
+| OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug         | P1-High     | Open             | [issues/ops-023.md](issues/ops-023.md)   |
+| OPS-024 | Email Import - Attachments Not Importing          | Bug         | P1-High     | Root Cause Found | [issues/ops-024.md](issues/ops-024.md)   |
 
 ---
 
@@ -62,15 +62,15 @@ Web app builds independently and deploys fine. Gateway deployment blocked.
 
 ### [OPS-024] Email Import - Attachments Not Importing
 
-**Status:** Investigating | **Priority:** P1-High | **Type:** Bug | **Last Active:** 2025-12-15
+**Status:** Root Cause Found | **Priority:** P1-High | **Type:** Bug | **Last Active:** 2025-12-15
 
 Email import wizard imports emails successfully but attachments aren't being imported:
 
 - **Emails**: WORKING (23 imported, appear in Communications tab)
 - **Attachments**: NOT WORKING (0 imported despite 9 in preview)
-- **Token**: Confirmed sent from frontend (Apollo logs show it)
+- **Root Cause**: MS access token is `null` when ExecuteEmailImport runs
 
-**Session 5 (2025-12-15):** Added diagnostic `_debug` field to track `hadAccessToken`, `emailsWithAttachmentsCount`. Need to expand console Object to see values and determine if issue is: (1) emails not marked with hasAttachments, (2) token not reaching server, or (3) OneDrive sync failing.
+**Session 6 (2025-12-15):** **ROOT CAUSE FOUND** - Console logs show `token: null` for ExecuteEmailImport. MSAL session expired, silent refresh failing with `AADSTS160021`. User needs to re-authenticate with Microsoft to get fresh tokens.
 
 ---
 
