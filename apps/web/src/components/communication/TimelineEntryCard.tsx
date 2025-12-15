@@ -36,6 +36,29 @@ import {
   Eye,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import DOMPurify from 'dompurify';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Sanitize email HTML and remove cid: image references that cause console errors.
+ * CID (Content-ID) URLs are email-specific references to inline attachments
+ * that browsers cannot load directly.
+ */
+function sanitizeEmailHtml(html: string): string {
+  // Replace cid: src attributes with a transparent 1x1 GIF to prevent browser errors
+  const sanitizedCid = html.replace(
+    /src=["']cid:[^"']*["']/gi,
+    'src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-cid-placeholder="true"'
+  );
+  return DOMPurify.sanitize(sanitizedCid);
+}
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface TimelineEntryCardProps {
   entry: TimelineEntry;
@@ -167,7 +190,7 @@ export function TimelineEntryCard({
                 className={`prose prose-sm max-w-none text-gray-700 ${
                   !isExpanded ? 'line-clamp-3 max-h-20 overflow-hidden' : ''
                 }`}
-                dangerouslySetInnerHTML={{ __html: entry.htmlBody }}
+                dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(entry.htmlBody) }}
               />
             ) : (
               <p className="whitespace-pre-wrap text-sm text-gray-700">

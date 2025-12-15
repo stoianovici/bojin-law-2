@@ -20,6 +20,28 @@ import { EmailComposer } from './EmailComposer';
 import { Spinner } from '@/components/ui/spinner';
 import type { EmailDraft } from '@/hooks/useEmailDraft';
 
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Sanitize email HTML and remove cid: image references that cause console errors.
+ * CID (Content-ID) URLs are email-specific references to inline attachments
+ * that browsers cannot load directly.
+ */
+function sanitizeEmailHtml(html: string): string {
+  // Replace cid: src attributes with a transparent 1x1 GIF to prevent browser errors
+  const sanitizedCid = html.replace(
+    /src=["']cid:[^"']*["']/gi,
+    'src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-cid-placeholder="true"'
+  );
+  return DOMPurify.sanitize(sanitizedCid);
+}
+
+// ============================================================================
+// Types
+// ============================================================================
+
 interface Email {
   id: string;
   subject: string;
@@ -400,7 +422,7 @@ function EmailMessage({
             {email.bodyContentType === 'html' ? (
               <div
                 className="prose prose-sm max-w-none dark:prose-invert"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.bodyContent) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(email.bodyContent) }}
               />
             ) : (
               <div className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
