@@ -7,12 +7,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useCaseWorkspaceStore } from '../../../stores/case-workspace.store';
 import { CaseHeader } from '../../../components/case/CaseHeader';
 import { WorkspaceTabs } from '../../../components/case/WorkspaceTabs';
-import { DocumentsTab } from '../../../components/case/tabs/DocumentsTab';
+import { CaseDocumentsList } from '../../../components/case/CaseDocumentsList';
 import { TasksTab } from '../../../components/case/tabs/TasksTab';
 import { OverviewTab } from '../../../components/case/tabs/OverviewTab';
 import { CommunicationsTab } from '../../../components/case/tabs/CommunicationsTab';
@@ -24,6 +23,7 @@ import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
 import { useCase } from '../../../hooks/useCase';
 import { useSuggestions } from '../../../hooks/useSuggestions';
 import { useSetAIContext } from '../../../contexts/AIAssistantContext';
+import { useAuth } from '../../../lib/hooks/useAuth';
 import type { Case, User, Document, Task, DocumentNode } from '@legal-platform/types';
 
 interface CaseWorkspacePageProps {
@@ -89,11 +89,13 @@ function LoadingSkeleton() {
  */
 export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   const { caseId } = React.use(params);
-  const router = useRouter();
   const { activeTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
 
   // Use the real useCase hook to get actual case data
   const { case: realCaseData, loading, error } = useCase(caseId);
+
+  // Get current user for role-based features
+  const { user } = useAuth();
 
   // Use AI suggestions hook with case context
   const {
@@ -129,11 +131,6 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
     [acceptSuggestion]
   );
 
-  // Handler for creating new document
-  const handleNewDocument = useCallback(() => {
-    router.push(`/cases/${caseId}/documents/new`);
-  }, [router, caseId]);
-
   // Derive case workspace data from API response using useMemo
   const caseData = useMemo<CaseWorkspaceData | null>(() => {
     if (!realCaseData || loading) return null;
@@ -163,7 +160,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         }
       ),
       nextDeadline: undefined,
-      documents: [], // TODO: Fetch from API
+      documents: [], // Documents are fetched by CaseDocumentsList component
       tasks: [], // TODO: Fetch from API
       folderTree: [], // TODO: Fetch from API
       recentActivity: [], // TODO: Fetch from API
@@ -234,10 +231,12 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         );
       case 'documents':
         return (
-          <DocumentsTab
-            folderTree={caseData.folderTree}
-            documents={caseData.documents}
-            onNewDocument={handleNewDocument}
+          <CaseDocumentsList
+            caseId={caseId}
+            caseName={caseData.case.title}
+            clientId={realCaseData?.client?.id || ''}
+            userRole={(user?.role as 'Partner' | 'Associate' | 'Paralegal') || 'Associate'}
+            className="p-6"
           />
         );
       case 'tasks':
