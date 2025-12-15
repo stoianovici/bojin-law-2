@@ -1,99 +1,110 @@
 # Handoff: [OPS-024] Email Import - Attachments Not Importing
 
-**Session**: 9
-**Date**: 2025-12-15 15:40
-**Status**: Fixing (enhanced diagnostics deployed)
+**Session**: 10
+**Date**: 2025-12-15 16:02
+**Status**: Fixing (orphan detection deployed, awaiting verification)
 
 ## Summary
 
 - **Emails**: WORKING (23 imported, appear in Communications tab)
-- **Attachments**: NOT WORKING - upgrade logic deployed but still showing 0
+- **Attachments**: FIX DEPLOYED - awaiting verification
 
-## ROOT CAUSE HYPOTHESIS
+## ROOT CAUSE IDENTIFIED
 
-Attachments exist in `EmailAttachment` table (55 total across 9 emails) but they were synced BEFORE emails were linked to the case. Therefore:
-- `EmailAttachment` records exist with `documentId = null`
-- `Document` records do NOT exist
-- `CaseDocument` records do NOT exist
+**EmailAttachment records have `documentId` set but the actual Document records don't exist (orphaned references).**
 
-The upgrade logic was added (commit `3ec7d36`) but it's not working. The most likely cause is that `email.caseId` is null when `syncAllAttachments` fetches the email, even though `updateMany` was called before.
+The previous upgrade logic only checked `if (!existing.documentId)`. But the diagnostic showed:
 
-## Session 9 Work
+- `attachmentsAlreadyExist: 14` (attachments exist in DB)
+- `upgradedWithDocument: 0` (none upgraded)
+- `emailCaseId: "47504bff-..."` (caseId IS set)
+- `errors: []` (no errors)
 
-### Enhanced Diagnostics Added
-Added two new diagnostic fields to `AttachmentSyncDetail`:
-- `emailCaseId` - The email's caseId at time of sync (null if not linked)
-- `upgradedWithDocument` - Counter for successfully upgraded attachments
+This means `documentId` was set on the EmailAttachment records, but pointing to non-existent Documents.
 
-Also added detailed logging at the upgrade decision point:
+## Session 10 Fix
+
+Modified the upgrade condition to check if Document actually exists:
+
+```typescript
+// OLD: Only checked if documentId was set
+if (!existing.documentId && email.caseId) { ... }
+
+// NEW: Check if Document actually exists
+let documentExists = false;
+if (existing.documentId) {
+  const doc = await this.prisma.document.findUnique({
+    where: { id: existing.documentId },
+    select: { id: true },
+  });
+  documentExists = !!doc;
+}
+const needsUpgrade = !documentExists && !!email.caseId;
+if (needsUpgrade) { ... }
 ```
-syncAllAttachments: Checking existing attachment for upgrade
-- willUpgrade: !existing.documentId && !!email.caseId
+
+Also added `orphanedDocumentIds` diagnostic field to track how many attachments have documentId pointing to non-existent Documents.
+
+## Commits
+
+- `26c6ca3` - fix(gateway): detect orphaned documentIds and upgrade attachments
+
+## Deployment Status
+
+- Gateway: Building (commit `26c6ca3`) - triggered at 15:00:57 UTC
+- Web: Building (commit `26c6ca3`)
+
+Check status:
+
+```bash
+curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
+  "https://api.render.com/v1/services/srv-d4pkv8q4i8rc73fq3mvg/deploys?limit=1" \
+  | jq '.[0] | {status: .deploy.status, commit: .deploy.commit.id[0:7]}'
 ```
-
-**Commit**: `7ac1e5f` - Deploying to gateway now
-
-### Deployment Status
-- Gateway: Building (commit `7ac1e5f`)
-- Web: Building
 
 ## How to Test
 
-1. Go to email import wizard
-2. Run an import with attachments enabled
-3. Check browser console for `[useEmailImport] Import result:`
-4. Expand `_debug.attachmentSyncDetails` array
+1. Wait for deployment to complete (should be live soon)
+2. Go to email import wizard for case `47504bff-e466-4166-b6a6-16db23ebdb2d`
+3. Run import with attachments enabled
+4. Check console for `[useEmailImport] Import result:`
+5. Expand `_debug.attachmentSyncDetails` array
 
-Each entry now shows:
+New diagnostic fields:
+
 ```javascript
 {
-  emailId: "...",
-  graphMessageId: "...",
-  attachmentsFromGraph: N,
-  attachmentsSynced: N,
-  attachmentsSkipped: N,
   attachmentsAlreadyExist: N,
-  upgradedWithDocument: N,     // <-- NEW: How many upgraded
-  emailCaseId: "..." | null,   // <-- NEW: Was email linked to case?
+  upgradedWithDocument: N,     // Should now be > 0
+  orphanedDocumentIds: N,      // NEW: How many had orphaned documentId
+  emailCaseId: "...",
   errors: [...]
 }
 ```
 
-## Key Diagnostic Questions
+## Expected Outcome
 
-1. **Is `emailCaseId` set or null?**
-   - If null: The updateMany didn't commit before syncAllAttachments fetched the email
-   - If set: The problem is elsewhere (Graph API or OneDrive)
+After fix:
 
-2. **What is `willUpgrade` in Render logs?**
-   - Look for: `syncAllAttachments: Checking existing attachment for upgrade`
-   - If `willUpgrade: false` with `hasCaseId: false` → caseId timing issue
-   - If `willUpgrade: true` but no upgrade → check for errors in sync
+- `orphanedDocumentIds` should show how many attachments had documentId pointing to non-existent Documents
+- `upgradedWithDocument` should now be > 0 (attachments being upgraded)
+- `attachmentsImported` at top level should be > 0
+- Documents should appear in Documents panel
 
-3. **Are there errors in the `errors` array?**
-   - Graph API errors (token expired)
-   - OneDrive errors (folder creation, upload)
-   - Database errors (creating Document/CaseDocument)
+## Files Modified
 
-## Files Modified This Session
+- `services/gateway/src/services/email-attachment.service.ts` - Added orphan detection, new diagnostic field
+- `services/gateway/src/services/email-to-case.service.ts` - Pass orphanedDocumentIds
+- `services/gateway/src/graphql/schema/email-import.graphql` - Added orphanedDocumentIds field
+- `apps/web/src/hooks/useEmailImport.ts` - Request orphanedDocumentIds in GraphQL
 
-- `services/gateway/src/services/email-attachment.service.ts` - Added emailCaseId to diagnostics, upgrade logging
-- `services/gateway/src/services/email-to-case.service.ts` - Pass new diagnostic fields
-- `services/gateway/src/graphql/schema/email-import.graphql` - New fields on AttachmentSyncDetail
-- `apps/web/src/hooks/useEmailImport.ts` - Request new fields in GraphQL fragment
+## If Fix Still Doesn't Work
 
-## Commits
+If `upgradedWithDocument` is still 0 after this deploy:
 
-1. Session 8: `3ec7d36` - fix(gateway): upgrade existing attachments without Document records
-2. Session 9: `7ac1e5f` - feat(gateway): add emailCaseId diagnostic to attachment sync
-
-## Next Steps If emailCaseId is null
-
-If the diagnostic shows `emailCaseId: null` for all entries, the fix is to ensure the updateMany is committed before syncAllAttachments runs. Options:
-
-1. **Use $transaction** - Wrap updateMany and subsequent operations in a transaction
-2. **Re-fetch email in syncAllAttachments** - Already doing this, but maybe add a delay
-3. **Pass caseId explicitly** - Instead of relying on the email's caseId, pass it from executeEmailImport
+1. Check `orphanedDocumentIds` - if > 0, orphan detection is working but upgrade is failing
+2. Check `errors` array for upgrade errors (Graph API, OneDrive issues)
+3. Check Render logs for detailed server-side logging
 
 ## Useful Commands
 
@@ -101,8 +112,10 @@ If the diagnostic shows `emailCaseId: null` for all entries, the fix is to ensur
 # Resume this issue
 /ops-continue 024
 
-# Check gateway logs on Render
-# https://dashboard.render.com/ -> legal-platform-gateway -> Logs
+# Check gateway deployment
+curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
+  "https://api.render.com/v1/services/srv-d4pkv8q4i8rc73fq3mvg/deploys?limit=1" \
+  | jq '.[0] | {status: .deploy.status, commit: .deploy.commit.id[0:7]}'
 
 # Test locally
 pnpm dev
