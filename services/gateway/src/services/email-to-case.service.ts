@@ -71,6 +71,8 @@ export interface EmailImportResult {
       attachmentsSynced: number;
       attachmentsSkipped: number;
       attachmentsAlreadyExist: number;
+      upgradedWithDocument: number;
+      emailCaseId: string | null;
       errors: string[];
     }>;
   };
@@ -359,6 +361,8 @@ export class EmailToCaseService {
               attachmentsSynced: syncResult.attachmentsSynced,
               attachmentsSkipped: (syncResult._diagnostics?.skippedNonFile || 0),
               attachmentsAlreadyExist: (syncResult._diagnostics?.skippedAlreadyExist || 0),
+              upgradedWithDocument: syncResult._diagnostics?.upgradedWithDocument || 0,
+              emailCaseId: syncResult._diagnostics?.emailCaseId || null,
               errors: syncResult.errors,
             });
 
@@ -382,6 +386,8 @@ export class EmailToCaseService {
               attachmentsSynced: 0,
               attachmentsSkipped: 0,
               attachmentsAlreadyExist: 0,
+              upgradedWithDocument: 0,
+              emailCaseId: null,
               errors: [error.message],
             });
           }

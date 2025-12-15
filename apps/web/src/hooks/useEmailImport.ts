@@ -64,6 +64,8 @@ const EMAIL_IMPORT_RESULT_FRAGMENT = gql`
         attachmentsSynced
         attachmentsSkipped
         attachmentsAlreadyExist
+        upgradedWithDocument
+        emailCaseId
         errors
       }
     }
@@ -134,6 +136,8 @@ export interface AttachmentSyncDetail {
   attachmentsSynced: number;
   attachmentsSkipped: number;
   attachmentsAlreadyExist: number;
+  upgradedWithDocument: number;
+  emailCaseId: string | null;
   errors: string[];
 }
 

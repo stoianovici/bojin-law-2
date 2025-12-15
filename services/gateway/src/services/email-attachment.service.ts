@@ -45,6 +45,8 @@ export interface AttachmentSyncResult {
     attachmentsFromGraph: number;
     skippedNonFile: number;
     skippedAlreadyExist: number;
+    upgradedWithDocument: number;
+    emailCaseId: string | null;
   };
 }
 
@@ -222,7 +224,7 @@ export class EmailAttachmentService {
     let skippedAlreadyExist = 0;
     let upgradedWithDocument = 0;
 
-    // Get email
+    // Get email (fresh fetch to get latest caseId after updateMany)
     const email = await this.prisma.email.findUnique({
       where: { id: emailId },
     });
@@ -236,6 +238,13 @@ export class EmailAttachmentService {
       return result;
     }
 
+    // Log caseId for debugging upgrade logic
+    logger.info('syncAllAttachments: Email fetched', {
+      emailId,
+      caseId: email.caseId,
+      hasCaseId: !!email.caseId,
+    });
+
     // Get attachments list from Graph API
     const attachments = await this.listAttachmentsFromGraph(
       email.graphMessageId,
@@ -248,6 +257,8 @@ export class EmailAttachmentService {
       attachmentsFromGraph: attachments.length,
       skippedNonFile: 0,
       skippedAlreadyExist: 0,
+      upgradedWithDocument: 0,
+      emailCaseId: email.caseId,
     };
 
     logger.info('Attachments from Graph API', {
@@ -286,6 +297,18 @@ export class EmailAttachmentService {
         });
 
         if (existing) {
+          // Log decision point for upgrade
+          logger.info('syncAllAttachments: Checking existing attachment for upgrade', {
+            emailId,
+            attachmentId: existing.id,
+            name: existing.name,
+            existingDocumentId: existing.documentId,
+            hasDocumentId: !!existing.documentId,
+            emailCaseId: email.caseId,
+            hasCaseId: !!email.caseId,
+            willUpgrade: !existing.documentId && !!email.caseId,
+          });
+
           // Check if attachment exists but needs Document/CaseDocument records created
           // This happens when attachments were synced before email was linked to case
           if (!existing.documentId && email.caseId) {
@@ -370,11 +393,13 @@ export class EmailAttachmentService {
     }
 
     // Update final diagnostic counts
-    result._diagnostics.skippedNonFile = skippedNonFile;
-    result._diagnostics.skippedAlreadyExist = skippedAlreadyExist;
+    result._diagnostics!.skippedNonFile = skippedNonFile;
+    result._diagnostics!.skippedAlreadyExist = skippedAlreadyExist;
+    result._diagnostics!.upgradedWithDocument = upgradedWithDocument;
 
     logger.info('syncAllAttachments complete', {
       emailId,
+      caseId: email.caseId,
       attachmentsSynced: result.attachmentsSynced,
       upgradedWithDocument,
       skippedNonFile,

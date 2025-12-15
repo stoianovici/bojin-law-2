@@ -79,6 +79,12 @@ type AttachmentSyncDetail {
   """How many attachments already existed in DB"""
   attachmentsAlreadyExist: Int!
 
+  """How many existing attachments were upgraded with Document records"""
+  upgradedWithDocument: Int!
+
+  """Email's caseId at time of sync (null if not linked to case)"""
+  emailCaseId: String
+
   """Errors for this specific email"""
   errors: [String!]!
 }
