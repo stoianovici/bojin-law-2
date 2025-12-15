@@ -30,7 +30,7 @@
 | OPS-021 | Ensure dev/production parity                      | Infra       | P2-Medium   | Resolved         | [archive/ops-021.md](archive/ops-021.md) |
 | OPS-022 | Email-to-Case Timeline Integration                | Feature     | P1-High     | In Progress      | [issues/ops-022.md](issues/ops-022.md)   |
 | OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug         | P1-High     | Open             | [issues/ops-023.md](issues/ops-023.md)   |
-| OPS-024 | Email Import - Attachments Not Importing          | Bug         | P1-High     | Root Cause Found | [issues/ops-024.md](issues/ops-024.md)   |
+| OPS-024 | Email Import - Attachments Not Importing          | Bug         | P1-High     | Fixing           | [issues/ops-024.md](issues/ops-024.md)   |
 
 ---
 
@@ -62,15 +62,14 @@ Web app builds independently and deploys fine. Gateway deployment blocked.
 
 ### [OPS-024] Email Import - Attachments Not Importing
 
-**Status:** Root Cause Found | **Priority:** P1-High | **Type:** Bug | **Last Active:** 2025-12-15
+**Status:** Fixing | **Priority:** P1-High | **Type:** Bug | **Last Active:** 2025-12-15
 
-Email import wizard imports emails successfully but attachments aren't being imported:
+Email import wizard imports emails successfully but attachments aren't appearing in Documents panel:
 
 - **Emails**: WORKING (23 imported, appear in Communications tab)
-- **Attachments**: NOT WORKING (0 imported despite 9 in preview)
-- **Root Cause**: MS access token is `null` when ExecuteEmailImport runs
+- **Attachments**: PARTIALLY FIXED (exist in EmailAttachment table but missing Document records)
 
-**Session 6 (2025-12-15):** **ROOT CAUSE FOUND** - Console logs show `token: null` for ExecuteEmailImport. MSAL session expired, silent refresh failing with `AADSTS160021`. User needs to re-authenticate with Microsoft to get fresh tokens.
+**Session 8 (2025-12-15):** Discovered attachments exist in `EmailAttachment` table (55 across 9 emails) but without `Document`/`CaseDocument` records - synced before emails were linked to case. Implemented upgrade logic to re-download and create Document records. Fix deployed (`3ec7d36`) but still showing 0 attachments - need to check for errors in `attachmentSyncDetails`.
 
 ---
 

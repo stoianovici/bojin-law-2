@@ -1,86 +1,79 @@
 # Handoff: [OPS-024] Email Import - Attachments Not Importing
 
-**Session**: 6
-**Date**: 2025-12-15 10:55
-**Status**: Root Cause Found
+**Session**: 8
+**Date**: 2025-12-15 15:20
+**Status**: Fixing (upgrade logic deployed but not working yet)
 
 ## Summary
 
-- **Emails**: WORKING (23 emails imported, appear in Communications tab)
-- **Attachments**: NOT WORKING (0 imported despite 9 detected in preview)
-- **Root Cause**: MS access token is `null` when ExecuteEmailImport runs
+- **Emails**: WORKING (23 imported, appear in Communications tab)
+- **Attachments**: PARTIALLY FIXED - root cause identified, fix deployed but still showing 0
 
-## ROOT CAUSE IDENTIFIED
+## ROOT CAUSE IDENTIFIED & FIX ATTEMPTED
 
-**The MS access token is `null` when the ExecuteEmailImport mutation runs.**
+### The Problem
+Attachments exist in `EmailAttachment` table (55 total across 9 emails) but they were synced BEFORE emails were linked to the case. Therefore:
+- `EmailAttachment` records exist ✓
+- `Document` records do NOT exist ✗
+- `CaseDocument` records do NOT exist ✗
 
-Console logs show:
+Without Document/CaseDocument records, attachments don't appear in the case's Documents panel.
 
-```
-[Apollo] Got MS access token for operation: ExecuteEmailImport token: null
-```
+### The Fix (Deployed but Not Working)
+Added logic to `syncAllAttachments()` in `email-attachment.service.ts`:
+- When existing attachment found WITHOUT `documentId`
+- AND email now has `caseId`
+- Re-download attachment from Graph API
+- Store in OneDrive case folder
+- Create Document + CaseDocument records
+- Delete old EmailAttachment, keep new one with documentId
 
-The MSAL session has expired and silent token refresh fails with:
+**Commit**: `3ec7d36` - Deployed to gateway
 
-- `InteractionRequiredAuthError: AADSTS160021: Application requested a user session which does not exist`
-- `BrowserAuthError: monitor_window_timeout: Token acquisition in iframe failed due to timeout`
-
-The app falls back to session cookie auth (which works for platform features) but has no Graph API token for Microsoft operations like fetching attachment content from Outlook.
-
-## Solution
-
-User needs to re-authenticate with Microsoft to get fresh tokens:
-
-1. Log out from the application
-2. Log back in through the Microsoft authentication flow
-3. Try the email import again
-
-After re-authentication, the MSAL tokens will be refreshed and the ExecuteEmailImport mutation should receive a valid token.
-
-## Work Completed This Session
-
-1. Analyzed console logs from user's email import attempt
-2. Identified that `[Apollo] Got MS access token for operation: ExecuteEmailImport token: null`
-3. Found MSAL errors showing session expiration (`AADSTS160021`)
-4. Documented root cause and solution
-5. Updated issue status to "Root Cause Found"
-
-## Previous Sessions Summary
-
-### Session 5 (2025-12-15)
-
-- Added diagnostic `_debug` field to `EmailImportResult`
-- Added server-side logging for attachment import flow
-- Added client-side console logging of import result
-
-### Session 4 (2025-12-14)
-
-- Fixed CaseDocument fields (linkedBy + firmId required)
-- Fixed invalid DocumentStatus enum (ACTIVE → FINAL)
-
-### Earlier Sessions
-
-- Fixed Prisma JSON query issues
-- Fixed timeline sync for emails
-- Fixed Document fields for attachment import
+### Current Status
+- Console diagnostic shows `attachmentSyncDetails` array with 9 entries
+- But `attachmentsImported: 0` still shows in result
+- UI shows "0 Atașamente"
+- Documents panel is empty
 
 ## Next Steps
 
-1. **Verify fix**: After user re-authenticates with Microsoft, test email import again
-2. **If still failing**: Check server-side logs for attachment sync errors
-3. **Consider UX improvement**: Add clear message when MSAL token is unavailable, prompting re-authentication
+1. **Expand the `attachmentSyncDetails` array in console** to see per-email details:
+   - Are there errors in any of the entries?
+   - What are the `attachmentsFromGraph`, `attachmentsSynced`, `attachmentsAlreadyExist` values now?
 
-## Key Files
+2. **Check Render logs** for gateway service to see detailed error messages during the upgrade process. Look for:
+   - `Existing attachment missing Document record, creating now`
+   - `Successfully created Document for existing attachment`
+   - `Failed to create Document for existing attachment`
 
-### Token handling:
+3. **Possible issues to investigate**:
+   - OneDrive folder creation might be failing
+   - Graph API token might not have sufficient permissions for OneDrive write
+   - Prisma transaction issues when deleting/creating EmailAttachment
 
-- `apps/web/src/contexts/AuthContext.tsx` - MSAL authentication context
-- `apps/web/src/lib/apollo-client.ts` - Apollo link that adds MS token to requests
+4. **If upgrade is failing silently**, the fix logic might need error handling improvements or the OneDrive integration might need debugging.
 
-### Attachment import:
+## Key Files Modified This Session
 
-- `services/gateway/src/services/email-attachment.service.ts` - Attachment sync logic
-- `services/gateway/src/services/email-to-case.service.ts` - Email import orchestration
+### Console flooding fixes:
+- `apps/web/src/components/email/EmailThreadView.tsx` - Added `sanitizeEmailHtml()` for cid: URLs
+- `apps/web/src/components/communication/TimelineEntryCard.tsx` - Same fix
+- `apps/web/src/components/ui/dialog.tsx` - Added `aria-describedby={undefined}`
+- `apps/web/src/components/layout/ConditionalLayout.tsx` - Removed verbose auth logging
+
+### Attachment diagnostic additions:
+- `services/gateway/src/services/email-attachment.service.ts` - Added `_diagnostics` to result, upgrade logic for existing attachments
+- `services/gateway/src/services/email-to-case.service.ts` - Added `attachmentSyncDetails` array to `_debug`
+- `services/gateway/src/graphql/schema/email-import.graphql` - Added `AttachmentSyncDetail` type
+- `apps/web/src/hooks/useEmailImport.ts` - Added new debug fields to fragment
+
+## Commits This Session
+
+1. `d0b1ca4` - fix(web): sanitize cid: image URLs in email HTML
+2. `0256323` - fix(web): suppress DialogContent warnings and remove auth state logging
+3. `228a915` - feat(gateway): add detailed attachment sync diagnostics
+4. `3ec7d36` - fix(gateway): upgrade existing attachments without Document records
 
 ## Useful Commands
 
@@ -88,6 +81,26 @@ After re-authentication, the MSAL tokens will be refreshed and the ExecuteEmailI
 # Resume this issue
 /ops-continue 024
 
-# After fix is verified, close the issue
-/ops-close 024
+# Check gateway logs on Render dashboard
+# https://dashboard.render.com/ -> legal-platform-gateway -> Logs
+
+# Test locally
+pnpm dev
 ```
+
+## Console Debug Data to Examine
+
+When testing, expand the `_debug.attachmentSyncDetails` array. Each entry should show:
+```javascript
+{
+  emailId: "...",
+  graphMessageId: "...",
+  attachmentsFromGraph: N,    // How many Graph API returned
+  attachmentsSynced: N,       // How many were newly synced (including upgraded)
+  attachmentsSkipped: N,      // Non-file types skipped
+  attachmentsAlreadyExist: N, // Already had documentId
+  errors: [...]               // <-- CHECK THIS FOR ERRORS
+}
+```
+
+If `errors` array has entries, those explain why upgrade failed.
