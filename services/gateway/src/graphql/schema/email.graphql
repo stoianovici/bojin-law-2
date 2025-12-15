@@ -287,20 +287,49 @@ extend type Mutation {
 
   """
   Bulk clear all case data (emails and documents) - Admin cleanup
-  Removes all emails linked to the case and all case documents
+  Permanently DELETES all emails linked to the case and all case documents
   Authorization: Partner or BusinessOwner role required
   """
   bulkClearCaseData(caseId: ID!): BulkClearCaseDataResult!
+
+  """
+  Permanently delete a single email and all its attachments
+  Authorization: Partner or BusinessOwner role required
+  """
+  permanentlyDeleteEmail(emailId: ID!): DeleteEmailResult!
+
+  """
+  Permanently delete all emails linked to a case
+  Authorization: Partner or BusinessOwner role required
+  """
+  bulkDeleteCaseEmails(caseId: ID!): BulkDeleteEmailsResult!
 }
 
 """
 Result of bulk clearing case data
 """
 type BulkClearCaseDataResult {
-  emailsCleared: Int!
+  emailsDeleted: Int!
   caseDocumentsDeleted: Int!
   documentsDeleted: Int!
   attachmentReferencesCleared: Int!
+  success: Boolean!
+}
+
+"""
+Result of deleting a single email
+"""
+type DeleteEmailResult {
+  success: Boolean!
+  attachmentsDeleted: Int!
+}
+
+"""
+Result of bulk deleting emails for a case
+"""
+type BulkDeleteEmailsResult {
+  emailsDeleted: Int!
+  attachmentsDeleted: Int!
   success: Boolean!
 }
 

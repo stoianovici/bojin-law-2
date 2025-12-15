@@ -1003,22 +1003,155 @@ export const emailResolvers = {
           }
         }
 
-        // 6. Unlink emails from case (set caseId to null)
-        const emailsResult = await tx.email.updateMany({
+        // 6. Delete emails linked to case (and their attachments via cascade)
+        // First delete attachments explicitly to get count
+        const attachmentsResult = await tx.emailAttachment.deleteMany({
+          where: { email: { caseId: args.caseId } },
+        });
+
+        // Then delete the emails
+        const emailsResult = await tx.email.deleteMany({
           where: { caseId: args.caseId },
-          data: { caseId: null },
         });
 
         return {
-          emailsCleared: emailsResult.count,
+          emailsDeleted: emailsResult.count,
           caseDocumentsDeleted: caseDocsResult.count,
           documentsDeleted,
-          attachmentReferencesCleared,
+          attachmentReferencesCleared: attachmentReferencesCleared + attachmentsResult.count,
           success: true,
         };
       });
 
       console.log('[bulkClearCaseData] Cleanup complete:', result);
+
+      return result;
+    },
+
+    /**
+     * Permanently delete a single email and all its attachments
+     * Partners/BusinessOwners only
+     */
+    permanentlyDeleteEmail: async (_: any, args: { emailId: string }, context: Context) => {
+      const user = context.user;
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only Partners and BusinessOwners can permanently delete
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners and BusinessOwners can permanently delete emails', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify email exists and belongs to user's firm
+      const email = await prisma.email.findUnique({
+        where: { id: args.emailId },
+        select: { firmId: true, id: true },
+      });
+
+      if (!email || email.firmId !== user.firmId) {
+        throw new GraphQLError('Email not found or not authorized', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      console.log('[permanentlyDeleteEmail] Deleting email:', args.emailId);
+
+      // Delete in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Delete attachments first
+        const attachmentsResult = await tx.emailAttachment.deleteMany({
+          where: { emailId: args.emailId },
+        });
+
+        // Delete the email
+        await tx.email.delete({
+          where: { id: args.emailId },
+        });
+
+        return {
+          success: true,
+          attachmentsDeleted: attachmentsResult.count,
+        };
+      });
+
+      console.log('[permanentlyDeleteEmail] Deleted email with', result.attachmentsDeleted, 'attachments');
+
+      return result;
+    },
+
+    /**
+     * Bulk delete all emails linked to a case
+     * Partners/BusinessOwners only
+     */
+    bulkDeleteCaseEmails: async (_: any, args: { caseId: string }, context: Context) => {
+      const user = context.user;
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only Partners and BusinessOwners can bulk delete
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners and BusinessOwners can bulk delete emails', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify case exists and belongs to user's firm
+      const caseData = await prisma.case.findUnique({
+        where: { id: args.caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== user.firmId) {
+        throw new GraphQLError('Case not found or not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      console.log('[bulkDeleteCaseEmails] Deleting all emails for case:', args.caseId);
+
+      // Delete in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Get email IDs first
+        const emails = await tx.email.findMany({
+          where: { caseId: args.caseId },
+          select: { id: true },
+        });
+        const emailIds = emails.map((e) => e.id);
+
+        if (emailIds.length === 0) {
+          return {
+            emailsDeleted: 0,
+            attachmentsDeleted: 0,
+            success: true,
+          };
+        }
+
+        // Delete attachments first
+        const attachmentsResult = await tx.emailAttachment.deleteMany({
+          where: { emailId: { in: emailIds } },
+        });
+
+        // Delete the emails
+        const emailsResult = await tx.email.deleteMany({
+          where: { id: { in: emailIds } },
+        });
+
+        return {
+          emailsDeleted: emailsResult.count,
+          attachmentsDeleted: attachmentsResult.count,
+          success: true,
+        };
+      });
+
+      console.log('[bulkDeleteCaseEmails] Deleted', result.emailsDeleted, 'emails with', result.attachmentsDeleted, 'attachments');
 
       return result;
     },
