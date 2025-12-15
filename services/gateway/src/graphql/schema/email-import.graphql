@@ -82,6 +82,9 @@ type AttachmentSyncDetail {
   """How many existing attachments were upgraded with Document records"""
   upgradedWithDocument: Int!
 
+  """How many attachments have documentId but Document doesn't exist (orphaned)"""
+  orphanedDocumentIds: Int!
+
   """Email's caseId at time of sync (null if not linked to case)"""
   emailCaseId: String
 

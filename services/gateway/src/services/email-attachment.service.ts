@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Email Attachment Service
  * Story 5.1: Email Integration and Synchronization
@@ -12,7 +11,7 @@
 import { Client } from '@microsoft/microsoft-graph-client';
 import type { Attachment, FileAttachment } from '@microsoft/microsoft-graph-types';
 import { PrismaClient, DocumentStatus } from '@prisma/client';
-import { createGraphClient, graphEndpoints } from '../config/graph.config';
+import { createGraphClient } from '../config/graph.config';
 import { OneDriveService, oneDriveService } from './onedrive.service';
 import { R2StorageService, r2StorageService } from './r2-storage.service';
 import { retryWithBackoff } from '../utils/retry.util';
@@ -46,6 +45,7 @@ export interface AttachmentSyncResult {
     skippedNonFile: number;
     skippedAlreadyExist: number;
     upgradedWithDocument: number;
+    orphanedDocumentIds: number; // documentId set but Document doesn't exist
     emailCaseId: string | null;
   };
 }
@@ -77,11 +77,7 @@ export class EmailAttachmentService {
   private oneDrive: OneDriveService;
   private r2Storage: R2StorageService;
 
-  constructor(
-    prisma: PrismaClient,
-    oneDrive?: OneDriveService,
-    r2Storage?: R2StorageService
-  ) {
+  constructor(prisma: PrismaClient, oneDrive?: OneDriveService, r2Storage?: R2StorageService) {
     this.prisma = prisma;
     this.oneDrive = oneDrive || oneDriveService;
     this.r2Storage = r2Storage || r2StorageService;
@@ -131,19 +127,13 @@ export class EmailAttachmentService {
     let documentId: string | undefined;
 
     const shouldUseR2 =
-      !email.caseId ||
-      attachment.size > LARGE_ATTACHMENT_THRESHOLD ||
-      !this.oneDrive;
+      !email.caseId || attachment.size > LARGE_ATTACHMENT_THRESHOLD || !this.oneDrive;
 
     if (shouldUseR2) {
       // Store in R2 (uncategorized, large files, or OneDrive unavailable)
       // Check if R2 is configured first
       if (this.r2Storage.isConfigured()) {
-        storageUrl = await this.storeInR2(
-          attachment,
-          email.id,
-          email.userId
-        );
+        storageUrl = await this.storeInR2(attachment, email.id, email.userId);
       } else {
         // R2 not configured - save metadata only (for local dev)
         logger.warn('R2 not configured - saving attachment metadata only', {
@@ -208,10 +198,7 @@ export class EmailAttachmentService {
    * @param accessToken - User's OAuth access token
    * @returns Sync result with all attachments
    */
-  async syncAllAttachments(
-    emailId: string,
-    accessToken: string
-  ): Promise<AttachmentSyncResult> {
+  async syncAllAttachments(emailId: string, accessToken: string): Promise<AttachmentSyncResult> {
     const result: AttachmentSyncResult = {
       success: true,
       attachmentsSynced: 0,
@@ -223,6 +210,7 @@ export class EmailAttachmentService {
     let skippedNonFile = 0;
     let skippedAlreadyExist = 0;
     let upgradedWithDocument = 0;
+    let orphanedDocumentIds = 0;
 
     // Get email (fresh fetch to get latest caseId after updateMany)
     const email = await this.prisma.email.findUnique({
@@ -246,10 +234,7 @@ export class EmailAttachmentService {
     });
 
     // Get attachments list from Graph API
-    const attachments = await this.listAttachmentsFromGraph(
-      email.graphMessageId,
-      accessToken
-    );
+    const attachments = await this.listAttachmentsFromGraph(email.graphMessageId, accessToken);
 
     // Add diagnostics to result
     result._diagnostics = {
@@ -258,6 +243,7 @@ export class EmailAttachmentService {
       skippedNonFile: 0,
       skippedAlreadyExist: 0,
       upgradedWithDocument: 0,
+      orphanedDocumentIds: 0,
       emailCaseId: email.caseId,
     };
 
@@ -265,7 +251,7 @@ export class EmailAttachmentService {
       emailId,
       graphMessageId: email.graphMessageId,
       attachmentCount: attachments.length,
-      attachments: attachments.map(a => ({
+      attachments: attachments.map((a) => ({
         id: a.id,
         name: a.name,
         type: a['@odata.type'],
@@ -297,6 +283,24 @@ export class EmailAttachmentService {
         });
 
         if (existing) {
+          // Check if documentId points to an actual Document (could be orphaned)
+          let documentExists = false;
+          if (existing.documentId) {
+            const doc = await this.prisma.document.findUnique({
+              where: { id: existing.documentId },
+              select: { id: true },
+            });
+            documentExists = !!doc;
+          }
+
+          // Determine if we need to upgrade (create Document for existing attachment)
+          const needsUpgrade = !documentExists && !!email.caseId;
+
+          // Track orphaned documentIds (documentId set but Document doesn't exist)
+          if (existing.documentId && !documentExists) {
+            orphanedDocumentIds++;
+          }
+
           // Log decision point for upgrade
           logger.info('syncAllAttachments: Checking existing attachment for upgrade', {
             emailId,
@@ -304,14 +308,17 @@ export class EmailAttachmentService {
             name: existing.name,
             existingDocumentId: existing.documentId,
             hasDocumentId: !!existing.documentId,
+            documentActuallyExists: documentExists,
             emailCaseId: email.caseId,
             hasCaseId: !!email.caseId,
-            willUpgrade: !existing.documentId && !!email.caseId,
+            willUpgrade: needsUpgrade,
           });
 
           // Check if attachment exists but needs Document/CaseDocument records created
-          // This happens when attachments were synced before email was linked to case
-          if (!existing.documentId && email.caseId) {
+          // This happens when:
+          // 1. Attachments were synced before email was linked to case (documentId null)
+          // 2. DocumentId is set but Document was deleted (orphaned reference)
+          if (needsUpgrade) {
             logger.info('Existing attachment missing Document record, creating now', {
               emailId,
               attachmentId: existing.id,
@@ -396,6 +403,7 @@ export class EmailAttachmentService {
     result._diagnostics!.skippedNonFile = skippedNonFile;
     result._diagnostics!.skippedAlreadyExist = skippedAlreadyExist;
     result._diagnostics!.upgradedWithDocument = upgradedWithDocument;
+    result._diagnostics!.orphanedDocumentIds = orphanedDocumentIds;
 
     logger.info('syncAllAttachments complete', {
       emailId,
@@ -564,9 +572,9 @@ export class EmailAttachmentService {
           const client = createGraphClient(accessToken);
 
           // Get attachment with content
-          const attachment = await client
+          const attachment = (await client
             .api(`/me/messages/${graphMessageId}/attachments/${graphAttachmentId}`)
-            .get() as FileAttachment;
+            .get()) as FileAttachment;
 
           if (!attachment.contentBytes) {
             throw new Error('Attachment has no content');
@@ -654,11 +662,7 @@ export class EmailAttachmentService {
     );
 
     // Create year-month subfolder
-    const monthFolder = await this.createOrGetFolder(
-      client,
-      emailsFolder.id!,
-      yearMonth
-    );
+    const _monthFolder = await this.createOrGetFolder(client, emailsFolder.id!, yearMonth);
 
     // Upload file
     const uploadResult = await this.oneDrive.uploadDocumentToOneDrive(
@@ -728,11 +732,7 @@ export class EmailAttachmentService {
     // Generate storage path: email-attachments/{userId}/{emailId}/{filename}
     const storagePath = `${R2_EMAIL_ATTACHMENTS_PATH}/${userId}/${emailId}/${attachment.name}`;
 
-    await this.r2Storage.uploadDocument(
-      storagePath,
-      attachment.content,
-      attachment.contentType
-    );
+    await this.r2Storage.uploadDocument(storagePath, attachment.content, attachment.contentType);
 
     return `r2://${storagePath}`;
   }
@@ -746,13 +746,11 @@ export class EmailAttachmentService {
     folderName: string
   ): Promise<{ id: string }> {
     try {
-      const folder = await client
-        .api(`/me/drive/items/${parentId}/children`)
-        .post({
-          name: folderName,
-          folder: {},
-          '@microsoft.graph.conflictBehavior': 'fail',
-        });
+      const folder = await client.api(`/me/drive/items/${parentId}/children`).post({
+        name: folderName,
+        folder: {},
+        '@microsoft.graph.conflictBehavior': 'fail',
+      });
 
       return { id: folder.id };
     } catch (error: any) {
@@ -779,9 +777,7 @@ export class EmailAttachmentService {
 
 let emailAttachmentServiceInstance: EmailAttachmentService | null = null;
 
-export function getEmailAttachmentService(
-  prisma: PrismaClient
-): EmailAttachmentService {
+export function getEmailAttachmentService(prisma: PrismaClient): EmailAttachmentService {
   if (!emailAttachmentServiceInstance) {
     emailAttachmentServiceInstance = new EmailAttachmentService(prisma);
   }

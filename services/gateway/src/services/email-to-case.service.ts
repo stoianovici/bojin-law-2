@@ -72,6 +72,7 @@ export interface EmailImportResult {
       attachmentsSkipped: number;
       attachmentsAlreadyExist: number;
       upgradedWithDocument: number;
+      orphanedDocumentIds: number;
       emailCaseId: string | null;
       errors: string[];
     }>;
@@ -359,9 +360,10 @@ export class EmailToCaseService {
               graphMessageId: syncResult._diagnostics?.graphMessageId || email.graphMessageId,
               attachmentsFromGraph: syncResult._diagnostics?.attachmentsFromGraph || 0,
               attachmentsSynced: syncResult.attachmentsSynced,
-              attachmentsSkipped: (syncResult._diagnostics?.skippedNonFile || 0),
-              attachmentsAlreadyExist: (syncResult._diagnostics?.skippedAlreadyExist || 0),
+              attachmentsSkipped: syncResult._diagnostics?.skippedNonFile || 0,
+              attachmentsAlreadyExist: syncResult._diagnostics?.skippedAlreadyExist || 0,
               upgradedWithDocument: syncResult._diagnostics?.upgradedWithDocument || 0,
+              orphanedDocumentIds: syncResult._diagnostics?.orphanedDocumentIds || 0,
               emailCaseId: syncResult._diagnostics?.emailCaseId || null,
               errors: syncResult.errors,
             });
@@ -387,6 +389,7 @@ export class EmailToCaseService {
               attachmentsSkipped: 0,
               attachmentsAlreadyExist: 0,
               upgradedWithDocument: 0,
+              orphanedDocumentIds: 0,
               emailCaseId: null,
               errors: [error.message],
             });
