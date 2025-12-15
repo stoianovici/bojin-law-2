@@ -31,6 +31,7 @@
 | OPS-022 | Email-to-Case Timeline Integration                | Feature     | P1-High     | In Progress | [issues/ops-022.md](issues/ops-022.md)   |
 | OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug         | P1-High     | Open        | [issues/ops-023.md](issues/ops-023.md)   |
 | OPS-024 | Email Import - Attachments Not Importing          | Bug         | P1-High     | Fixing      | [issues/ops-024.md](issues/ops-024.md)   |
+| OPS-025 | Email and Document Permanent Deletion             | Feature     | P1-High     | Resolved    | [archive/ops-025.md](archive/ops-025.md) |
 
 ---
 
