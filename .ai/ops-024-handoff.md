@@ -1,122 +1,106 @@
 # Handoff: [OPS-024] Email Import - Attachments Not Importing
 
-**Session**: 11
-**Date**: 2025-12-15 16:22
-**Status**: Fixing (CaseDocument link fix deployed, awaiting verification)
+**Session**: 12
+**Date**: 2025-12-15T17:07:00Z
+**Status**: Fixing (Web frontend fix deployed, awaiting verification)
 
 ## Summary
 
-- **Emails**: WORKING (61 imported in last test)
-- **Attachments**: FIX DEPLOYED - awaiting verification
+- **Emails**: WORKING (61 imported)
+- **Backend (Gateway)**: WORKING - CaseDocument links exist
+- **Frontend (Web)**: FIX DEPLOYED - awaiting verification
 
-## ROOT CAUSE IDENTIFIED (Session 11)
+## ROOT CAUSE FOUND (Session 12)
 
-**Documents exist but CaseDocument links are missing.**
+**The Documents tab was never connected to the backend.**
 
-The diagnostic output from session 10 showed:
-
-- `orphanedDocumentIds: 0` - Documents DO exist
-- `upgradedWithDocument: 0` - No need to create new Documents
-- `attachmentsAlreadyExist: 100+` - EmailAttachment records exist with documentId set
-
-This means Documents were created previously, but they're not appearing in the Documents panel because **CaseDocument** records (which link Documents to Cases) don't exist for the current case.
-
-## Session 11 Fix
-
-Added logic to detect and create missing CaseDocument links:
+In `apps/web/src/app/cases/[caseId]/page.tsx` line 166:
 
 ```typescript
-// If Document exists and email has caseId, check if CaseDocument exists
-if (doc && email.caseId) {
-  const caseDoc = await this.prisma.caseDocument.findFirst({
-    where: {
-      documentId: existing.documentId,
-      caseId: email.caseId,
-    },
-  });
-
-  // If Document exists but CaseDocument doesn't, create the link
-  if (!caseDoc) {
-    missingCaseDocument++;
-    await this.prisma.caseDocument.create({
-      data: {
-        caseId: email.caseId,
-        documentId: existing.documentId,
-        linkedBy: email.userId,
-        firmId: doc.firmId,
-        isOriginal: true,
-      },
-    });
-    linkedToCase++;
-  }
-}
+documents: [], // TODO: Fetch from API  <-- HARDCODED EMPTY ARRAY!
 ```
 
-New diagnostic fields added:
+The `DocumentsTab` component just rendered whatever was passed to it. The `useCaseDocuments` hook existed but was never used.
 
-- `missingCaseDocument` - Documents that existed but had no CaseDocument for this case
-- `linkedToCase` - Documents successfully linked to the case
+**Backend was working all along** - the session 11 fix created CaseDocument links properly. Diagnostic output showed `linkedToCase` values (3, 14, 4, etc.) confirming data exists.
+
+## Session 12 Fix
+
+Replaced `DocumentsTab` with `CaseDocumentsList` component which properly fetches documents via GraphQL.
+
+Changes to `apps/web/src/app/cases/[caseId]/page.tsx`:
+
+- Import `CaseDocumentsList` instead of `DocumentsTab`
+- Add `useAuth` to get user role
+- Replace DocumentsTab render with CaseDocumentsList
+
+```typescript
+case 'documents':
+  return (
+    <CaseDocumentsList
+      caseId={caseId}
+      caseName={caseData.case.title}
+      clientId={realCaseData?.client?.id || ''}
+      userRole={(user?.role as 'Partner' | 'Associate' | 'Paralegal') || 'Associate'}
+      className="p-6"
+    />
+  );
+```
 
 ## Commits
 
-- `a478b86` - fix(gateway): create missing CaseDocument links for email attachments
+- `a478b86` - fix(gateway): create missing CaseDocument links for email attachments (Session 11)
+- `ba98ab3` - fix(web): connect Documents tab to backend via CaseDocumentsList (Session 12)
 
 ## Deployment Status
 
-- Gateway: Building (commit `a478b86`) - triggered at 16:22 UTC
-- Web: Building (commit `a478b86`) - triggered at 16:22 UTC
+- **Web**: Queued/Building (commit `ba98ab3`) - triggered at 17:05 UTC
 
 Check status:
 
 ```bash
 curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
-  "https://api.render.com/v1/services/srv-d4pkv8q4i8rc73fq3mvg/deploys?limit=1" \
+  "https://api.render.com/v1/services/srv-d4dk9fodl3ps73d3d7ig/deploys?limit=1" \
   | jq '.[0] | {status: .deploy.status, commit: .deploy.commit.id[0:7]}'
 ```
 
-## How to Test
+Should show: `status: "live"`, `commit: "ba98ab3"`
 
-1. Wait for deployment to complete
-2. Go to email import wizard for case `47504bff-e466-4166-b6a6-16db23ebdb2d`
-3. Run import with attachments enabled
-4. Check console for `[useEmailImport] Import result:`
-5. Expand `_debug.attachmentSyncDetails` array
+## How to Test (Next Session)
 
-New diagnostic fields to watch:
+1. **Check deployment completed** (see command above)
 
-```javascript
-{
-  attachmentsAlreadyExist: N,
-  upgradedWithDocument: N,
-  orphanedDocumentIds: N,
-  missingCaseDocument: N,    // NEW: Should be > 0 (Documents found without CaseDocument)
-  linkedToCase: N,           // NEW: Should be > 0 (CaseDocument links created)
-  emailCaseId: "...",
-  errors: [...]
-}
-```
+2. **Test in browser**:
+   - Go to case `47504bff-e466-4166-b6a6-16db23ebdb2d`
+   - Click on **Documents** tab
+   - Verify email attachments appear (should be ~104 documents)
 
-## Expected Outcome
+3. **Check Network tab**:
+   - Should see `GetCaseDocuments` GraphQL request (previously missing!)
+   - Response should contain array of documents
 
-After fix:
+4. **If working**: Close OPS-024
 
-- `missingCaseDocument` should show how many Documents were missing CaseDocument links
-- `linkedToCase` should show how many CaseDocument links were created
-- Documents should now appear in Documents panel (via CaseDocument join)
+## Key Insight
 
-## Files Modified
+This was a **frontend display bug**, not a backend data bug:
 
-- `services/gateway/src/services/email-attachment.service.ts` - Added CaseDocument detection and creation
-- `services/gateway/src/services/email-to-case.service.ts` - Pass new diagnostic fields
-- `services/gateway/src/graphql/schema/email-import.graphql` - Added missingCaseDocument, linkedToCase fields
-- `apps/web/src/hooks/useEmailImport.ts` - Request new diagnostic fields
+- Backend: Documents exist, EmailAttachments exist, CaseDocuments exist
+- Frontend: Never queried the backend - just displayed empty array
 
-## If Fix Still Doesn't Work
+The `CaseDocumentsList` component was already built with proper GraphQL integration (`useCaseDocuments` hook), it was just never used on the main case page.
 
-1. Check `missingCaseDocument` - if 0, Documents might already be linked to a different case
-2. Check `errors` array for any CaseDocument creation errors
-3. Check Render logs for detailed server-side logging
-4. Verify Documents panel query includes the current caseId
+## Files Modified (Session 12)
+
+- `apps/web/src/app/cases/[caseId]/page.tsx`:
+  - Added: `CaseDocumentsList`, `useAuth` imports
+  - Removed: `DocumentsTab`, `useRouter`, `handleNewDocument`
+  - Changed: Documents tab now renders `CaseDocumentsList`
+
+## Service IDs
+
+- Gateway: `srv-d4pkv8q4i8rc73fq3mvg`
+- Web: `srv-d4dk9fodl3ps73d3d7ig`
 
 ## Useful Commands
 
@@ -124,9 +108,9 @@ After fix:
 # Resume this issue
 /ops-continue 024
 
-# Check gateway deployment
+# Check web deployment
 curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
-  "https://api.render.com/v1/services/srv-d4pkv8q4i8rc73fq3mvg/deploys?limit=1" \
+  "https://api.render.com/v1/services/srv-d4dk9fodl3ps73d3d7ig/deploys?limit=1" \
   | jq '.[0] | {status: .deploy.status, commit: .deploy.commit.id[0:7]}'
 
 # Test locally
