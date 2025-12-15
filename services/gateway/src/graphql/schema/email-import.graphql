@@ -85,6 +85,12 @@ type AttachmentSyncDetail {
   """How many attachments have documentId but Document doesn't exist (orphaned)"""
   orphanedDocumentIds: Int!
 
+  """How many Documents exist but had no CaseDocument for this case (now linked)"""
+  missingCaseDocument: Int!
+
+  """How many attachments are properly linked to the case via CaseDocument"""
+  linkedToCase: Int!
+
   """Email's caseId at time of sync (null if not linked to case)"""
   emailCaseId: String
 

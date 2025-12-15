@@ -46,6 +46,8 @@ export interface AttachmentSyncResult {
     skippedAlreadyExist: number;
     upgradedWithDocument: number;
     orphanedDocumentIds: number; // documentId set but Document doesn't exist
+    missingCaseDocument: number; // Document exists but no CaseDocument for this case
+    linkedToCase: number; // Document exists AND CaseDocument exists for this case
     emailCaseId: string | null;
   };
 }
@@ -211,6 +213,8 @@ export class EmailAttachmentService {
     let skippedAlreadyExist = 0;
     let upgradedWithDocument = 0;
     let orphanedDocumentIds = 0;
+    let missingCaseDocument = 0;
+    let linkedToCase = 0;
 
     // Get email (fresh fetch to get latest caseId after updateMany)
     const email = await this.prisma.email.findUnique({
@@ -244,6 +248,8 @@ export class EmailAttachmentService {
       skippedAlreadyExist: 0,
       upgradedWithDocument: 0,
       orphanedDocumentIds: 0,
+      missingCaseDocument: 0,
+      linkedToCase: 0,
       emailCaseId: email.caseId,
     };
 
@@ -285,12 +291,62 @@ export class EmailAttachmentService {
         if (existing) {
           // Check if documentId points to an actual Document (could be orphaned)
           let documentExists = false;
+          let caseDocumentExists = false;
           if (existing.documentId) {
             const doc = await this.prisma.document.findUnique({
               where: { id: existing.documentId },
-              select: { id: true },
+              select: { id: true, clientId: true, firmId: true },
             });
             documentExists = !!doc;
+
+            // If Document exists and email has caseId, check if CaseDocument exists
+            if (doc && email.caseId) {
+              const caseDoc = await this.prisma.caseDocument.findFirst({
+                where: {
+                  documentId: existing.documentId,
+                  caseId: email.caseId,
+                },
+              });
+              caseDocumentExists = !!caseDoc;
+
+              // If Document exists but CaseDocument doesn't, create the link
+              if (!caseDoc) {
+                logger.info('Document exists but missing CaseDocument link, creating now', {
+                  emailId,
+                  attachmentId: existing.id,
+                  documentId: existing.documentId,
+                  caseId: email.caseId,
+                });
+                missingCaseDocument++;
+
+                try {
+                  await this.prisma.caseDocument.create({
+                    data: {
+                      caseId: email.caseId,
+                      documentId: existing.documentId,
+                      linkedBy: email.userId,
+                      firmId: doc.firmId,
+                      isOriginal: true,
+                    },
+                  });
+                  linkedToCase++;
+                  logger.info('Created CaseDocument link for existing attachment', {
+                    documentId: existing.documentId,
+                    caseId: email.caseId,
+                  });
+                } catch (linkErr) {
+                  // Might fail if CaseDocument already exists (race condition)
+                  const linkErrMsg = linkErr instanceof Error ? linkErr.message : String(linkErr);
+                  logger.warn('Failed to create CaseDocument link', {
+                    documentId: existing.documentId,
+                    caseId: email.caseId,
+                    error: linkErrMsg,
+                  });
+                }
+              } else {
+                linkedToCase++;
+              }
+            }
           }
 
           // Determine if we need to upgrade (create Document for existing attachment)
@@ -309,6 +365,7 @@ export class EmailAttachmentService {
             existingDocumentId: existing.documentId,
             hasDocumentId: !!existing.documentId,
             documentActuallyExists: documentExists,
+            caseDocumentExists,
             emailCaseId: email.caseId,
             hasCaseId: !!email.caseId,
             willUpgrade: needsUpgrade,
@@ -404,6 +461,8 @@ export class EmailAttachmentService {
     result._diagnostics!.skippedAlreadyExist = skippedAlreadyExist;
     result._diagnostics!.upgradedWithDocument = upgradedWithDocument;
     result._diagnostics!.orphanedDocumentIds = orphanedDocumentIds;
+    result._diagnostics!.missingCaseDocument = missingCaseDocument;
+    result._diagnostics!.linkedToCase = linkedToCase;
 
     logger.info('syncAllAttachments complete', {
       emailId,

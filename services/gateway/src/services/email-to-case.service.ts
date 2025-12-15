@@ -73,6 +73,8 @@ export interface EmailImportResult {
       attachmentsAlreadyExist: number;
       upgradedWithDocument: number;
       orphanedDocumentIds: number;
+      missingCaseDocument: number;
+      linkedToCase: number;
       emailCaseId: string | null;
       errors: string[];
     }>;
@@ -364,6 +366,8 @@ export class EmailToCaseService {
               attachmentsAlreadyExist: syncResult._diagnostics?.skippedAlreadyExist || 0,
               upgradedWithDocument: syncResult._diagnostics?.upgradedWithDocument || 0,
               orphanedDocumentIds: syncResult._diagnostics?.orphanedDocumentIds || 0,
+              missingCaseDocument: syncResult._diagnostics?.missingCaseDocument || 0,
+              linkedToCase: syncResult._diagnostics?.linkedToCase || 0,
               emailCaseId: syncResult._diagnostics?.emailCaseId || null,
               errors: syncResult.errors,
             });
@@ -390,6 +394,8 @@ export class EmailToCaseService {
               attachmentsAlreadyExist: 0,
               upgradedWithDocument: 0,
               orphanedDocumentIds: 0,
+              missingCaseDocument: 0,
+              linkedToCase: 0,
               emailCaseId: null,
               errors: [error.message],
             });

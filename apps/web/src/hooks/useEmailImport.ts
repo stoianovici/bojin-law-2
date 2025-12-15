@@ -66,6 +66,8 @@ const EMAIL_IMPORT_RESULT_FRAGMENT = gql`
         attachmentsAlreadyExist
         upgradedWithDocument
         orphanedDocumentIds
+        missingCaseDocument
+        linkedToCase
         emailCaseId
         errors
       }
@@ -139,6 +141,8 @@ export interface AttachmentSyncDetail {
   attachmentsAlreadyExist: number;
   upgradedWithDocument: number;
   orphanedDocumentIds: number;
+  missingCaseDocument: number;
+  linkedToCase: number;
   emailCaseId: string | null;
   errors: string[];
 }
