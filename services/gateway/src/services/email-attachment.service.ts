@@ -220,6 +220,7 @@ export class EmailAttachmentService {
     // Diagnostic counters
     let skippedNonFile = 0;
     let skippedAlreadyExist = 0;
+    let upgradedWithDocument = 0;
 
     // Get email
     const email = await this.prisma.email.findUnique({
@@ -285,10 +286,53 @@ export class EmailAttachmentService {
         });
 
         if (existing) {
+          // Check if attachment exists but needs Document/CaseDocument records created
+          // This happens when attachments were synced before email was linked to case
+          if (!existing.documentId && email.caseId) {
+            logger.info('Existing attachment missing Document record, creating now', {
+              emailId,
+              attachmentId: existing.id,
+              name: existing.name,
+              caseId: email.caseId,
+            });
+
+            try {
+              // Re-download and store in OneDrive with Document creation
+              const synced = await this.syncAttachment(emailId, attachment.id!, accessToken);
+
+              // Delete the old EmailAttachment record (syncAttachment created a new one)
+              await this.prisma.emailAttachment.delete({
+                where: { id: existing.id },
+              });
+
+              result.attachments.push(synced);
+              result.attachmentsSynced++;
+
+              upgradedWithDocument++;
+              logger.info('Successfully created Document for existing attachment', {
+                emailId,
+                oldAttachmentId: existing.id,
+                newAttachmentId: synced.id,
+                documentId: synced.documentId,
+              });
+              continue;
+            } catch (err) {
+              const errorMsg = err instanceof Error ? err.message : String(err);
+              logger.error('Failed to create Document for existing attachment', {
+                emailId,
+                attachmentId: existing.id,
+                error: errorMsg,
+              });
+              result.errors.push(`Failed to create Document for ${existing.name}: ${errorMsg}`);
+              // Fall through to add the existing attachment without document
+            }
+          }
+
           logger.info('Attachment already synced', {
             emailId,
             attachmentId: existing.id,
             name: existing.name,
+            hasDocument: !!existing.documentId,
           });
           skippedAlreadyExist++;
           result.attachments.push({
@@ -332,6 +376,7 @@ export class EmailAttachmentService {
     logger.info('syncAllAttachments complete', {
       emailId,
       attachmentsSynced: result.attachmentsSynced,
+      upgradedWithDocument,
       skippedNonFile,
       skippedAlreadyExist,
       errorCount: result.errors.length,
