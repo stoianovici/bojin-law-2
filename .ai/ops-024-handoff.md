@@ -1,118 +1,93 @@
 # Handoff: [OPS-024] Email Import - Attachments Not Importing
 
-**Session**: 12
-**Date**: 2025-12-15T17:07:00Z
-**Status**: Fixing (Web frontend fix deployed, awaiting verification)
+**Session**: 13
+**Date**: 2025-12-15T17:40:00Z
+**Status**: Fixing (bulk delete mutation deployed, awaiting use)
 
 ## Summary
 
-- **Emails**: WORKING (61 imported)
-- **Backend (Gateway)**: WORKING - CaseDocument links exist
-- **Frontend (Web)**: FIX DEPLOYED - awaiting verification
+- **Documents Tab Fix**: VERIFIED WORKING - Documents now appear
+- **Cleanup**: Bulk delete mutation added, gateway deploying
 
-## ROOT CAUSE FOUND (Session 12)
+## Session 13 Progress
 
-**The Documents tab was never connected to the backend.**
+### 1. Verified Frontend Fix
 
-In `apps/web/src/app/cases/[caseId]/page.tsx` line 166:
+- Web deployment completed (commit `89256c2`)
+- User confirmed documents now appear in Documents tab
+- **OPS-024 core issue is FIXED**
 
-```typescript
-documents: [], // TODO: Fetch from API  <-- HARDCODED EMPTY ARRAY!
-```
+### 2. Cleanup Task (In Progress)
 
-The `DocumentsTab` component just rendered whatever was passed to it. The `useCaseDocuments` hook existed but was never used.
+User requested deletion of test documents (duplicates from debugging sessions).
 
-**Backend was working all along** - the session 11 fix created CaseDocument links properly. Diagnostic output showed `linkedToCase` values (3, 14, 4, etc.) confirming data exists.
+**Problem**: Can't connect to Render PostgreSQL from local machine (connection terminated - internal-only access)
 
-## Session 12 Fix
+**Solution**: Added `bulkDeleteCaseDocuments` GraphQL mutation to gateway:
 
-Replaced `DocumentsTab` with `CaseDocumentsList` component which properly fetches documents via GraphQL.
+- Schema: `services/gateway/src/graphql/schema/document.graphql`
+- Resolver: `services/gateway/src/graphql/resolvers/document.resolvers.ts`
+- Commit: `c678da2`
 
-Changes to `apps/web/src/app/cases/[caseId]/page.tsx`:
+### 3. Gateway Deployment Status
 
-- Import `CaseDocumentsList` instead of `DocumentsTab`
-- Add `useAuth` to get user role
-- Replace DocumentsTab render with CaseDocumentsList
-
-```typescript
-case 'documents':
-  return (
-    <CaseDocumentsList
-      caseId={caseId}
-      caseName={caseData.case.title}
-      clientId={realCaseData?.client?.id || ''}
-      userRole={(user?.role as 'Partner' | 'Associate' | 'Paralegal') || 'Associate'}
-      className="p-6"
-    />
-  );
-```
-
-## Commits
-
-- `a478b86` - fix(gateway): create missing CaseDocument links for email attachments (Session 11)
-- `ba98ab3` - fix(web): connect Documents tab to backend via CaseDocumentsList (Session 12)
-
-## Deployment Status
-
-- **Web**: Queued/Building (commit `ba98ab3`) - triggered at 17:05 UTC
+- Triggered at 17:35 UTC
+- Status: `build_in_progress` (last checked)
+- Commit: `c678da2`
 
 Check status:
 
 ```bash
 curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
-  "https://api.render.com/v1/services/srv-d4dk9fodl3ps73d3d7ig/deploys?limit=1" \
+  "https://api.render.com/v1/services/srv-d4pkv8q4i8rc73fq3mvg/deploys?limit=1" \
   | jq '.[0] | {status: .deploy.status, commit: .deploy.commit.id[0:7]}'
 ```
 
-Should show: `status: "live"`, `commit: "ba98ab3"`
+## Next Steps
 
-## How to Test (Next Session)
+1. **Wait for gateway deployment** to complete (should show `status: "live"`)
 
-1. **Check deployment completed** (see command above)
+2. **Call the bulk delete mutation** via GraphQL Playground or curl:
 
-2. **Test in browser**:
-   - Go to case `47504bff-e466-4166-b6a6-16db23ebdb2d`
-   - Click on **Documents** tab
-   - Verify email attachments appear (should be ~104 documents)
+   ```graphql
+   mutation {
+     bulkDeleteCaseDocuments(caseId: "47504bff-e466-4166-b6a6-16db23ebdb2d") {
+       caseDocumentsDeleted
+       attachmentReferencesCleared
+       documentsDeleted
+       success
+     }
+   }
+   ```
 
-3. **Check Network tab**:
-   - Should see `GetCaseDocuments` GraphQL request (previously missing!)
-   - Response should contain array of documents
+   Via curl (requires auth token from browser):
 
-4. **If working**: Close OPS-024
+   ```bash
+   curl -X POST https://gateway.bojinlaw.com/graphql \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <YOUR_TOKEN>" \
+     -d '{"query": "mutation { bulkDeleteCaseDocuments(caseId: \"47504bff-e466-4166-b6a6-16db23ebdb2d\") { caseDocumentsDeleted attachmentReferencesCleared documentsDeleted success } }"}'
+   ```
+
+3. **Verify Documents tab is empty** after deletion
+
+4. **Close OPS-024** - Core issue is resolved, cleanup is optional
+
+## Files Modified (Session 13)
+
+- `services/gateway/src/graphql/schema/document.graphql` - Added `bulkDeleteCaseDocuments` mutation and `BulkDeleteResult` type
+- `services/gateway/src/graphql/resolvers/document.resolvers.ts` - Added resolver implementation
+- `packages/database/scripts/cleanup-case-documents.ts` - Created standalone script (unused - DB not accessible from local)
+
+## Commits
+
+- `c678da2` - feat(gateway): add bulkDeleteCaseDocuments mutation for admin cleanup
 
 ## Key Insight
 
-This was a **frontend display bug**, not a backend data bug:
-
-- Backend: Documents exist, EmailAttachments exist, CaseDocuments exist
-- Frontend: Never queried the backend - just displayed empty array
-
-The `CaseDocumentsList` component was already built with proper GraphQL integration (`useCaseDocuments` hook), it was just never used on the main case page.
-
-## Files Modified (Session 12)
-
-- `apps/web/src/app/cases/[caseId]/page.tsx`:
-  - Added: `CaseDocumentsList`, `useAuth` imports
-  - Removed: `DocumentsTab`, `useRouter`, `handleNewDocument`
-  - Changed: Documents tab now renders `CaseDocumentsList`
+The core OPS-024 issue (attachments not appearing) was a **frontend display bug** fixed in session 12. The cleanup task in session 13 is a separate housekeeping task to remove test data.
 
 ## Service IDs
 
 - Gateway: `srv-d4pkv8q4i8rc73fq3mvg`
 - Web: `srv-d4dk9fodl3ps73d3d7ig`
-
-## Useful Commands
-
-```bash
-# Resume this issue
-/ops-continue 024
-
-# Check web deployment
-curl -s -H "Authorization: Bearer rnd_xPmOVitvPACYNfeNEMSDH5ZQfSR0" \
-  "https://api.render.com/v1/services/srv-d4dk9fodl3ps73d3d7ig/deploys?limit=1" \
-  | jq '.[0] | {status: .deploy.status, commit: .deploy.commit.id[0:7]}'
-
-# Test locally
-pnpm dev
-```
