@@ -7,6 +7,7 @@ You are resuming work on an operations issue. This is a cross-session workflow -
 Read these files in parallel:
 
 - `docs/ops/operations-log.md` - Source of truth for all issues
+- `docs/ops/root-cause-patterns.md` - Common root causes and quick checks
 - `docs/project-conventions.md` - Code patterns and implementation standards
 - `.ai/ops-*-handoff.md` - Find the most recent handoff file(s)
 
@@ -68,8 +69,13 @@ Based on current status, proceed with appropriate workflow:
 
 **If Status = New or Triaging**:
 
-- Ask user to describe the issue in more detail
-- Use Explore agent to search codebase
+- Run **Quick Sanity Checks** from `root-cause-patterns.md`:
+  1. Does the data exist in DB?
+  2. Does GraphQL return it?
+  3. Does the frontend fetch it?
+  4. Does the component render it (not hardcoded)?
+- Check if symptom matches known patterns in the pattern library
+- If multiple hypotheses, suggest running `/ops-investigate`
 - Update status to "Investigating"
 
 **If Status = Investigating**:
