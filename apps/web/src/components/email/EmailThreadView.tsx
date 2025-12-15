@@ -11,7 +11,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import DOMPurify from 'dompurify';
-import { useEmailThread, useThreadParticipants } from '@/hooks/useEmailSync';
+import { useEmailThread, useThreadParticipants, useDeleteEmail } from '@/hooks/useEmailSync';
+import { useAuth } from '@/contexts/AuthContext';
 import { CaseAssignmentSelector } from './CaseAssignmentSelector';
 import { EmailAttachmentsPanel } from './EmailAttachmentsPanel';
 import { EmailIntelligenceSidebar } from './EmailIntelligenceSidebar';
@@ -70,10 +71,16 @@ interface EmailThreadViewProps {
 export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProps) {
   const { thread, loading, error, markRead, assignToCase, refetch } = useEmailThread(conversationId);
   const { participants } = useThreadParticipants(conversationId);
+  const { user } = useAuth();
+  const { deleteEmail, loading: deleting } = useDeleteEmail();
   const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set());
   const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [showIntelligence, setShowIntelligence] = useState(false);
   const [_highlightedExtraction, setHighlightedExtraction] = useState<{ emailId: string; extractionId: string } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Check if user can delete (Partner or BusinessOwner)
+  const canDelete = user?.role === 'Partner' || user?.role === 'BusinessOwner';
 
   // Story 5.3: AI Email Drafting state
   const [showDraftPanel, setShowDraftPanel] = useState(false);
@@ -157,6 +164,22 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
     refetch();
   }, [refetch]);
 
+  // Handle delete all emails in thread
+  const handleDeleteThread = useCallback(async () => {
+    if (!thread?.emails) return;
+
+    try {
+      // Delete all emails in the thread
+      for (const email of thread.emails) {
+        await deleteEmail(email.id);
+      }
+      setShowDeleteConfirm(false);
+      onClose?.();
+    } catch (err) {
+      console.error('Failed to delete thread:', err);
+    }
+  }, [thread?.emails, deleteEmail, onClose]);
+
   if (loading && !thread) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -219,6 +242,18 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
                 <BrainIcon />
                 Intelligence
               </button>
+
+              {/* Delete button - Partners/BusinessOwners only */}
+              {canDelete && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  title="Șterge conversația"
+                >
+                  <TrashIcon />
+                  Șterge
+                </button>
+              )}
 
               {onClose && (
                 <button
@@ -343,6 +378,47 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
             </div>
           );
         })()}
+
+        {/* Delete confirmation dialog */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Confirmare ștergere
+              </h3>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                Sigur doriți să ștergeți permanent această conversație cu {thread.messageCount} {thread.messageCount === 1 ? 'mesaj' : 'mesaje'}?
+                Această acțiune nu poate fi anulată.
+              </p>
+              <div className="mt-4 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                  disabled={deleting}
+                >
+                  Anulează
+                </button>
+                <button
+                  onClick={handleDeleteThread}
+                  disabled={deleting}
+                  className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <>
+                      <Spinner className="h-4 w-4" />
+                      Se șterge...
+                    </>
+                  ) : (
+                    <>
+                      <TrashIcon />
+                      Șterge permanent
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Intelligence Sidebar */}
@@ -484,6 +560,19 @@ function FolderIcon() {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
       />
     </svg>
   );

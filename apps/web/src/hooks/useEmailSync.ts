@@ -252,6 +252,25 @@ const CREATE_EMAIL_SUBSCRIPTION = gql`
   }
 `;
 
+const PERMANENTLY_DELETE_EMAIL = gql`
+  mutation PermanentlyDeleteEmail($emailId: ID!) {
+    permanentlyDeleteEmail(emailId: $emailId) {
+      success
+      attachmentsDeleted
+    }
+  }
+`;
+
+const BULK_DELETE_CASE_EMAILS = gql`
+  mutation BulkDeleteCaseEmails($caseId: ID!) {
+    bulkDeleteCaseEmails(caseId: $caseId) {
+      emailsDeleted
+      attachmentsDeleted
+      success
+    }
+  }
+`;
+
 // ============================================================================
 // Subscriptions
 // ============================================================================
@@ -551,4 +570,40 @@ export function useEmailRealtime(onNewEmail?: (email: any) => void) {
       }
     },
   });
+}
+
+/**
+ * Hook for permanently deleting emails (Partners/BusinessOwners only)
+ */
+export function useDeleteEmail() {
+  const [deleteEmail, { loading, error }] = useMutation(PERMANENTLY_DELETE_EMAIL, {
+    refetchQueries: [{ query: GET_EMAIL_STATS }, { query: GET_EMAIL_THREADS }],
+  });
+
+  return {
+    deleteEmail: async (emailId: string) => {
+      const result = await deleteEmail({ variables: { emailId } });
+      return result.data?.permanentlyDeleteEmail;
+    },
+    loading,
+    error,
+  };
+}
+
+/**
+ * Hook for bulk deleting all emails for a case (Partners/BusinessOwners only)
+ */
+export function useBulkDeleteCaseEmails() {
+  const [bulkDelete, { loading, error }] = useMutation(BULK_DELETE_CASE_EMAILS, {
+    refetchQueries: [{ query: GET_EMAIL_STATS }, { query: GET_EMAIL_THREADS }],
+  });
+
+  return {
+    bulkDeleteCaseEmails: async (caseId: string) => {
+      const result = await bulkDelete({ variables: { caseId } });
+      return result.data?.bulkDeleteCaseEmails;
+    },
+    loading,
+    error,
+  };
 }
