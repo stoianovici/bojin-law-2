@@ -63,6 +63,16 @@ export interface EmailImportResult {
     hadAccessToken: boolean;
     importAttachmentsRequested: boolean;
     emailsWithAttachmentsCount: number;
+    /** Details from each email's attachment sync attempt */
+    attachmentSyncDetails?: Array<{
+      emailId: string;
+      graphMessageId: string;
+      attachmentsFromGraph: number;
+      attachmentsSynced: number;
+      attachmentsSkipped: number;
+      attachmentsAlreadyExist: number;
+      errors: string[];
+    }>;
   };
 }
 
@@ -301,6 +311,7 @@ export class EmailToCaseService {
         hadAccessToken: !!accessToken,
         importAttachmentsRequested: importAttachments,
         emailsWithAttachmentsCount: emailsWithAttachments.length,
+        attachmentSyncDetails: [],
       };
 
       logger.info('[EmailToCaseService.executeEmailImport] Attachment import check', {
@@ -321,6 +332,7 @@ export class EmailToCaseService {
           try {
             logger.info('[EmailToCaseService.executeEmailImport] Syncing attachments for email', {
               emailId: email.id,
+              graphMessageId: email.graphMessageId,
               subject: email.subject?.substring(0, 50),
             });
             const syncResult = await attachmentService.syncAllAttachments(email.id, accessToken);
@@ -329,6 +341,7 @@ export class EmailToCaseService {
               success: syncResult.success,
               attachmentsSynced: syncResult.attachmentsSynced,
               totalAttachments: syncResult.attachments.length,
+              diagnostics: syncResult._diagnostics,
               errors: syncResult.errors,
               attachmentDetails: syncResult.attachments.map((a) => ({
                 name: a.name,
@@ -337,6 +350,17 @@ export class EmailToCaseService {
               })),
             });
             result.attachmentsImported += syncResult.attachmentsSynced;
+
+            // Add diagnostic details for this email
+            result._debug!.attachmentSyncDetails!.push({
+              emailId: email.id,
+              graphMessageId: syncResult._diagnostics?.graphMessageId || email.graphMessageId,
+              attachmentsFromGraph: syncResult._diagnostics?.attachmentsFromGraph || 0,
+              attachmentsSynced: syncResult.attachmentsSynced,
+              attachmentsSkipped: (syncResult._diagnostics?.skippedNonFile || 0),
+              attachmentsAlreadyExist: (syncResult._diagnostics?.skippedAlreadyExist || 0),
+              errors: syncResult.errors,
+            });
 
             if (syncResult.errors.length > 0) {
               result.errors.push(...syncResult.errors);
@@ -350,6 +374,16 @@ export class EmailToCaseService {
             result.errors.push(
               `Failed to sync attachments for email ${email.id}: ${error.message}`
             );
+            // Add error to diagnostic details
+            result._debug!.attachmentSyncDetails!.push({
+              emailId: email.id,
+              graphMessageId: email.graphMessageId,
+              attachmentsFromGraph: 0,
+              attachmentsSynced: 0,
+              attachmentsSkipped: 0,
+              attachmentsAlreadyExist: 0,
+              errors: [error.message],
+            });
           }
         }
       } else {

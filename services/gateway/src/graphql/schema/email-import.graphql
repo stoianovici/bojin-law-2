@@ -58,6 +58,32 @@ type EmailImportPreview {
 }
 
 """
+Details about attachment sync for a single email
+"""
+type AttachmentSyncDetail {
+  """Database email ID"""
+  emailId: String!
+
+  """MS Graph message ID"""
+  graphMessageId: String!
+
+  """How many attachments Graph API returned"""
+  attachmentsFromGraph: Int!
+
+  """How many new attachments were synced"""
+  attachmentsSynced: Int!
+
+  """How many attachments skipped (non-file type)"""
+  attachmentsSkipped: Int!
+
+  """How many attachments already existed in DB"""
+  attachmentsAlreadyExist: Int!
+
+  """Errors for this specific email"""
+  errors: [String!]!
+}
+
+"""
 Debug info for diagnosing attachment import issues
 """
 type EmailImportDebugInfo {
@@ -69,6 +95,9 @@ type EmailImportDebugInfo {
 
   """Number of emails that had attachments"""
   emailsWithAttachmentsCount: Int!
+
+  """Detailed sync info for each email with attachments"""
+  attachmentSyncDetails: [AttachmentSyncDetail!]
 }
 
 """

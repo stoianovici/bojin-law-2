@@ -57,6 +57,15 @@ const EMAIL_IMPORT_RESULT_FRAGMENT = gql`
       hadAccessToken
       importAttachmentsRequested
       emailsWithAttachmentsCount
+      attachmentSyncDetails {
+        emailId
+        graphMessageId
+        attachmentsFromGraph
+        attachmentsSynced
+        attachmentsSkipped
+        attachmentsAlreadyExist
+        errors
+      }
     }
   }
 `;
@@ -118,10 +127,21 @@ export interface ContactRoleAssignment {
   role: 'Client' | 'OpposingParty' | 'OpposingCounsel' | 'Witness' | 'Expert';
 }
 
+export interface AttachmentSyncDetail {
+  emailId: string;
+  graphMessageId: string;
+  attachmentsFromGraph: number;
+  attachmentsSynced: number;
+  attachmentsSkipped: number;
+  attachmentsAlreadyExist: number;
+  errors: string[];
+}
+
 export interface EmailImportDebugInfo {
   hadAccessToken: boolean;
   importAttachmentsRequested: boolean;
   emailsWithAttachmentsCount: number;
+  attachmentSyncDetails?: AttachmentSyncDetail[];
 }
 
 export interface EmailImportResult {

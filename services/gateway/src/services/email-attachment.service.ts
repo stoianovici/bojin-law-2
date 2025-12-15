@@ -39,6 +39,13 @@ export interface AttachmentSyncResult {
   attachmentsSynced: number;
   attachments: SyncedAttachment[];
   errors: string[];
+  /** Diagnostic info */
+  _diagnostics?: {
+    graphMessageId: string;
+    attachmentsFromGraph: number;
+    skippedNonFile: number;
+    skippedAlreadyExist: number;
+  };
 }
 
 export interface AttachmentDownloadResult {
@@ -210,12 +217,21 @@ export class EmailAttachmentService {
       errors: [],
     };
 
+    // Diagnostic counters
+    let skippedNonFile = 0;
+    let skippedAlreadyExist = 0;
+
     // Get email
     const email = await this.prisma.email.findUnique({
       where: { id: emailId },
     });
 
     if (!email || !email.hasAttachments) {
+      logger.info('syncAllAttachments: No email or no attachments flag', {
+        emailId,
+        emailFound: !!email,
+        hasAttachments: email?.hasAttachments,
+      });
       return result;
     }
 
@@ -224,6 +240,14 @@ export class EmailAttachmentService {
       email.graphMessageId,
       accessToken
     );
+
+    // Add diagnostics to result
+    result._diagnostics = {
+      graphMessageId: email.graphMessageId,
+      attachmentsFromGraph: attachments.length,
+      skippedNonFile: 0,
+      skippedAlreadyExist: 0,
+    };
 
     logger.info('Attachments from Graph API', {
       emailId,
@@ -248,6 +272,7 @@ export class EmailAttachmentService {
             name: attachment.name,
             type: attachment['@odata.type'],
           });
+          skippedNonFile++;
           continue;
         }
 
@@ -260,6 +285,12 @@ export class EmailAttachmentService {
         });
 
         if (existing) {
+          logger.info('Attachment already synced', {
+            emailId,
+            attachmentId: existing.id,
+            name: existing.name,
+          });
+          skippedAlreadyExist++;
           result.attachments.push({
             id: existing.id,
             emailId,
@@ -274,15 +305,37 @@ export class EmailAttachmentService {
         }
 
         // Sync new attachment
+        logger.info('Syncing new attachment', {
+          emailId,
+          graphAttachmentId: attachment.id,
+          name: attachment.name,
+        });
         const synced = await this.syncAttachment(emailId, attachment.id!, accessToken);
         result.attachments.push(synced);
         result.attachmentsSynced++;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('Failed to sync attachment', {
+          emailId,
+          attachmentName: attachment.name,
+          error: errorMessage,
+        });
         result.errors.push(`Failed to sync ${attachment.name}: ${errorMessage}`);
         result.success = false;
       }
     }
+
+    // Update final diagnostic counts
+    result._diagnostics.skippedNonFile = skippedNonFile;
+    result._diagnostics.skippedAlreadyExist = skippedAlreadyExist;
+
+    logger.info('syncAllAttachments complete', {
+      emailId,
+      attachmentsSynced: result.attachmentsSynced,
+      skippedNonFile,
+      skippedAlreadyExist,
+      errorCount: result.errors.length,
+    });
 
     return result;
   }
