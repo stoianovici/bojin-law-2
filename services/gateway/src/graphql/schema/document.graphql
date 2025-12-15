@@ -454,6 +454,17 @@ extend type Mutation {
   ): Boolean!
 
   """
+  Bulk delete all documents linked to a case (Admin cleanup)
+  Removes CaseDocument links, clears EmailAttachment references, deletes Document records
+
+  Authorization: Partner role required
+  """
+  bulkDeleteCaseDocuments(
+    """Case ID to delete all documents from"""
+    caseId: UUID!
+  ): BulkDeleteResult!
+
+  """
   Update document metadata
 
   Authorization: User must have access to the document
@@ -515,6 +526,23 @@ extend type Mutation {
 # ============================================================================
 # Response Types (Story 2.9)
 # ============================================================================
+
+"""
+Result of bulk delete operation
+"""
+type BulkDeleteResult {
+  """Number of CaseDocument links deleted"""
+  caseDocumentsDeleted: Int!
+
+  """Number of EmailAttachment references cleared"""
+  attachmentReferencesCleared: Int!
+
+  """Number of Document records deleted"""
+  documentsDeleted: Int!
+
+  """Whether the operation was successful"""
+  success: Boolean!
+}
 
 """
 Response for download URL request

@@ -112,7 +112,12 @@ async function createDocumentAuditLog(
   data: {
     documentId?: string | null;
     userId: string;
-    action: 'Uploaded' | 'LinkedToCase' | 'UnlinkedFromCase' | 'PermanentlyDeleted' | 'MetadataUpdated';
+    action:
+      | 'Uploaded'
+      | 'LinkedToCase'
+      | 'UnlinkedFromCase'
+      | 'PermanentlyDeleted'
+      | 'MetadataUpdated';
     caseId?: string | null;
     details: Record<string, unknown>;
     firmId: string;
@@ -232,9 +237,7 @@ export const documentResolvers = {
 
       // Search filter
       if (args.search) {
-        where.OR = [
-          { fileName: { contains: args.search, mode: 'insensitive' } },
-        ];
+        where.OR = [{ fileName: { contains: args.search, mode: 'insensitive' } }];
       }
 
       const documents = await prisma.document.findMany({
@@ -398,11 +401,7 @@ export const documentResolvers = {
     },
 
     // Get document thumbnail (Story 2.9 AC5)
-    getDocumentThumbnail: async (
-      _: any,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    getDocumentThumbnail: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       if (!(await canAccessDocument(args.documentId, user))) {
@@ -717,19 +716,18 @@ export const documentResolvers = {
     },
 
     // Permanently delete document (Partners only)
-    permanentlyDeleteDocument: async (
-      _: any,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    permanentlyDeleteDocument: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       // Only Partners and BusinessOwners can permanently delete documents
       // Story 2.11.1: Added BusinessOwner role support
       if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
-        throw new GraphQLError('Only Partners and BusinessOwners can permanently delete documents', {
-          extensions: { code: 'FORBIDDEN' },
-        });
+        throw new GraphQLError(
+          'Only Partners and BusinessOwners can permanently delete documents',
+          {
+            extensions: { code: 'FORBIDDEN' },
+          }
+        );
       }
 
       // Get document with all links
@@ -795,6 +793,89 @@ export const documentResolvers = {
       });
 
       return true;
+    },
+
+    // Bulk delete all documents for a case (Admin cleanup)
+    bulkDeleteCaseDocuments: async (_: any, args: { caseId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only Partners and BusinessOwners can bulk delete
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners and BusinessOwners can bulk delete documents', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify case exists and belongs to user's firm
+      const caseData = await prisma.case.findUnique({
+        where: { id: args.caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== user.firmId) {
+        throw new GraphQLError('Case not found or not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get all CaseDocuments for this case
+      const caseDocuments = await prisma.caseDocument.findMany({
+        where: { caseId: args.caseId },
+        select: { documentId: true },
+      });
+
+      const documentIds = caseDocuments.map((cd) => cd.documentId);
+
+      logger.info('Bulk delete starting', {
+        caseId: args.caseId,
+        documentCount: documentIds.length,
+        userId: user.id,
+      });
+
+      if (documentIds.length === 0) {
+        return {
+          caseDocumentsDeleted: 0,
+          attachmentReferencesCleared: 0,
+          documentsDeleted: 0,
+          success: true,
+        };
+      }
+
+      // Perform deletion in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Clear EmailAttachment.documentId references
+        const attachmentsCleared = await tx.emailAttachment.updateMany({
+          where: { documentId: { in: documentIds } },
+          data: { documentId: null },
+        });
+
+        // 2. Delete CaseDocument links
+        const caseDocsDeleted = await tx.caseDocument.deleteMany({
+          where: { caseId: args.caseId },
+        });
+
+        // 3. Delete Document records
+        const docsDeleted = await tx.document.deleteMany({
+          where: { id: { in: documentIds } },
+        });
+
+        return {
+          caseDocumentsDeleted: caseDocsDeleted.count,
+          attachmentReferencesCleared: attachmentsCleared.count,
+          documentsDeleted: docsDeleted.count,
+        };
+      });
+
+      logger.info('Bulk delete completed', {
+        caseId: args.caseId,
+        ...result,
+        userId: user.id,
+      });
+
+      return {
+        ...result,
+        success: true,
+      };
     },
 
     // Update document metadata
@@ -916,18 +997,14 @@ export const documentResolvers = {
       }
 
       // Upload to OneDrive
-      const oneDriveFile = await oneDriveService.uploadDocumentToOneDrive(
-        accessToken,
-        fileBuffer,
-        {
-          caseId: args.input.caseId,
-          caseNumber: caseData.caseNumber,
-          fileName: args.input.fileName,
-          fileType: args.input.fileType,
-          fileSize: fileSize,
-          description: args.input.description,
-        }
-      );
+      const oneDriveFile = await oneDriveService.uploadDocumentToOneDrive(accessToken, fileBuffer, {
+        caseId: args.input.caseId,
+        caseNumber: caseData.caseNumber,
+        fileName: args.input.fileName,
+        fileType: args.input.fileType,
+        fileSize: fileSize,
+        description: args.input.description,
+      });
 
       // Create document in database
       const document = await prisma.$transaction(async (tx) => {
@@ -1015,11 +1092,7 @@ export const documentResolvers = {
     },
 
     // Get temporary download URL for a document
-    getDocumentDownloadUrl: async (
-      _: any,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    getDocumentDownloadUrl: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       if (!(await canAccessDocument(args.documentId, user))) {
@@ -1063,11 +1136,7 @@ export const documentResolvers = {
     },
 
     // Sync document from OneDrive
-    syncDocumentFromOneDrive: async (
-      _: any,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    syncDocumentFromOneDrive: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       if (!(await canAccessDocument(args.documentId, user))) {
