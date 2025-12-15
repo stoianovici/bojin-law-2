@@ -32,15 +32,12 @@ export const msalConfig: Configuration = {
   system: {
     loggerOptions: {
       loggerCallback: (level, message, containsPii) => {
-        if (containsPii) return;
-        // Only log errors and warnings to reduce console noise
-        if (level === LogLevel.Error) {
+        // Only log critical errors, suppress all other MSAL noise
+        if (!containsPii && level === LogLevel.Error) {
           console.error('[MSAL]', message);
-        } else if (level === LogLevel.Warning) {
-          console.warn('[MSAL]', message);
         }
       },
-      logLevel: LogLevel.Warning,
+      logLevel: LogLevel.Error,
     },
   },
 };
