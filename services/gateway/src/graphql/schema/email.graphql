@@ -284,6 +284,24 @@ extend type Mutation {
   Reply to an email thread via MS Graph API
   """
   replyToEmail(input: ReplyEmailInput!): SendEmailResult!
+
+  """
+  Bulk clear all case data (emails and documents) - Admin cleanup
+  Removes all emails linked to the case and all case documents
+  Authorization: Partner or BusinessOwner role required
+  """
+  bulkClearCaseData(caseId: ID!): BulkClearCaseDataResult!
+}
+
+"""
+Result of bulk clearing case data
+"""
+type BulkClearCaseDataResult {
+  emailsCleared: Int!
+  caseDocumentsDeleted: Int!
+  documentsDeleted: Int!
+  attachmentReferencesCleared: Int!
+  success: Boolean!
 }
 
 # ============================================================================

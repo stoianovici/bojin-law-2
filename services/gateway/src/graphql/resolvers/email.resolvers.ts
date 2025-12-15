@@ -922,6 +922,106 @@ export const emailResolvers = {
         };
       }
     },
+
+    // Bulk clear all case data (emails and documents) - Admin cleanup
+    bulkClearCaseData: async (_: any, args: { caseId: string }, context: Context) => {
+      const user = context.user;
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only Partners and BusinessOwners can bulk clear
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners and BusinessOwners can clear case data', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify case exists and belongs to user's firm
+      const caseData = await prisma.case.findUnique({
+        where: { id: args.caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== user.firmId) {
+        throw new GraphQLError('Case not found or not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      console.log('[bulkClearCaseData] Starting cleanup for case:', args.caseId);
+
+      // Perform cleanup in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Get all emails linked to this case
+        const emails = await tx.email.findMany({
+          where: { caseId: args.caseId },
+          select: { id: true },
+        });
+        const _emailIds = emails.map((e) => e.id); // Kept for potential future use
+
+        // 2. Get all CaseDocuments for this case
+        const caseDocuments = await tx.caseDocument.findMany({
+          where: { caseId: args.caseId },
+          select: { documentId: true },
+        });
+        const documentIds = caseDocuments.map((cd) => cd.documentId);
+
+        // 3. Clear EmailAttachment.documentId references for these documents
+        let attachmentReferencesCleared = 0;
+        if (documentIds.length > 0) {
+          const attachmentsResult = await tx.emailAttachment.updateMany({
+            where: { documentId: { in: documentIds } },
+            data: { documentId: null },
+          });
+          attachmentReferencesCleared = attachmentsResult.count;
+        }
+
+        // 4. Delete CaseDocuments
+        const caseDocsResult = await tx.caseDocument.deleteMany({
+          where: { caseId: args.caseId },
+        });
+
+        // 5. Delete Documents that are no longer linked to any case
+        let documentsDeleted = 0;
+        if (documentIds.length > 0) {
+          // Find documents that still have links
+          const stillLinked = await tx.caseDocument.findMany({
+            where: { documentId: { in: documentIds } },
+            select: { documentId: true },
+          });
+          const stillLinkedIds = new Set(stillLinked.map((cd) => cd.documentId));
+          const orphanedIds = documentIds.filter((id) => !stillLinkedIds.has(id));
+
+          if (orphanedIds.length > 0) {
+            const deleteResult = await tx.document.deleteMany({
+              where: { id: { in: orphanedIds } },
+            });
+            documentsDeleted = deleteResult.count;
+          }
+        }
+
+        // 6. Unlink emails from case (set caseId to null)
+        const emailsResult = await tx.email.updateMany({
+          where: { caseId: args.caseId },
+          data: { caseId: null },
+        });
+
+        return {
+          emailsCleared: emailsResult.count,
+          caseDocumentsDeleted: caseDocsResult.count,
+          documentsDeleted,
+          attachmentReferencesCleared,
+          success: true,
+        };
+      });
+
+      console.log('[bulkClearCaseData] Cleanup complete:', result);
+
+      return result;
+    },
   },
 
   Subscription: {
