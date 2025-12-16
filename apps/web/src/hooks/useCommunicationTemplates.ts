@@ -212,6 +212,34 @@ export interface TemplateFilter {
 }
 
 // ============================================================================
+// GraphQL Response Types
+// ============================================================================
+
+interface GetTemplatesData {
+  communicationTemplates: CommunicationTemplate[];
+}
+
+interface GetTemplateData {
+  communicationTemplate: CommunicationTemplate | null;
+}
+
+interface CreateTemplateData {
+  createCommunicationTemplate: CommunicationTemplate;
+}
+
+interface UpdateTemplateData {
+  updateCommunicationTemplate: CommunicationTemplate;
+}
+
+interface DeleteTemplateData {
+  deleteCommunicationTemplate: boolean;
+}
+
+interface RenderTemplateData {
+  renderTemplate: RenderedTemplate;
+}
+
+// ============================================================================
 // Hooks
 // ============================================================================
 
@@ -219,13 +247,13 @@ export interface TemplateFilter {
  * Hook for listing templates with optional filters
  */
 export function useTemplates(filter?: TemplateFilter) {
-  const { data, loading, error, refetch } = useQuery(GET_TEMPLATES, {
+  const { data, loading, error, refetch } = useQuery<GetTemplatesData>(GET_TEMPLATES, {
     variables: filter || {},
     fetchPolicy: 'cache-and-network',
   });
 
   return {
-    templates: (data?.communicationTemplates || []) as CommunicationTemplate[],
+    templates: data?.communicationTemplates || [],
     loading,
     error,
     refetch,
@@ -236,13 +264,13 @@ export function useTemplates(filter?: TemplateFilter) {
  * Hook for getting a single template
  */
 export function useTemplate(id: string) {
-  const { data, loading, error, refetch } = useQuery(GET_TEMPLATE, {
+  const { data, loading, error, refetch } = useQuery<GetTemplateData>(GET_TEMPLATE, {
     variables: { id },
     skip: !id,
   });
 
   return {
-    template: data?.communicationTemplate as CommunicationTemplate | undefined,
+    template: data?.communicationTemplate ?? undefined,
     loading,
     error,
     refetch,
@@ -253,7 +281,7 @@ export function useTemplate(id: string) {
  * Hook for creating a new template
  */
 export function useCreateTemplate() {
-  const [createMutation, { loading, error }] = useMutation(CREATE_TEMPLATE, {
+  const [createMutation, { loading, error }] = useMutation<CreateTemplateData>(CREATE_TEMPLATE, {
     refetchQueries: [{ query: GET_TEMPLATES }],
   });
 
@@ -263,7 +291,7 @@ export function useCreateTemplate() {
         variables: { input },
       });
 
-      return result.data?.createCommunicationTemplate as CommunicationTemplate;
+      return result.data?.createCommunicationTemplate;
     },
     [createMutation]
   );
@@ -279,7 +307,7 @@ export function useCreateTemplate() {
  * Hook for updating an existing template
  */
 export function useUpdateTemplate() {
-  const [updateMutation, { loading, error }] = useMutation(UPDATE_TEMPLATE);
+  const [updateMutation, { loading, error }] = useMutation<UpdateTemplateData>(UPDATE_TEMPLATE);
 
   const update = useCallback(
     async (id: string, input: UpdateTemplateInput) => {
@@ -287,7 +315,7 @@ export function useUpdateTemplate() {
         variables: { id, input },
       });
 
-      return result.data?.updateCommunicationTemplate as CommunicationTemplate;
+      return result.data?.updateCommunicationTemplate;
     },
     [updateMutation]
   );
@@ -303,7 +331,7 @@ export function useUpdateTemplate() {
  * Hook for deleting a template
  */
 export function useDeleteTemplate() {
-  const [deleteMutation, { loading, error }] = useMutation(DELETE_TEMPLATE, {
+  const [deleteMutation, { loading, error }] = useMutation<DeleteTemplateData>(DELETE_TEMPLATE, {
     refetchQueries: [{ query: GET_TEMPLATES }],
   });
 
@@ -313,7 +341,7 @@ export function useDeleteTemplate() {
         variables: { id },
       });
 
-      return result.data?.deleteCommunicationTemplate as boolean;
+      return result.data?.deleteCommunicationTemplate ?? false;
     },
     [deleteMutation]
   );
@@ -329,7 +357,7 @@ export function useDeleteTemplate() {
  * Hook for rendering a template with variables
  */
 export function useRenderTemplate() {
-  const [renderMutation, { loading, error }] = useMutation(RENDER_TEMPLATE);
+  const [renderMutation, { loading, error }] = useMutation<RenderTemplateData>(RENDER_TEMPLATE);
 
   const render = useCallback(
     async (templateId: string, variables: Record<string, string>) => {
@@ -342,7 +370,7 @@ export function useRenderTemplate() {
         },
       });
 
-      return result.data?.renderTemplate as RenderedTemplate;
+      return result.data?.renderTemplate;
     },
     [renderMutation]
   );

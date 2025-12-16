@@ -10,7 +10,33 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import type { AISuggestion, SuggestionType, SuggestionPriority } from '@legal-platform/types';
+// Local types for UI suggestions - the component expects richer data than the base types
+type SuggestionType =
+  | 'PatternMatch'
+  | 'DeadlineWarning'
+  | 'DocumentCheck'
+  | 'TaskSuggestion'
+  | 'RiskAlert'
+  | 'FollowUp'
+  | 'MorningBriefing';
+
+type SuggestionPriority = 'Low' | 'Normal' | 'High' | 'Urgent';
+
+type SuggestionCategory = 'Task' | 'Communication' | 'Document' | 'Calendar' | 'Compliance';
+
+export interface AISuggestion {
+  id: string;
+  type: SuggestionType;
+  category?: SuggestionCategory;
+  title: string;
+  description: string;
+  priority: SuggestionPriority;
+  confidence?: number;
+  case?: {
+    id: string;
+    title: string;
+  };
+}
 
 // Icons
 const PatternIcon = ({ className }: { className?: string }) => (

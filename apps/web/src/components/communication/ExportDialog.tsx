@@ -115,8 +115,10 @@ export function ExportDialog({
           includeAttachments,
         });
 
-        setExportId(result.id);
-        setStep('processing');
+        if (result) {
+          setExportId(result.id);
+          setStep('processing');
+        }
       } catch (err) {
         // Error handled by hook
       }

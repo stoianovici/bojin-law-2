@@ -225,6 +225,31 @@ export interface BulkCommunicationFilter {
   status?: BulkCommunicationStatus;
 }
 
+// GraphQL Response Types
+interface GetBulkCommunicationsData {
+  bulkCommunications: BulkCommunication[];
+}
+
+interface CreateBulkCommunicationData {
+  createBulkCommunication: BulkCommunication;
+}
+
+interface SendBulkCommunicationData {
+  sendBulkCommunication: BulkCommunication;
+}
+
+interface CancelBulkCommunicationData {
+  cancelBulkCommunication: BulkCommunication;
+}
+
+interface GetBulkCommunicationProgressData {
+  bulkCommunicationProgress: BulkCommunicationProgress;
+}
+
+interface GetBulkFailedRecipientsData {
+  bulkCommunicationFailedRecipients: FailedRecipientsResult;
+}
+
 // ============================================================================
 // Hooks
 // ============================================================================
@@ -233,13 +258,16 @@ export interface BulkCommunicationFilter {
  * Hook for listing bulk communications with optional filters
  */
 export function useBulkCommunications(filter?: BulkCommunicationFilter) {
-  const { data, loading, error, refetch } = useQuery(GET_BULK_COMMUNICATIONS, {
-    variables: filter || {},
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error, refetch } = useQuery<GetBulkCommunicationsData>(
+    GET_BULK_COMMUNICATIONS,
+    {
+      variables: filter || {},
+      fetchPolicy: 'cache-and-network',
+    }
+  );
 
   return {
-    bulkCommunications: (data?.bulkCommunications || []) as BulkCommunication[],
+    bulkCommunications: data?.bulkCommunications || [],
     loading,
     error,
     refetch,
@@ -250,9 +278,12 @@ export function useBulkCommunications(filter?: BulkCommunicationFilter) {
  * Hook for creating a new bulk communication
  */
 export function useCreateBulkCommunication() {
-  const [createMutation, { loading, error }] = useMutation(CREATE_BULK_COMMUNICATION, {
-    refetchQueries: [{ query: GET_BULK_COMMUNICATIONS }],
-  });
+  const [createMutation, { loading, error }] = useMutation<CreateBulkCommunicationData>(
+    CREATE_BULK_COMMUNICATION,
+    {
+      refetchQueries: [{ query: GET_BULK_COMMUNICATIONS }],
+    }
+  );
 
   const create = useCallback(
     async (input: CreateBulkCommunicationInput) => {
@@ -265,7 +296,7 @@ export function useCreateBulkCommunication() {
         },
       });
 
-      return result.data?.createBulkCommunication as BulkCommunication;
+      return result.data?.createBulkCommunication;
     },
     [createMutation]
   );
@@ -281,9 +312,12 @@ export function useCreateBulkCommunication() {
  * Hook for sending a bulk communication
  */
 export function useSendBulkCommunication() {
-  const [sendMutation, { loading, error }] = useMutation(SEND_BULK_COMMUNICATION, {
-    refetchQueries: [{ query: GET_BULK_COMMUNICATIONS }],
-  });
+  const [sendMutation, { loading, error }] = useMutation<SendBulkCommunicationData>(
+    SEND_BULK_COMMUNICATION,
+    {
+      refetchQueries: [{ query: GET_BULK_COMMUNICATIONS }],
+    }
+  );
 
   const send = useCallback(
     async (id: string) => {
@@ -291,7 +325,7 @@ export function useSendBulkCommunication() {
         variables: { id },
       });
 
-      return result.data?.sendBulkCommunication as BulkCommunication;
+      return result.data?.sendBulkCommunication;
     },
     [sendMutation]
   );
@@ -307,9 +341,12 @@ export function useSendBulkCommunication() {
  * Hook for cancelling a bulk communication
  */
 export function useCancelBulkCommunication() {
-  const [cancelMutation, { loading, error }] = useMutation(CANCEL_BULK_COMMUNICATION, {
-    refetchQueries: [{ query: GET_BULK_COMMUNICATIONS }],
-  });
+  const [cancelMutation, { loading, error }] = useMutation<CancelBulkCommunicationData>(
+    CANCEL_BULK_COMMUNICATION,
+    {
+      refetchQueries: [{ query: GET_BULK_COMMUNICATIONS }],
+    }
+  );
 
   const cancel = useCallback(
     async (id: string) => {
@@ -317,7 +354,7 @@ export function useCancelBulkCommunication() {
         variables: { id },
       });
 
-      return result.data?.cancelBulkCommunication as BulkCommunication;
+      return result.data?.cancelBulkCommunication;
     },
     [cancelMutation]
   );
@@ -339,16 +376,14 @@ export function useBulkCommunicationProgress(
   const { pollingInterval = 2000, enabled = true } = options || {};
   const [isPolling, setIsPolling] = useState(false);
 
-  const { data, loading, error, startPolling, stopPolling, refetch } = useQuery(
-    GET_BULK_COMMUNICATION_PROGRESS,
-    {
+  const { data, loading, error, startPolling, stopPolling, refetch } =
+    useQuery<GetBulkCommunicationProgressData>(GET_BULK_COMMUNICATION_PROGRESS, {
       variables: { id },
       skip: !id || !enabled,
       fetchPolicy: 'network-only',
-    }
-  );
+    });
 
-  const progress = data?.bulkCommunicationProgress as BulkCommunicationProgress | undefined;
+  const progress = data?.bulkCommunicationProgress;
 
   // Start polling when communication is in progress
   useEffect(() => {
@@ -519,13 +554,16 @@ export function useBulkFailedRecipients(
 ) {
   const { limit = 50, offset = 0, enabled = true } = options || {};
 
-  const { data, loading, error, refetch } = useQuery(GET_BULK_FAILED_RECIPIENTS, {
-    variables: { id, limit, offset },
-    skip: !id || !enabled,
-    fetchPolicy: 'network-only',
-  });
+  const { data, loading, error, refetch } = useQuery<GetBulkFailedRecipientsData>(
+    GET_BULK_FAILED_RECIPIENTS,
+    {
+      variables: { id, limit, offset },
+      skip: !id || !enabled,
+      fetchPolicy: 'network-only',
+    }
+  );
 
-  const result = data?.bulkCommunicationFailedRecipients as FailedRecipientsResult | undefined;
+  const result = data?.bulkCommunicationFailedRecipients;
 
   return {
     failedRecipients: result?.logs || [],

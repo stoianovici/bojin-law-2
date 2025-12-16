@@ -56,7 +56,9 @@ export function useCaseTypes(options: UseCaseTypesOptions = {}) {
     }
   );
 
-  const [createCaseTypeMutation, { loading: createLoading }] = useMutation(CREATE_CASE_TYPE);
+  const [createCaseTypeMutation, { loading: createLoading }] = useMutation<{
+    createCaseType: CaseTypeOption;
+  }>(CREATE_CASE_TYPE);
 
   const caseTypes = useMemo(() => {
     return data?.caseTypes ?? [];

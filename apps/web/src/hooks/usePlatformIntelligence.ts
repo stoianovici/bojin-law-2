@@ -16,8 +16,6 @@ import type {
   AIUtilizationSummary,
   AIUtilizationByUser,
   ExportResult,
-  ExportFormat,
-  ExportSection,
 } from '@legal-platform/types';
 
 // ============================================================================

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SuggestionCard, SuggestionCardCompact } from './SuggestionCard';
 import { useSuggestions, SuggestionContextInput } from '@/hooks/useSuggestions';
-import type { AISuggestion } from '@legal-platform/types';
+import type { AISuggestion } from './SuggestionCard';
 
 // Icons
 const SparklesIcon = ({ className }: { className?: string }) => (

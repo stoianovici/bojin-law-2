@@ -76,6 +76,27 @@ export interface PrivacyConfig {
 }
 
 // ============================================================================
+// GraphQL Response Types
+// ============================================================================
+
+interface TimelineEntryPrivacy {
+  id: string;
+  isPrivate: boolean;
+  privacyLevel: string;
+}
+
+interface UpdatePrivacyData {
+  updateCommunicationPrivacy: TimelineEntryPrivacy;
+}
+
+interface GetCaseTeamMembersData {
+  case: {
+    id: string;
+    team: TeamMember[];
+  } | null;
+}
+
+// ============================================================================
 // Hooks
 // ============================================================================
 
@@ -83,7 +104,7 @@ export interface PrivacyConfig {
  * Hook for updating communication privacy
  */
 export function useUpdatePrivacy() {
-  const [updateMutation, { loading, error }] = useMutation(UPDATE_PRIVACY);
+  const [updateMutation, { loading, error }] = useMutation<UpdatePrivacyData>(UPDATE_PRIVACY);
 
   const updatePrivacy = useCallback(
     async (input: UpdatePrivacyInput) => {
@@ -107,10 +128,13 @@ export function useUpdatePrivacy() {
  * Hook for getting team members for viewer selection
  */
 export function useTeamMembers(caseId: string) {
-  const { data, loading, error, refetch } = useQuery(GET_CASE_TEAM_MEMBERS, {
-    variables: { caseId },
-    skip: !caseId,
-  });
+  const { data, loading, error, refetch } = useQuery<GetCaseTeamMembersData>(
+    GET_CASE_TEAM_MEMBERS,
+    {
+      variables: { caseId },
+      skip: !caseId,
+    }
+  );
 
   const teamMembers: TeamMember[] = data?.case?.team || [];
 

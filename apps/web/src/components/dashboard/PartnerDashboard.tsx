@@ -56,7 +56,7 @@ const emptyFirmTasksOverviewWidget: FirmTasksOverviewWidgetType = {
     dueTodayCount: 0,
     dueThisWeekCount: 0,
     completionRate: 0,
-    avgCompletionRateTrend: 'stable',
+    avgCompletionRateTrend: 'neutral',
   },
   taskBreakdown: [],
   priorityTasks: [],
@@ -123,7 +123,7 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
         supervisorId: '22222222-2222-2222-2222-222222222222', // Partner ID from seed
         teamSize: c.teamSize,
         riskLevel: c.riskLevel,
-        nextDeadline: c.nextDeadline ? new Date(c.nextDeadline) : undefined,
+        nextDeadline: undefined, // Not available from dashboard data
       })),
     }),
     [supervisedCases]

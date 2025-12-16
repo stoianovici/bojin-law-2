@@ -264,6 +264,51 @@ export interface MultipleDraftsResult {
   recommendationReason: string;
 }
 
+// GraphQL Response Types
+interface GenerateEmailDraftData {
+  generateEmailDraft: EmailDraft;
+}
+
+interface GenerateMultipleDraftsData {
+  generateMultipleDrafts: MultipleDraftsResult;
+}
+
+interface RefineDraftData {
+  refineDraft: EmailDraft;
+}
+
+interface UpdateDraftData {
+  updateDraft: EmailDraft;
+}
+
+interface SendDraftData {
+  sendDraft: boolean;
+}
+
+interface DiscardDraftData {
+  discardDraft: boolean;
+}
+
+interface GetEmailDraftData {
+  emailDraft: EmailDraft;
+}
+
+interface GetEmailDraftsData {
+  emailDrafts: EmailDraft[];
+}
+
+interface GetAttachmentSuggestionsData {
+  attachmentSuggestions: AttachmentSuggestion[];
+}
+
+interface SelectAttachmentData {
+  selectAttachment: AttachmentSuggestion;
+}
+
+interface GetInlineSuggestionData {
+  getInlineSuggestion: InlineSuggestion;
+}
+
 // ============================================================================
 // Hooks
 // ============================================================================
@@ -272,9 +317,12 @@ export interface MultipleDraftsResult {
  * Hook for generating a single draft
  */
 export function useGenerateDraft(emailId: string, tone?: EmailTone, recipientType?: RecipientType) {
-  const [generateDraft, { data, loading, error }] = useMutation(GENERATE_EMAIL_DRAFT, {
-    refetchQueries: [{ query: GET_EMAIL_DRAFTS, variables: { emailId } }],
-  });
+  const [generateDraft, { data, loading, error }] = useMutation<GenerateEmailDraftData>(
+    GENERATE_EMAIL_DRAFT,
+    {
+      refetchQueries: [{ query: GET_EMAIL_DRAFTS, variables: { emailId } }],
+    }
+  );
 
   const generate = useCallback(
     async (overrideTone?: EmailTone, overrideRecipientType?: RecipientType) => {
@@ -289,15 +337,7 @@ export function useGenerateDraft(emailId: string, tone?: EmailTone, recipientTyp
           },
         });
 
-        // Log GraphQL errors if present
-        if (result.errors && result.errors.length > 0) {
-          console.error(
-            '[useGenerateDraft] GraphQL errors:',
-            result.errors.map((e) => e.message)
-          );
-        }
-
-        return result.data?.generateEmailDraft as EmailDraft | undefined;
+        return result.data?.generateEmailDraft;
       } catch (err) {
         console.error('[useGenerateDraft] Mutation failed:', err);
         throw err;
@@ -308,7 +348,7 @@ export function useGenerateDraft(emailId: string, tone?: EmailTone, recipientTyp
 
   return {
     generate,
-    draft: data?.generateEmailDraft as EmailDraft | undefined,
+    draft: data?.generateEmailDraft,
     loading,
     error,
   };
@@ -318,20 +358,23 @@ export function useGenerateDraft(emailId: string, tone?: EmailTone, recipientTyp
  * Hook for generating multiple drafts with different tones
  */
 export function useGenerateMultipleDrafts(emailId: string) {
-  const [generateDrafts, { data, loading, error }] = useMutation(GENERATE_MULTIPLE_DRAFTS, {
-    refetchQueries: [{ query: GET_EMAIL_DRAFTS, variables: { emailId } }],
-  });
+  const [generateDrafts, { data, loading, error }] = useMutation<GenerateMultipleDraftsData>(
+    GENERATE_MULTIPLE_DRAFTS,
+    {
+      refetchQueries: [{ query: GET_EMAIL_DRAFTS, variables: { emailId } }],
+    }
+  );
 
   const generate = useCallback(async () => {
     const result = await generateDrafts({
       variables: { emailId },
     });
-    return result.data?.generateMultipleDrafts as MultipleDraftsResult | undefined;
+    return result.data?.generateMultipleDrafts;
   }, [emailId, generateDrafts]);
 
   return {
     generate,
-    result: data?.generateMultipleDrafts as MultipleDraftsResult | undefined,
+    result: data?.generateMultipleDrafts,
     loading,
     error,
   };
@@ -341,7 +384,7 @@ export function useGenerateMultipleDrafts(emailId: string) {
  * Hook for refining an existing draft
  */
 export function useRefineDraft() {
-  const [refineDraft, { data, loading, error }] = useMutation(REFINE_DRAFT);
+  const [refineDraft, { data, loading, error }] = useMutation<RefineDraftData>(REFINE_DRAFT);
 
   const refine = useCallback(
     async (draftId: string, instruction: string) => {
@@ -350,14 +393,14 @@ export function useRefineDraft() {
           input: { draftId, instruction },
         },
       });
-      return result.data?.refineDraft as EmailDraft | undefined;
+      return result.data?.refineDraft;
     },
     [refineDraft]
   );
 
   return {
     refine,
-    draft: data?.refineDraft as EmailDraft | undefined,
+    draft: data?.refineDraft,
     loading,
     error,
   };
@@ -367,7 +410,7 @@ export function useRefineDraft() {
  * Hook for updating draft content
  */
 export function useUpdateDraft() {
-  const [updateDraft, { loading, error }] = useMutation(UPDATE_DRAFT);
+  const [updateDraft, { loading, error }] = useMutation<UpdateDraftData>(UPDATE_DRAFT);
 
   const update = useCallback(
     async (
@@ -384,7 +427,7 @@ export function useUpdateDraft() {
           input: { draftId, ...updates },
         },
       });
-      return result.data?.updateDraft as EmailDraft | undefined;
+      return result.data?.updateDraft;
     },
     [updateDraft]
   );
@@ -410,14 +453,14 @@ export function useUpdateDraft() {
  * Hook for sending a draft
  */
 export function useSendDraft() {
-  const [sendDraft, { loading, error }] = useMutation(SEND_DRAFT);
+  const [sendDraft, { loading, error }] = useMutation<SendDraftData>(SEND_DRAFT);
 
   const send = useCallback(
     async (draftId: string) => {
       const result = await sendDraft({
         variables: { draftId },
       });
-      return result.data?.sendDraft as boolean;
+      return result.data?.sendDraft;
     },
     [sendDraft]
   );
@@ -433,14 +476,14 @@ export function useSendDraft() {
  * Hook for discarding a draft
  */
 export function useDiscardDraft() {
-  const [discardDraft, { loading, error }] = useMutation(DISCARD_DRAFT);
+  const [discardDraft, { loading, error }] = useMutation<DiscardDraftData>(DISCARD_DRAFT);
 
   const discard = useCallback(
     async (draftId: string) => {
       const result = await discardDraft({
         variables: { draftId },
       });
-      return result.data?.discardDraft as boolean;
+      return result.data?.discardDraft;
     },
     [discardDraft]
   );
@@ -456,14 +499,14 @@ export function useDiscardDraft() {
  * Hook for getting a single draft
  */
 export function useEmailDraft(id: string) {
-  const { data, loading, error, refetch } = useQuery(GET_EMAIL_DRAFT, {
+  const { data, loading, error, refetch } = useQuery<GetEmailDraftData>(GET_EMAIL_DRAFT, {
     variables: { id },
     skip: !id,
     fetchPolicy: 'cache-and-network',
   });
 
   return {
-    draft: data?.emailDraft as EmailDraft | undefined,
+    draft: data?.emailDraft,
     loading,
     error,
     refetch,
@@ -478,13 +521,13 @@ export function useEmailDrafts(filters?: {
   caseId?: string;
   status?: DraftStatus;
 }) {
-  const { data, loading, error, refetch } = useQuery(GET_EMAIL_DRAFTS, {
+  const { data, loading, error, refetch } = useQuery<GetEmailDraftsData>(GET_EMAIL_DRAFTS, {
     variables: filters || {},
     fetchPolicy: 'cache-and-network',
   });
 
   return {
-    drafts: (data?.emailDrafts || []) as EmailDraft[],
+    drafts: data?.emailDrafts || [],
     loading,
     error,
     refetch,
@@ -495,25 +538,28 @@ export function useEmailDrafts(filters?: {
  * Hook for managing attachment suggestions
  */
 export function useAttachmentSuggestions(draftId: string) {
-  const { data, loading, error, refetch } = useQuery(GET_ATTACHMENT_SUGGESTIONS, {
-    variables: { draftId },
-    skip: !draftId,
-  });
+  const { data, loading, error, refetch } = useQuery<GetAttachmentSuggestionsData>(
+    GET_ATTACHMENT_SUGGESTIONS,
+    {
+      variables: { draftId },
+      skip: !draftId,
+    }
+  );
 
-  const [selectAttachment] = useMutation(SELECT_ATTACHMENT);
+  const [selectAttachment] = useMutation<SelectAttachmentData>(SELECT_ATTACHMENT);
 
   const toggleSelection = useCallback(
     async (suggestionId: string, selected: boolean) => {
       const result = await selectAttachment({
         variables: { suggestionId, selected },
       });
-      return result.data?.selectAttachment as AttachmentSuggestion | undefined;
+      return result.data?.selectAttachment;
     },
     [selectAttachment]
   );
 
   return {
-    suggestions: (data?.attachmentSuggestions || []) as AttachmentSuggestion[],
+    suggestions: data?.attachmentSuggestions || [],
     loading,
     error,
     refetch,
@@ -525,7 +571,7 @@ export function useAttachmentSuggestions(draftId: string) {
  * Hook for inline AI suggestions while editing
  */
 export function useInlineSuggestions(draftId: string) {
-  const [getSuggestion, { loading }] = useMutation(GET_INLINE_SUGGESTION);
+  const [getSuggestion, { loading }] = useMutation<GetInlineSuggestionData>(GET_INLINE_SUGGESTION);
   const [suggestion, setSuggestion] = useState<InlineSuggestion | null>(null);
 
   // Debounced function to get suggestions

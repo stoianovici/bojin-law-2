@@ -12,9 +12,17 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Task } from '@legal-platform/types';
 
+// Extended Task type with case relationship from GraphQL
+interface TaskWithCase extends Task {
+  case?: {
+    id: string;
+    title: string;
+  };
+}
+
 export interface PrioritizedTaskData {
   taskId: string;
-  task: Task | null;
+  task: TaskWithCase | null;
   priority: number; // 1-10 scale
   priorityReason: string;
   suggestedTimeSlot?: string;

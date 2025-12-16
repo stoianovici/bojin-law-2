@@ -179,14 +179,16 @@ export function BulkCommunicationWizard({
         scheduledFor: state.useSchedule ? state.scheduledFor : undefined,
       });
 
-      setCreatedId(result.id);
+      if (result) {
+        setCreatedId(result.id);
 
-      // Send immediately if not scheduled
-      if (!state.useSchedule) {
-        await send(result.id);
+        // Send immediately if not scheduled
+        if (!state.useSchedule) {
+          await send(result.id);
+        }
+
+        onComplete?.(result.id);
       }
-
-      onComplete?.(result.id);
     } catch (err) {
       setIsSending(false);
     }
@@ -205,7 +207,9 @@ export function BulkCommunicationWizard({
         recipientFilter: state.recipientFilter,
       });
 
-      onComplete?.(result.id);
+      if (result) {
+        onComplete?.(result.id);
+      }
     } catch (err) {
       // Error handled by hook
     }

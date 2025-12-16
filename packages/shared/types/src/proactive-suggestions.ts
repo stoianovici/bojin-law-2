@@ -89,12 +89,18 @@ export interface PrioritizedTask {
 
 export interface DeadlineInfo {
   id: string;
+  taskId?: string;
   title: string;
   dueDate: Date;
   daysUntilDue: number;
   severity: 'info' | 'warning' | 'critical';
   caseId?: string;
+  case?: {
+    id: string;
+    title: string;
+  };
   suggestedActions: SuggestedAction[];
+  blockedBy?: string[];
 }
 
 export interface RiskAlert {

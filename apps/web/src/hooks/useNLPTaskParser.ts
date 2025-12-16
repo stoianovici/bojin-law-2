@@ -8,16 +8,56 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { gql } from '@apollo/client';
-import { useMutation, useQuery, useLazyQuery } from '@apollo/client/react';
+import { useMutation, useLazyQuery } from '@apollo/client/react';
 import type {
   NLPTaskParseResponse,
   TaskCorrections,
   TaskPatternSuggestion,
   ClarificationQuestion,
   ParsedTaskFields,
-  TaskType,
-  TaskPriority,
 } from '@legal-platform/types';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface ParseTaskData {
+  parseTask: NLPTaskParseResponse;
+}
+
+interface ResolveClarificationData {
+  resolveClarification: NLPTaskParseResponse;
+}
+
+interface ConfirmTaskCreationData {
+  confirmTaskCreation: {
+    id: string;
+    title: string;
+    description?: string;
+    dueDate?: string;
+    priority: string;
+    status: string;
+    taskType: string;
+    case?: {
+      id: string;
+      caseNumber: string;
+      title: string;
+    };
+    assignee?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    };
+  };
+}
+
+interface RecordParsedTaskData {
+  recordParsedTask: boolean;
+}
+
+interface TaskPatternSuggestionsData {
+  taskPatternSuggestions: TaskPatternSuggestion[];
+}
 
 // ============================================================================
 // GraphQL Operations
@@ -362,20 +402,33 @@ export function useNLPTaskParser(options: UseNLPTaskParserOptions = {}): UseNLPT
   const lastParsedTextRef = useRef<string>('');
 
   // GraphQL mutations
-  const [parseTaskMutation, { loading: parseLoading }] = useMutation(PARSE_TASK_MUTATION);
-  const [resolveClarificationMutation, { loading: clarifyLoading }] = useMutation(
-    RESOLVE_CLARIFICATION_MUTATION
+  const [parseTaskMutation, { loading: parseLoading }] =
+    useMutation<ParseTaskData>(PARSE_TASK_MUTATION);
+  const [resolveClarificationMutation, { loading: clarifyLoading }] =
+    useMutation<ResolveClarificationData>(RESOLVE_CLARIFICATION_MUTATION);
+  const [confirmTaskMutation] = useMutation<ConfirmTaskCreationData>(
+    CONFIRM_TASK_CREATION_MUTATION
   );
-  const [confirmTaskMutation] = useMutation(CONFIRM_TASK_CREATION_MUTATION);
-  const [recordParsedTaskMutation] = useMutation(RECORD_PARSED_TASK_MUTATION);
+  const [recordParsedTaskMutation] = useMutation<RecordParsedTaskData>(RECORD_PARSED_TASK_MUTATION);
 
   // Pattern suggestions query (lazy)
-  const [fetchSuggestions] = useLazyQuery(TASK_PATTERN_SUGGESTIONS_QUERY, {
-    fetchPolicy: 'network-only',
-    onCompleted: (data: { taskPatternSuggestions?: TaskPatternSuggestion[] }) => {
-      setSuggestions(data?.taskPatternSuggestions ?? []);
+  const [fetchSuggestionsQuery] = useLazyQuery<TaskPatternSuggestionsData>(
+    TASK_PATTERN_SUGGESTIONS_QUERY,
+    {
+      fetchPolicy: 'network-only',
+    }
+  );
+
+  // Wrapper for fetchSuggestions that handles the response
+  const fetchSuggestions = useCallback(
+    async (variables: { partialInput: string }) => {
+      const result = await fetchSuggestionsQuery({ variables });
+      if (result.data?.taskPatternSuggestions) {
+        setSuggestions(result.data.taskPatternSuggestions);
+      }
     },
-  });
+    [fetchSuggestionsQuery]
+  );
 
   const isLoading = parseLoading || clarifyLoading;
 
@@ -449,7 +502,7 @@ export function useNLPTaskParser(options: UseNLPTaskParserOptions = {}): UseNLPT
 
       // Fetch suggestions for short input
       if (text.length >= 3 && text.length < minCharsForParse) {
-        fetchSuggestions({ variables: { partialInput: text } });
+        fetchSuggestions({ partialInput: text });
       } else {
         setSuggestions([]);
       }
@@ -651,21 +704,24 @@ export function useNLPTaskParser(options: UseNLPTaskParserOptions = {}): UseNLPT
 export function useTaskPatternSuggestions() {
   const [suggestions, setSuggestions] = useState<TaskPatternSuggestion[]>([]);
 
-  const [fetchQuery, { loading }] = useLazyQuery(TASK_PATTERN_SUGGESTIONS_QUERY, {
-    fetchPolicy: 'network-only',
-    onCompleted: (data: { taskPatternSuggestions?: TaskPatternSuggestion[] }) => {
-      setSuggestions(data?.taskPatternSuggestions ?? []);
-    },
-  });
+  const [fetchQuery, { loading }] = useLazyQuery<TaskPatternSuggestionsData>(
+    TASK_PATTERN_SUGGESTIONS_QUERY,
+    {
+      fetchPolicy: 'network-only',
+    }
+  );
 
   const fetchSuggestions = useCallback(
-    (partialInput: string) => {
+    async (partialInput: string) => {
       if (partialInput.length < 3) {
         setSuggestions([]);
         return;
       }
 
-      fetchQuery({ variables: { partialInput } });
+      const result = await fetchQuery({ variables: { partialInput } });
+      if (result.data?.taskPatternSuggestions) {
+        setSuggestions(result.data.taskPatternSuggestions);
+      }
     },
     [fetchQuery]
   );

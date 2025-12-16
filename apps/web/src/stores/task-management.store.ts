@@ -226,7 +226,10 @@ export const useFilteredTasks = (): Task[] => {
         : bValue.getTime() - aValue.getTime();
     }
 
-    // Handle string/number sorting
+    // Handle string/number sorting (with null/undefined checks)
+    if (aValue == null && bValue == null) return 0;
+    if (aValue == null) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (bValue == null) return sortConfig.direction === 'asc' ? 1 : -1;
     if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
     return 0;

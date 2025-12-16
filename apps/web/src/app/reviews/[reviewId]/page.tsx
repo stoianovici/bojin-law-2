@@ -18,6 +18,7 @@ import { ReviewCommentsPanel } from '@/components/documents/ReviewCommentsPanel'
 import { ReviewDecisionDialog } from '@/components/documents/ReviewDecisionDialog';
 import { ReviewHistoryTimeline } from '@/components/documents/ReviewHistoryTimeline';
 import { useAuthorization } from '@/hooks/useAuthorization';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DocumentReview {
   id: string;
@@ -316,7 +317,8 @@ export default function ReviewPage() {
   const params = useParams();
   const router = useRouter();
   const reviewId = params.reviewId as string;
-  const { isPartner, user } = useAuthorization();
+  const { isPartner } = useAuthorization();
+  const { user } = useAuth();
 
   const [review, setReview] = useState<DocumentReview | null>(null);
   const [loading, setLoading] = useState(true);

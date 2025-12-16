@@ -121,7 +121,7 @@ export function TemplateEditor({
       };
 
       try {
-        let savedTemplate: CommunicationTemplate;
+        let savedTemplate: CommunicationTemplate | undefined;
 
         if (isEditing && template) {
           savedTemplate = await update(template.id, input);
@@ -129,7 +129,9 @@ export function TemplateEditor({
           savedTemplate = await create(input as CreateTemplateInput);
         }
 
-        onSave?.(savedTemplate);
+        if (savedTemplate) {
+          onSave?.(savedTemplate);
+        }
       } catch (err) {
         // Error is handled by the hook
       }

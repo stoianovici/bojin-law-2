@@ -149,9 +149,7 @@ export function QuickTimeLog({
               id="quick-hours"
               type="text"
               value={hoursInput}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setHoursInput(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHoursInput(e.target.value)}
               placeholder="1.5 or 1:30"
               className={errors.hours ? 'border-red-500' : ''}
               disabled={isSubmitting || isLoading}
@@ -183,7 +181,7 @@ export function QuickTimeLog({
             id="quick-description"
             type="text"
             value={description}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
             placeholder="Brief description of work"
             className={errors.description ? 'border-red-500' : ''}
             disabled={isSubmitting || isLoading}

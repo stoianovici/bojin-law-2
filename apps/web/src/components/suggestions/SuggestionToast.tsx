@@ -7,7 +7,9 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import type { AISuggestion, SuggestionType, SuggestionPriority } from '@legal-platform/types';
+import type { AISuggestion } from './SuggestionCard';
+
+type SuggestionPriority = 'Low' | 'Normal' | 'High' | 'Urgent';
 
 // Icons
 const SparklesIcon = ({ className }: { className?: string }) => (

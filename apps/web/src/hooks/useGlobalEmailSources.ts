@@ -108,6 +108,29 @@ interface MutationResult<T> {
   error?: string;
 }
 
+// GraphQL Response Types
+interface CreateGlobalEmailSourceData {
+  createGlobalEmailSource: GlobalEmailSource;
+}
+
+interface UpdateGlobalEmailSourceData {
+  updateGlobalEmailSource: GlobalEmailSource;
+}
+
+interface DeleteGlobalEmailSourceData {
+  deleteGlobalEmailSource: boolean;
+}
+
+interface UpdateCaseClassificationData {
+  updateCaseClassification: {
+    id: string;
+    keywords: string[];
+    referenceNumbers: string[];
+    subjectPatterns: string[];
+    classificationNotes: string | null;
+  };
+}
+
 // ============================================================================
 // Category Labels (Romanian)
 // ============================================================================
@@ -139,9 +162,15 @@ export function useGlobalEmailSources() {
     fetchPolicy: 'cache-and-network',
   });
 
-  const [createMutation, { loading: createLoading }] = useMutation(CREATE_GLOBAL_EMAIL_SOURCE);
-  const [updateMutation, { loading: updateLoading }] = useMutation(UPDATE_GLOBAL_EMAIL_SOURCE);
-  const [deleteMutation, { loading: deleteLoading }] = useMutation(DELETE_GLOBAL_EMAIL_SOURCE);
+  const [createMutation, { loading: createLoading }] = useMutation<CreateGlobalEmailSourceData>(
+    CREATE_GLOBAL_EMAIL_SOURCE
+  );
+  const [updateMutation, { loading: updateLoading }] = useMutation<UpdateGlobalEmailSourceData>(
+    UPDATE_GLOBAL_EMAIL_SOURCE
+  );
+  const [deleteMutation, { loading: deleteLoading }] = useMutation<DeleteGlobalEmailSourceData>(
+    DELETE_GLOBAL_EMAIL_SOURCE
+  );
 
   const sources = useMemo(() => {
     return data?.globalEmailSources ?? [];
@@ -279,7 +308,9 @@ export interface UpdateCaseClassificationInput {
 }
 
 export function useCaseClassification() {
-  const [updateMutation, { loading }] = useMutation(UPDATE_CASE_CLASSIFICATION);
+  const [updateMutation, { loading }] = useMutation<UpdateCaseClassificationData>(
+    UPDATE_CASE_CLASSIFICATION
+  );
 
   const updateClassification = useCallback(
     async (

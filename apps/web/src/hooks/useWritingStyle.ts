@@ -205,7 +205,7 @@ export function useResetWritingStyle() {
   }>(RESET_WRITING_STYLE_PROFILE, {
     refetchQueries: ['GetMyWritingStyleProfile'],
     // Optimistic update - immediately clear cache
-    update: (cache: { writeQuery: (options: { query: unknown; data: unknown }) => void }) => {
+    update: (cache) => {
       cache.writeQuery({
         query: GET_MY_WRITING_STYLE_PROFILE,
         data: { myWritingStyleProfile: null },

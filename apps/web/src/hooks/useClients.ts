@@ -41,12 +41,6 @@ export function useClients(options: UseClientsOptions = {}) {
     SEARCH_CLIENTS,
     {
       fetchPolicy: 'network-only',
-      onCompleted: (data) => {
-        setClients(data?.searchClients ?? []);
-      },
-      onError: () => {
-        setClients([]);
-      },
     }
   );
 
@@ -69,7 +63,13 @@ export function useClients(options: UseClientsOptions = {}) {
       debounceRef.current = setTimeout(() => {
         searchClientsQuery({
           variables: { query, limit },
-        });
+        })
+          .then((result) => {
+            setClients(result.data?.searchClients ?? []);
+          })
+          .catch(() => {
+            setClients([]);
+          });
       }, debounceMs);
     },
     [searchClientsQuery, debounceMs, limit]

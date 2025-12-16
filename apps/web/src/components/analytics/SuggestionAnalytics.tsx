@@ -28,11 +28,53 @@ import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type {
-  SuggestionAnalytics as SuggestionAnalyticsType,
-  SuggestionType,
-  SuggestionCategory,
-} from '@legal-platform/types';
+// Local types for suggestion analytics UI
+type SuggestionType =
+  | 'PatternMatch'
+  | 'DeadlineWarning'
+  | 'DocumentCheck'
+  | 'TaskSuggestion'
+  | 'RiskAlert'
+  | 'FollowUp'
+  | 'MorningBriefing';
+
+type SuggestionCategory = 'Task' | 'Communication' | 'Document' | 'Calendar' | 'Compliance';
+
+interface TypeMetric {
+  type: SuggestionType;
+  total: number;
+  accepted: number;
+  dismissed: number;
+  acceptanceRate: number;
+}
+
+interface CategoryMetric {
+  category: SuggestionCategory;
+  total: number;
+  accepted: number;
+  dismissed: number;
+  acceptanceRate: number;
+}
+
+interface DailyMetric {
+  date: string;
+  total: number;
+  accepted: number;
+  dismissed: number;
+}
+
+interface SuggestionAnalyticsType {
+  totalSuggestions: number;
+  acceptedCount: number;
+  dismissedCount: number;
+  overallAcceptanceRate: number;
+  acceptanceRate: number;
+  estimatedTimeSavedMinutes: number;
+  averageResponseTimeMs: number;
+  byType: TypeMetric[];
+  byCategory: CategoryMetric[];
+  dailyTrend: DailyMetric[];
+}
 
 // ====================
 // GraphQL Query

@@ -5,7 +5,6 @@
 
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
-import type { TimeEntryInput } from '@legal-platform/types';
 
 // GraphQL Fragments
 const TIME_ENTRY_FRAGMENT = gql`

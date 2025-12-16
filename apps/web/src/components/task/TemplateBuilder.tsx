@@ -8,8 +8,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
@@ -71,7 +71,7 @@ const TASK_TYPES: TaskType[] = [
   'BusinessTrip',
 ];
 
-const CASE_TYPES: CaseType[] = ['Litigation', 'Contract', 'Corporate', 'RealEstate', 'IP'];
+const CASE_TYPES: CaseType[] = ['Litigation', 'Contract', 'Advisory', 'Criminal', 'Other'];
 
 const OFFSET_TYPES: OffsetType[] = ['CaseStart', 'PreviousTask', 'CaseDeadline'];
 
@@ -147,7 +147,9 @@ function SortableStep({
               <label className="block text-sm font-medium mb-1">Title</label>
               <Input
                 value={step.title}
-                onChange={(e: React.MouseEvent) => onUpdate(step.id, { title: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  onUpdate(step.id, { title: e.target.value })
+                }
                 placeholder="Step title"
               />
             </div>
@@ -157,7 +159,9 @@ function SortableStep({
             <label className="block text-sm font-medium mb-1">Description</label>
             <Textarea
               value={step.description || ''}
-              onChange={(e: React.MouseEvent) => onUpdate(step.id, { description: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                onUpdate(step.id, { description: e.target.value })
+              }
               placeholder="Step description"
               rows={2}
             />
@@ -169,7 +173,7 @@ function SortableStep({
               <Input
                 type="number"
                 value={step.offsetDays}
-                onChange={(e: React.MouseEvent) =>
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   onUpdate(step.id, { offsetDays: parseInt(e.target.value) || 0 })
                 }
                 min="0"
@@ -203,7 +207,7 @@ function SortableStep({
                 type="number"
                 step="0.5"
                 value={step.estimatedHours || ''}
-                onChange={(e: React.MouseEvent) =>
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   onUpdate(step.id, { estimatedHours: parseFloat(e.target.value) || undefined })
                 }
                 placeholder="0"
@@ -273,8 +277,9 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
   const [description, setDescription] = React.useState(template?.description || '');
   const [caseType, setCaseType] = React.useState<CaseType | undefined>(template?.caseType);
   const [isDefault, setIsDefault] = React.useState(template?.isDefault || false);
-  const [steps, setSteps] = React.useState<TemplateStepData[]>(
-    template?.steps.map((s: (typeof steps)[number]) => ({
+  const [steps, setSteps] = React.useState<TemplateStepData[]>(() => {
+    if (!template?.steps) return [];
+    return template.steps.map((s) => ({
       id: s.id,
       stepOrder: s.stepOrder,
       taskType: s.taskType,
@@ -285,9 +290,9 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
       offsetFrom: s.offsetFrom,
       isParallel: s.isParallel,
       isCriticalPath: s.isCriticalPath,
-      dependencies: s.dependencies.map((d: (typeof s.dependencies)[number]) => d.sourceStepId),
-    })) || []
-  );
+      dependencies: s.dependencies.map((d) => d.sourceStepId),
+    }));
+  });
   const [isSaving, setIsSaving] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -378,7 +383,7 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
       newErrors.steps = 'At least one step is required';
     }
 
-    steps.forEach((step, idx) => {
+    steps.forEach((step: TemplateStepData, idx: number) => {
       if (!step.title.trim()) {
         newErrors[`step-${idx}-title`] = `Step ${idx + 1} title is required`;
       }
@@ -399,7 +404,7 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
         description,
         caseType,
         isDefault,
-        steps: steps.map((s, idx) => ({ ...s, stepOrder: idx })),
+        steps: steps.map((s: TemplateStepData, idx: number) => ({ ...s, stepOrder: idx })),
       };
       await onSave(data);
     } catch (error) {
@@ -410,7 +415,7 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
   };
 
   const generatePreview = () => {
-    const timeline = steps.map((step, idx) => {
+    const timeline = steps.map((step: TemplateStepData, idx: number) => {
       let startDay = step.offsetDays;
       if (step.offsetFrom === 'PreviousTask' && idx > 0) {
         const prevStep = steps[idx - 1];
@@ -427,37 +432,41 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
     return (
       <div className="space-y-2">
         <h4 className="font-medium text-sm mb-3">Example Timeline (from case start)</h4>
-        {timeline.map((step, idx) => (
-          <div key={step.id} className="flex items-center gap-2 text-sm">
-            <div className="w-16 text-gray-500">Day {step.startDay}</div>
-            <div className="flex-1">
-              <div
-                className={`px-3 py-2 rounded ${
-                  step.isCriticalPath ? 'bg-red-100 border-red-300' : 'bg-blue-100 border-blue-300'
-                } border`}
-              >
-                <div className="font-medium">
-                  Step {idx + 1}: {step.title}
-                </div>
-                <div className="text-xs text-gray-600">
-                  {step.estimatedHours}h ({Math.ceil((step.estimatedHours || 0) / 8)}d)
-                  {step.dependencies.length > 0 && (
-                    <span className="ml-2">
-                      Depends on:{' '}
-                      {step.dependencies
-                        .map((depId) => {
-                          const depIdx = steps.findIndex((s) => s.id === depId);
-                          return `Step ${depIdx + 1}`;
-                        })
-                        .join(', ')}
-                    </span>
-                  )}
+        {timeline.map(
+          (step: TemplateStepData & { startDay: number; endDay: number }, idx: number) => (
+            <div key={step.id} className="flex items-center gap-2 text-sm">
+              <div className="w-16 text-gray-500">Day {step.startDay}</div>
+              <div className="flex-1">
+                <div
+                  className={`px-3 py-2 rounded ${
+                    step.isCriticalPath
+                      ? 'bg-red-100 border-red-300'
+                      : 'bg-blue-100 border-blue-300'
+                  } border`}
+                >
+                  <div className="font-medium">
+                    Step {idx + 1}: {step.title}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {step.estimatedHours}h ({Math.ceil((step.estimatedHours || 0) / 8)}d)
+                    {step.dependencies.length > 0 && (
+                      <span className="ml-2">
+                        Depends on:{' '}
+                        {step.dependencies
+                          .map((depId: string) => {
+                            const depIdx = steps.findIndex((s: TemplateStepData) => s.id === depId);
+                            return `Step ${depIdx + 1}`;
+                          })
+                          .join(', ')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+              <div className="w-24 text-right text-gray-500">→ Day {step.endDay}</div>
             </div>
-            <div className="w-24 text-right text-gray-500">→ Day {step.endDay}</div>
-          </div>
-        ))}
+          )
+        )}
       </div>
     );
   };
@@ -476,7 +485,7 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
             </label>
             <Input
               value={name}
-              onChange={(e: React.MouseEvent) => setName(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               placeholder="e.g., Standard Litigation Workflow"
               className={errors.name ? 'border-red-500' : ''}
             />
@@ -555,8 +564,11 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-              {steps.map((step, idx) => (
+            <SortableContext
+              items={steps.map((s: TemplateStepData) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {steps.map((step: TemplateStepData, idx: number) => (
                 <SortableStep
                   key={step.id}
                   step={step}

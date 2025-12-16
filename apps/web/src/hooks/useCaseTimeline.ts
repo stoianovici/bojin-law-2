@@ -208,6 +208,36 @@ export interface CreateInternalNoteInput {
   attachmentIds?: string[];
 }
 
+// GraphQL Response Types
+interface GetCaseTimelineData {
+  caseTimeline: {
+    entries: TimelineEntry[];
+    totalCount: number;
+    hasMore: boolean;
+    cursor: string | null;
+  };
+}
+
+interface GetCommunicationEntryData {
+  communicationEntry: TimelineEntry;
+}
+
+interface CreateInternalNoteData {
+  createInternalNote: TimelineEntry;
+}
+
+interface UpdateInternalNoteData {
+  updateInternalNote: TimelineEntry;
+}
+
+interface DeleteInternalNoteData {
+  deleteInternalNote: boolean;
+}
+
+interface UpdateCommunicationPrivacyData {
+  updateCommunicationPrivacy: TimelineEntry;
+}
+
 // ============================================================================
 // Hooks
 // ============================================================================
@@ -223,15 +253,18 @@ export function useCaseTimeline(caseId: string, filter?: Omit<TimelineFilter, 'c
     ...filter,
   };
 
-  const { data, loading, error, refetch, fetchMore } = useQuery(GET_CASE_TIMELINE, {
-    variables: {
-      filter: timelineFilter,
-      first: 20,
-    },
-    skip: !caseId,
-    fetchPolicy: 'cache-and-network',
-    notifyOnNetworkStatusChange: true,
-  });
+  const { data, loading, error, refetch, fetchMore } = useQuery<GetCaseTimelineData>(
+    GET_CASE_TIMELINE,
+    {
+      variables: {
+        filter: timelineFilter,
+        first: 20,
+      },
+      skip: !caseId,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
+    }
+  );
 
   const entries = data?.caseTimeline?.entries || [];
   const totalCount = data?.caseTimeline?.totalCount || 0;
@@ -248,7 +281,10 @@ export function useCaseTimeline(caseId: string, filter?: Omit<TimelineFilter, 'c
           first: 20,
           after: cursor,
         },
-        updateQuery: (prev, { fetchMoreResult }) => {
+        updateQuery: (
+          prev: GetCaseTimelineData,
+          { fetchMoreResult }: { fetchMoreResult?: GetCaseTimelineData }
+        ) => {
           if (!fetchMoreResult) return prev;
           return {
             caseTimeline: {
@@ -292,13 +328,16 @@ export function useCaseTimeline(caseId: string, filter?: Omit<TimelineFilter, 'c
  * Hook for fetching a single timeline entry
  */
 export function useTimelineEntry(id: string) {
-  const { data, loading, error, refetch } = useQuery(GET_COMMUNICATION_ENTRY, {
-    variables: { id },
-    skip: !id,
-  });
+  const { data, loading, error, refetch } = useQuery<GetCommunicationEntryData>(
+    GET_COMMUNICATION_ENTRY,
+    {
+      variables: { id },
+      skip: !id,
+    }
+  );
 
   return {
-    entry: data?.communicationEntry as TimelineEntry | undefined,
+    entry: data?.communicationEntry,
     loading,
     error,
     refetch,
@@ -309,14 +348,17 @@ export function useTimelineEntry(id: string) {
  * Hook for creating internal notes
  */
 export function useCreateInternalNote(caseId: string) {
-  const [createNote, { loading, error }] = useMutation(CREATE_INTERNAL_NOTE, {
-    refetchQueries: [
-      {
-        query: GET_CASE_TIMELINE,
-        variables: { filter: { caseId }, first: 20 },
-      },
-    ],
-  });
+  const [createNote, { loading, error }] = useMutation<CreateInternalNoteData>(
+    CREATE_INTERNAL_NOTE,
+    {
+      refetchQueries: [
+        {
+          query: GET_CASE_TIMELINE,
+          variables: { filter: { caseId }, first: 20 },
+        },
+      ],
+    }
+  );
 
   const create = useCallback(
     async (input: Omit<CreateInternalNoteInput, 'caseId'>) => {
@@ -333,27 +375,27 @@ export function useCreateInternalNote(caseId: string) {
             id: `temp-${Date.now()}`,
             channelType: 'InternalNote',
             direction: 'Internal',
-            subject: null,
+            subject: undefined,
             bodyPreview: input.body.substring(0, 200),
             body: input.body,
-            htmlBody: null,
+            htmlBody: undefined,
             senderName: 'You',
-            senderEmail: null,
+            senderEmail: undefined,
             recipients: [],
             hasAttachments: false,
             attachments: [],
             isPrivate: input.isPrivate || false,
             privacyLevel: input.privacyLevel || 'Normal',
             sentAt: new Date().toISOString(),
-            parentId: null,
+            parentId: undefined,
             childCount: 0,
-            case: null,
-            metadata: null,
+            case: undefined,
+            metadata: undefined,
           },
         },
       });
 
-      return result.data?.createInternalNote as TimelineEntry;
+      return result.data?.createInternalNote;
     },
     [createNote, caseId]
   );
@@ -369,7 +411,8 @@ export function useCreateInternalNote(caseId: string) {
  * Hook for updating internal notes
  */
 export function useUpdateInternalNote() {
-  const [updateNote, { loading, error }] = useMutation(UPDATE_INTERNAL_NOTE);
+  const [updateNote, { loading, error }] =
+    useMutation<UpdateInternalNoteData>(UPDATE_INTERNAL_NOTE);
 
   const update = useCallback(
     async (id: string, body: string) => {
@@ -377,7 +420,7 @@ export function useUpdateInternalNote() {
         variables: { id, body },
       });
 
-      return result.data?.updateInternalNote as TimelineEntry;
+      return result.data?.updateInternalNote;
     },
     [updateNote]
   );
@@ -393,14 +436,17 @@ export function useUpdateInternalNote() {
  * Hook for deleting internal notes
  */
 export function useDeleteInternalNote(caseId: string) {
-  const [deleteNote, { loading, error }] = useMutation(DELETE_INTERNAL_NOTE, {
-    refetchQueries: [
-      {
-        query: GET_CASE_TIMELINE,
-        variables: { filter: { caseId }, first: 20 },
-      },
-    ],
-  });
+  const [deleteNote, { loading, error }] = useMutation<DeleteInternalNoteData>(
+    DELETE_INTERNAL_NOTE,
+    {
+      refetchQueries: [
+        {
+          query: GET_CASE_TIMELINE,
+          variables: { filter: { caseId }, first: 20 },
+        },
+      ],
+    }
+  );
 
   const remove = useCallback(
     async (id: string) => {
@@ -408,7 +454,7 @@ export function useDeleteInternalNote(caseId: string) {
         variables: { id },
       });
 
-      return result.data?.deleteInternalNote as boolean;
+      return result.data?.deleteInternalNote;
     },
     [deleteNote]
   );
@@ -424,7 +470,9 @@ export function useDeleteInternalNote(caseId: string) {
  * Hook for updating communication privacy
  */
 export function useUpdateCommunicationPrivacy() {
-  const [updatePrivacy, { loading, error }] = useMutation(UPDATE_COMMUNICATION_PRIVACY);
+  const [updatePrivacy, { loading, error }] = useMutation<UpdateCommunicationPrivacyData>(
+    UPDATE_COMMUNICATION_PRIVACY
+  );
 
   const update = useCallback(
     async (communicationId: string, privacyLevel: PrivacyLevel, allowedViewers?: string[]) => {
@@ -438,7 +486,7 @@ export function useUpdateCommunicationPrivacy() {
         },
       });
 
-      return result.data?.updateCommunicationPrivacy as TimelineEntry;
+      return result.data?.updateCommunicationPrivacy;
     },
     [updatePrivacy]
   );
@@ -463,15 +511,16 @@ export function useCaseTimelineWithPolling(
     ...filter,
   };
 
-  const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(GET_CASE_TIMELINE, {
-    variables: {
-      filter: timelineFilter,
-      first: 20,
-    },
-    skip: !caseId,
-    fetchPolicy: 'cache-and-network',
-    pollInterval: pollIntervalMs,
-  });
+  const { data, loading, error, refetch, startPolling, stopPolling } =
+    useQuery<GetCaseTimelineData>(GET_CASE_TIMELINE, {
+      variables: {
+        filter: timelineFilter,
+        first: 20,
+      },
+      skip: !caseId,
+      fetchPolicy: 'cache-and-network',
+      pollInterval: pollIntervalMs,
+    });
 
   const entries = data?.caseTimeline?.entries || [];
   const totalCount = data?.caseTimeline?.totalCount || 0;

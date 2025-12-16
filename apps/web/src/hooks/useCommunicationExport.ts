@@ -102,6 +102,22 @@ export interface ExportCommunicationsInput {
 }
 
 // ============================================================================
+// GraphQL Response Types
+// ============================================================================
+
+interface GetCaseExportsData {
+  communicationExports: CommunicationExport[];
+}
+
+interface GetExportData {
+  communicationExport: CommunicationExport | null;
+}
+
+interface ExportCommunicationsData {
+  exportCommunications: CommunicationExport;
+}
+
+// ============================================================================
 // Hooks
 // ============================================================================
 
@@ -109,14 +125,14 @@ export interface ExportCommunicationsInput {
  * Hook for listing exports for a case
  */
 export function useCaseExports(caseId: string) {
-  const { data, loading, error, refetch } = useQuery(GET_CASE_EXPORTS, {
+  const { data, loading, error, refetch } = useQuery<GetCaseExportsData>(GET_CASE_EXPORTS, {
     variables: { caseId },
     skip: !caseId,
     fetchPolicy: 'cache-and-network',
   });
 
   return {
-    exports: (data?.communicationExports || []) as CommunicationExport[],
+    exports: data?.communicationExports || [],
     loading,
     error,
     refetch,
@@ -127,7 +143,8 @@ export function useCaseExports(caseId: string) {
  * Hook for requesting a new export
  */
 export function useExportCommunications() {
-  const [exportMutation, { loading, error }] = useMutation(EXPORT_COMMUNICATIONS);
+  const [exportMutation, { loading, error }] =
+    useMutation<ExportCommunicationsData>(EXPORT_COMMUNICATIONS);
 
   const requestExport = useCallback(
     async (input: ExportCommunicationsInput) => {
@@ -141,7 +158,7 @@ export function useExportCommunications() {
         ],
       });
 
-      return result.data?.exportCommunications as CommunicationExport;
+      return result.data?.exportCommunications;
     },
     [exportMutation]
   );
@@ -163,13 +180,16 @@ export function useExportStatus(
   const { pollingInterval = 2000, enabled = true } = options || {};
   const [isPolling, setIsPolling] = useState(false);
 
-  const { data, loading, error, startPolling, stopPolling, refetch } = useQuery(GET_EXPORT, {
-    variables: { id: exportId },
-    skip: !exportId || !enabled,
-    fetchPolicy: 'network-only',
-  });
+  const { data, loading, error, startPolling, stopPolling, refetch } = useQuery<GetExportData>(
+    GET_EXPORT,
+    {
+      variables: { id: exportId },
+      skip: !exportId || !enabled,
+      fetchPolicy: 'network-only',
+    }
+  );
 
-  const exportData = data?.communicationExport as CommunicationExport | undefined;
+  const exportData = data?.communicationExport ?? undefined;
 
   // Start/stop polling based on status
   useEffect(() => {

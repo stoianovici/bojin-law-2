@@ -131,6 +131,9 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
       }
 
       // Handle string/number sorting
+      if (aValue === undefined && bValue === undefined) return 0;
+      if (aValue === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
+      if (bValue === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
@@ -396,10 +399,9 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                           taskId={task.id}
                           taskTitle={task.title}
                           onSubmit={(data: {
-                            description: string;
                             hours: number;
-                            minutes: number;
-                            notes?: string;
+                            description: string;
+                            billable: boolean;
                           }) => handleTimeLogSubmit(task.id, data)}
                           onCancel={() => setLogTimeTaskId(null)}
                           isLoading={loggingTime}

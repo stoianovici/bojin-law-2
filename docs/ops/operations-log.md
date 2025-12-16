@@ -40,6 +40,7 @@
 | OPS-031 | Classification Review & Correction                | Feature     | P2-Medium   | Complete    | [issues/ops-031.md](issues/ops-031.md)   |
 | OPS-032 | Repurpose /communications as Pending Queue        | Feature     | P1-High     | Open        | [issues/ops-032.md](issues/ops-032.md)   |
 | OPS-033 | Firm-wide Email Search                            | Feature     | P3-Low      | Open        | [issues/ops-033.md](issues/ops-033.md)   |
+| OPS-034 | Fix Web App TypeScript Errors (377→134)           | Bug         | P0-Critical | Resolved    | [issues/ops-034.md](issues/ops-034.md)   |
 
 ---
 
@@ -159,6 +160,23 @@ Transform `/communications` from an inbox-style email viewer into the Pending Cl
 Fallback feature for "find any email" use case after OPS-032 removes the inbox view.
 
 **Recommendation:** Defer. Monitor user feedback post-OPS-032. Users can search in Outlook or case Communications tabs.
+
+### [OPS-034] Fix Web App TypeScript Errors (BLOCKING DEPLOYMENTS)
+
+**Status:** Fixing | **Priority:** P0-Critical | **Type:** Bug | **Last Active:** 2025-12-16
+
+WIP commit `c608a82` introduced TypeScript errors blocking `pnpm preflight:full`.
+
+**Session 1 Progress:** 377 → 284 errors (93 fixed, ~25% reduction)
+
+**Hooks Fixed:**
+
+- `useEmailSync.ts` (28), `useNLPTaskParser.ts` (15), `useGlobalEmailSources.ts` (10)
+- `useEmailDraft.ts` (~20), `useCaseTimeline.ts` (15), `useBulkCommunication.ts` (6)
+
+**Next Session:** Continue fixing remaining hooks (useCommunicationTemplates, useCommunicationExport, etc.), then component files.
+
+**Impact:** ALL deployments blocked until resolved.
 
 ---
 

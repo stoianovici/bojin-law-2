@@ -13,8 +13,13 @@ import {
 import { CheckCircle2, Lock, AlertTriangle } from 'lucide-react';
 import type { Task, TaskDependency } from '@legal-platform/types';
 
+// Extended task type with optional critical path indicator
+interface ExtendedTask extends Task {
+  isCriticalPath?: boolean;
+}
+
 export interface DependencyGraphProps {
-  tasks: Task[];
+  tasks: ExtendedTask[];
   dependencies: TaskDependency[];
   _onAddDependency?: (predecessorId: string, successorId: string) => void;
   _onRemoveDependency?: (dependencyId: string) => void;
@@ -75,7 +80,7 @@ export function DependencyGraph({
   };
 
   // Get task status class
-  const getTaskStatusClass = (task: Task) => {
+  const getTaskStatusClass = (task: ExtendedTask) => {
     const isCompleted = task.status === 'Completed';
     const isBlocked = dependencies.some(
       (d) =>
@@ -91,7 +96,7 @@ export function DependencyGraph({
   };
 
   // Get task status icon
-  const getTaskStatusIcon = (task: Task) => {
+  const getTaskStatusIcon = (task: ExtendedTask) => {
     const isCompleted = task.status === 'Completed';
     const isBlocked = dependencies.some(
       (d) =>

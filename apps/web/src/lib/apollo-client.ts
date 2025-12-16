@@ -71,7 +71,7 @@ const httpLink = new HttpLink({
 });
 
 // Auth link to add MS access token for email operations
-const authLink = setContext(async (operation, { headers }) => {
+const authLink = setContext(async (_operation, { headers }) => {
   // Only fetch token if getter is available
   if (!getMsAccessToken) {
     return { headers };

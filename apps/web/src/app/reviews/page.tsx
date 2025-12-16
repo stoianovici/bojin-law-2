@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PendingReviewsDashboard } from '@/components/documents/PendingReviewsDashboard';
 import { useAuthorization } from '@/hooks/useAuthorization';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Mock data for development - replace with actual GraphQL query
 interface PendingReview {
@@ -104,7 +105,8 @@ const PENDING_REVIEWS_QUERY = `
 
 export default function ReviewsPage() {
   const router = useRouter();
-  const { isPartner, isAssociate, user, loading: authLoading } = useAuthorization();
+  const { isPartner, isAssociate } = useAuthorization();
+  const { user, loading: authLoading } = useAuth();
   const [reviews, setReviews] = useState<PendingReview[]>([]);
   const [statistics, setStatistics] = useState<ReviewStatistics | undefined>();
   const [loading, setLoading] = useState(true);

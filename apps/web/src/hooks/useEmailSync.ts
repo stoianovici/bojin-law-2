@@ -9,6 +9,194 @@ import { gql } from '@apollo/client';
 import { useMutation, useQuery, useSubscription } from '@apollo/client/react';
 
 // ============================================================================
+// Types
+// ============================================================================
+
+interface EmailAddress {
+  name?: string;
+  address: string;
+}
+
+interface EmailAttachment {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+  downloadUrl?: string;
+}
+
+interface CaseReference {
+  id: string;
+  title: string;
+  caseNumber: string;
+}
+
+interface Email {
+  id: string;
+  graphMessageId: string;
+  conversationId?: string;
+  subject: string;
+  bodyPreview: string;
+  bodyContent: string;
+  bodyContentType: string;
+  from: EmailAddress;
+  toRecipients: EmailAddress[];
+  ccRecipients: EmailAddress[];
+  receivedDateTime: string;
+  sentDateTime: string;
+  hasAttachments: boolean;
+  importance: string;
+  isRead: boolean;
+  case?: CaseReference;
+  attachments: EmailAttachment[];
+}
+
+interface EmailThread {
+  id: string;
+  conversationId: string;
+  subject: string;
+  participantCount: number;
+  messageCount: number;
+  hasUnread: boolean;
+  hasAttachments: boolean;
+  lastMessageDate: string;
+  firstMessageDate: string;
+  case?: CaseReference;
+  emails: Email[];
+}
+
+interface EmailSyncStatus {
+  status: string;
+  lastSyncAt?: string;
+  emailCount: number;
+  pendingCategorization: number;
+}
+
+interface EmailStats {
+  totalEmails: number;
+  unreadEmails: number;
+  uncategorizedEmails: number;
+  emailsWithAttachments: number;
+  emailsByCase: Array<{
+    caseId: string;
+    caseName: string;
+    count: number;
+  }>;
+}
+
+interface EmailThreadParticipant {
+  email: string;
+  name?: string;
+  messageCount: number;
+  roles: string[];
+}
+
+interface EmailCategorizationResult {
+  emailId: string;
+  caseId: string;
+  confidence: number;
+  reasoning: string;
+}
+
+// Query Response Types
+interface GetEmailsData {
+  emails: {
+    emails: Email[];
+    totalCount: number;
+    hasMore: boolean;
+  };
+}
+
+interface GetEmailData {
+  email: Email;
+}
+
+interface GetEmailThreadsData {
+  emailThreads: EmailThread[];
+}
+
+interface GetEmailThreadData {
+  emailThread: EmailThread;
+}
+
+interface GetEmailSyncStatusData {
+  emailSyncStatus: EmailSyncStatus;
+}
+
+interface GetEmailStatsData {
+  emailStats: EmailStats;
+}
+
+interface GetEmailSearchSuggestionsData {
+  emailSearchSuggestions: string[];
+}
+
+interface GetThreadParticipantsData {
+  emailThreadParticipants: EmailThreadParticipant[];
+}
+
+// Mutation Response Types
+interface StartEmailSyncData {
+  startEmailSync: EmailSyncStatus;
+}
+
+interface CreateEmailSubscriptionData {
+  createEmailSubscription: EmailSyncStatus;
+}
+
+interface MarkEmailReadData {
+  markEmailRead: Email;
+}
+
+interface AssignEmailToCaseData {
+  assignEmailToCase: Email;
+}
+
+interface SyncEmailAttachmentsData {
+  syncEmailAttachments: EmailAttachment[];
+}
+
+interface MarkThreadReadData {
+  markThreadRead: EmailThread;
+}
+
+interface AssignThreadToCaseData {
+  assignThreadToCase: EmailThread;
+}
+
+interface TriggerEmailCategorizationData {
+  triggerEmailCategorization: number;
+}
+
+interface PermanentlyDeleteEmailData {
+  permanentlyDeleteEmail: {
+    success: boolean;
+    attachmentsDeleted: number;
+  };
+}
+
+interface BulkDeleteCaseEmailsData {
+  bulkDeleteCaseEmails: {
+    emailsDeleted: number;
+    attachmentsDeleted: number;
+    success: boolean;
+  };
+}
+
+// Subscription Data Types
+interface EmailReceivedSubscriptionData {
+  emailReceived: Email;
+}
+
+interface EmailSyncProgressSubscriptionData {
+  emailSyncProgress: EmailSyncStatus;
+}
+
+interface EmailCategorizedSubscriptionData {
+  emailCategorized: EmailCategorizationResult;
+}
+
+// ============================================================================
 // GraphQL Fragments
 // ============================================================================
 
@@ -312,18 +500,21 @@ const EMAIL_CATEGORIZED_SUBSCRIPTION = gql`
  * Hook for email sync status and operations
  */
 export function useEmailSync() {
-  const { data, loading, error, refetch } = useQuery(GET_EMAIL_SYNC_STATUS, {
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error, refetch } = useQuery<GetEmailSyncStatusData>(
+    GET_EMAIL_SYNC_STATUS,
+    {
+      fetchPolicy: 'cache-and-network',
+    }
+  );
 
-  const [startSync, { loading: syncing }] = useMutation(START_EMAIL_SYNC, {
+  const [startSync, { loading: syncing }] = useMutation<StartEmailSyncData>(START_EMAIL_SYNC, {
     refetchQueries: [{ query: GET_EMAIL_SYNC_STATUS }],
   });
 
-  const [createSubscription] = useMutation(CREATE_EMAIL_SUBSCRIPTION);
+  const [createSubscription] = useMutation<CreateEmailSubscriptionData>(CREATE_EMAIL_SUBSCRIPTION);
 
   // Subscribe to sync progress
-  useSubscription(EMAIL_SYNC_PROGRESS_SUBSCRIPTION, {
+  useSubscription<EmailSyncProgressSubscriptionData>(EMAIL_SYNC_PROGRESS_SUBSCRIPTION, {
     onData: ({ data: subData }) => {
       if (subData?.data?.emailSyncProgress) {
         refetch();
@@ -365,7 +556,7 @@ export function useEmails(
   limit = 20,
   offset = 0
 ) {
-  const { data, loading, error, refetch, fetchMore } = useQuery(GET_EMAILS, {
+  const { data, loading, error, refetch, fetchMore } = useQuery<GetEmailsData>(GET_EMAILS, {
     variables: { filters, limit, offset },
     fetchPolicy: 'cache-and-network',
   });
@@ -381,7 +572,10 @@ export function useEmails(
       const currentCount = data?.emails?.emails?.length || 0;
       return fetchMore({
         variables: { offset: currentCount },
-        updateQuery: (prev, { fetchMoreResult }) => {
+        updateQuery: (
+          prev: GetEmailsData,
+          { fetchMoreResult }: { fetchMoreResult?: GetEmailsData }
+        ) => {
           if (!fetchMoreResult) return prev;
           return {
             emails: {
@@ -399,14 +593,14 @@ export function useEmails(
  * Hook for getting a single email
  */
 export function useEmail(id: string) {
-  const { data, loading, error, refetch } = useQuery(GET_EMAIL, {
+  const { data, loading, error, refetch } = useQuery<GetEmailData>(GET_EMAIL, {
     variables: { id },
     skip: !id,
   });
 
-  const [markRead] = useMutation(MARK_EMAIL_READ);
-  const [assignToCase] = useMutation(ASSIGN_EMAIL_TO_CASE);
-  const [syncAttachments] = useMutation(SYNC_EMAIL_ATTACHMENTS);
+  const [markRead] = useMutation<MarkEmailReadData>(MARK_EMAIL_READ);
+  const [assignToCase] = useMutation<AssignEmailToCaseData>(ASSIGN_EMAIL_TO_CASE);
+  const [syncAttachments] = useMutation<SyncEmailAttachmentsData>(SYNC_EMAIL_ATTACHMENTS);
 
   return {
     email: data?.email,
@@ -443,10 +637,13 @@ export function useEmailThreads(
   limit = 20,
   offset = 0
 ) {
-  const { data, loading, error, refetch, fetchMore } = useQuery(GET_EMAIL_THREADS, {
-    variables: { filters, limit, offset },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error, refetch, fetchMore } = useQuery<GetEmailThreadsData>(
+    GET_EMAIL_THREADS,
+    {
+      variables: { filters, limit, offset },
+      fetchPolicy: 'cache-and-network',
+    }
+  );
 
   return {
     threads: data?.emailThreads || [],
@@ -457,7 +654,10 @@ export function useEmailThreads(
       const currentCount = data?.emailThreads?.length || 0;
       return fetchMore({
         variables: { offset: currentCount },
-        updateQuery: (prev, { fetchMoreResult }) => {
+        updateQuery: (
+          prev: GetEmailThreadsData,
+          { fetchMoreResult }: { fetchMoreResult?: GetEmailThreadsData }
+        ) => {
           if (!fetchMoreResult) return prev;
           return {
             emailThreads: [...prev.emailThreads, ...fetchMoreResult.emailThreads],
@@ -472,13 +672,13 @@ export function useEmailThreads(
  * Hook for a single email thread
  */
 export function useEmailThread(conversationId: string) {
-  const { data, loading, error, refetch } = useQuery(GET_EMAIL_THREAD, {
+  const { data, loading, error, refetch } = useQuery<GetEmailThreadData>(GET_EMAIL_THREAD, {
     variables: { conversationId },
     skip: !conversationId,
   });
 
-  const [markRead] = useMutation(MARK_THREAD_READ);
-  const [assignToCase] = useMutation(ASSIGN_THREAD_TO_CASE);
+  const [markRead] = useMutation<MarkThreadReadData>(MARK_THREAD_READ);
+  const [assignToCase] = useMutation<AssignThreadToCaseData>(ASSIGN_THREAD_TO_CASE);
 
   return {
     thread: data?.emailThread,
@@ -500,7 +700,7 @@ export function useEmailThread(conversationId: string) {
  * Hook for email statistics
  */
 export function useEmailStats() {
-  const { data, loading, error, refetch } = useQuery(GET_EMAIL_STATS, {
+  const { data, loading, error, refetch } = useQuery<GetEmailStatsData>(GET_EMAIL_STATS, {
     fetchPolicy: 'cache-and-network',
     pollInterval: 60000, // Refresh every minute
   });
@@ -517,7 +717,7 @@ export function useEmailStats() {
  * Hook for email search suggestions
  */
 export function useEmailSearchSuggestions(prefix: string) {
-  const { data, loading } = useQuery(GET_EMAIL_SEARCH_SUGGESTIONS, {
+  const { data, loading } = useQuery<GetEmailSearchSuggestionsData>(GET_EMAIL_SEARCH_SUGGESTIONS, {
     variables: { prefix },
     skip: !prefix || prefix.length < 2,
     fetchPolicy: 'cache-first',
@@ -533,7 +733,7 @@ export function useEmailSearchSuggestions(prefix: string) {
  * Hook for thread participants
  */
 export function useThreadParticipants(conversationId: string) {
-  const { data, loading, error } = useQuery(GET_THREAD_PARTICIPANTS, {
+  const { data, loading, error } = useQuery<GetThreadParticipantsData>(GET_THREAD_PARTICIPANTS, {
     variables: { conversationId },
     skip: !conversationId,
   });
@@ -549,12 +749,17 @@ export function useThreadParticipants(conversationId: string) {
  * Hook for batch categorization (admin only)
  */
 export function useEmailCategorization() {
-  const [trigger, { loading, error }] = useMutation(TRIGGER_EMAIL_CATEGORIZATION, {
-    refetchQueries: [{ query: GET_EMAIL_STATS }],
-  });
+  const [trigger, { loading, error }] = useMutation<TriggerEmailCategorizationData>(
+    TRIGGER_EMAIL_CATEGORIZATION,
+    {
+      refetchQueries: [{ query: GET_EMAIL_STATS }],
+    }
+  );
 
   // Subscribe to categorization results
-  const { data: subData } = useSubscription(EMAIL_CATEGORIZED_SUBSCRIPTION);
+  const { data: subData } = useSubscription<EmailCategorizedSubscriptionData>(
+    EMAIL_CATEGORIZED_SUBSCRIPTION
+  );
 
   return {
     trigger: async () => {
@@ -570,8 +775,8 @@ export function useEmailCategorization() {
 /**
  * Hook for real-time email updates
  */
-export function useEmailRealtime(onNewEmail?: (email: any) => void) {
-  useSubscription(EMAIL_RECEIVED_SUBSCRIPTION, {
+export function useEmailRealtime(onNewEmail?: (email: Email) => void) {
+  useSubscription<EmailReceivedSubscriptionData>(EMAIL_RECEIVED_SUBSCRIPTION, {
     onData: ({ data }) => {
       if (data?.data?.emailReceived && onNewEmail) {
         onNewEmail(data.data.emailReceived);
@@ -584,9 +789,12 @@ export function useEmailRealtime(onNewEmail?: (email: any) => void) {
  * Hook for permanently deleting emails (Partners/BusinessOwners only)
  */
 export function useDeleteEmail() {
-  const [deleteEmail, { loading, error }] = useMutation(PERMANENTLY_DELETE_EMAIL, {
-    refetchQueries: [{ query: GET_EMAIL_STATS }, { query: GET_EMAIL_THREADS }],
-  });
+  const [deleteEmail, { loading, error }] = useMutation<PermanentlyDeleteEmailData>(
+    PERMANENTLY_DELETE_EMAIL,
+    {
+      refetchQueries: [{ query: GET_EMAIL_STATS }, { query: GET_EMAIL_THREADS }],
+    }
+  );
 
   return {
     deleteEmail: async (emailId: string) => {
@@ -602,9 +810,12 @@ export function useDeleteEmail() {
  * Hook for bulk deleting all emails for a case (Partners/BusinessOwners only)
  */
 export function useBulkDeleteCaseEmails() {
-  const [bulkDelete, { loading, error }] = useMutation(BULK_DELETE_CASE_EMAILS, {
-    refetchQueries: [{ query: GET_EMAIL_STATS }, { query: GET_EMAIL_THREADS }],
-  });
+  const [bulkDelete, { loading, error }] = useMutation<BulkDeleteCaseEmailsData>(
+    BULK_DELETE_CASE_EMAILS,
+    {
+      refetchQueries: [{ query: GET_EMAIL_STATS }, { query: GET_EMAIL_THREADS }],
+    }
+  );
 
   return {
     bulkDeleteCaseEmails: async (caseId: string) => {

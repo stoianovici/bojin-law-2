@@ -16,8 +16,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useRecordFeedback, SuggestionFeedbackInput } from '@/hooks/useSuggestions';
-import type { AISuggestion } from '@legal-platform/types';
+import { useRecordFeedback } from '@/hooks/useSuggestions';
+import type { SuggestionFeedbackInput } from '@/hooks/useSuggestions';
+import type { AISuggestion } from './SuggestionCard';
 
 export interface FeedbackDialogProps {
   suggestion: AISuggestion | null;

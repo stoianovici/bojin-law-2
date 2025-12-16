@@ -6,7 +6,7 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useMemo } from 'react';
-import type { CompletenessCheckResult, MissingItem } from '@legal-platform/types';
+import type { MissingItem } from '@legal-platform/types';
 
 // ====================
 // GraphQL Queries

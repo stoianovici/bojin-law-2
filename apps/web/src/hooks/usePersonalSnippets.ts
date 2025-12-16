@@ -380,9 +380,10 @@ export function useRecordSnippetUsage() {
         content: '',
         category: 'Custom',
         isAutoDetected: false,
+        sourceContext: null,
         createdAt: '',
         updatedAt: '',
-      },
+      } as unknown as PersonalSnippet,
     }),
   });
 

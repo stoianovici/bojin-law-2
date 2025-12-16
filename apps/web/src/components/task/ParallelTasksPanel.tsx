@@ -12,7 +12,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Users, Sparkles, Clock, CheckCircle2, User } from 'lucide-react';
-import type { ParallelTaskGroup, User as UserType } from '@legal-platform/types';
+import type {
+  ParallelTaskGroup,
+  User as UserType,
+  AssigneeSuggestion,
+} from '@legal-platform/types';
 
 export interface ParallelTasksPanelProps {
   _caseId: string;
@@ -133,15 +137,11 @@ export function ParallelTasksPanel({
               const userWorkload =
                 parallelTaskGroups
                   .flatMap((g) => g.suggestedAssignees || [])
-                  .find(
-                    (s: (typeof parallelTask.assignmentSuggestions)[number]) => s.userId === user.id
-                  )?.currentWorkload || 0;
+                  .find((s: AssigneeSuggestion) => s.userId === user.id)?.currentWorkload || 0;
               const userCapacity =
                 parallelTaskGroups
                   .flatMap((g) => g.suggestedAssignees || [])
-                  .find(
-                    (s: (typeof parallelTask.assignmentSuggestions)[number]) => s.userId === user.id
-                  )?.availableCapacity || 40;
+                  .find((s: AssigneeSuggestion) => s.userId === user.id)?.availableCapacity || 40;
 
               const workloadPercentage = Math.round((userWorkload / userCapacity) * 100);
 
@@ -153,7 +153,9 @@ export function ParallelTasksPanel({
                         <User className="h-4 w-4 text-gray-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{user.name}</div>
+                        <div className="text-sm font-medium truncate">
+                          {user.firstName} {user.lastName}
+                        </div>
                         <div className="text-xs text-gray-500 truncate">{user.email}</div>
                       </div>
                     </div>
@@ -250,11 +252,8 @@ export function ParallelTasksPanel({
 
                     {isExpanded && (
                       <CardContent className="space-y-3">
-                        {group.tasks.map((task: (typeof tasks)[number]) => {
+                        {group.tasks.map((task) => {
                           const suggestions = group.suggestedAssignees || [];
-                          const topSuggestion = suggestions.find(
-                            (s: (typeof suggestions)[number]) => (task.id ? true : false)
-                          );
 
                           return (
                             <Card key={task.id} className="bg-white border">
@@ -288,7 +287,7 @@ export function ParallelTasksPanel({
                                         <SelectContent>
                                           {users.map((user) => (
                                             <SelectItem key={user.id} value={user.id}>
-                                              {user.name}
+                                              {user.firstName} {user.lastName}
                                             </SelectItem>
                                           ))}
                                         </SelectContent>
@@ -306,36 +305,32 @@ export function ParallelTasksPanel({
                                       <div className="space-y-2">
                                         {suggestions
                                           .slice(0, 3)
-                                          .map(
-                                            (
-                                              suggestion: (typeof parallelTask.assignmentSuggestions)[number]
-                                            ) => (
-                                              <div
-                                                key={suggestion.userId}
-                                                className={`flex items-center justify-between p-2 border rounded ${getMatchScoreColor(
-                                                  suggestion.matchScore
-                                                )}`}
-                                              >
-                                                <div className="flex-1">
-                                                  <div className="text-sm font-medium">
-                                                    {suggestion.userName}
-                                                  </div>
-                                                  <div className="text-xs mt-0.5">
-                                                    {suggestion.reasoning}
-                                                  </div>
+                                          .map((suggestion: AssigneeSuggestion) => (
+                                            <div
+                                              key={suggestion.userId}
+                                              className={`flex items-center justify-between p-2 border rounded ${getMatchScoreColor(
+                                                suggestion.matchScore
+                                              )}`}
+                                            >
+                                              <div className="flex-1">
+                                                <div className="text-sm font-medium">
+                                                  {suggestion.userName}
                                                 </div>
-                                                <div className="ml-3 text-right">
-                                                  <div className="text-sm font-bold">
-                                                    {suggestion.matchScore}%
-                                                  </div>
-                                                  <div className="text-xs">
-                                                    {suggestion.currentWorkload}h /{' '}
-                                                    {suggestion.availableCapacity}h
-                                                  </div>
+                                                <div className="text-xs mt-0.5">
+                                                  {suggestion.reasoning}
                                                 </div>
                                               </div>
-                                            )
-                                          )}
+                                              <div className="ml-3 text-right">
+                                                <div className="text-sm font-bold">
+                                                  {suggestion.matchScore}%
+                                                </div>
+                                                <div className="text-xs">
+                                                  {suggestion.currentWorkload}h /{' '}
+                                                  {suggestion.availableCapacity}h
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
                                       </div>
                                     </div>
                                   )}

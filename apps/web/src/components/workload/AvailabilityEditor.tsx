@@ -161,7 +161,7 @@ export function AvailabilityEditor({
                     value={type.value}
                     checked={formData.availabilityType === type.value}
                     onChange={(e) =>
-                      setFormData((prev: typeof weeklyCapacity) => ({
+                      setFormData((prev) => ({
                         ...prev,
                         availabilityType: e.target.value as AvailabilityType,
                       }))
@@ -187,7 +187,7 @@ export function AvailabilityEditor({
                   type="date"
                   value={formData.startDate}
                   onChange={(e) =>
-                    setFormData((prev: typeof weeklyCapacity) => ({
+                    setFormData((prev) => ({
                       ...prev,
                       startDate: e.target.value,
                     }))
@@ -205,7 +205,7 @@ export function AvailabilityEditor({
                   type="date"
                   value={formData.endDate}
                   onChange={(e) =>
-                    setFormData((prev: typeof weeklyCapacity) => ({
+                    setFormData((prev) => ({
                       ...prev,
                       endDate: e.target.value,
                     }))
@@ -230,7 +230,7 @@ export function AvailabilityEditor({
                   step="0.5"
                   value={formData.hoursPerDay || ''}
                   onChange={(e) =>
-                    setFormData((prev: typeof weeklyCapacity) => ({
+                    setFormData((prev) => ({
                       ...prev,
                       hoursPerDay: e.target.value ? parseFloat(e.target.value) : undefined,
                     }))
@@ -249,9 +249,7 @@ export function AvailabilityEditor({
             </label>
             <textarea
               value={formData.reason}
-              onChange={(e) =>
-                setFormData((prev: typeof weeklyCapacity) => ({ ...prev, reason: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
               rows={2}
               placeholder="Brief description of the reason..."
               className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -266,7 +264,7 @@ export function AvailabilityEditor({
                   type="checkbox"
                   checked={formData.autoReassign}
                   onChange={(e) =>
-                    setFormData((prev: typeof weeklyCapacity) => ({
+                    setFormData((prev) => ({
                       ...prev,
                       autoReassign: e.target.checked,
                     }))
@@ -289,7 +287,7 @@ export function AvailabilityEditor({
                     <select
                       value={formData.delegateTo || ''}
                       onChange={(e) =>
-                        setFormData((prev: typeof weeklyCapacity) => ({
+                        setFormData((prev) => ({
                           ...prev,
                           delegateTo: e.target.value || undefined,
                         }))
