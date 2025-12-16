@@ -9,13 +9,7 @@
 'use client';
 
 import React from 'react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Banknote } from 'lucide-react';
 import { BaseWidget } from './BaseWidget';
 import { KPISkeleton } from './WidgetSkeleton';
@@ -146,9 +140,7 @@ export function RevenueOverviewWidget({
                   innerRadius={45}
                   outerRadius={70}
                   paddingAngle={2}
-                  label={({ name, percent }) =>
-                    `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                  }
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
                   {chartData.map((entry, index) => (
@@ -166,14 +158,9 @@ export function RevenueOverviewWidget({
           <div className="flex flex-wrap gap-4 justify-center text-sm">
             {chartData.map((item) => (
               <div key={item.name} className="flex items-center gap-2">
-                <span
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
                 <span className="text-gray-600">{item.name}</span>
-                <span className="font-medium text-gray-900">
-                  {formatCurrency(item.value)}
-                </span>
+                <span className="font-medium text-gray-900">{formatCurrency(item.value)}</span>
               </div>
             ))}
           </div>

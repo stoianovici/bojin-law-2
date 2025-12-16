@@ -7,17 +7,8 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  Task as PrismaTask,
-  TaskStatus,
-  TaskPriority,
-  TaskTypeEnum,
-  Prisma,
-} from '@prisma/client';
-import {
-  validateTaskByType,
-  CreateTaskInput,
-} from './task-validation.service';
+import { Task as PrismaTask, TaskStatus, TaskPriority, TaskTypeEnum, Prisma } from '@prisma/client';
+import { validateTaskByType, CreateTaskInput } from './task-validation.service';
 import * as DependencyAutomationService from './dependency-automation.service';
 
 export interface UpdateTaskInput {
@@ -48,10 +39,7 @@ export class TaskService {
    * Create a new task with type-specific validation
    * Auto-generates subtasks for CourtDate tasks
    */
-  async createTask(
-    input: CreateTaskInput,
-    userId: string
-  ): Promise<PrismaTask> {
+  async createTask(input: CreateTaskInput, userId: string): Promise<PrismaTask> {
     // Validate task using type-specific rules
     const validation = validateTaskByType(input);
     if (!validation.valid) {
@@ -118,11 +106,7 @@ export class TaskService {
   /**
    * Update an existing task
    */
-  async updateTask(
-    taskId: string,
-    input: UpdateTaskInput,
-    userId: string
-  ): Promise<PrismaTask> {
+  async updateTask(taskId: string, input: UpdateTaskInput, userId: string): Promise<PrismaTask> {
     // Get user's firmId for firm isolation
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -181,10 +165,7 @@ export class TaskService {
   /**
    * Get a single task by ID with firm isolation
    */
-  async getTaskById(
-    taskId: string,
-    firmId: string
-  ): Promise<PrismaTask | null> {
+  async getTaskById(taskId: string, firmId: string): Promise<PrismaTask | null> {
     return await prisma.task.findFirst({
       where: {
         id: taskId,
@@ -310,11 +291,7 @@ export class TaskService {
   /**
    * Cancel a task with optional reason
    */
-  async cancelTask(
-    taskId: string,
-    userId: string,
-    reason?: string
-  ): Promise<PrismaTask> {
+  async cancelTask(taskId: string, userId: string, reason?: string): Promise<PrismaTask> {
     // Get user's firmId for firm isolation
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -347,7 +324,9 @@ export class TaskService {
       where: { id: taskId },
       data: {
         status: TaskStatus.Cancelled,
-        typeMetadata: (reason ? updatedMetadata : existingTask.typeMetadata) as Prisma.InputJsonValue,
+        typeMetadata: (reason
+          ? updatedMetadata
+          : existingTask.typeMetadata) as Prisma.InputJsonValue,
       },
     });
   }

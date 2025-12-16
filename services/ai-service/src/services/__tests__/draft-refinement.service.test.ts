@@ -109,7 +109,8 @@ describe('DraftRefinementService', () => {
 
   const baseRefinementParams: RefinementParams = {
     draftId: 'draft-123',
-    currentBody: 'Bună ziua,\n\nVă mulțumim pentru mesaj. Vom reveni cu un răspuns în curând.\n\nCu stimă,\nAvocat',
+    currentBody:
+      'Bună ziua,\n\nVă mulțumim pentru mesaj. Vom reveni cu un răspuns în curând.\n\nCu stimă,\nAvocat',
     instruction: 'Make it shorter',
     caseContext: mockCaseContext,
     firmId: 'firm-123',
@@ -213,9 +214,10 @@ describe('DraftRefinementService', () => {
     // Helper to create properly chained mock for inline suggestions
     const setupInlineMock = (mockResponse: string | Error) => {
       const mockChain = {
-        invoke: mockResponse instanceof Error
-          ? jest.fn().mockRejectedValue(mockResponse)
-          : jest.fn().mockResolvedValue(mockResponse),
+        invoke:
+          mockResponse instanceof Error
+            ? jest.fn().mockRejectedValue(mockResponse)
+            : jest.fn().mockResolvedValue(mockResponse),
       };
       const mockModelWithPipe = {
         pipe: jest.fn().mockReturnValue(mockChain),
@@ -349,16 +351,22 @@ describe('DraftRefinementService', () => {
       const normalizeInstruction = (service as any).normalizeInstruction.bind(service);
 
       expect(normalizeInstruction('Add more details')).toContain('more details and explanations');
-      expect(normalizeInstruction('Please explain more')).toContain('more details and explanations');
+      expect(normalizeInstruction('Please explain more')).toContain(
+        'more details and explanations'
+      );
       expect(normalizeInstruction('Adaugă detalii')).toContain('more details and explanations');
     });
 
     it('should normalize translation instructions', () => {
       const normalizeInstruction = (service as any).normalizeInstruction.bind(service);
 
-      expect(normalizeInstruction('Translate to Romanian')).toContain('Translate this email to Romanian');
+      expect(normalizeInstruction('Translate to Romanian')).toContain(
+        'Translate this email to Romanian'
+      );
       expect(normalizeInstruction('În română')).toContain('Translate this email to Romanian');
-      expect(normalizeInstruction('Translate to English')).toContain('Translate this email to English');
+      expect(normalizeInstruction('Translate to English')).toContain(
+        'Translate this email to English'
+      );
       expect(normalizeInstruction('În engleză')).toContain('Translate this email to English');
     });
 

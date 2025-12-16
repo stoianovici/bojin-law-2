@@ -17,10 +17,7 @@ process.env.JWT_AUDIENCE = JWT_AUDIENCE_TEST;
 
 import jwt from 'jsonwebtoken';
 import { JWTService, TOKEN_EXPIRY } from '../../src/services/jwt.service';
-import {
-  JWTAccessTokenPayload,
-  JWTRefreshTokenPayload,
-} from '../../src/types/auth.types';
+import { JWTAccessTokenPayload, JWTRefreshTokenPayload } from '../../src/types/auth.types';
 
 describe('JWTService', () => {
   let jwtService: JWTService;
@@ -77,12 +74,8 @@ describe('JWTService', () => {
       const decoded = jwt.decode(token) as JWTAccessTokenPayload;
 
       // Verify expiry is approximately 30 minutes from now
-      expect(decoded.exp).toBeGreaterThanOrEqual(
-        beforeGeneration + TOKEN_EXPIRY.ACCESS_TOKEN
-      );
-      expect(decoded.exp).toBeLessThanOrEqual(
-        afterGeneration + TOKEN_EXPIRY.ACCESS_TOKEN
-      );
+      expect(decoded.exp).toBeGreaterThanOrEqual(beforeGeneration + TOKEN_EXPIRY.ACCESS_TOKEN);
+      expect(decoded.exp).toBeLessThanOrEqual(afterGeneration + TOKEN_EXPIRY.ACCESS_TOKEN);
 
       // Verify issued at timestamp
       expect(decoded.iat).toBeGreaterThanOrEqual(beforeGeneration);
@@ -163,12 +156,8 @@ describe('JWTService', () => {
       const decoded = jwt.decode(token) as JWTRefreshTokenPayload;
 
       // Verify expiry is approximately 7 days from now
-      expect(decoded.exp).toBeGreaterThanOrEqual(
-        beforeGeneration + TOKEN_EXPIRY.REFRESH_TOKEN
-      );
-      expect(decoded.exp).toBeLessThanOrEqual(
-        afterGeneration + TOKEN_EXPIRY.REFRESH_TOKEN
-      );
+      expect(decoded.exp).toBeGreaterThanOrEqual(beforeGeneration + TOKEN_EXPIRY.REFRESH_TOKEN);
+      expect(decoded.exp).toBeLessThanOrEqual(afterGeneration + TOKEN_EXPIRY.REFRESH_TOKEN);
 
       // Verify issued at timestamp
       expect(decoded.iat).toBeGreaterThanOrEqual(beforeGeneration);

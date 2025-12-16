@@ -1,4 +1,5 @@
 # Document Type Discovery Framework
+
 ## Bridging Skills Development (Story 2.12) with Legacy Import (Story 3.2.6)
 
 ---
@@ -7,7 +8,7 @@
 
 This framework defines how the Bojin Law platform progressively discovers, categorizes, and creates skills for document types based on actual usage patterns from legacy document imports. Rather than predefining all possible document types, the system learns from real data and adapts its capabilities accordingly.
 
-**Core Principle:** *Build what's needed, when it's needed, based on actual usage data.*
+**Core Principle:** _Build what's needed, when it's needed, based on actual usage data._
 
 ---
 
@@ -149,9 +150,9 @@ async function analyzePatternsByType(category: string) {
   const typeGroups = await prisma.documentTypeRegistry.findMany({
     where: {
       document_category: category,
-      mapping_status: 'pending'
+      mapping_status: 'pending',
     },
-    orderBy: { total_occurrences: 'desc' }
+    orderBy: { total_occurrences: 'desc' },
   });
 
   for (const typeGroup of typeGroups) {
@@ -203,10 +204,7 @@ priority_weights:
 
 ```typescript
 class TemplateDecisionEngine {
-  async evaluateDocumentType(
-    registry: DocumentTypeRegistry
-  ): Promise<DecisionResult> {
-
+  async evaluateDocumentType(registry: DocumentTypeRegistry): Promise<DecisionResult> {
     // Calculate composite priority score
     const priority = this.calculatePriority(registry);
 
@@ -216,17 +214,17 @@ class TemplateDecisionEngine {
         action: 'create_template',
         priority: 'high',
         skill: this.determineTargetSkill(registry),
-        estimatedEffort: this.estimateTemplateEffort(registry)
+        estimatedEffort: this.estimateTemplateEffort(registry),
       };
     }
 
     // Try to map to existing template
     const mapping = await this.findBestMapping(registry);
-    if (mapping.confidence > 0.80) {
+    if (mapping.confidence > 0.8) {
       return {
         action: 'map_existing',
         targetTemplate: mapping.templateId,
-        confidence: mapping.confidence
+        confidence: mapping.confidence,
       };
     }
 
@@ -236,14 +234,14 @@ class TemplateDecisionEngine {
         action: 'queue_review',
         priority: 'medium',
         suggestedSkill: this.suggestSkill(registry),
-        reason: this.generateReviewReason(registry)
+        reason: this.generateReviewReason(registry),
       };
     }
 
     // Low priority - map to generic
     return {
       action: 'map_generic',
-      priority: 'low'
+      priority: 'low',
     };
   }
 }
@@ -258,30 +256,30 @@ class TemplateDecisionEngine {
 ```javascript
 const CATEGORY_SKILL_MAP = {
   // Contracts & Agreements
-  'contract': 'contract-analysis',
-  'agreement': 'contract-analysis',
-  'protocol': 'contract-analysis',
+  contract: 'contract-analysis',
+  agreement: 'contract-analysis',
+  protocol: 'contract-analysis',
 
   // Document Creation
-  'template': 'document-drafting',
-  'draft': 'document-drafting',
-  'form': 'document-drafting',
+  template: 'document-drafting',
+  draft: 'document-drafting',
+  form: 'document-drafting',
 
   // Legal Proceedings
-  'notice': 'document-drafting',
-  'intampinare': 'document-drafting',
-  'contestatie': 'document-drafting',
-  'cerere': 'document-drafting',
+  notice: 'document-drafting',
+  intampinare: 'document-drafting',
+  contestatie: 'document-drafting',
+  cerere: 'document-drafting',
 
   // Research & Analysis
-  'opinion': 'legal-research',
-  'memorandum': 'legal-research',
-  'analysis': 'legal-research',
+  opinion: 'legal-research',
+  memorandum: 'legal-research',
+  analysis: 'legal-research',
 
   // Compliance
-  'gdpr': 'compliance-check',
-  'audit': 'compliance-check',
-  'regulatory': 'compliance-check'
+  gdpr: 'compliance-check',
+  audit: 'compliance-check',
+  regulatory: 'compliance-check',
 };
 ```
 
@@ -293,47 +291,47 @@ const ROMANIAN_DOCUMENT_TYPES = {
   'contract de vanzare-cumparare': {
     skill: 'contract-analysis',
     template: 'purchase_agreement',
-    priority: 'high'
+    priority: 'high',
   },
   'contract de prestari servicii': {
     skill: 'contract-analysis',
     template: 'service_agreement',
-    priority: 'high'
+    priority: 'high',
   },
   'contract de inchiriere': {
     skill: 'contract-analysis',
     template: 'lease_agreement',
-    priority: 'medium'
+    priority: 'medium',
   },
 
   // Legal Notices (→ Document Drafting)
   'notificare avocateasca': {
     skill: 'document-drafting',
     template: null, // Needs creation
-    priority: 'high'
+    priority: 'high',
   },
   'somatie de plata': {
     skill: 'document-drafting',
     template: null, // Needs creation
-    priority: 'high'
+    priority: 'high',
   },
 
   // Court Documents (→ Document Drafting)
-  'intampinare': {
+  intampinare: {
     skill: 'document-drafting',
     template: null, // Needs creation
-    priority: 'high'
+    priority: 'high',
   },
   'cerere de chemare in judecata': {
     skill: 'document-drafting',
     template: null, // Needs creation
-    priority: 'medium'
+    priority: 'medium',
   },
-  'contestatie': {
+  contestatie: {
     skill: 'document-drafting',
     template: null, // Needs creation
-    priority: 'medium'
-  }
+    priority: 'medium',
+  },
 };
 ```
 
@@ -365,20 +363,19 @@ sequenceDiagram
 
 ```typescript
 class FeedbackLoopManager {
-
   // Weekly analysis job
   async analyzeWeeklyPatterns() {
     const report = {
       newTypesDiscovered: [],
       templatesCreated: [],
       mappingAccuracy: 0,
-      recommendations: []
+      recommendations: [],
     };
 
     // 1. Check for emerging document types
     const emergingTypes = await this.findEmergingTypes({
       minOccurrences: 10,
-      timeWindow: '7 days'
+      timeWindow: '7 days',
     });
 
     // 2. Evaluate mapping accuracy
@@ -389,7 +386,7 @@ class FeedbackLoopManager {
       report.recommendations.push({
         type: 'template_creation',
         items: emergingTypes,
-        estimatedValue: this.calculateBusinessValue(emergingTypes)
+        estimatedValue: this.calculateBusinessValue(emergingTypes),
       });
     }
 
@@ -422,24 +419,28 @@ class FeedbackLoopManager {
 ## 7. Implementation Timeline
 
 ### Phase 1: Foundation (Week 1)
+
 - [ ] Create document_type_registry table
 - [ ] Update AI Document Analyzer to populate registry
 - [ ] Build basic mapping engine
 - [ ] Set up initial threshold configuration
 
 ### Phase 2: Automation (Week 2)
+
 - [ ] Implement decision engine
 - [ ] Create auto-mapping for high-confidence matches
 - [ ] Build review queue system
 - [ ] Add admin dashboard views
 
 ### Phase 3: Feedback Loop (Week 3)
+
 - [ ] Set up weekly analysis jobs
 - [ ] Create template effectiveness tracking
 - [ ] Build recommendation engine
 - [ ] Implement continuous improvement metrics
 
 ### Phase 4: Romanian Specialization (Week 4)
+
 - [ ] Map common Romanian document types
 - [ ] Create first 3 Romanian-specific templates
 - [ ] Add bilingual support to templates
@@ -468,13 +469,13 @@ ORDER BY week DESC;
 
 ### 8.2 Success Indicators
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| **Discovery Coverage** | >95% | Documents successfully categorized |
-| **Auto-Mapping Rate** | >70% | Documents mapped without manual intervention |
-| **Template Creation Time** | <3 days | From discovery to template availability |
-| **Mapping Accuracy** | >85% | Confidence score for automated mappings |
-| **Template Utilization** | >60% | Templates used vs. generic processing |
+| Metric                     | Target  | Measurement                                  |
+| -------------------------- | ------- | -------------------------------------------- |
+| **Discovery Coverage**     | >95%    | Documents successfully categorized           |
+| **Auto-Mapping Rate**      | >70%    | Documents mapped without manual intervention |
+| **Template Creation Time** | <3 days | From discovery to template availability      |
+| **Mapping Accuracy**       | >85%    | Confidence score for automated mappings      |
+| **Template Utilization**   | >60%    | Templates used vs. generic processing        |
 
 ---
 
@@ -541,23 +542,19 @@ class BusinessValueCalculator {
       hourlyRate: 150,
 
       // Template creation cost (hours)
-      templateCreationHours: this.estimateCreationEffort(registry)
+      templateCreationHours: this.estimateCreationEffort(registry),
     };
 
     const monthlySavings =
-      (metrics.timeSavedPerDoc / 60) *
-      metrics.monthlyVolume *
-      metrics.hourlyRate;
+      (metrics.timeSavedPerDoc / 60) * metrics.monthlyVolume * metrics.hourlyRate;
 
-    const creationCost =
-      metrics.templateCreationHours *
-      metrics.hourlyRate;
+    const creationCost = metrics.templateCreationHours * metrics.hourlyRate;
 
     return {
       monthlySavingsEUR: monthlySavings,
       creationCostEUR: creationCost,
       paybackPeriodDays: (creationCost / monthlySavings) * 30,
-      twelveMonthROI: (monthlySavings * 12 - creationCost) / creationCost
+      twelveMonthROI: (monthlySavings * 12 - creationCost) / creationCost,
     };
   }
 }
@@ -568,16 +565,19 @@ class BusinessValueCalculator {
 ## 11. Integration Points
 
 ### With Story 2.12 (Skills Development)
+
 - Registry feeds template creation backlog
 - Skills updated based on discovery patterns
 - Performance metrics feedback to skill optimization
 
 ### With Story 3.2.5 (Legacy Import)
+
 - Real-time type discovery during import
 - Metadata extraction for registry population
 - Sample document collection
 
 ### With Story 3.2.6 (AI Training Pipeline)
+
 - Pattern analysis by document type
 - Template extraction from similar documents
 - Continuous learning from processed documents
@@ -620,15 +620,9 @@ const prisma = new PrismaClient();
 export class DocumentTypeFramework {
   private discovery: DocumentTypeDiscoveryService;
 
-  async processDocument(
-    document: ExtractedDocument,
-    aiAnalysis: AIAnalysisResult
-  ): Promise<void> {
+  async processDocument(document: ExtractedDocument, aiAnalysis: AIAnalysisResult): Promise<void> {
     // 1. Discover and register type
-    const registry = await this.discovery.discoverAndRegister(
-      document,
-      aiAnalysis
-    );
+    const registry = await this.discovery.discoverAndRegister(document, aiAnalysis);
 
     // 2. Evaluate if action needed
     if (registry.total_occurrences % 10 === 0) {
@@ -639,9 +633,7 @@ export class DocumentTypeFramework {
     await this.updateDiscoveryMetrics(registry);
   }
 
-  private async evaluateTypeForAction(
-    registry: DocumentTypeRegistry
-  ): Promise<void> {
+  private async evaluateTypeForAction(registry: DocumentTypeRegistry): Promise<void> {
     const decision = await this.decisionEngine.evaluate(registry);
 
     switch (decision.action) {

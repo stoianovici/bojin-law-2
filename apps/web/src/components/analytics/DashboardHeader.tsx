@@ -39,9 +39,7 @@ export function DashboardHeader({ className = '' }: DashboardHeaderProps) {
         {scope && (
           <span
             className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full ${
-              isBusinessOwner
-                ? 'bg-purple-100 text-purple-700'
-                : 'bg-blue-100 text-blue-700'
+              isBusinessOwner ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
             }`}
           >
             {isBusinessOwner ? (

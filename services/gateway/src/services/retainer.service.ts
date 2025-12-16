@@ -30,10 +30,7 @@ export class RetainerService {
    * @param period - The retainer billing period (Monthly, Quarterly, Annually)
    * @param referenceDate - The date to calculate period boundaries for (defaults to today)
    */
-  getRetainerPeriodDates(
-    period: RetainerPeriod,
-    referenceDate: Date = new Date()
-  ): PeriodDates {
+  getRetainerPeriodDates(period: RetainerPeriod, referenceDate: Date = new Date()): PeriodDates {
     const start = new Date(referenceDate);
     const end = new Date(referenceDate);
 
@@ -131,10 +128,7 @@ export class RetainerService {
    * @param caseId - The case ID
    * @param firmId - The firm ID for authorization scope
    */
-  async calculateCurrentUsage(
-    caseId: string,
-    firmId: string
-  ): Promise<RetainerUsageData | null> {
+  async calculateCurrentUsage(caseId: string, firmId: string): Promise<RetainerUsageData | null> {
     // Get the case with retainer configuration
     const caseData = await prisma.case.findFirst({
       where: {
@@ -159,8 +153,7 @@ export class RetainerService {
     // Get effective rate (use custom rate if set, otherwise firm default)
     const customRates = caseData.customRates as { partnerRate?: number } | null;
     const firmRates = caseData.firm.defaultRates as { partnerRate?: number } | null;
-    const effectiveRate =
-      customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
+    const effectiveRate = customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
 
     if (effectiveRate <= 0) {
       return null;
@@ -171,11 +164,7 @@ export class RetainerService {
     const hoursIncluded = this.getIncludedHours(retainerAmount, effectiveRate);
 
     // Calculate rollover from previous period
-    const rolledOver = await this.calculateRollover(
-      caseId,
-      periodStart,
-      caseData.retainerRollover
-    );
+    const rolledOver = await this.calculateRollover(caseId, periodStart, caseData.retainerRollover);
 
     // Sum hours used in current period from time entries
     const timeEntriesAggregate = await prisma.timeEntry.aggregate({
@@ -196,8 +185,7 @@ export class RetainerService {
     const hoursUsed = Number(timeEntriesAggregate._sum.hours ?? 0);
     const totalAvailable = hoursIncluded + rolledOver;
     const remaining = Math.max(0, totalAvailable - hoursUsed);
-    const utilizationPercent =
-      totalAvailable > 0 ? (hoursUsed / totalAvailable) * 100 : 0;
+    const utilizationPercent = totalAvailable > 0 ? (hoursUsed / totalAvailable) * 100 : 0;
 
     return {
       periodStart,
@@ -239,10 +227,7 @@ export class RetainerService {
 
     // Determine which period to query
     const referenceDate = periodStart || new Date();
-    const { start, end } = this.getRetainerPeriodDates(
-      caseData.retainerPeriod,
-      referenceDate
-    );
+    const { start, end } = this.getRetainerPeriodDates(caseData.retainerPeriod, referenceDate);
 
     // Check if we have a stored usage record for this period
     const storedUsage = await prisma.retainerPeriodUsage.findFirst({
@@ -255,8 +240,7 @@ export class RetainerService {
     // Get effective rate
     const customRates = caseData.customRates as { partnerRate?: number } | null;
     const firmRates = caseData.firm.defaultRates as { partnerRate?: number } | null;
-    const effectiveRate =
-      customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
+    const effectiveRate = customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
 
     if (effectiveRate <= 0) {
       return null;
@@ -290,8 +274,7 @@ export class RetainerService {
     const hoursUsed = Number(timeEntriesAggregate._sum.hours ?? 0);
     const totalAvailable = hoursIncluded + rolledOver;
     const remaining = Math.max(0, totalAvailable - hoursUsed);
-    const utilizationPercent =
-      totalAvailable > 0 ? (hoursUsed / totalAvailable) * 100 : 0;
+    const utilizationPercent = totalAvailable > 0 ? (hoursUsed / totalAvailable) * 100 : 0;
 
     return {
       periodStart: start,
@@ -346,8 +329,7 @@ export class RetainerService {
     // Get effective rate for calculating historical data
     const customRates = caseData.customRates as { partnerRate?: number } | null;
     const firmRates = caseData.firm.defaultRates as { partnerRate?: number } | null;
-    const effectiveRate =
-      customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
+    const effectiveRate = customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
 
     if (effectiveRate <= 0) {
       return [];
@@ -362,8 +344,7 @@ export class RetainerService {
       const rolledOver = Number(record.rolledOver);
       const totalAvailable = hoursIncluded + rolledOver;
       const remaining = Math.max(0, totalAvailable - hoursUsed);
-      const utilizationPercent =
-        totalAvailable > 0 ? (hoursUsed / totalAvailable) * 100 : 0;
+      const utilizationPercent = totalAvailable > 0 ? (hoursUsed / totalAvailable) * 100 : 0;
 
       history.push({
         periodStart: record.periodStart,

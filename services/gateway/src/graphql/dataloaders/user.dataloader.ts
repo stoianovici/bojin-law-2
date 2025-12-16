@@ -21,7 +21,10 @@ interface UserBasicInfo {
  * Collects IDs within a tick and resolves them all at once
  */
 export class UserDataLoader {
-  private batch: Map<string, { resolve: (user: UserBasicInfo | null) => void; reject: (err: Error) => void }[]> = new Map();
+  private batch: Map<
+    string,
+    { resolve: (user: UserBasicInfo | null) => void; reject: (err: Error) => void }[]
+  > = new Map();
   private scheduled = false;
 
   /**

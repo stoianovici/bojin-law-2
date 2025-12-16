@@ -87,9 +87,7 @@ test.describe('Dashboard Accessibility - WCAG AA Compliance', () => {
         const hasLabel =
           (await input.getAttribute('aria-label')) ||
           (await input.getAttribute('aria-labelledby')) ||
-          (await page
-            .locator(`label[for="${await input.getAttribute('id')}"]`)
-            .count()) > 0;
+          (await page.locator(`label[for="${await input.getAttribute('id')}"]`).count()) > 0;
 
         expect(hasLabel).toBeTruthy();
       }

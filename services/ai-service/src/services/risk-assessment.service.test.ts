@@ -74,10 +74,7 @@ describe('RiskAssessmentService', () => {
 
   describe('assessChangeRisk', () => {
     it('should return risk assessment for a change', async () => {
-      const result = await riskAssessmentService.assessChangeRisk(
-        mockChange,
-        mockDocumentContext
-      );
+      const result = await riskAssessmentService.assessChangeRisk(mockChange, mockDocumentContext);
 
       expect(result).toBeDefined();
       expect(result.riskLevel).toBeDefined();
@@ -140,10 +137,7 @@ describe('RiskAssessmentService', () => {
     });
 
     it('should include contributing factors', async () => {
-      const result = await riskAssessmentService.assessChangeRisk(
-        mockChange,
-        mockDocumentContext
-      );
+      const result = await riskAssessmentService.assessChangeRisk(mockChange, mockDocumentContext);
 
       expect(result.factors).toBeDefined();
       expect(Array.isArray(result.factors)).toBe(true);
@@ -207,16 +201,12 @@ describe('RiskAssessmentService', () => {
 
   describe('getLegalChangeTypeRisk', () => {
     it('should return HIGH for LIABILITY_CHANGE', () => {
-      const risk = riskAssessmentService.getLegalChangeTypeRisk(
-        LegalChangeType.LIABILITY_CHANGE
-      );
+      const risk = riskAssessmentService.getLegalChangeTypeRisk(LegalChangeType.LIABILITY_CHANGE);
       expect(risk).toBe(RiskLevel.HIGH);
     });
 
     it('should return HIGH for TERMINATION_CHANGE', () => {
-      const risk = riskAssessmentService.getLegalChangeTypeRisk(
-        LegalChangeType.TERMINATION_CHANGE
-      );
+      const risk = riskAssessmentService.getLegalChangeTypeRisk(LegalChangeType.TERMINATION_CHANGE);
       expect(risk).toBe(RiskLevel.HIGH);
     });
 

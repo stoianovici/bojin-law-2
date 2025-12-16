@@ -22,6 +22,7 @@ This document provides comprehensive documentation for the Azure AD OAuth 2.0 au
 The application uses **Azure AD OAuth 2.0 with PKCE** (Proof Key for Code Exchange) for user authentication. Users sign in with their Microsoft 365 credentials and are automatically provisioned in the database with "Pending" status until activated by a Partner.
 
 **Key Features:**
+
 - Single Sign-On (SSO) with Microsoft 365
 - OAuth 2.0 Authorization Code Flow with PKCE
 - JWT-based access tokens (30-minute expiry)
@@ -78,6 +79,7 @@ The application uses **Azure AD OAuth 2.0 with PKCE** (Proof Key for Code Exchan
 ### Step 5: Note Configuration Details
 
 Copy the following values for environment variables:
+
 - **Application (client) ID** → `AZURE_AD_CLIENT_ID`
 - **Directory (tenant) ID** → `AZURE_AD_TENANT_ID`
 - **Client secret** (from Step 3) → `AZURE_AD_CLIENT_SECRET`
@@ -110,6 +112,7 @@ REDIS_URL=<redis-connection-string>
 ```
 
 **Generating Secrets:**
+
 ```bash
 # Generate secure random secrets (32+ characters)
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -250,12 +253,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 Initiates OAuth 2.0 authorization flow with Azure AD.
 
 **Request:**
+
 ```http
 GET /auth/login HTTP/1.1
 Host: bojin-law.onrender.com
 ```
 
 **Response:**
+
 ```http
 HTTP/1.1 302 Found
 Location: https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize?
@@ -269,11 +274,13 @@ Location: https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize?
 ```
 
 **Behavior:**
+
 1. Generates authorization URL with PKCE parameters
 2. Stores PKCE session in Redis (15-minute TTL)
 3. Redirects user to Azure AD login page
 
 **Error Responses:**
+
 ```json
 {
   "error": "oauth_error",
@@ -288,12 +295,14 @@ Location: https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize?
 Handles OAuth callback from Azure AD after user authentication.
 
 **Request:**
+
 ```http
 GET /auth/callback?code={authorization-code}&state={state} HTTP/1.1
 Host: bojin-law.onrender.com
 ```
 
 **Success Response (200 OK):**
+
 ```json
 {
   "message": "Authentication successful",
@@ -317,6 +326,7 @@ Host: bojin-law.onrender.com
 **Error Responses:**
 
 **Pending User (403 Forbidden):**
+
 ```json
 {
   "error": "account_pending_activation",
@@ -327,6 +337,7 @@ Host: bojin-law.onrender.com
 ```
 
 **Inactive User (403 Forbidden):**
+
 ```json
 {
   "error": "account_inactive",
@@ -337,6 +348,7 @@ Host: bojin-law.onrender.com
 ```
 
 **Invalid State (400 Bad Request):**
+
 ```json
 {
   "error": "invalid_state",
@@ -351,6 +363,7 @@ Host: bojin-law.onrender.com
 Refreshes access token using Azure AD refresh token from session.
 
 **Request:**
+
 ```http
 POST /auth/refresh HTTP/1.1
 Host: bojin-law.onrender.com
@@ -358,6 +371,7 @@ Cookie: sid=session-id
 ```
 
 **Success Response (200 OK):**
+
 ```json
 {
   "message": "Token refreshed successfully",
@@ -372,6 +386,7 @@ Cookie: sid=session-id
 **Error Responses:**
 
 **No Session (401 Unauthorized):**
+
 ```json
 {
   "error": "session_not_found",
@@ -380,6 +395,7 @@ Cookie: sid=session-id
 ```
 
 **Expired Refresh Token (401 Unauthorized):**
+
 ```json
 {
   "error": "refresh_token_expired",
@@ -394,6 +410,7 @@ Cookie: sid=session-id
 Logs out user by destroying session and clearing cookies.
 
 **Request:**
+
 ```http
 POST /auth/logout HTTP/1.1
 Host: bojin-law.onrender.com
@@ -401,6 +418,7 @@ Cookie: sid=session-id
 ```
 
 **Success Response (200 OK):**
+
 ```json
 {
   "message": "Logged out successfully"
@@ -410,6 +428,7 @@ Cookie: sid=session-id
 **Error Responses:**
 
 **No Session (200 OK - Graceful):**
+
 ```json
 {
   "message": "No active session found"
@@ -423,6 +442,7 @@ Cookie: sid=session-id
 JWT access tokens are used for API authentication and contain user identity claims.
 
 **Claims:**
+
 ```json
 {
   "iss": "https://bojin-law.onrender.com",
@@ -440,6 +460,7 @@ JWT access tokens are used for API authentication and contain user identity clai
 ```
 
 **Usage:**
+
 ```http
 GET /api/cases HTTP/1.1
 Authorization: Bearer {access-token}
@@ -450,6 +471,7 @@ Authorization: Bearer {access-token}
 Refresh tokens are used to obtain new access tokens without re-authentication.
 
 **Claims:**
+
 ```json
 {
   "iss": "https://bojin-law.onrender.com",
@@ -462,10 +484,12 @@ Refresh tokens are used to obtain new access tokens without re-authentication.
 ```
 
 **Storage:**
+
 - Access Token: In-memory (React state/context) - cleared on page refresh
 - Refresh Token: httpOnly session cookie - inaccessible to JavaScript
 
 **Security:**
+
 - Algorithm: HS256 (HMAC-SHA256)
 - Signature: Verified using `JWT_SECRET`
 - Expiry: Strictly enforced (access: 30min, refresh: 7 days)
@@ -479,6 +503,7 @@ Sessions are stored in Redis with the following structure:
 **Session Key Format:** `sess:{session-id}`
 
 **Session Data (JSON):**
+
 ```json
 {
   "userId": "user-uuid",
@@ -496,6 +521,7 @@ Sessions are stored in Redis with the following structure:
 ```
 
 **Configuration:**
+
 - **TTL**: 7 days (604,800 seconds)
 - **Cleanup**: Automatic via Redis TTL expiration
 - **Storage**: Redis backend via `connect-redis`
@@ -505,6 +531,7 @@ Sessions are stored in Redis with the following structure:
 **Name:** `sid` (session ID)
 
 **Configuration:**
+
 ```javascript
 {
   httpOnly: true,              // Prevent JavaScript access
@@ -556,22 +583,14 @@ Protect routes by required roles:
 import { authenticateJWT, requireRole } from './middleware/auth.middleware';
 
 // Partner-only endpoint
-router.get('/admin/users',
-  authenticateJWT,
-  requireRole(['Partner']),
-  (req, res) => {
-    // Only Partners can access
-  }
-);
+router.get('/admin/users', authenticateJWT, requireRole(['Partner']), (req, res) => {
+  // Only Partners can access
+});
 
 // Partner or Associate endpoint
-router.post('/cases',
-  authenticateJWT,
-  requireRole(['Partner', 'Associate']),
-  (req, res) => {
-    // Partners and Associates can access
-  }
-);
+router.post('/cases', authenticateJWT, requireRole(['Partner', 'Associate']), (req, res) => {
+  // Partners and Associates can access
+});
 ```
 
 ### Status-Based Access
@@ -581,16 +600,13 @@ Users must have "Active" status to access the application:
 ```typescript
 import { authenticateJWT, requireActiveUser } from './middleware/auth.middleware';
 
-router.get('/dashboard',
-  authenticateJWT,
-  requireActiveUser,
-  (req, res) => {
-    // Only Active users can access
-  }
-);
+router.get('/dashboard', authenticateJWT, requireActiveUser, (req, res) => {
+  // Only Active users can access
+});
 ```
 
 **Status Values:**
+
 - **Pending**: New user awaiting Partner activation (no access)
 - **Active**: User can access application
 - **Inactive**: User deactivated by Partner (no access)
@@ -616,6 +632,7 @@ When a user signs in for the first time:
 ### User Activation (Story 2.4.1)
 
 Partners activate pending users via the Partner User Management UI:
+
 1. View all pending users
 2. Assign role (Partner, Associate, Paralegal)
 3. Assign to firm
@@ -634,6 +651,7 @@ WHERE email = 'user@lawfirm.ro';
 ### Subsequent Logins
 
 For existing users:
+
 1. User found by `azureAdId` (unique)
 2. `lastActive` timestamp updated
 3. User status validated:
@@ -650,12 +668,13 @@ For existing users:
 **Cause:** Access token not included in API request
 
 **Solution:**
+
 ```javascript
 // Include Bearer token in Authorization header
 fetch('/api/cases', {
   headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+    Authorization: `Bearer ${accessToken}`,
+  },
 });
 ```
 
@@ -666,11 +685,12 @@ fetch('/api/cases', {
 **Cause:** Access token expired (30-minute lifetime)
 
 **Solution:**
+
 ```javascript
 // Call refresh endpoint to get new access token
 const response = await fetch('/auth/refresh', {
   method: 'POST',
-  credentials: 'include' // Include session cookie
+  credentials: 'include', // Include session cookie
 });
 
 const { tokens } = await response.json();
@@ -684,6 +704,7 @@ const { tokens } = await response.json();
 **Cause:** New user not yet activated by Partner
 
 **Solution:**
+
 - Contact your firm's Partner to activate your account
 - Partners can activate users via Story 2.4.1 (Partner User Management UI)
 - Temporary workaround: Manual database update (see User Provisioning)
@@ -695,6 +716,7 @@ const { tokens } = await response.json();
 **Cause:** PKCE session expired or state mismatch
 
 **Solution:**
+
 - PKCE sessions have 15-minute TTL
 - User took too long to authenticate
 - Retry login flow from beginning
@@ -706,6 +728,7 @@ const { tokens } = await response.json();
 **Cause:** Redis session expired or not found
 
 **Solution:**
+
 - Sessions expire after 7 days of inactivity
 - User must re-authenticate via `/auth/login`
 - Check Redis connectivity if persistent
@@ -717,6 +740,7 @@ const { tokens } = await response.json();
 **Cause:** JWT_SECRET mismatch or token tampered with
 
 **Solution:**
+
 - Verify `JWT_SECRET` matches value used to sign tokens
 - Do not manually edit JWT tokens
 - Re-authenticate to get fresh tokens
@@ -773,19 +797,19 @@ tail -f logs/postgresql.log
 
 ### Error Codes Reference
 
-| Error Code | Status | Description | Solution |
-|------------|--------|-------------|----------|
-| `unauthorized` | 401 | Missing or invalid authorization | Include valid Bearer token |
-| `token_expired` | 401 | Access token expired | Call `/auth/refresh` |
-| `invalid_token` | 401 | Token signature invalid | Re-authenticate |
-| `session_not_found` | 401 | Redis session not found | Re-authenticate |
-| `refresh_token_expired` | 401 | Refresh token expired | Re-authenticate |
-| `account_pending_activation` | 403 | User status is Pending | Contact Partner for activation |
-| `account_inactive` | 403 | User status is Inactive | Contact administrator |
-| `forbidden` | 403 | Insufficient role permissions | Request role upgrade from Partner |
-| `invalid_state` | 400 | OAuth state mismatch or expired | Retry login flow |
-| `oauth_error` | 500 | OAuth flow initialization failed | Check Azure AD configuration |
-| `authentication_failed` | 500 | General authentication error | Check logs for details |
+| Error Code                   | Status | Description                      | Solution                          |
+| ---------------------------- | ------ | -------------------------------- | --------------------------------- |
+| `unauthorized`               | 401    | Missing or invalid authorization | Include valid Bearer token        |
+| `token_expired`              | 401    | Access token expired             | Call `/auth/refresh`              |
+| `invalid_token`              | 401    | Token signature invalid          | Re-authenticate                   |
+| `session_not_found`          | 401    | Redis session not found          | Re-authenticate                   |
+| `refresh_token_expired`      | 401    | Refresh token expired            | Re-authenticate                   |
+| `account_pending_activation` | 403    | User status is Pending           | Contact Partner for activation    |
+| `account_inactive`           | 403    | User status is Inactive          | Contact administrator             |
+| `forbidden`                  | 403    | Insufficient role permissions    | Request role upgrade from Partner |
+| `invalid_state`              | 400    | OAuth state mismatch or expired  | Retry login flow                  |
+| `oauth_error`                | 500    | OAuth flow initialization failed | Check Azure AD configuration      |
+| `authentication_failed`      | 500    | General authentication error     | Check logs for details            |
 
 ---
 
@@ -794,11 +818,13 @@ tail -f logs/postgresql.log
 ### Token Storage
 
 ✅ **DO:**
+
 - Store access tokens in memory (React state/context)
 - Store refresh tokens in httpOnly cookies
 - Clear tokens on page refresh/logout
 
 ❌ **DON'T:**
+
 - Store tokens in localStorage (vulnerable to XSS)
 - Store tokens in sessionStorage (vulnerable to XSS)
 - Log tokens in console or error messages
@@ -819,6 +845,7 @@ tail -f logs/postgresql.log
 ### Rate Limiting (Future Enhancement)
 
 Recommended rate limits:
+
 - Login: 5 attempts per minute per IP
 - Token refresh: 10 per minute per session
 - Failed auth: Exponential backoff

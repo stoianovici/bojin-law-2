@@ -8,10 +8,7 @@
  * - Others: null scope (no financial access)
  */
 
-import {
-  useFinancialAccess,
-  type FinancialDataScope,
-} from '../contexts/FinancialAccessContext';
+import { useFinancialAccess, type FinancialDataScope } from '../contexts/FinancialAccessContext';
 
 /**
  * Return type for useFinancialDataScope hook
@@ -59,8 +56,7 @@ export interface UseFinancialDataScopeReturn {
  * ```
  */
 export function useFinancialDataScope(): UseFinancialDataScopeReturn {
-  const { financialDataScope, isBusinessOwner, hasFinancialAccess } =
-    useFinancialAccess();
+  const { financialDataScope, isBusinessOwner, hasFinancialAccess } = useFinancialAccess();
 
   return {
     scope: financialDataScope,

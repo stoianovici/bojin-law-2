@@ -58,8 +58,8 @@ describe('CostValidator', () => {
       // With skills, using 600 tokens with Haiku (cheap)
       for (let i = 0; i < 100; i++) {
         dashboard.recordRequest(mockDecision, {
-          tokensUsed: 600,    // Using 600 tokens with skills
-          tokensSaved: 400,   // Saved 400 tokens compared to baseline
+          tokensUsed: 600, // Using 600 tokens with skills
+          tokensSaved: 400, // Saved 400 tokens compared to baseline
           effectiveness: 0.85,
         });
       }
@@ -202,19 +202,25 @@ describe('CostValidator', () => {
 
       // 30% with skills
       for (let i = 0; i < 3; i++) {
-        dashboard.recordRequest(withSkills, { tokensUsed: 700, tokensSaved: 300, effectiveness: 0.85 });
+        dashboard.recordRequest(withSkills, {
+          tokensUsed: 700,
+          tokensSaved: 300,
+          effectiveness: 0.85,
+        });
       }
 
       // 70% without skills
       for (let i = 0; i < 7; i++) {
-        dashboard.recordRequest(withoutSkills, { tokensUsed: 1000, tokensSaved: 0, effectiveness: 0.5 });
+        dashboard.recordRequest(withoutSkills, {
+          tokensUsed: 1000,
+          tokensSaved: 0,
+          effectiveness: 0.5,
+        });
       }
 
       const report = validator.validateCostSavings(1);
 
-      const skillsUtilizationOpp = report.opportunities.find(o =>
-        o.area.includes('Utilization')
-      );
+      const skillsUtilizationOpp = report.opportunities.find((o) => o.area.includes('Utilization'));
 
       expect(skillsUtilizationOpp).toBeDefined();
       expect(skillsUtilizationOpp?.priority).toBe('high');
@@ -242,9 +248,7 @@ describe('CostValidator', () => {
 
       const report = validator.validateCostSavings(1);
 
-      const modelDistOpp = report.opportunities.find(o =>
-        o.area.includes('Model Distribution')
-      );
+      const modelDistOpp = report.opportunities.find((o) => o.area.includes('Model Distribution'));
 
       expect(modelDistOpp).toBeDefined();
     });
@@ -275,8 +279,8 @@ describe('CostValidator', () => {
 
       expect(report.achievements.length).toBeGreaterThan(0);
       // Should mention meeting target or cost savings
-      const hasTargetAchievement = report.achievements.some(a =>
-        a.includes('cost savings') || a.includes('target')
+      const hasTargetAchievement = report.achievements.some(
+        (a) => a.includes('cost savings') || a.includes('target')
       );
       expect(hasTargetAchievement).toBe(true);
     });
@@ -303,8 +307,8 @@ describe('CostValidator', () => {
 
       const report = validator.validateCostSavings(1);
 
-      const skillsUsageAchievement = report.achievements.some(a =>
-        a.includes('requests') && a.includes('skills')
+      const skillsUsageAchievement = report.achievements.some(
+        (a) => a.includes('requests') && a.includes('skills')
       );
       expect(skillsUsageAchievement).toBe(true);
     });
@@ -357,9 +361,9 @@ describe('CostValidator', () => {
 
       const report = validator.validateCostSavings(1);
 
-      if (report.opportunities.some(o => o.priority === 'high')) {
-        const hasOpportunityRec = report.recommendations.some(r =>
-          r.includes('optimization') || r.includes('opportunities')
+      if (report.opportunities.some((o) => o.priority === 'high')) {
+        const hasOpportunityRec = report.recommendations.some(
+          (r) => r.includes('optimization') || r.includes('opportunities')
         );
         expect(hasOpportunityRec).toBe(true);
       }

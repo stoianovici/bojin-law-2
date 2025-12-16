@@ -65,13 +65,7 @@ describe('SearchResults', () => {
   describe('Loading state', () => {
     it('should show loading spinner when loading and no results', () => {
       render(
-        <SearchResults
-          results={[]}
-          query="test"
-          totalCount={0}
-          searchTime={0}
-          loading={true}
-        />
+        <SearchResults results={[]} query="test" totalCount={0} searchTime={0} loading={true} />
       );
 
       expect(screen.getByText('Searching...')).toBeInTheDocument();
@@ -109,17 +103,11 @@ describe('SearchResults', () => {
     });
 
     it('should show prompt when no query provided', () => {
-      render(
-        <SearchResults
-          results={[]}
-          query=""
-          totalCount={0}
-          searchTime={0}
-          loading={false}
-        />
-      );
+      render(<SearchResults results={[]} query="" totalCount={0} searchTime={0} loading={false} />);
 
-      expect(screen.getByText('Enter a search query to find cases and documents.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Enter a search query to find cases and documents.')
+      ).toBeInTheDocument();
     });
   });
 
@@ -491,19 +479,14 @@ describe('SearchResults', () => {
     it('should show correct colors for different statuses', () => {
       const statuses = ['Active', 'PendingApproval', 'OnHold', 'Closed', 'Archived'];
 
-      statuses.forEach(status => {
+      statuses.forEach((status) => {
         const result = {
           ...mockCaseResult,
           case: { ...mockCaseResult.case, status },
         };
 
         const { unmount } = render(
-          <SearchResults
-            results={[result as any]}
-            query="test"
-            totalCount={1}
-            searchTime={100}
-          />
+          <SearchResults results={[result as any]} query="test" totalCount={1} searchTime={100} />
         );
 
         // Status should be displayed with proper spacing
@@ -522,12 +505,7 @@ describe('SearchResults', () => {
         document: { ...mockDocumentResult.document, fileType: 'application/pdf' },
       };
       render(
-        <SearchResults
-          results={[pdfResult as any]}
-          query="test"
-          totalCount={1}
-          searchTime={100}
-        />
+        <SearchResults results={[pdfResult as any]} query="test" totalCount={1} searchTime={100} />
       );
 
       expect(screen.getByText('PDF')).toBeInTheDocument();
@@ -542,12 +520,7 @@ describe('SearchResults', () => {
         },
       };
       render(
-        <SearchResults
-          results={[docxResult as any]}
-          query="test"
-          totalCount={1}
-          searchTime={100}
-        />
+        <SearchResults results={[docxResult as any]} query="test" totalCount={1} searchTime={100} />
       );
 
       expect(screen.getByText('DOCX')).toBeInTheDocument();

@@ -96,9 +96,7 @@ export function ExportDialog({
   // Toggle channel type
   const handleChannelToggle = useCallback((channel: CommunicationChannel) => {
     setChannelTypes((prev) =>
-      prev.includes(channel)
-        ? prev.filter((c) => c !== channel)
-        : [...prev, channel]
+      prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel]
     );
   }, []);
 
@@ -178,9 +176,7 @@ export function ExportDialog({
 
             {/* Format Selection */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Export Format
-              </label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Export Format</label>
               <div className="grid grid-cols-2 gap-2">
                 {formats.map((f) => (
                   <button
@@ -250,9 +246,7 @@ export function ExportDialog({
                 <Filter className="h-4 w-4" />
                 Communication Types (Optional)
               </label>
-              <p className="mb-2 text-xs text-gray-500">
-                Leave empty to include all types
-              </p>
+              <p className="mb-2 text-xs text-gray-500">Leave empty to include all types</p>
               <div className="flex flex-wrap gap-2">
                 {CHANNEL_OPTIONS.map((channel) => (
                   <button
@@ -310,12 +304,8 @@ export function ExportDialog({
         {step === 'processing' && (
           <div className="flex flex-col items-center justify-center py-8">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              Generating Export
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              This may take a few moments...
-            </p>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">Generating Export</h3>
+            <p className="mt-1 text-sm text-gray-500">This may take a few moments...</p>
             {exportData && (
               <p className="mt-4 text-sm text-gray-600">
                 Processing {exportData.totalEntries} entries
@@ -328,12 +318,8 @@ export function ExportDialog({
         {step === 'complete' && exportData && (
           <div className="flex flex-col items-center justify-center py-8">
             <CheckCircle className="h-12 w-12 text-green-500" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              Export Ready
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {exportData.totalEntries} entries exported
-            </p>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">Export Ready</h3>
+            <p className="mt-1 text-sm text-gray-500">{exportData.totalEntries} entries exported</p>
 
             {exportData.expiresAt && (
               <p className="mt-2 text-xs text-gray-400">
@@ -363,9 +349,7 @@ export function ExportDialog({
         {step === 'error' && (
           <div className="flex flex-col items-center justify-center py-8">
             <XCircle className="h-12 w-12 text-red-500" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              Export Failed
-            </h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">Export Failed</h3>
             <p className="mt-1 text-sm text-gray-500">
               {exportData?.errorMessage || 'An error occurred while generating the export'}
             </p>

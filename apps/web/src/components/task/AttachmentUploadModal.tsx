@@ -182,9 +182,7 @@ export function AttachmentUploadModal({
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragging
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
+            isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
           }`}
         >
           <input
@@ -233,18 +231,11 @@ export function AttachmentUploadModal({
         {files.length > 0 && (
           <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
             {files.map((file, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg"
-              >
+              <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                 <span className="text-xl">{getFileIcon(file.type)}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {file.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formatFileSize(file.size)}
-                  </p>
+                  <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                  <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                 </div>
                 {uploading ? (
                   <div className="w-16">

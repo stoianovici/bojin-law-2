@@ -6,11 +6,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  BulkCommunicationStatus,
-  BulkRecipientType,
-  CommunicationChannel,
-} from '@prisma/client';
+import { BulkCommunicationStatus, BulkRecipientType, CommunicationChannel } from '@prisma/client';
 import { communicationTemplateService } from './communication-template.service';
 import { GraphService } from './graph.service';
 
@@ -301,7 +297,7 @@ export class BulkCommunicationService {
       throw new Error('Bulk communication is not in draft status');
     }
 
-    const recipients = (bulkComm.recipients as unknown) as ResolvedRecipient[];
+    const recipients = bulkComm.recipients as unknown as ResolvedRecipient[];
     if (recipients.length === 0) {
       throw new Error('No recipients resolved. Call resolveRecipients first.');
     }
@@ -597,29 +593,29 @@ export class BulkCommunicationService {
 
       // Send email using the Graph API with app permissions
       // Note: With application permissions, we need to specify the sender
-      await appClient
-        .api(`/users/${bulkComm.creator.email}/sendMail`)
-        .post({
-          message: {
-            subject: bulkComm.subject,
-            body: {
-              contentType: bulkComm.htmlBody ? 'HTML' : 'Text',
-              content: bulkComm.htmlBody || bulkComm.body,
-            },
-            toRecipients: [
-              {
-                emailAddress: {
-                  address: log.recipientEmail,
-                },
-              },
-            ],
+      await appClient.api(`/users/${bulkComm.creator.email}/sendMail`).post({
+        message: {
+          subject: bulkComm.subject,
+          body: {
+            contentType: bulkComm.htmlBody ? 'HTML' : 'Text',
+            content: bulkComm.htmlBody || bulkComm.body,
           },
-          saveToSentItems: true,
-        });
+          toRecipients: [
+            {
+              emailAddress: {
+                address: log.recipientEmail,
+              },
+            },
+          ],
+        },
+        saveToSentItems: true,
+      });
     } catch (error: any) {
       // Check if this is a development environment without Graph API configured
-      if (error.message?.includes('Failed to initialize app-only Graph client') ||
-          error.message?.includes('Failed to acquire')) {
+      if (
+        error.message?.includes('Failed to initialize app-only Graph client') ||
+        error.message?.includes('Failed to acquire')
+      ) {
         console.warn(`Graph API not configured for bulk comm ${bulkCommId}, simulating send`);
         await new Promise((resolve) => setTimeout(resolve, 50));
         return;

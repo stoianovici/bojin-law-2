@@ -129,36 +129,17 @@ function calculateDelta(current: number, previous: number): KPIDelta {
 /**
  * Calculate all deltas between current and previous KPIs
  */
-function calculateDeltas(
-  current: FinancialKPIs,
-  previous: FinancialKPIs
-): FinancialKPIsDeltas {
+function calculateDeltas(current: FinancialKPIs, previous: FinancialKPIs): FinancialKPIsDeltas {
   return {
     totalRevenue: calculateDelta(current.totalRevenue, previous.totalRevenue),
-    totalBillableHours: calculateDelta(
-      current.totalBillableHours,
-      previous.totalBillableHours
-    ),
-    utilizationRate: calculateDelta(
-      current.utilizationRate,
-      previous.utilizationRate
-    ),
-    realizationRate: calculateDelta(
-      current.realizationRate,
-      previous.realizationRate
-    ),
-    effectiveHourlyRate: calculateDelta(
-      current.effectiveHourlyRate,
-      previous.effectiveHourlyRate
-    ),
+    totalBillableHours: calculateDelta(current.totalBillableHours, previous.totalBillableHours),
+    utilizationRate: calculateDelta(current.utilizationRate, previous.utilizationRate),
+    realizationRate: calculateDelta(current.realizationRate, previous.realizationRate),
+    effectiveHourlyRate: calculateDelta(current.effectiveHourlyRate, previous.effectiveHourlyRate),
     caseCount: calculateDelta(current.caseCount, previous.caseCount),
     retainerUtilizationAverage:
-      current.retainerUtilizationAverage !== null &&
-      previous.retainerUtilizationAverage !== null
-        ? calculateDelta(
-            current.retainerUtilizationAverage,
-            previous.retainerUtilizationAverage
-          )
+      current.retainerUtilizationAverage !== null && previous.retainerUtilizationAverage !== null
+        ? calculateDelta(current.retainerUtilizationAverage, previous.retainerUtilizationAverage)
         : null,
   };
 }
@@ -190,12 +171,7 @@ function calculateDeltas(
 export function useFinancialKPIsComparison(
   options: UseFinancialKPIsComparisonOptions
 ): UseFinancialKPIsComparisonReturn {
-  const {
-    dateRange,
-    previousDateRange,
-    comparisonEnabled = true,
-    skip = false,
-  } = options;
+  const { dateRange, previousDateRange, comparisonEnabled = true, skip = false } = options;
 
   // Fetch current period KPIs
   const currentOptions: UseFinancialKPIsOptions = {

@@ -46,11 +46,14 @@ export interface CompletenessCheckResult {
 }
 
 // Document completeness rules for Romanian legal documents
-export const DOCUMENT_COMPLETENESS_RULES: Record<string, {
-  required: string[];
-  recommended: string[];
-  signatureBlocks: number;
-}> = {
+export const DOCUMENT_COMPLETENESS_RULES: Record<
+  string,
+  {
+    required: string[];
+    recommended: string[];
+    signatureBlocks: number;
+  }
+> = {
   Contract: {
     required: ['parties', 'object', 'price', 'signatures', 'date'],
     recommended: ['witnesses', 'notarization'],
@@ -144,18 +147,22 @@ export class DocumentCompletenessService {
         documentId,
         documentType: documentType || 'Unknown',
         completenessScore: 0,
-        missingItems: [{
-          item: 'Document content',
-          severity: 'required',
-          suggestion: 'The document appears to be empty or has very little content. Please add content to the document.',
-        }],
+        missingItems: [
+          {
+            item: 'Document content',
+            severity: 'required',
+            suggestion:
+              'The document appears to be empty or has very little content. Please add content to the document.',
+          },
+        ],
         suggestions: ['Add content to the document before checking completeness'],
       };
     }
 
     // Normalize document type for rules lookup
     const normalizedType = this.normalizeDocumentType(documentType);
-    const rules = DOCUMENT_COMPLETENESS_RULES[normalizedType] || DOCUMENT_COMPLETENESS_RULES['Contract'];
+    const rules =
+      DOCUMENT_COMPLETENESS_RULES[normalizedType] || DOCUMENT_COMPLETENESS_RULES['Contract'];
 
     // Perform AI-based completeness check
     const result = await this.performAICompletenessCheck(
@@ -213,7 +220,8 @@ export class DocumentCompletenessService {
 
     try {
       const request: ProviderRequest = {
-        systemPrompt: 'You are a legal document completeness analyzer for a Romanian law firm. Analyze documents for missing or incomplete elements. Always respond with valid JSON.',
+        systemPrompt:
+          'You are a legal document completeness analyzer for a Romanian law firm. Analyze documents for missing or incomplete elements. Always respond with valid JSON.',
         prompt,
         model: ClaudeModel.Haiku, // Use Haiku for fast analysis
         maxTokens: 1500,
@@ -248,10 +256,10 @@ Analyze the following ${documentType} document for completeness.
 DOCUMENT TITLE: ${documentTitle}
 
 REQUIRED ELEMENTS for ${documentType}:
-${rules.required.map(r => `- ${r}`).join('\n')}
+${rules.required.map((r) => `- ${r}`).join('\n')}
 
 RECOMMENDED ELEMENTS:
-${rules.recommended.map(r => `- ${r}`).join('\n')}
+${rules.recommended.map((r) => `- ${r}`).join('\n')}
 
 SIGNATURE BLOCKS EXPECTED: ${rules.signatureBlocks}
 
@@ -297,7 +305,10 @@ Respond ONLY with the JSON, no additional text.
       // Extract JSON from response (handle markdown code blocks)
       let jsonStr = response.trim();
       if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+        jsonStr = jsonStr
+          .replace(/```json?\n?/g, '')
+          .replace(/```/g, '')
+          .trim();
       }
 
       const parsed = JSON.parse(jsonStr);
@@ -339,11 +350,13 @@ Respond ONLY with the JSON, no additional text.
         documentId,
         documentType,
         completenessScore: 0.5, // Unknown, assume partial
-        missingItems: [{
-          item: 'Analysis incomplete',
-          severity: 'recommended',
-          suggestion: 'Could not fully analyze document. Please review manually.',
-        }],
+        missingItems: [
+          {
+            item: 'Analysis incomplete',
+            severity: 'recommended',
+            suggestion: 'Could not fully analyze document. Please review manually.',
+          },
+        ],
         suggestions: ['Manual review recommended'],
       };
     }
@@ -366,7 +379,7 @@ Respond ONLY with the JSON, no additional text.
     // Check required elements
     for (const required of rules.required) {
       const patterns = this.getElementPatterns(required);
-      const found = patterns.some(pattern => contentLower.includes(pattern.toLowerCase()));
+      const found = patterns.some((pattern) => contentLower.includes(pattern.toLowerCase()));
 
       if (found) {
         foundCount++;
@@ -382,7 +395,7 @@ Respond ONLY with the JSON, no additional text.
     // Check recommended elements
     for (const recommended of rules.recommended) {
       const patterns = this.getElementPatterns(recommended);
-      const found = patterns.some(pattern => contentLower.includes(pattern.toLowerCase()));
+      const found = patterns.some((pattern) => contentLower.includes(pattern.toLowerCase()));
 
       if (!found) {
         missingItems.push({
@@ -411,10 +424,10 @@ Respond ONLY with the JSON, no additional text.
     const completenessScore = totalRequired > 0 ? foundCount / totalRequired : 0;
 
     const suggestions: string[] = [];
-    if (missingItems.filter(m => m.severity === 'required').length > 0) {
+    if (missingItems.filter((m) => m.severity === 'required').length > 0) {
       suggestions.push('Review and add all required elements before finalizing');
     }
-    if (missingItems.filter(m => m.severity === 'recommended').length > 0) {
+    if (missingItems.filter((m) => m.severity === 'recommended').length > 0) {
       suggestions.push('Consider adding recommended elements for a more complete document');
     }
 
@@ -432,9 +445,28 @@ Respond ONLY with the JSON, no additional text.
    */
   private getElementPatterns(element: string): string[] {
     const patterns: Record<string, string[]> = {
-      parties: ['părți', 'parties', 'între', 'between', 'vânzător', 'seller', 'cumpărător', 'buyer'],
+      parties: [
+        'părți',
+        'parties',
+        'între',
+        'between',
+        'vânzător',
+        'seller',
+        'cumpărător',
+        'buyer',
+      ],
       object: ['obiect', 'object', 'obiectul contractului', 'subject matter'],
-      price: ['preț', 'price', 'valoare', 'value', 'contravaloare', 'consideration', 'lei', 'ron', 'eur'],
+      price: [
+        'preț',
+        'price',
+        'valoare',
+        'value',
+        'contravaloare',
+        'consideration',
+        'lei',
+        'ron',
+        'eur',
+      ],
       signatures: ['semnătură', 'signature', 'signed', 'semnat'],
       date: ['data', 'date', 'încheiat la', 'executed on'],
       witnesses: ['martor', 'witness', 'în prezența'],
@@ -530,21 +562,18 @@ Respond ONLY with the JSON, no additional text.
   /**
    * Get recent completeness checks for a document
    */
-  async getRecentChecks(
-    documentId: string,
-    limit: number = 5
-  ): Promise<CompletenessCheckResult[]> {
+  async getRecentChecks(documentId: string, limit: number = 5): Promise<CompletenessCheckResult[]> {
     const checks = await prisma.documentCompletenessCheck.findMany({
       where: { documentId },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
 
-    return checks.map(check => ({
+    return checks.map((check) => ({
       documentId: check.documentId,
       documentType: check.documentType,
       completenessScore: check.completeness,
-      missingItems: (check.missingItems as unknown) as MissingItem[],
+      missingItems: check.missingItems as unknown as MissingItem[],
       suggestions: [], // Schema doesn't store suggestions, generate default
     }));
   }
@@ -556,12 +585,14 @@ Respond ONLY with the JSON, no additional text.
     firmId: string,
     threshold: number = 0.7,
     limit: number = 20
-  ): Promise<Array<{
-    documentId: string;
-    documentType: string;
-    completenessScore: number;
-    checkedAt: Date;
-  }>> {
+  ): Promise<
+    Array<{
+      documentId: string;
+      documentType: string;
+      completenessScore: number;
+      checkedAt: Date;
+    }>
+  > {
     const checks = await prisma.documentCompletenessCheck.findMany({
       where: {
         firmId,
@@ -577,7 +608,7 @@ Respond ONLY with the JSON, no additional text.
       },
     });
 
-    return checks.map(check => ({
+    return checks.map((check) => ({
       documentId: check.documentId,
       documentType: check.documentType,
       completenessScore: check.completeness,
@@ -604,14 +635,14 @@ Respond ONLY with the JSON, no additional text.
     for (let i = 0; i < documents.length; i += batchSize) {
       const batch = documents.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map(doc =>
+        batch.map((doc) =>
           this.checkDocumentCompleteness(
             doc.documentId,
             doc.firmId,
             doc.content,
             doc.type,
             doc.title
-          ).catch(error => {
+          ).catch((error) => {
             logger.error('Batch completeness check failed for document', {
               documentId: doc.documentId,
               error: error instanceof Error ? error.message : String(error),
@@ -630,10 +661,7 @@ Respond ONLY with the JSON, no additional text.
   /**
    * Mark a completeness issue as resolved
    */
-  async markResolved(
-    checkId: string,
-    resolvedBy: string
-  ): Promise<void> {
+  async markResolved(checkId: string, resolvedBy: string): Promise<void> {
     await prisma.documentCompletenessCheck.update({
       where: { id: checkId },
       data: {
@@ -652,14 +680,16 @@ Respond ONLY with the JSON, no additional text.
   async getUnresolvedIssues(
     firmId: string,
     limit: number = 50
-  ): Promise<Array<{
-    id: string;
-    documentId: string;
-    documentType: string;
-    completenessScore: number;
-    missingItems: MissingItem[];
-    createdAt: Date;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      documentId: string;
+      documentType: string;
+      completenessScore: number;
+      missingItems: MissingItem[];
+      createdAt: Date;
+    }>
+  > {
     const checks = await prisma.documentCompletenessCheck.findMany({
       where: {
         firmId,
@@ -673,12 +703,12 @@ Respond ONLY with the JSON, no additional text.
       take: limit,
     });
 
-    return checks.map(check => ({
+    return checks.map((check) => ({
       id: check.id,
       documentId: check.documentId,
       documentType: check.documentType,
       completenessScore: check.completeness,
-      missingItems: (check.missingItems as unknown) as MissingItem[],
+      missingItems: check.missingItems as unknown as MissingItem[],
       createdAt: check.createdAt,
     }));
   }

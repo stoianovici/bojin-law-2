@@ -109,9 +109,8 @@ export function TrackChangesPanel({ documentId, className }: TrackChangesPanelPr
   const trackChanges: TrackChange[] = data?.documentTrackChanges || [];
   const summary: TrackChangesSummary | undefined = summaryData?.documentTrackChangesSummary;
 
-  const filteredChanges = filterType === 'all'
-    ? trackChanges
-    : trackChanges.filter((c) => c.type === filterType);
+  const filteredChanges =
+    filterType === 'all' ? trackChanges : trackChanges.filter((c) => c.type === filterType);
 
   const toggleExpanded = (id: string) => {
     const newExpanded = new Set(expandedChanges);
@@ -229,7 +228,10 @@ export function TrackChangesPanel({ documentId, className }: TrackChangesPanelPr
           <div className="text-center py-8 text-muted-foreground">
             <Edit3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No track changes found</p>
-            <p className="text-xs mt-1">Changes will appear here when the document is edited in Word with Track Changes enabled</p>
+            <p className="text-xs mt-1">
+              Changes will appear here when the document is edited in Word with Track Changes
+              enabled
+            </p>
           </div>
         ) : (
           <>
@@ -259,17 +261,12 @@ export function TrackChangesPanel({ documentId, className }: TrackChangesPanelPr
                   const isExpanded = expandedChanges.has(change.id);
 
                   return (
-                    <div
-                      key={change.id}
-                      className="border rounded-lg overflow-hidden"
-                    >
+                    <div key={change.id} className="border rounded-lg overflow-hidden">
                       <div
                         className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50"
                         onClick={() => toggleExpanded(change.id)}
                       >
-                        <div className="flex-shrink-0 mt-0.5">
-                          {getChangeIcon(change.type)}
-                        </div>
+                        <div className="flex-shrink-0 mt-0.5">{getChangeIcon(change.type)}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <Badge variant="outline" className={getChangeBadgeVariant(change.type)}>
@@ -308,7 +305,9 @@ export function TrackChangesPanel({ documentId, className }: TrackChangesPanelPr
                           <div className="pt-3 space-y-2">
                             {change.originalContent && (
                               <div>
-                                <span className="text-xs font-medium text-muted-foreground">Original:</span>
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  Original:
+                                </span>
                                 <p className="text-sm text-red-600 line-through mt-1 p-2 bg-red-50 rounded">
                                   {change.originalContent}
                                 </p>
@@ -316,18 +315,29 @@ export function TrackChangesPanel({ documentId, className }: TrackChangesPanelPr
                             )}
                             <div>
                               <span className="text-xs font-medium text-muted-foreground">
-                                {change.type === 'DELETION' ? 'Deleted:' : change.type === 'INSERTION' ? 'Inserted:' : 'New:'}
+                                {change.type === 'DELETION'
+                                  ? 'Deleted:'
+                                  : change.type === 'INSERTION'
+                                    ? 'Inserted:'
+                                    : 'New:'}
                               </span>
-                              <p className={`text-sm mt-1 p-2 rounded ${
-                                change.type === 'DELETION' ? 'bg-red-50 text-red-600 line-through' :
-                                change.type === 'INSERTION' ? 'bg-green-50 text-green-600' :
-                                'bg-amber-50'
-                              }`}>
+                              <p
+                                className={`text-sm mt-1 p-2 rounded ${
+                                  change.type === 'DELETION'
+                                    ? 'bg-red-50 text-red-600 line-through'
+                                    : change.type === 'INSERTION'
+                                      ? 'bg-green-50 text-green-600'
+                                      : 'bg-amber-50'
+                                }`}
+                              >
                                 {change.content}
                               </p>
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              <span>Changed by {change.authorName} on {format(new Date(change.timestamp), 'PPp')}</span>
+                              <span>
+                                Changed by {change.authorName} on{' '}
+                                {format(new Date(change.timestamp), 'PPp')}
+                              </span>
                               {change.paragraphIndex !== undefined && (
                                 <span> · Paragraph {change.paragraphIndex + 1}</span>
                               )}

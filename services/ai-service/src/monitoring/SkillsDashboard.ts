@@ -113,16 +113,16 @@ export class SkillsDashboard {
   // Model pricing (same as RequestRouter)
   private readonly modelPricing = {
     'claude-3-5-haiku-20241022': {
-      inputCostPer1M: 0.80,
-      outputCostPer1M: 4.00,
+      inputCostPer1M: 0.8,
+      outputCostPer1M: 4.0,
     },
     'claude-3-5-sonnet-20241022': {
-      inputCostPer1M: 3.00,
-      outputCostPer1M: 15.00,
+      inputCostPer1M: 3.0,
+      outputCostPer1M: 15.0,
     },
     'claude-4-opus-20250514': {
-      inputCostPer1M: 15.00,
-      outputCostPer1M: 75.00,
+      inputCostPer1M: 15.0,
+      outputCostPer1M: 75.0,
     },
   };
 
@@ -144,16 +144,12 @@ export class SkillsDashboard {
     const oneMinuteAgo = new Date(now.getTime() - 60000);
 
     // Filter requests from last minute
-    const recentRequests = this.requestLogs.filter(
-      (log) => log.timestamp >= oneMinuteAgo
-    );
+    const recentRequests = this.requestLogs.filter((log) => log.timestamp >= oneMinuteAgo);
 
     // Calculate active skills count (skills used in last hour)
     const oneHourAgo = new Date(now.getTime() - 3600000);
     const recentSkills = new Set(
-      this.requestLogs
-        .filter((log) => log.timestamp >= oneHourAgo)
-        .flatMap((log) => log.skillsUsed)
+      this.requestLogs.filter((log) => log.timestamp >= oneHourAgo).flatMap((log) => log.skillsUsed)
     );
     const activeSkillsCount = recentSkills.size;
 
@@ -177,14 +173,14 @@ export class SkillsDashboard {
       modelCosts.set(log.model, (modelCosts.get(log.model) || 0) + log.cost);
     });
 
-    const modelDistribution: DashboardSummary['modelDistribution'] = Array.from(modelCounts.entries()).map(
-      ([model, count]) => ({
-        model,
-        count,
-        percentage: recentRequests.length > 0 ? count / recentRequests.length : 0,
-        totalCost: modelCosts.get(model) || 0,
-      })
-    );
+    const modelDistribution: DashboardSummary['modelDistribution'] = Array.from(
+      modelCounts.entries()
+    ).map(([model, count]) => ({
+      model,
+      count,
+      percentage: recentRequests.length > 0 ? count / recentRequests.length : 0,
+      totalCost: modelCosts.get(model) || 0,
+    }));
 
     // Get performance metrics
     const perfStats = this.performanceOptimizer.getPerformanceStats();
@@ -231,7 +227,8 @@ export class SkillsDashboard {
 
       const totalTokensSaved = periodRequests.reduce((sum, log) => sum + log.tokensSaved, 0);
       const totalTokensUsed = periodRequests.reduce((sum, log) => sum + log.tokensUsed, 0);
-      const tokenSavings = totalTokensUsed > 0 ? totalTokensSaved / (totalTokensUsed + totalTokensSaved) : 0;
+      const tokenSavings =
+        totalTokensUsed > 0 ? totalTokensSaved / (totalTokensUsed + totalTokensSaved) : 0;
 
       // Estimate cost savings (comparing with/without skills)
       const actualCost = periodRequests.reduce((sum, log) => sum + log.cost, 0);
@@ -323,7 +320,8 @@ export class SkillsDashboard {
     const dailyCost = last24h.reduce((sum, log) => sum + log.cost, 0);
     const dailyTokensSaved = last24h.reduce((sum, log) => sum + log.tokensSaved, 0);
     const dailyTokensUsed = last24h.reduce((sum, log) => sum + log.tokensUsed, 0);
-    const savingsRate = dailyTokensUsed > 0 ? dailyTokensSaved / (dailyTokensUsed + dailyTokensSaved) : 0;
+    const savingsRate =
+      dailyTokensUsed > 0 ? dailyTokensSaved / (dailyTokensUsed + dailyTokensSaved) : 0;
 
     // Estimate cost without skills
     const currentDailyCostWithoutSkills = dailyCost / (1 - savingsRate);
@@ -364,11 +362,14 @@ export class SkillsDashboard {
   /**
    * Record a request for dashboard tracking
    */
-  recordRequest(decision: RoutingDecision, actualMetrics: {
-    tokensUsed: number;
-    tokensSaved: number;
-    effectiveness: number;
-  }): void {
+  recordRequest(
+    decision: RoutingDecision,
+    actualMetrics: {
+      tokensUsed: number;
+      tokensSaved: number;
+      effectiveness: number;
+    }
+  ): void {
     const log: RequestLog = {
       timestamp: new Date(),
       model: decision.model,

@@ -57,8 +57,7 @@ describe('analyticsFiltersStore', () => {
 
     // Allow for small differences due to execution time
     const diffInDays = Math.abs(
-      (result.current.dateRange.start.getTime() - threeMonthsAgo.getTime()) /
-        (1000 * 60 * 60 * 24)
+      (result.current.dateRange.start.getTime() - threeMonthsAgo.getTime()) / (1000 * 60 * 60 * 24)
     );
     expect(diffInDays).toBeLessThan(2);
   });
@@ -126,8 +125,6 @@ describe('analyticsFiltersStore', () => {
     expect(previousPeriod.start.getTime()).toBeLessThan(previousPeriod.end.getTime());
 
     // Previous end should be before current start
-    expect(previousPeriod.end.getTime()).toBeLessThan(
-      result.current.dateRange.start.getTime()
-    );
+    expect(previousPeriod.end.getTime()).toBeLessThan(result.current.dateRange.start.getTime());
   });
 });

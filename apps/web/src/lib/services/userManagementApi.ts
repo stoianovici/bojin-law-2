@@ -25,11 +25,7 @@ export async function getActiveUsers(firmId?: string): Promise<User[]> {
 /**
  * Activate a pending user by assigning them to a firm with a role
  */
-export async function activateUser(
-  userId: string,
-  firmId: string,
-  role: UserRole
-): Promise<User> {
+export async function activateUser(userId: string, firmId: string, role: UserRole): Promise<User> {
   return apiClient.post<User>(`/api/users/${userId}/activate`, {
     firmId,
     role,
@@ -46,10 +42,7 @@ export async function deactivateUser(userId: string): Promise<User> {
 /**
  * Update user role
  */
-export async function updateUserRole(
-  userId: string,
-  role: UserRole
-): Promise<User> {
+export async function updateUserRole(userId: string, role: UserRole): Promise<User> {
   return apiClient.patch<User>(`/api/users/${userId}/role`, {
     role,
   });

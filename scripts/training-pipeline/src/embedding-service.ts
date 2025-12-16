@@ -38,10 +38,7 @@ export async function initializeModel(): Promise<void> {
  * Generate embedding for a single text
  * E5 models require a prefix for queries vs passages
  */
-export async function generateEmbedding(
-  text: string,
-  isQuery: boolean = false
-): Promise<number[]> {
+export async function generateEmbedding(text: string, isQuery: boolean = false): Promise<number[]> {
   if (!embedder) {
     throw new Error('Model not initialized. Call initializeModel() first.');
   }
@@ -85,7 +82,7 @@ export function splitIntoChunks(text: string, maxLength: number = MAX_CHUNK_LENG
     chunks.push(currentChunk.join(' '));
   }
 
-  return chunks.filter(chunk => chunk.trim().length > 0);
+  return chunks.filter((chunk) => chunk.trim().length > 0);
 }
 
 /**

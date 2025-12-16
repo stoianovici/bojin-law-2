@@ -204,8 +204,7 @@ export const PartnerView: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Partner role has access to all navigation items including Reports',
+        story: 'Partner role has access to all navigation items including Reports',
       },
     },
   },
@@ -272,8 +271,7 @@ export const Collapsed: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Collapsed sidebar shows only icons with tooltips on hover. Width reduces to 64px.',
+        story: 'Collapsed sidebar shows only icons with tooltips on hover. Width reduces to 64px.',
       },
     },
   },

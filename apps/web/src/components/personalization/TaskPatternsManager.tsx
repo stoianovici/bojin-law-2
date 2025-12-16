@@ -49,13 +49,7 @@ const PatternIcon = ({ className }: { className?: string }) => (
 );
 
 const EditIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -66,13 +60,7 @@ const EditIcon = () => (
 );
 
 const DeleteIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -165,9 +153,7 @@ function PatternItem({
             >
               {getTriggerTypeLabel(pattern.triggerType)}
             </Badge>
-            {!pattern.isActive && (
-              <Badge variant="secondary">Dezactivat</Badge>
-            )}
+            {!pattern.isActive && <Badge variant="secondary">Dezactivat</Badge>}
           </div>
 
           {/* Task template preview */}
@@ -182,8 +168,8 @@ function PatternItem({
               Declanșări: <strong>{pattern.occurrenceCount}</strong>
             </span>
             <span className={getConfidenceColor(pattern.confidence)}>
-              Încredere: <strong>{getConfidenceLabel(pattern.confidence)}</strong>{' '}
-              ({Math.round(pattern.confidence * 100)}%)
+              Încredere: <strong>{getConfidenceLabel(pattern.confidence)}</strong> (
+              {Math.round(pattern.confidence * 100)}%)
             </span>
             {template?.priority && (
               <span>
@@ -252,11 +238,7 @@ function PatternEditDialog({
   pattern: TaskCreationPattern | null;
   open: boolean;
   onClose: () => void;
-  onSave: (input: {
-    titleTemplate: string;
-    priority: string;
-    estimatedHours?: number;
-  }) => void;
+  onSave: (input: { titleTemplate: string; priority: string; estimatedHours?: number }) => void;
   loading: boolean;
 }) {
   const template = pattern?.taskTemplate as {
@@ -395,8 +377,8 @@ function DeleteConfirmDialog({
         <DialogHeader>
           <DialogTitle>Șterge Pattern</DialogTitle>
           <DialogDescription>
-            Ești sigur că vrei să ștergi pattern-ul &ldquo;{pattern.patternName}&rdquo;?
-            Această acțiune nu poate fi anulată.
+            Ești sigur că vrei să ștergi pattern-ul &ldquo;{pattern.patternName}&rdquo;? Această
+            acțiune nu poate fi anulată.
           </DialogDescription>
         </DialogHeader>
 
@@ -404,11 +386,7 @@ function DeleteConfirmDialog({
           <Button variant="outline" onClick={onClose}>
             Anulează
           </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
             {loading ? 'Se șterge...' : 'Șterge'}
           </Button>
         </DialogFooter>
@@ -504,9 +482,7 @@ export function TaskPatternsManager({
       <Card className={className}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center h-32">
-            <div className="animate-pulse text-muted-foreground">
-              Se încarcă pattern-urile...
-            </div>
+            <div className="animate-pulse text-muted-foreground">Se încarcă pattern-urile...</div>
           </div>
         </CardContent>
       </Card>
@@ -567,19 +543,12 @@ export function TaskPatternsManager({
             <>
               {/* Filter tabs */}
               {triggerTypes.length > 1 && (
-                <Tabs
-                  value={filterTrigger}
-                  onValueChange={setFilterTrigger}
-                  className="mb-4"
-                >
+                <Tabs value={filterTrigger} onValueChange={setFilterTrigger} className="mb-4">
                   <TabsList>
-                    <TabsTrigger value="all">
-                      Toate ({patterns.length})
-                    </TabsTrigger>
+                    <TabsTrigger value="all">Toate ({patterns.length})</TabsTrigger>
                     {triggerTypes.map((trigger) => (
                       <TabsTrigger key={trigger} value={trigger}>
-                        {getTriggerTypeLabel(trigger)} (
-                        {patternsByTrigger[trigger]?.length || 0})
+                        {getTriggerTypeLabel(trigger)} ({patternsByTrigger[trigger]?.length || 0})
                       </TabsTrigger>
                     ))}
                   </TabsList>
@@ -587,11 +556,7 @@ export function TaskPatternsManager({
               )}
 
               {/* Pattern list */}
-              <div
-                className="space-y-3"
-                role="list"
-                aria-label="Listă pattern-uri task"
-              >
+              <div className="space-y-3" role="list" aria-label="Listă pattern-uri task">
                 {displayPatterns.map((pattern: TaskCreationPattern) => (
                   <PatternItem
                     key={pattern.id}
@@ -641,9 +606,8 @@ export function TaskPatternsManager({
           <DialogHeader>
             <DialogTitle>Resetează toate Pattern-urile</DialogTitle>
             <DialogDescription>
-              Ești sigur că vrei să ștergi toate pattern-urile învățate? AI-ul
-              va trebui să le re-învețe din nou. Această acțiune nu poate fi
-              anulată.
+              Ești sigur că vrei să ștergi toate pattern-urile învățate? AI-ul va trebui să le
+              re-învețe din nou. Această acțiune nu poate fi anulată.
             </DialogDescription>
           </DialogHeader>
 
@@ -651,11 +615,7 @@ export function TaskPatternsManager({
             <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
               Anulează
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleReset}
-              disabled={resetting}
-            >
+            <Button variant="destructive" onClick={handleReset} disabled={resetting}>
               {resetting ? 'Se resetează...' : 'Resetează'}
             </Button>
           </DialogFooter>
@@ -671,8 +631,7 @@ TaskPatternsManager.displayName = 'TaskPatternsManager';
  * Compact version for dashboard widgets
  */
 export function TaskPatternsCard({ className = '' }: { className?: string }) {
-  const { patterns, activeCount, mostTriggered, loading } =
-    useTaskPatternManagement();
+  const { patterns, activeCount, mostTriggered, loading } = useTaskPatternManagement();
 
   if (loading) {
     return (
@@ -702,15 +661,10 @@ export function TaskPatternsCard({ className = '' }: { className?: string }) {
 
         {mostTriggered.length > 0 && (
           <div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Cele mai folosite
-            </p>
+            <p className="text-xs text-muted-foreground mb-2">Cele mai folosite</p>
             <div className="space-y-1">
               {mostTriggered.slice(0, 3).map((pattern: TaskCreationPattern) => (
-                <div
-                  key={pattern.id}
-                  className="flex items-center justify-between text-xs"
-                >
+                <div key={pattern.id} className="flex items-center justify-between text-xs">
                   <span className="truncate">{pattern.patternName}</span>
                   <Badge variant="secondary" className="text-[10px]">
                     {pattern.occurrenceCount}x

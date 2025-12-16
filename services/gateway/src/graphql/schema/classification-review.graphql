@@ -1,0 +1,304 @@
+# OPS-031: Classification Review & Correction
+# GraphQL schema for review queue, email reassignment, and audit trail
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+"""
+Classification action types for audit logging
+"""
+enum ClassificationAction {
+  ASSIGNED
+  MOVED
+  IGNORED
+  UNASSIGNED
+}
+
+"""
+How the email was matched to a case
+"""
+enum ClassificationMatchType {
+  ACTOR
+  REFERENCE_NUMBER
+  KEYWORD
+  SEMANTIC
+  GLOBAL_SOURCE
+  MANUAL
+}
+
+"""
+Reason why an email needs manual review
+"""
+enum ClassificationReason {
+  MULTI_CASE_CONFLICT
+  LOW_CONFIDENCE
+  NO_MATCHING_CASE
+  COURT_NO_REFERENCE
+  UNKNOWN_CONTACT
+}
+
+# ============================================================================
+# Types - Classification Queue
+# ============================================================================
+
+"""
+Suggested case for an unclassified email
+"""
+type CaseSuggestion {
+  caseId: ID!
+  case: Case!
+  confidence: Float!
+  matchType: ClassificationMatchType!
+  reason: String!
+}
+
+"""
+Email in the classification review queue
+"""
+type PendingClassificationItem {
+  id: ID!
+  email: Email!
+  reason: ClassificationReason!
+  suggestedCases: [CaseSuggestion!]!
+  detectedReferences: [String!]!
+  createdAt: DateTime!
+}
+
+"""
+Result of classification queue query
+"""
+type ClassificationQueueResult {
+  items: [PendingClassificationItem!]!
+  total: Int!
+  hasMore: Boolean!
+}
+
+"""
+Filter options for classification queue
+"""
+input ClassificationQueueFilter {
+  """Filter by specific client's cases"""
+  clientId: ID
+  """Filter by reason (MULTI_CASE_CONFLICT, LOW_CONFIDENCE, etc.)"""
+  reason: ClassificationReason
+  """Only show items created after this date"""
+  createdAfter: DateTime
+  """Only show items created before this date"""
+  createdBefore: DateTime
+}
+
+# ============================================================================
+# Types - Email Reassignment
+# ============================================================================
+
+"""
+Input for moving an email to a different case
+"""
+input MoveEmailInput {
+  """The email to move"""
+  emailId: ID!
+  """The target case"""
+  toCaseId: ID!
+  """Optional reason for the move"""
+  reason: String
+  """Whether to also move associated attachments (as documents)"""
+  moveAttachments: Boolean
+  """Whether to add the sender as an actor in the target case"""
+  addSenderAsActor: Boolean
+}
+
+"""
+Result of moving an email
+"""
+type MoveEmailResult {
+  success: Boolean!
+  email: Email
+  fromCase: Case
+  toCase: Case
+  attachmentsMoved: Int
+  actorCreated: Boolean
+  error: String
+}
+
+"""
+Input for bulk assigning multiple emails to a case
+"""
+input BulkAssignEmailsInput {
+  """Email IDs to assign"""
+  emailIds: [ID!]!
+  """Target case ID"""
+  caseId: ID!
+  """Optional reason for the assignment"""
+  reason: String
+}
+
+"""
+Result of bulk assignment
+"""
+type BulkAssignResult {
+  success: Boolean!
+  emailsAssigned: Int!
+  errors: [String!]!
+}
+
+"""
+Input for ignoring an email (marking as not case-related)
+"""
+input IgnoreEmailInput {
+  emailId: ID!
+  reason: String
+}
+
+# ============================================================================
+# Types - Audit Trail
+# ============================================================================
+
+"""
+Classification audit log entry
+"""
+type EmailClassificationLog {
+  id: ID!
+  emailId: ID!
+  email: Email!
+  action: ClassificationAction!
+  fromCase: Case
+  toCase: Case
+  wasAutomatic: Boolean!
+  confidence: Float
+  matchType: ClassificationMatchType
+  correctionReason: String
+  performedBy: User!
+  performedAt: DateTime!
+}
+
+"""
+Classification history for an email
+"""
+type EmailClassificationHistory {
+  email: Email!
+  logs: [EmailClassificationLog!]!
+}
+
+"""
+Classification activity for a case (emails moved in/out)
+"""
+type CaseClassificationActivity {
+  case: Case!
+  movedIn: [EmailClassificationLog!]!
+  movedOut: [EmailClassificationLog!]!
+}
+
+# ============================================================================
+# Types - Classification Insights
+# ============================================================================
+
+"""
+Classification statistics for dashboard widget
+"""
+type ClassificationStats {
+  autoClassified: Int!
+  manuallyReviewed: Int!
+  movedAfterImport: Int!
+  pendingReview: Int!
+  aiAccuracy: Float
+}
+
+"""
+Time period for statistics
+"""
+enum StatsPeriod {
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+}
+
+# ============================================================================
+# Query Extensions
+# ============================================================================
+
+extend type Query {
+  """
+  Get emails pending classification review
+  """
+  classificationQueue(
+    filter: ClassificationQueueFilter
+    limit: Int = 50
+    offset: Int = 0
+  ): ClassificationQueueResult!
+
+  """
+  Get pending classification count for badge display
+  """
+  pendingClassificationCount: Int!
+
+  """
+  Get classification history for a specific email
+  """
+  emailClassificationHistory(emailId: ID!): EmailClassificationHistory!
+
+  """
+  Get classification activity for a case (emails moved in/out)
+  """
+  caseClassificationActivity(
+    caseId: ID!
+    limit: Int = 20
+  ): CaseClassificationActivity!
+
+  """
+  Get classification statistics for dashboard
+  """
+  classificationStats(period: StatsPeriod!): ClassificationStats!
+
+  """
+  Get cases available for reassignment (same client)
+  """
+  casesForReassignment(emailId: ID!): [Case!]!
+}
+
+# ============================================================================
+# Mutation Extensions
+# ============================================================================
+
+extend type Mutation {
+  """
+  Move an email from one case to another
+  """
+  moveEmailToCase(input: MoveEmailInput!): MoveEmailResult!
+
+  """
+  Mark an email as not case-related (ignore)
+  """
+  ignoreEmail(input: IgnoreEmailInput!): Boolean!
+
+  """
+  Bulk assign multiple emails to a case from the review queue
+  """
+  bulkAssignEmails(input: BulkAssignEmailsInput!): BulkAssignResult!
+
+  """
+  Assign a single email from the review queue to a case
+  """
+  assignPendingEmailToCase(
+    pendingId: ID!
+    caseId: ID!
+    reason: String
+  ): MoveEmailResult!
+
+  """
+  Dismiss an item from the review queue without assigning
+  """
+  dismissFromQueue(
+    pendingId: ID!
+    reason: String
+  ): Boolean!
+
+  """
+  Add a detected reference number to a case
+  """
+  addReferenceToCase(
+    caseId: ID!
+    reference: String!
+  ): Case!
+}

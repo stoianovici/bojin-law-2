@@ -183,7 +183,9 @@ async function runCleanup(config: CleanupWorkerConfig): Promise<void> {
 
     const duration = Date.now() - startTime;
     logger.info(`[${WORKER_NAME}] Cleanup complete in ${duration}ms`);
-    logger.info(`[${WORKER_NAME}] Summary: ${expiredCount} expired, ${archivedCount} archived, ${orphanedCount} orphaned removed`);
+    logger.info(
+      `[${WORKER_NAME}] Summary: ${expiredCount} expired, ${archivedCount} archived, ${orphanedCount} orphaned removed`
+    );
   } catch (error) {
     await logError(error as Error);
     throw error;

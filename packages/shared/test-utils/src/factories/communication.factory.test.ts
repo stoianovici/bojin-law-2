@@ -73,7 +73,7 @@ describe('Communication Factory', () => {
       const deadlines = createMockExtractedDeadlines(messageIds);
 
       expect(Array.isArray(deadlines)).toBe(true);
-      deadlines.forEach(deadline => {
+      deadlines.forEach((deadline) => {
         expect(deadline).toHaveProperty('id');
         expect(deadline).toHaveProperty('description');
         expect(deadline).toHaveProperty('dueDate');
@@ -90,7 +90,7 @@ describe('Communication Factory', () => {
       const commitments = createMockExtractedCommitments(messageIds);
 
       expect(Array.isArray(commitments)).toBe(true);
-      commitments.forEach(commitment => {
+      commitments.forEach((commitment) => {
         expect(commitment).toHaveProperty('id');
         expect(commitment).toHaveProperty('party');
         expect(commitment).toHaveProperty('commitmentText');
@@ -107,7 +107,7 @@ describe('Communication Factory', () => {
       const actionItems = createMockExtractedActionItems(messageIds);
 
       expect(Array.isArray(actionItems)).toBe(true);
-      actionItems.forEach(item => {
+      actionItems.forEach((item) => {
         expect(item).toHaveProperty('id');
         expect(item).toHaveProperty('description');
         expect(item).toHaveProperty('priority');
@@ -173,7 +173,7 @@ describe('Communication Factory', () => {
 
       expect(Array.isArray(threads)).toBe(true);
       expect(threads.length).toBe(25);
-      threads.forEach(thread => {
+      threads.forEach((thread) => {
         expect(thread).toHaveProperty('id');
         expect(thread).toHaveProperty('messages');
       });
@@ -218,7 +218,7 @@ describe('Communication Factory', () => {
 
       // Check for at least one Romanian diacritic
       const romanianDiacritics = ['ă', 'â', 'î', 'ș', 'ț', 'Ă', 'Â', 'Î', 'Ș', 'Ț'];
-      const hasDiacritics = romanianDiacritics.some(char => draft.draftBody.includes(char));
+      const hasDiacritics = romanianDiacritics.some((char) => draft.draftBody.includes(char));
       expect(hasDiacritics).toBe(true);
     });
   });
@@ -230,7 +230,7 @@ describe('Communication Factory', () => {
         const deadlines = createMockExtractedDeadlines(messageIds, { withConversions: true });
 
         if (deadlines.length > 0) {
-          const hasConverted = deadlines.some(d => d.convertedToTaskId !== undefined);
+          const hasConverted = deadlines.some((d) => d.convertedToTaskId !== undefined);
           expect(hasConverted).toBe(true);
         }
       });
@@ -240,9 +240,9 @@ describe('Communication Factory', () => {
         const commitments = createMockExtractedCommitments(messageIds, { withDismissals: true });
 
         if (commitments.length > 0) {
-          const hasDismissed = commitments.some(c => c.isDismissed === true);
+          const hasDismissed = commitments.some((c) => c.isDismissed === true);
           if (hasDismissed) {
-            const dismissed = commitments.find(c => c.isDismissed);
+            const dismissed = commitments.find((c) => c.isDismissed);
             expect(dismissed?.dismissedAt).toBeDefined();
             expect(dismissed?.dismissReason).toBeDefined();
           }

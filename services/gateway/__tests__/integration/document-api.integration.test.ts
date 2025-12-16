@@ -73,9 +73,21 @@ jest.mock('../../src/services/thumbnail.service', () => {
 // Mock Prisma - typed to avoid circular reference
 type MockPrismaType = {
   case: { findUnique: jest.Mock; findMany: jest.Mock };
-  document: { findUnique: jest.Mock; findMany: jest.Mock; create: jest.Mock; update: jest.Mock; delete: jest.Mock };
+  document: {
+    findUnique: jest.Mock;
+    findMany: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
   documentVersion: { findMany: jest.Mock; create: jest.Mock };
-  caseDocument: { findUnique: jest.Mock; findMany: jest.Mock; create: jest.Mock; delete: jest.Mock; deleteMany: jest.Mock };
+  caseDocument: {
+    findUnique: jest.Mock;
+    findMany: jest.Mock;
+    create: jest.Mock;
+    delete: jest.Mock;
+    deleteMany: jest.Mock;
+  };
   caseTeam: { findUnique: jest.Mock };
   client: { findUnique: jest.Mock };
   documentAuditLog: { create: jest.Mock; findMany: jest.Mock };
@@ -115,7 +127,9 @@ const mockPrisma: MockPrismaType = {
     create: jest.fn(),
     findMany: jest.fn(),
   },
-  $transaction: jest.fn((callback: (prisma: MockPrismaType) => Promise<any>) => callback(mockPrisma)),
+  $transaction: jest.fn((callback: (prisma: MockPrismaType) => Promise<any>) =>
+    callback(mockPrisma)
+  ),
 };
 
 jest.mock('@legal-platform/database', () => ({
@@ -210,7 +224,9 @@ describe('Document API Integration Tests - Story 2.9', () => {
     };
 
     it('should create folder structure on first upload for new case', async () => {
-      (oneDriveService.createCaseFolderStructure as jest.Mock).mockResolvedValue(mockFolderStructure);
+      (oneDriveService.createCaseFolderStructure as jest.Mock).mockResolvedValue(
+        mockFolderStructure
+      );
       (oneDriveService.uploadDocumentToOneDrive as jest.Mock).mockResolvedValue(mockOneDriveFile);
 
       // Simulate the upload flow
@@ -425,10 +441,9 @@ describe('Document API Integration Tests - Story 2.9', () => {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       ];
 
-      (thumbnailService.canGenerateThumbnail as jest.Mock)
-        .mockImplementation((fileType: string) =>
-          [...imageTypes, ...officeTypes].includes(fileType)
-        );
+      (thumbnailService.canGenerateThumbnail as jest.Mock).mockImplementation((fileType: string) =>
+        [...imageTypes, ...officeTypes].includes(fileType)
+      );
 
       expect(thumbnailService.canGenerateThumbnail('image/png')).toBe(true);
       expect(thumbnailService.canGenerateThumbnail('application/pdf')).toBe(true);
@@ -564,17 +579,13 @@ describe('Document API Integration Tests - Story 2.9', () => {
       (oneDriveService.uploadDocumentToOneDrive as jest.Mock).mockRejectedValue(error);
 
       await expect(
-        oneDriveService.uploadDocumentToOneDrive(
-          mockAccessToken,
-          Buffer.from('test'),
-          {
-            caseId: mockCaseId,
-            caseNumber: 'CASE-001',
-            fileName: 'test.pdf',
-            fileType: 'application/pdf',
-            fileSize: 100,
-          }
-        )
+        oneDriveService.uploadDocumentToOneDrive(mockAccessToken, Buffer.from('test'), {
+          caseId: mockCaseId,
+          caseNumber: 'CASE-001',
+          fileName: 'test.pdf',
+          fileType: 'application/pdf',
+          fileSize: 100,
+        })
       ).rejects.toThrow('OneDrive API error');
     });
 

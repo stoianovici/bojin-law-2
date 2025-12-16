@@ -222,9 +222,7 @@ function Column({ column, tasks, onTaskClick }: ColumnProps) {
     >
       {/* Column header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-          {column.title}
-        </h2>
+        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">{column.title}</h2>
         <span
           className="px-2 py-1 rounded-full text-xs font-semibold text-white"
           style={{ backgroundColor: column.color }}

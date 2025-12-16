@@ -200,10 +200,7 @@ describe('Story 2.11.2: Retainer Calculation Integration', () => {
       } as any);
       jest.mocked(prisma.retainerPeriodUsage.findFirst).mockResolvedValue(null);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-retainer-1',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-retainer-1', 'firm-1');
 
       expect(usage).not.toBeNull();
       expect(usage?.hoursUsed).toBe(8);
@@ -214,10 +211,7 @@ describe('Story 2.11.2: Retainer Calculation Integration', () => {
     it('returns null for non-retainer cases', async () => {
       jest.mocked(prisma.case.findFirst).mockResolvedValue(null);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-hourly-1',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-hourly-1', 'firm-1');
 
       expect(usage).toBeNull();
     });
@@ -229,10 +223,7 @@ describe('Story 2.11.2: Retainer Calculation Integration', () => {
       } as any);
       jest.mocked(prisma.retainerPeriodUsage.findFirst).mockResolvedValue(null);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-retainer-2',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-retainer-2', 'firm-1');
 
       expect(usage).not.toBeNull();
       // $15,000 / $350 = 42.86 hours
@@ -248,10 +239,7 @@ describe('Story 2.11.2: Retainer Calculation Integration', () => {
       } as any);
       jest.mocked(prisma.retainerPeriodUsage.findFirst).mockResolvedValue(null);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-retainer-1',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-retainer-1', 'firm-1');
 
       expect(usage?.utilizationPercent).toBe(0);
       expect(usage?.hoursUsed).toBe(0);
@@ -264,10 +252,7 @@ describe('Story 2.11.2: Retainer Calculation Integration', () => {
       } as any);
       jest.mocked(prisma.retainerPeriodUsage.findFirst).mockResolvedValue(null);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-retainer-1',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-retainer-1', 'firm-1');
 
       expect(usage?.utilizationPercent).toBeGreaterThan(100);
       expect(usage?.hoursUsed).toBe(25);
@@ -291,10 +276,7 @@ describe('Story 2.11.2: Retainer Calculation Integration', () => {
       } as any);
       jest.mocked(prisma.retainerPeriodUsage.findFirst).mockResolvedValue(null);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-retainer-1',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-retainer-1', 'firm-1');
 
       expect(usage?.hoursUsed).toBe(0);
     });

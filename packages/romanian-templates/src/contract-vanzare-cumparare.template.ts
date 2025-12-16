@@ -37,8 +37,7 @@ export const ContractVanzareCumparareTemplate: RomanianTemplateDefinition = {
         labelEn: 'Preamble',
         required: true,
         variables: ['{{DATA_CONTRACT}}', '{{LOCALITATE}}'],
-        template:
-          'Încheiat astăzi, {{DATA_CONTRACT}}, în {{LOCALITATE}}, între:',
+        template: 'Încheiat astăzi, {{DATA_CONTRACT}}, în {{LOCALITATE}}, între:',
       },
       {
         id: 'parti_vanzator',
@@ -82,12 +81,7 @@ export const ContractVanzareCumparareTemplate: RomanianTemplateDefinition = {
         labelRo: 'III. PREȚUL ȘI MODALITATEA DE PLATĂ',
         labelEn: 'III. PRICE AND PAYMENT TERMS',
         required: true,
-        variables: [
-          '{{PRET_TOTAL}}',
-          '{{MONEDA}}',
-          '{{PRET_LITERE}}',
-          '{{MODALITATE_PLATA}}',
-        ],
+        variables: ['{{PRET_TOTAL}}', '{{MONEDA}}', '{{PRET_LITERE}}', '{{MODALITATE_PLATA}}'],
         template:
           'Prețul total convenit între părți pentru bunul ce face obiectul prezentului contract este de {{PRET_TOTAL}} {{MONEDA}} ({{PRET_LITERE}}).\n\nModalitatea de plată: {{MODALITATE_PLATA}}',
       },
@@ -97,8 +91,7 @@ export const ContractVanzareCumparareTemplate: RomanianTemplateDefinition = {
         labelEn: 'Payment Deadlines',
         required: false,
         variables: ['{{AVANS}}', '{{DATA_SOLD}}'],
-        template:
-          'Avans la semnare: {{AVANS}} {{MONEDA}}\nSold la data de: {{DATA_SOLD}}',
+        template: 'Avans la semnare: {{AVANS}} {{MONEDA}}\nSold la data de: {{DATA_SOLD}}',
       },
       {
         id: 'garantii',
@@ -188,11 +181,7 @@ export const ContractVanzareCumparareTemplate: RomanianTemplateDefinition = {
         labelRo: 'SEMNĂTURI',
         labelEn: 'SIGNATURES',
         required: true,
-        variables: [
-          '{{VANZATOR_NUME}}',
-          '{{CUMPARATOR_NUME}}',
-          '{{DATA_SEMNARE}}',
-        ],
+        variables: ['{{VANZATOR_NUME}}', '{{CUMPARATOR_NUME}}', '{{DATA_SEMNARE}}'],
         template:
           'VÂNZĂTOR,                    CUMPĂRĂTOR,\n{{VANZATOR_NUME}}             {{CUMPARATOR_NUME}}\n\nSemnătură: __________        Semnătură: __________\nData: {{DATA_SEMNARE}}       Data: {{DATA_SEMNARE}}',
       },
@@ -266,9 +255,7 @@ export const ContractVanzareCumparareTemplate: RomanianTemplateDefinition = {
 /**
  * Generate a formatted sales-purchase contract from the template
  */
-export function generateContractVanzareCumparare(
-  variables: Record<string, string>
-): string {
+export function generateContractVanzareCumparare(variables: Record<string, string>): string {
   const template = ContractVanzareCumparareTemplate;
   let document = '';
 
@@ -308,9 +295,10 @@ export function generateContractVanzareCumparare(
 /**
  * Validate that all required variables are provided
  */
-export function validateContractVariables(
-  variables: Record<string, string>
-): { valid: boolean; missing: string[] } {
+export function validateContractVariables(variables: Record<string, string>): {
+  valid: boolean;
+  missing: string[];
+} {
   const template = ContractVanzareCumparareTemplate;
   const missing: string[] = [];
 

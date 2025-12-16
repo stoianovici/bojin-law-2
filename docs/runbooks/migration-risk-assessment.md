@@ -38,7 +38,7 @@
 - [ ] **Modifying** - Changing existing structures (7 points)
 - [ ] **Deleting** - Removing structures (10 points)
 
-**Section 1 Subtotal:** _____ / 30 points
+**Section 1 Subtotal:** **\_** / 30 points
 
 ---
 
@@ -65,7 +65,7 @@
 - [ ] **5-15 minutes** (7 points)
 - [ ] **> 15 minutes** (10 points)
 
-**Section 2 Subtotal:** _____ / 30 points
+**Section 2 Subtotal:** **\_** / 30 points
 
 ---
 
@@ -92,7 +92,7 @@
 - [ ] **Changing column types** (7 points)
 - [ ] **Renaming/removing columns** (10 points)
 
-**Section 3 Subtotal:** _____ / 30 points
+**Section 3 Subtotal:** **\_** / 30 points
 
 ---
 
@@ -116,7 +116,7 @@
 - [ ] **Partially** - Some manual testing done (3 points)
 - [ ] **No** - No automated tests (5 points)
 
-**Section 4 Subtotal:** _____ / 25 points
+**Section 4 Subtotal:** **\_** / 25 points
 
 ---
 
@@ -142,22 +142,22 @@
 - [ ] **Medium traffic** - Regular business hours (5 points)
 - [ ] **Peak traffic** - Highest usage period (10 points)
 
-**Section 5 Subtotal:** _____ / 35 points
+**Section 5 Subtotal:** **\_** / 35 points
 
 ---
 
 ## Risk Score Calculation
 
-**Total Risk Score:** _____ / 150 points
+**Total Risk Score:** **\_** / 150 points
 
 ### Risk Level Determination
 
-| Score Range | Risk Level | Migration Strategy Required |
-|-------------|-----------|----------------------------|
-| **0-30** | 🟢 **Low Risk** | Standard migration procedure |
-| **31-60** | 🟡 **Medium Risk** | Enhanced testing + monitoring |
-| **61-90** | 🟠 **High Risk** | Expand-contract pattern + staged rollout |
-| **91-150** | 🔴 **Critical Risk** | Blue-green deployment + extensive planning |
+| Score Range | Risk Level           | Migration Strategy Required                |
+| ----------- | -------------------- | ------------------------------------------ |
+| **0-30**    | 🟢 **Low Risk**      | Standard migration procedure               |
+| **31-60**   | 🟡 **Medium Risk**   | Enhanced testing + monitoring              |
+| **61-90**   | 🟠 **High Risk**     | Expand-contract pattern + staged rollout   |
+| **91-150**  | 🔴 **Critical Risk** | Blue-green deployment + extensive planning |
 
 ---
 
@@ -166,6 +166,7 @@
 ### 🟢 Low Risk (0-30 points)
 
 **Requirements:**
+
 - [ ] Test on local and staging
 - [ ] Create manual backup before migration
 - [ ] Standard monitoring during migration
@@ -180,6 +181,7 @@
 ### 🟡 Medium Risk (31-60 points)
 
 **Requirements:**
+
 - [ ] All Low Risk requirements
 - [ ] Peer review of migration code
 - [ ] Integration tests for migration
@@ -196,6 +198,7 @@
 ### 🟠 High Risk (61-90 points)
 
 **Requirements:**
+
 - [ ] All Medium Risk requirements
 - [ ] Use expand-contract pattern (see [Migration Patterns](../architecture/database-migration-patterns.md))
 - [ ] Feature flags for gradual rollout
@@ -209,6 +212,7 @@
 **Communication:** All stakeholders notified 48 hours in advance
 
 **Special Considerations:**
+
 - Consider splitting into multiple smaller migrations
 - Schedule during maintenance window
 - Prepare detailed rollback plan
@@ -218,6 +222,7 @@
 ### 🔴 Critical Risk (91-150 points)
 
 **Requirements:**
+
 - [ ] All High Risk requirements
 - [ ] Blue-green deployment or canary release
 - [ ] Extensive load testing on staging
@@ -232,6 +237,7 @@
 **Communication:** All stakeholders + customers notified 1 week in advance
 
 **Special Considerations:**
+
 - Strongly consider breaking into smaller migrations
 - Schedule during extended maintenance window
 - Rehearse migration multiple times on staging
@@ -270,12 +276,14 @@ Based on your risk assessment, select the appropriate strategy:
 ### Strategy A: Direct Migration (Low Risk only)
 
 **Use when:**
+
 - Risk score < 30
 - Adding new tables/columns only
 - No data backfill required
 - Backward-compatible
 
 **Steps:**
+
 1. Test on local and staging
 2. Create backup
 3. Apply migration
@@ -287,12 +295,14 @@ Based on your risk assessment, select the appropriate strategy:
 ### Strategy B: Batched Migration (Medium Risk)
 
 **Use when:**
+
 - Risk score 31-60
 - Large data backfills required
 - Indexes without CONCURRENTLY
 - Some breaking changes
 
 **Steps:**
+
 1. All Strategy A steps
 2. Break into smaller batches (if applicable)
 3. Add throttling between batches
@@ -304,12 +314,14 @@ Based on your risk assessment, select the appropriate strategy:
 ### Strategy C: Expand-Contract (High Risk)
 
 **Use when:**
+
 - Risk score 61-90
 - Renaming columns/tables
 - Changing column types
 - Splitting/merging tables
 
 **Steps:**
+
 1. Follow expand-contract pattern (see [Migration Patterns](../architecture/database-migration-patterns.md))
 2. Phase 1: Expand (add new structures)
 3. Phase 2: Migrate (dual-write, backfill, switch reads)
@@ -321,12 +333,14 @@ Based on your risk assessment, select the appropriate strategy:
 ### Strategy D: Blue-Green Deployment (Critical Risk)
 
 **Use when:**
+
 - Risk score > 90
 - Cannot achieve zero downtime with expand-contract
 - Requires extensive database restructuring
 - Affects critical business functionality
 
 **Steps:**
+
 1. Clone production database to "green" environment
 2. Apply migrations to green database
 3. Deploy new code to green environment
@@ -376,6 +390,7 @@ Use this checklist to reduce risk before migration:
 ### Example: Adding User Email Verification Column
 
 **Migration SQL:**
+
 ```sql
 ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;
 CREATE INDEX CONCURRENTLY idx_users_email_verified ON users(email_verified);
@@ -383,14 +398,14 @@ CREATE INDEX CONCURRENTLY idx_users_email_verified ON users(email_verified);
 
 **Assessment:**
 
-| Section | Score | Reasoning |
-|---------|-------|-----------|
-| Section 1 | 0 | Backward-compatible, can rollback, adding only |
-| Section 2 | 5 | 500K users, small backfill, <1 min execution |
-| Section 3 | 1 | Index with CONCURRENTLY |
-| Section 4 | 0 | Tested on staging, rollback tested, has tests |
-| Section 5 | 0 | Zero downtime, low blast radius, off-peak |
-| **Total** | **6** | **🟢 Low Risk** |
+| Section   | Score | Reasoning                                      |
+| --------- | ----- | ---------------------------------------------- |
+| Section 1 | 0     | Backward-compatible, can rollback, adding only |
+| Section 2 | 5     | 500K users, small backfill, <1 min execution   |
+| Section 3 | 1     | Index with CONCURRENTLY                        |
+| Section 4 | 0     | Tested on staging, rollback tested, has tests  |
+| Section 5 | 0     | Zero downtime, low blast radius, off-peak      |
+| **Total** | **6** | **🟢 Low Risk**                                |
 
 **Strategy:** Direct migration with standard procedure
 
@@ -400,10 +415,10 @@ CREATE INDEX CONCURRENTLY idx_users_email_verified ON users(email_verified);
 
 Keep a log of risk assessments for historical reference:
 
-| Date | Migration | Risk Score | Risk Level | Outcome |
-|------|-----------|-----------|-----------|---------|
-| 2025-11-20 | Add email_verified | 6 | 🟢 Low | Success |
-| _Date_ | _Name_ | _Score_ | _Level_ | _Success/Rollback/Issues_ |
+| Date       | Migration          | Risk Score | Risk Level | Outcome                   |
+| ---------- | ------------------ | ---------- | ---------- | ------------------------- |
+| 2025-11-20 | Add email_verified | 6          | 🟢 Low     | Success                   |
+| _Date_     | _Name_             | _Score_    | _Level_    | _Success/Rollback/Issues_ |
 
 ---
 
@@ -418,6 +433,6 @@ Keep a log of risk assessments for historical reference:
 
 **Document Version History:**
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-11-20 | Dev Agent | Initial creation |
+| Version | Date       | Author    | Changes          |
+| ------- | ---------- | --------- | ---------------- |
+| 1.0     | 2025-11-20 | Dev Agent | Initial creation |

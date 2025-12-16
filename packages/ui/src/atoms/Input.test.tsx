@@ -177,13 +177,7 @@ describe('Input', () => {
     });
 
     it('has correct ARIA attributes for error state', () => {
-      render(
-        <Input
-          label="Email"
-          validationState="error"
-          errorMessage="Invalid email"
-        />
-      );
+      render(<Input label="Email" validationState="error" errorMessage="Invalid email" />);
       const input = screen.getByLabelText('Email');
       expect(input).toHaveAttribute('aria-invalid', 'true');
       expect(input).toHaveAttribute('aria-describedby');

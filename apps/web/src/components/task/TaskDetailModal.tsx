@@ -95,7 +95,9 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showQuickLog, setShowQuickLog] = useState(false);
-  const [activeCollabTab, setActiveCollabTab] = useState<'comments' | 'subtasks' | 'attachments' | 'history'>('comments');
+  const [activeCollabTab, setActiveCollabTab] = useState<
+    'comments' | 'subtasks' | 'attachments' | 'history'
+  >('comments');
 
   // Time tracking hooks
   const [logTimeAgainstTask, { loading: loggingTime }] = useLogTimeAgainstTask();
@@ -141,15 +143,20 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
   /**
    * Calculate total logged hours
    */
-  const totalLoggedHours = timeEntriesData?.timeEntriesByTask?.reduce(
-    (total: number, entry: { hours: number }) => total + entry.hours,
-    0
-  ) || 0;
+  const totalLoggedHours =
+    timeEntriesData?.timeEntriesByTask?.reduce(
+      (total: number, entry: { hours: number }) => total + entry.hours,
+      0
+    ) || 0;
 
   /**
    * Handle quick time log submission
    */
-  const handleTimeLogSubmit = async (data: { hours: number; description: string; billable: boolean }) => {
+  const handleTimeLogSubmit = async (data: {
+    hours: number;
+    description: string;
+    billable: boolean;
+  }) => {
     if (!task) return;
 
     await logTimeAgainstTask({
@@ -600,7 +607,10 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
                   <h3 className="text-sm font-semibold text-gray-700">Timp Înregistrat</h3>
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-gray-600">
-                      Total: <span className="font-medium text-gray-900">{totalLoggedHours.toFixed(2)}h</span>
+                      Total:{' '}
+                      <span className="font-medium text-gray-900">
+                        {totalLoggedHours.toFixed(2)}h
+                      </span>
                     </span>
                     {!showQuickLog && (
                       <button
@@ -664,9 +674,7 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
                   {activeCollabTab === 'attachments' && (
                     <TaskAttachments taskId={task.id} currentUserId="current-user-id" />
                   )}
-                  {activeCollabTab === 'history' && (
-                    <TaskHistoryTimeline taskId={task.id} />
-                  )}
+                  {activeCollabTab === 'history' && <TaskHistoryTimeline taskId={task.id} />}
                 </div>
               </div>
             )}

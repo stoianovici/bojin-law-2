@@ -461,9 +461,7 @@ describe('SkillMetrics', () => {
       const topSkills = skillMetrics.getTopSkills(2, 'savings');
 
       expect(topSkills).toHaveLength(2);
-      expect(topSkills[0].totalTokensSaved).toBeGreaterThanOrEqual(
-        topSkills[1].totalTokensSaved
-      );
+      expect(topSkills[0].totalTokensSaved).toBeGreaterThanOrEqual(topSkills[1].totalTokensSaved);
     });
   });
 
@@ -504,10 +502,7 @@ describe('SkillMetrics', () => {
         tokensSaved: 0.7,
       });
 
-      const metricsMap = await skillMetrics.getEffectivenessForSkills([
-        'skill-1',
-        'non-existent',
-      ]);
+      const metricsMap = await skillMetrics.getEffectivenessForSkills(['skill-1', 'non-existent']);
 
       expect(metricsMap.size).toBe(1);
       expect(metricsMap.has('skill-1')).toBe(true);

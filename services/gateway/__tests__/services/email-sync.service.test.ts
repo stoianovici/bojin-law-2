@@ -72,9 +72,7 @@ describe('Email Sync Service', () => {
 
     it('should return pending status if never synced', async () => {
       mockPrisma.emailSyncState.findUnique.mockResolvedValue(null);
-      mockPrisma.email.count
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(0);
+      mockPrisma.email.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
 
       const [syncState, emailCount, pendingCount] = await Promise.all([
         mockPrisma.emailSyncState.findUnique({ where: { userId: 'user-123' } }),
@@ -271,9 +269,7 @@ describe('Email Sync Service', () => {
         bodyPreview: 'Preview',
         body: { content: 'Body', contentType: 'text' as const },
         from: { emailAddress: { name: null, address: 'sender@test.com' } },
-        toRecipients: [
-          { emailAddress: { name: undefined, address: 'to@test.com' } },
-        ],
+        toRecipients: [{ emailAddress: { name: undefined, address: 'to@test.com' } }],
         receivedDateTime: '2024-01-01T00:00:00Z',
         sentDateTime: '2024-01-01T00:00:00Z',
         hasAttachments: false,
@@ -337,8 +333,7 @@ describe('Email Sync Service', () => {
 
   describe('Delta Token Extraction', () => {
     it('should extract delta token from delta link', () => {
-      const deltaLink =
-        'https://graph.microsoft.com/v1.0/me/messages/delta?$deltatoken=abc123xyz';
+      const deltaLink = 'https://graph.microsoft.com/v1.0/me/messages/delta?$deltatoken=abc123xyz';
 
       // Simulate extraction logic
       const url = new URL(deltaLink);

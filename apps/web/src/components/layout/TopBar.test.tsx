@@ -34,9 +34,7 @@ describe('TopBar', () => {
     });
 
     it('should display user name and role', () => {
-      render(
-        <TopBar userName="Alexandru Popescu" userRole="Partner" />
-      );
+      render(<TopBar userName="Alexandru Popescu" userRole="Partner" />);
 
       expect(screen.getByText('Alexandru Popescu')).toBeInTheDocument();
       expect(screen.getByText('Partner')).toBeInTheDocument();
@@ -95,9 +93,7 @@ describe('TopBar', () => {
     it('should include unread count in aria-label', () => {
       render(<TopBar unreadCount={3} />);
 
-      expect(
-        screen.getByLabelText('Notifications (3 unread)')
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Notifications (3 unread)')).toBeInTheDocument();
     });
   });
 

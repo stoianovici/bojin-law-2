@@ -180,12 +180,7 @@ async function processDigests(): Promise<void> {
         // Send email
         if (accessToken) {
           const userName = `${user.firstName} ${user.lastName}`;
-          const success = await sendDailyDigestEmail(
-            user.email,
-            userName,
-            digest,
-            accessToken
-          );
+          const success = await sendDailyDigestEmail(user.email, userName, digest, accessToken);
 
           if (success) {
             successCount++;
@@ -197,7 +192,9 @@ async function processDigests(): Promise<void> {
           }
         } else {
           // Log what would have been sent
-          console.log(`[Daily Digest Worker] Would send digest to ${user.email} (${digest.cases.length} cases)`);
+          console.log(
+            `[Daily Digest Worker] Would send digest to ${user.email} (${digest.cases.length} cases)`
+          );
           successCount++;
           sentDigests.add(digestKey);
         }
@@ -209,7 +206,9 @@ async function processDigests(): Promise<void> {
 
     const duration = Date.now() - startTime;
     console.log(`[Daily Digest Worker] Processing complete in ${duration}ms`);
-    console.log(`[Daily Digest Worker] Results: ${successCount} sent, ${skipCount} skipped, ${errorCount} errors`);
+    console.log(
+      `[Daily Digest Worker] Results: ${successCount} sent, ${skipCount} skipped, ${errorCount} errors`
+    );
   } catch (error) {
     console.error('[Daily Digest Worker] Fatal error:', error);
     throw error;

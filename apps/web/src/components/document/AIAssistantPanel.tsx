@@ -42,7 +42,8 @@ const MOCK_SIMILAR_DOCUMENTS = [
   {
     id: '1',
     title: 'Contract de Consultanță Juridică - Tech Innovations SRL',
-    snippet: 'Contract similar privind servicii de consultanță juridică pentru companie tech, durata 24 luni...',
+    snippet:
+      'Contract similar privind servicii de consultanță juridică pentru companie tech, durata 24 luni...',
     date: '2024-10-15',
     similarity: 94,
   },
@@ -116,10 +117,7 @@ const MOCK_TEMPLATES = [
   },
 ];
 
-export function AIAssistantPanel({
-  isCollapsed = false,
-  onToggleCollapse,
-}: AIAssistantPanelProps) {
+export function AIAssistantPanel({ isCollapsed = false, onToggleCollapse }: AIAssistantPanelProps) {
   const [activeTab, setActiveTab] = React.useState('suggestions');
 
   if (isCollapsed) {
@@ -139,9 +137,7 @@ export function AIAssistantPanel({
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          <span className="text-xs writing-mode-vertical transform rotate-180">
-            Asistent AI
-          </span>
+          <span className="text-xs writing-mode-vertical transform rotate-180">Asistent AI</span>
         </button>
       </div>
     );
@@ -164,12 +160,7 @@ export function AIAssistantPanel({
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
@@ -202,10 +193,7 @@ export function AIAssistantPanel({
         </Tabs.List>
 
         {/* Suggestions Tab */}
-        <Tabs.Content
-          value="suggestions"
-          className="flex-1 overflow-y-auto p-4 space-y-3"
-        >
+        <Tabs.Content value="suggestions" className="flex-1 overflow-y-auto p-4 space-y-3">
           {MOCK_SUGGESTIONS.length > 0 ? (
             MOCK_SUGGESTIONS.map((suggestion) => (
               <div
@@ -226,9 +214,7 @@ export function AIAssistantPanel({
                     Inserează
                   </button>
                 </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {suggestion.text}
-                </p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{suggestion.text}</p>
               </div>
             ))
           ) : (
@@ -249,18 +235,13 @@ export function AIAssistantPanel({
               <h3 className="text-sm font-medium text-gray-900 mb-1">
                 Nu există sugestii disponibile
               </h3>
-              <p className="text-xs text-gray-500">
-                Începe să scrii pentru a primi sugestii AI
-              </p>
+              <p className="text-xs text-gray-500">Începe să scrii pentru a primi sugestii AI</p>
             </div>
           )}
         </Tabs.Content>
 
         {/* Similar Documents Tab */}
-        <Tabs.Content
-          value="documents"
-          className="flex-1 overflow-y-auto p-4 space-y-3"
-        >
+        <Tabs.Content value="documents" className="flex-1 overflow-y-auto p-4 space-y-3">
           {MOCK_SIMILAR_DOCUMENTS.length > 0 ? (
             MOCK_SIMILAR_DOCUMENTS.map((doc) => (
               <div
@@ -272,9 +253,7 @@ export function AIAssistantPanel({
                 }}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="text-sm font-semibold text-gray-900 flex-1">
-                    {doc.title}
-                  </h3>
+                  <h3 className="text-sm font-semibold text-gray-900 flex-1">{doc.title}</h3>
                   <span className="text-xs font-medium text-green-600 whitespace-nowrap">
                     {doc.similarity}% similar
                   </span>
@@ -310,18 +289,13 @@ export function AIAssistantPanel({
               <h3 className="text-sm font-medium text-gray-900 mb-1">
                 Nu s-au găsit documente similare
               </h3>
-              <p className="text-xs text-gray-500">
-                Documentele similare vor apărea aici
-              </p>
+              <p className="text-xs text-gray-500">Documentele similare vor apărea aici</p>
             </div>
           )}
         </Tabs.Content>
 
         {/* Templates Tab */}
-        <Tabs.Content
-          value="templates"
-          className="flex-1 overflow-y-auto p-4"
-        >
+        <Tabs.Content value="templates" className="flex-1 overflow-y-auto p-4">
           {MOCK_TEMPLATES.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               {MOCK_TEMPLATES.map((template) => (
@@ -334,11 +308,7 @@ export function AIAssistantPanel({
                   }}
                 >
                   <div className="flex items-center justify-center w-full h-20 bg-gradient-to-br from-blue-50 to-blue-100 rounded mb-2">
-                    <svg
-                      className="w-8 h-8 text-blue-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
+                    <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         fillRule="evenodd"
                         d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -350,9 +320,7 @@ export function AIAssistantPanel({
                     {template.name}
                   </h3>
                   <p className="text-xs text-gray-500 mb-1">{template.category}</p>
-                  <p className="text-xs text-gray-600 line-clamp-2">
-                    {template.description}
-                  </p>
+                  <p className="text-xs text-gray-600 line-clamp-2">{template.description}</p>
                 </div>
               ))}
             </div>
@@ -374,9 +342,7 @@ export function AIAssistantPanel({
               <h3 className="text-sm font-medium text-gray-900 mb-1">
                 Nu există șabloane disponibile
               </h3>
-              <p className="text-xs text-gray-500">
-                Șabloanele de documente vor apărea aici
-              </p>
+              <p className="text-xs text-gray-500">Șabloanele de documente vor apărea aici</p>
             </div>
           )}
         </Tabs.Content>

@@ -209,8 +209,7 @@ export const RomanianName: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Demonstrates proper rendering of Romanian diacritics in user name: Ș, Ț, Î',
+        story: 'Demonstrates proper rendering of Romanian diacritics in user name: Ș, Ț, Î',
       },
     },
   },
@@ -280,8 +279,7 @@ export const MobileView: Story = {
     },
     docs: {
       description: {
-        story:
-          'Mobile view shows hamburger menu and may adjust spacing for smaller screens',
+        story: 'Mobile view shows hamburger menu and may adjust spacing for smaller screens',
       },
     },
   },

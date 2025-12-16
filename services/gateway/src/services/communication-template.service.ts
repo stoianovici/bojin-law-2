@@ -6,10 +6,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  CommunicationChannel,
-  TemplateCategory,
-} from '@prisma/client';
+import { CommunicationChannel, TemplateCategory } from '@prisma/client';
 import { templateParser } from '../utils/template-parser';
 
 // ============================================================================
@@ -199,10 +196,7 @@ export class CommunicationTemplateService {
     const template = await prisma.communicationTemplate.findFirst({
       where: {
         id,
-        OR: [
-          { firmId: userContext.firmId },
-          { isGlobal: true },
-        ],
+        OR: [{ firmId: userContext.firmId }, { isGlobal: true }],
       },
     });
 
@@ -221,10 +215,7 @@ export class CommunicationTemplateService {
     const offset = options?.offset || 0;
 
     const where: any = {
-      OR: [
-        { firmId: userContext.firmId },
-        { isGlobal: true },
-      ],
+      OR: [{ firmId: userContext.firmId }, { isGlobal: true }],
     };
 
     if (filter.category) {
@@ -338,10 +329,7 @@ export class CommunicationTemplateService {
       where: {
         channelType,
         isActive: true,
-        OR: [
-          { firmId: userContext.firmId },
-          { isGlobal: true },
-        ],
+        OR: [{ firmId: userContext.firmId }, { isGlobal: true }],
       },
       orderBy: { usageCount: 'desc' },
       take: limit,

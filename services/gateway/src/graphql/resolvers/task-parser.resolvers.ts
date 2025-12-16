@@ -95,9 +95,7 @@ export const taskParserResolvers = {
 
         return patterns.map((p) => ({
           id: p.id,
-          pattern: p.inputPattern
-            .replace(/\{date\}/g, '[data]')
-            .replace(/\{time\}/g, '[ora]'),
+          pattern: p.inputPattern.replace(/\{date\}/g, '[data]').replace(/\{time\}/g, '[ora]'),
           completedText: p.inputPattern,
           taskType: p.taskType,
           frequency: p.frequency,
@@ -287,7 +285,8 @@ export const taskParserResolvers = {
 
         // Determine final values (corrections override parsed values)
         const parsedResult = parseHistory?.parsedResult as any;
-        const finalTitle = corrections?.title || parsedResult?.parsedTask?.title?.value || 'New Task';
+        const finalTitle =
+          corrections?.title || parsedResult?.parsedTask?.title?.value || 'New Task';
         const finalDescription =
           corrections?.description || parsedResult?.parsedTask?.description?.value || '';
         const finalDueDate =
@@ -296,8 +295,7 @@ export const taskParserResolvers = {
           corrections?.priority || parsedResult?.parsedTask?.priority?.value || 'Medium';
         const finalAssigneeId =
           corrections?.assigneeId || parsedResult?.parsedTask?.assigneeId?.value || null;
-        const finalCaseId =
-          corrections?.caseId || parsedResult?.parsedTask?.caseId?.value || null;
+        const finalCaseId = corrections?.caseId || parsedResult?.parsedTask?.caseId?.value || null;
         const finalTaskType =
           corrections?.taskType || parsedResult?.parsedTask?.taskType?.value || 'Meeting';
 

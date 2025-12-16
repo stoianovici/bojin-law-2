@@ -290,9 +290,7 @@ test.describe('Task Type System E2E Tests', () => {
     await page.click('[data-task-type="Meeting"]');
 
     // Verify info message about attendee management
-    await expect(
-      page.locator('text=you can add internal and external attendees')
-    ).toBeVisible();
+    await expect(page.locator('text=you can add internal and external attendees')).toBeVisible();
   });
 
   test('should show Business Trip delegation option', async ({ page }) => {
@@ -307,7 +305,7 @@ test.describe('Task Type System E2E Tests', () => {
 
     // Verify delegation info message appears
     await expect(
-      page.locator('text=you\'ll be prompted to select which tasks to delegate')
+      page.locator("text=you'll be prompted to select which tasks to delegate")
     ).toBeVisible();
   });
 });

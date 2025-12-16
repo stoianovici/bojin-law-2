@@ -481,8 +481,9 @@ test.describe('Platform Intelligence Dashboard', () => {
       await page.click('button:has-text("PDF Document")');
 
       // Wait for export
-      await page.waitForResponse((response) =>
-        response.request().postDataJSON()?.operationName === 'ExportPlatformIntelligence'
+      await page.waitForResponse(
+        (response) =>
+          response.request().postDataJSON()?.operationName === 'ExportPlatformIntelligence'
       );
 
       expect(exportCalled).toBe(true);

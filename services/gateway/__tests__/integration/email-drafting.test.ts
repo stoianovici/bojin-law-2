@@ -201,11 +201,7 @@ describe('Email Drafting Integration Tests', () => {
     it('should filter by emailId', async () => {
       (mockPrisma.emailDraft.findMany as jest.Mock).mockResolvedValue([testDraft]);
 
-      await emailDraftingResolvers.Query.emailDrafts(
-        {},
-        { emailId: testEmail.id },
-        testContext
-      );
+      await emailDraftingResolvers.Query.emailDrafts({}, { emailId: testEmail.id }, testContext);
 
       expect(mockPrisma.emailDraft.findMany).toHaveBeenCalledWith({
         where: { firmId: testFirm.id, emailId: testEmail.id },
@@ -217,11 +213,7 @@ describe('Email Drafting Integration Tests', () => {
     it('should filter by status', async () => {
       (mockPrisma.emailDraft.findMany as jest.Mock).mockResolvedValue([]);
 
-      await emailDraftingResolvers.Query.emailDrafts(
-        {},
-        { status: 'Sent' },
-        testContext
-      );
+      await emailDraftingResolvers.Query.emailDrafts({}, { status: 'Sent' }, testContext);
 
       expect(mockPrisma.emailDraft.findMany).toHaveBeenCalledWith({
         where: { firmId: testFirm.id, status: 'Sent' },
@@ -587,11 +579,7 @@ describe('Email Drafting Integration Tests', () => {
       (mockPrisma.emailDraft.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        emailDraftingResolvers.Mutation.discardDraft(
-          {},
-          { draftId: 'non-existent' },
-          testContext
-        )
+        emailDraftingResolvers.Mutation.discardDraft({}, { draftId: 'non-existent' }, testContext)
       ).rejects.toThrow('Draft not found');
     });
   });

@@ -21,24 +21,15 @@ export async function POST(request: NextRequest) {
 
     // Validate request
     if (!body.templateSlug) {
-      return NextResponse.json(
-        { error: 'Template slug is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Template slug is required' }, { status: 400 });
     }
 
     if (!body.variables || typeof body.variables !== 'object') {
-      return NextResponse.json(
-        { error: 'Variables object is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Variables object is required' }, { status: 400 });
     }
 
     // Validate variables
-    const result = romanianDocumentGenerator.validateVariables(
-      body.templateSlug,
-      body.variables
-    );
+    const result = romanianDocumentGenerator.validateVariables(body.templateSlug, body.variables);
 
     return NextResponse.json({
       valid: result.valid,

@@ -7,10 +7,7 @@
 
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
-import type {
-  TeamCalendarView,
-  TeamMemberCalendar,
-} from '@legal-platform/types';
+import type { TeamCalendarView, TeamMemberCalendar } from '@legal-platform/types';
 
 // GraphQL Operations
 const GET_TEAM_CALENDAR = gql`

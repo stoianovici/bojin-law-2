@@ -23,10 +23,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import type {
-  AIUtilizationSummary,
-  AIFeatureType,
-} from '@legal-platform/types';
+import type { AIUtilizationSummary, AIFeatureType } from '@legal-platform/types';
 
 // ============================================================================
 // Types
@@ -54,10 +51,7 @@ interface FeatureChartData {
 // Constants
 // ============================================================================
 
-const FEATURE_CONFIG: Record<
-  AIFeatureType,
-  { label: string; color: string; icon: string }
-> = {
+const FEATURE_CONFIG: Record<AIFeatureType, { label: string; color: string; icon: string }> = {
   email_drafting: {
     label: 'Redactare email',
     color: '#3B82F6',
@@ -203,19 +197,10 @@ function FeatureUsageChart({ data, onFeatureClick }: FeatureUsageChartProps) {
 
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <BarChart
-        data={data}
-        layout="vertical"
-        margin={{ left: 100, right: 20 }}
-      >
+      <BarChart data={data} layout="vertical" margin={{ left: 100, right: 20 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
         <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
-        <YAxis
-          type="category"
-          dataKey="label"
-          tick={{ fontSize: 11 }}
-          width={95}
-        />
+        <YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={95} />
         <Tooltip
           formatter={(value: number, name: string) => [
             formatNumber(value),
@@ -223,11 +208,7 @@ function FeatureUsageChart({ data, onFeatureClick }: FeatureUsageChartProps) {
           ]}
           labelFormatter={(label) => `Funcție: ${label}`}
         />
-        <Legend
-          formatter={(value) =>
-            value === 'requestCount' ? 'Cereri' : 'Tokeni (K)'
-          }
-        />
+        <Legend formatter={(value) => (value === 'requestCount' ? 'Cereri' : 'Tokeni (K)')} />
         <Bar
           dataKey="requestCount"
           fill="#3B82F6"
@@ -280,9 +261,7 @@ function FeatureDistributionPie({ data }: FeatureDistributionPieProps) {
               <Cell key={entry.feature} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip
-            formatter={(value: number) => [formatNumber(value), 'Cereri']}
-          />
+          <Tooltip formatter={(value: number) => [formatNumber(value), 'Cereri']} />
         </PieChart>
       </ResponsiveContainer>
       <div className="w-1/2 space-y-2">
@@ -292,18 +271,12 @@ function FeatureDistributionPie({ data }: FeatureDistributionPieProps) {
               className="w-3 h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: item.color }}
             />
-            <span className="text-xs text-gray-600 truncate flex-1">
-              {item.label}
-            </span>
-            <span className="text-xs font-medium text-gray-900">
-              {item.percent.toFixed(0)}%
-            </span>
+            <span className="text-xs text-gray-600 truncate flex-1">{item.label}</span>
+            <span className="text-xs font-medium text-gray-900">{item.percent.toFixed(0)}%</span>
           </div>
         ))}
         {pieData.length > 6 && (
-          <div className="text-xs text-gray-400">
-            +{pieData.length - 6} altele
-          </div>
+          <div className="text-xs text-gray-400">+{pieData.length - 6} altele</div>
         )}
       </div>
     </div>
@@ -321,9 +294,7 @@ function CostPerUserTable({ users, onUserClick }: CostPerUserTableProps) {
 
   if (topUsers.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-4">
-        Nu există date de cost per utilizator
-      </div>
+      <div className="text-center text-gray-500 py-4">Nu există date de cost per utilizator</div>
     );
   }
 
@@ -339,20 +310,14 @@ function CostPerUserTable({ users, onUserClick }: CostPerUserTableProps) {
             {index + 1}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-gray-900 truncate">
-              {user.userName}
-            </div>
-            <div className="text-xs text-gray-500">
-              {formatNumber(user.totalRequests)} cereri
-            </div>
+            <div className="text-sm font-medium text-gray-900 truncate">{user.userName}</div>
+            <div className="text-xs text-gray-500">{formatNumber(user.totalRequests)} cereri</div>
           </div>
           <div className="text-right">
             <div className="text-sm font-semibold text-gray-900">
               {formatCurrency(user.totalCostCents)}
             </div>
-            <div
-              className={`text-xs ${getAdoptionColor(user.adoptionScore)}`}
-            >
+            <div className={`text-xs ${getAdoptionColor(user.adoptionScore)}`}>
               Adopție: {user.adoptionScore}%
             </div>
           </div>
@@ -372,9 +337,7 @@ export function AIUtilizationPanel({
   onUserClick,
   onFeatureClick,
 }: AIUtilizationPanelProps) {
-  const [selectedFeature, setSelectedFeature] = useState<AIFeatureType | null>(
-    null
-  );
+  const [selectedFeature, setSelectedFeature] = useState<AIFeatureType | null>(null);
 
   // Transform feature data for charts
   const featureChartData = useMemo((): FeatureChartData[] => {
@@ -423,9 +386,7 @@ export function AIUtilizationPanel({
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Utilizare AI
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Utilizare AI</h3>
         <div className="flex items-center gap-2">
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium ${getAdoptionBg(
@@ -480,11 +441,7 @@ export function AIUtilizationPanel({
         {featureChartData.slice(0, 5).map((f) => (
           <button
             key={f.feature}
-            onClick={() =>
-              setSelectedFeature(
-                selectedFeature === f.feature ? null : f.feature
-              )
-            }
+            onClick={() => setSelectedFeature(selectedFeature === f.feature ? null : f.feature)}
             className={`px-3 py-1 text-sm rounded-full transition-colors flex items-center gap-1 ${
               selectedFeature === f.feature
                 ? 'bg-blue-600 text-white'
@@ -501,22 +458,15 @@ export function AIUtilizationPanel({
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         {/* Feature Usage Bar Chart */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Utilizare pe funcționalitate
-          </h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Utilizare pe funcționalitate</h4>
           <div className="bg-gray-50 rounded-lg p-4">
-            <FeatureUsageChart
-              data={filteredFeatureData}
-              onFeatureClick={onFeatureClick}
-            />
+            <FeatureUsageChart data={filteredFeatureData} onFeatureClick={onFeatureClick} />
           </div>
         </div>
 
         {/* Feature Distribution Pie */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Distribuție cereri
-          </h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Distribuție cereri</h4>
           <div className="bg-gray-50 rounded-lg p-4">
             <FeatureDistributionPie data={featureChartData} />
           </div>
@@ -527,9 +477,7 @@ export function AIUtilizationPanel({
       <div className="grid md:grid-cols-2 gap-6">
         {/* Top Users by Cost */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Top utilizatori (cost)
-          </h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Top utilizatori (cost)</h4>
           <div className="bg-gray-50 rounded-lg p-4">
             <CostPerUserTable users={byUser} onUserClick={onUserClick} />
           </div>
@@ -537,9 +485,7 @@ export function AIUtilizationPanel({
 
         {/* Adoption Summary */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Sumar adopție
-          </h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Sumar adopție</h4>
           <div className="bg-gray-50 rounded-lg p-4 space-y-4">
             {/* Top Users */}
             <div>
@@ -599,10 +545,8 @@ export function AIUtilizationPanel({
                     );
                     if (withAcceptance.length === 0) return 'N/A';
                     const avg =
-                      withAcceptance.reduce(
-                        (sum, f) => sum + (f.acceptanceRate || 0),
-                        0
-                      ) / withAcceptance.length;
+                      withAcceptance.reduce((sum, f) => sum + (f.acceptanceRate || 0), 0) /
+                      withAcceptance.length;
                     return `${avg.toFixed(0)}%`;
                   })()}
                 </div>

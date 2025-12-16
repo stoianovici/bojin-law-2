@@ -43,10 +43,10 @@ interface ComparisonBenchmarkResult {
 
 // Thresholds from story requirements
 const COMPARISON_THRESHOLDS = {
-  1: { p95: 2000 },     // 1 page: < 2s
-  10: { p95: 5000 },    // 10 pages: < 5s
-  50: { p95: 15000 },   // 50 pages: < 15s
-  100: { p95: 30000 },  // 100 pages: < 30s
+  1: { p95: 2000 }, // 1 page: < 2s
+  10: { p95: 5000 }, // 10 pages: < 5s
+  50: { p95: 15000 }, // 50 pages: < 15s
+  100: { p95: 30000 }, // 100 pages: < 30s
 };
 
 // Page counts to benchmark
@@ -96,7 +96,7 @@ async function simulateSemanticDiff(pageCount: number): Promise<VersionCompariso
   const perPageLatency = pageCount <= 10 ? 200 : pageCount <= 50 ? 180 : 150; // Batching efficiency
   const variance = Math.random() * (pageCount * 50);
 
-  const semanticDiffMs = baseLatency + (pageCount * perPageLatency) + variance;
+  const semanticDiffMs = baseLatency + pageCount * perPageLatency + variance;
 
   // Change classification is faster (rule-based + small AI call)
   const changeClassificationMs = 100 + pageCount * 10 + Math.random() * 50;
@@ -221,7 +221,9 @@ async function runBenchmarks(): Promise<void> {
     const results = await runComparisonBenchmark(pageCount, iterations);
     allResults.push({ pageCount, ...results });
 
-    console.log(`    Semantic Diff: p95=${results.semanticDiff.stats.p95.toFixed(0)}ms ${results.semanticDiff.passed ? '✓' : '✗'}`);
+    console.log(
+      `    Semantic Diff: p95=${results.semanticDiff.stats.p95.toFixed(0)}ms ${results.semanticDiff.passed ? '✓' : '✗'}`
+    );
   }
 
   // Print summary table - Semantic Diff Performance
@@ -301,7 +303,9 @@ async function runBenchmarks(): Promise<void> {
 
   // Overall result
   const allPassed = allResults.every((r) => r.semanticDiff.passed);
-  console.log(`\n  Overall: ${allPassed ? '✅ All version comparison benchmarks passed' : '❌ Some benchmarks failed'}`);
+  console.log(
+    `\n  Overall: ${allPassed ? '✅ All version comparison benchmarks passed' : '❌ Some benchmarks failed'}`
+  );
   console.log(`  Report saved: ${reportPath}`);
 
   if (!allPassed) {

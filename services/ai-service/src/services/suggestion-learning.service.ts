@@ -77,7 +77,9 @@ export class SuggestionLearningService {
           userId,
           firmId,
           action: feedback.action,
-          modifiedAction: feedback.modifiedAction ? JSON.parse(JSON.stringify(feedback.modifiedAction)) : undefined,
+          modifiedAction: feedback.modifiedAction
+            ? JSON.parse(JSON.stringify(feedback.modifiedAction))
+            : undefined,
           feedbackReason: feedback.feedbackReason,
           responseTimeMs: feedback.responseTimeMs,
         },
@@ -87,7 +89,7 @@ export class SuggestionLearningService {
       await this.updateSuggestionStatus(suggestionId, feedback.action);
 
       // Trigger async learning update
-      this.updateLearningMetrics(userId, firmId).catch(error => {
+      this.updateLearningMetrics(userId, firmId).catch((error) => {
         logger.error('Failed to update learning metrics', {
           userId,
           firmId,
@@ -112,10 +114,7 @@ export class SuggestionLearningService {
   /**
    * Update suggestion status based on feedback
    */
-  private async updateSuggestionStatus(
-    suggestionId: string,
-    action: string
-  ): Promise<void> {
+  private async updateSuggestionStatus(suggestionId: string, action: string): Promise<void> {
     const statusMap: Record<string, string> = {
       accepted: 'Accepted',
       dismissed: 'Dismissed',
@@ -392,16 +391,18 @@ export class SuggestionLearningService {
     firmId: string,
     limit: number = 100,
     offset: number = 0
-  ): Promise<Array<{
-    id: string;
-    suggestionId: string;
-    action: string;
-    feedbackReason: string | null;
-    responseTimeMs: number | null;
-    createdAt: Date;
-    suggestionType: string | null;
-    suggestionCategory: string | null;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      suggestionId: string;
+      action: string;
+      feedbackReason: string | null;
+      responseTimeMs: number | null;
+      createdAt: Date;
+      suggestionType: string | null;
+      suggestionCategory: string | null;
+    }>
+  > {
     const feedback = await prisma.suggestionFeedback.findMany({
       where: { userId, firmId },
       orderBy: { createdAt: 'desc' },
@@ -417,7 +418,7 @@ export class SuggestionLearningService {
       },
     });
 
-    return feedback.map(fb => ({
+    return feedback.map((fb) => ({
       id: fb.id,
       suggestionId: fb.suggestionId,
       action: fb.action,

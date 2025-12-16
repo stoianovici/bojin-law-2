@@ -498,7 +498,7 @@ ${textPreview}
     });
 
     // Create a map for quick lookup
-    const docMap = new Map(documents.map((d: typeof documents[number]) => [d.id, d]));
+    const docMap = new Map(documents.map((d: (typeof documents)[number]) => [d.id, d]));
 
     // Update documents with analysis results
     const updates = results.map((result) =>

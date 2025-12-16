@@ -76,7 +76,9 @@ describe('SupervisedCasesWidget', () => {
     expect(screen.getByText('COM-2025-042')).toBeInTheDocument();
     expect(screen.getByText('PEN-2025-015')).toBeInTheDocument();
 
-    expect(screen.getByText('Litigiu comercial Ștefănescu vs. CompaniaCorp SRL')).toBeInTheDocument();
+    expect(
+      screen.getByText('Litigiu comercial Ștefănescu vs. CompaniaCorp SRL')
+    ).toBeInTheDocument();
     expect(screen.getByText('Contract parteneriat strategic')).toBeInTheDocument();
     expect(screen.getByText('Apărare penală')).toBeInTheDocument();
   });
@@ -127,7 +129,9 @@ describe('SupervisedCasesWidget', () => {
   it('navigates to case detail when case is clicked', () => {
     render(<SupervisedCasesWidget widget={mockWidget} />);
 
-    const firstCase = screen.getByLabelText('Caz CIV-2025-001: Litigiu comercial Ștefănescu vs. CompaniaCorp SRL');
+    const firstCase = screen.getByLabelText(
+      'Caz CIV-2025-001: Litigiu comercial Ștefănescu vs. CompaniaCorp SRL'
+    );
     fireEvent.click(firstCase);
 
     expect(mockRouter.push).toHaveBeenCalledWith('/cases/case-1');
@@ -145,7 +149,9 @@ describe('SupervisedCasesWidget', () => {
   it('handles Enter key press for keyboard navigation', () => {
     render(<SupervisedCasesWidget widget={mockWidget} />);
 
-    const firstCase = screen.getByLabelText('Caz CIV-2025-001: Litigiu comercial Ștefănescu vs. CompaniaCorp SRL');
+    const firstCase = screen.getByLabelText(
+      'Caz CIV-2025-001: Litigiu comercial Ștefănescu vs. CompaniaCorp SRL'
+    );
     fireEvent.keyDown(firstCase, { key: 'Enter' });
 
     expect(mockRouter.push).toHaveBeenCalledWith('/cases/case-1');
@@ -154,7 +160,9 @@ describe('SupervisedCasesWidget', () => {
   it('handles Space key press for keyboard navigation', () => {
     render(<SupervisedCasesWidget widget={mockWidget} />);
 
-    const firstCase = screen.getByLabelText('Caz CIV-2025-001: Litigiu comercial Ștefănescu vs. CompaniaCorp SRL');
+    const firstCase = screen.getByLabelText(
+      'Caz CIV-2025-001: Litigiu comercial Ștefănescu vs. CompaniaCorp SRL'
+    );
     fireEvent.keyDown(firstCase, { key: ' ' });
 
     expect(mockRouter.push).toHaveBeenCalledWith('/cases/case-1');
@@ -213,7 +221,9 @@ describe('SupervisedCasesWidget', () => {
     render(<SupervisedCasesWidget widget={mockWidget} />);
 
     // Check Romanian diacritics are rendered correctly
-    expect(screen.getByText('Litigiu comercial Ștefănescu vs. CompaniaCorp SRL')).toBeInTheDocument();
+    expect(
+      screen.getByText('Litigiu comercial Ștefănescu vs. CompaniaCorp SRL')
+    ).toBeInTheDocument();
     expect(screen.getByText('Ion Ștefănescu')).toBeInTheDocument();
   });
 

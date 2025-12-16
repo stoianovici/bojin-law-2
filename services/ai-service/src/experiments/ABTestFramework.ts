@@ -121,15 +121,18 @@ export class ABTestFramework {
 
     this.experiments.set(config.id, config);
     this.assignments.set(config.id, new Map());
-    this.metrics.set(config.id, new Map([
-      ['control', []],
-      ['treatment', []]
-    ]));
+    this.metrics.set(
+      config.id,
+      new Map([
+        ['control', []],
+        ['treatment', []],
+      ])
+    );
 
     this.logger.info('Experiment created', {
       experimentId: config.id,
       name: config.name,
-      strategy: config.assignmentStrategy
+      strategy: config.assignmentStrategy,
     });
   }
 
@@ -174,7 +177,7 @@ export class ABTestFramework {
       experimentId,
       userId,
       variant,
-      assignedAt: new Date()
+      assignedAt: new Date(),
     };
     experimentAssignments.set(userId, assignment);
 
@@ -182,7 +185,7 @@ export class ABTestFramework {
       experimentId,
       userId,
       variant,
-      strategy: experiment.assignmentStrategy
+      strategy: experiment.assignmentStrategy,
     });
 
     return variant;
@@ -195,7 +198,7 @@ export class ABTestFramework {
   private hashAssignment(userId: string): ExperimentVariant {
     const hash = crypto.createHash('sha256').update(userId).digest('hex');
     const numericHash = parseInt(hash.substring(0, 8), 16);
-    return (numericHash % 2 === 0) ? 'control' : 'treatment';
+    return numericHash % 2 === 0 ? 'control' : 'treatment';
   }
 
   /**
@@ -227,7 +230,7 @@ export class ABTestFramework {
       variant,
       sampleSize: variantMetrics.length,
       cost: metrics.costPerRequest,
-      executionTime: metrics.executionTimeMs
+      executionTime: metrics.executionTimeMs,
     });
   }
 
@@ -242,7 +245,7 @@ export class ABTestFramework {
 
     return {
       control: experimentMetrics.get('control')!.length,
-      treatment: experimentMetrics.get('treatment')!.length
+      treatment: experimentMetrics.get('treatment')!.length,
     };
   }
 
@@ -258,17 +261,20 @@ export class ABTestFramework {
     }
 
     // Calculate means
-    const avgCost = this.mean(metrics.map(m => m.costPerRequest));
-    const avgExecutionTime = this.mean(metrics.map(m => m.executionTimeMs));
-    const avgTokenUsage = this.mean(metrics.map(m => m.tokenUsage));
-    const qualityMetrics = metrics.filter(m => m.responseQuality !== undefined).map(m => m.responseQuality!);
+    const avgCost = this.mean(metrics.map((m) => m.costPerRequest));
+    const avgExecutionTime = this.mean(metrics.map((m) => m.executionTimeMs));
+    const avgTokenUsage = this.mean(metrics.map((m) => m.tokenUsage));
+    const qualityMetrics = metrics
+      .filter((m) => m.responseQuality !== undefined)
+      .map((m) => m.responseQuality!);
     const avgQuality = qualityMetrics.length > 0 ? this.mean(qualityMetrics) : undefined;
 
     // Calculate standard deviations
-    const stdCost = this.standardDeviation(metrics.map(m => m.costPerRequest));
-    const stdExecutionTime = this.standardDeviation(metrics.map(m => m.executionTimeMs));
-    const stdTokenUsage = this.standardDeviation(metrics.map(m => m.tokenUsage));
-    const stdQuality = qualityMetrics.length > 0 ? this.standardDeviation(qualityMetrics) : undefined;
+    const stdCost = this.standardDeviation(metrics.map((m) => m.costPerRequest));
+    const stdExecutionTime = this.standardDeviation(metrics.map((m) => m.executionTimeMs));
+    const stdTokenUsage = this.standardDeviation(metrics.map((m) => m.tokenUsage));
+    const stdQuality =
+      qualityMetrics.length > 0 ? this.standardDeviation(qualityMetrics) : undefined;
 
     return {
       variant,
@@ -277,14 +283,14 @@ export class ABTestFramework {
         avgCost,
         avgExecutionTime,
         avgTokenUsage,
-        avgQuality
+        avgQuality,
       },
       standardDeviations: {
         cost: stdCost,
         executionTime: stdExecutionTime,
         tokenUsage: stdTokenUsage,
-        quality: stdQuality
-      }
+        quality: stdQuality,
+      },
     };
   }
 
@@ -303,11 +309,13 @@ export class ABTestFramework {
     const treatmentMetrics = experimentMetrics.get('treatment')!;
 
     // Verify minimum sample size
-    if (controlMetrics.length < experiment.minimumSampleSize ||
-        treatmentMetrics.length < experiment.minimumSampleSize) {
+    if (
+      controlMetrics.length < experiment.minimumSampleSize ||
+      treatmentMetrics.length < experiment.minimumSampleSize
+    ) {
       throw new Error(
         `Insufficient sample size. Need ${experiment.minimumSampleSize}, ` +
-        `have control=${controlMetrics.length}, treatment=${treatmentMetrics.length}`
+          `have control=${controlMetrics.length}, treatment=${treatmentMetrics.length}`
       );
     }
 
@@ -317,8 +325,8 @@ export class ABTestFramework {
 
     // Perform Welch's t-test on cost (primary metric)
     const pValue = this.welchTTest(
-      controlMetrics.map(m => m.costPerRequest),
-      treatmentMetrics.map(m => m.costPerRequest)
+      controlMetrics.map((m) => m.costPerRequest),
+      treatmentMetrics.map((m) => m.costPerRequest)
     );
 
     const significant = pValue < experiment.significanceLevel;
@@ -327,20 +335,31 @@ export class ABTestFramework {
     // Calculate relative differences (%)
     const relativeDifference = {
       cost: ((treatment.metrics.avgCost - control.metrics.avgCost) / control.metrics.avgCost) * 100,
-      executionTime: ((treatment.metrics.avgExecutionTime - control.metrics.avgExecutionTime) / control.metrics.avgExecutionTime) * 100,
-      tokenUsage: ((treatment.metrics.avgTokenUsage - control.metrics.avgTokenUsage) / control.metrics.avgTokenUsage) * 100,
-      quality: (control.metrics.avgQuality && treatment.metrics.avgQuality)
-        ? ((treatment.metrics.avgQuality - control.metrics.avgQuality) / control.metrics.avgQuality) * 100
-        : undefined
+      executionTime:
+        ((treatment.metrics.avgExecutionTime - control.metrics.avgExecutionTime) /
+          control.metrics.avgExecutionTime) *
+        100,
+      tokenUsage:
+        ((treatment.metrics.avgTokenUsage - control.metrics.avgTokenUsage) /
+          control.metrics.avgTokenUsage) *
+        100,
+      quality:
+        control.metrics.avgQuality && treatment.metrics.avgQuality
+          ? ((treatment.metrics.avgQuality - control.metrics.avgQuality) /
+              control.metrics.avgQuality) *
+            100
+          : undefined,
     };
 
     // Make recommendation
     let recommendation: StatisticalAnalysis['recommendation'];
     if (!significant) {
       recommendation = 'continue_testing';
-    } else if (relativeDifference.cost < -10) { // Treatment is >10% cheaper
+    } else if (relativeDifference.cost < -10) {
+      // Treatment is >10% cheaper
       recommendation = 'adopt_treatment';
-    } else if (relativeDifference.cost > 10) { // Treatment is >10% more expensive
+    } else if (relativeDifference.cost > 10) {
+      // Treatment is >10% more expensive
       recommendation = 'keep_control';
     } else {
       recommendation = 'continue_testing';
@@ -354,7 +373,7 @@ export class ABTestFramework {
       significant,
       confidenceLevel,
       relativeDifference,
-      recommendation
+      recommendation,
     };
 
     this.logger.info('Experiment analyzed', {
@@ -362,7 +381,7 @@ export class ABTestFramework {
       pValue,
       significant,
       recommendation,
-      costDifference: `${relativeDifference.cost.toFixed(2)}%`
+      costDifference: `${relativeDifference.cost.toFixed(2)}%`,
     });
 
     return analysis;
@@ -380,7 +399,7 @@ export class ABTestFramework {
    */
   private standardDeviation(values: number[]): number {
     const avg = this.mean(values);
-    const squareDiffs = values.map(value => Math.pow(value - avg, 2));
+    const squareDiffs = values.map((value) => Math.pow(value - avg, 2));
     const variance = this.mean(squareDiffs);
     return Math.sqrt(variance);
   }
@@ -404,10 +423,9 @@ export class ABTestFramework {
 
     // Calculate degrees of freedom (Welch-Satterthwaite equation)
     // Using normal approximation for p-value calculation (works well for large samples)
-    const _df = Math.pow(variance1 + variance2, 2) / (
-      Math.pow(variance1, 2) / (n1 - 1) +
-      Math.pow(variance2, 2) / (n2 - 1)
-    );
+    const _df =
+      Math.pow(variance1 + variance2, 2) /
+      (Math.pow(variance1, 2) / (n1 - 1) + Math.pow(variance2, 2) / (n2 - 1));
 
     // Convert t-statistic to p-value (two-tailed)
     // Using approximation: p ≈ 2 * P(T > |t|)
@@ -424,8 +442,9 @@ export class ABTestFramework {
   private normalCDF(x: number): number {
     // Using approximation for standard normal CDF
     const t = 1 / (1 + 0.2316419 * Math.abs(x));
-    const d = 0.3989423 * Math.exp(-x * x / 2);
-    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    const d = 0.3989423 * Math.exp((-x * x) / 2);
+    const p =
+      d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
     return x > 0 ? 1 - p : p;
   }
 
@@ -444,7 +463,7 @@ export class ABTestFramework {
     this.logger.info('Experiment stopped', {
       experimentId,
       name: experiment.name,
-      endDate: experiment.endDate
+      endDate: experiment.endDate,
     });
   }
 
@@ -452,7 +471,7 @@ export class ABTestFramework {
    * Get all active experiments
    */
   getActiveExperiments(): ExperimentConfig[] {
-    return Array.from(this.experiments.values()).filter(exp => exp.active);
+    return Array.from(this.experiments.values()).filter((exp) => exp.active);
   }
 
   /**
@@ -477,7 +496,7 @@ export class ABTestFramework {
     const metricsMap = this.metrics.get(experimentId)!;
     const metrics = {
       control: metricsMap.get('control')!,
-      treatment: metricsMap.get('treatment')!
+      treatment: metricsMap.get('treatment')!,
     };
 
     return { config, assignments, metrics };

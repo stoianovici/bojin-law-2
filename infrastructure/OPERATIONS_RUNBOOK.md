@@ -586,11 +586,13 @@ pnpm db:export  # Export to backups/ directory
 ```
 
 **Backup Storage:**
+
 - Local backups stored in: `packages/database/backups/`
 - Render backups managed automatically
 - External storage recommended for critical backups
 
 **See also:**
+
 - [Database Quick Start Guide](../docs/runbooks/database-quick-start.md)
 - [Database Migration Runbook](../docs/runbooks/database-migration-runbook.md)
 
@@ -615,6 +617,7 @@ render db restore --database bojin-law-db --backup [backup-id]
 ```
 
 **Restore Workflow:**
+
 1. Stop all application services
 2. Create safety backup of current state
 3. Restore from backup file/Render backup
@@ -623,6 +626,7 @@ render db restore --database bojin-law-db --backup [backup-id]
 6. Monitor for issues
 
 **See also:**
+
 - [Database Restore Script](../packages/database/scripts/restore-database.sh)
 - [Database Migration Runbook](../docs/runbooks/database-migration-runbook.md) (Rollback section)
 

@@ -234,11 +234,15 @@ describe('DocumentIntelligenceService', () => {
       const result = await service.getDocumentVelocityStats(mockFilters);
 
       // User 1 should have 2 documents
-      const user1Stats = result.byUser.find((u: { userId: string; documentCount: number }) => u.userId === 'user-1');
+      const user1Stats = result.byUser.find(
+        (u: { userId: string; documentCount: number }) => u.userId === 'user-1'
+      );
       expect(user1Stats?.documentCount).toBe(2);
 
       // User 2 should have 1 document
-      const user2Stats = result.byUser.find((u: { userId: string; documentCount: number }) => u.userId === 'user-2');
+      const user2Stats = result.byUser.find(
+        (u: { userId: string; documentCount: number }) => u.userId === 'user-2'
+      );
       expect(user2Stats?.documentCount).toBe(1);
     });
 
@@ -250,7 +254,9 @@ describe('DocumentIntelligenceService', () => {
       const service = createDocumentIntelligenceService(mockPartnerContext);
       const result = await service.getDocumentVelocityStats(mockFilters);
 
-      const contractStats = result.byType.find((t: { documentType: string; documentCount: number }) => t.documentType === 'Contract');
+      const contractStats = result.byType.find(
+        (t: { documentType: string; documentCount: number }) => t.documentType === 'Contract'
+      );
       expect(contractStats?.documentCount).toBe(2);
     });
   });
@@ -330,7 +336,9 @@ describe('DocumentIntelligenceService', () => {
       const result = await service.getErrorDetectionStats(mockFilters);
 
       expect(result.bySeverity).toHaveLength(3);
-      const errorSeverity = result.bySeverity.find((s: { severity: string; count: number }) => s.severity === 'ERROR');
+      const errorSeverity = result.bySeverity.find(
+        (s: { severity: string; count: number }) => s.severity === 'ERROR'
+      );
       expect(errorSeverity?.count).toBe(1);
     });
 
@@ -578,9 +586,7 @@ describe('DocumentIntelligenceService', () => {
 
       // Third call (should not use cache)
       await service.getDashboardMetrics(mockFilters);
-      expect((prisma.document.findMany as jest.Mock).mock.calls.length).toBeGreaterThan(
-        callCount
-      );
+      expect((prisma.document.findMany as jest.Mock).mock.calls.length).toBeGreaterThan(callCount);
     });
   });
 });

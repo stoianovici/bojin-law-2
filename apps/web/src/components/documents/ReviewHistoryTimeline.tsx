@@ -125,9 +125,7 @@ export function ReviewHistoryTimeline({ history }: ReviewHistoryTimelineProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No history yet.
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-4">No history yet.</p>
         </CardContent>
       </Card>
     );
@@ -161,9 +159,7 @@ export function ReviewHistoryTimeline({ history }: ReviewHistoryTimelineProps) {
               return (
                 <div key={entry.id} className="relative pl-10">
                   {/* Timeline dot/icon */}
-                  <div
-                    className={`absolute left-0 p-1.5 rounded-full ${config.bgColor}`}
-                  >
+                  <div className={`absolute left-0 p-1.5 rounded-full ${config.bgColor}`}>
                     <Icon className={`h-4 w-4 ${config.color}`} />
                   </div>
 
@@ -187,9 +183,7 @@ export function ReviewHistoryTimeline({ history }: ReviewHistoryTimelineProps) {
                     </p>
 
                     {entry.feedback && (
-                      <div className="mt-2 p-2 bg-muted rounded text-sm">
-                        {entry.feedback}
-                      </div>
+                      <div className="mt-2 p-2 bg-muted rounded text-sm">{entry.feedback}</div>
                     )}
 
                     {entry.previousStatus && entry.newStatus && (

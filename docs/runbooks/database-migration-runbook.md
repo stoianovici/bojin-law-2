@@ -28,6 +28,7 @@ This runbook provides step-by-step procedures for safely executing database migr
 Complete ALL items before executing production migration:
 
 ### 1. Testing and Validation
+
 - [ ] Migration tested on local development database (zero errors)
 - [ ] Migration tested on staging environment (zero errors)
 - [ ] Full test suite passes on staging post-migration (100% pass rate)
@@ -36,6 +37,7 @@ Complete ALL items before executing production migration:
 - [ ] Migration reviewed by another developer (peer review completed)
 
 ### 2. Backup and Safety
+
 - [ ] Manual backup created: `pnpm db:backup` or `render db backup --database bojin-law-db`
 - [ ] Backup verified (file size consistent, not corrupted)
 - [ ] Safety backup stored securely (encrypted, off-site)
@@ -43,6 +45,7 @@ Complete ALL items before executing production migration:
 - [ ] DOWN migration SQL prepared (if applicable)
 
 ### 3. Communication and Coordination
+
 - [ ] Stakeholders notified 24 hours in advance
 - [ ] Migration announcement sent (see [Migration Communication Template](../templates/migration-announcement-template.md))
 - [ ] Maintenance window scheduled (low-traffic period identified)
@@ -51,6 +54,7 @@ Complete ALL items before executing production migration:
 - [ ] Customer support team notified
 
 ### 4. Environment Preparation
+
 - [ ] Migration SQL reviewed and validated
 - [ ] Database connection credentials verified
 - [ ] Render CLI authenticated (if using Render)
@@ -59,6 +63,7 @@ Complete ALL items before executing production migration:
 - [ ] Access to production database confirmed
 
 ### 5. Risk Assessment
+
 - [ ] Migration risk level assessed (see [Migration Risk Assessment](migration-risk-assessment.md))
 - [ ] Downtime estimate calculated
 - [ ] Affected features documented
@@ -71,16 +76,16 @@ Complete ALL items before executing production migration:
 
 ### Timeline Overview
 
-| Time | Step | Duration | Description |
-|------|------|----------|-------------|
-| T-0  | Announcement | 2 min | Post maintenance start notification |
-| T+0  | Backup | 5 min | Create pre-migration backup |
-| T+5  | Stop Services | 3 min | Scale down services (if downtime required) |
-| T+8  | Execute Migration | 5-10 min | Apply database migration |
-| T+18 | Verify | 5 min | Verify migration success |
-| T+23 | Restart Services | 5 min | Scale up services |
-| T+28 | Monitor | 30 min | Monitor application health |
-| T+58 | Announcement | 2 min | Post completion notification |
+| Time | Step              | Duration | Description                                |
+| ---- | ----------------- | -------- | ------------------------------------------ |
+| T-0  | Announcement      | 2 min    | Post maintenance start notification        |
+| T+0  | Backup            | 5 min    | Create pre-migration backup                |
+| T+5  | Stop Services     | 3 min    | Scale down services (if downtime required) |
+| T+8  | Execute Migration | 5-10 min | Apply database migration                   |
+| T+18 | Verify            | 5 min    | Verify migration success                   |
+| T+23 | Restart Services  | 5 min    | Scale up services                          |
+| T+28 | Monitor           | 30 min   | Monitor application health                 |
+| T+58 | Announcement      | 2 min    | Post completion notification               |
 
 **Total Estimated Time:** 60 minutes (1 hour maintenance window)
 
@@ -100,6 +105,7 @@ Status updates: Every 15 minutes"
 ```
 
 Update status page (if applicable):
+
 - Status: Maintenance in Progress
 - Affected Services: [List services]
 - ETA: [Completion time]
@@ -124,6 +130,7 @@ render db backups --database bojin-law-db | head -n 5
 ```
 
 **Expected Output:**
+
 ```
 Backup ID: backup-abc123
 Status: Completed
@@ -145,6 +152,7 @@ ls -lh backups/
 ```
 
 **Verification:**
+
 - [ ] Backup completed successfully
 - [ ] Backup ID or file path documented
 - [ ] Backup size reasonable (not 0 bytes, not unexpectedly large)
@@ -169,10 +177,12 @@ render services status
 ```
 
 **Expected State:**
+
 - bojin-law-web: 0/0 replicas
 - bojin-law-gateway: 0/0 replicas
 
 **Verification:**
+
 - [ ] All services scaled to 0
 - [ ] No active connections to database (check connection pool)
 
@@ -196,6 +206,7 @@ npx prisma migrate deploy --schema=./packages/database/prisma/schema.prisma
 ```
 
 **Expected Output:**
+
 ```
 Prisma schema loaded from prisma/schema.prisma
 Datasource "db": PostgreSQL
@@ -213,11 +224,13 @@ psql $DATABASE_URL -f packages/database/migrations/003_new_migration.sql
 ```
 
 **Monitoring During Migration:**
+
 - Watch for SQL errors
 - Monitor execution time
 - Check database locks (shouldn't block for >30 seconds)
 
 **Verification:**
+
 - [ ] Migration executed without errors
 - [ ] No SQL exceptions in output
 - [ ] Execution time within expected range (<10 minutes)
@@ -266,6 +279,7 @@ npm run db:validate
 ```
 
 **Verification Checklist:**
+
 - [ ] Migration marked as applied in `_prisma_migrations`
 - [ ] Schema changes present in database
 - [ ] Data integrity checks pass
@@ -294,6 +308,7 @@ curl https://bojin-law-gateway.onrender.com/health
 ```
 
 **Expected Response:**
+
 ```json
 {
   "status": "healthy",
@@ -303,6 +318,7 @@ curl https://bojin-law-gateway.onrender.com/health
 ```
 
 **Verification:**
+
 - [ ] All services scaled to target replicas
 - [ ] Health checks passing (200 OK)
 - [ ] Database connection pool healthy (<80% utilization)
@@ -317,12 +333,12 @@ curl https://bojin-law-gateway.onrender.com/health
 
 **Metrics to Watch:**
 
-| Metric | Threshold | Action if Exceeded |
-|--------|-----------|-------------------|
-| Error rate | >10% for >5 minutes | Initiate rollback |
-| Response time (p95) | >1000ms | Investigate, consider rollback |
+| Metric               | Threshold             | Action if Exceeded               |
+| -------------------- | --------------------- | -------------------------------- |
+| Error rate           | >10% for >5 minutes   | Initiate rollback                |
+| Response time (p95)  | >1000ms               | Investigate, consider rollback   |
 | Database connections | >90% pool utilization | Scale up connections or rollback |
-| Failed requests | >5% for >5 minutes | Initiate rollback |
+| Failed requests      | >5% for >5 minutes    | Initiate rollback                |
 
 #### Check Application Logs
 
@@ -338,6 +354,7 @@ render logs --service bojin-law-gateway --tail 100 | grep -i "database"
 #### Test Critical Workflows
 
 Manually test (or use automated smoke tests):
+
 - [ ] User login
 - [ ] Case creation
 - [ ] Document upload
@@ -345,6 +362,7 @@ Manually test (or use automated smoke tests):
 - [ ] Dashboard rendering
 
 **Verification:**
+
 - [ ] Error rate <1%
 - [ ] Response time p95 <500ms
 - [ ] Database connections <80% pool
@@ -367,6 +385,7 @@ Thanks for your patience!"
 ```
 
 Update status page:
+
 - Status: Operational
 - Message: "Database migration completed successfully"
 
@@ -377,6 +396,7 @@ Update status page:
 ### Extended Monitoring (24 hours)
 
 Continue monitoring for:
+
 - Error rates trending up
 - Performance degradation
 - Database query slow log entries
@@ -491,13 +511,13 @@ render scale --service bojin-law-gateway --replicas 2
 
 ### Key Metrics
 
-| Metric | Tool | Alert Threshold |
-|--------|------|----------------|
-| Error rate | New Relic / Render Metrics | >5% for >5 min |
-| Response time (p95) | New Relic | >1000ms |
-| Database connections | PostgreSQL | >90% pool |
-| Database latency | New Relic | >100ms p95 |
-| Failed migrations | Logs | Any failure |
+| Metric               | Tool                       | Alert Threshold |
+| -------------------- | -------------------------- | --------------- |
+| Error rate           | New Relic / Render Metrics | >5% for >5 min  |
+| Response time (p95)  | New Relic                  | >1000ms         |
+| Database connections | PostgreSQL                 | >90% pool       |
+| Database latency     | New Relic                  | >100ms p95      |
+| Failed migrations    | Logs                       | Any failure     |
 
 ### Alert Channels
 
@@ -514,11 +534,13 @@ render scale --service bojin-law-gateway --replicas 2
 #### Issue: Migration Fails with Foreign Key Constraint Violation
 
 **Symptoms:**
+
 ```
 ERROR: insert or update on table violates foreign key constraint
 ```
 
 **Resolution:**
+
 1. Check data integrity before migration
 2. Ensure parent records exist before creating child records
 3. Consider adding foreign key with `NOT VALID` first, then validating separately
@@ -528,11 +550,13 @@ ERROR: insert or update on table violates foreign key constraint
 #### Issue: Migration Times Out
 
 **Symptoms:**
+
 ```
 ERROR: timeout exceeded
 ```
 
 **Resolution:**
+
 1. Increase statement timeout: `SET statement_timeout = '600000'` (10 minutes)
 2. Break migration into smaller batches
 3. Run large data migrations as background jobs
@@ -543,11 +567,13 @@ ERROR: timeout exceeded
 #### Issue: Application Can't Connect to Database After Migration
 
 **Symptoms:**
+
 ```
 ERROR: connection refused / connection pool exhausted
 ```
 
 **Resolution:**
+
 1. Check database is running: `render db status`
 2. Verify connection string correct
 3. Check connection pool not exhausted
@@ -558,11 +584,13 @@ ERROR: connection refused / connection pool exhausted
 #### Issue: New Columns/Tables Not Visible
 
 **Symptoms:**
+
 ```
 ERROR: column "new_column" does not exist
 ```
 
 **Resolution:**
+
 1. Verify migration applied: `npm run db:migrate:status`
 2. Clear Prisma Client cache: `npx prisma generate`
 3. Redeploy application with updated Prisma Client
@@ -576,12 +604,14 @@ Use this template for planning migrations:
 
 ```markdown
 ### Migration: [Migration Name]
+
 **Date:** [YYYY-MM-DD]
 **Time:** [HH:MM timezone]
 **Risk Level:** [Low / Medium / High]
 **Estimated Downtime:** [X minutes or Zero]
 
 #### Timeline
+
 - **T-24h:** Send migration announcement
 - **T-1h:** Final verification on staging
 - **T-30m:** Team standup, final go/no-go decision
@@ -595,9 +625,11 @@ Use this template for planning migrations:
 - **T+58:** Complete, send announcement
 
 #### Rollback Deadline
+
 If issues detected within [X hours], rollback immediately.
 
 #### Team Assignments
+
 - **Migration Executor:** [Name]
 - **On-call Engineer:** [Name]
 - **Backup Support:** [Name]
@@ -617,6 +649,6 @@ If issues detected within [X hours], rollback immediately.
 
 **Document Version History:**
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-11-20 | Dev Agent | Initial creation |
+| Version | Date       | Author    | Changes          |
+| ------- | ---------- | --------- | ---------------- |
+| 1.0     | 2025-11-20 | Dev Agent | Initial creation |

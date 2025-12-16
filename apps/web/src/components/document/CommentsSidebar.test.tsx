@@ -290,11 +290,7 @@ describe('CommentsSidebar', () => {
     it('calls onResolveComment when resolve button is clicked', () => {
       const handleResolve = jest.fn();
       render(
-        <CommentsSidebar
-          isOpen={true}
-          comments={mockComments}
-          onResolveComment={handleResolve}
-        />
+        <CommentsSidebar isOpen={true} comments={mockComments} onResolveComment={handleResolve} />
       );
 
       const resolveButtons = screen.getAllByText('Rezolvat');
@@ -306,11 +302,7 @@ describe('CommentsSidebar', () => {
     it('calls onReplyComment when reply button is clicked', () => {
       const handleReply = jest.fn();
       render(
-        <CommentsSidebar
-          isOpen={true}
-          comments={mockComments}
-          onReplyComment={handleReply}
-        />
+        <CommentsSidebar isOpen={true} comments={mockComments} onReplyComment={handleReply} />
       );
 
       const replyButtons = screen.getAllByText('Răspunde');
@@ -341,7 +333,9 @@ describe('CommentsSidebar', () => {
       render(<CommentsSidebar isOpen={true} comments={[]} />);
 
       expect(screen.getByText('Niciun comentariu încă')).toBeInTheDocument();
-      expect(screen.getByText('Adaugă primul comentariu pentru acest document')).toBeInTheDocument();
+      expect(
+        screen.getByText('Adaugă primul comentariu pentru acest document')
+      ).toBeInTheDocument();
     });
 
     it('does not show empty state when comments exist', () => {
@@ -400,7 +394,9 @@ describe('CommentsSidebar', () => {
       render(<CommentsSidebar isOpen={true} comments={[]} />);
 
       expect(screen.getByText('Niciun comentariu încă')).toBeInTheDocument();
-      expect(screen.getByText('Adaugă primul comentariu pentru acest document')).toBeInTheDocument();
+      expect(
+        screen.getByText('Adaugă primul comentariu pentru acest document')
+      ).toBeInTheDocument();
     });
   });
 

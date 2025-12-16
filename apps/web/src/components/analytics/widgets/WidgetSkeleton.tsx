@@ -36,13 +36,7 @@ export function NumberSkeleton({ className = '' }: { className?: string }) {
 /**
  * List skeleton - multiple rows
  */
-export function ListSkeleton({
-  rows = 3,
-  className = '',
-}: {
-  rows?: number;
-  className?: string;
-}) {
+export function ListSkeleton({ rows = 3, className = '' }: { rows?: number; className?: string }) {
   return (
     <div className={`animate-pulse space-y-3 ${className}`}>
       {Array.from({ length: rows }).map((_, i) => (

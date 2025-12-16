@@ -22,10 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import type {
-  DeadlineConflict,
-  DeadlineCascadeResult,
-} from '@legal-platform/types';
+import type { DeadlineConflict, DeadlineCascadeResult } from '@legal-platform/types';
 
 export interface CascadeWarningDialogProps {
   open: boolean;
@@ -54,7 +51,9 @@ export function CascadeWarningDialog({
   }, [cascadeResult]);
 
   const hasWarnings = React.useMemo(() => {
-    return cascadeResult?.conflicts.some((c: DeadlineConflict) => c.severity === 'Warning') || false;
+    return (
+      cascadeResult?.conflicts.some((c: DeadlineConflict) => c.severity === 'Warning') || false
+    );
   }, [cascadeResult]);
 
   const toggleConflictExpanded = (taskId: string) => {
@@ -145,14 +144,37 @@ export function CascadeWarningDialog({
                     </div>
                     {hasErrors && (
                       <div className="text-red-700">
-                        <strong>{cascadeResult.conflicts.filter((c: DeadlineConflict) => c.severity === 'Error').length}</strong>{' '}
-                        critical conflict{cascadeResult.conflicts.filter((c: DeadlineConflict) => c.severity === 'Error').length !== 1 ? 's' : ''} found
+                        <strong>
+                          {
+                            cascadeResult.conflicts.filter(
+                              (c: DeadlineConflict) => c.severity === 'Error'
+                            ).length
+                          }
+                        </strong>{' '}
+                        critical conflict
+                        {cascadeResult.conflicts.filter(
+                          (c: DeadlineConflict) => c.severity === 'Error'
+                        ).length !== 1
+                          ? 's'
+                          : ''}{' '}
+                        found
                       </div>
                     )}
                     {hasWarnings && !hasErrors && (
                       <div className="text-orange-700">
-                        <strong>{cascadeResult.conflicts.filter((c: DeadlineConflict) => c.severity === 'Warning').length}</strong>{' '}
-                        warning{cascadeResult.conflicts.filter((c: DeadlineConflict) => c.severity === 'Warning').length !== 1 ? 's' : ''}
+                        <strong>
+                          {
+                            cascadeResult.conflicts.filter(
+                              (c: DeadlineConflict) => c.severity === 'Warning'
+                            ).length
+                          }
+                        </strong>{' '}
+                        warning
+                        {cascadeResult.conflicts.filter(
+                          (c: DeadlineConflict) => c.severity === 'Warning'
+                        ).length !== 1
+                          ? 's'
+                          : ''}
                       </div>
                     )}
                     {cascadeResult.suggestedResolution && (
@@ -180,7 +202,8 @@ export function CascadeWarningDialog({
                 {cascadeResult.conflicts.map((conflict: DeadlineConflict) => {
                   const isExpanded = expandedConflicts.has(conflict.taskId);
                   const affectedTask = cascadeResult.affectedTasks.find(
-                    (t: typeof cascadeResult.affectedTasks[number]) => t.taskId === conflict.taskId
+                    (t: (typeof cascadeResult.affectedTasks)[number]) =>
+                      t.taskId === conflict.taskId
                   );
 
                   return (
@@ -237,8 +260,8 @@ export function CascadeWarningDialog({
                                   affectedTask.daysDelta > 0
                                     ? 'text-orange-700'
                                     : affectedTask.daysDelta < 0
-                                    ? 'text-green-700'
-                                    : ''
+                                      ? 'text-green-700'
+                                      : ''
                                 }`}
                               >
                                 {formatDateDelta(affectedTask.daysDelta)}
@@ -264,10 +287,12 @@ export function CascadeWarningDialog({
                 <div className="space-y-2">
                   {cascadeResult.affectedTasks
                     .filter(
-                      (task: typeof cascadeResult.affectedTasks[number]) =>
-                        !cascadeResult.conflicts.some((c: DeadlineConflict) => c.taskId === task.taskId)
+                      (task: (typeof cascadeResult.affectedTasks)[number]) =>
+                        !cascadeResult.conflicts.some(
+                          (c: DeadlineConflict) => c.taskId === task.taskId
+                        )
                     )
-                    .map((task: typeof cascadeResult.affectedTasks[number]) => (
+                    .map((task: (typeof cascadeResult.affectedTasks)[number]) => (
                       <Card key={task.taskId} className="border-gray-200">
                         <CardContent className="pt-4">
                           <div className="flex items-center justify-between text-sm">
@@ -284,8 +309,8 @@ export function CascadeWarningDialog({
                                 task.daysDelta > 0
                                   ? 'text-orange-600'
                                   : task.daysDelta < 0
-                                  ? 'text-green-600'
-                                  : 'text-gray-600'
+                                    ? 'text-green-600'
+                                    : 'text-gray-600'
                               }`}
                             >
                               {formatDateDelta(task.daysDelta)}

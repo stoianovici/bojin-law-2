@@ -203,7 +203,7 @@ describe('SnippetManagerService', () => {
       const results = service.findMatchingSnippets(text, sampleSnippets);
 
       expect(results.length).toBeGreaterThanOrEqual(1);
-      const greetMatch = results.find(r => r.snippet.shortcut === '/greet');
+      const greetMatch = results.find((r) => r.snippet.shortcut === '/greet');
       expect(greetMatch).toBeDefined();
       expect(greetMatch?.confidence).toBe(1.0);
     });
@@ -213,7 +213,7 @@ describe('SnippetManagerService', () => {
 
       const results = service.findMatchingSnippets(text, sampleSnippets);
 
-      const greetMatch = results.find(r => r.snippet.shortcut === '/greet');
+      const greetMatch = results.find((r) => r.snippet.shortcut === '/greet');
       expect(greetMatch).toBeDefined();
     });
 
@@ -224,7 +224,7 @@ describe('SnippetManagerService', () => {
 
       expect(results.length).toBeGreaterThanOrEqual(2);
       // All exact matches should have confidence 1.0
-      const exactMatches = results.filter(r => r.confidence === 1.0);
+      const exactMatches = results.filter((r) => r.confidence === 1.0);
       expect(exactMatches.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -234,7 +234,7 @@ describe('SnippetManagerService', () => {
       const results = service.findMatchingSnippets(text, sampleSnippets);
 
       // May have fuzzy matches, but no exact shortcut matches
-      const exactMatches = results.filter(r => r.confidence === 1.0);
+      const exactMatches = results.filter((r) => r.confidence === 1.0);
       expect(exactMatches.length).toBe(0);
     });
 
@@ -243,7 +243,7 @@ describe('SnippetManagerService', () => {
 
       const results = service.findMatchingSnippets(text, sampleSnippets);
 
-      const greetMatch = results.find(r => r.snippet.shortcut === '/greet');
+      const greetMatch = results.find((r) => r.snippet.shortcut === '/greet');
       expect(greetMatch?.matchPosition).toBe(6); // Position of /greet
     });
 
@@ -339,11 +339,7 @@ describe('SnippetManagerService', () => {
         confidence: 0.9,
       };
 
-      const snippet = service.createSnippetFromSuggestion(
-        suggestion,
-        'user-123',
-        'firm-456'
-      );
+      const snippet = service.createSnippetFromSuggestion(suggestion, 'user-123', 'firm-456');
 
       expect(snippet.userId).toBe('user-123');
       expect(snippet.firmId).toBe('firm-456');
@@ -370,11 +366,7 @@ describe('SnippetManagerService', () => {
         confidence: 0.8,
       };
 
-      const snippet = service.createSnippetFromSuggestion(
-        suggestion,
-        'user-123',
-        'firm-456'
-      );
+      const snippet = service.createSnippetFromSuggestion(suggestion, 'user-123', 'firm-456');
 
       expect(snippet.sourceContext?.documentType).toBe('contract');
     });
@@ -410,11 +402,7 @@ describe('SnippetManagerService', () => {
       };
 
       const beforeCreate = new Date();
-      const snippet = service.createSnippetFromSuggestion(
-        suggestion,
-        'user-123',
-        'firm-456'
-      );
+      const snippet = service.createSnippetFromSuggestion(suggestion, 'user-123', 'firm-456');
       const afterCreate = new Date();
 
       expect(snippet.createdAt.getTime()).toBeGreaterThanOrEqual(beforeCreate.getTime());

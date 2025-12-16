@@ -25,6 +25,7 @@ A breaking change is any modification to the API that requires clients to update
 ### Breaking Change Examples
 
 ✅ **These ARE breaking changes:**
+
 - Removing a field from a type
 - Renaming a field or type
 - Changing a field's type
@@ -35,6 +36,7 @@ A breaking change is any modification to the API that requires clients to update
 - Changing error response format
 
 ❌ **These are NOT breaking changes:**
+
 - Adding a new optional field
 - Adding a new type
 - Adding a new query or mutation
@@ -47,6 +49,7 @@ A breaking change is any modification to the API that requires clients to update
 ### Gray Areas
 
 ⚠️ **Potentially breaking (requires careful consideration):**
+
 - Adding enum values (clients should handle unknown values)
 - Changing performance characteristics significantly
 - Modifying rate limits
@@ -69,38 +72,48 @@ Create a breaking change proposal document:
 # Breaking Change Proposal: [Change Title]
 
 ## Metadata
+
 - **Proposed By:** [Name]
 - **Date:** [YYYY-MM-DD]
 - **Target Version:** [e.g., v2.0.0]
 - **Estimated Impact:** [Low/Medium/High]
 
 ## Summary
+
 [1-2 sentence summary of the change]
 
 ## Motivation
+
 [Why is this change necessary?]
 
 ## Current Behavior
+
 [Describe current API behavior with examples]
 
 ## Proposed Behavior
+
 [Describe new API behavior with examples]
 
 ## Breaking Change Details
+
 [Specific fields/types/operations affected]
 
 ## Migration Path
+
 [Step-by-step guide for clients to migrate]
 
 ## Estimated Impact
+
 - Number of affected endpoints: [X]
 - Estimated affected clients: [X]
 - Estimated migration effort: [X hours/days]
 
 ## Alternatives Considered
+
 [Other approaches and why they were rejected]
 
 ## Timeline
+
 - Announcement: [Date]
 - Deprecation: [Date]
 - Removal: [Date] (minimum 6 months after deprecation)
@@ -114,6 +127,7 @@ Create a breaking change proposal document:
 - **Impact Assessment:** Analyze usage metrics for affected fields
 
 **Review Checklist:**
+
 - [ ] Is this change truly necessary?
 - [ ] Have we considered non-breaking alternatives?
 - [ ] Is the migration path clear?
@@ -123,6 +137,7 @@ Create a breaking change proposal document:
 #### Step 3: Approval
 
 Breaking changes require approval from:
+
 - ✅ Backend Team Lead
 - ✅ Product Owner
 - ✅ API Governance Committee (if exists)
@@ -145,11 +160,14 @@ type Case {
 
   See: https://docs.legal-platform.com/api/migrations/isActive-to-status
   """
-  isActive: Boolean @deprecated(
-    reason: "Use 'status' field. Migration guide: https://docs.legal-platform.com/api/migrations/isActive-to-status. Removal date: 2026-06-01"
-  )
+  isActive: Boolean
+    @deprecated(
+      reason: "Use 'status' field. Migration guide: https://docs.legal-platform.com/api/migrations/isActive-to-status. Removal date: 2026-06-01"
+    )
 
-  """Current status of the case"""
+  """
+  Current status of the case
+  """
   status: CaseStatus!
 }
 ```
@@ -158,15 +176,17 @@ type Case {
 
 **Template: migrations/[field-name]-migration.md**
 
-```markdown
+````markdown
 # Migration Guide: isActive → status
 
 ## Overview
+
 The `Case.isActive` field is deprecated and will be removed on 2026-06-01.
 
 ## Quick Migration
 
 ### Before
+
 ```graphql
 query {
   case(id: "...") {
@@ -174,8 +194,10 @@ query {
   }
 }
 ```
+````
 
 ### After
+
 ```graphql
 query {
   case(id: "...") {
@@ -185,14 +207,16 @@ query {
 ```
 
 ## Field Mapping
+
 | Old Value | New Value |
-|-----------|-----------|
-| `true` | `ACTIVE` |
-| `false` | `CLOSED` |
+| --------- | --------- |
+| `true`    | `ACTIVE`  |
+| `false`   | `CLOSED`  |
 
 ## Code Examples
 
 ### JavaScript/TypeScript
+
 ```typescript
 // Before
 if (case.isActive) {
@@ -206,14 +230,18 @@ if (case.status === 'ACTIVE') {
 ```
 
 ## Testing
+
 [Test scenarios and expected results]
 
 ## Timeline
+
 - **Deprecation:** 2025-12-01
 - **Removal:** 2026-06-01
 
 ## Support
+
 Questions? Contact api-support@legal-platform.com
+
 ```
 
 #### Step 3: Communicate via All Channels
@@ -229,6 +257,7 @@ Send notifications via:
 **Email Template:**
 
 ```
+
 Subject: [ACTION REQUIRED] GraphQL API Breaking Change: Case.isActive Deprecation
 
 Dear Legal Platform API Consumer,
@@ -249,6 +278,7 @@ Update your queries to use `Case.status` instead of `Case.isActive`.
 https://docs.legal-platform.com/api/migrations/isActive-to-status
 
 **Timeline:**
+
 - December 1, 2025: Field deprecated (warning in schema)
 - June 1, 2026: Field removed (6 months notice)
 
@@ -257,7 +287,8 @@ Contact api-support@legal-platform.com for migration assistance.
 
 Thank you,
 Legal Platform API Team
-```
+
+````
 
 ### Phase 3: Monitoring (Months 1-5)
 
@@ -279,7 +310,7 @@ WHERE query_contains_field = 'Case.isActive'
   AND created_at > NOW() - INTERVAL '7 days'
 GROUP BY user_firm
 ORDER BY deprecated_field_uses DESC;
-```
+````
 
 #### Step 2: Proactive Outreach
 
@@ -413,26 +444,26 @@ Legal Platform API Team
 
 ### Standard Timeline (6 Months)
 
-| Week | Action | Channel |
-|------|--------|---------|
-| **0** | Announce deprecation | Email, Slack, Docs, Schema |
-| **4** | First reminder | Email to high-usage teams |
-| **8** | Second reminder | Slack, Email |
-| **12** | Offer migration support | Email |
-| **16** | Third reminder | Email, Slack |
-| **20** | Final warning (30 days) | Email (all), Slack (@channel) |
-| **24** | Removal deployed | Email (completion), Slack, Blog |
+| Week   | Action                  | Channel                         |
+| ------ | ----------------------- | ------------------------------- |
+| **0**  | Announce deprecation    | Email, Slack, Docs, Schema      |
+| **4**  | First reminder          | Email to high-usage teams       |
+| **8**  | Second reminder         | Slack, Email                    |
+| **12** | Offer migration support | Email                           |
+| **16** | Third reminder          | Email, Slack                    |
+| **20** | Final warning (30 days) | Email (all), Slack (@channel)   |
+| **24** | Removal deployed        | Email (completion), Slack, Blog |
 
 ### Expedited Timeline (3 Months for Critical Changes)
 
 Only for security-critical changes. Requires executive approval.
 
-| Week | Action |
-|------|--------|
-| **0** | Emergency announcement + migration support |
-| **4** | Reminder + direct support sessions |
-| **8** | Final warning |
-| **12** | Removal |
+| Week   | Action                                     |
+| ------ | ------------------------------------------ |
+| **0**  | Emergency announcement + migration support |
+| **4**  | Reminder + direct support sessions         |
+| **8**  | Final warning                              |
+| **12** | Removal                                    |
 
 ---
 
@@ -446,43 +477,53 @@ Only for security-critical changes. Requires executive approval.
 ## [Unreleased]
 
 ### Breaking Changes
+
 - None
 
 ### Deprecated
+
 - None
 
 ### Added
+
 - New `Case.priority` field for case prioritization
 
 ### Changed
+
 - Improved error messages for validation errors
 
 ### Fixed
+
 - Fixed race condition in case assignment
 
 ## [2.0.0] - 2026-06-01
 
 ### Breaking Changes
+
 - **REMOVED:** `Case.isActive` field (deprecated 2025-12-01)
   - Migration: Use `Case.status` instead
   - Guide: https://docs.legal-platform.com/api/migrations/isActive-to-status
 
 ### Added
+
 - New `CaseStatus.ARCHIVED` enum value
 - New `archiveCase` mutation
 
 ## [1.5.0] - 2026-03-01
 
 ### Deprecated
+
 - `Case.isActive` field (removal: 2026-06-01)
   - Use `Case.status` instead
 
 ### Added
+
 - New `Case.status` field with full lifecycle tracking
 
 ## [1.0.0] - 2025-11-21
 
 ### Added
+
 - Initial GraphQL API release
 - Case management queries and mutations
 - Authentication via Azure AD OAuth 2.0
@@ -495,6 +536,7 @@ Only for security-critical changes. Requires executive approval.
 ### When to Rollback
 
 Rollback if:
+
 - **Critical bugs** affecting >50% of users
 - **Data corruption** or loss
 - **Security vulnerabilities** introduced
@@ -504,6 +546,7 @@ Rollback if:
 ### Rollback Process
 
 1. **Immediate Actions (0-15 minutes)**
+
    ```bash
    # Revert to previous deployment
    git revert <commit-hash>
@@ -582,10 +625,12 @@ Rollback if:
 **Scenario:** Remove `Case.legacyId` field
 
 **Timeline:**
+
 - **2025-12-01:** Announce deprecation
 - **2026-06-01:** Remove field
 
 **Migration:**
+
 ```graphql
 # Before
 query {
@@ -597,7 +642,7 @@ query {
 # After
 query {
   case(id: "...") {
-    id  # Use standard UUID id instead
+    id # Use standard UUID id instead
   }
 }
 ```
@@ -607,6 +652,7 @@ query {
 **Scenario:** Change `Case.value` from `Float` to `Money` type
 
 **Migration:**
+
 ```graphql
 # Before
 type Case {
@@ -616,7 +662,7 @@ type Case {
 # After (Step 1: Add new field)
 type Case {
   value: Float @deprecated(reason: "Use valueAmount field")
-  valueAmount: Money  # New structured type
+  valueAmount: Money # New structured type
 }
 
 # After (Step 2: Remove old field after 6 months)

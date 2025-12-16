@@ -225,7 +225,8 @@ export function DocumentRequestsWidget({
                   />
                 </svg>
                 <span>
-                  {urgentCount} cerere{urgentCount > 1 ? '' : ''} urgent{urgentCount > 1 ? 'e' : 'ă'}
+                  {urgentCount} cerere{urgentCount > 1 ? '' : ''} urgent
+                  {urgentCount > 1 ? 'e' : 'ă'}
                 </span>
               </div>
             </div>

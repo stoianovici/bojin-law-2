@@ -21,7 +21,7 @@ import {
   FileEdit,
   ClipboardList,
   Search,
-  type LucideIcon
+  type LucideIcon,
 } from 'lucide-react';
 
 /**
@@ -122,11 +122,7 @@ export interface CommandPaletteProps {
  */
 export function CommandPalette({ className = '' }: CommandPaletteProps) {
   const router = useRouter();
-  const {
-    isCommandPaletteOpen,
-    closeCommandPalette,
-    setCurrentSection,
-  } = useNavigationStore();
+  const { isCommandPaletteOpen, closeCommandPalette, setCurrentSection } = useNavigationStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -157,15 +153,11 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
       switch (event.key) {
         case 'ArrowDown':
           event.preventDefault();
-          setSelectedIndex((prev) =>
-            prev < filteredCommands.length - 1 ? prev + 1 : 0
-          );
+          setSelectedIndex((prev) => (prev < filteredCommands.length - 1 ? prev + 1 : 0));
           break;
         case 'ArrowUp':
           event.preventDefault();
-          setSelectedIndex((prev) =>
-            prev > 0 ? prev - 1 : filteredCommands.length - 1
-          );
+          setSelectedIndex((prev) => (prev > 0 ? prev - 1 : filteredCommands.length - 1));
           break;
         case 'Enter':
           event.preventDefault();
@@ -208,9 +200,12 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
   };
 
   return (
-    <Dialog.Root open={isCommandPaletteOpen} onOpenChange={(open) => {
-      if (!open) closeCommandPalette();
-    }}>
+    <Dialog.Root
+      open={isCommandPaletteOpen}
+      onOpenChange={(open) => {
+        if (!open) closeCommandPalette();
+      }}
+    >
       <Dialog.Portal>
         <Dialog.Overlay
           className="
@@ -270,9 +265,7 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
           {/* Command List */}
           <div className="flex-1 overflow-y-auto p-2">
             {filteredCommands.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                No commands found
-              </div>
+              <div className="p-8 text-center text-gray-500">No commands found</div>
             ) : (
               <div className="space-y-1" role="listbox">
                 {filteredCommands.map((command, index) => {
@@ -296,18 +289,11 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
                       aria-selected={index === selectedIndex}
                     >
                       {IconComponent && (
-                        <IconComponent
-                          className="w-5 h-5 flex-shrink-0"
-                          aria-hidden="true"
-                        />
+                        <IconComponent className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">
-                          {command.label}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate">
-                          {command.description}
-                        </div>
+                        <div className="font-medium truncate">{command.label}</div>
+                        <div className="text-sm text-gray-500 truncate">{command.description}</div>
                       </div>
                     </button>
                   );

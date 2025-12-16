@@ -49,15 +49,24 @@ jest.mock('../config', () => ({
 describe('Provider Manager Circuit Breaker Tests', () => {
   let providerManager: ProviderManagerService;
   let mockClaudeModel: jest.Mock;
-  let mockGrokClient: { createCompletion: jest.Mock; isConfigured: jest.Mock; mapClaudeMessages: jest.Mock; healthCheck: jest.Mock };
+  let mockGrokClient: {
+    createCompletion: jest.Mock;
+    isConfigured: jest.Mock;
+    mapClaudeMessages: jest.Mock;
+    healthCheck: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
 
     // Get mocked modules
-    const langchainModule = jest.requireMock('../lib/langchain/client') as { createClaudeModel: jest.Mock };
-    const grokModule = jest.requireMock('../lib/grok/client') as { grokClient: typeof mockGrokClient };
+    const langchainModule = jest.requireMock('../lib/langchain/client') as {
+      createClaudeModel: jest.Mock;
+    };
+    const grokModule = jest.requireMock('../lib/grok/client') as {
+      grokClient: typeof mockGrokClient;
+    };
 
     mockClaudeModel = langchainModule.createClaudeModel;
     mockGrokClient = grokModule.grokClient;
@@ -387,9 +396,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
       const grokError = new Error('Grok service unavailable');
       mockGrokClient.createCompletion.mockRejectedValue(grokError);
 
-      await expect(
-        providerManager.execute({ prompt: 'Test' })
-      ).rejects.toThrow(ProviderError);
+      await expect(providerManager.execute({ prompt: 'Test' })).rejects.toThrow(ProviderError);
 
       try {
         await providerManager.execute({ prompt: 'Test' });
@@ -436,9 +443,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
         invoke: jest.fn().mockRejectedValue(authError),
       });
 
-      await expect(
-        providerManager.execute({ prompt: 'Test' })
-      ).rejects.toThrow('401 Unauthorized');
+      await expect(providerManager.execute({ prompt: 'Test' })).rejects.toThrow('401 Unauthorized');
 
       // Grok should not have been called for auth error
       expect(mockGrokClient.createCompletion).not.toHaveBeenCalled();

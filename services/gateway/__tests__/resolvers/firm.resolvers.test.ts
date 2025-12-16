@@ -49,11 +49,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
         defaultRates: mockRates,
       });
 
-      const result = await firmResolvers.Query.defaultRates(
-        {},
-        {},
-        mockContext
-      );
+      const result = await firmResolvers.Query.defaultRates({}, {}, mockContext);
 
       expect(result).toEqual(mockRates);
       expect(prisma.firm.findUnique).toHaveBeenCalledWith({
@@ -68,11 +64,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
         defaultRates: null,
       });
 
-      const result = await firmResolvers.Query.defaultRates(
-        {},
-        {},
-        mockContext
-      );
+      const result = await firmResolvers.Query.defaultRates({}, {}, mockContext);
 
       expect(result).toBeNull();
     });
@@ -80,33 +72,33 @@ describe('Firm Resolvers - Story 2.8.1', () => {
     it('should throw error if firm not found', async () => {
       (prisma.firm.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        firmResolvers.Query.defaultRates({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(firmResolvers.Query.defaultRates({}, {}, mockContext)).rejects.toThrow(
+        GraphQLError
+      );
     });
 
     it('should throw FORBIDDEN error for Associate', async () => {
       mockContext.user!.role = 'Associate';
 
-      await expect(
-        firmResolvers.Query.defaultRates({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(firmResolvers.Query.defaultRates({}, {}, mockContext)).rejects.toThrow(
+        GraphQLError
+      );
     });
 
     it('should throw FORBIDDEN error for Paralegal', async () => {
       mockContext.user!.role = 'Paralegal';
 
-      await expect(
-        firmResolvers.Query.defaultRates({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(firmResolvers.Query.defaultRates({}, {}, mockContext)).rejects.toThrow(
+        GraphQLError
+      );
     });
 
     it('should throw UNAUTHENTICATED error if no user', async () => {
       mockContext.user = undefined;
 
-      await expect(
-        firmResolvers.Query.defaultRates({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(firmResolvers.Query.defaultRates({}, {}, mockContext)).rejects.toThrow(
+        GraphQLError
+      );
     });
   });
 
@@ -133,9 +125,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
     it('should throw error if firm not found', async () => {
       (prisma.firm.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        firmResolvers.Query.firm({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(firmResolvers.Query.firm({}, {}, mockContext)).rejects.toThrow(GraphQLError);
     });
 
     it('should work for Associate', async () => {
@@ -196,11 +186,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       };
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: invalidRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: invalidRates }, mockContext)
       ).rejects.toThrow('All rates must be positive numbers');
     });
 
@@ -212,11 +198,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       };
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: invalidRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: invalidRates }, mockContext)
       ).rejects.toThrow('All rates must be positive numbers');
     });
 
@@ -228,11 +210,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       };
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: invalidRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: invalidRates }, mockContext)
       ).rejects.toThrow('All rates must be positive numbers');
     });
 
@@ -244,11 +222,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       };
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: invalidRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: invalidRates }, mockContext)
       ).rejects.toThrow('Rates must be in cents');
     });
 
@@ -260,11 +234,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       };
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: invalidRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: invalidRates }, mockContext)
       ).rejects.toThrow('Rates must be valid numbers');
     });
 
@@ -276,11 +246,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       };
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: invalidRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: invalidRates }, mockContext)
       ).rejects.toThrow('Rates must be valid numbers');
     });
 
@@ -288,11 +254,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       mockContext.user!.role = 'Associate';
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: validRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: validRates }, mockContext)
       ).rejects.toThrow('Only Partners can manage billing rates');
     });
 
@@ -300,11 +262,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       mockContext.user!.role = 'Paralegal';
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: validRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: validRates }, mockContext)
       ).rejects.toThrow('Only Partners can manage billing rates');
     });
 
@@ -312,11 +270,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
       mockContext.user = undefined;
 
       await expect(
-        firmResolvers.Mutation.updateDefaultRates(
-          {},
-          { input: validRates },
-          mockContext
-        )
+        firmResolvers.Mutation.updateDefaultRates({}, { input: validRates }, mockContext)
       ).rejects.toThrow(GraphQLError);
     });
   });

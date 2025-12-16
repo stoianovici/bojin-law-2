@@ -128,11 +128,11 @@ describe('SnippetLibrary', () => {
       render(<SnippetLibrary />);
       // Use getAllByRole for tabs to handle multiple matching elements
       const tabs = screen.getAllByRole('tab');
-      const tabTexts = tabs.map(tab => tab.textContent);
-      expect(tabTexts.some(t => t?.includes('Toate'))).toBe(true);
-      expect(tabTexts.some(t => t?.includes('Salutări'))).toBe(true);
-      expect(tabTexts.some(t => t?.includes('Încheieri'))).toBe(true);
-      expect(tabTexts.some(t => t?.includes('Expresii Juridice'))).toBe(true);
+      const tabTexts = tabs.map((tab) => tab.textContent);
+      expect(tabTexts.some((t) => t?.includes('Toate'))).toBe(true);
+      expect(tabTexts.some((t) => t?.includes('Salutări'))).toBe(true);
+      expect(tabTexts.some((t) => t?.includes('Încheieri'))).toBe(true);
+      expect(tabTexts.some((t) => t?.includes('Expresii Juridice'))).toBe(true);
     });
 
     it('renders all snippets in grid', () => {
@@ -222,7 +222,7 @@ describe('SnippetLibrary', () => {
 
       // Find the tab by role and text content
       const tabs = screen.getAllByRole('tab');
-      const greetingsTab = tabs.find(tab => tab.textContent?.includes('Salutări'));
+      const greetingsTab = tabs.find((tab) => tab.textContent?.includes('Salutări'));
       expect(greetingsTab).toBeDefined();
 
       await user.click(greetingsTab!);
@@ -253,7 +253,10 @@ describe('SnippetLibrary', () => {
 
       // Find and click edit button if visible
       const editButtons = screen.queryAllByRole('button');
-      const editButton = editButtons.find(btn => btn.getAttribute('aria-label')?.includes('edit') || btn.textContent?.includes('Editează'));
+      const editButton = editButtons.find(
+        (btn) =>
+          btn.getAttribute('aria-label')?.includes('edit') || btn.textContent?.includes('Editează')
+      );
 
       if (editButton) {
         await user.click(editButton);
@@ -270,9 +273,9 @@ describe('SnippetLibrary', () => {
 
       // Find delete button
       const buttons = screen.getAllByRole('button');
-      const deleteButton = buttons.find(btn =>
-        btn.getAttribute('aria-label')?.includes('delete') ||
-        btn.textContent?.includes('Șterge')
+      const deleteButton = buttons.find(
+        (btn) =>
+          btn.getAttribute('aria-label')?.includes('delete') || btn.textContent?.includes('Șterge')
       );
 
       if (deleteButton) {
@@ -298,9 +301,9 @@ describe('SnippetLibrary', () => {
 
       // Find and click delete if available
       const buttons = screen.getAllByRole('button');
-      const deleteButton = buttons.find(btn =>
-        btn.getAttribute('aria-label')?.includes('delete') ||
-        btn.textContent?.includes('Șterge')
+      const deleteButton = buttons.find(
+        (btn) =>
+          btn.getAttribute('aria-label')?.includes('delete') || btn.textContent?.includes('Șterge')
       );
 
       if (deleteButton) {

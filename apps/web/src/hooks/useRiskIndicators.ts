@@ -149,7 +149,10 @@ export function useRiskIndicators(filter?: RiskIndicatorsFilter) {
 /**
  * Hook to fetch risk indicators for a specific case
  */
-export function useCaseRiskIndicators(caseId: string, additionalFilters?: Partial<RiskIndicatorsFilter>) {
+export function useCaseRiskIndicators(
+  caseId: string,
+  additionalFilters?: Partial<RiskIndicatorsFilter>
+) {
   const filter: RiskIndicatorsFilter = { caseId, ...additionalFilters };
   return useRiskIndicators(filter);
 }
@@ -195,10 +198,17 @@ export function useResolveRisk() {
  * Provides both data and actions
  */
 export function useCaseRisks(caseId: string) {
-  const { data: risksData, loading: risksLoading, error: risksError, refetch: refetchRisks } =
-    useCaseRiskIndicators(caseId);
-  const { data: summaryData, loading: summaryLoading, error: summaryError } =
-    useCaseRiskSummary(caseId);
+  const {
+    data: risksData,
+    loading: risksLoading,
+    error: risksError,
+    refetch: refetchRisks,
+  } = useCaseRiskIndicators(caseId);
+  const {
+    data: summaryData,
+    loading: summaryLoading,
+    error: summaryError,
+  } = useCaseRiskSummary(caseId);
   const [resolveRisk, { loading: resolving }] = useResolveRisk();
 
   const handleResolveRisk = async (riskId: string, note?: string) => {

@@ -47,9 +47,7 @@ function TreeNode({ node, level, selectedNodeId, onSelectNode }: TreeNodeProps) 
         onClick={handleClick}
         className={clsx(
           'flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-md transition-colors text-left',
-          isSelected
-            ? 'bg-blue-50 text-blue-700 font-medium'
-            : 'text-gray-700 hover:bg-gray-100',
+          isSelected ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'
         )}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
@@ -59,7 +57,7 @@ function TreeNode({ node, level, selectedNodeId, onSelectNode }: TreeNodeProps) 
           <ChevronIcon
             className={clsx(
               'ml-auto flex-shrink-0 transition-transform',
-              isExpanded && 'rotate-90',
+              isExpanded && 'rotate-90'
             )}
           />
         )}
@@ -148,12 +146,7 @@ function ChevronIcon({ className }: { className?: string }) {
       stroke="currentColor"
       viewBox="0 0 24 24"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 5l7 7-7 7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
     </svg>
   );
 }

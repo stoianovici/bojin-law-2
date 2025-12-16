@@ -23,12 +23,14 @@ This guide explains how to use the GraphQL Playground (Apollo Sandbox) for testi
 The GraphQL Playground (Apollo Sandbox) is automatically available in development mode:
 
 1. **Start the development server:**
+
    ```bash
    cd services/gateway
    pnpm dev
    ```
 
 2. **Open your browser and navigate to:**
+
    ```
    http://localhost:4000/graphql
    ```
@@ -68,6 +70,7 @@ If you need to test with specific users or tokens:
 1. **Click "Headers" in Apollo Sandbox**
 
 2. **Add the session cookie header:**
+
    ```json
    {
      "cookie": "connect.sid=YOUR_SESSION_ID"
@@ -75,6 +78,7 @@ If you need to test with specific users or tokens:
    ```
 
    Or add authorization header (if using JWT directly):
+
    ```json
    {
      "authorization": "Bearer YOUR_JWT_TOKEN"
@@ -94,6 +98,7 @@ If you need to test with specific users or tokens:
 Retrieve all active cases for the current user.
 
 **Query:**
+
 ```graphql
 query GetActiveCases {
   cases(status: ACTIVE) {
@@ -120,6 +125,7 @@ query GetActiveCases {
 ```
 
 **Expected Response:**
+
 ```json
 {
   "data": {
@@ -133,7 +139,7 @@ query GetActiveCases {
         "client": {
           "id": "660e8400-e29b-41d4-a716-446655440111",
           "name": "Tech Corp Inc.",
-          "contactInfo": {"email": "contact@techcorp.com"}
+          "contactInfo": { "email": "contact@techcorp.com" }
         },
         "teamMembers": [
           {
@@ -144,7 +150,7 @@ query GetActiveCases {
           }
         ],
         "openedDate": "2025-01-15T10:00:00Z",
-        "value": 250000.00
+        "value": 250000.0
       }
     ]
   }
@@ -156,6 +162,7 @@ query GetActiveCases {
 Retrieve a specific case with all external actors.
 
 **Query:**
+
 ```graphql
 query GetCaseDetails($caseId: UUID!) {
   case(id: $caseId) {
@@ -190,6 +197,7 @@ query GetCaseDetails($caseId: UUID!) {
 ```
 
 **Variables:**
+
 ```json
 {
   "caseId": "550e8400-e29b-41d4-a716-446655440000"
@@ -201,6 +209,7 @@ query GetCaseDetails($caseId: UUID!) {
 Full-text search across cases.
 
 **Query:**
+
 ```graphql
 query SearchCases($searchQuery: String!, $limit: Int) {
   searchCases(query: $searchQuery, limit: $limit) {
@@ -218,6 +227,7 @@ query SearchCases($searchQuery: String!, $limit: Int) {
 ```
 
 **Variables:**
+
 ```json
 {
   "searchQuery": "contract dispute",
@@ -230,6 +240,7 @@ query SearchCases($searchQuery: String!, $limit: Int) {
 Filter cases assigned to the current user.
 
 **Query:**
+
 ```graphql
 query GetMyCases {
   cases(assignedToMe: true) {
@@ -251,6 +262,7 @@ query GetMyCases {
 Retrieve actors for a specific case filtered by role.
 
 **Query:**
+
 ```graphql
 query GetCaseWitnesses($caseId: UUID!) {
   caseActorsByRole(caseId: $caseId, role: WITNESS) {
@@ -265,6 +277,7 @@ query GetCaseWitnesses($caseId: UUID!) {
 ```
 
 **Variables:**
+
 ```json
 {
   "caseId": "550e8400-e29b-41d4-a716-446655440000"
@@ -280,6 +293,7 @@ query GetCaseWitnesses($caseId: UUID!) {
 Create a new legal case.
 
 **Mutation:**
+
 ```graphql
 mutation CreateNewCase($input: CreateCaseInput!) {
   createCase(input: $input) {
@@ -304,6 +318,7 @@ mutation CreateNewCase($input: CreateCaseInput!) {
 ```
 
 **Variables:**
+
 ```json
 {
   "input": {
@@ -311,7 +326,7 @@ mutation CreateNewCase($input: CreateCaseInput!) {
     "clientId": "660e8400-e29b-41d4-a716-446655440111",
     "type": "CONTRACT",
     "description": "Annual contract review for Acme Corporation's vendor agreements",
-    "value": 50000.00,
+    "value": 50000.0,
     "metadata": {
       "priority": "high",
       "estimatedHours": 40
@@ -325,6 +340,7 @@ mutation CreateNewCase($input: CreateCaseInput!) {
 Update an existing case.
 
 **Mutation:**
+
 ```graphql
 mutation UpdateCase($caseId: UUID!, $input: UpdateCaseInput!) {
   updateCase(id: $caseId, input: $input) {
@@ -339,13 +355,14 @@ mutation UpdateCase($caseId: UUID!, $input: UpdateCaseInput!) {
 ```
 
 **Variables:**
+
 ```json
 {
   "caseId": "550e8400-e29b-41d4-a716-446655440000",
   "input": {
     "status": "ON_HOLD",
     "description": "Waiting for client documents before proceeding",
-    "value": 75000.00
+    "value": 75000.0
   }
 }
 ```
@@ -355,6 +372,7 @@ mutation UpdateCase($caseId: UUID!, $input: UpdateCaseInput!) {
 Assign a user to a case team.
 
 **Mutation:**
+
 ```graphql
 mutation AssignTeamMember($input: AssignTeamInput!) {
   assignTeam(input: $input) {
@@ -371,6 +389,7 @@ mutation AssignTeamMember($input: AssignTeamInput!) {
 ```
 
 **Variables:**
+
 ```json
 {
   "input": {
@@ -386,6 +405,7 @@ mutation AssignTeamMember($input: AssignTeamInput!) {
 Add an external party to a case.
 
 **Mutation:**
+
 ```graphql
 mutation AddCaseActor($input: AddCaseActorInput!) {
   addCaseActor(input: $input) {
@@ -401,6 +421,7 @@ mutation AddCaseActor($input: AddCaseActorInput!) {
 ```
 
 **Variables:**
+
 ```json
 {
   "input": {
@@ -419,6 +440,7 @@ mutation AddCaseActor($input: AddCaseActorInput!) {
 Archive a case (Partner role required).
 
 **Mutation:**
+
 ```graphql
 mutation ArchiveCase($caseId: UUID!) {
   archiveCase(id: $caseId) {
@@ -431,6 +453,7 @@ mutation ArchiveCase($caseId: UUID!) {
 ```
 
 **Variables:**
+
 ```json
 {
   "caseId": "550e8400-e29b-41d4-a716-446655440000"
@@ -446,6 +469,7 @@ mutation ArchiveCase($caseId: UUID!) {
 **Problem:** `Unauthorized` or `Authentication required` errors
 
 **Solutions:**
+
 1. Verify you're authenticated through the frontend app
 2. Check that your session cookie is valid
 3. Ensure your user has the required permissions
@@ -456,6 +480,7 @@ mutation ArchiveCase($caseId: UUID!) {
 **Problem:** Schema explorer doesn't show types
 
 **Solutions:**
+
 1. Verify you're running in development mode (`NODE_ENV=development`)
 2. Check that the server started without errors
 3. Restart the development server
@@ -465,6 +490,7 @@ mutation ArchiveCase($caseId: UUID!) {
 **Problem:** `Insufficient permissions` or `Access denied` errors
 
 **Solutions:**
+
 1. Check your user role (some operations require Partner role)
 2. Verify you're assigned to the case (for case-specific operations)
 3. Ensure firm isolation is respected (you can only access your firm's data)
@@ -474,6 +500,7 @@ mutation ArchiveCase($caseId: UUID!) {
 **Problem:** Cannot connect to GraphQL endpoint
 
 **Solutions:**
+
 1. Verify the server is running on port 4000
 2. Check that no other service is using port 4000
 3. Review server logs for startup errors

@@ -101,12 +101,7 @@ export function DiscoveryStatusPanel() {
     <div className="space-y-6">
       {/* Summary Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Types Discovered"
-          value={status.typesDiscovered}
-          icon="📚"
-          color="blue"
-        />
+        <StatCard label="Types Discovered" value={status.typesDiscovered} icon="📚" color="blue" />
         <StatCard
           label="Pending Review"
           value={status.pendingReview}
@@ -120,12 +115,7 @@ export function DiscoveryStatusPanel() {
           icon="📝"
           color="green"
         />
-        <StatCard
-          label="Estimated ROI"
-          value={status.estimatedROI}
-          icon="💰"
-          color="purple"
-        />
+        <StatCard label="Estimated ROI" value={status.estimatedROI} icon="💰" color="purple" />
       </div>
 
       {/* Additional Metrics */}
@@ -159,9 +149,7 @@ export function DiscoveryStatusPanel() {
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900">
-                    {item.discoveredTypeOriginal}
-                  </div>
+                  <div className="font-medium text-gray-900">{item.discoveredTypeOriginal}</div>
                   <div className="text-sm text-gray-600">
                     {item.totalOccurrences} occurrences • {item.estimatedMonthlySavings}
                   </div>
@@ -222,9 +210,7 @@ export function DiscoveryStatusPanel() {
                       <div className="text-sm font-medium text-gray-900">
                         {type.discoveredTypeOriginal}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {type.discoveredTypeEnglish}
-                      </div>
+                      <div className="text-xs text-gray-500">{type.discoveredTypeEnglish}</div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                       {type.primaryLanguage.toUpperCase()}
@@ -288,9 +274,7 @@ function StatCard({
     <div
       className={clsx(
         'rounded-lg border p-6 transition-all',
-        highlight
-          ? 'bg-yellow-50 border-yellow-300 shadow-md'
-          : 'bg-white border-gray-200'
+        highlight ? 'bg-yellow-50 border-yellow-300 shadow-md' : 'bg-white border-gray-200'
       )}
     >
       <div className="flex items-center justify-between">

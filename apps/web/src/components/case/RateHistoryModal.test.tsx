@@ -74,9 +74,7 @@ describe('RateHistoryModal', () => {
 
   describe('Rendering', () => {
     it('renders nothing when isOpen is false', () => {
-      const { container } = render(
-        <RateHistoryModal {...defaultProps} isOpen={false} />
-      );
+      const { container } = render(<RateHistoryModal {...defaultProps} isOpen={false} />);
       expect(container.firstChild).toBeNull();
     });
 

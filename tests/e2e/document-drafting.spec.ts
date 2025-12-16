@@ -19,10 +19,7 @@ async function loginAsUser(page: Page) {
 
   // Mock authentication for E2E tests
   await page.evaluate(() => {
-    localStorage.setItem(
-      'auth_token',
-      'test-token-for-e2e'
-    );
+    localStorage.setItem('auth_token', 'test-token-for-e2e');
     localStorage.setItem(
       'user',
       JSON.stringify({

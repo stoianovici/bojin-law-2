@@ -41,17 +41,27 @@ describe('OneDriveService', () => {
     });
 
     it('allows Word documents', () => {
-      expect(ALLOWED_FILE_TYPES.has('application/vnd.openxmlformats-officedocument.wordprocessingml.document')).toBe(true);
+      expect(
+        ALLOWED_FILE_TYPES.has(
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+      ).toBe(true);
       expect(ALLOWED_FILE_TYPES.has('application/msword')).toBe(true);
     });
 
     it('allows Excel files', () => {
-      expect(ALLOWED_FILE_TYPES.has('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')).toBe(true);
+      expect(
+        ALLOWED_FILE_TYPES.has('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      ).toBe(true);
       expect(ALLOWED_FILE_TYPES.has('application/vnd.ms-excel')).toBe(true);
     });
 
     it('allows PowerPoint files', () => {
-      expect(ALLOWED_FILE_TYPES.has('application/vnd.openxmlformats-officedocument.presentationml.presentation')).toBe(true);
+      expect(
+        ALLOWED_FILE_TYPES.has(
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        )
+      ).toBe(true);
       expect(ALLOWED_FILE_TYPES.has('application/vnd.ms-powerpoint')).toBe(true);
     });
 

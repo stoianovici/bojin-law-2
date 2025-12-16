@@ -19,11 +19,7 @@ interface EmailThreadFiltersProps {
   onRefresh: () => void;
 }
 
-export function EmailThreadFilters({
-  filters,
-  onChange,
-  onRefresh,
-}: EmailThreadFiltersProps) {
+export function EmailThreadFilters({ filters, onChange, onRefresh }: EmailThreadFiltersProps) {
   return (
     <div className="border-b border-gray-200 p-3 dark:border-gray-700">
       {/* Search */}

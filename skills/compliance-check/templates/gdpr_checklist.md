@@ -9,15 +9,15 @@
 
 ## COMPLIANCE STATUS SUMMARY
 
-| Category | Compliant | Partial | Non-Compliant | N/A |
-|----------|-----------|---------|---------------|-----|
-| Lawful Basis | ☐ | ☐ | ☐ | ☐ |
-| Transparency | ☐ | ☐ | ☐ | ☐ |
-| Data Subject Rights | ☐ | ☐ | ☐ | ☐ |
-| Data Security | ☐ | ☐ | ☐ | ☐ |
-| Data Processing Agreements | ☐ | ☐ | ☐ | ☐ |
-| Records & Documentation | ☐ | ☐ | ☐ | ☐ |
-| Data Breaches | ☐ | ☐ | ☐ | ☐ |
+| Category                   | Compliant | Partial | Non-Compliant | N/A |
+| -------------------------- | --------- | ------- | ------------- | --- |
+| Lawful Basis               | ☐         | ☐       | ☐             | ☐   |
+| Transparency               | ☐         | ☐       | ☐             | ☐   |
+| Data Subject Rights        | ☐         | ☐       | ☐             | ☐   |
+| Data Security              | ☐         | ☐       | ☐             | ☐   |
+| Data Processing Agreements | ☐         | ☐       | ☐             | ☐   |
+| Records & Documentation    | ☐         | ☐       | ☐             | ☐   |
+| Data Breaches              | ☐         | ☐       | ☐             | ☐   |
 
 **Overall Risk Level:** {{RISK_LEVEL}} (Low / Medium / High / Critical)
 
@@ -26,6 +26,7 @@
 ## 1. LAWFUL BASIS FOR PROCESSING (Article 6)
 
 ### 1.1 Identification of Legal Basis
+
 ☐ **Consent:** Documented for marketing, cookies, special category data
 ☐ **Contract:** Identified for order processing, account management
 ☐ **Legal Obligation:** Documented (tax, employment law)
@@ -38,6 +39,7 @@
 **Gaps:** {{LAWFUL_BASIS_GAPS}}
 
 ### 1.2 Special Category Data (Article 9)
+
 ☐ Processing of special category data identified
 ☐ Additional legal basis documented
 ☐ Enhanced protections implemented
@@ -49,6 +51,7 @@
 ## 2. TRANSPARENCY & INFORMATION (Articles 13-14)
 
 ### 2.1 Privacy Notice/Policy
+
 ☐ Privacy policy exists and is accessible
 ☐ Identity of controller provided
 ☐ Contact details of DPO provided (if applicable)
@@ -69,6 +72,7 @@
 **Gaps:** {{TRANSPARENCY_GAPS}}
 
 ### 2.2 Cookie Notice
+
 ☐ Cookie banner implemented
 ☐ Granular consent for non-essential cookies
 ☐ Cookie policy detailed and accessible
@@ -81,6 +85,7 @@
 ## 3. DATA SUBJECT RIGHTS (Articles 15-22)
 
 ### 3.1 Access (Article 15)
+
 ☐ Process for access requests documented
 ☐ Response template prepared
 ☐ Verification procedure established
@@ -89,12 +94,14 @@
 **Findings:** {{ACCESS_RIGHT_FINDINGS}}
 
 ### 3.2 Rectification (Article 16)
+
 ☐ Process for correction requests documented
 ☐ Self-service correction available (where appropriate)
 
 **Findings:** {{RECTIFICATION_FINDINGS}}
 
 ### 3.3 Erasure/Right to be Forgotten (Article 17)
+
 ☐ Deletion request process documented
 ☐ Exceptions identified (legal retention, etc.)
 ☐ Third-party notification process defined
@@ -102,18 +109,21 @@
 **Findings:** {{ERASURE_FINDINGS}}
 
 ### 3.4 Data Portability (Article 20)
+
 ☐ Portability process documented
 ☐ Machine-readable format defined (JSON, CSV, etc.)
 
 **Findings:** {{PORTABILITY_FINDINGS}}
 
 ### 3.5 Object (Article 21)
+
 ☐ Objection process documented
 ☐ Opt-out mechanisms implemented (marketing)
 
 **Findings:** {{OBJECT_FINDINGS}}
 
 ### 3.6 Automated Decision-Making (Article 22)
+
 ☐ Automated decisions identified
 ☐ Human review process established
 ☐ Explanation mechanism implemented
@@ -125,6 +135,7 @@
 ## 4. DATA SECURITY (Article 32)
 
 ### 4.1 Technical Measures
+
 ☐ Encryption in transit (TLS/SSL)
 ☐ Encryption at rest (AES-256 or equivalent)
 ☐ Access controls implemented (RBAC)
@@ -137,6 +148,7 @@
 **Findings:** {{SECURITY_TECHNICAL_FINDINGS}}
 
 ### 4.2 Organizational Measures
+
 ☐ Security policies documented
 ☐ Employee training program active
 ☐ Background checks for employees with data access
@@ -194,15 +206,16 @@
 
 ☐ ROPA maintained and current
 ☐ ROPA includes all required elements:
-  - Controller/processor name and contact
-  - Purposes of processing
-  - Categories of data subjects
-  - Categories of personal data
-  - Recipients
-  - International transfers
-  - Retention periods
-  - Security measures
-☐ ROPA reviewed at least annually
+
+- Controller/processor name and contact
+- Purposes of processing
+- Categories of data subjects
+- Categories of personal data
+- Recipients
+- International transfers
+- Retention periods
+- Security measures
+  ☐ ROPA reviewed at least annually
 
 **Findings:** {{ROPA_FINDINGS}}
 
@@ -211,6 +224,7 @@
 ## 8. DATA BREACH PROCEDURES (Articles 33-34)
 
 ### 8.1 Detection & Response
+
 ☐ Breach detection mechanisms in place
 ☐ Incident response plan documented
 ☐ Breach notification template prepared
@@ -220,6 +234,7 @@
 **Findings:** {{BREACH_PROCEDURE_FINDINGS}}
 
 ### 8.2 Data Protection Impact Assessments (Article 35)
+
 ☐ DPIA process documented
 ☐ DPIA threshold criteria defined
 ☐ DPIAs conducted for high-risk processing
@@ -259,20 +274,24 @@
 ## GAP ANALYSIS SUMMARY
 
 ### Critical Gaps (Address Immediately)
+
 1. {{CRITICAL_GAP_1}}
 2. {{CRITICAL_GAP_2}}
 3. {{CRITICAL_GAP_3}}
 
 ### High Priority Gaps (Address within 30 days)
+
 1. {{HIGH_GAP_1}}
 2. {{HIGH_GAP_2}}
 3. {{HIGH_GAP_3}}
 
 ### Medium Priority Gaps (Address within 90 days)
+
 1. {{MEDIUM_GAP_1}}
 2. {{MEDIUM_GAP_2}}
 
 ### Low Priority Gaps (Ongoing improvement)
+
 1. {{LOW_GAP_1}}
 2. {{LOW_GAP_2}}
 
@@ -280,8 +299,8 @@
 
 ## REMEDIATION ROADMAP
 
-| Action | Owner | Deadline | Status |
-|--------|-------|----------|--------|
+| Action       | Owner       | Deadline       | Status       |
+| ------------ | ----------- | -------------- | ------------ |
 | {{ACTION_1}} | {{OWNER_1}} | {{DEADLINE_1}} | {{STATUS_1}} |
 | {{ACTION_2}} | {{OWNER_2}} | {{DEADLINE_2}} | {{STATUS_2}} |
 | {{ACTION_3}} | {{OWNER_3}} | {{DEADLINE_3}} | {{STATUS_3}} |
@@ -293,5 +312,5 @@
 
 {{NEXT_REVIEW_DATE}}
 
-**Assessor Signature:** _______________________
-**Date:** _______________________
+**Assessor Signature:** **********\_\_\_**********
+**Date:** **********\_\_\_**********

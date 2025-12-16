@@ -8,15 +8,7 @@
  */
 
 import * as React from 'react';
-import {
-  MessageSquare,
-  Send,
-  Check,
-  Reply,
-  AtSign,
-  ChevronDown,
-  ChevronRight,
-} from 'lucide-react';
+import { MessageSquare, Send, Check, Reply, AtSign, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -188,25 +180,23 @@ export function ReviewCommentsPanel({
             value={newComment}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)}
             placeholder={
-              selectedText
-                ? 'Add a comment on the selected text...'
-                : 'Add a general comment...'
+              selectedText ? 'Add a comment on the selected text...' : 'Add a general comment...'
             }
             rows={2}
           />
 
           <Textarea
             value={newSuggestion}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewSuggestion(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setNewSuggestion(e.target.value)
+            }
             placeholder="Suggest replacement text (optional)..."
             rows={2}
             className="text-sm"
           />
 
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Use @username to mention colleagues
-            </p>
+            <p className="text-xs text-muted-foreground">Use @username to mention colleagues</p>
             <Button
               size="sm"
               onClick={handleSubmitComment}
@@ -262,10 +252,7 @@ export function ReviewCommentsPanel({
                       {comment.anchorText && (
                         <button
                           onClick={() =>
-                            onNavigateToComment?.(
-                              comment.anchorStart || 0,
-                              comment.anchorEnd || 0
-                            )
+                            onNavigateToComment?.(comment.anchorStart || 0, comment.anchorEnd || 0)
                           }
                           className="text-xs text-primary hover:underline mt-1 block text-left"
                         >
@@ -357,7 +344,9 @@ export function ReviewCommentsPanel({
                     <div className="mt-3 ml-9 space-y-2">
                       <Textarea
                         value={replyContent}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReplyContent(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                          setReplyContent(e.target.value)
+                        }
                         placeholder="Write a reply..."
                         rows={2}
                         autoFocus
@@ -425,8 +414,7 @@ export function ReviewCommentsPanel({
                       {comment.author.firstName} {comment.author.lastName}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      Resolved by {comment.resolvedBy?.firstName}{' '}
-                      {comment.resolvedBy?.lastName}
+                      Resolved by {comment.resolvedBy?.firstName} {comment.resolvedBy?.lastName}
                     </span>
                   </div>
                   <p className="ml-6 text-muted-foreground">{comment.content}</p>

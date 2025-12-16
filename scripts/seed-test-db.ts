@@ -31,7 +31,8 @@ let pool: Pool;
  * Connect to the test database
  */
 async function connectToDatabase(): Promise<Pool> {
-  const connectionString = process.env.TEST_DATABASE_URL ||
+  const connectionString =
+    process.env.TEST_DATABASE_URL ||
     'postgresql://postgres:postgres@localhost:5433/legal_platform_test';
 
   pool = new Pool({
@@ -66,17 +67,17 @@ async function createTestUsers() {
   const partner = createPartner({
     email: 'partner@legal-platform.test',
     firstName: 'Ion',
-    lastName: 'Popescu'
+    lastName: 'Popescu',
   });
   const associate = createAssociate({
     email: 'associate@legal-platform.test',
     firstName: 'Maria',
-    lastName: 'Ionescu'
+    lastName: 'Ionescu',
   });
   const paralegal = createParalegal({
     email: 'paralegal@legal-platform.test',
     firstName: 'Ștefan',
-    lastName: 'Văduva'
+    lastName: 'Văduva',
   });
 
   const users = [partner, associate, paralegal];
@@ -156,11 +157,11 @@ async function createTestDocuments(users: any[], cases: any[]) {
   // Create documents with factory functions
   const contract = createContract({
     caseId: activeCase.id,
-    createdBy: partner.id
+    createdBy: partner.id,
   });
   const motion = createMotion({
     caseId: activeCase.id,
-    createdBy: partner.id
+    createdBy: partner.id,
   });
 
   const documents = [contract, motion];
@@ -202,11 +203,11 @@ async function createTestTasks(users: any[], cases: any[]) {
   // Create tasks with factory functions
   const researchTask = createResearchTask({
     caseId: activeCase.id,
-    assignedTo: associate.id
+    assignedTo: associate.id,
   });
   const docCreationTask = createDocumentCreationTask({
     caseId: activeCase.id,
-    assignedTo: associate.id
+    assignedTo: associate.id,
   });
 
   const tasks = [researchTask, docCreationTask];
@@ -263,8 +264,9 @@ async function seedTestDatabase() {
     const tasks = await createTestTasks(users, cases);
 
     console.log('\n✅ Test database seeding completed successfully!');
-    console.log(`   📊 Summary: ${users.length} users, ${cases.length} cases, ${documents.length} documents, ${tasks.length} tasks`);
-
+    console.log(
+      `   📊 Summary: ${users.length} users, ${cases.length} cases, ${documents.length} documents, ${tasks.length} tasks`
+    );
   } catch (error) {
     console.error('❌ Test database seeding failed:', error);
     throw error;

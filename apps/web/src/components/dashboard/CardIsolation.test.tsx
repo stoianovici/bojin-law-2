@@ -14,11 +14,7 @@ describe('Card from @legal-platform/ui', () => {
   });
 
   it('renders Card with header', () => {
-    render(
-      <Card header={<h3>Test Header</h3>}>
-        Test content
-      </Card>
-    );
+    render(<Card header={<h3>Test Header</h3>}>Test content</Card>);
 
     expect(screen.getByText('Test Header')).toBeInTheDocument();
     expect(screen.getByText('Test content')).toBeInTheDocument();

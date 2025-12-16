@@ -148,8 +148,7 @@ export function useWritingStyleSummary(): {
   loading: boolean;
   error: Error | undefined;
 } {
-  const { profile, loading, error, learningProgress, isLearning } =
-    useWritingStyleProfile();
+  const { profile, loading, error, learningProgress, isLearning } = useWritingStyleProfile();
 
   if (!profile) {
     return { summary: null, loading, error: error as Error | undefined };
@@ -160,7 +159,10 @@ export function useWritingStyleSummary(): {
     preferredTone: profile.preferredTone,
     sampleCount: profile.sampleCount,
     topPhrases: [...profile.commonPhrases]
-      .sort((a: { phrase: string; frequency: number }, b: { phrase: string; frequency: number }) => b.frequency - a.frequency)
+      .sort(
+        (a: { phrase: string; frequency: number }, b: { phrase: string; frequency: number }) =>
+          b.frequency - a.frequency
+      )
       .slice(0, 5)
       .map((p: { phrase: string; frequency: number }) => p.phrase),
     isLearning,
@@ -240,9 +242,7 @@ export function useRecordDraftEdit() {
     }
 
     // Don't record very small changes (less than 10 chars difference)
-    const lengthDiff = Math.abs(
-      input.editedText.length - input.originalText.length
-    );
+    const lengthDiff = Math.abs(input.editedText.length - input.originalText.length);
     if (lengthDiff < 10 && input.editedText.length < 50) {
       return true;
     }
@@ -279,17 +279,9 @@ export function useWritingStyle() {
     isLearning,
   } = useWritingStyleProfile();
 
-  const {
-    analyzeWritingStyle,
-    loading: analyzing,
-    error: analyzeError,
-  } = useAnalyzeWritingStyle();
+  const { analyzeWritingStyle, loading: analyzing, error: analyzeError } = useAnalyzeWritingStyle();
 
-  const {
-    resetWritingStyle,
-    loading: resetting,
-    error: resetError,
-  } = useResetWritingStyle();
+  const { resetWritingStyle, loading: resetting, error: resetError } = useResetWritingStyle();
 
   const { recordDraftEdit, loading: recording } = useRecordDraftEdit();
 
@@ -316,12 +308,8 @@ export function useWritingStyle() {
     refetch,
 
     // Computed values
-    formalityLabel: profile
-      ? getFormalityLabel(profile.formalityLevel)
-      : 'Unknown',
-    complexityLabel: profile
-      ? getComplexityLabel(profile.vocabularyComplexity)
-      : 'Unknown',
+    formalityLabel: profile ? getFormalityLabel(profile.formalityLevel) : 'Unknown',
+    complexityLabel: profile ? getComplexityLabel(profile.vocabularyComplexity) : 'Unknown',
   };
 }
 

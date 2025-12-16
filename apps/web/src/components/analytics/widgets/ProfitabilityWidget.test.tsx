@@ -98,13 +98,7 @@ describe('ProfitabilityWidget', () => {
       const mockRetry = jest.fn();
       const testError = new Error('Network error');
 
-      render(
-        <ProfitabilityWidget
-          {...defaultProps}
-          error={testError}
-          onRetry={mockRetry}
-        />
-      );
+      render(<ProfitabilityWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
       screen.getByRole('button', { name: /retry/i }).click();
       expect(mockRetry).toHaveBeenCalledTimes(1);
@@ -113,17 +107,10 @@ describe('ProfitabilityWidget', () => {
 
   describe('Empty State', () => {
     it('shows empty message when no data', () => {
-      render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={0}
-          profitabilityByCase={[]}
-        />
-      );
+      render(<ProfitabilityWidget effectiveHourlyRate={0} profitabilityByCase={[]} />);
 
       expect(screen.getByTestId('widget-empty')).toBeInTheDocument();
-      expect(
-        screen.getByText('No profitability data for this period')
-      ).toBeInTheDocument();
+      expect(screen.getByText('No profitability data for this period')).toBeInTheDocument();
     });
   });
 
@@ -150,12 +137,7 @@ describe('ProfitabilityWidget', () => {
   describe('Case Sorting and Display', () => {
     it('shows top 5 cases as performers', () => {
       const cases = createMockCases(10);
-      render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={cases}
-        />
-      );
+      render(<ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={cases} />);
 
       // Top performers section should exist
       expect(screen.getByText('Top Performers')).toBeInTheDocument();
@@ -163,27 +145,31 @@ describe('ProfitabilityWidget', () => {
 
     it('shows low-margin cases in needs attention', () => {
       const cases = createMockCases(10);
-      render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={cases}
-        />
-      );
+      render(<ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={cases} />);
 
       expect(screen.getByText('Needs Attention')).toBeInTheDocument();
     });
 
     it('does not show needs attention when all cases are profitable', () => {
       const profitableCases: CaseProfitability[] = [
-        { caseId: '1', caseName: 'High Margin Case', billingType: 'Hourly', revenue: 10000, marginPercent: 45 },
-        { caseId: '2', caseName: 'Good Margin Case', billingType: 'Fixed', revenue: 8000, marginPercent: 35 },
+        {
+          caseId: '1',
+          caseName: 'High Margin Case',
+          billingType: 'Hourly',
+          revenue: 10000,
+          marginPercent: 45,
+        },
+        {
+          caseId: '2',
+          caseName: 'Good Margin Case',
+          billingType: 'Fixed',
+          revenue: 8000,
+          marginPercent: 35,
+        },
       ];
 
       render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={profitableCases}
-        />
+        <ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={profitableCases} />
       );
 
       expect(screen.queryByText('Needs Attention')).not.toBeInTheDocument();
@@ -193,14 +179,17 @@ describe('ProfitabilityWidget', () => {
   describe('Margin Color Coding', () => {
     it('shows green for high margin cases (>=20%)', () => {
       const highMarginCase: CaseProfitability[] = [
-        { caseId: '1', caseName: 'High Margin', billingType: 'Hourly', revenue: 10000, marginPercent: 35 },
+        {
+          caseId: '1',
+          caseName: 'High Margin',
+          billingType: 'Hourly',
+          revenue: 10000,
+          marginPercent: 35,
+        },
       ];
 
       render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={highMarginCase}
-        />
+        <ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={highMarginCase} />
       );
 
       const marginText = screen.getByText('35.0%');
@@ -209,14 +198,17 @@ describe('ProfitabilityWidget', () => {
 
     it('shows yellow for medium margin cases (0-19%)', () => {
       const mediumMarginCase: CaseProfitability[] = [
-        { caseId: '1', caseName: 'Medium Margin', billingType: 'Hourly', revenue: 10000, marginPercent: 15 },
+        {
+          caseId: '1',
+          caseName: 'Medium Margin',
+          billingType: 'Hourly',
+          revenue: 10000,
+          marginPercent: 15,
+        },
       ];
 
       render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={mediumMarginCase}
-        />
+        <ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={mediumMarginCase} />
       );
 
       // Case appears in both top performers and needs attention, so use getAllByText
@@ -227,14 +219,17 @@ describe('ProfitabilityWidget', () => {
 
     it('shows red for negative margin cases (<0%)', () => {
       const negativeMarginCase: CaseProfitability[] = [
-        { caseId: '1', caseName: 'Negative Margin', billingType: 'Hourly', revenue: 5000, marginPercent: -10 },
+        {
+          caseId: '1',
+          caseName: 'Negative Margin',
+          billingType: 'Hourly',
+          revenue: 5000,
+          marginPercent: -10,
+        },
       ];
 
       render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={negativeMarginCase}
-        />
+        <ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={negativeMarginCase} />
       );
 
       // Case appears in both top performers and needs attention, so use getAllByText
@@ -257,15 +252,16 @@ describe('ProfitabilityWidget', () => {
   describe('Edge Cases', () => {
     it('handles single case', () => {
       const singleCase: CaseProfitability[] = [
-        { caseId: '1', caseName: 'Only Case', billingType: 'Hourly', revenue: 10000, marginPercent: 30 },
+        {
+          caseId: '1',
+          caseName: 'Only Case',
+          billingType: 'Hourly',
+          revenue: 10000,
+          marginPercent: 30,
+        },
       ];
 
-      render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={singleCase}
-        />
-      );
+      render(<ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={singleCase} />);
 
       expect(screen.getByText('Only Case')).toBeInTheDocument();
     });
@@ -281,12 +277,7 @@ describe('ProfitabilityWidget', () => {
         },
       ];
 
-      render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={longNameCase}
-        />
-      );
+      render(<ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={longNameCase} />);
 
       const caseName = screen.getByText(/This is a very long case name/);
       expect(caseName).toHaveClass('truncate');
@@ -294,10 +285,7 @@ describe('ProfitabilityWidget', () => {
 
     it('handles zero effective hourly rate', () => {
       render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={0}
-          profitabilityByCase={createMockCases(3)}
-        />
+        <ProfitabilityWidget effectiveHourlyRate={0} profitabilityByCase={createMockCases(3)} />
       );
 
       expect(screen.getByText('$0.00/hr')).toBeInTheDocument();
@@ -305,10 +293,7 @@ describe('ProfitabilityWidget', () => {
 
     it('handles very high effective hourly rate', () => {
       render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={2500}
-          profitabilityByCase={createMockCases(3)}
-        />
+        <ProfitabilityWidget effectiveHourlyRate={2500} profitabilityByCase={createMockCases(3)} />
       );
 
       expect(screen.getByText('$2,500.00/hr')).toBeInTheDocument();
@@ -324,17 +309,30 @@ describe('ProfitabilityWidget', () => {
 
     it('handles all billing types', () => {
       const allTypes: CaseProfitability[] = [
-        { caseId: '1', caseName: 'Hourly Case', billingType: 'HOURLY', revenue: 10000, marginPercent: 30 },
-        { caseId: '2', caseName: 'Fixed Case', billingType: 'FIXED', revenue: 8000, marginPercent: 25 },
-        { caseId: '3', caseName: 'Retainer Case', billingType: 'RETAINER', revenue: 6000, marginPercent: 28 },
+        {
+          caseId: '1',
+          caseName: 'Hourly Case',
+          billingType: 'HOURLY',
+          revenue: 10000,
+          marginPercent: 30,
+        },
+        {
+          caseId: '2',
+          caseName: 'Fixed Case',
+          billingType: 'FIXED',
+          revenue: 8000,
+          marginPercent: 25,
+        },
+        {
+          caseId: '3',
+          caseName: 'Retainer Case',
+          billingType: 'RETAINER',
+          revenue: 6000,
+          marginPercent: 28,
+        },
       ];
 
-      render(
-        <ProfitabilityWidget
-          effectiveHourlyRate={350}
-          profitabilityByCase={allTypes}
-        />
-      );
+      render(<ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={allTypes} />);
 
       expect(screen.getByText('HOURLY')).toBeInTheDocument();
       expect(screen.getByText('FIXED')).toBeInTheDocument();

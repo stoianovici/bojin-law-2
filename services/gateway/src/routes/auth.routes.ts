@@ -149,8 +149,7 @@ authRouter.get('/callback', async (req: Request, res: Response) => {
       console.error('PKCE session not found for state:', state);
       return res.status(400).json({
         error: 'invalid_state',
-        message:
-          'Authentication session expired or invalid. Please try again.',
+        message: 'Authentication session expired or invalid. Please try again.',
       });
     }
 
@@ -166,9 +165,7 @@ authRouter.get('/callback', async (req: Request, res: Response) => {
     );
 
     // Extract user profile from ID token
-    const userProfile = authService.extractUserProfile(
-      authResult.idTokenClaims
-    );
+    const userProfile = authService.extractUserProfile(authResult.idTokenClaims);
 
     // Task 8: Create or update user in database (User Provisioning Service)
     const user = await userService.provisionUserFromAzureAD(
@@ -232,7 +229,9 @@ authRouter.get('/callback', async (req: Request, res: Response) => {
         azureAdId: user.azureAdId,
         accessToken: authResult.accessToken, // Azure AD access token for Graph API
         refreshToken: azureRefreshToken, // Azure AD refresh token (if available)
-        accessTokenExpiry: now + (authResult.expiresOn ? Math.floor(authResult.expiresOn.getTime() / 1000) - now : 1800),
+        accessTokenExpiry:
+          now +
+          (authResult.expiresOn ? Math.floor(authResult.expiresOn.getTime() / 1000) - now : 1800),
         createdAt: now,
         lastActivity: now,
       };
@@ -306,7 +305,9 @@ authRouter.post('/refresh', refreshRateLimiter, async (req: Request, res: Respon
       // Update session with new Azure AD access token and expiry
       const now = Math.floor(Date.now() / 1000);
       sessionUser.accessToken = authResult.accessToken;
-      sessionUser.accessTokenExpiry = now + (authResult.expiresOn ? Math.floor(authResult.expiresOn.getTime() / 1000) - now : 1800);
+      sessionUser.accessTokenExpiry =
+        now +
+        (authResult.expiresOn ? Math.floor(authResult.expiresOn.getTime() / 1000) - now : 1800);
       sessionUser.lastActivity = now;
 
       // Update Azure AD refresh token if provided (token rotation)

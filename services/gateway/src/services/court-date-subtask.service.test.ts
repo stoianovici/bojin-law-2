@@ -58,9 +58,9 @@ describe('CourtDateSubtaskService', () => {
     it('should throw error if task is not CourtDate type', async () => {
       const nonCourtDateTask = { ...mockCourtDateTask, type: TaskTypeEnum.Meeting };
 
-      await expect(
-        service.generatePreparationSubtasks(nonCourtDateTask)
-      ).rejects.toThrow('Task must be of type CourtDate');
+      await expect(service.generatePreparationSubtasks(nonCourtDateTask)).rejects.toThrow(
+        'Task must be of type CourtDate'
+      );
     });
 
     it('should generate 5 subtasks with correct due dates', async () => {
@@ -161,7 +161,7 @@ describe('CourtDateSubtaskService', () => {
       const result = await service.generatePreparationSubtasks(task);
 
       // Check that some titles include "Trial" (the ones with {hearingType} placeholder)
-      const titlesWithHearingType = result.filter(s => s.title.includes('Trial'));
+      const titlesWithHearingType = result.filter((s) => s.title.includes('Trial'));
       expect(titlesWithHearingType.length).toBeGreaterThan(0);
 
       // Ensure no titles have the placeholder
@@ -223,8 +223,11 @@ describe('CourtDateSubtaskService', () => {
       const result = await service.generatePreparationSubtasks(task);
 
       // Should use default "hearing" when hearingType is missing (in templates with {hearingType})
-      const titlesWithHearingType = result.filter(s =>
-        s.title.includes('hearing') || s.title.includes('Confirm witness') || s.title.includes('Final preparation')
+      const titlesWithHearingType = result.filter(
+        (s) =>
+          s.title.includes('hearing') ||
+          s.title.includes('Confirm witness') ||
+          s.title.includes('Final preparation')
       );
       expect(titlesWithHearingType.length).toBeGreaterThan(0);
     });

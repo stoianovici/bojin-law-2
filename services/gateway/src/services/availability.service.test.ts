@@ -80,9 +80,9 @@ describe('AvailabilityService', () => {
         endDate: '2025-12-15',
       };
 
-      await expect(
-        service.createAvailability(invalidInput, userId, firmId)
-      ).rejects.toThrow('End date must be after start date');
+      await expect(service.createAvailability(invalidInput, userId, firmId)).rejects.toThrow(
+        'End date must be after start date'
+      );
     });
 
     it('should throw error when overlapping availability exists', async () => {
@@ -92,9 +92,9 @@ describe('AvailabilityService', () => {
         endDate: new Date('2025-12-18'),
       });
 
-      await expect(
-        service.createAvailability(validInput, userId, firmId)
-      ).rejects.toThrow('Overlapping availability already exists');
+      await expect(service.createAvailability(validInput, userId, firmId)).rejects.toThrow(
+        'Overlapping availability already exists'
+      );
     });
 
     it('should validate delegate belongs to same firm', async () => {
@@ -109,9 +109,9 @@ describe('AvailabilityService', () => {
         status: 'Active',
       });
 
-      await expect(
-        service.createAvailability(inputWithDelegate, userId, firmId)
-      ).rejects.toThrow('Delegate must be in the same firm');
+      await expect(service.createAvailability(inputWithDelegate, userId, firmId)).rejects.toThrow(
+        'Delegate must be in the same firm'
+      );
     });
 
     it('should validate delegate is active', async () => {
@@ -126,9 +126,9 @@ describe('AvailabilityService', () => {
         status: 'Inactive',
       });
 
-      await expect(
-        service.createAvailability(inputWithDelegate, userId, firmId)
-      ).rejects.toThrow('Delegate must be an active user');
+      await expect(service.createAvailability(inputWithDelegate, userId, firmId)).rejects.toThrow(
+        'Delegate must be an active user'
+      );
     });
   });
 
@@ -179,9 +179,9 @@ describe('AvailabilityService', () => {
         firmId,
       });
 
-      await expect(
-        service.updateAvailability(availId, {}, userId, firmId)
-      ).rejects.toThrow('Unauthorized: Cannot update another user availability');
+      await expect(service.updateAvailability(availId, {}, userId, firmId)).rejects.toThrow(
+        'Unauthorized: Cannot update another user availability'
+      );
     });
 
     it('should throw error if different firm', async () => {
@@ -191,9 +191,9 @@ describe('AvailabilityService', () => {
         firmId: 'other-firm',
       });
 
-      await expect(
-        service.updateAvailability(availId, {}, userId, firmId)
-      ).rejects.toThrow('Unauthorized: Availability not in your firm');
+      await expect(service.updateAvailability(availId, {}, userId, firmId)).rejects.toThrow(
+        'Unauthorized: Availability not in your firm'
+      );
     });
   });
 
@@ -218,9 +218,9 @@ describe('AvailabilityService', () => {
     it('should throw error if not found', async () => {
       mockPrisma.userAvailability.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.deleteAvailability(availId, userId, firmId)
-      ).rejects.toThrow('Availability not found');
+      await expect(service.deleteAvailability(availId, userId, firmId)).rejects.toThrow(
+        'Availability not found'
+      );
     });
   });
 

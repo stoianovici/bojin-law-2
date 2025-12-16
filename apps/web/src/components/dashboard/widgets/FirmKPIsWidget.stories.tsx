@@ -33,10 +33,22 @@ export const Loading: Story = {
 export const WithMockData: Story = {
   render: () => {
     const mockKPIs = [
-      createKPIMetric({ label: 'Cazuri Active', value: 127, trend: 'up', trendPercentage: 12 }, true),
-      createKPIMetric({ label: 'Ore Facturabile', value: 2340, trend: 'up', trendPercentage: 8 }, true),
-      createKPIMetric({ label: 'Progres Țintă Venit', value: '92%', trend: 'up', trendPercentage: 5 }, true),
-      createKPIMetric({ label: 'Utilizare Echipă', value: '87%', trend: 'down', trendPercentage: 3 }, true),
+      createKPIMetric(
+        { label: 'Cazuri Active', value: 127, trend: 'up', trendPercentage: 12 },
+        true
+      ),
+      createKPIMetric(
+        { label: 'Ore Facturabile', value: 2340, trend: 'up', trendPercentage: 8 },
+        true
+      ),
+      createKPIMetric(
+        { label: 'Progres Țintă Venit', value: '92%', trend: 'up', trendPercentage: 5 },
+        true
+      ),
+      createKPIMetric(
+        { label: 'Utilizare Echipă', value: '87%', trend: 'down', trendPercentage: 3 },
+        true
+      ),
     ];
     return <FirmKPIsWidget />;
   },

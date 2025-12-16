@@ -17,10 +17,7 @@ export async function POST(request: NextRequest) {
     const { sessionId, documentIds } = await request.json();
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     // Validate session exists
@@ -29,10 +26,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!importSession) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // If no document IDs provided, get all unanalyzed documents
@@ -97,10 +91,7 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     const status = await documentAnalyzer.getAnalysisStatus(sessionId);
@@ -117,7 +108,7 @@ export async function GET(request: NextRequest) {
       by: ['documentType'],
       where: {
         sessionId,
-        documentType: { not: null }
+        documentType: { not: null },
       },
       _count: true,
     });
@@ -127,31 +118,40 @@ export async function GET(request: NextRequest) {
       by: ['templatePotential'],
       where: {
         sessionId,
-        templatePotential: { not: null }
+        templatePotential: { not: null },
       },
       _count: true,
     });
 
     return NextResponse.json({
       ...status,
-      languageDistribution: languageStats.reduce((acc: Record<string, number>, stat: { primaryLanguage: string | null; _count: number }) => {
-        acc[stat.primaryLanguage || 'Unknown'] = stat._count;
-        return acc;
-      }, {}),
-      documentTypes: typeStats.reduce((acc: Record<string, number>, stat: { documentType: string | null; _count: number }) => {
-        acc[stat.documentType || 'Unknown'] = stat._count;
-        return acc;
-      }, {}),
-      templatePotential: templateStats.reduce((acc: Record<string, number>, stat: { templatePotential: string | null; _count: number }) => {
-        acc[stat.templatePotential || 'Unknown'] = stat._count;
-        return acc;
-      }, {}),
+      languageDistribution: languageStats.reduce(
+        (acc: Record<string, number>, stat: { primaryLanguage: string | null; _count: number }) => {
+          acc[stat.primaryLanguage || 'Unknown'] = stat._count;
+          return acc;
+        },
+        {}
+      ),
+      documentTypes: typeStats.reduce(
+        (acc: Record<string, number>, stat: { documentType: string | null; _count: number }) => {
+          acc[stat.documentType || 'Unknown'] = stat._count;
+          return acc;
+        },
+        {}
+      ),
+      templatePotential: templateStats.reduce(
+        (
+          acc: Record<string, number>,
+          stat: { templatePotential: string | null; _count: number }
+        ) => {
+          acc[stat.templatePotential || 'Unknown'] = stat._count;
+          return acc;
+        },
+        {}
+      ),
     });
   } catch (error) {
     console.error('Status check error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get analysis status' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get analysis status' }, { status: 500 });
   }
 }

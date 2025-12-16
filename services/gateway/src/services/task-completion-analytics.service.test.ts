@@ -398,7 +398,12 @@ describe('TaskCompletionAnalyticsService', () => {
       const mockRedis = {
         get: jest.fn().mockResolvedValue(null),
         setex: jest.fn().mockResolvedValue('OK'),
-        keys: jest.fn().mockResolvedValue(['analytics:completion:firm-1:key1', 'analytics:completion:firm-1:key2']),
+        keys: jest
+          .fn()
+          .mockResolvedValue([
+            'analytics:completion:firm-1:key1',
+            'analytics:completion:firm-1:key2',
+          ]),
         del: jest.fn().mockResolvedValue(2),
       };
 

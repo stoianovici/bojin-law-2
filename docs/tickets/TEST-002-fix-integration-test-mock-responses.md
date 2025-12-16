@@ -28,16 +28,19 @@ Configure Jest to properly handle MSW v2.x mock responses by enabling ES Module 
 ## Problem Statement
 
 ### Current State
+
 - ✅ **Unit tests:** 221/221 passing (100% coverage)
 - ❌ **Integration tests:** 28+ tests written but **0 executable**
 - ❌ **Root cause:** Jest cannot transform `until-async` ES module from MSW dependencies
 
 ### Error Message
+
 ```
 Cannot find module 'until-async' from 'node_modules/msw/...'
 ```
 
 ### Impact
+
 - **Critical testing gap:** No validation of complete user workflows
 - **Deployment risk:** Multi-component interactions untested
 - **Technical debt:** Accumulating unexecutable test code
@@ -47,6 +50,7 @@ Cannot find module 'until-async' from 'node_modules/msw/...'
 ## Acceptance Criteria
 
 ### Must-Have
+
 - [ ] Jest ESM mode configured and operational
 - [ ] All 221 unit tests continue to pass (no regressions)
 - [ ] All 28+ integration tests execute successfully
@@ -55,6 +59,7 @@ Cannot find module 'until-async' from 'node_modules/msw/...'
 - [ ] Integration test pass rate ≥80%
 
 ### Nice-to-Have
+
 - [ ] 100% integration test pass rate
 - [ ] Test run time <1.5x current speed
 - [ ] CI/CD pipeline automatically runs integration tests
@@ -64,6 +69,7 @@ Cannot find module 'until-async' from 'node_modules/msw/...'
 ## Technical Details
 
 ### Affected Test Files
+
 ```
 apps/web/src/app/cases/page.integration.test.tsx
 apps/web/src/app/cases/[caseId]/page.integration.test.tsx
@@ -74,6 +80,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ```
 
 ### Root Cause
+
 - MSW v2.x is an ES Module package with `until-async` dependency
 - Jest runs in CommonJS mode by default
 - `transformIgnorePatterns` configuration insufficient for ESM transformation
@@ -84,28 +91,35 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ## Implementation Plan
 
 ### Recommended Solution: Enable Jest ESM Mode
-*Refer to remediation plan Option 2 for full details*
+
+_Refer to remediation plan Option 2 for full details_
 
 ### Phase 1: Configuration (2-3 hours)
 
 **Tasks:**
+
 1. Update `apps/web/jest.config.js` with ESM support:
+
    ```javascript
    const customJestConfig = {
      extensionsToTreatAsEsm: ['.ts', '.tsx'],
      transform: {
-       '^.+\\.(ts|tsx)$': ['@swc/jest', {
-         jsc: {
-           parser: { syntax: 'typescript', tsx: true },
-           transform: { react: { runtime: 'automatic' } },
+       '^.+\\.(ts|tsx)$': [
+         '@swc/jest',
+         {
+           jsc: {
+             parser: { syntax: 'typescript', tsx: true },
+             transform: { react: { runtime: 'automatic' } },
+           },
+           module: { type: 'es6' },
          },
-         module: { type: 'es6' },
-       }],
+       ],
      },
    };
    ```
 
 2. Update `apps/web/package.json` test script:
+
    ```json
    "test": "NODE_OPTIONS='--experimental-vm-modules' jest"
    ```
@@ -115,6 +129,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Phase 2: Validation (2-3 hours)
 
 **Tasks:**
+
 1. Run full unit test suite: `pnpm test`
 2. Run integration tests: `pnpm test integration.test`
 3. Verify specific scenarios:
@@ -127,6 +142,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Phase 3: Documentation (1 hour)
 
 **Tasks:**
+
 1. Update `apps/web/src/app/cases/INTEGRATION_TESTS_README.md`
    - Remove "Known Setup Issues" section
    - Add "Jest ESM Configuration" explanation
@@ -137,18 +153,19 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 
 ## Effort Estimate
 
-| Phase | Time | Risk |
-|-------|------|------|
-| Configuration & Setup | 2-3 hours | Medium |
-| Testing & Validation | 2-3 hours | Low |
-| Documentation | 1 hour | Low |
-| **Total** | **5-7 hours** | **Medium** |
+| Phase                 | Time          | Risk       |
+| --------------------- | ------------- | ---------- |
+| Configuration & Setup | 2-3 hours     | Medium     |
+| Testing & Validation  | 2-3 hours     | Low        |
+| Documentation         | 1 hour        | Low        |
+| **Total**             | **5-7 hours** | **Medium** |
 
 ---
 
 ## Success Metrics
 
 ### Validation Checklist
+
 - [ ] Unit test pass rate: 100% (221/221)
 - [ ] Integration test execution: 100% (28+/28+)
 - [ ] Integration test pass rate: ≥80%
@@ -157,6 +174,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 - [ ] Test suite completes in reasonable time (<2x baseline)
 
 ### Testing Scenarios
+
 1. **Case Creation Flow**
    - Mock `CREATE_CASE` mutation response
    - Verify case appears in list after creation
@@ -174,22 +192,28 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ## Risks & Mitigation
 
 ### Risk: ESM Config Breaks Unit Tests
+
 **Likelihood:** Medium | **Impact:** High
 **Mitigation:**
+
 - Implement in feature branch
 - Full regression testing before merge
 - Ready rollback plan (git revert)
 
 ### Risk: Performance Degradation
+
 **Likelihood:** Low | **Impact:** Medium
 **Mitigation:**
+
 - Use `@swc/jest` for faster transforms
 - Benchmark before/after
 - Consider parallel execution if needed
 
 ### Risk: CI/CD Pipeline Issues
+
 **Likelihood:** Low | **Impact:** High
 **Mitigation:**
+
 - Test in draft PR first
 - Verify Node.js version compatibility (16+)
 - Update GitHub Actions workflow if needed
@@ -199,12 +223,14 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ## Rollback Plan
 
 ### Trigger Conditions
-- >20% unit test failures
+
+- > 20% unit test failures
 - Integration tests still blocked after config
-- >3x performance degradation
+- > 3x performance degradation
 - Developer workflow blocked >2 hours
 
 ### Rollback Procedure
+
 ```bash
 git revert <commit-hash>
 pnpm install --frozen-lockfile
@@ -212,6 +238,7 @@ pnpm test
 ```
 
 ### Fallback Option
+
 - Downgrade to MSW v1.x (temporary fix, technical debt)
 - Documented in remediation plan Option 1
 
@@ -220,15 +247,18 @@ pnpm test
 ## Dependencies
 
 ### Technical Dependencies
+
 - MSW v2.x (already installed: `~2.7.0`)
 - Jest 29+ (already installed)
 - Node.js 18+ (ESM native support)
 - `@swc/jest` (may need installation)
 
 ### Blocking Dependencies
+
 - None - can start immediately
 
 ### Blocked Work
+
 - Story 2.8.4 integration tests
 - Story 2.9 integration tests
 - All future feature integration testing
@@ -254,17 +284,20 @@ pnpm test
 ## Notes
 
 ### Alternative Solutions Considered
+
 1. **Downgrade MSW to v1.x** - Quick fix but temporary, creates technical debt
 2. **Hybrid Jest configs** - Over-engineered, maintenance burden
 3. **Manual mocks** - 40+ hours effort, loses MSW benefits
 
 ### Why ESM Mode?
+
 - **Future-proof:** ES modules are JavaScript standard
 - **Permanent fix:** No future MSW upgrade issues
 - **Scalable:** Benefits all future ESM dependencies
 - **Best practice:** Aligns with modern JavaScript ecosystem
 
 ### Team Communication
+
 - Announce via Slack/email after implementation
 - Include ESM vs CommonJS comparison guide
 - 15-minute demo session (optional)
@@ -285,6 +318,7 @@ pnpm test
 ## Comments / Activity Log
 
 **2025-11-22** - Ticket created by Mary (Business Analyst)
+
 - Linked to INFRA-001 remediation plan
 - Recommended solution: Jest ESM Mode (Option 2)
 - Estimated effort: 5-7 hours

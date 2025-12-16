@@ -351,16 +351,20 @@ export function useEmailSync() {
 /**
  * Hook for searching and listing emails
  */
-export function useEmails(filters?: {
-  caseId?: string;
-  search?: string;
-  hasAttachments?: boolean;
-  isUnread?: boolean;
-  dateFrom?: Date;
-  dateTo?: Date;
-  uncategorizedOnly?: boolean;
-  importance?: string;
-}, limit = 20, offset = 0) {
+export function useEmails(
+  filters?: {
+    caseId?: string;
+    search?: string;
+    hasAttachments?: boolean;
+    isUnread?: boolean;
+    dateFrom?: Date;
+    dateTo?: Date;
+    uncategorizedOnly?: boolean;
+    importance?: string;
+  },
+  limit = 20,
+  offset = 0
+) {
   const { data, loading, error, refetch, fetchMore } = useQuery(GET_EMAILS, {
     variables: { filters, limit, offset },
     fetchPolicy: 'cache-and-network',
@@ -427,14 +431,18 @@ export function useEmail(id: string) {
 /**
  * Hook for email threads
  */
-export function useEmailThreads(filters?: {
-  caseId?: string;
-  hasUnread?: boolean;
-  hasAttachments?: boolean;
-  search?: string;
-  dateFrom?: Date;
-  dateTo?: Date;
-}, limit = 20, offset = 0) {
+export function useEmailThreads(
+  filters?: {
+    caseId?: string;
+    hasUnread?: boolean;
+    hasAttachments?: boolean;
+    search?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+  },
+  limit = 20,
+  offset = 0
+) {
   const { data, loading, error, refetch, fetchMore } = useQuery(GET_EMAIL_THREADS, {
     variables: { filters, limit, offset },
     fetchPolicy: 'cache-and-network',

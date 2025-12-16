@@ -10,11 +10,7 @@
  * Uses configurable batch sizes and intervals to manage processing load.
  */
 
-import {
-  PrismaClient,
-  ExtractionStatus,
-  TaskPriority,
-} from '@legal-platform/database';
+import { PrismaClient, ExtractionStatus, TaskPriority } from '@legal-platform/database';
 
 // ============================================================================
 // Configuration
@@ -114,9 +110,7 @@ export function initializePrisma(client: PrismaClient): void {
   prisma = client;
 }
 
-export function startCommunicationIntelligenceWorker(
-  config: Partial<WorkerConfig> = {}
-): void {
+export function startCommunicationIntelligenceWorker(config: Partial<WorkerConfig> = {}): void {
   if (isRunning) {
     console.log('[Intelligence Worker] Already running');
     return;
@@ -209,10 +203,10 @@ async function processBatch(config: WorkerConfig): Promise<void> {
           result.questions.length;
 
         const allConfidences = [
-          ...result.deadlines.map(d => d.confidence),
-          ...result.commitments.map(c => c.confidence),
-          ...result.actionItems.map(a => a.confidence),
-          ...result.questions.map(q => q.confidence),
+          ...result.deadlines.map((d) => d.confidence),
+          ...result.commitments.map((c) => c.confidence),
+          ...result.actionItems.map((a) => a.confidence),
+          ...result.questions.map((q) => q.confidence),
         ];
 
         if (allConfidences.length > 0) {
@@ -222,14 +216,13 @@ async function processBatch(config: WorkerConfig): Promise<void> {
 
         metrics.totalProcessed++;
         metrics.totalExtractions += emailExtractions;
-
       } catch (error) {
         console.error(`[Intelligence Worker] Error processing email ${email.id}:`, error);
         metrics.errorCount++;
       }
 
       // Small delay between emails to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     // Update average metrics
@@ -239,8 +232,9 @@ async function processBatch(config: WorkerConfig): Promise<void> {
     metrics.avgProcessingTimeMs = Date.now() - startTime;
     metrics.lastRunAt = new Date();
 
-    console.log(`[Intelligence Worker] Batch complete: ${unprocessedEmails.length} emails, ${metrics.totalExtractions} total extractions`);
-
+    console.log(
+      `[Intelligence Worker] Batch complete: ${unprocessedEmails.length} emails, ${metrics.totalExtractions} total extractions`
+    );
   } catch (error) {
     console.error('[Intelligence Worker] Batch processing error:', error);
     metrics.errorCount++;
@@ -280,7 +274,7 @@ async function findUnprocessedEmails(limit: number): Promise<EmailForProcessing[
     take: limit,
   });
 
-  return emails.map(email => ({
+  return emails.map((email) => ({
     id: email.id,
     subject: email.subject,
     bodyContent: email.bodyContent,
@@ -329,7 +323,7 @@ async function processEmail(
       throw new Error(`AI service returned ${response.status}`);
     }
 
-    return await response.json() as ExtractionResult;
+    return (await response.json()) as ExtractionResult;
   } catch (error) {
     console.error(`[Intelligence Worker] AI service error for email ${email.id}:`, error);
     // Return empty results on error
@@ -355,10 +349,10 @@ async function storeExtractionResults(
   minConfidence: number
 ): Promise<void> {
   // Filter by confidence threshold
-  const filteredDeadlines = result.deadlines.filter(d => d.confidence >= minConfidence);
-  const filteredCommitments = result.commitments.filter(c => c.confidence >= minConfidence);
-  const filteredActionItems = result.actionItems.filter(a => a.confidence >= minConfidence);
-  const filteredQuestions = result.questions.filter(q => q.confidence >= minConfidence);
+  const filteredDeadlines = result.deadlines.filter((d) => d.confidence >= minConfidence);
+  const filteredCommitments = result.commitments.filter((c) => c.confidence >= minConfidence);
+  const filteredActionItems = result.actionItems.filter((a) => a.confidence >= minConfidence);
+  const filteredQuestions = result.questions.filter((q) => q.confidence >= minConfidence);
 
   // Store in database
   await prisma.$transaction(async (tx) => {
@@ -426,10 +420,10 @@ async function storeExtractionResults(
   });
 
   // Log low-confidence items for human review
-  const lowConfidenceDeadlines = result.deadlines.filter(d => d.confidence < minConfidence);
-  const lowConfidenceCommitments = result.commitments.filter(c => c.confidence < minConfidence);
-  const lowConfidenceActionItems = result.actionItems.filter(a => a.confidence < minConfidence);
-  const lowConfidenceQuestions = result.questions.filter(q => q.confidence < minConfidence);
+  const lowConfidenceDeadlines = result.deadlines.filter((d) => d.confidence < minConfidence);
+  const lowConfidenceCommitments = result.commitments.filter((c) => c.confidence < minConfidence);
+  const lowConfidenceActionItems = result.actionItems.filter((a) => a.confidence < minConfidence);
+  const lowConfidenceQuestions = result.questions.filter((q) => q.confidence < minConfidence);
 
   const totalLowConfidence =
     lowConfidenceDeadlines.length +
@@ -438,7 +432,9 @@ async function storeExtractionResults(
     lowConfidenceQuestions.length;
 
   if (totalLowConfidence > 0) {
-    console.log(`[Intelligence Worker] Email ${email.id}: ${totalLowConfidence} low-confidence items filtered`);
+    console.log(
+      `[Intelligence Worker] Email ${email.id}: ${totalLowConfidence} low-confidence items filtered`
+    );
   }
 }
 

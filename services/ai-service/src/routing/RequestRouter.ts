@@ -24,10 +24,10 @@ export type ModelId =
   | 'claude-4-opus-20250514';
 
 export type RoutingStrategy =
-  | 'skill-enhanced'  // High effectiveness: Haiku + skills
-  | 'hybrid'          // Medium effectiveness: Sonnet + skills
-  | 'fallback'        // Low effectiveness: Original routing without skills
-  | 'premium';        // Complex/critical: Opus without skills
+  | 'skill-enhanced' // High effectiveness: Haiku + skills
+  | 'hybrid' // Medium effectiveness: Sonnet + skills
+  | 'fallback' // Low effectiveness: Original routing without skills
+  | 'premium'; // Complex/critical: Opus without skills
 
 export interface RoutingDecision {
   model: ModelId;
@@ -77,23 +77,23 @@ export class RequestRouter {
   // Model pricing (Anthropic pricing as of 2025)
   private readonly modelPricing: Record<ModelId, ModelPricing> = {
     'claude-3-5-haiku-20241022': {
-      inputCostPer1M: 0.80,
-      outputCostPer1M: 4.00,
+      inputCostPer1M: 0.8,
+      outputCostPer1M: 4.0,
     },
     'claude-3-5-sonnet-20241022': {
-      inputCostPer1M: 3.00,
-      outputCostPer1M: 15.00,
+      inputCostPer1M: 3.0,
+      outputCostPer1M: 15.0,
     },
     'claude-4-opus-20250514': {
-      inputCostPer1M: 15.00,
-      outputCostPer1M: 75.00,
+      inputCostPer1M: 15.0,
+      outputCostPer1M: 75.0,
     },
   };
 
   // Routing configuration
   private config = {
     // Effectiveness thresholds (from story requirements)
-    highEffectivenessThreshold: 0.8,  // Route to Haiku + skills
+    highEffectivenessThreshold: 0.8, // Route to Haiku + skills
     mediumEffectivenessThreshold: 0.5, // Route to Sonnet + skills
 
     // Cost optimization
@@ -159,12 +159,12 @@ export class RequestRouter {
     // Step 4: Get effectiveness metrics for selected skills (with performance measurement)
     const effectiveness = await this.performanceOptimizer.measureAsync(
       'effectiveness-calculation',
-      async () => await this.getSkillEffectiveness(
-        skillSelection.skills.map(s => s.skill_id)
-      )
+      async () => await this.getSkillEffectiveness(skillSelection.skills.map((s) => s.skill_id))
     );
 
-    console.log(`[RequestRouter] Skill effectiveness: ${effectiveness.toFixed(2)}, strategy: ${skillSelection.strategy}`);
+    console.log(
+      `[RequestRouter] Skill effectiveness: ${effectiveness.toFixed(2)}, strategy: ${skillSelection.strategy}`
+    );
 
     // Step 5: Make routing decision based on effectiveness
     let routingDecision: RoutingDecision;
@@ -213,7 +213,9 @@ export class RequestRouter {
     // Step 9: Generate alternatives
     routingDecision.alternatives = await this.generateAlternatives(request, routingDecision);
 
-    console.log(`[RequestRouter] Final decision: ${routingDecision.model} (${routingDecision.strategy}) with ${routingDecision.skills.length} skills`);
+    console.log(
+      `[RequestRouter] Final decision: ${routingDecision.model} (${routingDecision.strategy}) with ${routingDecision.skills.length} skills`
+    );
 
     // Log total routing performance and check budget (AC#8: <100ms)
     this.logPerformance('route', routingStartTime);
@@ -326,11 +328,7 @@ export class RequestRouter {
   /**
    * Estimate cost for a request
    */
-  private estimateCost(
-    model: ModelId,
-    request: AIRequest,
-    withSkills: boolean
-  ): number {
+  private estimateCost(model: ModelId, request: AIRequest, withSkills: boolean): number {
     const estimatedTokens = this.estimateTokens(request, withSkills);
     const pricing = this.modelPricing[model];
 
@@ -416,10 +414,7 @@ export class RequestRouter {
   /**
    * Dynamically adjust thresholds based on performance
    */
-  private async adjustThresholds(
-    effectiveness: number,
-    decision: RoutingDecision
-  ): Promise<void> {
+  private async adjustThresholds(effectiveness: number, decision: RoutingDecision): Promise<void> {
     // Get recent performance metrics
     const recentMetrics = this.skillMetrics.getAllMetrics();
 
@@ -429,8 +424,7 @@ export class RequestRouter {
 
     // Calculate average effectiveness across all skills
     const avgEffectiveness =
-      recentMetrics.reduce((sum, m) => sum + m.effectivenessScore, 0) /
-      recentMetrics.length;
+      recentMetrics.reduce((sum, m) => sum + m.effectivenessScore, 0) / recentMetrics.length;
 
     // Adjust high effectiveness threshold
     if (avgEffectiveness > this.config.highEffectivenessThreshold + 0.1) {
@@ -439,14 +433,18 @@ export class RequestRouter {
         0.95,
         this.config.highEffectivenessThreshold + this.config.thresholdAdjustmentRate
       );
-      console.log(`[RequestRouter] Increased high effectiveness threshold to ${this.config.highEffectivenessThreshold.toFixed(2)}`);
+      console.log(
+        `[RequestRouter] Increased high effectiveness threshold to ${this.config.highEffectivenessThreshold.toFixed(2)}`
+      );
     } else if (avgEffectiveness < this.config.highEffectivenessThreshold - 0.1) {
       // Performance is low - slightly decrease threshold
       this.config.highEffectivenessThreshold = Math.max(
         0.7,
         this.config.highEffectivenessThreshold - this.config.thresholdAdjustmentRate
       );
-      console.log(`[RequestRouter] Decreased high effectiveness threshold to ${this.config.highEffectivenessThreshold.toFixed(2)}`);
+      console.log(
+        `[RequestRouter] Decreased high effectiveness threshold to ${this.config.highEffectivenessThreshold.toFixed(2)}`
+      );
     }
 
     // Adjust medium effectiveness threshold similarly
@@ -578,7 +576,7 @@ export class RequestRouter {
       averageDuration: stats.averageDuration,
       p95Duration: stats.p95Duration,
       cacheHitRate: stats.cacheHitRate,
-      slowestOperations: stats.slowestOperations.map(m => ({
+      slowestOperations: stats.slowestOperations.map((m) => ({
         operationName: m.operationName,
         duration: m.duration,
       })),

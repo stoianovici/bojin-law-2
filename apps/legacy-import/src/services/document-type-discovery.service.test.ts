@@ -109,18 +109,12 @@ describe('DocumentTypeDiscoveryService', () => {
 
       noticeTypes.forEach((type) => {
         const normalized = type.toLowerCase();
-        expect(
-          normalized.includes('notificare') || normalized.includes('somatie')
-        ).toBe(true);
+        expect(normalized.includes('notificare') || normalized.includes('somatie')).toBe(true);
       });
     });
 
     it('should infer court_filing category from court documents', () => {
-      const courtTypes = [
-        'Intampinare',
-        'Cerere de Chemare in Judecata',
-        'Contestatie',
-      ];
+      const courtTypes = ['Intampinare', 'Cerere de Chemare in Judecata', 'Contestatie'];
 
       courtTypes.forEach((type) => {
         const normalized = type.toLowerCase();
@@ -137,11 +131,11 @@ describe('DocumentTypeDiscoveryService', () => {
     it('should calculate correct frequency scores for different occurrence counts', () => {
       const testCases = [
         { occurrences: 100, minScore: 0.95 },
-        { occurrences: 50, minScore: 0.80 },
+        { occurrences: 50, minScore: 0.8 },
         { occurrences: 30, minScore: 0.65 },
-        { occurrences: 20, minScore: 0.50 },
+        { occurrences: 20, minScore: 0.5 },
         { occurrences: 10, minScore: 0.35 },
-        { occurrences: 5, minScore: 0.20 },
+        { occurrences: 5, minScore: 0.2 },
         { occurrences: 1, minScore: 0.05 },
       ];
 
@@ -169,9 +163,7 @@ describe('DocumentTypeDiscoveryService', () => {
         complexityScore: 0.3,
       };
 
-      const highScore = (service as any).calculateBusinessValue(
-        highPotentialAnalysis
-      );
+      const highScore = (service as any).calculateBusinessValue(highPotentialAnalysis);
       const lowScore = (service as any).calculateBusinessValue(lowPotentialAnalysis);
 
       expect(highScore).toBeGreaterThan(lowScore);
@@ -182,13 +174,7 @@ describe('DocumentTypeDiscoveryService', () => {
     it('should consider number of clauses in business value', () => {
       const manyClausesAnalysis: Partial<AIAnalysisResult> = {
         templatePotential: 'Medium',
-        clauseCategories: [
-          'payment',
-          'warranty',
-          'liability',
-          'termination',
-          'dispute',
-        ],
+        clauseCategories: ['payment', 'warranty', 'liability', 'termination', 'dispute'],
         structureType: 'semi-structured',
       };
 
@@ -224,8 +210,8 @@ describe('DocumentTypeDiscoveryService', () => {
     it('should calculate composite priority score correctly', () => {
       const params = {
         frequencyScore: 0.85,
-        complexityScore: 0.70,
-        businessValueScore: 0.80,
+        complexityScore: 0.7,
+        businessValueScore: 0.8,
         firstSeenDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       };
 
@@ -266,8 +252,8 @@ describe('DocumentTypeDiscoveryService', () => {
       const highPriorityEntry: any = {
         totalOccurrences: 55,
         frequencyScore: 0.85,
-        businessValueScore: 0.80,
-        complexityScore: 0.70,
+        businessValueScore: 0.8,
+        complexityScore: 0.7,
       };
 
       const thresholds = (service as any).checkThresholds(highPriorityEntry);
@@ -280,7 +266,7 @@ describe('DocumentTypeDiscoveryService', () => {
       const mediumPriorityEntry: any = {
         totalOccurrences: 25,
         frequencyScore: 0.55,
-        businessValueScore: 0.60,
+        businessValueScore: 0.6,
         complexityScore: 0.65,
       };
 
@@ -294,7 +280,7 @@ describe('DocumentTypeDiscoveryService', () => {
       const lowOccurrenceEntry: any = {
         totalOccurrences: 5,
         frequencyScore: 0.25,
-        businessValueScore: 0.40,
+        businessValueScore: 0.4,
       };
 
       const thresholds = (service as any).checkThresholds(lowOccurrenceEntry);
@@ -333,18 +319,12 @@ describe('DocumentTypeDiscoveryService', () => {
     });
 
     it('should return undefined for English documents', () => {
-      const result = (service as any).translateToEnglish(
-        'Non-Disclosure Agreement',
-        'English'
-      );
+      const result = (service as any).translateToEnglish('Non-Disclosure Agreement', 'English');
       expect(result).toBe('Non-Disclosure Agreement');
     });
 
     it('should return undefined for unknown Romanian types', () => {
-      const result = (service as any).translateToEnglish(
-        'Document Necunoscut',
-        'Romanian'
-      );
+      const result = (service as any).translateToEnglish('Document Necunoscut', 'Romanian');
       expect(result).toBeUndefined();
     });
   });
@@ -360,12 +340,7 @@ describe('DocumentTypeDiscoveryService', () => {
     });
 
     it('should map legal documents to document-drafting skill', () => {
-      const draftingCategories = [
-        'notice',
-        'correspondence',
-        'court_filing',
-        'form',
-      ];
+      const draftingCategories = ['notice', 'correspondence', 'court_filing', 'form'];
 
       draftingCategories.forEach((category) => {
         const skill = (service as any).mapToSkill(category, 'any_type');
@@ -392,10 +367,7 @@ describe('DocumentTypeDiscoveryService', () => {
     });
 
     it('should use normalized type as fallback for mapping', () => {
-      const skill = (service as any).mapToSkill(
-        'unknown_category',
-        'contract_vanzare'
-      );
+      const skill = (service as any).mapToSkill('unknown_category', 'contract_vanzare');
       expect(skill).toBe('contract-analysis');
     });
   });

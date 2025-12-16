@@ -46,16 +46,11 @@ export class TemplateSuggestionService {
       const categories = DOCUMENT_TYPE_TO_CATEGORY[documentType];
 
       // Query template_library table from Story 3.2.6
-      const whereClause = categories.length > 0
-        ? { category: { in: categories } }
-        : {};
+      const whereClause = categories.length > 0 ? { category: { in: categories } } : {};
 
       const templates = await prisma.templateLibrary.findMany({
         where: whereClause,
-        orderBy: [
-          { qualityScore: 'desc' },
-          { usageCount: 'desc' },
-        ],
+        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
         take: limit,
         select: {
           id: true,
@@ -186,12 +181,14 @@ export class TemplateSuggestionService {
     // Handle flat structure with headings/sections as keys
     const sections: DraftTemplateSection[] = Object.entries(structureObj)
       .filter(([key]) => !['metadata', 'version'].includes(key))
-      .map(([name, value]): DraftTemplateSection => ({
-        name,
-        type: this.inferSectionType(name, value),
-        required: false,
-        placeholder: typeof value === 'string' ? value : undefined,
-      }));
+      .map(
+        ([name, value]): DraftTemplateSection => ({
+          name,
+          type: this.inferSectionType(name, value),
+          required: false,
+          placeholder: typeof value === 'string' ? value : undefined,
+        })
+      );
 
     return { sections };
   }
@@ -242,10 +239,7 @@ export class TemplateSuggestionService {
     try {
       const templates = await prisma.templateLibrary.findMany({
         where: { category },
-        orderBy: [
-          { qualityScore: 'desc' },
-          { usageCount: 'desc' },
-        ],
+        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
         take: limit,
         select: {
           id: true,
@@ -277,10 +271,7 @@ export class TemplateSuggestionService {
   /**
    * Search templates by name or category
    */
-  async searchTemplates(
-    query: string,
-    limit: number = 10
-  ): Promise<TemplateSuggestion[]> {
+  async searchTemplates(query: string, limit: number = 10): Promise<TemplateSuggestion[]> {
     try {
       const templates = await prisma.templateLibrary.findMany({
         where: {
@@ -289,10 +280,7 @@ export class TemplateSuggestionService {
             { category: { contains: query, mode: 'insensitive' } },
           ],
         },
-        orderBy: [
-          { qualityScore: 'desc' },
-          { usageCount: 'desc' },
-        ],
+        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
         take: limit,
         select: {
           id: true,

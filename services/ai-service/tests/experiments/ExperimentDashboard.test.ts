@@ -6,7 +6,7 @@ const mockLogger: Logger = {
   info: jest.fn(),
   debug: jest.fn(),
   error: jest.fn(),
-  warn: jest.fn()
+  warn: jest.fn(),
 };
 
 describe('ExperimentDashboard', () => {
@@ -26,7 +26,7 @@ describe('ExperimentDashboard', () => {
       significanceLevel: 0.05,
       minimumSampleSize: 30,
       startDate: new Date('2024-01-01T00:00:00Z'),
-      active: true
+      active: true,
     };
 
     framework.createExperiment(baseConfig);
@@ -50,7 +50,7 @@ describe('ExperimentDashboard', () => {
           costPerRequest: 0.015,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -59,7 +59,7 @@ describe('ExperimentDashboard', () => {
           costPerRequest: 0.008,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -78,14 +78,14 @@ describe('ExperimentDashboard', () => {
           costPerRequest: 0.015,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
           costPerRequest: 0.008,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -101,14 +101,14 @@ describe('ExperimentDashboard', () => {
           costPerRequest: 0.015,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
           costPerRequest: 0.008,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -119,17 +119,17 @@ describe('ExperimentDashboard', () => {
 
     it('should calculate average metrics correctly', () => {
       framework.recordMetrics(baseConfig.id, 'control', {
-        costPerRequest: 0.010,
+        costPerRequest: 0.01,
         executionTimeMs: 1000,
         tokenUsage: 4000,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       framework.recordMetrics(baseConfig.id, 'control', {
-        costPerRequest: 0.020,
+        costPerRequest: 0.02,
         executionTimeMs: 2000,
         tokenUsage: 6000,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       const summary = dashboard.getDashboardSummary(baseConfig.id);
@@ -146,7 +146,7 @@ describe('ExperimentDashboard', () => {
         executionTimeMs: 1200,
         tokenUsage: 5000,
         responseQuality: 0.85,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       framework.recordMetrics(baseConfig.id, 'control', {
@@ -154,12 +154,12 @@ describe('ExperimentDashboard', () => {
         executionTimeMs: 1200,
         tokenUsage: 5000,
         responseQuality: 0.95,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       const summary = dashboard.getDashboardSummary(baseConfig.id);
 
-      expect(summary.currentMetrics.control.avgQuality).toBeCloseTo(0.90, 2);
+      expect(summary.currentMetrics.control.avgQuality).toBeCloseTo(0.9, 2);
     });
 
     it('should show completed status for inactive experiments', () => {
@@ -180,14 +180,14 @@ describe('ExperimentDashboard', () => {
           costPerRequest: 0.015,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
           costPerRequest: 0.008, // ~47% cheaper
           executionTimeMs: 1000, // ~17% faster
           tokenUsage: 3000, // ~40% fewer tokens
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
     });
@@ -227,19 +227,19 @@ describe('ExperimentDashboard', () => {
       framework.createExperiment(newConfig);
 
       for (let i = 0; i < 50; i++) {
-        const baseCost = 0.010 + (Math.random() * 0.002);
+        const baseCost = 0.01 + Math.random() * 0.002;
         framework.recordMetrics(newConfig.id, 'control', {
           costPerRequest: baseCost,
           executionTimeMs: 1000,
           tokenUsage: 4000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(newConfig.id, 'treatment', {
           costPerRequest: baseCost + (Math.random() * 0.001 - 0.0005),
           executionTimeMs: 1000,
           tokenUsage: 4000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -258,16 +258,16 @@ describe('ExperimentDashboard', () => {
         timestamp: new Date(),
         requestsPerMinute: {
           control: 10,
-          treatment: 12
+          treatment: 12,
         },
         costPerMinute: {
           control: 0.15,
-          treatment: 0.10
+          treatment: 0.1,
         },
         currentVariantDistribution: {
           control: 48,
-          treatment: 52
-        }
+          treatment: 52,
+        },
       };
 
       dashboard.recordRealtimeSnapshot(baseConfig.id, snapshot);
@@ -284,8 +284,8 @@ describe('ExperimentDashboard', () => {
           experimentId: baseConfig.id,
           timestamp: new Date(),
           requestsPerMinute: { control: 10, treatment: 10 },
-          costPerMinute: { control: 0.15, treatment: 0.10 },
-          currentVariantDistribution: { control: 50, treatment: 50 }
+          costPerMinute: { control: 0.15, treatment: 0.1 },
+          currentVariantDistribution: { control: 50, treatment: 50 },
         });
       }
 
@@ -305,8 +305,8 @@ describe('ExperimentDashboard', () => {
           experimentId: baseConfig.id,
           timestamp: new Date(),
           requestsPerMinute: { control: 10, treatment: 10 },
-          costPerMinute: { control: 0.15, treatment: 0.10 },
-          currentVariantDistribution: { control: 50, treatment: 50 }
+          costPerMinute: { control: 0.15, treatment: 0.1 },
+          currentVariantDistribution: { control: 50, treatment: 50 },
         });
       }
 
@@ -326,9 +326,9 @@ describe('ExperimentDashboard', () => {
       const summaries = dashboard.getAllActiveSummaries();
 
       expect(summaries).toHaveLength(2); // exp1 and exp2
-      expect(summaries.map(s => s.experimentId)).toContain(baseConfig.id);
-      expect(summaries.map(s => s.experimentId)).toContain('exp2');
-      expect(summaries.map(s => s.experimentId)).not.toContain('exp3');
+      expect(summaries.map((s) => s.experimentId)).toContain(baseConfig.id);
+      expect(summaries.map((s) => s.experimentId)).toContain('exp2');
+      expect(summaries.map((s) => s.experimentId)).not.toContain('exp3');
     });
   });
 
@@ -344,48 +344,48 @@ describe('ExperimentDashboard', () => {
       // Experiment 1: 50% savings
       for (let i = 0; i < 50; i++) {
         framework.recordMetrics(baseConfig.id, 'control', {
-          costPerRequest: 0.020,
+          costPerRequest: 0.02,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
         framework.recordMetrics(baseConfig.id, 'treatment', {
-          costPerRequest: 0.010, // 50% cheaper
+          costPerRequest: 0.01, // 50% cheaper
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
       // Experiment 2: 30% savings
       for (let i = 0; i < 50; i++) {
         framework.recordMetrics(config2.id, 'control', {
-          costPerRequest: 0.020,
+          costPerRequest: 0.02,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
         framework.recordMetrics(config2.id, 'treatment', {
           costPerRequest: 0.014, // 30% cheaper
           executionTimeMs: 1100,
           tokenUsage: 4000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
       // Experiment 3: 70% savings
       for (let i = 0; i < 50; i++) {
         framework.recordMetrics(config3.id, 'control', {
-          costPerRequest: 0.020,
+          costPerRequest: 0.02,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
         framework.recordMetrics(config3.id, 'treatment', {
           costPerRequest: 0.006, // 70% cheaper
           executionTimeMs: 900,
           tokenUsage: 2000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
     });
@@ -414,16 +414,16 @@ describe('ExperimentDashboard', () => {
       // Only record 5 metrics (not enough for analysis)
       for (let i = 0; i < 5; i++) {
         framework.recordMetrics(newConfig.id, 'control', {
-          costPerRequest: 0.020,
+          costPerRequest: 0.02,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
       const leaderboard = dashboard.generateLeaderboard();
 
-      expect(leaderboard.map(e => e.experimentId)).not.toContain('exp-new');
+      expect(leaderboard.map((e) => e.experimentId)).not.toContain('exp-new');
     });
   });
 
@@ -432,17 +432,17 @@ describe('ExperimentDashboard', () => {
       // Setup experiment with known savings
       for (let i = 0; i < 50; i++) {
         framework.recordMetrics(baseConfig.id, 'control', {
-          costPerRequest: 0.020, // $0.020 per request
+          costPerRequest: 0.02, // $0.020 per request
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
-          costPerRequest: 0.010, // $0.010 per request (50% cheaper)
+          costPerRequest: 0.01, // $0.010 per request (50% cheaper)
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
     });
@@ -483,14 +483,14 @@ describe('ExperimentDashboard', () => {
           costPerRequest: 0.015,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
           costPerRequest: 0.008,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -499,8 +499,8 @@ describe('ExperimentDashboard', () => {
         experimentId: baseConfig.id,
         timestamp: new Date(),
         requestsPerMinute: { control: 10, treatment: 12 },
-        costPerMinute: { control: 0.15, treatment: 0.10 },
-        currentVariantDistribution: { control: 48, treatment: 52 }
+        costPerMinute: { control: 0.15, treatment: 0.1 },
+        currentVariantDistribution: { control: 48, treatment: 52 },
       });
     });
 

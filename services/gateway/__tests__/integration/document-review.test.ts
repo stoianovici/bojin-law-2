@@ -271,11 +271,7 @@ describe('Document Review - Integration Tests', () => {
       (mockPrisma.reviewHistory.create as jest.Mock).mockResolvedValue({} as any);
       (mockPrisma.notification.createMany as jest.Mock).mockResolvedValue({ count: 1 });
 
-      const review = await simulateSubmitReview(
-        testDocument.id,
-        testVersion.id,
-        testAssociate.id
-      );
+      const review = await simulateSubmitReview(testDocument.id, testVersion.id, testAssociate.id);
 
       expect(review).toBeDefined();
       expect(review.documentId).toBe(testDocument.id);
@@ -291,12 +287,10 @@ describe('Document Review - Integration Tests', () => {
         dueDate,
       } as any);
 
-      const review = await simulateSubmitReview(
-        testDocument.id,
-        testVersion.id,
-        testAssociate.id,
-        { priority: 'HIGH', dueDate }
-      );
+      const review = await simulateSubmitReview(testDocument.id, testVersion.id, testAssociate.id, {
+        priority: 'HIGH',
+        dueDate,
+      });
 
       expect(review.priority).toBe('HIGH');
       expect(review.dueDate).toEqual(dueDate);
@@ -308,12 +302,9 @@ describe('Document Review - Integration Tests', () => {
         assignedTo: testPartner.id,
       } as any);
 
-      const review = await simulateSubmitReview(
-        testDocument.id,
-        testVersion.id,
-        testAssociate.id,
-        { assignedTo: testPartner.id }
-      );
+      const review = await simulateSubmitReview(testDocument.id, testVersion.id, testAssociate.id, {
+        assignedTo: testPartner.id,
+      });
 
       expect(review.assignedTo).toBe(testPartner.id);
     });
@@ -356,12 +347,9 @@ describe('Document Review - Integration Tests', () => {
         suggestionText: 'Replace with: clear language',
       } as any);
 
-      const comment = await simulateAddComment(
-        testReview.id,
-        testPartner.id,
-        'This is unclear.',
-        { suggestionText: 'Replace with: clear language' }
-      );
+      const comment = await simulateAddComment(testReview.id, testPartner.id, 'This is unclear.', {
+        suggestionText: 'Replace with: clear language',
+      });
 
       expect(comment.suggestionText).toBe('Replace with: clear language');
     });

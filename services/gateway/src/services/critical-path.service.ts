@@ -180,10 +180,7 @@ export async function calculateCriticalPath(
 /**
  * Updates the isCriticalPath flag for all tasks in a case
  */
-export async function recalculateCriticalPath(
-  caseId: string,
-  firmId: string
-): Promise<void> {
+export async function recalculateCriticalPath(caseId: string, firmId: string): Promise<void> {
   const result = await calculateCriticalPath(caseId, firmId);
 
   // Update all tasks: set critical path flag
@@ -206,10 +203,7 @@ export async function recalculateCriticalPath(
 /**
  * Gets bottlenecks for a case
  */
-export async function getBottlenecks(
-  caseId: string,
-  firmId: string
-): Promise<BottleneckInfo[]> {
+export async function getBottlenecks(caseId: string, firmId: string): Promise<BottleneckInfo[]> {
   const result = await calculateCriticalPath(caseId, firmId);
   return result.bottlenecks;
 }

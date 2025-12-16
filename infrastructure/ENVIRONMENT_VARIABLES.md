@@ -80,14 +80,14 @@ openssl rand -base64 48
 
 PostgreSQL database connection is auto-injected by Render via `DATABASE_URL`, but you can customize connection behavior with these variables:
 
-| Variable                        | Description                           | Example  | Required | Sensitive | Set Where   |
-| ------------------------------- | ------------------------------------- | -------- | -------- | --------- | ----------- |
-| `DATABASE_MAX_CONNECTIONS`      | Max database connections              | `20`     | No       | No        | render.yaml |
-| `DATABASE_POOL_SIZE`            | Connection pool size (per service)    | `10`     | No       | No        | render.yaml |
-| `DATABASE_CONNECTION_TIMEOUT`   | Connection timeout in milliseconds    | `30000`  | No       | No        | render.yaml |
-| `DATABASE_STATEMENT_TIMEOUT`    | Query statement timeout in ms         | `60000`  | No       | No        | render.yaml |
-| `DATABASE_IDLE_TIMEOUT`         | Idle connection timeout in ms         | `10000`  | No       | No        | render.yaml |
-| `DATABASE_SSL_MODE`             | SSL mode for database connection      | `require`| No       | No        | render.yaml |
+| Variable                      | Description                        | Example   | Required | Sensitive | Set Where   |
+| ----------------------------- | ---------------------------------- | --------- | -------- | --------- | ----------- |
+| `DATABASE_MAX_CONNECTIONS`    | Max database connections           | `20`      | No       | No        | render.yaml |
+| `DATABASE_POOL_SIZE`          | Connection pool size (per service) | `10`      | No       | No        | render.yaml |
+| `DATABASE_CONNECTION_TIMEOUT` | Connection timeout in milliseconds | `30000`   | No       | No        | render.yaml |
+| `DATABASE_STATEMENT_TIMEOUT`  | Query statement timeout in ms      | `60000`   | No       | No        | render.yaml |
+| `DATABASE_IDLE_TIMEOUT`       | Idle connection timeout in ms      | `10000`   | No       | No        | render.yaml |
+| `DATABASE_SSL_MODE`           | SSL mode for database connection   | `require` | No       | No        | render.yaml |
 
 **Database Details (Configured in render.yaml):**
 
@@ -109,12 +109,12 @@ postgresql://legal_platform_user:<password>@dpg-xxxxx.oregon-postgres.render.com
 
 Redis cache connection is auto-injected by Render via `REDIS_URL`, but you can customize Redis client behavior:
 
-| Variable                   | Description                      | Example | Required | Sensitive | Set Where   |
-| -------------------------- | -------------------------------- | ------- | -------- | --------- | ----------- |
-| `REDIS_MAX_RETRIES`        | Max reconnection attempts        | `3`     | No       | No        | render.yaml |
-| `REDIS_CONNECT_TIMEOUT`    | Connection timeout in ms         | `5000`  | No       | No        | render.yaml |
-| `REDIS_SESSION_TTL`        | Session expiration in seconds    | `86400` | No       | No        | render.yaml |
-| `REDIS_CACHE_DEFAULT_TTL`  | Default cache TTL in seconds     | `300`   | No       | No        | render.yaml |
+| Variable                  | Description                   | Example | Required | Sensitive | Set Where   |
+| ------------------------- | ----------------------------- | ------- | -------- | --------- | ----------- |
+| `REDIS_MAX_RETRIES`       | Max reconnection attempts     | `3`     | No       | No        | render.yaml |
+| `REDIS_CONNECT_TIMEOUT`   | Connection timeout in ms      | `5000`  | No       | No        | render.yaml |
+| `REDIS_SESSION_TTL`       | Session expiration in seconds | `86400` | No       | No        | render.yaml |
+| `REDIS_CACHE_DEFAULT_TTL` | Default cache TTL in seconds  | `300`   | No       | No        | render.yaml |
 
 **Redis Details (Configured in render.yaml):**
 
@@ -170,22 +170,22 @@ These variables have sensible defaults but can be customized.
 
 The platform uses a hybrid storage strategy with OneDrive as primary storage and Cloudflare R2 as fallback.
 
-| Variable                        | Description                           | Example                                    | Required | Sensitive |
-| ------------------------------- | ------------------------------------- | ------------------------------------------ | -------- | --------- |
-| `STORAGE_PROVIDER`              | Primary storage provider              | `onedrive`, `r2`, `local`                  | Yes      | No        |
-| `STORAGE_BACKUP_ENABLED`        | Enable backup to R2                   | `true`, `false`                            | No       | No        |
-| `STORAGE_BUCKET`                | Storage bucket name (for R2)          | `legal-platform-prod-documents`            | Yes\*    | No        |
+| Variable                 | Description                  | Example                         | Required | Sensitive |
+| ------------------------ | ---------------------------- | ------------------------------- | -------- | --------- |
+| `STORAGE_PROVIDER`       | Primary storage provider     | `onedrive`, `r2`, `local`       | Yes      | No        |
+| `STORAGE_BACKUP_ENABLED` | Enable backup to R2          | `true`, `false`                 | No       | No        |
+| `STORAGE_BUCKET`         | Storage bucket name (for R2) | `legal-platform-prod-documents` | Yes\*    | No        |
 
 **\*Required if `STORAGE_PROVIDER=r2` or `STORAGE_BACKUP_ENABLED=true`**
 
 #### OneDrive Configuration (Microsoft Graph API)
 
-| Variable                 | Description                       | Example                                | Required | Sensitive |
-| ------------------------ | --------------------------------- | -------------------------------------- | -------- | --------- |
-| `ONEDRIVE_CLIENT_ID`     | Azure App Client ID               | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | Yes\*    | No        |
-| `ONEDRIVE_CLIENT_SECRET` | Azure App Client Secret           | `xxxxx~xxxxxxxxxxxxxxxxxxxxxxxxx`      | Yes\*    | Yes       |
-| `ONEDRIVE_TENANT_ID`     | Azure Tenant ID                   | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | Yes\*    | No        |
-| `ONEDRIVE_DRIVE_ID`      | OneDrive Drive ID (optional)      | `b!xxxxxxxxxxxxxxxxxxxxxxxxxxxxx`      | No       | No        |
+| Variable                 | Description                  | Example                                | Required | Sensitive |
+| ------------------------ | ---------------------------- | -------------------------------------- | -------- | --------- |
+| `ONEDRIVE_CLIENT_ID`     | Azure App Client ID          | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | Yes\*    | No        |
+| `ONEDRIVE_CLIENT_SECRET` | Azure App Client Secret      | `xxxxx~xxxxxxxxxxxxxxxxxxxxxxxxx`      | Yes\*    | Yes       |
+| `ONEDRIVE_TENANT_ID`     | Azure Tenant ID              | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | Yes\*    | No        |
+| `ONEDRIVE_DRIVE_ID`      | OneDrive Drive ID (optional) | `b!xxxxxxxxxxxxxxxxxxxxxxxxxxxxx`      | No       | No        |
 
 **\*Required if `STORAGE_PROVIDER=onedrive`**
 
@@ -203,12 +203,12 @@ The platform uses a hybrid storage strategy with OneDrive as primary storage and
 
 #### Cloudflare R2 Configuration
 
-| Variable                        | Description                       | Example                                    | Required | Sensitive |
-| ------------------------------- | --------------------------------- | ------------------------------------------ | -------- | --------- |
-| `CLOUDFLARE_R2_ACCOUNT_ID`      | Cloudflare R2 Account ID          | `your-account-id`                          | Yes\*    | No        |
-| `CLOUDFLARE_R2_ACCESS_KEY_ID`   | Cloudflare R2 Access Key          | `your-access-key-id`                       | Yes\*    | Yes       |
+| Variable                          | Description                     | Example                                    | Required | Sensitive |
+| --------------------------------- | ------------------------------- | ------------------------------------------ | -------- | --------- |
+| `CLOUDFLARE_R2_ACCOUNT_ID`        | Cloudflare R2 Account ID        | `your-account-id`                          | Yes\*    | No        |
+| `CLOUDFLARE_R2_ACCESS_KEY_ID`     | Cloudflare R2 Access Key        | `your-access-key-id`                       | Yes\*    | Yes       |
 | `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Cloudflare R2 Secret Access Key | `your-secret-key`                          | Yes\*    | Yes       |
-| `CLOUDFLARE_R2_BUCKET_ENDPOINT` | Custom R2 endpoint (optional)     | `https://account.r2.cloudflarestorage.com` | No       | No        |
+| `CLOUDFLARE_R2_BUCKET_ENDPOINT`   | Custom R2 endpoint (optional)   | `https://account.r2.cloudflarestorage.com` | No       | No        |
 
 **\*Required if `STORAGE_PROVIDER=r2` or `STORAGE_BACKUP_ENABLED=true`**
 
@@ -223,13 +223,13 @@ The platform uses a hybrid storage strategy with OneDrive as primary storage and
 
 **Storage Provider Decision Matrix:**
 
-| Scenario                              | Provider | Rationale                                        |
-| ------------------------------------- | -------- | ------------------------------------------------ |
-| User uploads document via web app     | OneDrive | Microsoft 365 integration, collaboration         |
-| AI generates document from template   | OneDrive | User can edit in Office apps                     |
-| Large files >100MB                    | R2       | OneDrive throttles, R2 has no egress fees        |
-| Public documents (filed pleadings)    | R2       | Global CDN, no auth required, fast delivery      |
-| Archived cases (>2 years old)         | R2       | Cost-effective long-term storage                 |
+| Scenario                            | Provider | Rationale                                   |
+| ----------------------------------- | -------- | ------------------------------------------- |
+| User uploads document via web app   | OneDrive | Microsoft 365 integration, collaboration    |
+| AI generates document from template | OneDrive | User can edit in Office apps                |
+| Large files >100MB                  | R2       | OneDrive throttles, R2 has no egress fees   |
+| Public documents (filed pleadings)  | R2       | Global CDN, no auth required, fast delivery |
+| Archived cases (>2 years old)       | R2       | Cost-effective long-term storage            |
 
 **Cost Comparison:**
 

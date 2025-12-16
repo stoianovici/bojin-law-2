@@ -125,8 +125,7 @@ export function InlineEditField({
       }
     } catch (error) {
       // Show error notification
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to update field';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update field';
       addNotification({
         type: 'error',
         title: 'Update Failed',
@@ -152,10 +151,7 @@ export function InlineEditField({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      if (
-        (fieldType === 'text' || fieldType === 'textarea') &&
-        'select' in inputRef.current
-      ) {
+      if ((fieldType === 'text' || fieldType === 'textarea') && 'select' in inputRef.current) {
         inputRef.current.select();
       }
     }
@@ -205,12 +201,8 @@ export function InlineEditField({
                 step={fieldType === 'number' ? 'any' : undefined}
               />
             )}
-            {validationError && (
-              <p className="mt-1 text-sm text-red-600">{validationError}</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
-              Press Enter to save, ESC to cancel
-            </p>
+            {validationError && <p className="mt-1 text-sm text-red-600">{validationError}</p>}
+            <p className="mt-1 text-xs text-gray-500">Press Enter to save, ESC to cancel</p>
           </div>
           <div className="flex gap-1 pt-2">
             <button

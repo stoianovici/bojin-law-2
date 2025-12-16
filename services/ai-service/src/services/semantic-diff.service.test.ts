@@ -204,13 +204,12 @@ describe('SemanticDiffService', () => {
         ChangeType.MODIFIED
       );
 
-      expect([ChangeSignificance.SUBSTANTIVE, ChangeSignificance.CRITICAL]).toContain(
-        significance
-      );
+      expect([ChangeSignificance.SUBSTANTIVE, ChangeSignificance.CRITICAL]).toContain(significance);
     });
 
     it('should classify large removals as CRITICAL', () => {
-      const beforeText = 'This is a very important liability limitation clause that protects the party from damages exceeding the contract value.';
+      const beforeText =
+        'This is a very important liability limitation clause that protects the party from damages exceeding the contract value.';
       const afterText = '';
 
       const significance = semanticDiffService.classifyChangeSignificance(

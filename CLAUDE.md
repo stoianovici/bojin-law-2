@@ -5,11 +5,31 @@ AI-powered legal case management platform for Romanian law firms with Microsoft 
 ## Quick Start
 
 ```bash
+pnpm setup            # First-time setup (Docker, DB, migrations, env files)
 pnpm dev              # Development with hot reload
 pnpm preview          # Production-like Docker build
 pnpm preflight        # Run all checks before commit
 pnpm deploy:production # Deploy (git push does NOT deploy)
 ```
+
+## Local Development Setup
+
+Run `pnpm setup` to configure local development. This will:
+
+1. Start PostgreSQL and Redis containers
+2. Create environment files from templates
+3. Run database migrations
+4. Optionally import production data
+
+**Required environment variables** (add to env files after setup):
+
+- `AZURE_AD_CLIENT_ID` / `AZURE_AD_CLIENT_SECRET` / `AZURE_AD_TENANT_ID` - Microsoft auth
+- `ANTHROPIC_API_KEY` - AI features
+
+To import production database:
+
+1. Download backup from Render Dashboard (legal-platform-db > Backups)
+2. Run `pnpm setup` and choose option 1 when prompted
 
 ## Project Structure
 

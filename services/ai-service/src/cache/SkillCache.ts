@@ -116,10 +116,7 @@ export class SkillCache {
   /**
    * Get cached result for a request + skills combination
    */
-  async get(
-    request: AIRequest,
-    skillIds: string[]
-  ): Promise<CachedSkillResult | null> {
+  async get(request: AIRequest, skillIds: string[]): Promise<CachedSkillResult | null> {
     const startTime = Date.now();
 
     try {
@@ -184,11 +181,7 @@ export class SkillCache {
       await this.enforceMaxSize();
 
       // Store in Redis with TTL
-      await this.redis.setex(
-        cacheKey,
-        this.config.ttl,
-        JSON.stringify(cacheEntry)
-      );
+      await this.redis.setex(cacheKey, this.config.ttl, JSON.stringify(cacheEntry));
 
       console.log(`[SkillCache] SET - Key: ${cacheKey}, TTL: ${this.config.ttl}s`);
     } catch (error) {
@@ -242,11 +235,7 @@ export class SkillCache {
   /**
    * Register a pattern for cache warming
    */
-  registerWarmingPattern(
-    taskPattern: string,
-    skillIds: string[],
-    frequency: number = 1
-  ): void {
+  registerWarmingPattern(taskPattern: string, skillIds: string[], frequency: number = 1): void {
     if (!this.config.warmingEnabled) {
       return;
     }
@@ -277,7 +266,10 @@ export class SkillCache {
     warmingFunction: (
       request: AIRequest,
       skillIds: string[]
-    ) => Promise<{ result: unknown; metadata: { model: string; tokensEstimate: number; cost: number } }>
+    ) => Promise<{
+      result: unknown;
+      metadata: { model: string; tokensEstimate: number; cost: number };
+    }>
   ): Promise<number> {
     if (!this.config.warmingEnabled) {
       console.log('[SkillCache] Cache warming disabled');
@@ -293,7 +285,9 @@ export class SkillCache {
         // Check if already cached
         const exists = await this.has(request, skillIds);
         if (exists) {
-          console.log(`[SkillCache] Skipping warming - already cached: ${request.task.substring(0, 50)}...`);
+          console.log(
+            `[SkillCache] Skipping warming - already cached: ${request.task.substring(0, 50)}...`
+          );
           continue;
         }
 
@@ -319,9 +313,7 @@ export class SkillCache {
    * Get warming patterns sorted by frequency
    */
   getWarmingPatterns(): CacheWarmingEntry[] {
-    return Array.from(this.warmingPatterns.values()).sort(
-      (a, b) => b.frequency - a.frequency
-    );
+    return Array.from(this.warmingPatterns.values()).sort((a, b) => b.frequency - a.frequency);
   }
 
   // ============================================================================
@@ -348,8 +340,7 @@ export class SkillCache {
     // Calculate average response time
     const avgResponseTimeMs =
       this.metrics.responseTimes.length > 0
-        ? this.metrics.responseTimes.reduce((a, b) => a + b, 0) /
-          this.metrics.responseTimes.length
+        ? this.metrics.responseTimes.reduce((a, b) => a + b, 0) / this.metrics.responseTimes.length
         : 0;
 
     return {
@@ -412,11 +403,7 @@ export class SkillCache {
     });
 
     // Generate SHA-256 hash
-    const hash = crypto
-      .createHash('sha256')
-      .update(requestStr)
-      .digest('hex')
-      .substring(0, 16); // Use first 16 chars for shorter keys
+    const hash = crypto.createHash('sha256').update(requestStr).digest('hex').substring(0, 16); // Use first 16 chars for shorter keys
 
     return hash;
   }

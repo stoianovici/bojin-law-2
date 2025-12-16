@@ -79,7 +79,7 @@ describe('GlobalSearchBar', () => {
       render(<GlobalSearchBar />);
 
       // Should show Cmd or Ctrl key depending on platform
-      const kbdElements = screen.getAllByRole('generic').filter(el => el.tagName === 'KBD');
+      const kbdElements = screen.getAllByRole('generic').filter((el) => el.tagName === 'KBD');
       expect(kbdElements.length).toBeGreaterThan(0);
     });
   });
@@ -259,9 +259,7 @@ describe('GlobalSearchBar', () => {
 
     it('should wrap around on arrow navigation', async () => {
       (useRecentSearches as any).mockReturnValue({
-        recentSearches: [
-          { id: '1', query: 'only', resultCount: 1 },
-        ],
+        recentSearches: [{ id: '1', query: 'only', resultCount: 1 }],
         loading: false,
       });
 

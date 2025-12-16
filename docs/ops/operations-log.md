@@ -32,6 +32,14 @@
 | OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug         | P1-High     | Open        | [issues/ops-023.md](issues/ops-023.md)   |
 | OPS-024 | Email Import - Attachments Not Importing          | Bug         | P1-High     | Fixing      | [issues/ops-024.md](issues/ops-024.md)   |
 | OPS-025 | Email and Document Permanent Deletion             | Feature     | P1-High     | Resolved    | [archive/ops-025.md](archive/ops-025.md) |
+| OPS-026 | AI Thread Summary Agent for Communications        | Feature     | P2-Medium   | Fixing      | [issues/ops-026.md](issues/ops-026.md)   |
+| OPS-027 | Classification Schema & Data Model                | Feature     | P1-High     | Verifying   | [issues/ops-027.md](issues/ops-027.md)   |
+| OPS-028 | Classification Metadata UI                        | Feature     | P1-High     | Verifying   | [issues/ops-028.md](issues/ops-028.md)   |
+| OPS-029 | AI Email Classification Service                   | Feature     | P1-High     | Open        | [issues/ops-029.md](issues/ops-029.md)   |
+| OPS-030 | Email Import with Classification                  | Feature     | P1-High     | Verifying   | [issues/ops-030.md](issues/ops-030.md)   |
+| OPS-031 | Classification Review & Correction                | Feature     | P2-Medium   | Complete    | [issues/ops-031.md](issues/ops-031.md)   |
+| OPS-032 | Repurpose /communications as Pending Queue        | Feature     | P1-High     | Open        | [issues/ops-032.md](issues/ops-032.md)   |
+| OPS-033 | Firm-wide Email Search                            | Feature     | P3-Low      | Open        | [issues/ops-033.md](issues/ops-033.md)   |
 
 ---
 
@@ -71,6 +79,86 @@ Email import wizard imports emails successfully but attachments aren't appearing
 - **Attachments**: FIX DEPLOYED - awaiting verification
 
 **Session 11 (2025-12-15):** Discovered Documents DO exist (orphanedDocumentIds: 0) but CaseDocument links are missing. The Documents panel queries via CaseDocument, so without links, documents don't appear. Implemented fix to detect and create missing CaseDocument links. Deployed commit `a478b86`.
+
+### [OPS-026] AI Thread Summary Agent for Communications
+
+**Status:** Fixing | **Priority:** P2-Medium | **Type:** Feature | **Last Active:** 2025-12-15
+
+Add an AI agent to the Communications tab that maintains an up-to-date summary of email threads for a case. The feature will:
+
+1. Analyze ALL emails for a case and generate comprehensive summary
+2. Display summary prominently in Communications tab (collapsible panel)
+3. Auto-trigger when new emails arrive (Phase 2 - not started)
+
+**Session 2 (2025-12-15):** Phase 1 COMPLETE - Built full Case Conversation Summary Agent:
+
+- Frontend: `CaseConversationSummaryPanel.tsx` with rich UI
+- Backend: `generateCaseConversationSummary` GraphQL mutation
+- Summary includes: executive summary, chronology, key developments, status, open issues, next steps
+- Ready for local verification. Phase 2 (auto-trigger) not started.
+
+### [OPS-027 → OPS-031] Multi-Case Email Classification Feature
+
+**Status:** Open | **Priority:** P1-High | **Type:** Feature Set | **Created:** 2025-12-16
+
+A suite of 5 issues to solve the multi-case client email segregation problem. When a client has multiple active cases, the platform needs to classify emails to the correct case instead of importing all to one.
+
+**Problem:** Currently, importing emails for a contact imports ALL their emails into one case, even if some belong to other cases.
+
+**Solution:** AI-powered classification with human review for uncertain cases.
+
+| Issue   | Title                     | Scope                                     | Dependencies  | Parallel?  |
+| ------- | ------------------------- | ----------------------------------------- | ------------- | ---------- |
+| OPS-027 | Schema & Data Model       | DB fields for classification metadata     | None          | Foundation |
+| OPS-028 | Metadata UI               | Firm settings, case wizard, case settings | OPS-027       | ✓ with 029 |
+| OPS-029 | AI Classification Service | Algorithm, court detection, confidence    | OPS-027       | ✓ with 028 |
+| OPS-030 | Import Integration        | Multi-case import wizard, preview         | OPS-028 + 029 | Sequential |
+| OPS-031 | Review & Correction       | Review queue, reassignment, audit         | OPS-030       | Sequential |
+
+**Key Features:**
+
+- Case metadata: keywords, reference numbers, classification notes
+- Firm-level court/authority addresses (shared across all cases)
+- AI classification with confidence scores
+- Multi-case import preview
+- Human review queue for uncertain emails
+- Email reassignment between cases with audit trail
+
+**Session 1 Progress (2025-12-16):**
+
+- OPS-027: Schema complete, migration applied
+- OPS-028: GraphQL + resolvers + UI components built
+- OPS-029: Full algorithm implemented, unit tests pass
+- **OPS-030: IMPLEMENTATION COMPLETE** - Ready for verification
+  - `previewClassificationForImport` query
+  - `clientHasMultipleCases` query
+  - `executeClassifiedImport` mutation
+  - EmailImportWizard updated with 5-step flow for multi-case clients
+  - Classification step shows emails grouped by case with confidence scores
+  - Users can override classification or exclude emails before import
+
+### [OPS-032] Repurpose /communications as Pending Classification Queue
+
+**Status:** Open | **Priority:** P1-High | **Type:** Feature | **Created:** 2025-12-16
+
+Transform `/communications` from an inbox-style email viewer into the Pending Classification Queue.
+
+**Key Changes:**
+
+- Replace ThreadList/MessageView with ClassificationQueue component
+- Keep MS sync controls for email ingestion
+- Add pending count badge to sidebar
+- Philosophy: "If it's here, it needs action"
+
+**Depends on:** OPS-031 (Complete) | **Parallel with:** OPS-033 (optional)
+
+### [OPS-033] Firm-wide Email Search (Deferred)
+
+**Status:** Open | **Priority:** P3-Low | **Type:** Feature | **Created:** 2025-12-16
+
+Fallback feature for "find any email" use case after OPS-032 removes the inbox view.
+
+**Recommendation:** Defer. Monitor user feedback post-OPS-032. Users can search in Outlook or case Communications tabs.
 
 ---
 

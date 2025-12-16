@@ -202,7 +202,8 @@ export class TaskParserService {
     parsed: Record<string, unknown>
   ): NLPTaskParseResponse {
     const detectedLanguage = (parsed.detectedLanguage as 'ro' | 'en') || 'en';
-    const parsedTask = parsed.parsedTask as Record<string, { value: unknown; confidence: number }> || {};
+    const parsedTask =
+      (parsed.parsedTask as Record<string, { value: unknown; confidence: number }>) || {};
     const entities = (parsed.entities as ParsedEntity[]) || [];
     const overallConfidence = (parsed.overallConfidence as number) || 0.5;
 
@@ -230,7 +231,10 @@ export class TaskParserService {
   private buildParsedTaskFields(
     parsed: Record<string, { value: unknown; confidence: number }>
   ): ParsedTaskFields {
-    const getField = <T>(key: string, defaultValue: T | null = null): { value: T | null; confidence: number } => {
+    const getField = <T>(
+      key: string,
+      defaultValue: T | null = null
+    ): { value: T | null; confidence: number } => {
       const field = parsed[key];
       if (!field) {
         return { value: defaultValue, confidence: 0 };
@@ -290,14 +294,18 @@ export class TaskParserService {
       clarifications.push({
         id: uuidv4(),
         entityType: 'taskType',
-        question: language === 'ro'
-          ? 'Ce tip de sarcină doriți să creați?'
-          : 'What type of task do you want to create?',
+        question:
+          language === 'ro'
+            ? 'Ce tip de sarcină doriți să creați?'
+            : 'What type of task do you want to create?',
         options: [
           { value: 'Meeting', label: language === 'ro' ? 'Întâlnire' : 'Meeting' },
           { value: 'CourtDate', label: language === 'ro' ? 'Termen Instanță' : 'Court Date' },
           { value: 'Research', label: language === 'ro' ? 'Cercetare' : 'Research' },
-          { value: 'DocumentCreation', label: language === 'ro' ? 'Creare Document' : 'Document Creation' },
+          {
+            value: 'DocumentCreation',
+            label: language === 'ro' ? 'Creare Document' : 'Document Creation',
+          },
         ],
         allowFreeText: false,
       });
@@ -356,9 +364,7 @@ export class TaskParserService {
     const lowerName = assigneeName.toLowerCase();
 
     // Exact match
-    const exactMatch = teamMembers.find(
-      (m) => m.name.toLowerCase() === lowerName
-    );
+    const exactMatch = teamMembers.find((m) => m.name.toLowerCase() === lowerName);
     if (exactMatch) {
       return { id: exactMatch.id, confidence: 1.0 };
     }
@@ -395,9 +401,7 @@ export class TaskParserService {
     const lowerRef = caseReference.toLowerCase();
 
     // Exact case number match
-    const exactMatch = activeCases.find(
-      (c) => c.caseNumber.toLowerCase() === lowerRef
-    );
+    const exactMatch = activeCases.find((c) => c.caseNumber.toLowerCase() === lowerRef);
     if (exactMatch) {
       return { id: exactMatch.id, confidence: 1.0 };
     }

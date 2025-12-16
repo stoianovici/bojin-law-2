@@ -234,9 +234,7 @@ export default function BatchReviewPage() {
           <div className="flex">
             <AlertTriangle className="h-5 w-5 text-yellow-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">
-                Access Restricted
-              </h3>
+              <h3 className="text-sm font-medium text-yellow-800">Access Restricted</h3>
               <p className="mt-2 text-sm text-yellow-700">
                 Batch review is only available to Partners.
               </p>
@@ -269,9 +267,7 @@ export default function BatchReviewPage() {
         <div className="rounded-md bg-red-50 p-4">
           <div className="flex">
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Error loading documents
-              </h3>
+              <h3 className="text-sm font-medium text-red-800">Error loading documents</h3>
               <p className="mt-2 text-sm text-red-700">{error.message}</p>
             </div>
           </div>
@@ -296,8 +292,8 @@ export default function BatchReviewPage() {
 
         <h1 className="text-3xl font-bold text-gray-900">Batch Review</h1>
         <p className="mt-2 text-sm text-gray-700">
-          Review {documents.length} document{documents.length !== 1 ? 's' : ''} with
-          a common decision and feedback.
+          Review {documents.length} document{documents.length !== 1 ? 's' : ''} with a common
+          decision and feedback.
         </p>
       </div>
 
@@ -312,10 +308,7 @@ export default function BatchReviewPage() {
         <CardContent>
           <div className="space-y-2">
             {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="flex items-center justify-between p-3 rounded-lg border"
-              >
+              <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{doc.document.fileName}</span>
@@ -352,14 +345,12 @@ export default function BatchReviewPage() {
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
             <div>
-              <h3 className="font-medium text-yellow-800">
-                Some documents have issues
-              </h3>
+              <h3 className="font-medium text-yellow-800">Some documents have issues</h3>
               <p className="text-sm text-yellow-700 mt-1">
                 {documentsWithIssues.length} document
-                {documentsWithIssues.length !== 1 ? 's have' : ' has'} unresolved
-                comments or AI concerns. You cannot approve these until issues are
-                resolved. Consider reviewing them individually first.
+                {documentsWithIssues.length !== 1 ? 's have' : ' has'} unresolved comments or AI
+                concerns. You cannot approve these until issues are resolved. Consider reviewing
+                them individually first.
               </p>
             </div>
           </div>
@@ -402,9 +393,7 @@ export default function BatchReviewPage() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {option.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{option.description}</p>
                   </div>
                 </button>
               );
@@ -417,8 +406,7 @@ export default function BatchReviewPage() {
       <Card className="mb-6">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
-            Common Feedback{' '}
-            <span className="text-muted-foreground font-normal">(required)</span>
+            Common Feedback <span className="text-muted-foreground font-normal">(required)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -429,27 +417,22 @@ export default function BatchReviewPage() {
               selectedDecision === 'APPROVED'
                 ? 'Add approval notes that apply to all documents...'
                 : selectedDecision === 'REJECTED'
-                ? 'Explain why all documents are rejected...'
-                : selectedDecision === 'REVISION_REQUESTED'
-                ? 'Describe what changes are needed for all documents...'
-                : 'Select a decision to add feedback...'
+                  ? 'Explain why all documents are rejected...'
+                  : selectedDecision === 'REVISION_REQUESTED'
+                    ? 'Describe what changes are needed for all documents...'
+                    : 'Select a decision to add feedback...'
             }
             rows={4}
           />
           <p className="mt-2 text-xs text-muted-foreground">
-            This feedback will be applied to all {documents.length} selected
-            documents.
+            This feedback will be applied to all {documents.length} selected documents.
           </p>
         </CardContent>
       </Card>
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-4">
-        <Button
-          variant="outline"
-          onClick={() => router.push('/reviews')}
-          disabled={isSubmitting}
-        >
+        <Button variant="outline" onClick={() => router.push('/reviews')} disabled={isSubmitting}>
           Cancel
         </Button>
         <Button
@@ -459,8 +442,8 @@ export default function BatchReviewPage() {
             selectedDecision === 'REJECTED'
               ? 'destructive'
               : selectedDecision === 'REVISION_REQUESTED'
-              ? 'secondary'
-              : 'default'
+                ? 'secondary'
+                : 'default'
           }
         >
           {isSubmitting ? (

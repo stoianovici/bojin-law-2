@@ -234,17 +234,17 @@ describe('TimeEntryService', () => {
 
       mockPrisma.timeEntry.findUnique.mockResolvedValue(mockEntry as any);
 
-      await expect(
-        updateTimeEntry('entry-123', { hours: 3.0 }, 'user-123')
-      ).rejects.toThrow('Not authorized to update this time entry');
+      await expect(updateTimeEntry('entry-123', { hours: 3.0 }, 'user-123')).rejects.toThrow(
+        'Not authorized to update this time entry'
+      );
     });
 
     it('should throw error when entry not found', async () => {
       mockPrisma.timeEntry.findUnique.mockResolvedValue(null);
 
-      await expect(
-        updateTimeEntry('invalid-entry', { hours: 3.0 }, 'user-123')
-      ).rejects.toThrow('Time entry not found');
+      await expect(updateTimeEntry('invalid-entry', { hours: 3.0 }, 'user-123')).rejects.toThrow(
+        'Time entry not found'
+      );
     });
   });
 

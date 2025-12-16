@@ -178,9 +178,7 @@ export class SkillAssignmentService {
 
     // Determine recommended assignee
     const recommendedAssignee =
-      suggestions.length > 0 && suggestions[0].matchScore >= 40
-        ? suggestions[0].userId
-        : undefined;
+      suggestions.length > 0 && suggestions[0].matchScore >= 40 ? suggestions[0].userId : undefined;
 
     return {
       suggestions,
@@ -333,9 +331,7 @@ export class SkillAssignmentService {
 
     // Skill assessment
     if (requiredSkills.length > 0) {
-      const matchedSkills = userSkills.filter((s) =>
-        requiredSkills.includes(s.skillType)
-      );
+      const matchedSkills = userSkills.filter((s) => requiredSkills.includes(s.skillType));
       if (matchedSkills.length > 0) {
         const verifiedCount = matchedSkills.filter((s) => s.verified).length;
         parts.push(

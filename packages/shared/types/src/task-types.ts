@@ -90,7 +90,11 @@ export const TASK_TYPE_VALIDATION_RULES: Record<TaskType, TaskTypeValidationRule
     },
   ],
   DocumentRetrieval: [
-    { field: 'documentDescription', required: true, errorMessage: 'Document description is required' },
+    {
+      field: 'documentDescription',
+      required: true,
+      errorMessage: 'Document description is required',
+    },
     {
       field: 'retrievalMethod',
       required: false,
@@ -126,9 +130,29 @@ export interface CourtDatePrepSubtask {
 }
 
 export const COURT_DATE_PREP_SUBTASKS: CourtDatePrepSubtask[] = [
-  { titleTemplate: 'Review case file for {hearingType}', daysBeforeHearing: 7, description: 'Complete review of all case documents and evidence' },
-  { titleTemplate: 'Prepare exhibits for {hearingType}', daysBeforeHearing: 5, description: 'Organize and label all exhibits for presentation' },
-  { titleTemplate: 'Draft outline/arguments for {hearingType}', daysBeforeHearing: 4, description: 'Prepare written outline of key arguments and responses' },
-  { titleTemplate: 'Confirm witness availability', daysBeforeHearing: 3, description: 'Contact and confirm all witnesses will attend' },
-  { titleTemplate: 'Final preparation review', daysBeforeHearing: 1, description: 'Final review of all materials and logistics' },
+  {
+    titleTemplate: 'Review case file for {hearingType}',
+    daysBeforeHearing: 7,
+    description: 'Complete review of all case documents and evidence',
+  },
+  {
+    titleTemplate: 'Prepare exhibits for {hearingType}',
+    daysBeforeHearing: 5,
+    description: 'Organize and label all exhibits for presentation',
+  },
+  {
+    titleTemplate: 'Draft outline/arguments for {hearingType}',
+    daysBeforeHearing: 4,
+    description: 'Prepare written outline of key arguments and responses',
+  },
+  {
+    titleTemplate: 'Confirm witness availability',
+    daysBeforeHearing: 3,
+    description: 'Contact and confirm all witnesses will attend',
+  },
+  {
+    titleTemplate: 'Final preparation review',
+    daysBeforeHearing: 1,
+    description: 'Final review of all materials and logistics',
+  },
 ];

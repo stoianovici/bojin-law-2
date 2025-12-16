@@ -8,7 +8,9 @@ import type { NLPTaskParseResponse, ClarificationQuestion } from '@legal-platfor
 
 describe('TaskClarificationService', () => {
   // Mock parsed response with low confidence values
-  const createMockParsedResponse = (overrides?: Partial<NLPTaskParseResponse>): NLPTaskParseResponse => ({
+  const createMockParsedResponse = (
+    overrides?: Partial<NLPTaskParseResponse>
+  ): NLPTaskParseResponse => ({
     parseId: 'parse-123',
     originalText: 'Test task input',
     detectedLanguage: 'ro',
@@ -178,7 +180,14 @@ describe('TaskClarificationService', () => {
           dueDate: { value: null, confidence: 0.3 },
         },
         entities: [
-          { type: 'date', value: 'maybe tomorrow', normalizedValue: null, startIndex: 0, endIndex: 14, confidence: 0.3 },
+          {
+            type: 'date',
+            value: 'maybe tomorrow',
+            normalizedValue: null,
+            startIndex: 0,
+            endIndex: 14,
+            confidence: 0.3,
+          },
         ],
       });
 
@@ -270,7 +279,13 @@ describe('TaskClarificationService', () => {
     it('should apply case clarification answer', () => {
       const parsed = createMockParsedResponse({
         clarificationsNeeded: [
-          { id: 'q1', entityType: 'case', question: 'Which case?', options: [], allowFreeText: true },
+          {
+            id: 'q1',
+            entityType: 'case',
+            question: 'Which case?',
+            options: [],
+            allowFreeText: true,
+          },
         ],
         isComplete: false,
       });
@@ -305,7 +320,13 @@ describe('TaskClarificationService', () => {
           title: { value: 'Test', confidence: 0.8 },
         },
         clarificationsNeeded: [
-          { id: 'q1', entityType: 'taskType', question: 'What type?', options: [], allowFreeText: false },
+          {
+            id: 'q1',
+            entityType: 'taskType',
+            question: 'What type?',
+            options: [],
+            allowFreeText: false,
+          },
         ],
         isComplete: false,
       });
@@ -319,7 +340,13 @@ describe('TaskClarificationService', () => {
     it('should apply date clarification answer', () => {
       const parsed = createMockParsedResponse({
         clarificationsNeeded: [
-          { id: 'q1', entityType: 'date', question: 'When?', options: undefined, allowFreeText: true },
+          {
+            id: 'q1',
+            entityType: 'date',
+            question: 'When?',
+            options: undefined,
+            allowFreeText: true,
+          },
         ],
         isComplete: false,
       });
@@ -337,7 +364,13 @@ describe('TaskClarificationService', () => {
           dueDate: { value: new Date('2024-12-01'), confidence: 0.5 },
         },
         clarificationsNeeded: [
-          { id: 'q1', entityType: 'date', question: 'When?', options: undefined, allowFreeText: true },
+          {
+            id: 'q1',
+            entityType: 'date',
+            question: 'When?',
+            options: undefined,
+            allowFreeText: true,
+          },
         ],
         isComplete: false,
       });
@@ -351,7 +384,13 @@ describe('TaskClarificationService', () => {
     it('should not modify response for unknown question ID', () => {
       const parsed = createMockParsedResponse({
         clarificationsNeeded: [
-          { id: 'q1', entityType: 'case', question: 'Which case?', options: [], allowFreeText: true },
+          {
+            id: 'q1',
+            entityType: 'case',
+            question: 'Which case?',
+            options: [],
+            allowFreeText: true,
+          },
         ],
       });
 
@@ -368,7 +407,13 @@ describe('TaskClarificationService', () => {
           title: { value: 'Test Task', confidence: 0.9 },
         },
         clarificationsNeeded: [
-          { id: 'q1', entityType: 'taskType', question: 'What type?', options: [], allowFreeText: false },
+          {
+            id: 'q1',
+            entityType: 'taskType',
+            question: 'What type?',
+            options: [],
+            allowFreeText: false,
+          },
         ],
         isComplete: false,
       });
@@ -386,7 +431,13 @@ describe('TaskClarificationService', () => {
           title: { value: null, confidence: 0 },
         },
         clarificationsNeeded: [
-          { id: 'q1', entityType: 'taskType', question: 'What type?', options: [], allowFreeText: false },
+          {
+            id: 'q1',
+            entityType: 'taskType',
+            question: 'What type?',
+            options: [],
+            allowFreeText: false,
+          },
         ],
         isComplete: false,
       });

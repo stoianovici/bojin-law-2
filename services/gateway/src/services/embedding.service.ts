@@ -108,16 +108,16 @@ export class EmbeddingService {
     const chunks = this.chunkText(text, VOYAGE_MAX_TOKENS);
 
     // Generate embeddings for each chunk
-    const embeddings = await Promise.all(
-      chunks.map((chunk) => this.callVoyageAPI(chunk))
-    );
+    const embeddings = await Promise.all(chunks.map((chunk) => this.callVoyageAPI(chunk)));
 
     // Average embeddings if multiple chunks
     const averaged = this.averageEmbeddings(embeddings);
 
     // Cache result
     await cacheManager.set(`${EMBEDDING_CACHE_PREFIX}:${cacheKey}`, averaged, EMBEDDING_CACHE_TTL);
-    console.log(`[Embedding Service] Cached embedding for text hash: ${cacheKey.substring(0, 8)}...`);
+    console.log(
+      `[Embedding Service] Cached embedding for text hash: ${cacheKey.substring(0, 8)}...`
+    );
 
     return averaged;
   }
@@ -139,7 +139,7 @@ export class EmbeddingService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${VOYAGE_API_KEY}`,
+            Authorization: `Bearer ${VOYAGE_API_KEY}`,
           },
           body: JSON.stringify({
             model: VOYAGE_MODEL,
@@ -148,7 +148,9 @@ export class EmbeddingService {
         });
 
         if (!response.ok) {
-          const error: any = new Error(`Voyage AI API error: ${response.status} ${response.statusText}`);
+          const error: any = new Error(
+            `Voyage AI API error: ${response.status} ${response.statusText}`
+          );
           error.statusCode = response.status;
 
           // Parse error body if available
@@ -168,7 +170,9 @@ export class EmbeddingService {
           throw new Error('Voyage AI API returned no embeddings');
         }
 
-        console.log(`[Embedding Service] Generated embedding using ${data.model}, tokens: ${data.usage.total_tokens}`);
+        console.log(
+          `[Embedding Service] Generated embedding using ${data.model}, tokens: ${data.usage.total_tokens}`
+        );
 
         return data.data[0].embedding;
       },
@@ -290,7 +294,9 @@ export class EmbeddingService {
       return;
     }
 
-    console.log(`[Embedding Service] Starting queue processor (interval: ${EMBEDDING_BATCH_INTERVAL}ms)`);
+    console.log(
+      `[Embedding Service] Starting queue processor (interval: ${EMBEDDING_BATCH_INTERVAL}ms)`
+    );
 
     this.queueInterval = setInterval(async () => {
       await this.processQueue();
@@ -358,11 +364,10 @@ export class EmbeddingService {
 
           if (retryCount < MAX_RETRY_ATTEMPTS) {
             // Re-queue with incremented retry count
-            await redis.lpush(
-              EMBEDDING_QUEUE_KEY,
-              JSON.stringify({ ...item, retryCount })
+            await redis.lpush(EMBEDDING_QUEUE_KEY, JSON.stringify({ ...item, retryCount }));
+            console.log(
+              `[Embedding Service] Re-queued ${item.type}:${item.id} (attempt ${retryCount})`
             );
-            console.log(`[Embedding Service] Re-queued ${item.type}:${item.id} (attempt ${retryCount})`);
           } else {
             // Move to error queue after max retries
             await redis.lpush(
@@ -373,7 +378,9 @@ export class EmbeddingService {
                 failedAt: new Date().toISOString(),
               })
             );
-            console.error(`[Embedding Service] Moved ${item.type}:${item.id} to error queue after ${retryCount} attempts`);
+            console.error(
+              `[Embedding Service] Moved ${item.type}:${item.id} to error queue after ${retryCount} attempts`
+            );
           }
         }
       }
@@ -513,10 +520,7 @@ export class EmbeddingService {
    * @param document - Document model
    * @returns Concatenated searchable text
    */
-  private buildDocumentSearchText(document: {
-    fileName: string;
-    metadata?: any;
-  }): string {
+  private buildDocumentSearchText(document: { fileName: string; metadata?: any }): string {
     const parts = [document.fileName];
 
     // Add metadata fields

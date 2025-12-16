@@ -44,10 +44,7 @@ export async function GET(request: NextRequest) {
         lastActive: true,
         createdAt: true,
       },
-      orderBy: [
-        { role: 'asc' },
-        { lastName: 'asc' },
-      ],
+      orderBy: [{ role: 'asc' }, { lastName: 'asc' }],
     });
 
     return NextResponse.json({ users });

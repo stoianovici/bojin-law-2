@@ -163,8 +163,10 @@ describe('StyleLearningService', () => {
 
       const trivialEdit: EditAnalysisInput = {
         ...sampleEditInput,
-        originalText: 'This is a very long sentence that contains many words and should be analyzed for style patterns.',
-        editedText: 'This is a very long sentence that contains many words and should be analyzed for style pattern.', // Only one letter changed
+        originalText:
+          'This is a very long sentence that contains many words and should be analyzed for style patterns.',
+        editedText:
+          'This is a very long sentence that contains many words and should be analyzed for style pattern.', // Only one letter changed
       };
 
       const result = await service.analyzeEdit(trivialEdit);
@@ -260,10 +262,14 @@ describe('StyleLearningService', () => {
 
       // Should have merged "Cu stimă" (increased frequency) and added "Cu respect"
       // mergeCommonPhrases lowercases phrase keys for comparison
-      const cuStima = updatedProfile.commonPhrases.find(p => p.phrase.toLowerCase() === 'cu stimă');
+      const cuStima = updatedProfile.commonPhrases.find(
+        (p) => p.phrase.toLowerCase() === 'cu stimă'
+      );
       expect(cuStima?.frequency).toBe(6); // 5 + 1
 
-      const cuRespect = updatedProfile.commonPhrases.find(p => p.phrase.toLowerCase() === 'cu respect');
+      const cuRespect = updatedProfile.commonPhrases.find(
+        (p) => p.phrase.toLowerCase() === 'cu respect'
+      );
       expect(cuRespect).toBeDefined();
     });
 
@@ -302,7 +308,9 @@ describe('StyleLearningService', () => {
       const afterUpdate = new Date();
 
       expect(updatedProfile.lastAnalyzedAt).toBeDefined();
-      expect(updatedProfile.lastAnalyzedAt!.getTime()).toBeGreaterThanOrEqual(beforeUpdate.getTime());
+      expect(updatedProfile.lastAnalyzedAt!.getTime()).toBeGreaterThanOrEqual(
+        beforeUpdate.getTime()
+      );
       expect(updatedProfile.lastAnalyzedAt!.getTime()).toBeLessThanOrEqual(afterUpdate.getTime());
     });
 
@@ -310,11 +318,13 @@ describe('StyleLearningService', () => {
       // Create a profile with 49 phrases
       const largeProfile: WritingStyleProfile = {
         ...sampleProfile,
-        commonPhrases: Array(49).fill(null).map((_, i) => ({
-          phrase: `phrase-${i}`,
-          frequency: 1,
-          context: 'body' as const,
-        })),
+        commonPhrases: Array(49)
+          .fill(null)
+          .map((_, i) => ({
+            phrase: `phrase-${i}`,
+            frequency: 1,
+            context: 'body' as const,
+          })),
       };
 
       const analysis: StyleAnalysisResult = {
@@ -395,12 +405,7 @@ describe('StyleLearningService', () => {
     it('should return original text on error', async () => {
       // This would be tested with an actual mock that throws, but for now
       // we just verify the function signature works correctly
-      const result = await service.applyStyle(
-        'Test text',
-        sampleProfile,
-        'user-123',
-        'firm-456'
-      );
+      const result = await service.applyStyle('Test text', sampleProfile, 'user-123', 'firm-456');
 
       expect(typeof result).toBe('string');
     });

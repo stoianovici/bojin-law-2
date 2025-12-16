@@ -147,8 +147,7 @@ export function OOOBanner({
               >
                 <AlertCircle className="h-4 w-4" />
                 <span>
-                  {reassignedTasks.length} task{reassignedTasks.length !== 1 ? 's' : ''}{' '}
-                  reassigned
+                  {reassignedTasks.length} task{reassignedTasks.length !== 1 ? 's' : ''} reassigned
                 </span>
                 {showReassigned ? (
                   <ChevronUp className="h-4 w-4" />
@@ -165,9 +164,7 @@ export function OOOBanner({
                       className="flex items-center gap-2 text-sm p-2 bg-white rounded border"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">
-                          {task.taskTitle}
-                        </div>
+                        <div className="font-medium text-gray-900 truncate">{task.taskTitle}</div>
                         <div className="text-xs text-gray-500">{task.reason}</div>
                       </div>
                       {task.success ? (

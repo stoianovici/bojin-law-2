@@ -118,10 +118,7 @@ export function LanguageExplanationPanel({
   if (position === 'modal') {
     return (
       <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
         <div className="flex items-center justify-center min-h-screen p-4">
           <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden">
             <ExplanationContent
@@ -197,14 +194,9 @@ function ExplanationContent({
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <h3 className="text-sm font-semibold text-gray-900">
-            Explicație Limbaj Juridic
-          </h3>
+          <h3 className="text-sm font-semibold text-gray-900">Explicație Limbaj Juridic</h3>
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-        >
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -253,10 +245,7 @@ function ExplanationContent({
               />
             </svg>
             <p className="text-sm text-red-600 mb-2">{error}</p>
-            <button
-              onClick={onRetry}
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
+            <button onClick={onRetry} className="text-sm text-blue-600 hover:text-blue-700">
               Reîncearcă
             </button>
           </div>
@@ -270,9 +259,7 @@ function ExplanationContent({
               <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
                 Explicație
               </h4>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {explanation.explanation}
-              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">{explanation.explanation}</p>
             </div>
 
             {/* Legal Basis */}
@@ -282,9 +269,7 @@ function ExplanationContent({
                   Bază Legală
                 </h4>
                 <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <p className="text-sm text-blue-800 leading-relaxed">
-                    {explanation.legalBasis}
-                  </p>
+                  <p className="text-sm text-blue-800 leading-relaxed">{explanation.legalBasis}</p>
                 </div>
               </div>
             )}
@@ -297,10 +282,7 @@ function ExplanationContent({
                 </h4>
                 <ul className="space-y-2">
                   {explanation.alternatives.map((alt, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-2 text-sm text-gray-700"
-                    >
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
                       <span className="flex-shrink-0 w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-xs text-gray-500">
                         {idx + 1}
                       </span>
@@ -407,7 +389,9 @@ export function ExplanationContextMenu({
 export function useLanguageExplanation(_documentId: string) {
   const [isExplanationVisible, setIsExplanationVisible] = useState(false);
   const [selectedText, setSelectedText] = useState('');
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(
+    null
+  );
 
   // Handle right-click context menu
   const handleContextMenu = useCallback((e: React.MouseEvent) => {

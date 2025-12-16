@@ -25,9 +25,7 @@ export class TemplateExtractionService {
    * @param input - Template extraction input
    * @returns Extracted templates
    */
-  async extractTemplates(
-    input: ExtractTemplatesInput
-  ): Promise<ExtractTemplatesOutput> {
+  async extractTemplates(input: ExtractTemplatesInput): Promise<ExtractTemplatesOutput> {
     const startTime = Date.now();
     const similarityThreshold = input.similarityThreshold || 0.85;
 
@@ -55,22 +53,15 @@ export class TemplateExtractionService {
       }
 
       // Find similar document clusters
-      const clusters = this.findSimilarDocumentClusters(
-        documents,
-        similarityThreshold
-      );
+      const clusters = this.findSimilarDocumentClusters(documents, similarityThreshold);
 
       // Extract template from each cluster
-      const templates: Omit<DocumentTemplate, 'id' | 'createdAt' | 'updatedAt'>[] =
-        [];
+      const templates: Omit<DocumentTemplate, 'id' | 'createdAt' | 'updatedAt'>[] = [];
 
       for (const cluster of clusters) {
         if (cluster.length < 3) continue; // Need at least 3 similar docs
 
-        const template = await this.extractTemplateFromCluster(
-          cluster,
-          input.category
-        );
+        const template = await this.extractTemplateFromCluster(cluster, input.category);
 
         if (template) {
           templates.push(template);
@@ -110,10 +101,7 @@ export class TemplateExtractionService {
    * @param threshold - Similarity threshold
    * @returns Clusters of similar document IDs
    */
-  private findSimilarDocumentClusters(
-    documents: any[],
-    threshold: number
-  ): string[][] {
+  private findSimilarDocumentClusters(documents: any[], threshold: number): string[][] {
     const clusters: string[][] = [];
     const assigned = new Set<string>();
 
@@ -132,10 +120,7 @@ export class TemplateExtractionService {
         const embedding2 = this.parseEmbedding(documents[j].embeddings[0]?.embedding);
         if (!embedding2) continue;
 
-        const similarity = embeddingGenerationService.calculateSimilarity(
-          embedding1,
-          embedding2
-        );
+        const similarity = embeddingGenerationService.calculateSimilarity(embedding1, embedding2);
 
         if (similarity >= threshold) {
           cluster.push(documents[j].id);
@@ -203,11 +188,7 @@ export class TemplateExtractionService {
       const line = lines[i];
 
       // Detect potential headings (short lines, capitalized)
-      if (
-        line.length > 0 &&
-        line.length < 100 &&
-        line[0] === line[0].toUpperCase()
-      ) {
+      if (line.length > 0 && line.length < 100 && line[0] === line[0].toUpperCase()) {
         // Get phrases from next few lines
         const phrases: string[] = [];
         for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
@@ -245,8 +226,8 @@ export class TemplateExtractionService {
     const baseStructure = structures[0];
     const commonSections = baseStructure.sections.filter((section) => {
       const matchCount = structures.filter((s) =>
-        s.sections.some((sec) =>
-          this.normalizeHeading(sec.heading) === this.normalizeHeading(section.heading)
+        s.sections.some(
+          (sec) => this.normalizeHeading(sec.heading) === this.normalizeHeading(section.heading)
         )
       ).length;
 
@@ -269,7 +250,10 @@ export class TemplateExtractionService {
    * @returns Normalized heading
    */
   private normalizeHeading(heading: string): string {
-    return heading.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    return heading
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim();
   }
 
   /**
@@ -282,8 +266,7 @@ export class TemplateExtractionService {
 
     // Calculate consistency score based on section count variance
     const sectionCounts = structures.map((s) => s.totalSections);
-    const avgSections =
-      sectionCounts.reduce((sum, c) => sum + c, 0) / sectionCounts.length;
+    const avgSections = sectionCounts.reduce((sum, c) => sum + c, 0) / sectionCounts.length;
     const variance =
       sectionCounts.reduce((sum, c) => sum + Math.pow(c - avgSections, 2), 0) /
       sectionCounts.length;

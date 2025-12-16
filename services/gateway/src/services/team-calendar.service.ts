@@ -54,10 +54,7 @@ export class TeamCalendarService {
    * @param dateRange - Date range to display
    * @returns Team calendar view
    */
-  async getTeamCalendar(
-    firmId: string,
-    dateRange: WorkloadDateRange
-  ): Promise<TeamCalendarView> {
+  async getTeamCalendar(firmId: string, dateRange: WorkloadDateRange): Promise<TeamCalendarView> {
     // Get all active users in the firm
     const users = await this.prisma.user.findMany({
       where: {
@@ -264,12 +261,8 @@ export class TeamCalendarService {
 
     // Calculate workload metrics
     const capacityHours = await this.workloadService.getUserDailyCapacity(userId, date);
-    const totalAllocatedHours = calendarTasks.reduce(
-      (sum, t) => sum + (t.estimatedHours || 0),
-      0
-    );
-    const utilizationPercent =
-      capacityHours > 0 ? (totalAllocatedHours / capacityHours) * 100 : 0;
+    const totalAllocatedHours = calendarTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
+    const utilizationPercent = capacityHours > 0 ? (totalAllocatedHours / capacityHours) * 100 : 0;
 
     return {
       userId,
@@ -284,9 +277,7 @@ export class TeamCalendarService {
             availabilityType: availability.availabilityType,
             startDate: availability.startDate,
             endDate: availability.endDate,
-            hoursPerDay: availability.hoursPerDay
-              ? Number(availability.hoursPerDay)
-              : undefined,
+            hoursPerDay: availability.hoursPerDay ? Number(availability.hoursPerDay) : undefined,
             reason: availability.reason || undefined,
             autoReassign: availability.autoReassign,
             delegateTo: availability.delegateTo || undefined,

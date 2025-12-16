@@ -110,11 +110,7 @@ async function canAccessCase(caseId: string, user: Context['user']): Promise<boo
 }
 
 // Helper to call AI service
-async function callAIService(
-  endpoint: string,
-  method: string,
-  body?: unknown
-): Promise<unknown> {
+async function callAIService(endpoint: string, method: string, body?: unknown): Promise<unknown> {
   const url = `${AI_SERVICE_URL}${endpoint}`;
 
   const response = await fetch(url, {
@@ -160,16 +156,12 @@ export const documentDraftingResolvers = {
       }
 
       try {
-        const result = await callAIService(
-          '/api/ai/documents/similar',
-          'POST',
-          {
-            caseId: args.caseId,
-            documentType: args.documentType,
-            limit: args.limit || 5,
-            firmId: user.firmId,
-          }
-        );
+        const result = await callAIService('/api/ai/documents/similar', 'POST', {
+          caseId: args.caseId,
+          documentType: args.documentType,
+          limit: args.limit || 5,
+          firmId: user.firmId,
+        });
 
         return result;
       } catch (error) {
@@ -204,10 +196,7 @@ export const documentDraftingResolvers = {
             in: getTemplateCategories(args.documentType),
           },
         },
-        orderBy: [
-          { qualityScore: 'desc' },
-          { usageCount: 'desc' },
-        ],
+        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
         take: 10,
       });
 
@@ -224,11 +213,7 @@ export const documentDraftingResolvers = {
     /**
      * Get a specific template by ID
      */
-    getTemplate: async (
-      _: unknown,
-      args: { id: string },
-      context: Context
-    ) => {
+    getTemplate: async (_: unknown, args: { id: string }, context: Context) => {
       requireAuth(context);
 
       const template = await prisma.templateLibrary.findUnique({
@@ -264,10 +249,7 @@ export const documentDraftingResolvers = {
             { category: { contains: args.query, mode: 'insensitive' } },
           ],
         },
-        orderBy: [
-          { qualityScore: 'desc' },
-          { usageCount: 'desc' },
-        ],
+        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
         take: args.limit || 10,
       });
 
@@ -313,18 +295,14 @@ export const documentDraftingResolvers = {
       const user = requireAuth(context);
 
       try {
-        const result = await callAIService(
-          '/api/ai/suggestions/sync',
-          'POST',
-          {
-            documentId: 'temp', // Sync suggestions don't require a document ID
-            documentType: args.documentType,
-            currentText: args.currentText,
-            cursorPosition: args.cursorPosition,
-            firmId: user.firmId,
-            userId: user.id,
-          }
-        ) as { suggestions: unknown[] };
+        const result = (await callAIService('/api/ai/suggestions/sync', 'POST', {
+          documentId: 'temp', // Sync suggestions don't require a document ID
+          documentType: args.documentType,
+          currentText: args.currentText,
+          cursorPosition: args.cursorPosition,
+          firmId: user.firmId,
+          userId: user.id,
+        })) as { suggestions: unknown[] };
 
         return result.suggestions || [];
       } catch (error) {
@@ -372,19 +350,15 @@ export const documentDraftingResolvers = {
       });
 
       try {
-        const result = await callAIService(
-          '/api/ai/documents/generate',
-          'POST',
-          {
-            caseId: args.input.caseId,
-            prompt: args.input.prompt,
-            documentType: args.input.documentType,
-            templateId: args.input.templateId,
-            includeContext: args.input.includeContext ?? true,
-            userId: user.id,
-            firmId: user.firmId,
-          }
-        ) as {
+        const result = (await callAIService('/api/ai/documents/generate', 'POST', {
+          caseId: args.input.caseId,
+          prompt: args.input.prompt,
+          documentType: args.input.documentType,
+          templateId: args.input.templateId,
+          includeContext: args.input.includeContext ?? true,
+          userId: user.id,
+          firmId: user.firmId,
+        })) as {
           id: string;
           title: string;
           content: string;
@@ -402,12 +376,14 @@ export const documentDraftingResolvers = {
 
         // Increment template usage if one was used
         if (args.input.templateId) {
-          await prisma.templateLibrary.update({
-            where: { id: args.input.templateId },
-            data: { usageCount: { increment: 1 } },
-          }).catch(() => {
-            // Ignore if template not found
-          });
+          await prisma.templateLibrary
+            .update({
+              where: { id: args.input.templateId },
+              data: { usageCount: { increment: 1 } },
+            })
+            .catch(() => {
+              // Ignore if template not found
+            });
         }
 
         return result;
@@ -438,16 +414,12 @@ export const documentDraftingResolvers = {
       }
 
       try {
-        const result = await callAIService(
-          '/api/ai/explain',
-          'POST',
-          {
-            documentId: args.documentId,
-            selectedText: args.selectedText,
-            firmId: user.firmId,
-            userId: user.id,
-          }
-        ) as {
+        const result = (await callAIService('/api/ai/explain', 'POST', {
+          documentId: args.documentId,
+          selectedText: args.selectedText,
+          firmId: user.firmId,
+          userId: user.id,
+        })) as {
           selection: string;
           explanation: string;
           legalBasis?: string;
@@ -488,9 +460,8 @@ export const documentDraftingResolvers = {
       );
 
       const totalChanges = charactersAdded + charactersRemoved;
-      const editPercentage = args.initialContent.length > 0
-        ? (totalChanges / args.initialContent.length) * 100
-        : 0;
+      const editPercentage =
+        args.initialContent.length > 0 ? (totalChanges / args.initialContent.length) * 100 : 0;
 
       // Create metrics record (table to be created in Task 15)
       // For now, log the metrics
@@ -548,7 +519,10 @@ function getTemplateCategories(documentType: DocumentType): string[] {
 
 // Helper function to count words
 function countWords(text: string): number {
-  return text.trim().split(/\s+/).filter((word) => word.length > 0).length;
+  return text
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0).length;
 }
 
 // Helper function to calculate character changes

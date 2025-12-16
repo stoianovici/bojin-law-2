@@ -180,9 +180,7 @@ describe('useNavigationStore', () => {
         result.current.toggleSidebar();
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('navigation-storage') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('navigation-storage') || '{}');
       expect(stored.state.isSidebarCollapsed).toBe(true);
     });
 
@@ -193,9 +191,7 @@ describe('useNavigationStore', () => {
         result.current.setCurrentRole('Paralegal');
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('navigation-storage') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('navigation-storage') || '{}');
       expect(stored.state.currentRole).toBe('Paralegal');
     });
 
@@ -206,9 +202,7 @@ describe('useNavigationStore', () => {
         result.current.setCurrentSection('documents');
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('navigation-storage') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('navigation-storage') || '{}');
       expect(stored.state.currentSection).toBe('documents');
     });
 
@@ -219,9 +213,7 @@ describe('useNavigationStore', () => {
         result.current.openCommandPalette();
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('navigation-storage') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('navigation-storage') || '{}');
       expect(stored.state.isCommandPaletteOpen).toBeUndefined();
     });
   });

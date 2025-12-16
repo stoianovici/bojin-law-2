@@ -65,10 +65,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       validationState === 'error'
         ? errorMessage
         : validationState === 'success'
-        ? successMessage
-        : validationState === 'warning'
-        ? warningMessage
-        : helperText;
+          ? successMessage
+          : validationState === 'warning'
+            ? warningMessage
+            : helperText;
 
     // Base textarea styles
     const textareaBaseStyles =
@@ -76,13 +76,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     // Validation state styles
     const stateStyles = {
-      default:
-        'border-neutral-300 focus:border-primary-500 focus:ring-primary-500',
+      default: 'border-neutral-300 focus:border-primary-500 focus:ring-primary-500',
       error: 'border-error-500 focus:border-error-500 focus:ring-error-500',
-      success:
-        'border-success-500 focus:border-success-500 focus:ring-success-500',
-      warning:
-        'border-warning-500 focus:border-warning-500 focus:ring-warning-500',
+      success: 'border-success-500 focus:border-success-500 focus:ring-success-500',
+      warning: 'border-warning-500 focus:border-warning-500 focus:ring-warning-500',
     };
 
     // Message color styles
@@ -96,10 +93,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className={clsx('w-full', className)}>
         {label && (
-          <label
-            htmlFor={textareaId}
-            className="mb-1 block text-sm font-medium text-neutral-700"
-          >
+          <label htmlFor={textareaId} className="mb-1 block text-sm font-medium text-neutral-700">
             {label}
             {required && (
               <span className="ml-1 text-error-500" aria-label="required">
@@ -112,10 +106,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={textareaId}
           rows={rows}
-          className={clsx(
-            textareaBaseStyles,
-            stateStyles[validationState ?? 'default']
-          )}
+          className={clsx(textareaBaseStyles, stateStyles[validationState ?? 'default'])}
           aria-required={required}
           aria-invalid={validationState === 'error'}
           aria-describedby={message ? helperId : undefined}

@@ -61,12 +61,30 @@ describe('SkillAssignmentService', () => {
       // User 1: Has matching skills
       mockPrisma.userSkill.findMany
         .mockResolvedValueOnce([
-          { id: 'skill-1', userId: 'user-1', skillType: 'LegalResearch', proficiency: 4, verified: true },
-          { id: 'skill-2', userId: 'user-1', skillType: 'DocumentReview', proficiency: 3, verified: false },
+          {
+            id: 'skill-1',
+            userId: 'user-1',
+            skillType: 'LegalResearch',
+            proficiency: 4,
+            verified: true,
+          },
+          {
+            id: 'skill-2',
+            userId: 'user-1',
+            skillType: 'DocumentReview',
+            proficiency: 3,
+            verified: false,
+          },
         ])
         // User 2: No matching skills
         .mockResolvedValueOnce([
-          { id: 'skill-3', userId: 'user-2', skillType: 'Litigation', proficiency: 5, verified: true },
+          {
+            id: 'skill-3',
+            userId: 'user-2',
+            skillType: 'Litigation',
+            proficiency: 5,
+            verified: true,
+          },
         ]);
 
       mockWorkloadService.getCurrentWorkload
@@ -153,7 +171,13 @@ describe('SkillAssignmentService', () => {
 
     it('should calculate correct match for verified skills', () => {
       const userSkills = [
-        { id: 's1', userId: 'u1', skillType: 'LegalResearch' as const, proficiency: 5, verified: true },
+        {
+          id: 's1',
+          userId: 'u1',
+          skillType: 'LegalResearch' as const,
+          proficiency: 5,
+          verified: true,
+        },
       ];
       const requiredSkills = ['LegalResearch' as const];
 
@@ -165,7 +189,13 @@ describe('SkillAssignmentService', () => {
 
     it('should calculate correct match for unverified skills', () => {
       const userSkills = [
-        { id: 's1', userId: 'u1', skillType: 'LegalResearch' as const, proficiency: 4, verified: false },
+        {
+          id: 's1',
+          userId: 'u1',
+          skillType: 'LegalResearch' as const,
+          proficiency: 4,
+          verified: false,
+        },
       ];
       const requiredSkills = ['LegalResearch' as const];
 
@@ -177,7 +207,13 @@ describe('SkillAssignmentService', () => {
 
     it('should return 0 when user has no matching skills', () => {
       const userSkills = [
-        { id: 's1', userId: 'u1', skillType: 'Litigation' as const, proficiency: 5, verified: true },
+        {
+          id: 's1',
+          userId: 'u1',
+          skillType: 'Litigation' as const,
+          proficiency: 5,
+          verified: true,
+        },
       ];
       const requiredSkills = ['LegalResearch' as const, 'DocumentReview' as const];
 

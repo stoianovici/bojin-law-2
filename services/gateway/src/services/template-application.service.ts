@@ -201,10 +201,7 @@ export async function applyTemplate(
 /**
  * Gets all template usages for a case
  */
-export async function getTemplateUsagesForCase(
-  caseId: string,
-  firmId: string
-): Promise<any[]> {
+export async function getTemplateUsagesForCase(caseId: string, firmId: string): Promise<any[]> {
   // Verify case belongs to firm
   const caseRecord = await prisma.case.findUnique({
     where: { id: caseId },
@@ -228,10 +225,7 @@ export async function getTemplateUsagesForCase(
 /**
  * Gets tasks created from a specific template usage
  */
-export async function getTasksFromTemplateUsage(
-  usageId: string,
-  firmId: string
-): Promise<Task[]> {
+export async function getTasksFromTemplateUsage(usageId: string, firmId: string): Promise<Task[]> {
   const usage = await prisma.taskTemplateUsage.findUnique({
     where: { id: usageId },
     include: {

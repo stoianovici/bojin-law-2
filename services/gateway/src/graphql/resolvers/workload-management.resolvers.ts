@@ -288,11 +288,7 @@ export const workloadManagementResolvers = {
     // Delegation Handoff (AC: 4)
     // ============================================================================
 
-    delegationHandoff: async (
-      _: any,
-      args: { delegationId: string },
-      context: Context
-    ) => {
+    delegationHandoff: async (_: any, args: { delegationId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -308,11 +304,7 @@ export const workloadManagementResolvers = {
     // Capacity Planning (AC: 6)
     // ============================================================================
 
-    capacityForecast: async (
-      _: any,
-      args: { days?: number },
-      context: Context
-    ) => {
+    capacityForecast: async (_: any, args: { days?: number }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -321,10 +313,7 @@ export const workloadManagementResolvers = {
         });
       }
 
-      return await capacityPlanningService.getForecast(
-        user.firmId,
-        args.days || 30
-      );
+      return await capacityPlanningService.getForecast(user.firmId, args.days || 30);
     },
 
     resourceAllocationSuggestions: async (_: any, __: any, context: Context) => {
@@ -363,11 +352,7 @@ export const workloadManagementResolvers = {
     // Availability (AC: 1, 5)
     // ============================================================================
 
-    createAvailability: async (
-      _: any,
-      args: { input: any },
-      context: Context
-    ) => {
+    createAvailability: async (_: any, args: { input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -376,18 +361,10 @@ export const workloadManagementResolvers = {
         });
       }
 
-      return await availabilityService.createAvailability(
-        args.input,
-        user.id,
-        user.firmId
-      );
+      return await availabilityService.createAvailability(args.input, user.id, user.firmId);
     },
 
-    updateAvailability: async (
-      _: any,
-      args: { id: string; input: any },
-      context: Context
-    ) => {
+    updateAvailability: async (_: any, args: { id: string; input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -404,11 +381,7 @@ export const workloadManagementResolvers = {
       );
     },
 
-    deleteAvailability: async (
-      _: any,
-      args: { id: string },
-      context: Context
-    ) => {
+    deleteAvailability: async (_: any, args: { id: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -438,20 +411,12 @@ export const workloadManagementResolvers = {
         });
       }
 
-      await skillAssignmentService.updateUserSkills(
-        user.id,
-        args.skills as any,
-        user.firmId
-      );
+      await skillAssignmentService.updateUserSkills(user.id, args.skills as any, user.firmId);
 
       return await skillAssignmentService.getUserSkills(user.id);
     },
 
-    verifyUserSkill: async (
-      _: any,
-      args: { skillId: string },
-      context: Context
-    ) => {
+    verifyUserSkill: async (_: any, args: { skillId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -518,11 +483,7 @@ export const workloadManagementResolvers = {
     // OOO Reassignment (AC: 5)
     // ============================================================================
 
-    processOOOReassignments: async (
-      _: any,
-      args: { availabilityId: string },
-      context: Context
-    ) => {
+    processOOOReassignments: async (_: any, args: { availabilityId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -531,21 +492,14 @@ export const workloadManagementResolvers = {
         });
       }
 
-      return await oooReassignmentService.processOOOReassignments(
-        user.id,
-        args.availabilityId
-      );
+      return await oooReassignmentService.processOOOReassignments(user.id, args.availabilityId);
     },
 
     // ============================================================================
     // Workload Settings
     // ============================================================================
 
-    updateMyWorkloadSettings: async (
-      _: any,
-      args: { input: any },
-      context: Context
-    ) => {
+    updateMyWorkloadSettings: async (_: any, args: { input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {

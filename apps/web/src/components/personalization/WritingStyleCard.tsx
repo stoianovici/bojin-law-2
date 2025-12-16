@@ -7,13 +7,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -135,12 +129,9 @@ function EmptyState() {
   return (
     <div className="text-center py-6">
       <PenIcon className="mx-auto h-12 w-12 text-muted-foreground/50" />
-      <h4 className="mt-4 text-sm font-medium text-foreground">
-        Nicio preferință învățată
-      </h4>
+      <h4 className="mt-4 text-sm font-medium text-foreground">Nicio preferință învățată</h4>
       <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-        Editează draft-uri generate de AI pentru ca sistemul să învețe stilul
-        tău de scriere.
+        Editează draft-uri generate de AI pentru ca sistemul să învețe stilul tău de scriere.
       </p>
     </div>
   );
@@ -206,9 +197,7 @@ export function WritingStyleCard({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Eroare la încărcarea profilului de scriere.
-          </p>
+          <p className="text-sm text-destructive">Eroare la încărcarea profilului de scriere.</p>
         </CardContent>
       </Card>
     );
@@ -225,9 +214,7 @@ export function WritingStyleCard({
             </div>
             {hasProfile && (
               <Badge variant={isLearning ? 'outline' : 'default'}>
-                {isLearning
-                  ? `Învățare ${learningProgress}%`
-                  : 'Profil Complet'}
+                {isLearning ? `Învățare ${learningProgress}%` : 'Profil Complet'}
               </Badge>
             )}
           </div>
@@ -260,20 +247,14 @@ export function WritingStyleCard({
 
               {/* Preferred Tone */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Ton Preferat
-                </span>
+                <span className="text-sm text-muted-foreground">Ton Preferat</span>
                 <Badge variant="secondary">{profile!.preferredTone}</Badge>
               </div>
 
               {/* Sample Count */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Mostre Analizate
-                </span>
-                <span className="text-sm font-medium">
-                  {profile!.sampleCount}
-                </span>
+                <span className="text-sm text-muted-foreground">Mostre Analizate</span>
+                <span className="text-sm font-medium">{profile!.sampleCount}</span>
               </div>
 
               {/* Learning Progress Bar */}
@@ -302,25 +283,33 @@ export function WritingStyleCard({
               {/* Common Phrases */}
               {profile!.commonPhrases.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-sm text-muted-foreground">
-                    Expresii Frecvente
-                  </span>
+                  <span className="text-sm text-muted-foreground">Expresii Frecvente</span>
                   <div className="flex flex-wrap gap-2">
                     {[...profile!.commonPhrases]
-                      .sort((a: { phrase: string; frequency: number; context: string }, b: { phrase: string; frequency: number; context: string }) => b.frequency - a.frequency)
+                      .sort(
+                        (
+                          a: { phrase: string; frequency: number; context: string },
+                          b: { phrase: string; frequency: number; context: string }
+                        ) => b.frequency - a.frequency
+                      )
                       .slice(0, 5)
-                      .map((phrase: { phrase: string; frequency: number; context: string }, index: number) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="text-xs"
-                          title={`Folosită de ${phrase.frequency} ori în ${phrase.context}`}
-                        >
-                          {phrase.phrase.length > 30
-                            ? `${phrase.phrase.substring(0, 30)}...`
-                            : phrase.phrase}
-                        </Badge>
-                      ))}
+                      .map(
+                        (
+                          phrase: { phrase: string; frequency: number; context: string },
+                          index: number
+                        ) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="text-xs"
+                            title={`Folosită de ${phrase.frequency} ori în ${phrase.context}`}
+                          >
+                            {phrase.phrase.length > 30
+                              ? `${phrase.phrase.substring(0, 30)}...`
+                              : phrase.phrase}
+                          </Badge>
+                        )
+                      )}
                   </div>
                 </div>
               )}
@@ -329,16 +318,13 @@ export function WritingStyleCard({
               {profile!.lastAnalyzedAt && (
                 <p className="text-xs text-muted-foreground">
                   Ultima analiză:{' '}
-                  {new Date(profile!.lastAnalyzedAt).toLocaleDateString(
-                    'ro-RO',
-                    {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    }
-                  )}
+                  {new Date(profile!.lastAnalyzedAt).toLocaleDateString('ro-RO', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </p>
               )}
 
@@ -351,9 +337,7 @@ export function WritingStyleCard({
                   disabled={analyzing}
                   className="flex items-center gap-1"
                 >
-                  <RefreshIcon
-                    className={analyzing ? 'animate-spin' : undefined}
-                  />
+                  <RefreshIcon className={analyzing ? 'animate-spin' : undefined} />
                   {analyzing ? 'Analizez...' : 'Actualizează'}
                 </Button>
 
@@ -381,9 +365,8 @@ export function WritingStyleCard({
           <DialogHeader>
             <DialogTitle>Resetează Stilul de Scriere</DialogTitle>
             <DialogDescription>
-              Ești sigur că vrei să resetezi profilul de scriere? Toate
-              preferințele învățate vor fi șterse și sistemul va trebui să
-              reînvețe stilul tău de la zero.
+              Ești sigur că vrei să resetezi profilul de scriere? Toate preferințele învățate vor fi
+              șterse și sistemul va trebui să reînvețe stilul tău de la zero.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -394,11 +377,7 @@ export function WritingStyleCard({
             >
               Anulează
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleReset}
-              disabled={resetting}
-            >
+            <Button variant="destructive" onClick={handleReset} disabled={resetting}>
               {resetting ? 'Se resetează...' : 'Resetează'}
             </Button>
           </DialogFooter>
@@ -413,19 +392,12 @@ WritingStyleCard.displayName = 'WritingStyleCard';
 /**
  * Compact version of WritingStyleCard for dashboard widgets
  */
-export function WritingStyleCardCompact({
-  className = '',
-}: {
-  className?: string;
-}) {
-  const { profile, hasProfile, loading, formalityLabel, learningProgress } =
-    useWritingStyle();
+export function WritingStyleCardCompact({ className = '' }: { className?: string }) {
+  const { profile, hasProfile, loading, formalityLabel, learningProgress } = useWritingStyle();
 
   if (loading) {
     return (
-      <div
-        className={`p-4 rounded-lg border bg-card ${className} animate-pulse`}
-      >
+      <div className={`p-4 rounded-lg border bg-card ${className} animate-pulse`}>
         <div className="h-4 bg-muted rounded w-1/2 mb-2" />
         <div className="h-2 bg-muted rounded w-full" />
       </div>

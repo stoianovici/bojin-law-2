@@ -19,6 +19,7 @@
 ## Phase 1: Pre-Upgrade Preparation
 
 ### 1.1 Backup & Safety
+
 - [ ] Create git branch: `upgrade/nextjs-16`
 - [ ] Commit all current changes
 - [ ] Document current working state
@@ -26,6 +27,7 @@
 - [ ] Take note of current dev server behavior
 
 ### 1.2 Audit Current Code
+
 - [ ] Search for all usages of request APIs: `cookies()`, `headers()`, `draftMode()`
 - [ ] Identify all pages using `params` and `searchParams`
 - [ ] Check for custom `middleware.ts` (needs rename to `proxy.ts`)
@@ -34,6 +36,7 @@
 - [ ] Check for deprecated APIs: `useFormState`, `@next/font`
 
 ### 1.3 Environment Check
+
 - [ ] Verify Node.js version >= 20.9.0
 - [ ] Verify pnpm version >= 9.0.0
 - [ ] Check browser compatibility requirements (Chrome 111+, Safari 16.4+)
@@ -45,16 +48,19 @@
 **Why intermediate?** Reduces risk by handling breaking changes incrementally.
 
 ### 2.1 Install Next.js 15
+
 ```bash
 pnpm add next@15 react@19 react-dom@19
 ```
 
 ### 2.2 Run Automated Codemod
+
 ```bash
 npx @next/codemod@canary upgrade 15
 ```
 
 **What it handles:**
+
 - Converts synchronous request APIs to async
 - Updates `params`/`searchParams` type definitions
 - Replaces `@next/font` with `next/font`
@@ -64,41 +70,45 @@ npx @next/codemod@canary upgrade 15
 ### 2.3 Manual Breaking Changes (v15)
 
 #### Make Request APIs Async
+
 ```typescript
 // Before (v14)
 export default function Page({ params, searchParams }) {
-  const cookieStore = cookies()
-  const headersList = headers()
+  const cookieStore = cookies();
+  const headersList = headers();
 }
 
 // After (v15+)
 export default async function Page({ params, searchParams }) {
-  const cookieStore = await cookies()
-  const headersList = await headers()
-  const resolvedParams = await params
-  const resolvedSearchParams = await searchParams
+  const cookieStore = await cookies();
+  const headersList = await headers();
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
 }
 ```
 
 #### Update Fetch Caching
+
 ```typescript
 // Before (v14) - cached by default
-fetch('https://api.example.com/data')
+fetch('https://api.example.com/data');
 
 // After (v15+) - explicit caching
-fetch('https://api.example.com/data', { cache: 'force-cache' })
+fetch('https://api.example.com/data', { cache: 'force-cache' });
 
 // OR set default at layout/page level
-export const fetchCache = 'default-cache'
+export const fetchCache = 'default-cache';
 ```
 
 #### Update Route Handlers
+
 ```typescript
 // Route handlers need explicit caching
-export const dynamic = 'force-static' // if needed
+export const dynamic = 'force-static'; // if needed
 ```
 
 ### 2.4 Test Next.js 15
+
 - [ ] Run dev server: `pnpm dev`
 - [ ] Test all routes
 - [ ] Run test suite: `pnpm test`
@@ -111,11 +121,13 @@ export const dynamic = 'force-static' // if needed
 ## Phase 3: Upgrade to Next.js 16
 
 ### 3.1 Install Next.js 16
+
 ```bash
 pnpm add next@16 react@latest react-dom@latest
 ```
 
 ### 3.2 Run Next.js 16 Codemod
+
 ```bash
 npx @next/codemod@canary upgrade 16
 ```
@@ -123,6 +135,7 @@ npx @next/codemod@canary upgrade 16
 ### 3.3 Manual Breaking Changes (v16)
 
 #### Middleware → Proxy Migration
+
 ```bash
 # If you have middleware.ts
 mv middleware.ts proxy.ts
@@ -131,18 +144,20 @@ mv middleware.ts proxy.ts
 ```typescript
 // Update export name
 // Before
-export function middleware(request) { }
+export function middleware(request) {}
 
 // After
-export function proxy(request) { }
+export function proxy(request) {}
 ```
 
 **Important:** Edge runtime NOT supported in proxy. Node.js runtime only.
 
 #### Add default.js for Parallel Routes
+
 If using parallel routes, add `default.js` to all route slots or build will fail.
 
 #### Update Image Configuration
+
 ```typescript
 // next.config.js
 module.exports = {
@@ -160,13 +175,15 @@ module.exports = {
       },
     ],
   },
-}
+};
 ```
 
 #### Update ESLint Config to Flat Format
+
 Next.js 16 requires ESLint flat config format. Convert `.eslintrc.json` to `eslint.config.js`.
 
 #### Enable Turbopack Config (if using experimental)
+
 ```typescript
 // next.config.js
 // Move experimental.turbopack to top-level
@@ -174,39 +191,43 @@ module.exports = {
   turbopack: {
     // your turbopack config
   },
-}
+};
 ```
 
 ### 3.4 Optional Optimizations
 
 #### Enable React Compiler (Stable in v16)
+
 ```typescript
 // next.config.js
 module.exports = {
   reactCompiler: true,
-}
+};
 ```
 
 #### Enable Filesystem Caching
+
 ```typescript
 // next.config.js
 module.exports = {
   turbopackFileSystemCacheForDev: true,
-}
+};
 ```
 
 ### 3.5 React 19 Migration
 
 #### Replace useFormState
+
 ```typescript
 // Before
-import { useFormState } from 'react-dom'
+import { useFormState } from 'react-dom';
 
 // After
-import { useActionState } from 'react'
+import { useActionState } from 'react';
 ```
 
 #### Update Component Types
+
 React 19 has stricter type requirements for components and props.
 
 ---
@@ -214,6 +235,7 @@ React 19 has stricter type requirements for components and props.
 ## Phase 4: Testing & Validation
 
 ### 4.1 Development Testing
+
 - [ ] Start dev server (expect 5-10x faster with Turbopack)
 - [ ] Test all routes manually
 - [ ] Check SSR/SSG pages
@@ -223,18 +245,21 @@ React 19 has stricter type requirements for components and props.
 - [ ] Verify image optimization works
 
 ### 4.2 Automated Testing
+
 - [ ] Run unit tests: `pnpm test`
 - [ ] Run e2e tests: `pnpm test:e2e`
 - [ ] Run accessibility tests: `pnpm test:a11y`
 - [ ] Check test coverage hasn't dropped
 
 ### 4.3 Build Testing
+
 - [ ] Run production build: `pnpm build`
 - [ ] Check for build errors/warnings
 - [ ] Verify bundle sizes (should be similar or smaller)
 - [ ] Test production server: `pnpm start`
 
 ### 4.4 Performance Testing
+
 - [ ] Run Lighthouse CI: `pnpm test:perf`
 - [ ] Compare metrics to baseline
 - [ ] Check Core Web Vitals
@@ -245,6 +270,7 @@ React 19 has stricter type requirements for components and props.
 ## Phase 5: Dependency Updates
 
 ### 5.1 Update Related Packages
+
 ```bash
 # Testing libraries (check compatibility)
 pnpm add -D @testing-library/react@latest @testing-library/jest-dom@latest
@@ -257,6 +283,7 @@ pnpm outdated
 ```
 
 ### 5.2 Fix Package Issues
+
 Address any peer dependency warnings or incompatibilities.
 
 ---
@@ -264,9 +291,11 @@ Address any peer dependency warnings or incompatibilities.
 ## Known Issues & Workarounds
 
 ### Issue: test-utils Package in Browser
+
 **Current Error:** `Module not found: Can't resolve 'fs'` in test-utils when imported in browser code.
 
 **Fix:** Ensure test-utils is only imported in test files, not in application code. Consider adding Next.js webpack config:
+
 ```typescript
 // next.config.js
 module.exports = {
@@ -276,17 +305,19 @@ module.exports = {
         ...config.resolve.fallback,
         fs: false,
         path: false,
-      }
+      };
     }
-    return config
+    return config;
   },
-}
+};
 ```
 
 ### Issue: Package Export "types" Warning
+
 **Current Warning:** `"types" will never be used as it comes after "import" and "require"`
 
 **Fix:** Update package.json exports in affected packages:
+
 ```json
 {
   "exports": {
@@ -306,12 +337,14 @@ module.exports = {
 If issues arise:
 
 1. **Git Rollback:**
+
    ```bash
    git reset --hard HEAD
    git checkout main
    ```
 
 2. **Dependency Rollback:**
+
    ```bash
    git checkout package.json pnpm-lock.yaml
    pnpm install
@@ -324,14 +357,14 @@ If issues arise:
 
 ## Timeline Estimate
 
-| Phase | Duration | Dependencies |
-|-------|----------|--------------|
-| Phase 1: Preparation | 1-2 hours | None |
-| Phase 2: Next.js 15 | 2-3 hours | Phase 1 |
-| Phase 3: Next.js 16 | 1-2 hours | Phase 2 |
-| Phase 4: Testing | 2-3 hours | Phase 3 |
-| Phase 5: Dependencies | 1 hour | Phase 4 |
-| **Total** | **7-11 hours** | - |
+| Phase                 | Duration       | Dependencies |
+| --------------------- | -------------- | ------------ |
+| Phase 1: Preparation  | 1-2 hours      | None         |
+| Phase 2: Next.js 15   | 2-3 hours      | Phase 1      |
+| Phase 3: Next.js 16   | 1-2 hours      | Phase 2      |
+| Phase 4: Testing      | 2-3 hours      | Phase 3      |
+| Phase 5: Dependencies | 1 hour         | Phase 4      |
+| **Total**             | **7-11 hours** | -            |
 
 ---
 
@@ -377,11 +410,13 @@ If issues arise:
 4. **Consider:** Current project phase - if actively developing features, may want to wait
 
 **Alternatives:**
+
 - Stay on 14.x until major feature development complete
 - Upgrade to 15 only (more stable, fewer breaking changes)
 - Wait for Next.js 16.1+ (patch releases often address early issues)
 
 Would you like me to:
+
 1. **Begin Phase 1** (preparation and audit)?
 2. **Stay on Next.js 14** for now?
 3. **Only upgrade to Next.js 15** (skip 16)?

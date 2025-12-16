@@ -57,7 +57,7 @@ export const ROMANIAN_TEMPLATES = {
     generate: generateContractVanzareCumparare,
     validate: validateContractVariables,
   },
-  'intampinare': {
+  intampinare: {
     definition: IntampinareTemplate,
     generate: generateIntampinare,
     validate: validateIntampinareVariables,

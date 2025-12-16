@@ -29,9 +29,9 @@ describe('AuthService', () => {
     } as any;
 
     // Mock ConfidentialClientApplication constructor
-    (ConfidentialClientApplication as jest.MockedClass<typeof ConfidentialClientApplication>).mockImplementation(
-      () => mockMsalClient
-    );
+    (
+      ConfidentialClientApplication as jest.MockedClass<typeof ConfidentialClientApplication>
+    ).mockImplementation(() => mockMsalClient);
 
     authService = new AuthService();
   });
@@ -79,12 +79,8 @@ describe('AuthService', () => {
       const result1 = await authService.generateAuthorizationUrl();
       const result2 = await authService.generateAuthorizationUrl();
 
-      expect(result1.pkceParams.codeVerifier).not.toBe(
-        result2.pkceParams.codeVerifier
-      );
-      expect(result1.pkceParams.codeChallenge).not.toBe(
-        result2.pkceParams.codeChallenge
-      );
+      expect(result1.pkceParams.codeVerifier).not.toBe(result2.pkceParams.codeVerifier);
+      expect(result1.pkceParams.codeChallenge).not.toBe(result2.pkceParams.codeChallenge);
       expect(result1.pkceParams.state).not.toBe(result2.pkceParams.state);
     });
   });
@@ -160,9 +156,7 @@ describe('AuthService', () => {
         expiresOn: new Date(Date.now() + 3600000),
       };
 
-      mockMsalClient.acquireTokenByRefreshToken.mockResolvedValue(
-        mockAuthResult as any
-      );
+      mockMsalClient.acquireTokenByRefreshToken.mockResolvedValue(mockAuthResult as any);
 
       const result = await authService.refreshAccessToken('old-refresh-token');
 
@@ -182,9 +176,9 @@ describe('AuthService', () => {
 
       mockMsalClient.acquireTokenByRefreshToken.mockRejectedValue(mockError);
 
-      await expect(
-        authService.refreshAccessToken('expired-refresh-token')
-      ).rejects.toThrow(/Refresh token expired or invalid/);
+      await expect(authService.refreshAccessToken('expired-refresh-token')).rejects.toThrow(
+        /Refresh token expired or invalid/
+      );
     });
 
     it('should throw error if interaction is required', async () => {
@@ -195,9 +189,9 @@ describe('AuthService', () => {
 
       mockMsalClient.acquireTokenByRefreshToken.mockRejectedValue(mockError);
 
-      await expect(
-        authService.refreshAccessToken('refresh-token')
-      ).rejects.toThrow(/Refresh token expired or invalid/);
+      await expect(authService.refreshAccessToken('refresh-token')).rejects.toThrow(
+        /Refresh token expired or invalid/
+      );
     });
   });
 

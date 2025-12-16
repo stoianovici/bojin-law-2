@@ -119,7 +119,11 @@ export class VelocityTrendsService {
     const aggregated = this.aggregateByInterval(dailyCounts, interval);
 
     // Calculate historical average for target (from last 90 days before period)
-    const historicalTarget = await this.getHistoricalTarget(firmId, filters.dateRange.start, interval);
+    const historicalTarget = await this.getHistoricalTarget(
+      firmId,
+      filters.dateRange.start,
+      interval
+    );
 
     // Build velocity data points
     const dataPoints: VelocityDataPoint[] = [];
@@ -215,9 +219,7 @@ export class VelocityTrendsService {
       }
     }
 
-    return Array.from(dailyMap.values()).sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
-    );
+    return Array.from(dailyMap.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
   /**
@@ -263,9 +265,7 @@ export class VelocityTrendsService {
       }
     }
 
-    return Array.from(buckets.values()).sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
-    );
+    return Array.from(buckets.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
   /**
@@ -334,10 +334,7 @@ export class VelocityTrendsService {
   /**
    * Calculate firm-wide velocity metrics
    */
-  async calculateFirmVelocity(
-    firmId: string,
-    filters: AnalyticsFilters
-  ): Promise<FirmVelocity> {
+  async calculateFirmVelocity(firmId: string, filters: AnalyticsFilters): Promise<FirmVelocity> {
     // Current period
     const currentCompleted = await this.prisma.task.count({
       where: {
@@ -367,7 +364,11 @@ export class VelocityTrendsService {
     });
 
     // Calculate target from historical data
-    const historicalTarget = await this.getHistoricalTarget(firmId, filters.dateRange.start, 'daily');
+    const historicalTarget = await this.getHistoricalTarget(
+      firmId,
+      filters.dateRange.start,
+      'daily'
+    );
     const periodDays = Math.ceil(periodLength / (24 * 60 * 60 * 1000));
     const periodTarget = historicalTarget * periodDays;
 
@@ -438,9 +439,14 @@ export class VelocityTrendsService {
     const userNameMap = new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName}`]));
 
     // Calculate historical target per user
-    const historicalTarget = await this.getHistoricalTarget(firmId, filters.dateRange.start, 'daily');
+    const historicalTarget = await this.getHistoricalTarget(
+      firmId,
+      filters.dateRange.start,
+      'daily'
+    );
     const periodDays = Math.ceil(periodLength / (24 * 60 * 60 * 1000));
-    const userTarget = historicalTarget > 0 ? (historicalTarget * periodDays) / userStats.length : 1;
+    const userTarget =
+      historicalTarget > 0 ? (historicalTarget * periodDays) / userStats.length : 1;
 
     // Build result
     const result: VelocityByUser[] = userStats.map((stats) => {

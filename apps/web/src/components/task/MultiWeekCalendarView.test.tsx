@@ -43,9 +43,7 @@ describe('MultiWeekCalendarView', () => {
     });
 
     it('renders correct number of week rows based on weeksToShow prop', () => {
-      const tasks = [
-        createMockTask({ dueDate: new Date() }),
-      ];
+      const tasks = [createMockTask({ dueDate: new Date() })];
 
       render(
         <MultiWeekCalendarView
@@ -173,7 +171,7 @@ describe('MultiWeekCalendarView', () => {
       // Time badge should not exist
       const timeBadges = container.querySelectorAll('.text-xs.font-bold');
       // Filter to only time-format badges (HH:MM pattern)
-      const timePatternBadges = Array.from(timeBadges).filter(el =>
+      const timePatternBadges = Array.from(timeBadges).filter((el) =>
         /^\d{2}:\d{2}$/.test(el.textContent || '')
       );
       expect(timePatternBadges.length).toBe(0);
@@ -224,7 +222,7 @@ describe('MultiWeekCalendarView', () => {
       expect(taskCards.length).toBeGreaterThan(0);
 
       // Check that at least one task card has a background color style
-      const hasBackgroundColor = Array.from(taskCards).some(card => {
+      const hasBackgroundColor = Array.from(taskCards).some((card) => {
         const style = (card as HTMLElement).style.backgroundColor;
         return style && style !== '';
       });
@@ -251,7 +249,7 @@ describe('MultiWeekCalendarView', () => {
       expect(taskCards.length).toBeGreaterThan(0);
 
       // Check that at least one task card has a border-l class (priority border)
-      const hasPriorityBorder = Array.from(taskCards).some(card => {
+      const hasPriorityBorder = Array.from(taskCards).some((card) => {
         const className = (card as HTMLElement).className;
         return className.includes('border-l');
       });
@@ -291,7 +289,7 @@ describe('MultiWeekCalendarView', () => {
 
       // Get all task cards
       const taskTitles = Array.from(container.querySelectorAll('.text-sm.font-medium')).map(
-        el => el.textContent
+        (el) => el.textContent
       );
 
       // Morning Meeting (time-specific) should appear before All Day Task
@@ -330,7 +328,7 @@ describe('MultiWeekCalendarView', () => {
       );
 
       const taskTitles = Array.from(container.querySelectorAll('.text-sm.font-medium')).map(
-        el => el.textContent
+        (el) => el.textContent
       );
 
       const morningIndex = taskTitles.indexOf('Morning Meeting');
@@ -370,7 +368,7 @@ describe('MultiWeekCalendarView', () => {
       );
 
       const taskTitles = Array.from(container.querySelectorAll('.text-sm.font-medium')).map(
-        el => el.textContent
+        (el) => el.textContent
       );
 
       const urgentIndex = taskTitles.indexOf('Urgent Priority');
@@ -600,7 +598,7 @@ describe('MultiWeekCalendarView', () => {
       expect(allColumns.length).toBeGreaterThanOrEqual(7);
 
       // Weekend columns should have min-width: 50px style
-      const weekendColumns = Array.from(allColumns).filter(col => {
+      const weekendColumns = Array.from(allColumns).filter((col) => {
         const style = (col as HTMLElement).style;
         return style.minWidth === '50px';
       });
@@ -685,9 +683,7 @@ describe('MultiWeekCalendarView', () => {
 
     it('displays singular "sarcină" for day with 1 task', () => {
       const today = new Date();
-      const tasks = [
-        createMockTask({ title: 'Single Task', dueDate: today }),
-      ];
+      const tasks = [createMockTask({ title: 'Single Task', dueDate: today })];
 
       render(
         <MultiWeekCalendarView
@@ -741,9 +737,7 @@ describe('MultiWeekCalendarView', () => {
       expect(weekHeaders.length).toBeGreaterThan(0);
 
       // Check that at least one has top-0 class
-      const stickyHeader = Array.from(weekHeaders).find(el =>
-        el.className.includes('top-0')
-      );
+      const stickyHeader = Array.from(weekHeaders).find((el) => el.className.includes('top-0'));
       expect(stickyHeader).toBeDefined();
     });
   });

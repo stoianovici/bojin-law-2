@@ -10,11 +10,7 @@
 'use client';
 
 import React from 'react';
-import {
-  RadialBarChart,
-  RadialBar,
-  ResponsiveContainer,
-} from 'recharts';
+import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts';
 import { Wallet, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { BaseWidget } from './BaseWidget';
 import { GaugeSkeleton } from './WidgetSkeleton';
@@ -106,10 +102,7 @@ export function RetainerStatusWidget({
   // If no retainer cases and not loading, show special empty state
   if (!hasRetainerCases && !isLoading && !error) {
     return (
-      <BaseWidget
-        title="Status Abonamente"
-        className={className}
-      >
+      <BaseWidget title="Status Abonamente" className={className}>
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <Wallet className="w-10 h-10 text-gray-300 mb-3" />
           <p className="text-gray-500 text-sm">Nu există abonamente</p>
@@ -155,20 +148,13 @@ export function RetainerStatusWidget({
               startAngle={180}
               endAngle={0}
             >
-              <RadialBar
-                dataKey="value"
-                cornerRadius={10}
-                background={{ fill: '#E5E7EB' }}
-              />
+              <RadialBar dataKey="value" cornerRadius={10} background={{ fill: '#E5E7EB' }} />
             </RadialBarChart>
           </ResponsiveContainer>
 
           {/* Center text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
-            <span
-              className="text-2xl font-bold"
-              style={{ color: statusColor }}
-            >
+            <span className="text-2xl font-bold" style={{ color: statusColor }}>
               {formatPercent(utilization)}
             </span>
             <span className="text-xs text-gray-500">utilizare medie</span>
@@ -178,10 +164,7 @@ export function RetainerStatusWidget({
         {/* Status indicator */}
         <div className="flex items-center justify-center gap-2">
           {getStatusIcon(utilization)}
-          <span
-            className="text-sm font-medium"
-            style={{ color: statusColor }}
-          >
+          <span className="text-sm font-medium" style={{ color: statusColor }}>
             {getStatusText(utilization)}
           </span>
           {delta && (
@@ -212,11 +195,10 @@ export function RetainerStatusWidget({
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-red-800">
-                Ore de abonament depășite
-              </p>
+              <p className="text-sm font-medium text-red-800">Ore de abonament depășite</p>
               <p className="text-xs text-red-600 mt-0.5">
-                Unele contracte de abonament sunt supra-utilizate. Verificați facturarea pentru dosarele afectate.
+                Unele contracte de abonament sunt supra-utilizate. Verificați facturarea pentru
+                dosarele afectate.
               </p>
             </div>
           </div>

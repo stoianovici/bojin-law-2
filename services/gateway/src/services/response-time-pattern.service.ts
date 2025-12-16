@@ -145,10 +145,7 @@ export class ResponseTimePatternService {
 
     // Adjust based on day of week
     if (pattern.dayOfWeekPattern) {
-      const dayAdjustment = this.getDayOfWeekAdjustment(
-        pattern.dayOfWeekPattern,
-        targetDate
-      );
+      const dayAdjustment = this.getDayOfWeekAdjustment(pattern.dayOfWeekPattern, targetDate);
       if (dayAdjustment !== 1) {
         estimatedHours *= dayAdjustment;
         adjustedForDayOfWeek = true;
@@ -158,10 +155,7 @@ export class ResponseTimePatternService {
 
     // Adjust based on time of day
     if (pattern.timeOfDayPattern) {
-      const timeAdjustment = this.getTimeOfDayAdjustment(
-        pattern.timeOfDayPattern,
-        targetDate
-      );
+      const timeAdjustment = this.getTimeOfDayAdjustment(pattern.timeOfDayPattern, targetDate);
       if (timeAdjustment !== 1) {
         estimatedHours *= timeAdjustment;
         adjustedForTimeOfDay = true;
@@ -262,10 +256,7 @@ export class ResponseTimePatternService {
     );
 
     // Calculate overall average
-    const totalHours = patterns.reduce(
-      (sum, p) => sum + p.averageResponseHours * p.sampleCount,
-      0
-    );
+    const totalHours = patterns.reduce((sum, p) => sum + p.averageResponseHours * p.sampleCount, 0);
     const totalSamples = patterns.reduce((sum, p) => sum + p.sampleCount, 0);
     const averageResponseTime = totalSamples > 0 ? totalHours / totalSamples : 0;
 
@@ -388,10 +379,7 @@ export class ResponseTimePatternService {
   /**
    * Initialize day of week pattern
    */
-  private initializeDayOfWeekPattern(
-    completedAt: Date,
-    responseHours: number
-  ): DayOfWeekPattern {
+  private initializeDayOfWeekPattern(completedAt: Date, responseHours: number): DayOfWeekPattern {
     const days: DayOfWeekPattern = {
       monday: 0,
       tuesday: 0,
@@ -412,10 +400,7 @@ export class ResponseTimePatternService {
   /**
    * Initialize time of day pattern
    */
-  private initializeTimeOfDayPattern(
-    completedAt: Date,
-    responseHours: number
-  ): TimeOfDayPattern {
+  private initializeTimeOfDayPattern(completedAt: Date, responseHours: number): TimeOfDayPattern {
     const times: TimeOfDayPattern = {
       earlyMorning: 0,
       morning: 0,
@@ -525,16 +510,15 @@ export class ResponseTimePatternService {
   /**
    * Get adjustment factor based on day of week pattern
    */
-  private getDayOfWeekAdjustment(
-    pattern: DayOfWeekPattern,
-    targetDate: Date
-  ): number {
+  private getDayOfWeekAdjustment(pattern: DayOfWeekPattern, targetDate: Date): number {
     const dayOfWeek = targetDate.getDay();
     const dayName = this.getDayName(dayOfWeek) as keyof DayOfWeekPattern;
     const dayValue = pattern[dayName];
 
     // Calculate average across all days
-    const values = Object.values(pattern).filter((v): v is number => typeof v === 'number' && v > 0);
+    const values = Object.values(pattern).filter(
+      (v): v is number => typeof v === 'number' && v > 0
+    );
     if (values.length === 0) return 1;
 
     const avg = values.reduce((sum: number, v: number) => sum + v, 0) / values.length;
@@ -547,16 +531,15 @@ export class ResponseTimePatternService {
   /**
    * Get adjustment factor based on time of day pattern
    */
-  private getTimeOfDayAdjustment(
-    pattern: TimeOfDayPattern,
-    targetDate: Date
-  ): number {
+  private getTimeOfDayAdjustment(pattern: TimeOfDayPattern, targetDate: Date): number {
     const hour = targetDate.getHours();
     const timePeriod = this.getTimePeriod(hour) as keyof TimeOfDayPattern;
     const timeValue = pattern[timePeriod];
 
     // Calculate average across all time periods
-    const values = Object.values(pattern).filter((v): v is number => typeof v === 'number' && v > 0);
+    const values = Object.values(pattern).filter(
+      (v): v is number => typeof v === 'number' && v > 0
+    );
     if (values.length === 0) return 1;
 
     const avg = values.reduce((sum: number, v: number) => sum + v, 0) / values.length;

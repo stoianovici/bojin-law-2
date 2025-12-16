@@ -76,7 +76,13 @@ export interface DocumentTypeRegistryEntry {
   mappedSkillId?: string;
   mappedTemplateId?: string;
   mappingConfidence?: number;
-  mappingStatus: 'pending' | 'auto_mapped' | 'manual_mapped' | 'template_created' | 'queue_review' | 'template_pending';
+  mappingStatus:
+    | 'pending'
+    | 'auto_mapped'
+    | 'manual_mapped'
+    | 'template_created'
+    | 'queue_review'
+    | 'template_pending';
   firstSeenDate: Date;
   lastSeenDate: Date;
   totalOccurrences: number;

@@ -10,7 +10,7 @@
 ## DOCUMENT HEADER
 
 **ÎNTÂMPINARE**
-*STATEMENT OF DEFENSE*
+_STATEMENT OF DEFENSE_
 
 ---
 
@@ -45,7 +45,7 @@ Adresa: {{AVOCAT_PARAT_ADRESA}}
 ## OBJECT / OBIECT
 
 Prezenta întâmpinare se formulează în dosarul nr. {{NUMAR_DOSAR}}, având ca obiect:
-*This statement of defense is filed in case no. {{NUMAR_DOSAR}}, concerning:*
+_This statement of defense is filed in case no. {{NUMAR_DOSAR}}, concerning:_
 
 {{OBIECT_ACTIUNE}}
 
@@ -56,11 +56,12 @@ Prezenta întâmpinare se formulează în dosarul nr. {{NUMAR_DOSAR}}, având ca
 ### 1.1 Cererea reclamantului / Plaintiff's claim
 
 La data de {{DATA_CERERE}}, reclamantul {{RECLAMANT_NUME}} a formulat împotriva pârâtului o cerere prin care a solicitat:
-*On {{DATA_CERERE}}, the plaintiff {{RECLAMANT_NUME}} filed a claim against the defendant requesting:*
+_On {{DATA_CERERE}}, the plaintiff {{RECLAMANT_NUME}} filed a claim against the defendant requesting:_
 
 {{REZUMAT_CERERE_RECLAMANT}}
 
 ### 1.2 Valoarea obiectului cererii / Value of claim
+
 {{VALOARE_CERERE}}
 
 ---
@@ -70,7 +71,7 @@ La data de {{DATA_CERERE}}, reclamantul {{RECLAMANT_NUME}} a formulat împotriva
 ### 2.1 Răspuns la acțiune / Response to action
 
 Pârâtul solicită respingerea cererii de chemare în judecată ca **{{TIP_RESPINGERE}}** pentru următoarele motive:
-*The defendant requests dismissal of the lawsuit as **{{TIP_RESPINGERE}}** for the following reasons:*
+_The defendant requests dismissal of the lawsuit as **{{TIP_RESPINGERE}}** for the following reasons:_
 
 ---
 
@@ -105,7 +106,7 @@ Pârâtul solicită respingerea cererii de chemare în judecată ca **{{TIP_RESP
 ### 4.1 Situația de fapt / Statement of facts
 
 **Expunerea situației de fapt reale:**
-*Statement of actual facts:*
+_Statement of actual facts:_
 
 {{EXPUNERE_FAPT_PARAT}}
 
@@ -135,12 +136,12 @@ Pârâtul solicită respingerea cererii de chemare în judecată ca **{{TIP_RESP
 ### 5.1 Proba cu înscrisuri / Documentary evidence
 
 Pârâtul solicită administrarea probei cu următoarele înscrisuri:
-*The defendant requests the admission of the following documentary evidence:*
+_The defendant requests the admission of the following documentary evidence:_
 
 1. {{INSCRIS_1}}
 2. {{INSCRIS_2}}
 3. {{INSCRIS_3}}
-{{INSCRISURI_SUPLIMENTARE}}
+   {{INSCRISURI_SUPLIMENTARE}}
 
 **Temei legal / Legal basis:** Art. 296-311 C.proc.civ. (Codul de procedură civilă)
 
@@ -148,11 +149,11 @@ Pârâtul solicită administrarea probei cu următoarele înscrisuri:
 
 {{#PROBA_MARTORI}}
 Pârâtul solicită administrarea probei testimoniale, citarea următorilor martori:
-*The defendant requests witness testimony, summoning the following witnesses:*
+_The defendant requests witness testimony, summoning the following witnesses:_
 
 1. **{{MARTOR_1_NUME}}**, domiciliat în {{MARTOR_1_ADRESA}}, pentru a dovedi {{MARTOR_1_OBIECT}}
 2. **{{MARTOR_2_NUME}}**, domiciliat în {{MARTOR_2_ADRESA}}, pentru a dovedi {{MARTOR_2_OBIECT}}
-{{MARTORI_SUPLIMENTARI}}
+   {{MARTORI_SUPLIMENTARI}}
 
 **Temei legal / Legal basis:** Art. 312-328 C.proc.civ.
 {{/PROBA_MARTORI}}
@@ -161,7 +162,7 @@ Pârâtul solicită administrarea probei testimoniale, citarea următorilor mart
 
 {{#PROBA_EXPERTIZA}}
 Pârâtul solicită efectuarea unei expertize {{TIP_EXPERTIZA}} pentru a stabili:
-*The defendant requests a {{TIP_EXPERTIZA}} expert examination to establish:*
+_The defendant requests a {{TIP_EXPERTIZA}} expert examination to establish:_
 
 {{OBIECTIV_EXPERTIZA}}
 
@@ -179,7 +180,7 @@ Pârâtul solicită efectuarea unei expertize {{TIP_EXPERTIZA}} pentru a stabili
 ### 6.1 Cheltuieli de judecată / Court costs
 
 Pârâtul solicită obligarea reclamantului la plata cheltuielilor de judecată, inclusiv onorariul avocațial în cuantum de {{ONORARIU_AVOCAT}}.
-*The defendant requests that the plaintiff be ordered to pay court costs, including attorney fees in the amount of {{ONORARIU_AVOCAT}}.*
+_The defendant requests that the plaintiff be ordered to pay court costs, including attorney fees in the amount of {{ONORARIU_AVOCAT}}._
 
 **Temei legal / Legal basis:** Art. 451-456 C.proc.civ.
 
@@ -187,7 +188,7 @@ Pârâtul solicită obligarea reclamantului la plata cheltuielilor de judecată,
 
 {{#GARANTIE_JUDECATA}}
 Pârâtul solicită obligarea reclamantului să depună o garanție pentru judecată în cuantum de {{SUMA_GARANTIE}}.
-*The defendant requests that the plaintiff be ordered to deposit security for costs in the amount of {{SUMA_GARANTIE}}.*
+_The defendant requests that the plaintiff be ordered to deposit security for costs in the amount of {{SUMA_GARANTIE}}._
 
 **Temei legal / Legal basis:** Art. 190 C.proc.civ.
 {{/GARANTIE_JUDECATA}}
@@ -196,7 +197,7 @@ Pârâtul solicită obligarea reclamantului să depună o garanție pentru judec
 
 {{#SUSPENDARE_EXECUTARE}}
 Pârâtul solicită suspendarea executării actului atacat până la soluționarea definitivă a cauzei.
-*The defendant requests a stay of execution of the contested act until final resolution of the case.*
+_The defendant requests a stay of execution of the contested act until final resolution of the case._
 
 **Temei legal / Legal basis:** {{TEMEI_SUSPENDARE}}
 {{/SUSPENDARE_EXECUTARE}}
@@ -207,18 +208,22 @@ Pârâtul solicită suspendarea executării actului atacat până la soluționar
 
 {{#CERERE_RECONVENTIONALA}}
 **Pârâtul formulează cerere reconvențională împotriva reclamantului:**
-*The defendant files a counterclaim against the plaintiff:*
+_The defendant files a counterclaim against the plaintiff:_
 
 ### 7.1 Obiectul cererii reconvenționale / Object of counterclaim
+
 {{OBIECT_RECONVENTIONAL}}
 
 ### 7.2 Motivare / Reasoning
+
 {{MOTIVARE_RECONVENTIONALA}}
 
 ### 7.3 Temei legal / Legal basis
+
 {{TEMEI_RECONVENTIONAL}}
 
 ### 7.4 Valoare / Value
+
 {{VALOARE_RECONVENTIONALA}}
 
 **Temei legal procedural / Procedural legal basis:** Art. 204-208 C.proc.civ.
@@ -246,19 +251,22 @@ Pârâtul solicită suspendarea executării actului atacat până la soluționar
 ## IX. TEMEIURI DE DREPT / LEGAL GROUNDS
 
 Prezenta întâmpinare își găsește temei în următoarele dispoziții legale:
-*This statement of defense is based on the following legal provisions:*
+_This statement of defense is based on the following legal provisions:_
 
 ### Procedură civilă / Civil procedure:
+
 - Art. {{ART_PROC_CIV_1}} C.proc.civ. - {{DESCRIERE_ART_1}}
 - Art. {{ART_PROC_CIV_2}} C.proc.civ. - {{DESCRIERE_ART_2}}
-{{TEMEIURI_PROCEDURALE_SUPLIMENTARE}}
+  {{TEMEIURI_PROCEDURALE_SUPLIMENTARE}}
 
 ### Drept substanțial / Substantive law:
+
 - Art. {{ART_COD_CIVIL_1}} Cod Civil - {{DESCRIERE_CIVIL_1}}
 - Art. {{ART_COD_CIVIL_2}} Cod Civil - {{DESCRIERE_CIVIL_2}}
-{{TEMEIURI_CIVILE_SUPLIMENTARE}}
+  {{TEMEIURI_CIVILE_SUPLIMENTARE}}
 
 ### Alte reglementări / Other regulations:
+
 {{TEMEIURI_ALTE}}
 
 ---
@@ -266,31 +274,34 @@ Prezenta întâmpinare își găsește temei în următoarele dispoziții legale
 ## X. CONCLUZII / CONCLUSIONS
 
 **În considerarea celor arătate mai sus, pârâtul solicită instanței:**
-*In consideration of the above, the defendant requests the court:*
+_In consideration of the above, the defendant requests the court:_
 
 ### Cerere principală / Main request:
+
 **{{CERERE_PRINCIPALA}}**
 
 ### Cereri subsidiare / Subsidiary requests:
+
 1. {{CERERE_SUBSIDIARA_1}}
 2. {{CERERE_SUBSIDIARA_2}}
-{{CERERI_SUBSIDIARE_SUPLIMENTARE}}
+   {{CERERI_SUBSIDIARE_SUPLIMENTARE}}
 
 ### Cheltuieli de judecată / Court costs:
+
 Obligarea reclamantului la plata tuturor cheltuielilor de judecată ocazionate de prezentul litigiu.
-*Ordering the plaintiff to pay all court costs occasioned by this litigation.*
+_Ordering the plaintiff to pay all court costs occasioned by this litigation._
 
 ---
 
 ## XI. LISTA ANEXELOR / LIST OF ATTACHMENTS
 
 Anexăm prezentei întâmpinări următoarele documente:
-*We attach to this statement of defense the following documents:*
+_We attach to this statement of defense the following documents:_
 
 1. {{ANEXA_1}}
 2. {{ANEXA_2}}
 3. {{ANEXA_3}}
-{{ANEXE_SUPLIMENTARE}}
+   {{ANEXE_SUPLIMENTARE}}
 
 **Total anexe:** {{NUMAR_ANEXE}}
 
@@ -299,10 +310,10 @@ Anexăm prezentei întâmpinări următoarele documente:
 ## XII. FORMULA DE ÎNCHEIERE / CLOSING FORMULA
 
 **Pentru aceste motive,**
-*For these reasons,*
+_For these reasons,_
 
 **Solicităm instanței să admită prezenta întâmpinare, să respingă cererea de chemare în judecată formulată de reclamant și să dispună conform concluziilor formulate.**
-*We request the court to admit this statement of defense, to dismiss the plaintiff's lawsuit, and to rule according to the conclusions formulated.*
+_We request the court to admit this statement of defense, to dismiss the plaintiff's lawsuit, and to rule according to the conclusions formulated._
 
 ---
 
@@ -311,14 +322,14 @@ Anexăm prezentei întâmpinări următoarele documente:
 **Pârât / Defendant:**
 
 {{PARAT_NUME}}
-Semnătură: _________________
+Semnătură: ********\_********
 
 **Avocat / Attorney:**
 
 {{AVOCAT_PARAT_NUME}}
 Baroul {{BAROU_PARAT}}
-Semnătură: _________________
-Ștampilă: _________________
+Semnătură: ********\_********
+Ștampilă: ********\_********
 
 **Data / Date:** {{DATA_DEPUNERE}}
 
@@ -329,12 +340,14 @@ Semnătură: _________________
 ### Required Variables
 
 **Court Information:**
+
 - `{{INSTANTA_NUME}}` - Court name
 - `{{INSTANTA_ADRESA}}` - Court address
 - `{{NUMAR_DOSAR}}` - Case number
 - `{{DATA_DEPUNERE}}` - Filing date
 
 **Parties:**
+
 - `{{PARAT_NUME}}` - Defendant's name
 - `{{PARAT_TIP_PERSOANA}}` - Defendant type (persoană fizică/juridică)
 - `{{PARAT_ADRESA}}` - Defendant's address
@@ -345,11 +358,13 @@ Semnătură: _________________
 - `{{RECLAMANT_IDENTIFICARE}}` - ID/CNP/CUI
 
 **Attorney:**
+
 - `{{AVOCAT_PARAT_NUME}}` - Defense attorney name
 - `{{BAROU_PARAT}}` - Bar association
 - `{{AVOCAT_PARAT_ADRESA}}` - Attorney address
 
 **Case Details:**
+
 - `{{OBIECT_ACTIUNE}}` - Object of action
 - `{{DATA_CERERE}}` - Date of plaintiff's claim
 - `{{REZUMAT_CERERE_RECLAMANT}}` - Summary of plaintiff's claim
@@ -357,18 +372,22 @@ Semnătură: _________________
 - `{{TIP_RESPINGERE}}` - Type of dismissal (nefondată/inadmisibilă)
 
 **Defense Arguments:**
+
 - `{{EXPUNERE_FAPT_PARAT}}` - Defendant's statement of facts
 - `{{ARGUMENT_1}}`, `{{ARGUMENT_2}}`, `{{ARGUMENT_3}}` - Main arguments
 - `{{TEMEI_LEGAL_1}}`, `{{TEMEI_LEGAL_2}}`, `{{TEMEI_LEGAL_3}}` - Legal bases
 
 **Evidence:**
+
 - `{{INSCRIS_1}}`, `{{INSCRIS_2}}`, `{{INSCRIS_3}}` - Documentary evidence
 
 **Conclusions:**
+
 - `{{CERERE_PRINCIPALA}}` - Main request
 - `{{ONORARIU_AVOCAT}}` - Attorney fee amount
 
 ### Optional Sections (use conditional blocks)
+
 - `{{#EXCEPTII_PROCEDURALE}}...{{/EXCEPTII_PROCEDURALE}}` - Procedural objections
 - `{{#EXCEPTII_FOND}}...{{/EXCEPTII_FOND}}` - Substantive objections
 - `{{#PROBA_MARTORI}}...{{/PROBA_MARTORI}}` - Witness testimony
@@ -379,6 +398,7 @@ Semnătură: _________________
 - `{{#JURISPRUDENTA}}...{{/JURISPRUDENTA}}` - Case law
 
 ### Key Procedural Code References (C.proc.civ.)
+
 - Art. 155-165 - Introductory statement (întâmpinare)
 - Art. 190 - Security for costs
 - Art. 204-208 - Counterclaim
@@ -388,11 +408,13 @@ Semnătură: _________________
 - Art. 451-456 - Court costs
 
 ### Types of Dismissal
+
 - **Nefondată** - Unfounded (on the merits)
 - **Inadmisibilă** - Inadmissible (procedural grounds)
 - **Prescrisă** - Time-barred
 
 ### Usage Notes
+
 1. Must be filed within 25 days of service of summons
 2. Failure to file may result in judgment by default
 3. All exhibits must be attached

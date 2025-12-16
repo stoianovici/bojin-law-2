@@ -95,7 +95,9 @@ export interface DateRange {
  * @returns React Query result with KPI data
  */
 export function useFirmRevenueKPIs(dateRange?: DateRange) {
-  const addNotification = useNotificationStore((state: { addNotification: any }) => state.addNotification);
+  const addNotification = useNotificationStore(
+    (state: { addNotification: any }) => state.addNotification
+  );
 
   return useQuery<FirmRevenueKPIs>({
     queryKey: ['firmRevenueKPIs', dateRange?.startDate, dateRange?.endDate],
@@ -114,8 +116,8 @@ export function useFirmRevenueKPIs(dateRange?: DateRange) {
         return result.data.firmRevenueKPIs;
       } catch (error) {
         const errorMessage =
-          (error as { graphQLErrors?: Array<{ message: string }> })
-            ?.graphQLErrors?.[0]?.message || 'Failed to fetch revenue KPIs';
+          (error as { graphQLErrors?: Array<{ message: string }> })?.graphQLErrors?.[0]?.message ||
+          'Failed to fetch revenue KPIs';
 
         addNotification({
           type: 'error',
@@ -139,7 +141,9 @@ export function useFirmRevenueKPIs(dateRange?: DateRange) {
  * @returns React Query result with case KPI data
  */
 export function useCaseRevenueKPI(caseId: string, enabled: boolean = true) {
-  const addNotification = useNotificationStore((state: { addNotification: any }) => state.addNotification);
+  const addNotification = useNotificationStore(
+    (state: { addNotification: any }) => state.addNotification
+  );
 
   return useQuery<RevenueComparison | null>({
     queryKey: ['caseRevenueKPI', caseId],
@@ -158,8 +162,8 @@ export function useCaseRevenueKPI(caseId: string, enabled: boolean = true) {
         return data.caseRevenueKPI;
       } catch (error) {
         const errorMessage =
-          (error as { graphQLErrors?: Array<{ message: string }> })
-            ?.graphQLErrors?.[0]?.message || 'Failed to fetch case revenue KPI';
+          (error as { graphQLErrors?: Array<{ message: string }> })?.graphQLErrors?.[0]?.message ||
+          'Failed to fetch case revenue KPI';
 
         addNotification({
           type: 'error',

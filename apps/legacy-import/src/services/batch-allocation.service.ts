@@ -99,9 +99,15 @@ export async function allocateBatchesToUser(
 
   // If user already has batches, return them
   if (existingBatches.length > 0) {
-    type BatchType = typeof existingBatches[number];
-    const totalDocs = existingBatches.reduce((sum: number, b: BatchType) => sum + b.documentCount, 0);
-    const categorized = existingBatches.reduce((sum: number, b: BatchType) => sum + b.categorizedCount, 0);
+    type BatchType = (typeof existingBatches)[number];
+    const totalDocs = existingBatches.reduce(
+      (sum: number, b: BatchType) => sum + b.documentCount,
+      0
+    );
+    const categorized = existingBatches.reduce(
+      (sum: number, b: BatchType) => sum + b.categorizedCount,
+      0
+    );
     const skipped = existingBatches.reduce((sum: number, b: BatchType) => sum + b.skippedCount, 0);
 
     return {
@@ -129,8 +135,10 @@ export async function allocateBatchesToUser(
   });
 
   // Get unique assigned users
-  type AllBatchType = typeof allBatches[number];
-  const assignedUsers = new Set(allBatches.filter((b: AllBatchType) => b.assignedTo).map((b: AllBatchType) => b.assignedTo));
+  type AllBatchType = (typeof allBatches)[number];
+  const assignedUsers = new Set(
+    allBatches.filter((b: AllBatchType) => b.assignedTo).map((b: AllBatchType) => b.assignedTo)
+  );
   const totalUsers = assignedUsers.size + 1; // +1 for new user
 
   // Calculate fair share (batches per user)
@@ -140,7 +148,9 @@ export async function allocateBatchesToUser(
   const unassignedBatches = allBatches.filter((b: AllBatchType) => !b.assignedTo);
 
   // Assign batches to this user (oldest first) - collect IDs only
-  const batchIdsToAssign: string[] = unassignedBatches.slice(0, batchesPerUser).map((b: AllBatchType) => b.id);
+  const batchIdsToAssign: string[] = unassignedBatches
+    .slice(0, batchesPerUser)
+    .map((b: AllBatchType) => b.id);
 
   if (batchIdsToAssign.length === 0) {
     // All batches assigned, check if any can be reassigned
@@ -177,10 +187,19 @@ export async function allocateBatchesToUser(
     orderBy: { monthYear: 'asc' },
   });
 
-  type AssignedBatchType = typeof assignedBatches[number];
-  const totalDocs = assignedBatches.reduce((sum: number, b: AssignedBatchType) => sum + b.documentCount, 0);
-  const categorized = assignedBatches.reduce((sum: number, b: AssignedBatchType) => sum + b.categorizedCount, 0);
-  const skipped = assignedBatches.reduce((sum: number, b: AssignedBatchType) => sum + b.skippedCount, 0);
+  type AssignedBatchType = (typeof assignedBatches)[number];
+  const totalDocs = assignedBatches.reduce(
+    (sum: number, b: AssignedBatchType) => sum + b.documentCount,
+    0
+  );
+  const categorized = assignedBatches.reduce(
+    (sum: number, b: AssignedBatchType) => sum + b.categorizedCount,
+    0
+  );
+  const skipped = assignedBatches.reduce(
+    (sum: number, b: AssignedBatchType) => sum + b.skippedCount,
+    0
+  );
 
   return {
     userId,
@@ -222,7 +241,7 @@ async function findReassignableBatches(sessionId: string): Promise<{ id: string 
   });
 
   // Filter to only incomplete batches
-  type StalledBatchType = typeof stalledBatches[number];
+  type StalledBatchType = (typeof stalledBatches)[number];
   return stalledBatches
     .filter((b: StalledBatchType) => b.categorizedCount + b.skippedCount < b.documentCount)
     .map((b: StalledBatchType) => ({ id: b.id }));
@@ -307,7 +326,7 @@ export async function autoReassignBatches(sessionId: string): Promise<number> {
   const activeUsers: string[] = [];
 
   for (const [userId, userBatchList] of userBatches) {
-    type UserBatchType = typeof userBatchList[number];
+    type UserBatchType = (typeof userBatchList)[number];
     const allComplete = userBatchList.every(
       (b: UserBatchType) => b.categorizedCount + b.skippedCount >= b.documentCount
     );
@@ -319,7 +338,7 @@ export async function autoReassignBatches(sessionId: string): Promise<number> {
   }
 
   // If no active users or no unassigned batches, nothing to do
-  type BatchListType = typeof batches[number];
+  type BatchListType = (typeof batches)[number];
   const unassignedBatches = batches.filter((b: BatchListType) => !b.assignedTo);
   if (finishedUsers.length === 0 || unassignedBatches.length === 0) {
     return 0;
@@ -365,7 +384,7 @@ export async function getSessionProgress(sessionId: string): Promise<SessionProg
   const skippedCount = session.skippedCount;
   const remainingCount = totalDocuments - categorizedCount - skippedCount;
 
-  type SessionBatchType = typeof session.batches[number];
+  type SessionBatchType = (typeof session.batches)[number];
   const assignedBatchCount = session.batches.filter((b: SessionBatchType) => b.assignedTo).length;
   const completedBatchCount = session.batches.filter(
     (b: SessionBatchType) => b.categorizedCount + b.skippedCount >= b.documentCount
@@ -411,7 +430,7 @@ export async function getAllBatchesStatus(sessionId: string): Promise<{
     }
   }
 
-  type StatusBatchType = typeof batches[number];
+  type StatusBatchType = (typeof batches)[number];
   return {
     batches: batches.map((b: StatusBatchType) => ({
       batchId: b.id,

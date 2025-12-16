@@ -1,12 +1,14 @@
 /**
  * Email Import React Hooks
  * OPS-022: Email-to-Case Timeline Integration
+ * OPS-030: Email Import with Classification
  *
- * Provides hooks for previewing and executing email imports into cases
+ * Provides hooks for previewing and executing email imports into cases,
+ * with optional multi-case classification for clients with multiple cases.
  */
 
 import { gql } from '@apollo/client';
-import { useMutation, useLazyQuery } from '@apollo/client/react';
+import { useMutation, useLazyQuery, useQuery } from '@apollo/client/react';
 import { useCallback, useState } from 'react';
 
 // ============================================================================
@@ -24,7 +26,7 @@ const CONTACT_CANDIDATE_FRAGMENT = gql`
 `;
 
 const DATE_RANGE_FRAGMENT = gql`
-  fragment DateRangeFields on DateRange {
+  fragment DateRangeFields on EmailImportDateRange {
     start
     end
   }
@@ -88,6 +90,65 @@ const PREVIEW_EMAIL_IMPORT = gql`
   }
 `;
 
+// OPS-030: Classification queries
+const CLIENT_HAS_MULTIPLE_CASES = gql`
+  query ClientHasMultipleCases($caseId: ID!) {
+    clientHasMultipleCases(caseId: $caseId)
+  }
+`;
+
+const PREVIEW_CLASSIFICATION_FOR_IMPORT = gql`
+  query PreviewClassificationForImport($input: PreviewClassificationForImportInput!) {
+    previewClassificationForImport(input: $input) {
+      totalEmails
+      needsReview
+      unclassified
+      classifications {
+        emailId
+        email {
+          id
+          subject
+          from
+          fromName
+          receivedDateTime
+          hasAttachments
+        }
+        suggestedCaseId
+        suggestedCase {
+          id
+          title
+        }
+        confidence
+        reasons
+        alternativeCases {
+          caseId
+          case {
+            id
+            title
+          }
+          confidence
+          reason
+        }
+        needsHumanReview
+        reviewReason
+        matchType
+        isGlobalSource
+        globalSourceName
+      }
+      byCase {
+        caseId
+        case {
+          id
+          title
+        }
+        emailCount
+        autoClassified
+        needsReview
+      }
+    }
+  }
+`;
+
 // ============================================================================
 // Mutations
 // ============================================================================
@@ -97,6 +158,29 @@ const EXECUTE_EMAIL_IMPORT = gql`
   mutation ExecuteEmailImport($input: ExecuteEmailImportInput!) {
     executeEmailImport(input: $input) {
       ...EmailImportResultFields
+    }
+  }
+`;
+
+// OPS-030: Classified import mutation
+const EXECUTE_CLASSIFIED_IMPORT = gql`
+  mutation ExecuteClassifiedImport($input: ExecuteClassifiedImportInput!) {
+    executeClassifiedImport(input: $input) {
+      success
+      totalEmailsImported
+      totalAttachmentsImported
+      importedByCase {
+        caseId
+        case {
+          id
+          title
+        }
+        emailsImported
+        attachmentsImported
+        contactsCreated
+      }
+      excluded
+      errors
     }
   }
 `;
@@ -164,12 +248,96 @@ export interface EmailImportResult {
 }
 
 export interface EmailImportState {
-  step: 'input' | 'preview' | 'assign' | 'importing' | 'complete';
+  step: 'input' | 'preview' | 'classify' | 'assign' | 'importing' | 'complete';
   emailAddresses: string[];
   preview: EmailImportPreview | null;
   contactAssignments: ContactRoleAssignment[];
   importAttachments: boolean;
   result: EmailImportResult | null;
+  // OPS-030: Classification state
+  classificationPreview: ClassificationPreview | null;
+  classificationOverrides: ClassificationOverride[];
+  excludedEmailIds: string[];
+}
+
+// ============================================================================
+// OPS-030: Classification Types
+// ============================================================================
+
+export type MatchType = 'ACTOR' | 'REFERENCE' | 'KEYWORD' | 'SEMANTIC' | 'NONE';
+
+export interface EmailForClassification {
+  id: string;
+  subject: string | null;
+  from: string | null;
+  fromName: string | null;
+  receivedDateTime: Date | null;
+  hasAttachments: boolean;
+}
+
+export interface CaseRef {
+  id: string;
+  title: string;
+}
+
+export interface AlternativeCase {
+  caseId: string;
+  case: CaseRef | null;
+  confidence: number;
+  reason: string;
+}
+
+export interface ClassificationResult {
+  emailId: string;
+  email: EmailForClassification | null;
+  suggestedCaseId: string | null;
+  suggestedCase: CaseRef | null;
+  confidence: number;
+  reasons: string[];
+  alternativeCases: AlternativeCase[];
+  needsHumanReview: boolean;
+  reviewReason: string | null;
+  matchType: MatchType;
+  isGlobalSource: boolean;
+  globalSourceName: string | null;
+}
+
+export interface CaseClassificationSummary {
+  caseId: string;
+  case: CaseRef;
+  emailCount: number;
+  autoClassified: number;
+  needsReview: number;
+}
+
+export interface ClassificationPreview {
+  totalEmails: number;
+  classifications: ClassificationResult[];
+  byCase: CaseClassificationSummary[];
+  needsReview: number;
+  unclassified: number;
+}
+
+export interface ClassificationOverride {
+  emailId: string;
+  caseId: string;
+}
+
+export interface CaseImportSummary {
+  caseId: string;
+  case: CaseRef;
+  emailsImported: number;
+  attachmentsImported: number;
+  contactsCreated: number;
+}
+
+export interface ClassifiedImportResult {
+  success: boolean;
+  totalEmailsImported: number;
+  totalAttachmentsImported: number;
+  importedByCase: CaseImportSummary[];
+  excluded: number;
+  errors: string[];
 }
 
 // ============================================================================
@@ -178,7 +346,7 @@ export interface EmailImportState {
 
 /**
  * Hook for email import wizard flow
- * Manages the multi-step import process
+ * Manages the multi-step import process with optional classification
  */
 export function useEmailImport(caseId: string) {
   // State management
@@ -189,7 +357,20 @@ export function useEmailImport(caseId: string) {
     contactAssignments: [],
     importAttachments: true,
     result: null,
+    classificationPreview: null,
+    classificationOverrides: [],
+    excludedEmailIds: [],
   });
+
+  // OPS-030: Check if client has multiple cases
+  const { data: multipleCasesData, loading: checkingMultipleCases } = useQuery<{
+    clientHasMultipleCases: boolean;
+  }>(CLIENT_HAS_MULTIPLE_CASES, {
+    variables: { caseId },
+    skip: !caseId,
+  });
+
+  const hasMultipleCases = multipleCasesData?.clientHasMultipleCases ?? false;
 
   // GraphQL operations
   const [fetchPreview, { loading: previewLoading, error: previewError }] = useLazyQuery<{
@@ -198,9 +379,24 @@ export function useEmailImport(caseId: string) {
     fetchPolicy: 'network-only',
   });
 
+  // OPS-030: Classification preview query
+  const [
+    fetchClassificationPreview,
+    { loading: classificationLoading, error: classificationError },
+  ] = useLazyQuery<{
+    previewClassificationForImport: ClassificationPreview;
+  }>(PREVIEW_CLASSIFICATION_FOR_IMPORT, {
+    fetchPolicy: 'network-only',
+  });
+
   const [executeImportMutation, { loading: importLoading, error: importError }] = useMutation<{
     executeEmailImport: EmailImportResult;
   }>(EXECUTE_EMAIL_IMPORT);
+
+  // OPS-030: Classified import mutation
+  const [executeClassifiedImportMutation, { loading: classifiedImportLoading }] = useMutation<{
+    executeClassifiedImport: ClassifiedImportResult;
+  }>(EXECUTE_CLASSIFIED_IMPORT);
 
   // Update email addresses
   const setEmailAddresses = useCallback((addresses: string[]) => {
@@ -374,6 +570,9 @@ export function useEmailImport(caseId: string) {
       contactAssignments: [],
       importAttachments: true,
       result: null,
+      classificationPreview: null,
+      classificationOverrides: [],
+      excludedEmailIds: [],
     });
   }, []);
 
@@ -383,13 +582,205 @@ export function useEmailImport(caseId: string) {
       switch (prev.step) {
         case 'preview':
           return { ...prev, step: 'input' };
-        case 'assign':
+        case 'classify':
           return { ...prev, step: 'preview' };
+        case 'assign':
+          return hasMultipleCases && prev.classificationPreview
+            ? { ...prev, step: 'classify' }
+            : { ...prev, step: 'preview' };
         default:
           return prev;
       }
     });
+  }, [hasMultipleCases]);
+
+  // OPS-030: Load classification preview
+  const loadClassificationPreview = useCallback(async () => {
+    if (state.emailAddresses.length === 0) {
+      return null;
+    }
+
+    try {
+      const result = await fetchClassificationPreview({
+        variables: {
+          input: {
+            caseId,
+            emailAddresses: state.emailAddresses,
+          },
+        },
+      });
+
+      const preview = result.data?.previewClassificationForImport;
+      if (preview && preview.totalEmails > 0) {
+        setState((prev) => ({
+          ...prev,
+          step: 'classify',
+          classificationPreview: preview,
+        }));
+        return preview;
+      }
+
+      // No classification needed - go to assign step
+      setState((prev) => ({
+        ...prev,
+        step: 'assign',
+      }));
+      return null;
+    } catch (err) {
+      console.error('[useEmailImport] Classification preview error:', err);
+      // Fall back to assign step on error
+      setState((prev) => ({ ...prev, step: 'assign' }));
+      return null;
+    }
+  }, [state.emailAddresses, caseId, fetchClassificationPreview]);
+
+  // OPS-030: Override email classification
+  const setClassificationOverride = useCallback((emailId: string, targetCaseId: string | null) => {
+    setState((prev) => {
+      if (targetCaseId === null) {
+        // Remove override
+        return {
+          ...prev,
+          classificationOverrides: prev.classificationOverrides.filter(
+            (o) => o.emailId !== emailId
+          ),
+        };
+      }
+
+      const existing = prev.classificationOverrides.find((o) => o.emailId === emailId);
+      if (existing) {
+        return {
+          ...prev,
+          classificationOverrides: prev.classificationOverrides.map((o) =>
+            o.emailId === emailId ? { ...o, caseId: targetCaseId } : o
+          ),
+        };
+      }
+
+      return {
+        ...prev,
+        classificationOverrides: [
+          ...prev.classificationOverrides,
+          { emailId, caseId: targetCaseId },
+        ],
+      };
+    });
   }, []);
+
+  // OPS-030: Exclude/include email from import
+  const setEmailExcluded = useCallback((emailId: string, excluded: boolean) => {
+    setState((prev) => {
+      if (excluded) {
+        if (prev.excludedEmailIds.includes(emailId)) return prev;
+        return {
+          ...prev,
+          excludedEmailIds: [...prev.excludedEmailIds, emailId],
+        };
+      } else {
+        return {
+          ...prev,
+          excludedEmailIds: prev.excludedEmailIds.filter((id) => id !== emailId),
+        };
+      }
+    });
+  }, []);
+
+  // OPS-030: Go to assign step from classification
+  const goToAssignFromClassification = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      step: 'assign',
+    }));
+  }, []);
+
+  // OPS-030: Execute classified import
+  const executeClassifiedImport = useCallback(async () => {
+    setState((prev) => ({ ...prev, step: 'importing' }));
+
+    try {
+      // Build final overrides map from classification + user overrides
+      const finalOverrides: ClassificationOverride[] = [];
+
+      if (state.classificationPreview) {
+        // Start with classification suggestions
+        for (const classification of state.classificationPreview.classifications) {
+          if (state.excludedEmailIds.includes(classification.emailId)) continue;
+
+          // Check for user override
+          const userOverride = state.classificationOverrides.find(
+            (o) => o.emailId === classification.emailId
+          );
+
+          if (userOverride) {
+            finalOverrides.push(userOverride);
+          } else if (classification.suggestedCaseId) {
+            finalOverrides.push({
+              emailId: classification.emailId,
+              caseId: classification.suggestedCaseId,
+            });
+          }
+        }
+      }
+
+      const result = await executeClassifiedImportMutation({
+        variables: {
+          input: {
+            caseId,
+            emailAddresses: state.emailAddresses,
+            classificationOverrides: finalOverrides,
+            excludedEmailIds: state.excludedEmailIds,
+            importAttachments: state.importAttachments,
+            contactAssignments: state.contactAssignments,
+          },
+        },
+      });
+
+      const importResult = result.data?.executeClassifiedImport;
+
+      console.log('[useEmailImport] Classified import result:', importResult);
+
+      // Convert to standard result format
+      const standardResult: EmailImportResult = {
+        success: importResult?.success ?? false,
+        emailsLinked: importResult?.totalEmailsImported ?? 0,
+        contactsCreated:
+          importResult?.importedByCase.reduce((sum, c) => sum + c.contactsCreated, 0) ?? 0,
+        attachmentsImported: importResult?.totalAttachmentsImported ?? 0,
+        errors: importResult?.errors ?? [],
+      };
+
+      setState((prev) => ({
+        ...prev,
+        step: 'complete',
+        result: standardResult,
+      }));
+
+      return standardResult;
+    } catch (err) {
+      console.error('[useEmailImport] Classified import error:', err);
+      setState((prev) => ({
+        ...prev,
+        step: 'complete',
+        result: {
+          success: false,
+          emailsLinked: 0,
+          contactsCreated: 0,
+          attachmentsImported: 0,
+          errors: [(err as Error).message],
+        },
+      }));
+      return null;
+    }
+  }, [
+    caseId,
+    state.emailAddresses,
+    state.classificationPreview,
+    state.classificationOverrides,
+    state.excludedEmailIds,
+    state.importAttachments,
+    state.contactAssignments,
+    executeClassifiedImportMutation,
+  ]);
 
   return {
     // State
@@ -400,13 +791,22 @@ export function useEmailImport(caseId: string) {
     importAttachments: state.importAttachments,
     result: state.result,
 
+    // OPS-030: Classification state
+    hasMultipleCases,
+    checkingMultipleCases,
+    classificationPreview: state.classificationPreview,
+    classificationOverrides: state.classificationOverrides,
+    excludedEmailIds: state.excludedEmailIds,
+
     // Loading states
     previewLoading,
-    importLoading,
+    importLoading: importLoading || classifiedImportLoading,
+    classificationLoading,
 
     // Errors
     previewError,
     importError,
+    classificationError,
 
     // Actions
     setEmailAddresses,
@@ -417,6 +817,13 @@ export function useEmailImport(caseId: string) {
     executeImport,
     reset,
     goBack,
+
+    // OPS-030: Classification actions
+    loadClassificationPreview,
+    setClassificationOverride,
+    setEmailExcluded,
+    goToAssignFromClassification,
+    executeClassifiedImport,
 
     // Computed
     canLoadPreview: state.emailAddresses.length > 0,

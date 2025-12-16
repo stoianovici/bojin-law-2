@@ -36,18 +36,21 @@
 #### A. Leading Cases
 
 **{{CASE_1_CITATION}}**
+
 - **Facts:** {{CASE_1_FACTS}}
 - **Holding:** {{CASE_1_HOLDING}}
 - **Reasoning:** {{CASE_1_REASONING}}
 - **Relevance:** {{CASE_1_RELEVANCE}}
 
 **{{CASE_2_CITATION}}**
+
 - **Facts:** {{CASE_2_FACTS}}
 - **Holding:** {{CASE_2_HOLDING}}
 - **Reasoning:** {{CASE_2_REASONING}}
 - **Relevance:** {{CASE_2_RELEVANCE}}
 
 **{{CASE_3_CITATION}}**
+
 - **Facts:** {{CASE_3_FACTS}}
 - **Holding:** {{CASE_3_HOLDING}}
 - **Reasoning:** {{CASE_3_REASONING}}
@@ -98,17 +101,21 @@
 **Authorities Cited:**
 
 **Cases:**
+
 - {{FULL_CASE_CITATIONS}}
 
 **Statutes:**
+
 - {{FULL_STATUTE_CITATIONS}}
 
 **Secondary Sources:**
+
 - {{SECONDARY_SOURCES}}
 
 **Databases Searched:**
+
 - {{DATABASES_USED}}
 
 ---
 
-*This memorandum is intended for internal use only and does not constitute legal advice to clients. All analysis is based on current law as of {{MEMO_DATE}} and should be verified before reliance.*
+_This memorandum is intended for internal use only and does not constitute legal advice to clients. All analysis is based on current law as of {{MEMO_DATE}} and should be verified before reliance._

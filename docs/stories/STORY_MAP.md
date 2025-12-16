@@ -26,25 +26,25 @@ Create comprehensive UI design system, component library, testing infrastructure
 
 ### Stories
 
-| Story     | Title                               | Status                 | Dependencies | Notes                                            |
-| --------- | ----------------------------------- | ---------------------- | ------------ | ------------------------------------------------ |
-| **1.0**   | Project Initialization              | ⏸️ Not Created         | None         | Defined in PRD but not implemented as story file |
-| **1.1**   | Design System & Component Library   | ✅ Done                | None         | Foundation for all UI components                 |
-| **1.2**   | Testing Infrastructure              | ✅ Done                | 1.1          | Jest, Playwright, test utilities                 |
-| **1.3**   | Navigation Shell & Role Switching   | ✅ Done                | 1.1, 1.2     | Sidebar, top bar, role switcher                  |
-| **1.4**   | Dashboard Mockups for All Roles     | ✅ Done                | 1.3          | Partner, Associate, Paralegal dashboards         |
-| **1.5**   | Case Workspace Prototype            | ✅ Done                | 1.3, 1.4     | Unified case management interface                |
-| **1.5.5** | Enhanced Partner Dashboard          | ✅ Done                | 1.4, 1.5     | Operational focus refinement                     |
-| **1.6**   | Document Editor Interface           | 📝 Done with Tech Debt | 1.5          | AI-assisted editor, version control UI           |
-| **1.7**   | Task Management Views               | ✅ Done                | 1.5, 1.6     | Calendar, Kanban, List views                     |
-| **1.7.5** | Time Tracking Views                 | ✅ Done                | 1.7          | Timer, manual entry, reports                     |
-| **1.8**   | Search/Command Palette              | ✅ Done                | 1.3          | Global search, quick actions                     |
-| **1.8.5** | Natural Language Command Processing | ✅ Done                | 1.8          | AI-powered command interpretation                |
-| **1.11**  | Time Tracking Interface             | 🔄 Ready for Review    | 1.7.5        | Complete time tracking implementation            |
-| **1.12**  | Reports & Analytics Interface       | 🔄 Ready for Review    | 1.4, 1.11    | Comprehensive reporting dashboard                |
+| Story     | Title                               | Status                 | Dependencies                  | Notes                                                   |
+| --------- | ----------------------------------- | ---------------------- | ----------------------------- | ------------------------------------------------------- |
+| **1.0**   | Project Initialization              | ⏸️ Not Created         | None                          | Defined in PRD but not implemented as story file        |
+| **1.1**   | Design System & Component Library   | ✅ Done                | None                          | Foundation for all UI components                        |
+| **1.2**   | Testing Infrastructure              | ✅ Done                | 1.1                           | Jest, Playwright, test utilities                        |
+| **1.3**   | Navigation Shell & Role Switching   | ✅ Done                | 1.1, 1.2                      | Sidebar, top bar, role switcher                         |
+| **1.4**   | Dashboard Mockups for All Roles     | ✅ Done                | 1.3                           | Partner, Associate, Paralegal dashboards                |
+| **1.5**   | Case Workspace Prototype            | ✅ Done                | 1.3, 1.4                      | Unified case management interface                       |
+| **1.5.5** | Enhanced Partner Dashboard          | ✅ Done                | 1.4, 1.5                      | Operational focus refinement                            |
+| **1.6**   | Document Editor Interface           | 📝 Done with Tech Debt | 1.5                           | AI-assisted editor, version control UI                  |
+| **1.7**   | Task Management Views               | ✅ Done                | 1.5, 1.6                      | Calendar, Kanban, List views                            |
+| **1.7.5** | Time Tracking Views                 | ✅ Done                | 1.7                           | Timer, manual entry, reports                            |
+| **1.8**   | Search/Command Palette              | ✅ Done                | 1.3                           | Global search, quick actions                            |
+| **1.8.5** | Natural Language Command Processing | ✅ Done                | 1.8                           | AI-powered command interpretation                       |
+| **1.11**  | Time Tracking Interface             | 🔄 Ready for Review    | 1.7.5                         | Complete time tracking implementation                   |
+| **1.12**  | Reports & Analytics Interface       | 🔄 Ready for Review    | 1.4, 1.11                     | Comprehensive reporting dashboard                       |
 | **1.13**  | Layout & Spacing Fixes              | 🚀 Ready               | 1.4, 1.5.5, 1.7.5, 1.11, 1.12 | Remove duplicate titles, fix spacing, remove cronometru |
-| **1.14**  | Dashboard Widget Behavior           | 🚀 Ready               | 1.4, 1.5.5, 1.13 | Content-aware sizing, expandable widgets with push |
-| **1.15**  | Content Views Enrichment            | 🚀 Ready               | 1.5, 1.6, 1.7 | Rich case cards, document filtering, calendar cleanup |
+| **1.14**  | Dashboard Widget Behavior           | 🚀 Ready               | 1.4, 1.5.5, 1.13              | Content-aware sizing, expandable widgets with push      |
+| **1.15**  | Content Views Enrichment            | 🚀 Ready               | 1.5, 1.6, 1.7                 | Rich case cards, document filtering, calendar cleanup   |
 
 ### Epic 1 Implementation Order
 

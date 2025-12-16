@@ -90,7 +90,8 @@ export const WithResultMessage: Story = {
   args: {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
-    resultMessage: 'Clauza de confidențialitate a fost adăugată cu succes la documentul dumneavoastră.',
+    resultMessage:
+      'Clauza de confidențialitate a fost adăugată cu succes la documentul dumneavoastră.',
   },
   render: (args: CommandBarArgs) => (
     <div className="h-[400px] relative bg-gray-50">
@@ -215,7 +216,10 @@ export const KeyboardShortcut: Story = {
     <div className="h-[400px] relative bg-gray-50">
       <div className="absolute inset-0 flex items-center justify-center text-gray-400">
         <div className="text-center">
-          <p className="mb-2">Press <kbd className="px-2 py-1 bg-gray-200 border border-gray-300 rounded">Ctrl</kbd> + <kbd className="px-2 py-1 bg-gray-200 border border-gray-300 rounded">/</kbd></p>
+          <p className="mb-2">
+            Press <kbd className="px-2 py-1 bg-gray-200 border border-gray-300 rounded">Ctrl</kbd> +{' '}
+            <kbd className="px-2 py-1 bg-gray-200 border border-gray-300 rounded">/</kbd>
+          </p>
           <p>to focus the command input</p>
         </div>
       </div>
@@ -250,7 +254,8 @@ export const RomanianCommands: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Suggested commands in Romanian: "Adaugă clauză de confidențialitate", "Verifică pentru erori", "Generează rezumat", "Traduce în engleză"',
+        story:
+          'Suggested commands in Romanian: "Adaugă clauză de confidențialitate", "Verifică pentru erori", "Generează rezumat", "Traduce în engleză"',
       },
     },
   },
@@ -264,7 +269,8 @@ export const RomanianDiacritics: Story = {
   args: {
     onCommandSubmit: action('command-submitted'),
     isLoading: false,
-    resultMessage: 'Modificările au fost aplicate cu succes. Documentul conține acum clauza de confidențialitate și obligațiile părților.',
+    resultMessage:
+      'Modificările au fost aplicate cu succes. Documentul conține acum clauza de confidențialitate și obligațiile părților.',
   },
   render: (args: CommandBarArgs) => (
     <div className="h-[500px] relative bg-gray-50">
@@ -283,7 +289,8 @@ export const RomanianDiacritics: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Verify Romanian diacritics in all command bar text: placeholder, suggestions, result messages, helper text',
+        story:
+          'Verify Romanian diacritics in all command bar text: placeholder, suggestions, result messages, helper text',
       },
     },
   },
@@ -305,7 +312,8 @@ export const LongCommand: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Test with long command: "Adaugă o clauză detaliată privind confidențialitatea și protecția datelor cu caracter personal conform Regulamentului GDPR și legislației românești în vigoare"',
+        story:
+          'Test with long command: "Adaugă o clauză detaliată privind confidențialitatea și protecția datelor cu caracter personal conform Regulamentului GDPR și legislației românești în vigoare"',
       },
     },
   },

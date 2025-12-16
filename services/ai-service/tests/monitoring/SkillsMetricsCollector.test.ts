@@ -9,7 +9,11 @@
  * - Error and timeout tracking
  */
 
-import { SkillsMetricsCollector, SkillExecutionMetrics, CostMetrics } from '../../src/monitoring/SkillsMetricsCollector';
+import {
+  SkillsMetricsCollector,
+  SkillExecutionMetrics,
+  CostMetrics,
+} from '../../src/monitoring/SkillsMetricsCollector';
 
 describe('SkillsMetricsCollector', () => {
   let collector: SkillsMetricsCollector;
@@ -150,9 +154,9 @@ describe('SkillsMetricsCollector', () => {
   describe('Cost Metrics', () => {
     it('should record cost metrics', () => {
       const costMetrics: CostMetrics = {
-        totalCost: 10.50,
-        costWithSkills: 6.50,
-        costWithoutSkills: 10.50,
+        totalCost: 10.5,
+        costWithSkills: 6.5,
+        costWithoutSkills: 10.5,
         savingsPercent: 38.1, // >35% target
         tokensSaved: 5000,
         tokensUsed: 8000,
@@ -267,7 +271,7 @@ describe('SkillsMetricsCollector', () => {
         {
           model: 'claude-3-5-sonnet',
           requestCount: 100,
-          totalCost: 1.50,
+          totalCost: 1.5,
           percentage: 60,
         },
         {

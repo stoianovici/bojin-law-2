@@ -117,7 +117,8 @@ export class TaskClarificationService {
     context: ClarificationContext
   ): boolean {
     // No case reference provided and user has multiple active cases
-    const noCaseReference = !parsed.parsedTask.caseReference.value ||
+    const noCaseReference =
+      !parsed.parsedTask.caseReference.value ||
       parsed.parsedTask.caseReference.confidence < CONFIDENCE_THRESHOLDS.MEDIUM;
 
     const hasMultipleCases = (context.activeCases?.length ?? 0) > 1;
@@ -147,7 +148,9 @@ export class TaskClarificationService {
       const lowerName = assigneeName.toLowerCase();
       const matches = context.teamMembers.filter((m) => {
         const memberNameLower = m.name.toLowerCase();
-        return memberNameLower.includes(lowerName) || lowerName.includes(memberNameLower.split(' ')[0]);
+        return (
+          memberNameLower.includes(lowerName) || lowerName.includes(memberNameLower.split(' ')[0])
+        );
       });
       return matches.length > 1;
     }
@@ -159,8 +162,10 @@ export class TaskClarificationService {
    * Check if task type clarification is needed
    */
   private needsTaskTypeClarification(parsed: NLPTaskParseResponse): boolean {
-    return !parsed.parsedTask.taskType.value ||
-      parsed.parsedTask.taskType.confidence < CONFIDENCE_THRESHOLDS.MEDIUM;
+    return (
+      !parsed.parsedTask.taskType.value ||
+      parsed.parsedTask.taskType.confidence < CONFIDENCE_THRESHOLDS.MEDIUM
+    );
   }
 
   /**
@@ -179,7 +184,7 @@ export class TaskClarificationService {
    */
   private createCaseQuestion(
     context: ClarificationContext,
-    strings: typeof CLARIFICATION_STRINGS['en'],
+    strings: (typeof CLARIFICATION_STRINGS)['en'],
     lang: 'ro' | 'en'
   ): ClarificationQuestion {
     const options: ClarificationOption[] = [];
@@ -209,7 +214,7 @@ export class TaskClarificationService {
   private createAssigneeQuestion(
     parsed: NLPTaskParseResponse,
     context: ClarificationContext,
-    strings: typeof CLARIFICATION_STRINGS['en'],
+    strings: (typeof CLARIFICATION_STRINGS)['en'],
     lang: 'ro' | 'en'
   ): ClarificationQuestion {
     const options: ClarificationOption[] = [];
@@ -219,8 +224,10 @@ export class TaskClarificationService {
     if (context.teamMembers) {
       const matches = context.teamMembers.filter((m) => {
         const memberNameLower = m.name.toLowerCase();
-        return memberNameLower.includes(assigneeName) ||
-          assigneeName.includes(memberNameLower.split(' ')[0]);
+        return (
+          memberNameLower.includes(assigneeName) ||
+          assigneeName.includes(memberNameLower.split(' ')[0])
+        );
       });
 
       // Add matching team members as options (limit to 4)
@@ -236,7 +243,8 @@ export class TaskClarificationService {
     return {
       id: uuidv4(),
       entityType: 'assignee' as ClarificationEntityType,
-      question: strings.assigneeQuestion + (options.length > 1 ? ` (${strings.multipleMatchesHint})` : ''),
+      question:
+        strings.assigneeQuestion + (options.length > 1 ? ` (${strings.multipleMatchesHint})` : ''),
       options: options.length > 0 ? options : undefined,
       allowFreeText: true,
     };
@@ -246,7 +254,7 @@ export class TaskClarificationService {
    * Create task type selection question
    */
   private createTaskTypeQuestion(
-    strings: typeof CLARIFICATION_STRINGS['en'],
+    strings: (typeof CLARIFICATION_STRINGS)['en'],
     lang: 'ro' | 'en'
   ): ClarificationQuestion {
     const taskTypeStrings = strings.taskTypes;
@@ -271,7 +279,7 @@ export class TaskClarificationService {
    * Create date clarification question
    */
   private createDateQuestion(
-    strings: typeof CLARIFICATION_STRINGS['en'],
+    strings: (typeof CLARIFICATION_STRINGS)['en'],
     lang: 'ro' | 'en'
   ): ClarificationQuestion {
     return {
@@ -336,8 +344,8 @@ export class TaskClarificationService {
     }
 
     // Update isComplete status
-    updated.isComplete = updated.clarificationsNeeded.length === 0 &&
-      this.hasRequiredFields(updated);
+    updated.isComplete =
+      updated.clarificationsNeeded.length === 0 && this.hasRequiredFields(updated);
 
     return updated;
   }
@@ -346,16 +354,13 @@ export class TaskClarificationService {
    * Check if all required fields are present
    */
   private hasRequiredFields(parsed: NLPTaskParseResponse): boolean {
-    return Boolean(
-      parsed.parsedTask.taskType.value &&
-      parsed.parsedTask.title.value
-    );
+    return Boolean(parsed.parsedTask.taskType.value && parsed.parsedTask.title.value);
   }
 
   /**
    * Get localized strings for a language
    */
-  getLocalizedStrings(lang: 'ro' | 'en'): typeof CLARIFICATION_STRINGS['en'] {
+  getLocalizedStrings(lang: 'ro' | 'en'): (typeof CLARIFICATION_STRINGS)['en'] {
     return CLARIFICATION_STRINGS[lang];
   }
 }

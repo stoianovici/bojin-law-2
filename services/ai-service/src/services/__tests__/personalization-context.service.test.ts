@@ -174,11 +174,13 @@ describe('PersonalizationContextService', () => {
     });
 
     it('should include top 5 common phrases', () => {
-      const manyPhrases = Array(10).fill(null).map((_, i) => ({
-        phrase: `Phrase ${i}`,
-        frequency: 10 - i,
-        context: 'body',
-      }));
+      const manyPhrases = Array(10)
+        .fill(null)
+        .map((_, i) => ({
+          phrase: `Phrase ${i}`,
+          frequency: 10 - i,
+          context: 'body',
+        }));
 
       const context: PersonalizationContext = {
         userId: 'user-123',

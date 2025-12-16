@@ -64,13 +64,7 @@ describe('SearchService', () => {
       (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce(mockCaseResults);
       (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce([]); // documents
 
-      const result = await searchService.fullTextSearch(
-        'contract',
-        'firm-123',
-        {},
-        20,
-        0
-      );
+      const result = await searchService.fullTextSearch('contract', 'firm-123', {}, 20, 0);
 
       expect(prisma.$queryRaw).toHaveBeenCalled();
       expect(result.length).toBeGreaterThan(0);
@@ -93,13 +87,7 @@ describe('SearchService', () => {
       (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce([]); // cases
       (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce(mockDocResults);
 
-      const result = await searchService.fullTextSearch(
-        'agreement',
-        'firm-123',
-        {},
-        20,
-        0
-      );
+      const result = await searchService.fullTextSearch('agreement', 'firm-123', {}, 20, 0);
 
       expect(result.length).toBeGreaterThan(0);
       expect(result[0].type).toBe('document');
@@ -147,13 +135,7 @@ describe('SearchService', () => {
     it('should handle empty results', async () => {
       (jest.mocked as any)(prisma.$queryRaw).mockResolvedValue([]);
 
-      const result = await searchService.fullTextSearch(
-        'nonexistent',
-        'firm-123',
-        {},
-        20,
-        0
-      );
+      const result = await searchService.fullTextSearch('nonexistent', 'firm-123', {}, 20, 0);
 
       expect(result).toEqual([]);
     });
@@ -198,13 +180,7 @@ describe('SearchService', () => {
       (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce(mockResults);
       (jest.mocked as any)(prisma.$queryRaw).mockResolvedValueOnce([]);
 
-      const result = await searchService.semanticSearch(
-        'test query',
-        'firm-123',
-        {},
-        20,
-        0
-      );
+      const result = await searchService.semanticSearch('test query', 'firm-123', {}, 20, 0);
 
       // Only high-score result should be included
       const caseResults = result.filter((r) => r.score >= 0.5);
@@ -221,17 +197,17 @@ describe('SearchService', () => {
         ])
         .mockResolvedValueOnce([]) // FT documents
         .mockResolvedValueOnce([
-          { id: 'case-sem', title: 'Semantic Result', similarity: 0.85, status: 'Active', type: 'Contract' },
+          {
+            id: 'case-sem',
+            title: 'Semantic Result',
+            similarity: 0.85,
+            status: 'Active',
+            type: 'Contract',
+          },
         ])
         .mockResolvedValueOnce([]); // Semantic documents
 
-      const result = await searchService.hybridSearch(
-        'contract',
-        'firm-123',
-        {},
-        20,
-        0
-      );
+      const result = await searchService.hybridSearch('contract', 'firm-123', {}, 20, 0);
 
       expect(result.length).toBeGreaterThan(0);
       expect(result[0].matchType).toBe('HYBRID');
@@ -245,17 +221,17 @@ describe('SearchService', () => {
         ])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([
-          { id: 'case-same', title: 'Same Case', similarity: 0.85, status: 'Active', type: 'Contract' },
+          {
+            id: 'case-same',
+            title: 'Same Case',
+            similarity: 0.85,
+            status: 'Active',
+            type: 'Contract',
+          },
         ])
         .mockResolvedValueOnce([]);
 
-      const result = await searchService.hybridSearch(
-        'test',
-        'firm-123',
-        {},
-        20,
-        0
-      );
+      const result = await searchService.hybridSearch('test', 'firm-123', {}, 20, 0);
 
       const resultIds = result.map((r) => r.id);
       const uniqueIds = [...new Set(resultIds)];
@@ -275,13 +251,7 @@ describe('SearchService', () => {
         ])
         .mockResolvedValueOnce([]);
 
-      const result = await searchService.hybridSearch(
-        'test',
-        'firm-123',
-        {},
-        20,
-        0
-      );
+      const result = await searchService.hybridSearch('test', 'firm-123', {}, 20, 0);
 
       // Results should be sorted by combined RRF score
       expect(result.length).toBeGreaterThan(0);
@@ -365,14 +335,7 @@ describe('SearchService', () => {
         createdAt: new Date(),
       } as any);
 
-      await searchService.recordSearch(
-        'user-123',
-        'firm-123',
-        'test query',
-        'Hybrid',
-        {},
-        10
-      );
+      await searchService.recordSearch('user-123', 'firm-123', 'test query', 'Hybrid', {}, 10);
 
       expect(prisma.searchHistory.create).toHaveBeenCalledWith({
         data: expect.objectContaining({

@@ -19,7 +19,6 @@ import { useTaskManagementStore, useFilteredTasks } from '../../stores/task-mana
 import { useSetAIContext } from '../../contexts/AIAssistantContext';
 import type { Task } from '@legal-platform/types';
 
-
 export default function TasksPage() {
   // Set AI assistant context to tasks
   useSetAIContext('tasks');

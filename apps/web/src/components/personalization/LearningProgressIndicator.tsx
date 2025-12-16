@@ -44,12 +44,7 @@ const CheckIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 13l4 4L19 7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
@@ -137,11 +132,7 @@ function CircularGauge({
 /**
  * Category progress bar
  */
-function CategoryProgressBar({
-  category,
-}: {
-  category: CategoryProgress;
-}) {
+function CategoryProgressBar({ category }: { category: CategoryProgress }) {
   const statusColors = {
     learning: 'bg-yellow-500',
     proficient: 'bg-blue-500',
@@ -169,9 +160,7 @@ function CategoryProgressBar({
         />
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          {category.description}
-        </span>
+        <span className="text-xs text-muted-foreground">{category.description}</span>
         <span
           className={`text-xs ${
             category.status === 'expert'
@@ -201,11 +190,7 @@ function EncouragingMessage({ percentage }: { percentage: number }) {
     return 'AI-ul abia a început să învețe. Folosește platforma pentru a-l ajuta.';
   };
 
-  return (
-    <p className="text-sm text-muted-foreground text-center mt-4">
-      {getMessage(percentage)}
-    </p>
-  );
+  return <p className="text-sm text-muted-foreground text-center mt-4">{getMessage(percentage)}</p>;
 }
 
 /**
@@ -341,9 +326,7 @@ export function LearningProgressIndicator({
         {/* Category breakdown */}
         {showDetails && (
           <div className="mt-6 space-y-4">
-            <h4 className="text-sm font-medium text-muted-foreground">
-              Detalii pe categorii
-            </h4>
+            <h4 className="text-sm font-medium text-muted-foreground">Detalii pe categorii</h4>
             {categories.map((category) => (
               <CategoryProgressBar key={category.name} category={category} />
             ))}

@@ -50,14 +50,14 @@ async function checkDatabaseConnection(): Promise<void> {
     logResult({
       check: 'Database Connection',
       status: 'PASS',
-      message: 'Successfully connected to database'
+      message: 'Successfully connected to database',
     });
   } catch (error) {
     logResult({
       check: 'Database Connection',
       status: 'FAIL',
       message: 'Failed to connect to database',
-      details: error
+      details: error,
     });
     throw error;
   }
@@ -80,14 +80,14 @@ async function checkMigrationHistory(): Promise<void> {
       logResult({
         check: 'Migration History',
         status: 'SKIP',
-        message: 'No migrations applied yet (expected for new database)'
+        message: 'No migrations applied yet (expected for new database)',
       });
     } else {
       logResult({
         check: 'Migration History',
         status: 'PASS',
         message: `Found ${migrations.length} applied migrations`,
-        details: migrations.map(m => m.migration_name)
+        details: migrations.map((m) => m.migration_name),
       });
     }
   } catch (error) {
@@ -95,7 +95,7 @@ async function checkMigrationHistory(): Promise<void> {
       check: 'Migration History',
       status: 'FAIL',
       message: 'Failed to query migration history',
-      details: error
+      details: error,
     });
   }
 }
@@ -112,22 +112,22 @@ async function checkExtensions(): Promise<void> {
     `;
 
     const expectedExtensions = ['vector', 'uuid-ossp', 'pg_trgm'];
-    const installedExtensions = extensions.map(e => e.extname);
-    const missingExtensions = expectedExtensions.filter(e => !installedExtensions.includes(e));
+    const installedExtensions = extensions.map((e) => e.extname);
+    const missingExtensions = expectedExtensions.filter((e) => !installedExtensions.includes(e));
 
     if (missingExtensions.length === 0) {
       logResult({
         check: 'PostgreSQL Extensions',
         status: 'PASS',
         message: 'All required extensions installed',
-        details: installedExtensions
+        details: installedExtensions,
       });
     } else {
       logResult({
         check: 'PostgreSQL Extensions',
         status: 'FAIL',
         message: 'Missing required extensions',
-        details: { missing: missingExtensions, installed: installedExtensions }
+        details: { missing: missingExtensions, installed: installedExtensions },
       });
     }
   } catch (error) {
@@ -135,7 +135,7 @@ async function checkExtensions(): Promise<void> {
       check: 'PostgreSQL Extensions',
       status: 'FAIL',
       message: 'Failed to query extensions',
-      details: error
+      details: error,
     });
   }
 }
@@ -157,14 +157,14 @@ async function checkTables(): Promise<void> {
       logResult({
         check: 'Database Tables',
         status: 'SKIP',
-        message: 'No tables found (expected until Story 2.4+ adds models)'
+        message: 'No tables found (expected until Story 2.4+ adds models)',
       });
     } else {
       logResult({
         check: 'Database Tables',
         status: 'PASS',
         message: `Found ${tables.length} tables`,
-        details: tables.map(t => t.tablename)
+        details: tables.map((t) => t.tablename),
       });
     }
   } catch (error) {
@@ -172,7 +172,7 @@ async function checkTables(): Promise<void> {
       check: 'Database Tables',
       status: 'FAIL',
       message: 'Failed to query tables',
-      details: error
+      details: error,
     });
   }
 }
@@ -184,7 +184,9 @@ async function checkTables(): Promise<void> {
 async function checkReferentialIntegrity(): Promise<void> {
   try {
     // Check if any foreign key constraints exist
-    const foreignKeys = await prisma.$queryRaw<Array<{ constraint_name: string; table_name: string }>>`
+    const foreignKeys = await prisma.$queryRaw<
+      Array<{ constraint_name: string; table_name: string }>
+    >`
       SELECT
         tc.constraint_name,
         tc.table_name
@@ -197,14 +199,14 @@ async function checkReferentialIntegrity(): Promise<void> {
       logResult({
         check: 'Referential Integrity',
         status: 'SKIP',
-        message: 'No foreign key constraints found (expected until Story 2.4+ adds models)'
+        message: 'No foreign key constraints found (expected until Story 2.4+ adds models)',
       });
     } else {
       logResult({
         check: 'Referential Integrity',
         status: 'PASS',
         message: `Found ${foreignKeys.length} foreign key constraints`,
-        details: foreignKeys.map(fk => `${fk.table_name}.${fk.constraint_name}`)
+        details: foreignKeys.map((fk) => `${fk.table_name}.${fk.constraint_name}`),
       });
     }
   } catch (error) {
@@ -212,7 +214,7 @@ async function checkReferentialIntegrity(): Promise<void> {
       check: 'Referential Integrity',
       status: 'FAIL',
       message: 'Failed to check referential integrity',
-      details: error
+      details: error,
     });
   }
 }
@@ -222,7 +224,10 @@ async function checkReferentialIntegrity(): Promise<void> {
  */
 async function validateDataIntegrity(): Promise<void> {
   console.log('🔍 Starting Database Data Integrity Validation\n');
-  console.log('Database URL:', process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@') || 'Not set');
+  console.log(
+    'Database URL:',
+    process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@') || 'Not set'
+  );
   console.log('');
 
   try {
@@ -237,9 +242,9 @@ async function validateDataIntegrity(): Promise<void> {
     console.log('Validation Summary');
     console.log('='.repeat(60));
 
-    const passed = results.filter(r => r.status === 'PASS').length;
-    const failed = results.filter(r => r.status === 'FAIL').length;
-    const skipped = results.filter(r => r.status === 'SKIP').length;
+    const passed = results.filter((r) => r.status === 'PASS').length;
+    const failed = results.filter((r) => r.status === 'FAIL').length;
+    const skipped = results.filter((r) => r.status === 'SKIP').length;
 
     console.log(`✅ Passed:  ${passed}`);
     console.log(`❌ Failed:  ${failed}`);

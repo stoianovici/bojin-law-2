@@ -24,36 +24,49 @@ import { FinancialData } from '../auth/FinancialData';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Validation schema
-const createCaseSchema = z.object({
-  title: z
-    .string()
-    .min(3, 'Titlul trebuie să aibă cel puțin 3 caractere')
-    .max(500, 'Titlul nu poate depăși 500 de caractere'),
-  clientName: z.string().min(2, 'Numele clientului trebuie să aibă cel puțin 2 caractere').max(200, 'Numele clientului nu poate depăși 200 de caractere'),
-  type: z.string().min(1, 'Vă rugăm selectați tipul dosarului'),
-  description: z.string().min(10, 'Descrierea trebuie să aibă cel puțin 10 caractere'),
-  value: z.number().positive('Valoarea trebuie să fie pozitivă').optional().nullable(),
-  billingType: z.enum(['Hourly', 'Fixed'], {
-    required_error: 'Vă rugăm selectați tipul de facturare',
-  }),
-  fixedAmount: z.number().positive('Suma fixă trebuie să fie pozitivă').optional().nullable(),
-  useCustomRates: z.boolean(),
-  customPartnerRate: z.number().positive('Tariful trebuie să fie pozitiv').optional().nullable(),
-  customAssociateRate: z.number().positive('Tariful trebuie să fie pozitiv').optional().nullable(),
-  customParalegalRate: z.number().positive('Tariful trebuie să fie pozitiv').optional().nullable(),
-}).refine(
-  (data) => {
-    // If billing type is Fixed, fixedAmount is required
-    if (data.billingType === 'Fixed') {
-      return data.fixedAmount != null && data.fixedAmount > 0;
+const createCaseSchema = z
+  .object({
+    title: z
+      .string()
+      .min(3, 'Titlul trebuie să aibă cel puțin 3 caractere')
+      .max(500, 'Titlul nu poate depăși 500 de caractere'),
+    clientName: z
+      .string()
+      .min(2, 'Numele clientului trebuie să aibă cel puțin 2 caractere')
+      .max(200, 'Numele clientului nu poate depăși 200 de caractere'),
+    type: z.string().min(1, 'Vă rugăm selectați tipul dosarului'),
+    description: z.string().min(10, 'Descrierea trebuie să aibă cel puțin 10 caractere'),
+    value: z.number().positive('Valoarea trebuie să fie pozitivă').optional().nullable(),
+    billingType: z.enum(['Hourly', 'Fixed'], {
+      required_error: 'Vă rugăm selectați tipul de facturare',
+    }),
+    fixedAmount: z.number().positive('Suma fixă trebuie să fie pozitivă').optional().nullable(),
+    useCustomRates: z.boolean(),
+    customPartnerRate: z.number().positive('Tariful trebuie să fie pozitiv').optional().nullable(),
+    customAssociateRate: z
+      .number()
+      .positive('Tariful trebuie să fie pozitiv')
+      .optional()
+      .nullable(),
+    customParalegalRate: z
+      .number()
+      .positive('Tariful trebuie să fie pozitiv')
+      .optional()
+      .nullable(),
+  })
+  .refine(
+    (data) => {
+      // If billing type is Fixed, fixedAmount is required
+      if (data.billingType === 'Fixed') {
+        return data.fixedAmount != null && data.fixedAmount > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Suma fixă este obligatorie când tipul de facturare este Fix',
+      path: ['fixedAmount'],
     }
-    return true;
-  },
-  {
-    message: 'Suma fixă este obligatorie când tipul de facturare este Fix',
-    path: ['fixedAmount'],
-  }
-);
+  );
 
 type CreateCaseFormData = z.infer<typeof createCaseSchema>;
 
@@ -163,15 +176,21 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
   const onSubmit = async (data: CreateCaseFormData) => {
     try {
       // Build custom rates object if enabled
-      const customRates = data.useCustomRates && (
-        data.customPartnerRate != null ||
-        data.customAssociateRate != null ||
-        data.customParalegalRate != null
-      ) ? {
-        partnerRate: data.customPartnerRate ? leiToCents(data.customPartnerRate) : undefined,
-        associateRate: data.customAssociateRate ? leiToCents(data.customAssociateRate) : undefined,
-        paralegalRate: data.customParalegalRate ? leiToCents(data.customParalegalRate) : undefined,
-      } : undefined;
+      const customRates =
+        data.useCustomRates &&
+        (data.customPartnerRate != null ||
+          data.customAssociateRate != null ||
+          data.customParalegalRate != null)
+          ? {
+              partnerRate: data.customPartnerRate ? leiToCents(data.customPartnerRate) : undefined,
+              associateRate: data.customAssociateRate
+                ? leiToCents(data.customAssociateRate)
+                : undefined,
+              paralegalRate: data.customParalegalRate
+                ? leiToCents(data.customParalegalRate)
+                : undefined,
+            }
+          : undefined;
 
       // Story 2.8.2: Associates submit for approval, Partners create directly as Active
       const result = await createCase({
@@ -192,7 +211,8 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
           addNotification({
             type: 'success',
             title: 'Dosar trimis pentru aprobare',
-            message: 'Dosarul a fost trimis pentru aprobare. Veți fi notificat când va fi revizuit.',
+            message:
+              'Dosarul a fost trimis pentru aprobare. Veți fi notificat când va fi revizuit.',
           });
         } else {
           addNotification({
@@ -295,7 +315,8 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                     />
                   </svg>
                   <p className="text-sm text-blue-800">
-                    Acest dosar va fi trimis pentru aprobarea Partenerului înainte de a deveni activ.
+                    Acest dosar va fi trimis pentru aprobarea Partenerului înainte de a deveni
+                    activ.
                   </p>
                 </div>
               </div>
@@ -324,7 +345,10 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
 
               {/* Client Name with Autocomplete */}
               <div className="relative">
-                <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="clientName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Nume client <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -363,15 +387,37 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   {clientsLoading && (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                       <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
                       </svg>
                     </div>
                   )}
                   {selectedClientId && !clientsLoading && (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <svg
+                        className="h-4 w-4 text-blue-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                     </div>
                   )}
@@ -406,7 +452,12 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                 {selectedClientId && (
                   <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     Client existent selectat
                   </p>
@@ -454,7 +505,10 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                 {showAddType && isPartner && (
                   <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md space-y-3">
                     <div>
-                      <label htmlFor="newTypeName" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="newTypeName"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Nume tip nou
                       </label>
                       <input
@@ -467,14 +521,19 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                       />
                     </div>
                     <div>
-                      <label htmlFor="newTypeCode" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="newTypeCode"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Cod (generat automat)
                       </label>
                       <input
                         id="newTypeCode"
                         type="text"
                         value={newTypeCode}
-                        onChange={(e) => setNewTypeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+                        onChange={(e) =>
+                          setNewTypeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
                         placeholder="INSOLVENTA"
                       />
@@ -517,8 +576,20 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                       >
                         {createLoading && (
                           <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
                           </svg>
                         )}
                         Salvează
@@ -610,7 +681,10 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   {/* Fixed Amount (shown when Fixed billing type selected) */}
                   {billingType === 'Fixed' && (
                     <div>
-                      <label htmlFor="fixedAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="fixedAmount"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Sumă fixă <span className="text-red-500">*</span>
                       </label>
                       <div className="relative mt-1">
@@ -638,11 +712,19 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   {/* Default Rates Preview (shown when Hourly billing type selected) */}
                   {billingType === 'Hourly' && !useCustomRates && defaultRates && (
                     <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                      <p className="text-sm font-medium text-blue-900 mb-2">Tarife orare implicite:</p>
+                      <p className="text-sm font-medium text-blue-900 mb-2">
+                        Tarife orare implicite:
+                      </p>
                       <div className="text-sm text-blue-800 space-y-1">
-                        <div>Partener: {centsToLei(defaultRates.partnerRate).toFixed(2)} RON/oră</div>
-                        <div>Avocat: {centsToLei(defaultRates.associateRate).toFixed(2)} RON/oră</div>
-                        <div>Paralegal: {centsToLei(defaultRates.paralegalRate).toFixed(2)} RON/oră</div>
+                        <div>
+                          Partener: {centsToLei(defaultRates.partnerRate).toFixed(2)} RON/oră
+                        </div>
+                        <div>
+                          Avocat: {centsToLei(defaultRates.associateRate).toFixed(2)} RON/oră
+                        </div>
+                        <div>
+                          Paralegal: {centsToLei(defaultRates.paralegalRate).toFixed(2)} RON/oră
+                        </div>
                       </div>
                     </div>
                   )}
@@ -651,12 +733,10 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   {billingType === 'Hourly' && (
                     <div>
                       <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          {...register('useCustomRates')}
-                          className="mr-2"
-                        />
-                        <span className="text-sm text-gray-700">Utilizează tarife personalizate pentru acest dosar</span>
+                        <input type="checkbox" {...register('useCustomRates')} className="mr-2" />
+                        <span className="text-sm text-gray-700">
+                          Utilizează tarife personalizate pentru acest dosar
+                        </span>
                       </label>
                     </div>
                   )}
@@ -665,7 +745,10 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                   {billingType === 'Hourly' && useCustomRates && (
                     <div className="space-y-3 pl-4 border-l-2 border-gray-200">
                       <div>
-                        <label htmlFor="customPartnerRate" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="customPartnerRate"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           Tarif Partener
                         </label>
                         <div className="relative">
@@ -676,7 +759,11 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                             min="0"
                             {...register('customPartnerRate', { valueAsNumber: true })}
                             className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder={defaultRates ? centsToLei(defaultRates.partnerRate).toFixed(2) : '0.00'}
+                            placeholder={
+                              defaultRates
+                                ? centsToLei(defaultRates.partnerRate).toFixed(2)
+                                : '0.00'
+                            }
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <span className="text-gray-500 sm:text-sm">RON/oră</span>
@@ -684,7 +771,10 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                         </div>
                       </div>
                       <div>
-                        <label htmlFor="customAssociateRate" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="customAssociateRate"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           Tarif Avocat
                         </label>
                         <div className="relative">
@@ -695,7 +785,11 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                             min="0"
                             {...register('customAssociateRate', { valueAsNumber: true })}
                             className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder={defaultRates ? centsToLei(defaultRates.associateRate).toFixed(2) : '0.00'}
+                            placeholder={
+                              defaultRates
+                                ? centsToLei(defaultRates.associateRate).toFixed(2)
+                                : '0.00'
+                            }
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <span className="text-gray-500 sm:text-sm">RON/oră</span>
@@ -703,7 +797,10 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                         </div>
                       </div>
                       <div>
-                        <label htmlFor="customParalegalRate" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="customParalegalRate"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           Tarif Paralegal
                         </label>
                         <div className="relative">
@@ -714,7 +811,11 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                             min="0"
                             {...register('customParalegalRate', { valueAsNumber: true })}
                             className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder={defaultRates ? centsToLei(defaultRates.paralegalRate).toFixed(2) : '0.00'}
+                            placeholder={
+                              defaultRates
+                                ? centsToLei(defaultRates.paralegalRate).toFixed(2)
+                                : '0.00'
+                            }
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <span className="text-gray-500 sm:text-sm">RON/oră</span>

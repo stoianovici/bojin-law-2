@@ -109,11 +109,7 @@ describe('Semantic Version Control Resolvers - Integration', () => {
       const unauthContext = { user: undefined };
 
       await expect(
-        semanticVersionControlResolvers.Query.compareVersions(
-          null,
-          { input },
-          unauthContext as any
-        )
+        semanticVersionControlResolvers.Query.compareVersions(null, { input }, unauthContext as any)
       ).rejects.toThrow(GraphQLError);
     });
 
@@ -175,9 +171,7 @@ describe('Semantic Version Control Resolvers - Integration', () => {
         expiresAt: new Date(Date.now() - 1000), // Expired
       };
 
-      vi.mocked(prisma.versionComparisonCache.findUnique).mockResolvedValue(
-        expiredCache as any
-      );
+      vi.mocked(prisma.versionComparisonCache.findUnique).mockResolvedValue(expiredCache as any);
 
       const aiResponse = {
         changes: [

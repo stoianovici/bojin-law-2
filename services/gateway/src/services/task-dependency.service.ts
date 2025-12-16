@@ -81,10 +81,7 @@ export async function addDependency(
   return dependency;
 }
 
-export async function removeDependency(
-  dependencyId: string,
-  firmId: string
-): Promise<void> {
+export async function removeDependency(dependencyId: string, firmId: string): Promise<void> {
   // Verify dependency exists and belongs to user's firm
   const dependency = await prisma.taskDependency.findUnique({
     where: { id: dependencyId },
@@ -234,10 +231,7 @@ export async function validateNoCycle(
 /**
  * Gets all blocked tasks for a case
  */
-export async function getBlockedTasks(
-  caseId: string,
-  firmId: string
-): Promise<Task[]> {
+export async function getBlockedTasks(caseId: string, firmId: string): Promise<Task[]> {
   // Verify case belongs to firm
   const caseRecord = await prisma.case.findUnique({
     where: { id: caseId },
@@ -271,10 +265,7 @@ export async function getBlockedTasks(
 /**
  * Gets all unblocked tasks for a case (ready to start)
  */
-export async function getUnblockedTasks(
-  caseId: string,
-  firmId: string
-): Promise<Task[]> {
+export async function getUnblockedTasks(caseId: string, firmId: string): Promise<Task[]> {
   // Verify case belongs to firm
   const caseRecord = await prisma.case.findUnique({
     where: { id: caseId },
@@ -333,10 +324,7 @@ export async function isTaskBlocked(taskId: string, firmId: string): Promise<boo
 /**
  * Gets all tasks that would be unblocked if a specific task is completed
  */
-export async function getTasksUnblockedBy(
-  taskId: string,
-  firmId: string
-): Promise<Task[]> {
+export async function getTasksUnblockedBy(taskId: string, firmId: string): Promise<Task[]> {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
   });

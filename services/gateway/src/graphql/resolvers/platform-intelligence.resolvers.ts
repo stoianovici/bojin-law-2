@@ -23,10 +23,7 @@ import {
   AIUtilizationAnalyticsService,
   getAIUtilizationAnalyticsService,
 } from '../../services/ai-utilization-analytics.service';
-import type {
-  PlatformDateRange,
-  ExportFormat,
-} from '@legal-platform/types';
+import type { PlatformDateRange, ExportFormat } from '@legal-platform/types';
 
 // Initialize services
 const platformService = getPlatformIntelligenceService();

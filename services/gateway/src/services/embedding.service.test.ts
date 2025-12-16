@@ -370,5 +370,4 @@ describe('EmbeddingService', () => {
       expect(prisma.document.findUnique).not.toHaveBeenCalled();
     });
   });
-
 });

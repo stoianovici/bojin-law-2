@@ -245,11 +245,7 @@ export class PerformanceMetricsService {
   /**
    * Record a database query metric
    */
-  async recordDbMetric(
-    queryType: string,
-    durationMs: number,
-    table?: string
-  ): Promise<void> {
+  async recordDbMetric(queryType: string, durationMs: number, table?: string): Promise<void> {
     const key = `metrics:db:${queryType}`;
     const hourKey = `${key}:${this.getHourKey()}`;
 
@@ -257,8 +253,7 @@ export class PerformanceMetricsService {
       this.redis.lpush(`${hourKey}:times`, durationMs.toString()),
       this.redis.ltrim(`${hourKey}:times`, 0, 999),
       this.redis.incr(`${hourKey}:count`),
-      durationMs > PERFORMANCE_THRESHOLDS.database.query.p95 &&
-        this.redis.incr(`${hourKey}:slow`),
+      durationMs > PERFORMANCE_THRESHOLDS.database.query.p95 && this.redis.incr(`${hourKey}:slow`),
       this.redis.expire(`${hourKey}:times`, 3600),
       this.redis.expire(`${hourKey}:count`, 3600),
       this.redis.expire(`${hourKey}:slow`, 3600),
@@ -299,12 +294,7 @@ export class PerformanceMetricsService {
     const hourKey = this.getHourKey();
 
     // Gather all metrics in parallel
-    const [
-      apiMetrics,
-      aiMetrics,
-      dbMetrics,
-      cacheMetrics,
-    ] = await Promise.all([
+    const [apiMetrics, aiMetrics, dbMetrics, cacheMetrics] = await Promise.all([
       this.getApiMetrics(hourKey),
       this.getAiMetrics(hourKey),
       this.getDbMetrics(hourKey),
@@ -421,13 +411,9 @@ export class PerformanceMetricsService {
           .sort((a, b) => b.p95ResponseTime - a.p95ResponseTime)
           .slice(0, limit);
       case 'most_errors':
-        return endpoints.byEndpoint
-          .sort((a, b) => b.errorCount - a.errorCount)
-          .slice(0, limit);
+        return endpoints.byEndpoint.sort((a, b) => b.errorCount - a.errorCount).slice(0, limit);
       case 'most_requests':
-        return endpoints.byEndpoint
-          .sort((a, b) => b.requestCount - a.requestCount)
-          .slice(0, limit);
+        return endpoints.byEndpoint.sort((a, b) => b.requestCount - a.requestCount).slice(0, limit);
     }
   }
 
@@ -568,7 +554,10 @@ export class PerformanceMetricsService {
     const pattern = `metrics:ai:*:${hourKey}:count`;
     const keys = await this.redis.keys(pattern.replace(`:${hourKey}`, '*'));
 
-    const models = new Map<string, { ttft: number[]; total: number[]; count: number; errors: number }>();
+    const models = new Map<
+      string,
+      { ttft: number[]; total: number[]; count: number; errors: number }
+    >();
     const operations = new Map<string, { latencies: number[]; count: number; errors: number }>();
 
     for (const key of keys) {
@@ -612,8 +601,10 @@ export class PerformanceMetricsService {
 
     const byModel: ModelMetrics[] = [];
     for (const [model, data] of models) {
-      const avgTTFT = data.ttft.length > 0 ? data.ttft.reduce((a, b) => a + b, 0) / data.ttft.length : 0;
-      const avgTotal = data.total.length > 0 ? data.total.reduce((a, b) => a + b, 0) / data.total.length : 0;
+      const avgTTFT =
+        data.ttft.length > 0 ? data.ttft.reduce((a, b) => a + b, 0) / data.ttft.length : 0;
+      const avgTotal =
+        data.total.length > 0 ? data.total.reduce((a, b) => a + b, 0) / data.total.length : 0;
       const threshold = this.getModelThreshold(model);
 
       byModel.push({
@@ -628,7 +619,10 @@ export class PerformanceMetricsService {
 
     const byOperation: OperationMetrics[] = [];
     for (const [operation, data] of operations) {
-      const avg = data.latencies.length > 0 ? data.latencies.reduce((a, b) => a + b, 0) / data.latencies.length : 0;
+      const avg =
+        data.latencies.length > 0
+          ? data.latencies.reduce((a, b) => a + b, 0) / data.latencies.length
+          : 0;
       const p95 = this.calculatePercentile(data.latencies, 95);
 
       byOperation.push({
@@ -645,7 +639,8 @@ export class PerformanceMetricsService {
 
     return {
       totalOperations: totalOps,
-      avgLatency: allLatencies.length > 0 ? allLatencies.reduce((a, b) => a + b, 0) / allLatencies.length : 0,
+      avgLatency:
+        allLatencies.length > 0 ? allLatencies.reduce((a, b) => a + b, 0) / allLatencies.length : 0,
       p95Latency: this.calculatePercentile(allLatencies, 95),
       byModel,
       byOperation,
@@ -790,9 +785,7 @@ export class PerformanceMetricsService {
 
       timestamps.push(bucket.toISOString());
       values.push(
-        times.length > 0
-          ? times.map(Number).reduce((a, b) => a + b, 0) / times.length
-          : 0
+        times.length > 0 ? times.map(Number).reduce((a, b) => a + b, 0) / times.length : 0
       );
     }
 
@@ -915,7 +908,9 @@ export class PerformanceMetricsService {
   /**
    * Create a performance alert
    */
-  private async createAlert(params: Omit<PerformanceAlert, 'id' | 'timestamp' | 'acknowledged'>): Promise<void> {
+  private async createAlert(
+    params: Omit<PerformanceAlert, 'id' | 'timestamp' | 'acknowledged'>
+  ): Promise<void> {
     // Dedup by metric (only one alert per metric in the window)
     const existingKey = `${params.type}:${params.metric}`;
     const existing = Array.from(this.alerts.values()).find(

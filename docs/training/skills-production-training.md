@@ -39,22 +39,26 @@ Claude Skills (Beta API) allows Claude to use custom tools and capabilities:
 #### From Story 2.11: Core Infrastructure
 
 **AnthropicEnhancedClient** (`services/ai-service/src/clients/AnthropicEnhancedClient.ts`)
+
 - Extends Anthropic SDK with Skills beta flags
 - Enables: `skills-2025-10-02`, `code-execution-2025-08-25`
 - Handles Skills-enabled API calls
 
 **SkillsManager** (`services/ai-service/src/skills/SkillsManager.ts`)
+
 - Skill lifecycle management (upload, validation, caching)
 - LRU + TTL caching for skill metadata
 - Validation: dangerous patterns, size limits (100KB)
 - Database persistence: `skills`, `skill_versions` tables
 
 **SkillsRegistry** (`services/ai-service/src/skills/SkillsRegistry.ts`)
+
 - Pattern-based skill discovery
 - 8 task categories: Contract Analysis, Document Drafting, Legal Research, Compliance, Due Diligence, Dispute Resolution, IP Protection, Corporate Governance
 - Maps user requests to appropriate skills
 
 **CostTracker** (`services/ai-service/src/monitoring/CostTracker.ts`)
+
 - Real-time cost tracking
 - Savings percentage calculation (baseline vs skills)
 - Historical cost analysis
@@ -63,12 +67,14 @@ Claude Skills (Beta API) allows Claude to use custom tools and capabilities:
 #### From Story 2.12: Production Skills
 
 **Core Legal Skills** (`skills/` directory)
+
 1. **Contract Analysis** - Extract clauses, risks, obligations
 2. **Document Drafting** - Generate legal documents from templates
 3. **Legal Research** - Find precedents and regulations
 4. **Compliance Check** - Validate against regulations
 
 **Romanian Templates** (`packages/romanian-templates/`)
+
 - 10 document templates for Romanian legal work
 - Variable substitution format: `{{VARIABLE_NAME}}`
 - Template registry with generation/validation
@@ -76,16 +82,19 @@ Claude Skills (Beta API) allows Claude to use custom tools and capabilities:
 #### From Story 2.13: Skills Integration
 
 **SkillSelector** (`services/ai-service/src/routing/SkillSelector.ts`)
+
 - Pattern matching for skill selection
 - Hybrid routing: skills + model selection
 - Fallback logic for skill failures
 
 **PerformanceOptimizer** (`services/ai-service/src/routing/PerformanceOptimizer.ts`)
+
 - Routing overhead target: <100ms
 - Cache warming strategies
 - Performance monitoring
 
 **ExperimentManager** (`services/ai-service/src/experiments/ExperimentManager.ts`)
+
 - A/B testing framework
 - Traffic splitting (control vs experiment)
 - Statistical validation
@@ -93,21 +102,25 @@ Claude Skills (Beta API) allows Claude to use custom tools and capabilities:
 #### From Story 2.14: Production Monitoring
 
 **AlertsManager** (`services/ai-service/src/monitoring/AlertsManager.ts`)
+
 - Multi-channel alerting: PagerDuty, Slack, Email
 - Alert thresholds: error rate >5%, response time >10s, cost spike >150%
 - Escalation policies for critical alerts
 
 **SkillsMetricsCollector** (`services/ai-service/src/monitoring/SkillsMetricsCollector.ts`)
+
 - New Relic integration
 - Custom metrics: execution time, token savings, cost
 - Model distribution tracking
 
 **CostDashboard** (`services/ai-service/src/monitoring/CostDashboard.ts`)
+
 - Cost validation (AC#5: >35% savings)
 - Cost trend analysis
 - Anomaly detection
 
 **HealthChecker** (`services/ai-service/src/monitoring/HealthChecker.ts`)
+
 - Service health: database, Redis, Claude API, Skills API
 - Resource monitoring: CPU, memory
 - Skills metrics: cache hit rate, error rate, response time
@@ -137,6 +150,7 @@ User Response
 ### 1.4 Database Schema
 
 **`skills` table** (from Story 2.11):
+
 ```sql
 CREATE TABLE skills (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -155,6 +169,7 @@ CREATE INDEX idx_skills_active ON skills(active);
 ```
 
 **`skill_usage_logs` table**:
+
 ```sql
 CREATE TABLE skill_usage_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -176,6 +191,7 @@ CREATE INDEX idx_usage_logs_skill_ids ON skill_usage_logs USING GIN(skill_ids);
 ### 1.5 Hands-On Exercise (30 minutes)
 
 **Exercise 1:** Review existing skills
+
 ```bash
 cd /Users/mio/Desktop/dev/Bojin-law\ 2
 ls -la skills/
@@ -183,6 +199,7 @@ cat skills/contract-analysis/SKILL.md
 ```
 
 **Exercise 2:** Test AnthropicEnhancedClient
+
 ```typescript
 import { AnthropicEnhancedClient } from './services/ai-service/src/clients/AnthropicEnhancedClient';
 
@@ -199,6 +216,7 @@ console.log('Tokens used:', response.usage.input_tokens);
 ```
 
 **Exercise 3:** Query cost savings
+
 ```sql
 SELECT
   DATE(created_at) as date,
@@ -307,18 +325,21 @@ curl https://legal-platform-web.onrender.com/health
 From `docs/runbooks/skills-rollback.md`:
 
 **Method 1: Feature Flag Disable (Fastest - 2 minutes)**
+
 ```typescript
 // Disable skills for all users
 await rolloutManager.setRolloutPercentage(0);
 ```
 
 **Method 2: Render Rollback (5 minutes)**
+
 1. Access Render Dashboard
 2. Navigate to service
 3. Click "Rollback" → Select previous deployment
 4. Confirm rollback
 
 **Method 3: Deactivate Skill (10 minutes)**
+
 ```sql
 UPDATE skills
 SET active = false
@@ -326,6 +347,7 @@ WHERE skill_id = 'problematic-skill';
 ```
 
 **Method 4: Emergency Circuit Breaker (15 minutes)**
+
 ```typescript
 // In code
 export const SKILLS_CIRCUIT_BREAKER = {
@@ -338,6 +360,7 @@ export const SKILLS_CIRCUIT_BREAKER = {
 ### 2.4 Hands-On Exercise (20 minutes)
 
 **Exercise:** Practice rollback
+
 1. Enable a test skill
 2. Trigger an error condition
 3. Execute rollback via feature flag
@@ -359,6 +382,7 @@ export const SKILLS_CIRCUIT_BREAKER = {
 **Location:** New Relic → Dashboards → Skills Overview
 
 **Widgets:**
+
 - Active Skills Count (gauge)
 - Requests per Minute (line chart)
 - Token Savings Percentage (gauge)
@@ -366,6 +390,7 @@ export const SKILLS_CIRCUIT_BREAKER = {
 - Error Rate (gauge)
 
 **NRQL Queries:**
+
 ```sql
 -- Active Skills Count
 SELECT uniqueCount(skillId)
@@ -386,12 +411,14 @@ SINCE 1 hour ago
 #### Dashboard 2: Cost Optimization
 
 **Widgets:**
+
 - Daily Cost (billboard)
 - Cost Savings (line chart)
 - Model Distribution (pie chart)
 - Cost per Request (histogram)
 
 **NRQL Queries:**
+
 ```sql
 -- Daily Cost
 SELECT sum(cost) as 'Total Cost ($)'
@@ -408,6 +435,7 @@ TIMESERIES 1 day
 #### Dashboard 3: Performance Metrics
 
 **Widgets:**
+
 - P95 Response Time (gauge)
 - Routing Overhead (line chart)
 - Cache Hit Rate (gauge)
@@ -418,6 +446,7 @@ TIMESERIES 1 day
 From `services/ai-service/src/monitoring/AlertsManager.ts`:
 
 **Critical Alerts (PagerDuty):**
+
 1. **Skills Service Down**
    - Condition: `serviceHealth == 0`
    - Duration: 1 minute
@@ -434,6 +463,7 @@ From `services/ai-service/src/monitoring/AlertsManager.ts`:
    - Action: Page on-call
 
 **Warning Alerts (Slack):**
+
 1. **Elevated Timeout Rate**
    - Condition: `timeoutRate > 5%`
    - Duration: 10 minutes
@@ -454,6 +484,7 @@ From `services/ai-service/src/monitoring/AlertsManager.ts`:
 #### SEV1: Skills Service Down
 
 **Immediate Actions (15 minutes):**
+
 1. Check Render service status
 2. Review New Relic error tracking
 3. Check database connectivity
@@ -461,6 +492,7 @@ From `services/ai-service/src/monitoring/AlertsManager.ts`:
 5. Review recent deployments
 
 **Mitigation:**
+
 1. Enable circuit breaker
 2. Fallback to non-skills routing
 3. Scale up service if needed
@@ -471,6 +503,7 @@ From `services/ai-service/src/monitoring/AlertsManager.ts`:
 #### SEV2: High Error Rate
 
 **Actions (30 minutes):**
+
 1. Identify which skills are failing
 2. Check skill execution logs
 3. Review error patterns in Sentry
@@ -482,12 +515,14 @@ From `services/ai-service/src/monitoring/AlertsManager.ts`:
 ### 3.4 Hands-On Exercise (20 minutes)
 
 **Exercise 1:** Navigate New Relic Dashboards
+
 - Log into New Relic
 - Find Skills Overview dashboard
 - Identify current token savings percentage
 - Check p95 response time
 
 **Exercise 2:** Test Alert
+
 - Trigger test alert in Slack
 - Verify PagerDuty integration
 - Practice incident response workflow
@@ -504,11 +539,13 @@ From `services/ai-service/src/monitoring/AlertsManager.ts`:
 #### Issue 1: Low Cache Hit Rate (<30%)
 
 **Symptoms:**
+
 - Cache hit rate below 30%
 - Increased response times
 - Higher costs than expected
 
 **Diagnosis:**
+
 ```typescript
 // Check cache stats
 const cacheStats = await skillsManager.getCacheStats();
@@ -518,6 +555,7 @@ console.log('Evictions:', cacheStats.evictions);
 ```
 
 **Solutions:**
+
 1. Increase Redis memory allocation
 2. Adjust TTL settings (currently 1 hour)
 3. Warm cache for popular skills
@@ -528,11 +566,13 @@ console.log('Evictions:', cacheStats.evictions);
 #### Issue 2: Slow Response Times (>5s)
 
 **Symptoms:**
+
 - P95 response time >5s
 - User complaints about slowness
 - Timeout errors
 
 **Diagnosis:**
+
 ```bash
 # Check New Relic transaction traces
 # Look for slowest components
@@ -542,6 +582,7 @@ curl -X GET https://api.example.com/api/monitoring/skills/performance
 ```
 
 **Solutions:**
+
 1. Review skill complexity
 2. Optimize skill prompts
 3. Check routing overhead (<100ms target)
@@ -553,11 +594,13 @@ curl -X GET https://api.example.com/api/monitoring/skills/performance
 #### Issue 3: Cost Savings Below 35%
 
 **Symptoms:**
+
 - Cost validation failing
 - Savings percentage <35%
 - Cost alerts in Slack
 
 **Diagnosis:**
+
 ```typescript
 const validation = await costDashboard.validateCostSavings(35, 7);
 console.log('Achieved:', validation.achieved);
@@ -566,6 +609,7 @@ console.log('Model breakdown:', validation.breakdown);
 ```
 
 **Solutions:**
+
 1. Review skill effectiveness by skill
 2. Check if skills are being used (SkillSelector patterns)
 3. Verify token estimates are accurate
@@ -577,11 +621,13 @@ console.log('Model breakdown:', validation.breakdown);
 #### Issue 4: Skill Upload Failures
 
 **Symptoms:**
+
 - Skill upload rejected
 - Validation errors
 - 400 Bad Request from API
 
 **Diagnosis:**
+
 ```typescript
 try {
   await skillsManager.uploadSkill(skillDef);
@@ -592,6 +638,7 @@ try {
 ```
 
 **Solutions:**
+
 1. Check skill size (<100KB limit)
 2. Review for dangerous patterns (eval, exec)
 3. Validate JSON structure
@@ -603,11 +650,13 @@ try {
 #### Issue 5: High Timeout Rate (>5%)
 
 **Symptoms:**
+
 - Timeout alerts in Slack
 - Skills taking >30s
 - User frustration
 
 **Diagnosis:**
+
 ```sql
 SELECT
   skill_ids,
@@ -621,6 +670,7 @@ ORDER BY timeout_count DESC;
 ```
 
 **Solutions:**
+
 1. Identify which skills timeout most
 2. Review skill prompt complexity
 3. Consider skill redesign for complex tasks
@@ -632,6 +682,7 @@ ORDER BY timeout_count DESC;
 ### 4.2 Debugging Tools
 
 **Tool 1: Winston Logs**
+
 ```bash
 # Stream logs
 tail -f /var/log/ai-service/combined.log | grep "SkillExecution"
@@ -641,6 +692,7 @@ grep -i "error" /var/log/ai-service/error.log | tail -20
 ```
 
 **Tool 2: Database Queries**
+
 ```sql
 -- Recent skill usage
 SELECT * FROM skill_usage_logs
@@ -667,6 +719,7 @@ GROUP BY DATE(created_at);
 ```
 
 **Tool 3: Health Check Endpoint**
+
 ```bash
 # Check service health
 curl https://api.example.com/health | jq '.'
@@ -692,18 +745,21 @@ curl https://api.example.com/health | jq '.'
 ### 4.3 Hands-On Exercise (60 minutes)
 
 **Scenario 1:** Cache Hit Rate Drops to 20%
+
 - Diagnose using CostDashboard
 - Identify eviction patterns
 - Implement cache warming
 - Verify improvement
 
 **Scenario 2:** Cost Savings Fall to 28%
+
 - Run cost validation
 - Review model breakdown
 - Check skill usage patterns
 - Recommend optimizations
 
 **Scenario 3:** Skill Timeouts Spike
+
 - Query timeout logs
 - Identify problematic skills
 - Analyze skill complexity
@@ -719,6 +775,7 @@ curl https://api.example.com/health | jq '.'
 ### 5.1 Cost Targets (AC#5)
 
 From Story 2.14:
+
 - **Target:** >35% cost savings vs non-skills baseline
 - **Monitoring:** Daily validation required
 - **Alert:** Slack notification if <35%
@@ -726,6 +783,7 @@ From Story 2.14:
 ### 5.2 Cost Monitoring
 
 **Daily Cost Report:**
+
 ```bash
 # Run automated cost report
 node scripts/monitoring/daily-cost-report.js
@@ -748,6 +806,7 @@ node scripts/monitoring/daily-cost-report.js
 ```
 
 **Cost Dashboard:**
+
 ```typescript
 import { CostDashboard } from './services/ai-service/src/monitoring/CostDashboard';
 
@@ -758,7 +817,9 @@ const validation = await dashboard.validateCostSavings(35, 7);
 
 console.log(`Savings: ${validation.actualSavings.toFixed(1)}%`);
 console.log(`Target Met: ${validation.achieved ? 'YES' : 'NO'}`);
-console.log(`Total Saved: $${(validation.totalCostWithoutSkills - validation.totalCostWithSkills).toFixed(2)}`);
+console.log(
+  `Total Saved: $${(validation.totalCostWithoutSkills - validation.totalCostWithSkills).toFixed(2)}`
+);
 
 // Model breakdown
 console.log('\nModel Breakdown:');
@@ -774,12 +835,14 @@ console.log('Opus:', validation.breakdown.opus);
 **Goal:** Use skills for 80%+ of eligible requests
 
 **Actions:**
+
 1. Review SkillSelector patterns
 2. Expand skill coverage to more use cases
 3. Train users on when to trigger skills
 4. Monitor skill selection rate
 
 **Metrics:**
+
 ```sql
 SELECT
   COUNT(*) FILTER (WHERE skill_ids IS NOT NULL AND array_length(skill_ids, 1) > 0) as with_skills,
@@ -794,11 +857,13 @@ WHERE created_at > NOW() - INTERVAL '1 day';
 **Goal:** Use cheapest model that meets quality requirements
 
 **Cost Comparison:**
+
 - Haiku: $0.25 / 1M input tokens, $1.25 / 1M output tokens
 - Sonnet: $3.00 / 1M input tokens, $15.00 / 1M output tokens
 - Opus: $15.00 / 1M input tokens, $75.00 / 1M output tokens
 
 **Actions:**
+
 1. Review tasks using Opus (most expensive)
 2. Test if Sonnet + Skills can replace Opus
 3. Use Haiku + Skills for simple tasks
@@ -809,12 +874,14 @@ WHERE created_at > NOW() - INTERVAL '1 day';
 **Goal:** >40% cache hit rate for deterministic requests
 
 **Actions:**
+
 1. Identify frequently requested analyses
 2. Implement cache warming during low-traffic hours
 3. Increase Redis memory allocation
 4. Adjust TTL based on content freshness requirements
 
 **Savings:**
+
 - Cache hit = No API call = $0 cost
 - 40% hit rate on 10,000 requests/day = 4,000 free requests
 - Estimated savings: $200-400/day
@@ -824,6 +891,7 @@ WHERE created_at > NOW() - INTERVAL '1 day';
 **Goal:** Identify and improve low-performing skills
 
 **Query:**
+
 ```sql
 SELECT
   skill_id,
@@ -845,6 +913,7 @@ ORDER BY savings_percent DESC;
 ```
 
 **Actions:**
+
 1. Review skills with <30% savings
 2. Optimize prompts
 3. Consider skill redesign
@@ -853,6 +922,7 @@ ORDER BY savings_percent DESC;
 ### 5.4 Cost Projection
 
 **Monthly Projection:**
+
 ```typescript
 const projection = await costDashboard.getDetailedCostProjection(30);
 
@@ -872,6 +942,7 @@ projection.recommendations.forEach((rec, i) => {
 ### 5.5 Cost Alerts
 
 **Configure Cost Alerts:**
+
 ```yaml
 # Alert when hourly cost >$10
 - type: cost_spike
@@ -895,6 +966,7 @@ projection.recommendations.forEach((rec, i) => {
 ### 5.6 Hands-On Exercise (20 minutes)
 
 **Exercise 1:** Run cost validation
+
 ```typescript
 // Validate last 7 days
 const validation = await costDashboard.validateCostSavings(35, 7);
@@ -906,6 +978,7 @@ const validation = await costDashboard.validateCostSavings(35, 7);
 ```
 
 **Exercise 2:** Analyze skill effectiveness
+
 ```sql
 -- Run the skill effectiveness query
 -- Identify top 3 and bottom 3 skills
@@ -913,6 +986,7 @@ const validation = await costDashboard.validateCostSavings(35, 7);
 ```
 
 **Exercise 3:** Project future costs
+
 ```typescript
 // Get 30-day projection
 const projection = await costDashboard.getDetailedCostProjection(30);
@@ -930,12 +1004,14 @@ const projection = await costDashboard.getDetailedCostProjection(30);
 ### Documentation
 
 **Stories:**
+
 - [Story 2.11: Claude Skills Infrastructure](../stories/2.11.story.md)
 - [Story 2.12: Core Legal Skills Development](../stories/2.12.story.md)
 - [Story 2.13: Skills Integration with Model Routing](../stories/2.13.story.md)
 - [Story 2.14: Skills Production Deployment](../stories/2.14.story.md)
 
 **Runbooks:**
+
 - [Skills Deployment](../runbooks/skills-deployment.md)
 - [Rollback Procedures](../runbooks/skills-rollback.md)
 - [Incident Response](../runbooks/incident-response.md)
@@ -943,6 +1019,7 @@ const projection = await costDashboard.getDetailedCostProjection(30);
 - [Cost Optimization](../runbooks/cost-optimization.md)
 
 **Architecture:**
+
 - [Tech Stack](../architecture/tech-stack.md)
 - [Coding Standards](../architecture/coding-standards.md)
 - [Deployment Architecture](../architecture/deployment-architecture.md)
@@ -951,16 +1028,19 @@ const projection = await costDashboard.getDetailedCostProjection(30);
 ### External Resources
 
 **Anthropic Documentation:**
+
 - [Claude Skills API Beta](https://docs.anthropic.com/claude/docs/skills)
 - [Prompt Caching](https://docs.anthropic.com/claude/docs/prompt-caching)
 - [Claude API Reference](https://docs.anthropic.com/claude/reference)
 
 **Monitoring:**
+
 - [New Relic APM Documentation](https://docs.newrelic.com/docs/apm/)
 - [New Relic Custom Metrics](https://docs.newrelic.com/docs/data-apis/custom-data/custom-events/collect-custom-attributes/)
 - [Sentry Error Tracking](https://docs.sentry.io/)
 
 **Infrastructure:**
+
 - [Render Deployment](https://render.com/docs)
 - [PostgreSQL 16 Documentation](https://www.postgresql.org/docs/16/)
 - [Redis Documentation](https://redis.io/documentation)
@@ -968,11 +1048,13 @@ const projection = await costDashboard.getDetailedCostProjection(30);
 ### Support Channels
 
 **Internal:**
+
 - Slack: #skills-support
 - On-Call: PagerDuty rotation
 - Office Hours: Tuesdays 2-3 PM
 
 **External:**
+
 - Anthropic Support: support@anthropic.com
 - Render Support: support@render.com
 - New Relic Support: Via dashboard
@@ -980,6 +1062,7 @@ const projection = await costDashboard.getDetailedCostProjection(30);
 ### Training Assessment
 
 **Knowledge Check:**
+
 1. What are the 4 core legal skills from Story 2.12?
 2. What is the target cost savings percentage (AC#5)?
 3. What is the routing overhead target from Story 2.13?
@@ -992,14 +1075,15 @@ const projection = await costDashboard.getDetailedCostProjection(30);
 10. How do you trigger a rollback via feature flag?
 
 **Answers:**
+
 1. Contract Analysis, Document Drafting, Legal Research, Compliance Check
-2. >35% cost savings
+2. > 35% cost savings
 3. <100ms routing overhead
 4. Error rate >5%, response time >10s, cost spike >150%
 5. Feature flag (2min), Render rollback (5min), Deactivate skill (10min), Circuit breaker (15min)
 6. `skills`, `skill_versions`, `skill_usage_logs`
 7. <5s at p95
-8. >40% (minimum 30%)
+8. > 40% (minimum 30%)
 9. AlertsManager, SkillsMetricsCollector, CostDashboard, HealthChecker, (CostTracker)
 10. `await rolloutManager.setRolloutPercentage(0);`
 
@@ -1008,6 +1092,7 @@ const projection = await costDashboard.getDetailedCostProjection(30);
 **Training Complete!**
 
 You're now ready to support Skills in production. Remember:
+
 - Monitor dashboards daily
 - Respond to alerts within SLA
 - Run cost validation weekly
@@ -1015,6 +1100,7 @@ You're now ready to support Skills in production. Remember:
 - Ask questions in #skills-support
 
 **Next Steps:**
+
 1. Shadow on-call engineer
 2. Practice incident response drills
 3. Review recent production incidents
@@ -1023,5 +1109,5 @@ You're now ready to support Skills in production. Remember:
 
 ---
 
-*Last Updated: 2025-11-19*
-*Version: 1.0*
+_Last Updated: 2025-11-19_
+_Version: 1.0_

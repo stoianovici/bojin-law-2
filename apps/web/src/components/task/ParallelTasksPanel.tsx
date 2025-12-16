@@ -48,9 +48,9 @@ export function ParallelTasksPanel({
     if (!group) return;
 
     const aiAssignments: Record<string, string> = {};
-    group.tasks.forEach((task: typeof group.tasks[number]) => {
+    group.tasks.forEach((task: (typeof group.tasks)[number]) => {
       const suggestions = group.suggestedAssignees?.filter(
-        (s: typeof group.suggestedAssignees[number]) => s.matchScore > 70
+        (s: (typeof group.suggestedAssignees)[number]) => s.matchScore > 70
       );
       if (suggestions && suggestions.length > 0) {
         aiAssignments[task.id] = suggestions[0].userId;
@@ -86,10 +86,7 @@ export function ParallelTasksPanel({
     return 'border-red-500 bg-red-50 text-red-700';
   };
 
-  const totalTasksInGroups = parallelTaskGroups.reduce(
-    (sum, group) => sum + group.tasks.length,
-    0
-  );
+  const totalTasksInGroups = parallelTaskGroups.reduce((sum, group) => sum + group.tasks.length, 0);
   const assignedTasks = Object.keys(selectedAssignments).length;
 
   return (
@@ -136,11 +133,15 @@ export function ParallelTasksPanel({
               const userWorkload =
                 parallelTaskGroups
                   .flatMap((g) => g.suggestedAssignees || [])
-                  .find((s: typeof parallelTask.assignmentSuggestions[number]) => s.userId === user.id)?.currentWorkload || 0;
+                  .find(
+                    (s: (typeof parallelTask.assignmentSuggestions)[number]) => s.userId === user.id
+                  )?.currentWorkload || 0;
               const userCapacity =
                 parallelTaskGroups
                   .flatMap((g) => g.suggestedAssignees || [])
-                  .find((s: typeof parallelTask.assignmentSuggestions[number]) => s.userId === user.id)?.availableCapacity || 40;
+                  .find(
+                    (s: (typeof parallelTask.assignmentSuggestions)[number]) => s.userId === user.id
+                  )?.availableCapacity || 40;
 
               const workloadPercentage = Math.round((userWorkload / userCapacity) * 100);
 
@@ -159,7 +160,9 @@ export function ParallelTasksPanel({
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs">
                         <span className="text-gray-600">Workload</span>
-                        <span className={`font-medium px-2 py-0.5 rounded ${getWorkloadColor(userWorkload, userCapacity)}`}>
+                        <span
+                          className={`font-medium px-2 py-0.5 rounded ${getWorkloadColor(userWorkload, userCapacity)}`}
+                        >
                           {workloadPercentage}%
                         </span>
                       </div>
@@ -169,8 +172,8 @@ export function ParallelTasksPanel({
                             workloadPercentage >= 90
                               ? 'bg-red-500'
                               : workloadPercentage >= 70
-                              ? 'bg-orange-500'
-                              : 'bg-green-500'
+                                ? 'bg-orange-500'
+                                : 'bg-green-500'
                           }`}
                           style={{ width: `${Math.min(workloadPercentage, 100)}%` }}
                         ></div>
@@ -247,10 +250,10 @@ export function ParallelTasksPanel({
 
                     {isExpanded && (
                       <CardContent className="space-y-3">
-                        {group.tasks.map((task: typeof tasks[number]) => {
+                        {group.tasks.map((task: (typeof tasks)[number]) => {
                           const suggestions = group.suggestedAssignees || [];
-                          const topSuggestion = suggestions.find((s: typeof suggestions[number]) =>
-                            task.id ? true : false
+                          const topSuggestion = suggestions.find(
+                            (s: (typeof suggestions)[number]) => (task.id ? true : false)
                           );
 
                           return (
@@ -301,31 +304,38 @@ export function ParallelTasksPanel({
                                         <span className="text-sm font-medium">AI Suggestions</span>
                                       </div>
                                       <div className="space-y-2">
-                                        {suggestions.slice(0, 3).map((suggestion: typeof parallelTask.assignmentSuggestions[number]) => (
-                                          <div
-                                            key={suggestion.userId}
-                                            className={`flex items-center justify-between p-2 border rounded ${getMatchScoreColor(
-                                              suggestion.matchScore
-                                            )}`}
-                                          >
-                                            <div className="flex-1">
-                                              <div className="text-sm font-medium">
-                                                {suggestion.userName}
+                                        {suggestions
+                                          .slice(0, 3)
+                                          .map(
+                                            (
+                                              suggestion: (typeof parallelTask.assignmentSuggestions)[number]
+                                            ) => (
+                                              <div
+                                                key={suggestion.userId}
+                                                className={`flex items-center justify-between p-2 border rounded ${getMatchScoreColor(
+                                                  suggestion.matchScore
+                                                )}`}
+                                              >
+                                                <div className="flex-1">
+                                                  <div className="text-sm font-medium">
+                                                    {suggestion.userName}
+                                                  </div>
+                                                  <div className="text-xs mt-0.5">
+                                                    {suggestion.reasoning}
+                                                  </div>
+                                                </div>
+                                                <div className="ml-3 text-right">
+                                                  <div className="text-sm font-bold">
+                                                    {suggestion.matchScore}%
+                                                  </div>
+                                                  <div className="text-xs">
+                                                    {suggestion.currentWorkload}h /{' '}
+                                                    {suggestion.availableCapacity}h
+                                                  </div>
+                                                </div>
                                               </div>
-                                              <div className="text-xs mt-0.5">
-                                                {suggestion.reasoning}
-                                              </div>
-                                            </div>
-                                            <div className="ml-3 text-right">
-                                              <div className="text-sm font-bold">
-                                                {suggestion.matchScore}%
-                                              </div>
-                                              <div className="text-xs">
-                                                {suggestion.currentWorkload}h / {suggestion.availableCapacity}h
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ))}
+                                            )
+                                          )}
                                       </div>
                                     </div>
                                   )}

@@ -11,8 +11,7 @@ import type { CaseStatus } from '@legal-platform/types';
 import { useCaseFiltersStore } from '../../stores/caseFiltersStore';
 
 export function CaseFilters() {
-  const { status, assignedToMe, setStatus, setAssignedToMe, clearFilters } =
-    useCaseFiltersStore();
+  const { status, assignedToMe, setStatus, setAssignedToMe, clearFilters } = useCaseFiltersStore();
 
   const handleStatusChange = (newStatus: string) => {
     const statusValue = newStatus === 'All' ? undefined : (newStatus as CaseStatus);

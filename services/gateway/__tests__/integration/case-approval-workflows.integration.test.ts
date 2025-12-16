@@ -8,7 +8,6 @@
  * Tests complete flows from case creation through approval/rejection to final state
  */
 
-
 import { prisma } from '@legal-platform/database';
 import { ApprovalStatus, CaseStatus, UserRole } from '@prisma/client';
 import { approvalResolvers } from '../../src/graphql/resolvers/approval.resolvers';
@@ -67,11 +66,7 @@ describe('Case Approval Workflows - Integration Tests (TEST-002)', () => {
       // Step 1: Partner queries pending cases
       prisma.case.findMany.mockResolvedValue([pendingCase]);
 
-      const pendingCases = await approvalResolvers.Query.pendingCases(
-        {},
-        {},
-        partnerContext
-      );
+      const pendingCases = await approvalResolvers.Query.pendingCases({}, {}, partnerContext);
 
       expect(pendingCases).toHaveLength(1);
       expect(pendingCases[0].id).toBe('case-1');
@@ -164,18 +159,16 @@ describe('Case Approval Workflows - Integration Tests (TEST-002)', () => {
       };
 
       // Step 1: Partner rejects case
-      prisma.case.findUnique
-        .mockResolvedValueOnce(pendingCase)
-        .mockResolvedValueOnce({
-          ...pendingCase,
-          approval: {
-            ...pendingCase.approval,
-            status: ApprovalStatus.Rejected,
-            rejectionReason: 'Missing client contact information',
-            reviewedBy: 'partner-1',
-            reviewedAt: new Date(),
-          },
-        });
+      prisma.case.findUnique.mockResolvedValueOnce(pendingCase).mockResolvedValueOnce({
+        ...pendingCase,
+        approval: {
+          ...pendingCase.approval,
+          status: ApprovalStatus.Rejected,
+          rejectionReason: 'Missing client contact information',
+          reviewedBy: 'partner-1',
+          reviewedAt: new Date(),
+        },
+      });
 
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
@@ -215,30 +208,24 @@ describe('Case Approval Workflows - Integration Tests (TEST-002)', () => {
 
       prisma.case.findMany.mockResolvedValue([rejectedCaseForAssociate]);
 
-      const myCases = await approvalResolvers.Query.myCases(
-        {},
-        {},
-        associateContext
-      );
+      const myCases = await approvalResolvers.Query.myCases({}, {}, associateContext);
 
       expect(myCases).toHaveLength(1);
       expect(myCases[0].approval.status).toBe(ApprovalStatus.Rejected);
 
       // Step 3: Associate resubmits case (after making edits)
       jest.clearAllMocks();
-      prisma.case.findUnique
-        .mockResolvedValueOnce(rejectedCaseForAssociate)
-        .mockResolvedValueOnce({
-          ...rejectedCaseForAssociate,
-          approval: {
-            ...rejectedCaseForAssociate.approval,
-            status: ApprovalStatus.Pending,
-            revisionCount: 1,
-            rejectionReason: null,
-            reviewedBy: null,
-            reviewedAt: null,
-          },
-        });
+      prisma.case.findUnique.mockResolvedValueOnce(rejectedCaseForAssociate).mockResolvedValueOnce({
+        ...rejectedCaseForAssociate,
+        approval: {
+          ...rejectedCaseForAssociate.approval,
+          status: ApprovalStatus.Pending,
+          revisionCount: 1,
+          rejectionReason: null,
+          reviewedBy: null,
+          reviewedAt: null,
+        },
+      });
 
       prisma.caseApproval.update.mockResolvedValue({
         revisionCount: 1,
@@ -356,11 +343,7 @@ describe('Case Approval Workflows - Integration Tests (TEST-002)', () => {
         });
         prisma.caseAuditLog.create.mockResolvedValue({});
 
-        await approvalResolvers.Mutation.resubmitCase(
-          {},
-          { caseId: 'case-1' },
-          associateContext
-        );
+        await approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, associateContext);
 
         // Verify revision count incremented correctly
         expect(prisma.caseApproval.update).toHaveBeenCalledWith({
@@ -419,11 +402,7 @@ describe('Case Approval Workflows - Integration Tests (TEST-002)', () => {
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
-      await approvalResolvers.Mutation.approveCase(
-        {},
-        { caseId: 'case-1' },
-        partner1Context
-      );
+      await approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, partner1Context);
 
       // Partner 2 tries to approve (should fail - case no longer pending)
       jest.clearAllMocks();
@@ -435,11 +414,7 @@ describe('Case Approval Workflows - Integration Tests (TEST-002)', () => {
       prisma.case.findUnique.mockResolvedValue(alreadyApprovedCase);
 
       await expect(
-        approvalResolvers.Mutation.approveCase(
-          {},
-          { caseId: 'case-1' },
-          partner2Context
-        )
+        approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, partner2Context)
       ).rejects.toThrow('Case is not pending approval');
 
       // Verify no second update was attempted
@@ -478,11 +453,7 @@ describe('Case Approval Workflows - Integration Tests (TEST-002)', () => {
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
-      await approvalResolvers.Mutation.approveCase(
-        {},
-        { caseId: 'case-1' },
-        partnerContext
-      );
+      await approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, partnerContext);
 
       // Test passes - notification TODOs exist in implementation
       // AC2 and AC7 are acknowledged as incomplete (FEAT-001)

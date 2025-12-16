@@ -60,7 +60,10 @@ interface GetNotificationsVariables {
  * Hook to fetch and manage notifications
  */
 export function useNotifications(options?: { read?: boolean; limit?: number }) {
-  const { data, loading, error, refetch } = useQuery<GetNotificationsResult, GetNotificationsVariables>(GET_NOTIFICATIONS, {
+  const { data, loading, error, refetch } = useQuery<
+    GetNotificationsResult,
+    GetNotificationsVariables
+  >(GET_NOTIFICATIONS, {
     variables: {
       read: options?.read,
       limit: options?.limit || 50,

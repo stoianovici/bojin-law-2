@@ -318,7 +318,10 @@ describe('Financial Visibility Integration Tests - Partner vs Associate', () => 
 
       // Re-render as Associate
       setupFinancialVisibilityHandler('Associate');
-      const { container: associateContainer } = renderCaseDetailPageAsRole(mockAssociateUser, 'case-1');
+      const { container: associateContainer } = renderCaseDetailPageAsRole(
+        mockAssociateUser,
+        'case-1'
+      );
 
       await waitFor(() => {
         expect(screen.getByText('CASE-001')).toBeInTheDocument();

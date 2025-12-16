@@ -18,26 +18,26 @@ const THRESHOLDS = {
   AUTO_CREATE: {
     minOccurrences: 50,
     minFrequencyScore: 0.75,
-    minBusinessValue: 0.70,
+    minBusinessValue: 0.7,
     minConfidence: 0.85,
   },
   QUEUE_FOR_REVIEW: {
     minOccurrences: 20,
-    minFrequencyScore: 0.50,
-    minBusinessValue: 0.50,
-    minConfidence: 0.70,
+    minFrequencyScore: 0.5,
+    minBusinessValue: 0.5,
+    minConfidence: 0.7,
   },
   MAP_TO_EXISTING: {
     maxOccurrences: 19,
-    similarityThreshold: 0.80,
+    similarityThreshold: 0.8,
   },
 };
 
 // Priority calculation weights
 const PRIORITY_WEIGHTS = {
   frequency: 0.35,
-  complexity: 0.20,
-  businessValue: 0.30,
+  complexity: 0.2,
+  businessValue: 0.3,
   recency: 0.15,
 };
 
@@ -75,10 +75,7 @@ export class DocumentTypeDiscoveryService {
     const normalizedType = this.normalizeTypeName(aiAnalysis.documentType);
 
     // Check if type already exists in registry
-    const existing = await this.findInRegistry(
-      normalizedType,
-      aiAnalysis.primaryLanguage
-    );
+    const existing = await this.findInRegistry(normalizedType, aiAnalysis.primaryLanguage);
 
     let result: DiscoveryResult;
 
@@ -223,8 +220,7 @@ export class DocumentTypeDiscoveryService {
     // Calculate average document length
     const avgLength = existing.avgDocumentLength || 0;
     const newAvgLength = Math.round(
-      (avgLength * existing.totalOccurrences +
-        (document.extractedText?.length || 0)) /
+      (avgLength * existing.totalOccurrences + (document.extractedText?.length || 0)) /
         newOccurrences
     );
 
@@ -296,11 +292,7 @@ export class DocumentTypeDiscoveryService {
     // Romanian legal document patterns
     if (type.includes('contract')) return 'contract';
     if (type.includes('notificare') || type.includes('somatie')) return 'correspondence';
-    if (
-      type.includes('intampinare') ||
-      type.includes('cerere') ||
-      type.includes('contestatie')
-    )
+    if (type.includes('intampinare') || type.includes('cerere') || type.includes('contestatie'))
       return 'court_filing';
     if (type.includes('imputernicire') || type.includes('power of attorney'))
       return 'authorization';
@@ -388,9 +380,9 @@ export class DocumentTypeDiscoveryService {
   private calculateFrequencyScore(occurrences: number): number {
     if (occurrences >= 100) return 1.0;
     if (occurrences >= 50) return 0.85;
-    if (occurrences >= 30) return 0.70;
+    if (occurrences >= 30) return 0.7;
     if (occurrences >= 20) return 0.55;
-    if (occurrences >= 10) return 0.40;
+    if (occurrences >= 10) return 0.4;
     if (occurrences >= 5) return 0.25;
     return 0.1;
   }
@@ -444,8 +436,7 @@ export class DocumentTypeDiscoveryService {
       (entry.frequencyScore || 0) >= THRESHOLDS.QUEUE_FOR_REVIEW.minFrequencyScore &&
       (entry.businessValueScore || 0) >= THRESHOLDS.QUEUE_FOR_REVIEW.minBusinessValue;
 
-    const mapToExisting =
-      entry.totalOccurrences <= THRESHOLDS.MAP_TO_EXISTING.maxOccurrences;
+    const mapToExisting = entry.totalOccurrences <= THRESHOLDS.MAP_TO_EXISTING.maxOccurrences;
 
     return {
       autoCreate,

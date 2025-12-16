@@ -169,11 +169,7 @@ export const firmResolvers = {
      * Authorization: Partner role required
      * Validation: All rates must be positive numbers in cents
      */
-    updateDefaultRates: async (
-      _: any,
-      args: { input: DefaultRates },
-      context: Context
-    ) => {
+    updateDefaultRates: async (_: any, args: { input: DefaultRates }, context: Context) => {
       const user = requirePartner(context);
 
       // Validate rates

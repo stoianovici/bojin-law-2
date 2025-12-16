@@ -183,7 +183,8 @@ const testReview = {
     id: 'doc-test-123',
     fileName: 'Test Contract.docx',
     fileType: 'docx',
-    content: 'This is the test document content with some reasonable terms and appropriate clauses.',
+    content:
+      'This is the test document content with some reasonable terms and appropriate clauses.',
   },
   documentVersion: {
     id: 'version-test-123',
@@ -717,8 +718,18 @@ test.describe('Document Review Workflow', () => {
             body: JSON.stringify({
               data: {
                 batchReviewDocuments: [
-                  { ...testReview, id: 'review-1', hasUnresolvedComments: false, hasUnaddressedConcerns: false },
-                  { ...testReview, id: 'review-2', hasUnresolvedComments: false, hasUnaddressedConcerns: false },
+                  {
+                    ...testReview,
+                    id: 'review-1',
+                    hasUnresolvedComments: false,
+                    hasUnaddressedConcerns: false,
+                  },
+                  {
+                    ...testReview,
+                    id: 'review-2',
+                    hasUnresolvedComments: false,
+                    hasUnaddressedConcerns: false,
+                  },
                 ],
               },
             }),

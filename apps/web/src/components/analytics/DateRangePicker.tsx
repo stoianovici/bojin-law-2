@@ -11,10 +11,7 @@
 import React, { useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Calendar, ChevronDown, X } from 'lucide-react';
-import {
-  useAnalyticsFiltersStore,
-  type DateRangePreset,
-} from '../../stores/analyticsFiltersStore';
+import { useAnalyticsFiltersStore, type DateRangePreset } from '../../stores/analyticsFiltersStore';
 
 export interface DateRangePickerProps {
   /**
@@ -71,20 +68,25 @@ function formatDateForInput(date: Date): string {
  * <DateRangePicker />
  * ```
  */
-export function DateRangePicker({ className = '', startDate, endDate, onChange }: DateRangePickerProps) {
+export function DateRangePicker({
+  className = '',
+  startDate,
+  endDate,
+  onChange,
+}: DateRangePickerProps) {
   const store = useAnalyticsFiltersStore();
 
   // Use controlled mode if props are provided, otherwise use store
   const isControlled = startDate !== undefined && endDate !== undefined && onChange !== undefined;
   const dateRange = isControlled ? { start: startDate, end: endDate } : store.dateRange;
-  const preset = isControlled ? 'custom' as DateRangePreset : store.preset;
-  const setDateRange = isControlled ? (range: { start: Date; end: Date }) => onChange(range.start, range.end) : store.setDateRange;
+  const preset = isControlled ? ('custom' as DateRangePreset) : store.preset;
+  const setDateRange = isControlled
+    ? (range: { start: Date; end: Date }) => onChange(range.start, range.end)
+    : store.setDateRange;
   const setPreset = store.setPreset;
 
   const [isOpen, setIsOpen] = useState(false);
-  const [customStart, setCustomStart] = useState(
-    formatDateForInput(dateRange.start)
-  );
+  const [customStart, setCustomStart] = useState(formatDateForInput(dateRange.start));
   const [customEnd, setCustomEnd] = useState(formatDateForInput(dateRange.end));
 
   // Handle preset selection
@@ -163,21 +165,19 @@ export function DateRangePicker({ className = '', startDate, endDate, onChange }
               Selectare rapidă
             </p>
             <div className="flex flex-wrap gap-2">
-              {(['last30', 'lastQuarter', 'ytd'] as DateRangePreset[]).map(
-                (presetOption) => (
-                  <button
-                    key={presetOption}
-                    onClick={() => handlePresetClick(presetOption)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      preset === presetOption
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {presetLabels[presetOption]}
-                  </button>
-                )
-              )}
+              {(['last30', 'lastQuarter', 'ytd'] as DateRangePreset[]).map((presetOption) => (
+                <button
+                  key={presetOption}
+                  onClick={() => handlePresetClick(presetOption)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    preset === presetOption
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {presetLabels[presetOption]}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -188,10 +188,7 @@ export function DateRangePicker({ className = '', startDate, endDate, onChange }
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label
-                  htmlFor="start-date"
-                  className="block text-xs text-gray-500 mb-1"
-                >
+                <label htmlFor="start-date" className="block text-xs text-gray-500 mb-1">
                   Data de început
                 </label>
                 <input
@@ -203,10 +200,7 @@ export function DateRangePicker({ className = '', startDate, endDate, onChange }
                 />
               </div>
               <div>
-                <label
-                  htmlFor="end-date"
-                  className="block text-xs text-gray-500 mb-1"
-                >
+                <label htmlFor="end-date" className="block text-xs text-gray-500 mb-1">
                   Data de sfârșit
                 </label>
                 <input

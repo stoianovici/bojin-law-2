@@ -6,9 +6,7 @@
  * build clause libraries, and calculate template quality scores
  */
 
-import type {
-  DocumentPattern,
-} from '@legal-platform/types';
+import type { DocumentPattern } from '@legal-platform/types';
 
 export interface ExtractedPhrase {
   text: string;
@@ -102,17 +100,12 @@ export class PatternExtractionService {
     const phrases: string[] = [];
 
     // Normalize text
-    const normalized = content
-      .replace(/\s+/g, ' ')
-      .replace(/\n+/g, ' ')
-      .trim();
+    const normalized = content.replace(/\s+/g, ' ').replace(/\n+/g, ' ').trim();
 
     // Split into sentences (Romanian punctuation)
     // Handle abbreviations like Art., Cod., Nr. to avoid false splits
-    const withPlaceholders = normalized
-      .replace(/\b(Art|Cod|Nr|Str|al)\./g, '$1§');
-    const sentences = withPlaceholders.split(/[.;!?]\s+/)
-      .map(s => s.replace(/§/g, '.'));
+    const withPlaceholders = normalized.replace(/\b(Art|Cod|Nr|Str|al)\./g, '$1§');
+    const sentences = withPlaceholders.split(/[.;!?]\s+/).map((s) => s.replace(/§/g, '.'));
 
     for (const sentence of sentences) {
       const words = sentence.trim().split(/\s+/);
@@ -321,13 +314,13 @@ export class PatternExtractionService {
       'în termen de': 'within',
       'zile de la': 'days from',
       'prin prezenta': 'hereby',
-      'solicităm': 'we request',
+      solicităm: 'we request',
       'vă rugăm': 'we ask you',
       'sub sancțiunea': 'under penalty of',
       'ne rezervăm dreptul': 'we reserve the right',
       'în caz contrar': 'otherwise',
       'cod civil': 'civil code',
-      'articol': 'article',
+      articol: 'article',
     };
 
     let translated = romanianText;
@@ -442,9 +435,9 @@ export class PatternExtractionService {
     });
 
     // Fallback: if no variables found in sections, analyze full document content
-    const hasVariables = enrichedSections.some(s => s.variablePlaceholders.length > 0);
+    const hasVariables = enrichedSections.some((s) => s.variablePlaceholders.length > 0);
     if (!hasVariables && documents.length > 0) {
-      const fullContent = documents.map(d => d.content);
+      const fullContent = documents.map((d) => d.content);
       const fallbackVariables = this.extractVariablePlaceholders(fullContent);
 
       if (fallbackVariables.length > 0 && enrichedSections.length > 0) {
@@ -460,11 +453,7 @@ export class PatternExtractionService {
       .map((p) => p.pattern_text_ro);
 
     // Calculate quality score
-    const qualityScore = await this.calculateTemplateQuality(
-      typeName,
-      documents,
-      patterns
-    );
+    const qualityScore = await this.calculateTemplateQuality(typeName, documents, patterns);
 
     return {
       typeName,

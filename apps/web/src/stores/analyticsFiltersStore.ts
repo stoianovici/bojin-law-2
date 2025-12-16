@@ -125,37 +125,35 @@ function calculatePreviousPeriod(dateRange: DateRange): DateRange {
 /**
  * Analytics filters Zustand store
  */
-export const useAnalyticsFiltersStore = create<AnalyticsFiltersState>(
-  (set, get) => ({
-    dateRange: getPresetDateRange('last30'),
-    preset: 'last30',
-    comparisonEnabled: false,
+export const useAnalyticsFiltersStore = create<AnalyticsFiltersState>((set, get) => ({
+  dateRange: getPresetDateRange('last30'),
+  preset: 'last30',
+  comparisonEnabled: false,
 
-    setDateRange: (range: DateRange) =>
-      set({
-        dateRange: range,
-        preset: 'custom',
-      }),
+  setDateRange: (range: DateRange) =>
+    set({
+      dateRange: range,
+      preset: 'custom',
+    }),
 
-    setPreset: (preset: DateRangePreset) =>
-      set({
-        dateRange: getPresetDateRange(preset),
-        preset,
-      }),
+  setPreset: (preset: DateRangePreset) =>
+    set({
+      dateRange: getPresetDateRange(preset),
+      preset,
+    }),
 
-    toggleComparison: () =>
-      set((state) => ({
-        comparisonEnabled: !state.comparisonEnabled,
-      })),
+  toggleComparison: () =>
+    set((state) => ({
+      comparisonEnabled: !state.comparisonEnabled,
+    })),
 
-    setComparisonEnabled: (enabled: boolean) =>
-      set({
-        comparisonEnabled: enabled,
-      }),
+  setComparisonEnabled: (enabled: boolean) =>
+    set({
+      comparisonEnabled: enabled,
+    }),
 
-    getPreviousPeriod: () => {
-      const { dateRange } = get();
-      return calculatePreviousPeriod(dateRange);
-    },
-  })
-);
+  getPreviousPeriod: () => {
+    const { dateRange } = get();
+    return calculatePreviousPeriod(dateRange);
+  },
+}));

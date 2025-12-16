@@ -222,13 +222,15 @@ describe('TokenAlertService', () => {
       expect(mockEmailService.send).toHaveBeenCalledTimes(1);
 
       // Simulate rate limit in Redis
-      mockRedis.get.mockResolvedValue(JSON.stringify({
-        alertType: 'budget_warning',
-        firmId: 'firm-001',
-        lastSentAt: new Date().toISOString(),
-        count: 1,
-        windowStart: new Date().toISOString(),
-      }));
+      mockRedis.get.mockResolvedValue(
+        JSON.stringify({
+          alertType: 'budget_warning',
+          firmId: 'firm-001',
+          lastSentAt: new Date().toISOString(),
+          count: 1,
+          windowStart: new Date().toISOString(),
+        })
+      );
 
       // Second alert immediately - should be rate limited
       jest.clearAllMocks();
@@ -239,13 +241,15 @@ describe('TokenAlertService', () => {
     it('should allow alert after cooldown expires', async () => {
       // Simulate rate limit with old timestamp (past cooldown)
       const oldTime = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
-      mockRedis.get.mockResolvedValue(JSON.stringify({
-        alertType: 'budget_warning',
-        firmId: 'firm-001',
-        lastSentAt: oldTime.toISOString(),
-        count: 1,
-        windowStart: oldTime.toISOString(),
-      }));
+      mockRedis.get.mockResolvedValue(
+        JSON.stringify({
+          alertType: 'budget_warning',
+          firmId: 'firm-001',
+          lastSentAt: oldTime.toISOString(),
+          count: 1,
+          windowStart: oldTime.toISOString(),
+        })
+      );
 
       mockTokenMonitor.checkBudget.mockResolvedValue({
         dailyUsage: 5000,
@@ -264,13 +268,15 @@ describe('TokenAlertService', () => {
     it('should enforce hourly limit', async () => {
       // Simulate rate limit with max hourly count
       const recentTime = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
-      mockRedis.get.mockResolvedValue(JSON.stringify({
-        alertType: 'budget_warning',
-        firmId: 'firm-001',
-        lastSentAt: recentTime.toISOString(),
-        count: 10, // Way over limit
-        windowStart: recentTime.toISOString(),
-      }));
+      mockRedis.get.mockResolvedValue(
+        JSON.stringify({
+          alertType: 'budget_warning',
+          firmId: 'firm-001',
+          lastSentAt: recentTime.toISOString(),
+          count: 10, // Way over limit
+          windowStart: recentTime.toISOString(),
+        })
+      );
 
       mockTokenMonitor.checkBudget.mockResolvedValue({
         dailyUsage: 5000,
@@ -385,7 +391,7 @@ describe('TokenAlertService', () => {
 
       const unacknowledged = alertService.getUnacknowledgedAlerts('firm-001');
       expect(unacknowledged.length).toBeGreaterThan(0);
-      expect(unacknowledged.every(a => !a.acknowledged)).toBe(true);
+      expect(unacknowledged.every((a) => !a.acknowledged)).toBe(true);
     });
 
     it('should get alert history', async () => {

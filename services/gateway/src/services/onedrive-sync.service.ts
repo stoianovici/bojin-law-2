@@ -78,17 +78,13 @@ export class OneDriveSyncService {
     const fileContent = await this.getDocumentContent(document.storagePath);
 
     // Upload to OneDrive
-    const result = await this.oneDriveService.uploadDocumentToOneDrive(
-      accessToken,
-      fileContent,
-      {
-        caseId: caseInfo.id,
-        caseNumber: caseInfo.caseNumber,
-        fileName: document.fileName,
-        fileType: document.fileType,
-        fileSize: document.fileSize,
-      }
-    );
+    const result = await this.oneDriveService.uploadDocumentToOneDrive(accessToken, fileContent, {
+      caseId: caseInfo.id,
+      caseNumber: caseInfo.caseNumber,
+      fileName: document.fileName,
+      fileType: document.fileType,
+      fileSize: document.fileSize,
+    });
 
     // Update document with OneDrive ID
     await prisma.document.update({
@@ -121,10 +117,7 @@ export class OneDriveSyncService {
    * @param accessToken - Microsoft Graph API access token
    * @returns Sync result with version info
    */
-  async downloadFromOneDrive(
-    documentId: string,
-    accessToken: string
-  ): Promise<DocumentSyncResult> {
+  async downloadFromOneDrive(documentId: string, accessToken: string): Promise<DocumentSyncResult> {
     logger.info('Downloading document from OneDrive', { documentId });
 
     // Get document with latest version
@@ -162,10 +155,7 @@ export class OneDriveSyncService {
     }
 
     // Download content from OneDrive
-    const content = await this.downloadOneDriveContent(
-      accessToken,
-      document.oneDriveId
-    );
+    const content = await this.downloadOneDriveContent(accessToken, document.oneDriveId);
 
     // Calculate content hash for comparison
     const contentHash = createHash('sha256').update(content).digest('hex');
@@ -222,10 +212,7 @@ export class OneDriveSyncService {
    * @param accessToken - Microsoft Graph API access token
    * @returns Sync result
    */
-  async syncDocumentChanges(
-    documentId: string,
-    accessToken: string
-  ): Promise<DocumentSyncResult> {
+  async syncDocumentChanges(documentId: string, accessToken: string): Promise<DocumentSyncResult> {
     logger.info('Syncing document changes', { documentId });
 
     const document = await prisma.document.findUnique({
@@ -281,9 +268,7 @@ export class OneDriveSyncService {
         try {
           const client = createGraphClient(accessToken);
 
-          const response = await client
-            .api(graphEndpoints.driveItemVersions(oneDriveId))
-            .get();
+          const response = await client.api(graphEndpoints.driveItemVersions(oneDriveId)).get();
 
           return response.value.map((v: any) => ({
             id: v.id,
@@ -356,19 +341,14 @@ export class OneDriveSyncService {
   /**
    * Download OneDrive file content
    */
-  private async downloadOneDriveContent(
-    accessToken: string,
-    oneDriveId: string
-  ): Promise<Buffer> {
+  private async downloadOneDriveContent(accessToken: string, oneDriveId: string): Promise<Buffer> {
     return retryWithBackoff(
       async () => {
         try {
           const client = createGraphClient(accessToken);
 
           // Get download URL
-          const item = await client
-            .api(graphEndpoints.driveItem(oneDriveId))
-            .get();
+          const item = await client.api(graphEndpoints.driveItem(oneDriveId)).get();
 
           const downloadUrl = item['@microsoft.graph.downloadUrl'];
 
@@ -432,10 +412,7 @@ export class OneDriveSyncService {
    * @param content - The new document content
    * @throws Error if R2 is not configured or upload fails
    */
-  private async updateDocumentContent(
-    storagePath: string,
-    content: Buffer
-  ): Promise<void> {
+  private async updateDocumentContent(storagePath: string, content: Buffer): Promise<void> {
     logger.debug('Updating document content in R2', {
       storagePath,
       contentSize: content.length,

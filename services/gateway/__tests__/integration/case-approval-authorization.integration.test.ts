@@ -8,7 +8,6 @@
  * Tests multi-tenant isolation, role-based access control, and ownership verification
  */
 
-
 import { prisma } from '@legal-platform/database';
 import { ApprovalStatus, CaseStatus, UserRole } from '@prisma/client';
 import { approvalResolvers } from '../../src/graphql/resolvers/approval.resolvers';
@@ -114,11 +113,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.case.findUnique.mockResolvedValue(caseBelongingToFirmB);
 
       await expect(
-        approvalResolvers.Mutation.approveCase(
-          {},
-          { caseId: 'case-1' },
-          partnerContextFirmA
-        )
+        approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, partnerContextFirmA)
       ).rejects.toThrow('Case not found in your firm');
 
       // Verify no update was attempted
@@ -181,11 +176,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.case.findUnique.mockResolvedValue(caseBelongingToFirmB);
 
       await expect(
-        approvalResolvers.Mutation.resubmitCase(
-          {},
-          { caseId: 'case-1' },
-          associateContextFirmA
-        )
+        approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, associateContextFirmA)
       ).rejects.toThrow('Case not found in your firm');
     });
   });
@@ -201,11 +192,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       };
 
       await expect(
-        approvalResolvers.Mutation.approveCase(
-          {},
-          { caseId: 'case-1' },
-          associateContext
-        )
+        approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, associateContext)
       ).rejects.toThrow('Only Partners can approve cases');
 
       // Verify no database query was made
@@ -222,11 +209,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       };
 
       await expect(
-        approvalResolvers.Mutation.approveCase(
-          {},
-          { caseId: 'case-1' },
-          paralegalContext
-        )
+        approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, paralegalContext)
       ).rejects.toThrow('Only Partners can approve cases');
     });
 
@@ -285,9 +268,9 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
         },
       };
 
-      await expect(
-        approvalResolvers.Query.pendingCases({}, {}, paralegalContext)
-      ).rejects.toThrow('Only Partners can view pending approvals');
+      await expect(approvalResolvers.Query.pendingCases({}, {}, paralegalContext)).rejects.toThrow(
+        'Only Partners can view pending approvals'
+      );
     });
 
     it('should allow Partner to view pending approvals', async () => {
@@ -333,11 +316,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.caseAuditLog.create.mockResolvedValue({});
 
       await expect(
-        approvalResolvers.Mutation.approveCase(
-          {},
-          { caseId: 'case-1' },
-          partnerContext
-        )
+        approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, partnerContext)
       ).resolves.toBeDefined();
     });
   });
@@ -365,11 +344,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.case.findUnique.mockResolvedValue(caseSubmittedByAssociate1);
 
       await expect(
-        approvalResolvers.Mutation.resubmitCase(
-          {},
-          { caseId: 'case-1' },
-          associate2Context
-        )
+        approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, associate2Context)
       ).rejects.toThrow('Only the original submitter can resubmit this case');
 
       // Verify no update was attempted
@@ -398,11 +373,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.case.findUnique.mockResolvedValue(caseSubmittedByAssociate);
 
       await expect(
-        approvalResolvers.Mutation.resubmitCase(
-          {},
-          { caseId: 'case-1' },
-          partnerContext
-        )
+        approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, partnerContext)
       ).rejects.toThrow('Only the original submitter can resubmit this case');
     });
 
@@ -435,11 +406,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.caseAuditLog.create.mockResolvedValue({});
 
       await expect(
-        approvalResolvers.Mutation.resubmitCase(
-          {},
-          { caseId: 'case-1' },
-          associate1Context
-        )
+        approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, associate1Context)
       ).resolves.toBeDefined();
     });
   });
@@ -456,11 +423,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       };
 
       await expect(
-        approvalResolvers.Mutation.approveCase(
-          {},
-          { caseId: 'any-case' },
-          maliciousContext
-        )
+        approvalResolvers.Mutation.approveCase({}, { caseId: 'any-case' }, maliciousContext)
       ).rejects.toThrow('Only Partners can approve cases');
 
       // Authorization check happens BEFORE any database query
@@ -488,11 +451,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.case.findUnique.mockResolvedValue(caseBelongingToAssociateB);
 
       await expect(
-        approvalResolvers.Mutation.resubmitCase(
-          {},
-          { caseId: 'case-1' },
-          associateAContext
-        )
+        approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, associateAContext)
       ).rejects.toThrow('Only the original submitter can resubmit this case');
     });
 
@@ -516,11 +475,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
 
       prisma.case.findMany.mockResolvedValue(firmACases);
 
-      const result = await approvalResolvers.Query.pendingCases(
-        {},
-        {},
-        firmAPartnerContext
-      );
+      const result = await approvalResolvers.Query.pendingCases({}, {}, firmAPartnerContext);
 
       // Verify all returned cases belong to Firm A
       expect(result).toHaveLength(1);
@@ -589,11 +544,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.case.findUnique.mockResolvedValue(alreadyApprovedCase);
 
       await expect(
-        approvalResolvers.Mutation.approveCase(
-          {},
-          { caseId: 'case-1' },
-          partnerContext
-        )
+        approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, partnerContext)
       ).rejects.toThrow('Case is not pending approval');
     });
 
@@ -619,11 +570,7 @@ describe('Case Approval Authorization - Integration Tests (SEC-001)', () => {
       prisma.case.findUnique.mockResolvedValue(pendingCase);
 
       await expect(
-        approvalResolvers.Mutation.resubmitCase(
-          {},
-          { caseId: 'case-1' },
-          associateContext
-        )
+        approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, associateContext)
       ).rejects.toThrow('Only rejected cases can be resubmitted');
     });
   });

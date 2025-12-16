@@ -66,20 +66,15 @@ describe('UserService', () => {
 
       mockedAxios.get.mockResolvedValue({ data: mockGraphProfile });
 
-      const profile = await userService.fetchUserProfileFromGraph(
-        mockAccessToken
-      );
+      const profile = await userService.fetchUserProfileFromGraph(mockAccessToken);
 
       expect(profile).toEqual(mockGraphProfile);
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        'https://graph.microsoft.com/v1.0/me',
-        {
-          headers: {
-            Authorization: `Bearer ${mockAccessToken}`,
-          },
-          timeout: 5000,
-        }
-      );
+      expect(mockedAxios.get).toHaveBeenCalledWith('https://graph.microsoft.com/v1.0/me', {
+        headers: {
+          Authorization: `Bearer ${mockAccessToken}`,
+        },
+        timeout: 5000,
+      });
     });
 
     it('should throw error if Graph API returns error response', async () => {
@@ -97,9 +92,9 @@ describe('UserService', () => {
 
       mockedAxios.get.mockRejectedValue(mockError);
 
-      await expect(
-        userService.fetchUserProfileFromGraph(mockAccessToken)
-      ).rejects.toThrow('Microsoft Graph API error: 401 - Invalid authentication token');
+      await expect(userService.fetchUserProfileFromGraph(mockAccessToken)).rejects.toThrow(
+        'Microsoft Graph API error: 401 - Invalid authentication token'
+      );
     });
 
     it('should throw error if Graph API request times out', async () => {
@@ -111,9 +106,9 @@ describe('UserService', () => {
 
       mockedAxios.get.mockRejectedValue(mockError);
 
-      await expect(
-        userService.fetchUserProfileFromGraph(mockAccessToken)
-      ).rejects.toThrow('Microsoft Graph API request failed: No response received');
+      await expect(userService.fetchUserProfileFromGraph(mockAccessToken)).rejects.toThrow(
+        'Microsoft Graph API request failed: No response received'
+      );
     });
 
     it('should throw error if Graph API call setup fails', async () => {
@@ -122,9 +117,9 @@ describe('UserService', () => {
 
       mockedAxios.get.mockRejectedValue(mockError);
 
-      await expect(
-        userService.fetchUserProfileFromGraph(mockAccessToken)
-      ).rejects.toThrow('Failed to call Microsoft Graph API: Network error');
+      await expect(userService.fetchUserProfileFromGraph(mockAccessToken)).rejects.toThrow(
+        'Failed to call Microsoft Graph API: Network error'
+      );
     });
   });
 
@@ -481,10 +476,7 @@ describe('UserService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.user.create.mockResolvedValue(mockUser);
 
-      const user = await userService.provisionUserFromAzureAD(
-        mockAccessToken,
-        mockIdTokenClaims
-      );
+      const user = await userService.provisionUserFromAzureAD(mockAccessToken, mockIdTokenClaims);
 
       expect(user).toEqual(mockUser);
       expect(mockedAxios.get).toHaveBeenCalledWith(
@@ -524,10 +516,7 @@ describe('UserService', () => {
 
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      const user = await userService.provisionUserFromAzureAD(
-        mockAccessToken,
-        mockIdTokenClaims
-      );
+      const user = await userService.provisionUserFromAzureAD(mockAccessToken, mockIdTokenClaims);
 
       expect(user).toEqual(mockUser);
       expect(consoleSpy).toHaveBeenCalledWith(

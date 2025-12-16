@@ -137,7 +137,9 @@ test.describe('Page Load Performance', () => {
     // Get additional metrics from Performance API
     const performanceMetrics = await page.evaluate(() => {
       const timing = performance.timing;
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      const navigation = performance.getEntriesByType(
+        'navigation'
+      )[0] as PerformanceNavigationTiming;
 
       return {
         domContentLoaded: timing.domContentLoadedEventEnd - timing.navigationStart,
@@ -149,7 +151,7 @@ test.describe('Page Load Performance', () => {
         domProcessing: timing.domComplete - timing.domLoading,
         transferSize: navigation?.transferSize || 0,
         encodedBodySize: navigation?.encodedBodySize || 0,
-        decodedBodySize: navigation?.decodedBodySize || 0
+        decodedBodySize: navigation?.decodedBodySize || 0,
       };
     });
 
@@ -208,7 +210,7 @@ test.describe('Resource Size Performance', () => {
         jsResources.push({
           url,
           size: contentLength ? parseInt(contentLength) : 0,
-          status: response.status()
+          status: response.status(),
         });
       }
     });
@@ -237,7 +239,7 @@ test.describe('Resource Size Performance', () => {
 
         cssResources.push({
           url,
-          size: contentLength ? parseInt(contentLength) : 0
+          size: contentLength ? parseInt(contentLength) : 0,
         });
       }
     });
@@ -268,7 +270,7 @@ test.describe('Resource Size Performance', () => {
         imageResources.push({
           url,
           size: contentLength ? parseInt(contentLength) : 0,
-          type: contentType
+          type: contentType,
         });
       }
     });
@@ -306,7 +308,7 @@ test.describe('Resource Size Performance', () => {
         textResources.push({
           url: response.url(),
           encoding: contentEncoding,
-          contentType
+          contentType,
         });
       }
     });
@@ -357,7 +359,7 @@ test.describe('API Performance', () => {
       await new Promise((resolve) => setTimeout(resolve, 2000)); // 2s delay
       await route.fulfill({
         status: 200,
-        body: JSON.stringify({ data: [] })
+        body: JSON.stringify({ data: [] }),
       });
     });
 

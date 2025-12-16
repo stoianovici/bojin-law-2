@@ -141,11 +141,7 @@ export const searchResolvers = {
      * Main search query
      * Supports full-text, semantic, and hybrid search modes
      */
-    search: async (
-      _: unknown,
-      { input }: { input: SearchInput },
-      context: Context
-    ) => {
+    search: async (_: unknown, { input }: { input: SearchInput }, context: Context) => {
       const { userId, firmId } = requireAuth(context);
 
       // Validate input
@@ -223,11 +219,7 @@ export const searchResolvers = {
     /**
      * Get recent searches for the current user
      */
-    recentSearches: async (
-      _: unknown,
-      { limit = 10 }: { limit?: number },
-      context: Context
-    ) => {
+    recentSearches: async (_: unknown, { limit = 10 }: { limit?: number }, context: Context) => {
       const { userId } = requireAuth(context);
 
       // Validate limit

@@ -39,12 +39,7 @@ describe('DeadlineSuggestion', () => {
 
   describe('rendering', () => {
     it('renders suggestion when data is available', () => {
-      render(
-        <DeadlineSuggestion
-          taskType="Research"
-          onAccept={mockOnAccept}
-        />
-      );
+      render(<DeadlineSuggestion taskType="Research" onAccept={mockOnAccept} />);
 
       expect(screen.getByText('Sugestie AI pentru termen')).toBeInTheDocument();
       expect(screen.getByText('Înaltă')).toBeInTheDocument(); // High confidence label
@@ -59,10 +54,7 @@ describe('DeadlineSuggestion', () => {
       });
 
       const { container } = render(
-        <DeadlineSuggestion
-          taskType="Research"
-          onAccept={mockOnAccept}
-        />
+        <DeadlineSuggestion taskType="Research" onAccept={mockOnAccept} />
       );
 
       expect(container).toBeEmptyDOMElement();
@@ -76,10 +68,7 @@ describe('DeadlineSuggestion', () => {
       });
 
       const { container } = render(
-        <DeadlineSuggestion
-          taskType="Research"
-          onAccept={mockOnAccept}
-        />
+        <DeadlineSuggestion taskType="Research" onAccept={mockOnAccept} />
       );
 
       expect(container).toBeEmptyDOMElement();
@@ -100,12 +89,7 @@ describe('DeadlineSuggestion', () => {
 
   describe('interactions', () => {
     it('calls onAccept with ISO date when Accept button is clicked', () => {
-      render(
-        <DeadlineSuggestion
-          taskType="Research"
-          onAccept={mockOnAccept}
-        />
-      );
+      render(<DeadlineSuggestion taskType="Research" onAccept={mockOnAccept} />);
 
       const acceptButton = screen.getByRole('button', { name: /acceptă/i });
       fireEvent.click(acceptButton);
@@ -115,11 +99,7 @@ describe('DeadlineSuggestion', () => {
 
     it('calls onDismiss and hides suggestion when Ignore button is clicked', () => {
       render(
-        <DeadlineSuggestion
-          taskType="Research"
-          onAccept={mockOnAccept}
-          onDismiss={mockOnDismiss}
-        />
+        <DeadlineSuggestion taskType="Research" onAccept={mockOnAccept} onDismiss={mockOnDismiss} />
       );
 
       // Button has aria-label "Respinge sugestia"
@@ -134,26 +114,13 @@ describe('DeadlineSuggestion', () => {
 
   describe('accessibility', () => {
     it('has proper aria labels', () => {
-      render(
-        <DeadlineSuggestion
-          taskType="Research"
-          onAccept={mockOnAccept}
-        />
-      );
+      render(<DeadlineSuggestion taskType="Research" onAccept={mockOnAccept} />);
 
-      expect(screen.getByRole('region')).toHaveAttribute(
-        'aria-label',
-        'Sugestie termen limită AI'
-      );
+      expect(screen.getByRole('region')).toHaveAttribute('aria-label', 'Sugestie termen limită AI');
     });
 
     it('accept button has descriptive aria-label', () => {
-      render(
-        <DeadlineSuggestion
-          taskType="Research"
-          onAccept={mockOnAccept}
-        />
-      );
+      render(<DeadlineSuggestion taskType="Research" onAccept={mockOnAccept} />);
 
       const acceptButton = screen.getByRole('button', { name: /acceptă termenul sugerat/i });
       expect(acceptButton).toBeInTheDocument();
@@ -163,12 +130,7 @@ describe('DeadlineSuggestion', () => {
   describe('confidence levels', () => {
     it('displays confidence label based on confidence score', () => {
       // Default mock has confidence 0.85 which should show "Înaltă"
-      render(
-        <DeadlineSuggestion
-          taskType="Research"
-          onAccept={mockOnAccept}
-        />
-      );
+      render(<DeadlineSuggestion taskType="Research" onAccept={mockOnAccept} />);
 
       // 0.85 confidence should render "Înaltă" (High)
       expect(screen.getByText('Înaltă')).toBeInTheDocument();
@@ -189,24 +151,14 @@ describe('DeadlineSuggestionInline', () => {
   });
 
   it('renders compact inline suggestion', () => {
-    render(
-      <DeadlineSuggestionInline
-        taskType="Research"
-        onAccept={mockOnAccept}
-      />
-    );
+    render(<DeadlineSuggestionInline taskType="Research" onAccept={mockOnAccept} />);
 
     // Should show short date format
     expect(screen.getByText(/sugerare/i)).toBeInTheDocument();
   });
 
   it('calls onAccept when clicked', () => {
-    render(
-      <DeadlineSuggestionInline
-        taskType="Research"
-        onAccept={mockOnAccept}
-      />
-    );
+    render(<DeadlineSuggestionInline taskType="Research" onAccept={mockOnAccept} />);
 
     const button = screen.getByRole('button');
     fireEvent.click(button);

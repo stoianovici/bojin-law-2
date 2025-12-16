@@ -53,7 +53,8 @@ export const Complete: Story = {
     header: <h3 className="text-lg font-semibold">Card complet</h3>,
     children: (
       <p className="text-neutral-600">
-        Acesta este un card complet cu antet, conținut și subsol. Șeful a vândut o sticlă în oraș și țară.
+        Acesta este un card complet cu antet, conținut și subsol. Șeful a vândut o sticlă în oraș și
+        țară.
       </p>
     ),
     footer: (

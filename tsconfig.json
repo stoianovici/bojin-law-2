@@ -33,12 +33,5 @@
     // Interop constraints
     "skipLibCheck": true
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build",
-    ".turbo",
-    "coverage",
-    "storybook-static"
-  ]
+  "exclude": ["node_modules", "dist", "build", ".turbo", "coverage", "storybook-static"]
 }

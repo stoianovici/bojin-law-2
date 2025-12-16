@@ -241,7 +241,10 @@ describe('TaskTemplateService', () => {
 
       mockPrisma.taskTemplate.findUnique.mockResolvedValue(existingTemplate as any);
       mockPrisma.taskTemplateUsage.count.mockResolvedValue(5);
-      mockPrisma.taskTemplate.update.mockResolvedValue({ ...existingTemplate, isActive: false } as any);
+      mockPrisma.taskTemplate.update.mockResolvedValue({
+        ...existingTemplate,
+        isActive: false,
+      } as any);
 
       await deleteTemplate('template-123', 'user-123', 'firm-123');
 
@@ -260,9 +263,9 @@ describe('TaskTemplateService', () => {
 
       mockPrisma.taskTemplate.findUnique.mockResolvedValue(existingTemplate as any);
 
-      await expect(
-        deleteTemplate('template-123', 'user-123', 'firm-123')
-      ).rejects.toThrow('Template not found or access denied');
+      await expect(deleteTemplate('template-123', 'user-123', 'firm-123')).rejects.toThrow(
+        'Template not found or access denied'
+      );
     });
   });
 
@@ -314,10 +317,7 @@ describe('TaskTemplateService', () => {
           firmId: 'firm-123',
         },
         include: expect.any(Object),
-        orderBy: [
-          { isDefault: 'desc' },
-          { name: 'asc' },
-        ],
+        orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
       });
       expect(result).toEqual(mockTemplates);
     });
@@ -417,7 +417,12 @@ describe('TaskTemplateService', () => {
         steps: [newStep1, newStep2],
       } as any);
 
-      const result = await duplicateTemplate('template-123', 'Duplicated Template', 'user-123', 'firm-123');
+      const result = await duplicateTemplate(
+        'template-123',
+        'Duplicated Template',
+        'user-123',
+        'firm-123'
+      );
 
       expect(mockPrisma.taskTemplate.create).toHaveBeenCalled();
       expect(mockPrisma.taskTemplateStep.create).toHaveBeenCalledTimes(2);

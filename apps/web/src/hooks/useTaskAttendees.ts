@@ -113,12 +113,12 @@ export function useAddTaskAttendee() {
  * Hook to remove an attendee from a task
  */
 export function useRemoveTaskAttendee() {
-  return useMutation<
-    { removeTaskAttendee: boolean },
-    { taskId: string; attendeeId: string }
-  >(REMOVE_TASK_ATTENDEE, {
-    refetchQueries: ['GetTaskAttendees', 'GetTask'],
-  });
+  return useMutation<{ removeTaskAttendee: boolean }, { taskId: string; attendeeId: string }>(
+    REMOVE_TASK_ATTENDEE,
+    {
+      refetchQueries: ['GetTaskAttendees', 'GetTask'],
+    }
+  );
 }
 
 /**

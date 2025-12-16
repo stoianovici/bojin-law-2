@@ -140,9 +140,7 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
           </button>
 
           {/* Icon */}
-          <div className={`flex-shrink-0 ${severityConfig.text}`}>
-            {getRiskIcon(risk.riskType)}
-          </div>
+          <div className={`flex-shrink-0 ${severityConfig.text}`}>{getRiskIcon(risk.riskType)}</div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
@@ -219,10 +217,7 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
 
       {/* Expanded details */}
       {isExpanded && (
-        <div
-          id={`risk-details-${risk.id}`}
-          className="px-3 pb-3 border-t pt-3 ml-10"
-        >
+        <div id={`risk-details-${risk.id}`} className="px-3 pb-3 border-t pt-3 ml-10">
           {risk.evidence && (
             <div className="mb-2">
               <p className="text-xs font-medium text-gray-500 mb-1">Evidence</p>
@@ -293,14 +288,17 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
     return result;
   }, [risks, filterSeverity, filterType, filterResolved, sortField, sortDirection]);
 
-  const toggleSort = useCallback((field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
-  }, [sortField]);
+  const toggleSort = useCallback(
+    (field: SortField) => {
+      if (sortField === field) {
+        setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortField(field);
+        setSortDirection('desc');
+      }
+    },
+    [sortField]
+  );
 
   // Loading state
   if (loading && risks.length === 0) {
@@ -331,9 +329,15 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
         <h2 className="font-semibold text-lg">Risk Indicators</h2>
         {summary && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="px-2 py-0.5 rounded bg-red-100 text-red-800">{summary.highSeverity} High</span>
-            <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">{summary.mediumSeverity} Med</span>
-            <span className="px-2 py-0.5 rounded bg-green-100 text-green-800">{summary.lowSeverity} Low</span>
+            <span className="px-2 py-0.5 rounded bg-red-100 text-red-800">
+              {summary.highSeverity} High
+            </span>
+            <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">
+              {summary.mediumSeverity} Med
+            </span>
+            <span className="px-2 py-0.5 rounded bg-green-100 text-green-800">
+              {summary.lowSeverity} Low
+            </span>
           </div>
         )}
       </div>
@@ -385,7 +389,13 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
             onClick={() => toggleSort('severity')}
             className={`p-1 rounded hover:bg-gray-200 ${sortField === 'severity' ? 'bg-gray-200' : ''}`}
             aria-label="Sort by severity"
-            aria-sort={sortField === 'severity' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+            aria-sort={
+              sortField === 'severity'
+                ? sortDirection === 'asc'
+                  ? 'ascending'
+                  : 'descending'
+                : 'none'
+            }
           >
             {sortDirection === 'asc' && sortField === 'severity' ? (
               <SortAsc className="h-4 w-4" aria-hidden="true" />

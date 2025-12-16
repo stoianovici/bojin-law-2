@@ -23,15 +23,16 @@ This document defines the structure and content of seed data for the Legal Platf
 
 **Count:** 5 (1 Partner + 2 Associates + 2 Paralegals)
 
-| ID | Role      | First Name | Last Name | Email                       | Azure AD ID        |
-|----|-----------|------------|-----------|-----------------------------|--------------------|
-| 1  | Partner   | Alex       | Popescu   | partner@demo.lawfirm.ro     | aad-partner-demo   |
-| 2  | Associate | Maria      | Ionescu   | associate1@demo.lawfirm.ro  | aad-assoc1-demo    |
-| 3  | Associate | Ion        | Georgescu | associate2@demo.lawfirm.ro  | aad-assoc2-demo    |
-| 4  | Paralegal | Elena      | Popa      | paralegal1@demo.lawfirm.ro  | aad-para1-demo     |
-| 5  | Paralegal | Mihai      | Dumitrescu| paralegal2@demo.lawfirm.ro  | aad-para2-demo     |
+| ID  | Role      | First Name | Last Name  | Email                      | Azure AD ID      |
+| --- | --------- | ---------- | ---------- | -------------------------- | ---------------- |
+| 1   | Partner   | Alex       | Popescu    | partner@demo.lawfirm.ro    | aad-partner-demo |
+| 2   | Associate | Maria      | Ionescu    | associate1@demo.lawfirm.ro | aad-assoc1-demo  |
+| 3   | Associate | Ion        | Georgescu  | associate2@demo.lawfirm.ro | aad-assoc2-demo  |
+| 4   | Paralegal | Elena      | Popa       | paralegal1@demo.lawfirm.ro | aad-para1-demo   |
+| 5   | Paralegal | Mihai      | Dumitrescu | paralegal2@demo.lawfirm.ro | aad-para2-demo   |
 
 **User Attributes:**
+
 - All users: `is_active: true`, `created_at: NOW() - random(30-365 days)`
 - Partner: `can_approve_documents: true`, `can_manage_cases: true`
 - Associates: `can_approve_documents: false`, `can_manage_cases: true`
@@ -42,13 +43,16 @@ This document defines the structure and content of seed data for the Legal Platf
 **Count:** 10
 
 ### Case Distribution by Status:
+
 - Active: 4 cases
 - OnHold: 2 cases
 - Closed: 2 cases
 - Archived: 2 cases
 
 ### Case Distribution by Type:
+
 Mix of all case types from enum:
+
 - Civil: 3 cases
 - Criminal: 2 cases
 - Corporate: 2 cases
@@ -95,6 +99,7 @@ Mix of all case types from enum:
 **Count:** 20
 
 ### Document Distribution by Type:
+
 - Contract: 4 docs
 - Pleading: 4 docs
 - Motion: 3 docs
@@ -104,12 +109,14 @@ Mix of all case types from enum:
 - Other: 1 doc
 
 ### Document Distribution by Status:
+
 - Draft: 8 docs
 - Review: 6 docs
 - Approved: 4 docs
 - Filed: 2 docs
 
 ### AI Generated Distribution:
+
 - `ai_generated: true`: 10 docs (50%)
 - `ai_generated: false`: 10 docs (50%)
 
@@ -135,6 +142,7 @@ Mix of all case types from enum:
 ```
 
 ### Key Test Cases in Documents:
+
 - Version history: 3 docs with multiple versions
 - Large files: 2 docs > 5MB
 - Small files: 2 docs < 100KB
@@ -147,6 +155,7 @@ Mix of all case types from enum:
 **Count:** 30
 
 ### Task Distribution by Type:
+
 - Research: 8 tasks
 - DocumentCreation: 7 tasks
 - DocumentReview: 5 tasks
@@ -155,11 +164,13 @@ Mix of all case types from enum:
 - CasePreparation: 3 tasks
 
 ### Task Distribution by Status:
+
 - Pending: 12 tasks
 - InProgress: 10 tasks
 - Completed: 8 tasks
 
 ### Task Distribution by Due Date:
+
 - Overdue (past): 5 tasks
 - Due soon (next 7 days): 8 tasks
 - Due later (7-30 days): 10 tasks
@@ -187,6 +198,7 @@ Mix of all case types from enum:
 ```
 
 ### Task Assignment Distribution:
+
 - Partner: 5 tasks (mostly review/approval)
 - Associate 1: 10 tasks (mixed types)
 - Associate 2: 8 tasks (research heavy)
@@ -195,6 +207,7 @@ Mix of all case types from enum:
 - Unassigned: 5 tasks
 
 ### Key Test Cases in Tasks:
+
 - Overdue tasks: Test priority/alert systems
 - Tasks with no estimated hours: Test time tracking
 - Completed tasks: Test reporting/analytics
@@ -204,6 +217,7 @@ Mix of all case types from enum:
 ## Edge Cases and Testing Scenarios
 
 ### Data Integrity Tests:
+
 1. **Orphaned records**: Ensure all foreign keys reference existing records
 2. **Circular dependencies**: No case → document → task → case loops
 3. **Date consistency**: created_at < updated_at, opened_date < closed_date
@@ -211,18 +225,21 @@ Mix of all case types from enum:
 5. **NULL handling**: Optional fields properly handle NULL values
 
 ### Performance Tests:
+
 1. **Large data volumes**: Cases with 50+ documents, 100+ tasks
 2. **Deep nesting**: Cases with subcases, tasks with subtasks
 3. **Complex queries**: Filter cases by multiple criteria
 4. **Aggregations**: Count documents by type, sum hours by user
 
 ### Security Tests:
+
 1. **Access control**: Users can only access their firm's data
 2. **Role permissions**: Paralegals can't approve documents
 3. **Audit trail**: All modifications logged with user ID and timestamp
 4. **Data isolation**: Firm data not leaked across tenants
 
 ### Unicode and Localization:
+
 1. **Romanian characters**: ă, â, î, ș, ț in names and addresses
 2. **Date formats**: DD-MM-YYYY for Romanian locale
 3. **Currency**: RON (Romanian Leu) in financial fields

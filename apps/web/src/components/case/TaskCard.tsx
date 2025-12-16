@@ -28,10 +28,7 @@ interface PriorityBadgeProps {
 }
 
 function PriorityBadge({ priority }: PriorityBadgeProps) {
-  const priorityConfig: Record<
-    'High' | 'Medium' | 'Low',
-    { label: string; className: string }
-  > = {
+  const priorityConfig: Record<'High' | 'Medium' | 'Low', { label: string; className: string }> = {
     High: { label: 'Înaltă', className: 'bg-red-100 text-red-800 border-red-200' },
     Medium: { label: 'Medie', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
     Low: { label: 'Scăzută', className: 'bg-gray-100 text-gray-800 border-gray-200' },
@@ -43,7 +40,7 @@ function PriorityBadge({ priority }: PriorityBadgeProps) {
     <span
       className={clsx(
         'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border',
-        config.className,
+        config.className
       )}
     >
       {config.label}
@@ -72,16 +69,13 @@ function DueDateBadge({ dueDate }: DueDateBadgeProps) {
             : 'text-blue-700 bg-blue-50',
   };
 
-  const label =
-    daysUntil < 0
-      ? 'Întârziat'
-      : format(dueDate, 'dd MMM', { locale: ro });
+  const label = daysUntil < 0 ? 'Întârziat' : format(dueDate, 'dd MMM', { locale: ro });
 
   return (
     <div
       className={clsx(
         'inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
-        urgencyConfig.className,
+        urgencyConfig.className
       )}
     >
       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,13 +96,7 @@ function DueDateBadge({ dueDate }: DueDateBadgeProps) {
  *
  * Displays task information in a card format for kanban boards
  */
-export function TaskCard({
-  task,
-  assignee,
-  onTaskClick,
-  onMenuClick,
-  className,
-}: TaskCardProps) {
+export function TaskCard({ task, assignee, onTaskClick, onMenuClick, className }: TaskCardProps) {
   const initials = assignee
     ? `${assignee.firstName.charAt(0)}${assignee.lastName.charAt(0)}`.toUpperCase()
     : '?';
@@ -123,15 +111,13 @@ export function TaskCard({
     <div
       className={clsx(
         'bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer group',
-        className,
+        className
       )}
       onClick={() => onTaskClick?.(task)}
     >
       {/* Header: Title and Menu */}
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="text-sm font-semibold text-gray-900 leading-snug flex-1">
-          {task.title}
-        </h4>
+        <h4 className="text-sm font-semibold text-gray-900 leading-snug flex-1">{task.title}</h4>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -153,9 +139,7 @@ export function TaskCard({
 
       {/* Description */}
       {truncatedDescription && (
-        <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-          {truncatedDescription}
-        </p>
+        <p className="text-xs text-gray-600 mb-3 line-clamp-2">{truncatedDescription}</p>
       )}
 
       {/* Footer: Priority, Due Date, Assignee */}
@@ -180,9 +164,7 @@ export function TaskCard({
 
       {/* Drag hint tooltip (visual only) */}
       <div className="mt-2 pt-2 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
-        <p className="text-xs text-gray-500 text-center">
-          Trageți pentru a muta
-        </p>
+        <p className="text-xs text-gray-500 text-center">Trageți pentru a muta</p>
       </div>
     </div>
   );

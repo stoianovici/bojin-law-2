@@ -323,9 +323,7 @@ describe('Case Search Integration Tests', () => {
 
       // Wait for filtered empty state
       await waitFor(() => {
-        expect(
-          screen.getByText(/no cases match your filters|no cases found/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/no cases match your filters|no cases found/i)).toBeInTheDocument();
       });
 
       // Verify "Clear Filters" button is present in empty state

@@ -192,7 +192,9 @@ export class SearchService {
     const ttl = mode === SearchMode.SEMANTIC ? SEMANTIC_CACHE_TTL : FULL_TEXT_CACHE_TTL;
     await cacheManager.set(`${SEARCH_CACHE_PREFIX}:${cacheKey}`, response, ttl);
 
-    console.log(`[Search Service] Search completed in ${response.searchTime}ms, ${results.length} results`);
+    console.log(
+      `[Search Service] Search completed in ${response.searchTime}ms, ${results.length} results`
+    );
     return response;
   }
 
@@ -245,7 +247,9 @@ export class SearchService {
     let paramIndex = 7;
 
     if (filterConditions.dateRange && filters.dateRange) {
-      whereParts.push(`AND c.opened_date BETWEEN $${paramIndex}::timestamp AND $${paramIndex + 1}::timestamp`);
+      whereParts.push(
+        `AND c.opened_date BETWEEN $${paramIndex}::timestamp AND $${paramIndex + 1}::timestamp`
+      );
       params.push(filters.dateRange.start, filters.dateRange.end);
       paramIndex += 2;
     }
@@ -270,18 +274,20 @@ export class SearchService {
 
     const filterSql = whereParts.join(' ');
 
-    const results = await prisma.$queryRawUnsafe<Array<{
-      id: string;
-      case_number: string;
-      title: string;
-      description: string;
-      status: string;
-      type: string;
-      client_name: string | null;
-      opened_date: Date;
-      rank: number;
-      highlight: string | null;
-    }>>(
+    const results = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        case_number: string;
+        title: string;
+        description: string;
+        status: string;
+        type: string;
+        client_name: string | null;
+        opened_date: Date;
+        rank: number;
+        highlight: string | null;
+      }>
+    >(
       `SELECT
         c.id,
         c.case_number,
@@ -360,15 +366,17 @@ export class SearchService {
 
     const filterSql = whereParts.join(' ');
 
-    const results = await prisma.$queryRawUnsafe<Array<{
-      id: string;
-      file_name: string;
-      file_type: string;
-      client_name: string | null;
-      uploaded_at: Date;
-      rank: number;
-      highlight: string | null;
-    }>>(
+    const results = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        file_name: string;
+        file_type: string;
+        client_name: string | null;
+        uploaded_at: Date;
+        rank: number;
+        highlight: string | null;
+      }>
+    >(
       `SELECT
         d.id,
         d.file_name,
@@ -426,15 +434,17 @@ export class SearchService {
       return [];
     }
 
-    const results = await prisma.$queryRaw<Array<{
-      id: string;
-      name: string;
-      contact_info: any;
-      address: string | null;
-      case_count: number;
-      rank: number;
-      highlight: string | null;
-    }>>`
+    const results = await prisma.$queryRaw<
+      Array<{
+        id: string;
+        name: string;
+        contact_info: any;
+        address: string | null;
+        case_count: number;
+        rank: number;
+        highlight: string | null;
+      }>
+    >`
       SELECT
         c.id,
         c.name,
@@ -489,11 +499,23 @@ export class SearchService {
     const results: SearchResult[] = [];
 
     // Search cases
-    const caseResults = await this.semanticSearchCases(queryEmbedding, firmId, filters, limit, offset);
+    const caseResults = await this.semanticSearchCases(
+      queryEmbedding,
+      firmId,
+      filters,
+      limit,
+      offset
+    );
     results.push(...caseResults);
 
     // Search documents
-    const docResults = await this.semanticSearchDocuments(queryEmbedding, firmId, filters, limit, offset);
+    const docResults = await this.semanticSearchDocuments(
+      queryEmbedding,
+      firmId,
+      filters,
+      limit,
+      offset
+    );
     results.push(...docResults);
 
     // Sort by score descending
@@ -517,11 +539,21 @@ export class SearchService {
 
     // Build WHERE clause parts
     const whereParts: string[] = [];
-    const params: any[] = [firmId, embeddingStr, embeddingStr, SEARCH_MIN_SIMILARITY, embeddingStr, limit, offset];
+    const params: any[] = [
+      firmId,
+      embeddingStr,
+      embeddingStr,
+      SEARCH_MIN_SIMILARITY,
+      embeddingStr,
+      limit,
+      offset,
+    ];
     let paramIndex = 8;
 
     if (filterConditions.dateRange && filters.dateRange) {
-      whereParts.push(`AND c.opened_date BETWEEN $${paramIndex}::timestamp AND $${paramIndex + 1}::timestamp`);
+      whereParts.push(
+        `AND c.opened_date BETWEEN $${paramIndex}::timestamp AND $${paramIndex + 1}::timestamp`
+      );
       params.push(filters.dateRange.start, filters.dateRange.end);
       paramIndex += 2;
     }
@@ -546,17 +578,19 @@ export class SearchService {
 
     const filterSql = whereParts.join(' ');
 
-    const results = await prisma.$queryRawUnsafe<Array<{
-      id: string;
-      case_number: string;
-      title: string;
-      description: string;
-      status: string;
-      type: string;
-      client_name: string | null;
-      opened_date: Date;
-      similarity: number;
-    }>>(
+    const results = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        case_number: string;
+        title: string;
+        description: string;
+        status: string;
+        type: string;
+        client_name: string | null;
+        opened_date: Date;
+        similarity: number;
+      }>
+    >(
       `SELECT
         c.id,
         c.case_number,
@@ -610,7 +644,15 @@ export class SearchService {
 
     // Build WHERE clause parts
     const whereParts: string[] = [];
-    const params: any[] = [firmId, embeddingStr, embeddingStr, SEARCH_MIN_SIMILARITY, embeddingStr, limit, offset];
+    const params: any[] = [
+      firmId,
+      embeddingStr,
+      embeddingStr,
+      SEARCH_MIN_SIMILARITY,
+      embeddingStr,
+      limit,
+      offset,
+    ];
     let paramIndex = 8;
 
     if (filterConditions.documentTypes && filters.documentTypes) {
@@ -627,15 +669,17 @@ export class SearchService {
 
     const filterSql = whereParts.join(' ');
 
-    const results = await prisma.$queryRawUnsafe<Array<{
-      id: string;
-      file_name: string;
-      file_type: string;
-      client_name: string | null;
-      uploaded_at: Date;
-      similarity: number;
-      description: string | null;
-    }>>(
+    const results = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        file_name: string;
+        file_type: string;
+        client_name: string | null;
+        uploaded_at: Date;
+        similarity: number;
+        description: string | null;
+      }>
+    >(
       `SELECT
         d.id,
         d.file_name,
@@ -854,14 +898,16 @@ export class SearchService {
   async getRecentSearches(
     userId: string,
     limit: number = 10
-  ): Promise<Array<{
-    id: string;
-    query: string;
-    searchType: string;
-    filters: any;
-    resultCount: number;
-    createdAt: Date;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      query: string;
+      searchType: string;
+      filters: any;
+      resultCount: number;
+      createdAt: Date;
+    }>
+  > {
     // Check cache first
     const cacheKey = `recentSearches:${userId}`;
     const cached = await cacheManager.get<any[]>(cacheKey);
@@ -870,14 +916,16 @@ export class SearchService {
     }
 
     // Query database with deduplication
-    const searches = await prisma.$queryRaw<Array<{
-      id: string;
-      query: string;
-      search_type: string;
-      filters: any;
-      result_count: number;
-      created_at: Date;
-    }>>`
+    const searches = await prisma.$queryRaw<
+      Array<{
+        id: string;
+        query: string;
+        search_type: string;
+        filters: any;
+        result_count: number;
+        created_at: Date;
+      }>
+    >`
       SELECT DISTINCT ON (query)
         id,
         query,

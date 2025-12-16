@@ -221,7 +221,7 @@ describe('ProactiveSuggestionService', () => {
       const suggestions = await service.generateContextualSuggestions(minimalContext);
 
       // Only the DeadlineWarning (0.92) should pass the 0.7 threshold
-      expect(suggestions.every(s => s.confidence >= 0.7)).toBe(true);
+      expect(suggestions.every((s) => s.confidence >= 0.7)).toBe(true);
     });
 
     it('should use Haiku model for fast suggestions', async () => {
@@ -291,16 +291,18 @@ describe('ProactiveSuggestionService', () => {
       const manyResponse = {
         ...sampleAIResponse,
         content: JSON.stringify(
-          Array(10).fill(null).map((_, i) => ({
-            type: 'TaskSuggestion',
-            category: 'Task',
-            title: `Suggestion ${i}`,
-            description: 'Test',
-            suggestedAction: 'test',
-            actionPayload: {},
-            confidence: 0.9,
-            priority: 'Normal',
-          }))
+          Array(10)
+            .fill(null)
+            .map((_, i) => ({
+              type: 'TaskSuggestion',
+              category: 'Task',
+              title: `Suggestion ${i}`,
+              description: 'Test',
+              suggestedAction: 'test',
+              actionPayload: {},
+              confidence: 0.9,
+              priority: 'Normal',
+            }))
         ),
       };
       (providerManager.execute as jest.Mock).mockResolvedValue(manyResponse);
@@ -374,10 +376,7 @@ describe('ProactiveSuggestionService', () => {
       expect(prisma.aISuggestion.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            OR: [
-              { expiresAt: null },
-              { expiresAt: { gt: expect.any(Date) } },
-            ],
+            OR: [{ expiresAt: null }, { expiresAt: { gt: expect.any(Date) } }],
           }),
         })
       );
@@ -422,7 +421,12 @@ describe('ProactiveSuggestionService', () => {
       };
       (prisma.aISuggestion.update as jest.Mock).mockResolvedValue(mockUpdated);
 
-      const result = await service.dismissSuggestion('sug-123', 'user-123', 'firm-456', 'Not relevant');
+      const result = await service.dismissSuggestion(
+        'sug-123',
+        'user-123',
+        'firm-456',
+        'Not relevant'
+      );
 
       expect(prisma.aISuggestion.update).toHaveBeenCalledWith({
         where: {

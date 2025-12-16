@@ -1,0 +1,195 @@
+# OPS-029: AI Email Classification Service
+# OPS-030: Email Import with Classification Integration
+# GraphQL schema for multi-case email classification
+#
+# Note: GlobalEmailSource CRUD is defined in global-email-sources.graphql
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+enum MatchType {
+  ACTOR
+  REFERENCE
+  KEYWORD
+  SEMANTIC
+  NONE
+}
+
+# ============================================================================
+# Types - Email Details for Classification
+# ============================================================================
+
+"""
+Basic email info for display in classification preview
+"""
+type EmailForClassification {
+  id: ID!
+  subject: String
+  from: String
+  fromName: String
+  receivedDateTime: DateTime
+  hasAttachments: Boolean!
+}
+
+# ============================================================================
+# Types - Classification Results
+# ============================================================================
+
+type ExtractedReference {
+  type: String!
+  value: String!
+  normalized: String!
+  position: Int!
+}
+
+type AlternativeCase {
+  caseId: ID!
+  case: Case
+  confidence: Float!
+  reason: String!
+}
+
+type ClassificationResult {
+  emailId: ID!
+  email: EmailForClassification
+  suggestedCaseId: ID
+  suggestedCase: Case
+  confidence: Float!
+  reasons: [String!]!
+  alternativeCases: [AlternativeCase!]!
+  needsHumanReview: Boolean!
+  reviewReason: String
+  matchType: MatchType!
+  extractedReferences: [ExtractedReference!]!
+  isGlobalSource: Boolean!
+  globalSourceName: String
+}
+
+# ============================================================================
+# Types - Preview and Summary
+# ============================================================================
+
+type CaseClassificationSummary {
+  caseId: ID!
+  case: Case!
+  emailCount: Int!
+  autoClassified: Int!
+  needsReview: Int!
+}
+
+type EmailClassificationPreview {
+  totalEmails: Int!
+  classifications: [ClassificationResult!]!
+  byCase: [CaseClassificationSummary!]!
+  needsReview: Int!
+  unclassified: Int!
+}
+
+type CaseClassificationMetadata {
+  caseId: ID!
+  case: Case!
+  keywords: [String!]!
+  referenceNumbers: [String!]!
+  subjectPatterns: [String!]!
+  classificationNotes: String
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+input ClassifyEmailsInput {
+  clientId: ID!
+  emailIds: [ID!]!
+}
+
+input PreviewClassificationInput {
+  emailAddresses: [String!]!
+  clientId: ID!
+}
+
+"""
+Input for classification preview during email import wizard
+"""
+input PreviewClassificationForImportInput {
+  """The case being imported into - used to derive client and their other cases"""
+  caseId: ID!
+  """Email addresses to filter emails by (same as regular import)"""
+  emailAddresses: [String!]!
+}
+
+"""
+Input for executing classified email import
+"""
+input ExecuteClassifiedImportInput {
+  """Primary case ID (used when importing to single case, or as default)"""
+  caseId: ID!
+  """Email addresses used to find emails"""
+  emailAddresses: [String!]!
+  """Manual overrides: which emails go to which case"""
+  classificationOverrides: [ClassificationOverrideInput!]!
+  """Email IDs to exclude from import"""
+  excludedEmailIds: [ID!]!
+  """Whether to import attachments"""
+  importAttachments: Boolean!
+  """Contact role assignments"""
+  contactAssignments: [ContactRoleAssignmentInput!]!
+}
+
+input ClassificationOverrideInput {
+  emailId: ID!
+  caseId: ID!
+}
+
+# ============================================================================
+# Types - Multi-Case Import Results
+# ============================================================================
+
+type CaseImportSummary {
+  caseId: ID!
+  case: Case!
+  emailsImported: Int!
+  attachmentsImported: Int!
+  contactsCreated: Int!
+}
+
+type ClassifiedImportResult {
+  success: Boolean!
+  totalEmailsImported: Int!
+  totalAttachmentsImported: Int!
+  importedByCase: [CaseImportSummary!]!
+  excluded: Int!
+  errors: [String!]!
+}
+
+# ============================================================================
+# Query Extensions
+# ============================================================================
+
+extend type Query {
+  # Classify emails for a specific client's cases
+  # Uses AI to determine which case each email belongs to
+  classifyEmailsForClient(input: ClassifyEmailsInput!): [ClassificationResult!]!
+
+  # Preview classification for email import (using email addresses to fetch from MS Graph)
+  previewEmailClassification(input: PreviewClassificationInput!): EmailClassificationPreview!
+
+  # Preview classification for import wizard - derives client from caseId
+  previewClassificationForImport(input: PreviewClassificationForImportInput!): EmailClassificationPreview!
+
+  # Get classification metadata for a case
+  caseClassificationMetadata(caseId: ID!): CaseClassificationMetadata!
+
+  # Check if client has multiple active cases (for UI flow decisions)
+  clientHasMultipleCases(caseId: ID!): Boolean!
+}
+
+# ============================================================================
+# Mutation Extensions
+# ============================================================================
+
+extend type Mutation {
+  # Execute email import with classification results
+  executeClassifiedImport(input: ExecuteClassifiedImportInput!): ClassifiedImportResult!
+}

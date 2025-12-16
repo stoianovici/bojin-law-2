@@ -77,7 +77,8 @@ export function SearchResults({
       {/* Results Header */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-500">
-          S-au găsit <span className="font-medium text-gray-900 dark:text-gray-100">{totalCount}</span>{' '}
+          S-au găsit{' '}
+          <span className="font-medium text-gray-900 dark:text-gray-100">{totalCount}</span>{' '}
           rezultate în <span className="font-medium">{searchTime}ms</span>
         </p>
       </div>
@@ -292,9 +293,7 @@ function ScoreBadge({ score }: { score: number }) {
         : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
 
   return (
-    <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${color}`}>
-      {percentage}%
-    </span>
+    <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${color}`}>{percentage}%</span>
   );
 }
 
@@ -312,7 +311,9 @@ function MatchTypeBadge({ matchType }: { matchType: string }) {
   };
 
   return (
-    <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${colors[matchType] || colors.FULL_TEXT}`}>
+    <span
+      className={`px-1.5 py-0.5 text-xs font-medium rounded ${colors[matchType] || colors.FULL_TEXT}`}
+    >
       {labels[matchType] || matchType}
     </span>
   );

@@ -59,9 +59,7 @@ export function FeedbackDialog({
       suggestionId: suggestion.id,
       action: action === 'dismiss' ? 'dismissed' : 'modified',
       feedbackReason: reason || undefined,
-      modifiedAction: alternativeAction
-        ? { alternativeAction }
-        : undefined,
+      modifiedAction: alternativeAction ? { alternativeAction } : undefined,
     };
 
     await recordFeedback(feedbackInput);
@@ -83,9 +81,7 @@ export function FeedbackDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {action === 'dismiss'
-              ? 'De ce respingi această sugestie?'
-              : 'Ce ai făcut în schimb?'}
+            {action === 'dismiss' ? 'De ce respingi această sugestie?' : 'Ce ai făcut în schimb?'}
           </DialogTitle>
           <DialogDescription>
             Feedback-ul tău ne ajută să îmbunătățim sugestiile AI.
@@ -99,9 +95,7 @@ export function FeedbackDialog({
             <Badge variant="outline">{suggestion.category}</Badge>
           </div>
           <p className="font-medium">{suggestion.title}</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {suggestion.description}
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{suggestion.description}</p>
         </div>
 
         {/* Reason selection */}

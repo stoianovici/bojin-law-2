@@ -211,9 +211,7 @@ export function MentionAutocomplete({
       {/* Loading state */}
       {showDropdown && searchQuery && users.length === 0 && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 px-3 py-2 text-sm text-gray-500">
-          {searchQuery.length < 1
-            ? 'Tastează pentru a căuta...'
-            : 'Niciun utilizator găsit'}
+          {searchQuery.length < 1 ? 'Tastează pentru a căuta...' : 'Niciun utilizator găsit'}
         </div>
       )}
     </div>

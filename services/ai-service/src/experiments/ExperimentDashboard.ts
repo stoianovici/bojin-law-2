@@ -111,7 +111,9 @@ export class ExperimentDashboard {
     const percentComplete = Math.min(100, (totalSamples / targetSamples) * 100);
 
     const now = new Date();
-    const daysRunning = Math.floor((now.getTime() - experiment.startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRunning = Math.floor(
+      (now.getTime() - experiment.startDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     const summary: DashboardSummary = {
       experimentId,
@@ -122,16 +124,16 @@ export class ExperimentDashboard {
       sampleSizes: {
         control: sampleSizes.control,
         treatment: sampleSizes.treatment,
-        total: totalSamples
+        total: totalSamples,
       },
       currentMetrics: {
         control: controlMetrics,
-        treatment: treatmentMetrics
+        treatment: treatmentMetrics,
       },
       progress: {
         percentComplete,
-        daysRunning
-      }
+        daysRunning,
+      },
     };
 
     return summary;
@@ -146,7 +148,7 @@ export class ExperimentDashboard {
         avgCostPerRequest: 0,
         avgExecutionTimeMs: 0,
         avgTokenUsage: 0,
-        totalRequests: 0
+        totalRequests: 0,
       };
     }
 
@@ -154,17 +156,18 @@ export class ExperimentDashboard {
     const avgTime = metrics.reduce((sum, m) => sum + m.executionTimeMs, 0) / metrics.length;
     const avgTokens = metrics.reduce((sum, m) => sum + m.tokenUsage, 0) / metrics.length;
 
-    const qualityMetrics = metrics.filter(m => m.responseQuality !== undefined);
-    const avgQuality = qualityMetrics.length > 0
-      ? qualityMetrics.reduce((sum, m) => sum + m.responseQuality!, 0) / qualityMetrics.length
-      : undefined;
+    const qualityMetrics = metrics.filter((m) => m.responseQuality !== undefined);
+    const avgQuality =
+      qualityMetrics.length > 0
+        ? qualityMetrics.reduce((sum, m) => sum + m.responseQuality!, 0) / qualityMetrics.length
+        : undefined;
 
     return {
       avgCostPerRequest: avgCost,
       avgExecutionTimeMs: avgTime,
       avgTokenUsage: avgTokens,
       avgQuality,
-      totalRequests: metrics.length
+      totalRequests: metrics.length,
     };
   }
 
@@ -202,7 +205,7 @@ export class ExperimentDashboard {
       reason = `Control performs better. Treatment increases cost by ${(-costSavings).toFixed(2)}%`;
     } else {
       action = 'continue_testing';
-      reason = `Results not yet significant (p-value ${analysis.pValue.toFixed(4)}). Continue testing to reach ${(analysis.confidenceLevel * 100)}% confidence.`;
+      reason = `Results not yet significant (p-value ${analysis.pValue.toFixed(4)}). Continue testing to reach ${analysis.confidenceLevel * 100}% confidence.`;
     }
 
     const report: ComparisonReport = {
@@ -213,19 +216,19 @@ export class ExperimentDashboard {
         costSavings,
         speedImprovement,
         tokenReduction,
-        confidenceLevel: analysis.confidenceLevel
+        confidenceLevel: analysis.confidenceLevel,
       },
       recommendation: {
         action,
-        reason
-      }
+        reason,
+      },
     };
 
     this.logger.info('Comparison report generated', {
       experimentId,
       winner,
       costSavings: `${costSavings.toFixed(2)}%`,
-      recommendation: action
+      recommendation: action,
     });
 
     return report;
@@ -261,7 +264,7 @@ export class ExperimentDashboard {
    */
   getAllActiveSummaries(): DashboardSummary[] {
     const activeExperiments = this.framework.getActiveExperiments();
-    return activeExperiments.map(exp => this.getDashboardSummary(exp.id));
+    return activeExperiments.map((exp) => this.getDashboardSummary(exp.id));
   }
 
   /**
@@ -278,7 +281,7 @@ export class ExperimentDashboard {
   }> {
     const experiments = this.framework.getActiveExperiments();
     const leaderboard = experiments
-      .map(exp => {
+      .map((exp) => {
         try {
           const report = this.generateComparisonReport(exp.id);
           return {
@@ -286,7 +289,7 @@ export class ExperimentDashboard {
             experimentName: exp.name,
             costSavings: report.summary.costSavings,
             confidence: report.summary.confidenceLevel,
-            status: exp.active ? 'active' as const : 'completed' as const
+            status: exp.active ? ('active' as const) : ('completed' as const),
           };
         } catch (_error) {
           // Experiment not ready for analysis yet
@@ -297,7 +300,7 @@ export class ExperimentDashboard {
       .sort((a, b) => b.costSavings - a.costSavings)
       .map((item, index) => ({
         ...item,
-        rank: index + 1
+        rank: index + 1,
       }));
 
     return leaderboard;
@@ -306,7 +309,10 @@ export class ExperimentDashboard {
   /**
    * Calculate projected monthly savings based on current experiment results
    */
-  calculateProjectedSavings(experimentId: string, monthlyRequestVolume: number): {
+  calculateProjectedSavings(
+    experimentId: string,
+    monthlyRequestVolume: number
+  ): {
     currentMonthlyCost: number;
     projectedMonthlyCost: number;
     monthlySavings: number;
@@ -328,14 +334,14 @@ export class ExperimentDashboard {
       experimentId,
       monthlyVolume: monthlyRequestVolume,
       monthlySavings,
-      annualSavings
+      annualSavings,
     });
 
     return {
       currentMonthlyCost,
       projectedMonthlyCost,
       monthlySavings,
-      annualSavings
+      annualSavings,
     };
   }
 
@@ -350,7 +356,7 @@ export class ExperimentDashboard {
     return {
       summary: this.getDashboardSummary(experimentId),
       comparison: this.generateComparisonReport(experimentId),
-      realtimeMetrics: this.getRealtimeMetrics(experimentId)
+      realtimeMetrics: this.getRealtimeMetrics(experimentId),
     };
   }
 }

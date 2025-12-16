@@ -125,7 +125,9 @@ export function QuickTaskCreator({
 
       {/* Task Type */}
       <div>
-        <label htmlFor="task-type" className="block text-xs font-medium mb-1">Tip Task:</label>
+        <label htmlFor="task-type" className="block text-xs font-medium mb-1">
+          Tip Task:
+        </label>
         <select
           id="task-type"
           value={taskType}
@@ -161,7 +163,9 @@ export function QuickTaskCreator({
 
       {/* Description */}
       <div>
-        <label htmlFor="task-description" className="block text-xs font-medium mb-1">Descriere:</label>
+        <label htmlFor="task-description" className="block text-xs font-medium mb-1">
+          Descriere:
+        </label>
         <textarea
           id="task-description"
           value={description}
@@ -173,7 +177,9 @@ export function QuickTaskCreator({
 
       {/* Assigned To */}
       <div>
-        <label htmlFor="task-assigned-to" className="block text-xs font-medium mb-1">Atribuit către:</label>
+        <label htmlFor="task-assigned-to" className="block text-xs font-medium mb-1">
+          Atribuit către:
+        </label>
         <select
           id="task-assigned-to"
           value={assignedTo}
@@ -206,7 +212,9 @@ export function QuickTaskCreator({
 
       {/* Priority */}
       <div>
-        <label htmlFor="task-priority" className="block text-xs font-medium mb-1">Prioritate:</label>
+        <label htmlFor="task-priority" className="block text-xs font-medium mb-1">
+          Prioritate:
+        </label>
         <select
           id="task-priority"
           value={priority}

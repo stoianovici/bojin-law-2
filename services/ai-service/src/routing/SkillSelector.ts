@@ -171,7 +171,9 @@ export class SkillSelector {
 
     const reasoning = this.generateReasoning(selectedSkills, strategy, classification, confidence);
 
-    console.log(`[SkillSelector] Selected ${selectedSkills.length} skills with confidence ${confidence.toFixed(2)} (${strategy})`);
+    console.log(
+      `[SkillSelector] Selected ${selectedSkills.length} skills with confidence ${confidence.toFixed(2)} (${strategy})`
+    );
 
     return {
       skills: selectedSkills,
@@ -201,9 +203,11 @@ export class SkillSelector {
       const metrics = this.skillsRegistry.getSkillMetrics(skillId);
       if (metrics) {
         // Calculate effectiveness score based on metrics
-        return metrics.successRate * 0.5 +
+        return (
+          metrics.successRate * 0.5 +
           Math.min(metrics.averageTokensSaved / 0.7, 1.0) * 0.3 +
-          Math.max(0, 1 - metrics.averageExecutionTime / 5000) * 0.2;
+          Math.max(0, 1 - metrics.averageExecutionTime / 5000) * 0.2
+        );
       } else {
         // No metrics yet - use default moderate score
         return 0.6;
@@ -442,10 +446,7 @@ export class SkillSelector {
   /**
    * Update confidence thresholds
    */
-  updateThresholds(thresholds: {
-    minConfidence?: number;
-    highConfidence?: number;
-  }): void {
+  updateThresholds(thresholds: { minConfidence?: number; highConfidence?: number }): void {
     if (thresholds.minConfidence !== undefined) {
       this.config.minConfidenceThreshold = thresholds.minConfidence;
     }

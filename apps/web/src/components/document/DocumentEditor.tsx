@@ -162,11 +162,7 @@ export function DocumentEditor({
       <div className="flex-shrink-0 w-16 bg-gray-50 border-r border-gray-200 py-4 px-2 overflow-hidden">
         <div className="text-right text-xs font-mono text-gray-500 leading-[1.6]">
           {lines.map((_, index) => (
-            <div
-              key={index}
-              className="h-[25.6px] select-none"
-              style={{ lineHeight: '1.6' }}
-            >
+            <div key={index} className="h-[25.6px] select-none" style={{ lineHeight: '1.6' }}>
               {index + 1}
             </div>
           ))}

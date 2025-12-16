@@ -97,11 +97,7 @@ describe('TemplateUsageTrackingService', () => {
     it('should return 0 if template not found', async () => {
       (mockDb.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
 
-      const timeSaved = await service.measureTimeSaved(
-        'invalid-template',
-        new Date(),
-        new Date()
-      );
+      const timeSaved = await service.measureTimeSaved('invalid-template', new Date(), new Date());
 
       expect(timeSaved).toBe(0);
     });
@@ -361,8 +357,8 @@ describe('TemplateUsageTrackingService', () => {
       );
 
       // Check that at least one recommendation matches the pattern
-      const hasMatchingRecommendation = report.recommendations.some(
-        (rec) => /high-value|excellent ROI/i.test(rec)
+      const hasMatchingRecommendation = report.recommendations.some((rec) =>
+        /high-value|excellent ROI/i.test(rec)
       );
       expect(hasMatchingRecommendation).toBe(true);
     });

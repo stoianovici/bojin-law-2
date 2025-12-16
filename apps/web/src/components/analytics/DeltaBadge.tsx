@@ -67,17 +67,10 @@ export function DeltaBadge({
 
   // Get icon based on direction
   const Icon =
-    delta.direction === 'up'
-      ? TrendingUp
-      : delta.direction === 'down'
-        ? TrendingDown
-        : Minus;
+    delta.direction === 'up' ? TrendingUp : delta.direction === 'down' ? TrendingDown : Minus;
 
   // Size classes
-  const sizeClasses =
-    size === 'sm'
-      ? 'text-xs px-1.5 py-0.5 gap-0.5'
-      : 'text-sm px-2 py-1 gap-1';
+  const sizeClasses = size === 'sm' ? 'text-xs px-1.5 py-0.5 gap-0.5' : 'text-sm px-2 py-1 gap-1';
 
   const iconSize = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
 

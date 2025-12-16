@@ -61,9 +61,7 @@ try {
  */
 function generateMarkdown(schema, schemaSDL) {
   const introspection = introspectionFromSchema(schema);
-  const types = introspection.__schema.types.filter(
-    type => !type.name.startsWith('__')
-  );
+  const types = introspection.__schema.types.filter((type) => !type.name.startsWith('__'));
 
   let markdown = `# GraphQL API Schema Documentation
 
@@ -103,11 +101,11 @@ and authorization controls.
 `;
 
   // Scalars
-  const scalars = types.filter(t => t.kind === 'SCALAR');
+  const scalars = types.filter((t) => t.kind === 'SCALAR');
   if (scalars.length > 0) {
     markdown += '## Scalars\n\n';
     markdown += 'Custom scalar types used in the API.\n\n';
-    scalars.forEach(scalar => {
+    scalars.forEach((scalar) => {
       markdown += `### ${scalar.name}\n\n`;
       if (scalar.description) {
         markdown += `${scalar.description}\n\n`;
@@ -117,18 +115,18 @@ and authorization controls.
   }
 
   // Enums
-  const enums = types.filter(t => t.kind === 'ENUM');
+  const enums = types.filter((t) => t.kind === 'ENUM');
   if (enums.length > 0) {
     markdown += '## Enums\n\n';
     markdown += 'Enumeration types representing fixed sets of values.\n\n';
-    enums.forEach(enumType => {
+    enums.forEach((enumType) => {
       markdown += `### ${enumType.name}\n\n`;
       if (enumType.description) {
         markdown += `${enumType.description}\n\n`;
       }
       if (enumType.enumValues && enumType.enumValues.length > 0) {
         markdown += '**Values:**\n\n';
-        enumType.enumValues.forEach(value => {
+        enumType.enumValues.forEach((value) => {
           markdown += `- \`${value.name}\``;
           if (value.description) {
             markdown += ` - ${value.description}`;
@@ -149,12 +147,16 @@ and authorization controls.
 
   // Object Types
   const objects = types.filter(
-    t => t.kind === 'OBJECT' && t.name !== 'Query' && t.name !== 'Mutation' && t.name !== 'Subscription'
+    (t) =>
+      t.kind === 'OBJECT' &&
+      t.name !== 'Query' &&
+      t.name !== 'Mutation' &&
+      t.name !== 'Subscription'
   );
   if (objects.length > 0) {
     markdown += '## Types\n\n';
     markdown += 'Object types representing entities in the system.\n\n';
-    objects.forEach(obj => {
+    objects.forEach((obj) => {
       markdown += `### ${obj.name}\n\n`;
       if (obj.description) {
         markdown += `${obj.description}\n\n`;
@@ -163,7 +165,7 @@ and authorization controls.
         markdown += '**Fields:**\n\n';
         markdown += '| Field | Type | Description |\n';
         markdown += '|-------|------|-------------|\n';
-        obj.fields.forEach(field => {
+        obj.fields.forEach((field) => {
           const fieldType = formatType(field.type);
           const description = field.description || '-';
           const deprecation = field.isDeprecated
@@ -178,11 +180,11 @@ and authorization controls.
   }
 
   // Input Types
-  const inputs = types.filter(t => t.kind === 'INPUT_OBJECT');
+  const inputs = types.filter((t) => t.kind === 'INPUT_OBJECT');
   if (inputs.length > 0) {
     markdown += '## Input Types\n\n';
     markdown += 'Input types used for mutations and complex query arguments.\n\n';
-    inputs.forEach(input => {
+    inputs.forEach((input) => {
       markdown += `### ${input.name}\n\n`;
       if (input.description) {
         markdown += `${input.description}\n\n`;
@@ -191,7 +193,7 @@ and authorization controls.
         markdown += '**Fields:**\n\n';
         markdown += '| Field | Type | Description |\n';
         markdown += '|-------|------|-------------|\n';
-        input.inputFields.forEach(field => {
+        input.inputFields.forEach((field) => {
           const fieldType = formatType(field.type);
           const description = field.description || '-';
           markdown += `| \`${field.name}\` | \`${fieldType}\` | ${description} |\n`;
@@ -203,11 +205,11 @@ and authorization controls.
   }
 
   // Queries
-  const queryType = types.find(t => t.name === 'Query');
+  const queryType = types.find((t) => t.name === 'Query');
   if (queryType && queryType.fields) {
     markdown += '## Queries\n\n';
     markdown += 'Available query operations for fetching data.\n\n';
-    queryType.fields.forEach(field => {
+    queryType.fields.forEach((field) => {
       markdown += `### ${field.name}\n\n`;
       if (field.description) {
         markdown += `${field.description}\n\n`;
@@ -218,7 +220,7 @@ and authorization controls.
         markdown += '**Arguments:**\n\n';
         markdown += '| Argument | Type | Description |\n';
         markdown += '|----------|------|-------------|\n';
-        field.args.forEach(arg => {
+        field.args.forEach((arg) => {
           const argType = formatType(arg.type);
           const description = arg.description || '-';
           markdown += `| \`${arg.name}\` | \`${argType}\` | ${description} |\n`;
@@ -237,11 +239,11 @@ and authorization controls.
   }
 
   // Mutations
-  const mutationType = types.find(t => t.name === 'Mutation');
+  const mutationType = types.find((t) => t.name === 'Mutation');
   if (mutationType && mutationType.fields) {
     markdown += '## Mutations\n\n';
     markdown += 'Available mutation operations for modifying data.\n\n';
-    mutationType.fields.forEach(field => {
+    mutationType.fields.forEach((field) => {
       markdown += `### ${field.name}\n\n`;
       if (field.description) {
         markdown += `${field.description}\n\n`;
@@ -252,7 +254,7 @@ and authorization controls.
         markdown += '**Arguments:**\n\n';
         markdown += '| Argument | Type | Description |\n';
         markdown += '|----------|------|-------------|\n';
-        field.args.forEach(arg => {
+        field.args.forEach((arg) => {
           const argType = formatType(arg.type);
           const description = arg.description || '-';
           markdown += `| \`${arg.name}\` | \`${argType}\` | ${description} |\n`;

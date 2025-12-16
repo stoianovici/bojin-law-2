@@ -71,9 +71,9 @@ describe('RoleSwitcher', () => {
         expect(options.length).toBeGreaterThan(0);
       });
 
-      const associateOption = screen.getAllByText('Associate').find(el =>
-        el.closest('[role="option"]')
-      );
+      const associateOption = screen
+        .getAllByText('Associate')
+        .find((el) => el.closest('[role="option"]'));
 
       if (associateOption) {
         await user.click(associateOption);
@@ -98,9 +98,9 @@ describe('RoleSwitcher', () => {
         expect(screen.getAllByText('Paralegal').length).toBeGreaterThan(0);
       });
 
-      const paralegalOption = screen.getAllByText('Paralegal').find(el =>
-        el.closest('[role="option"]')
-      );
+      const paralegalOption = screen
+        .getAllByText('Paralegal')
+        .find((el) => el.closest('[role="option"]'));
 
       if (paralegalOption) {
         await user.click(paralegalOption);
@@ -130,9 +130,9 @@ describe('RoleSwitcher', () => {
         expect(screen.getAllByText('Associate').length).toBeGreaterThan(0);
       });
 
-      const associateOption = screen.getAllByText('Associate').find(el =>
-        el.closest('[role="option"]')
-      );
+      const associateOption = screen
+        .getAllByText('Associate')
+        .find((el) => el.closest('[role="option"]'));
 
       if (associateOption) {
         await user.click(associateOption);
@@ -191,9 +191,9 @@ describe('RoleSwitcher', () => {
         expect(screen.getAllByText('Associate').length).toBeGreaterThan(0);
       });
 
-      const associateOption = screen.getAllByText('Associate').find(el =>
-        el.closest('[role="option"]')
-      );
+      const associateOption = screen
+        .getAllByText('Associate')
+        .find((el) => el.closest('[role="option"]'));
 
       if (associateOption) {
         await user.click(associateOption);

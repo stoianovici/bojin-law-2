@@ -29,10 +29,7 @@ export async function GET(
         timeSavings,
       });
     } catch (error) {
-      return NextResponse.json(
-        { error: `Template not found: ${slug}` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `Template not found: ${slug}` }, { status: 404 });
     }
   } catch (error) {
     console.error('Template details error:', error);

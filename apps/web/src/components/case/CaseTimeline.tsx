@@ -270,7 +270,12 @@ function DateGroup({
 // Main Timeline Component
 // ============================================================================
 
-export function CaseTimeline({ caseId: _caseId, events, isLoading, onEventClick }: CaseTimelineProps) {
+export function CaseTimeline({
+  caseId: _caseId,
+  events,
+  isLoading,
+  onEventClick,
+}: CaseTimelineProps) {
   const [filter, setFilter] = useState<FilterType>('all');
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [currentFocus, setCurrentFocus] = useState(0);

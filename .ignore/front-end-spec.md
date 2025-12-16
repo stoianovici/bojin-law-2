@@ -27,9 +27,9 @@ This document defines the user experience goals, information architecture, user 
 
 ### Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|---------|
-| Nov 2024 | 1.0 | Initial UI/UX specification created from PRD | Sally (UX Expert) |
+| Date     | Version | Description                                  | Author            |
+| -------- | ------- | -------------------------------------------- | ----------------- |
+| Nov 2024 | 1.0     | Initial UI/UX specification created from PRD | Sally (UX Expert) |
 
 ## Information Architecture (IA)
 
@@ -126,6 +126,7 @@ graph TD
 **User Goal:** Create a legal document (contract, motion, etc.) using AI assistance and firm templates
 
 **Entry Points:**
+
 - Command palette (Cmd+K): "Draft contract for [client name]"
 - Case workspace > Documents tab > New Document
 - Dashboard quick action button
@@ -154,6 +155,7 @@ graph TD
 ```
 
 #### Edge Cases & Error Handling:
+
 - No template exists: AI learns from similar documents in firm library
 - Ambiguous case reference: Show case picker with smart suggestions
 - AI unavailable: Fall back to template-only creation
@@ -166,6 +168,7 @@ graph TD
 **User Goal:** Create and manage tasks using conversational input
 
 **Entry Points:**
+
 - Command palette (Cmd+K): Primary method
 - Task section > Natural language bar
 - Case workspace > Quick add task
@@ -199,6 +202,7 @@ graph TD
 ```
 
 #### Edge Cases & Error Handling:
+
 - Conflicting deadlines: Alert user and suggest alternatives
 - Unknown assignee: Show team member picker
 - Multiple possible cases: Show case selector with context
@@ -209,6 +213,7 @@ graph TD
 **User Goal:** Process incoming emails and respond with AI assistance
 
 **Entry Points:**
+
 - Communication Hub > Email thread
 - Dashboard > Priority emails widget
 - Notification > New email alert
@@ -241,6 +246,7 @@ graph TD
 ```
 
 #### Edge Cases & Error Handling:
+
 - Cannot determine case: Flag for manual categorization
 - Sensitive content detected: Require manual response
 - Multiple action items: Group related tasks
@@ -251,6 +257,7 @@ graph TD
 **User Goal:** Review document changes and approve for filing/sending
 
 **Entry Points:**
+
 - Notification > Approval requested
 - Dashboard > Pending approvals widget
 - Document > Request approval button
@@ -280,6 +287,7 @@ graph TD
 ```
 
 #### Edge Cases & Error Handling:
+
 - Multiple approvers required: Sequential or parallel routing
 - Deadline approaching: Escalate to alternative approver
 - Conflicting feedback: AI summarizes and suggests resolution
@@ -297,6 +305,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Provide role-specific overview with AI-prioritized information and proactive suggestions for the day
 
 **Key Elements:**
+
 - Top bar: Command palette trigger (prominent), notifications bell, user avatar with role indicator
 - AI Daily Briefing card: Morning summary with prioritized tasks and suggestions
 - Role-specific widgets: KPIs for Partners, active cases for Associates, task queue for Paralegals
@@ -312,6 +321,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Unified hub for all case-related information with seamless navigation between documents, tasks, and communications
 
 **Key Elements:**
+
 - Case header: Name, client, status, team members, next critical deadline with countdown
 - Tab navigation: Overview, Documents, Tasks, Communications, Time Entries, AI Insights
 - Collapsible AI assistant panel (right): Persistent context, suggestions, and quick actions
@@ -327,6 +337,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Split-screen interface for document creation/editing with real-time AI assistance
 
 **Key Elements:**
+
 - Document editor (left 65%): Rich text editor with formatting toolbar, track changes
 - AI assistant panel (right 35%): Suggestions, similar documents, completion options
 - Top toolbar: Save status, version indicator, Word sync button, share/approve actions
@@ -342,6 +353,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Demonstrate conversational task creation with intelligent parsing and minimal form interaction
 
 **Key Elements:**
+
 - Prominent natural language input bar with placeholder examples
 - Parse result preview: Shows extracted fields with confidence indicators
 - Task type icons: Visual indicators for six task types
@@ -357,6 +369,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Unified email and message management with AI-powered triage and response drafting
 
 **Key Elements:**
+
 - Thread list (left): Grouped by case with unread indicators and AI priority badges
 - Message view (center): Full thread with expand/collapse individual messages
 - AI insights panel (right): Extracted deadlines, commitments, suggested responses
@@ -372,6 +385,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Primary interaction model for all platform actions via natural language
 
 **Key Elements:**
+
 - Semi-transparent overlay with centered input box
 - Smart suggestions below: Recent commands, contextual actions, AI predictions
 - Result preview: Shows what will happen before execution
@@ -393,6 +407,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Universal natural language input component used across the platform for all conversational interactions
 
 **Variants:**
+
 - Global (overlay): Full-screen command palette
 - Inline (embedded): Task creation bars, document commands
 - Contextual (popover): Quick actions within specific contexts
@@ -406,6 +421,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Display AI-generated suggestions, responses, and insights in a consistent, trustworthy format
 
 **Variants:**
+
 - Suggestion (blue accent): Proactive recommendations
 - Draft (gray accent): Generated content for review
 - Warning (amber accent): Risk alerts and cautions
@@ -420,6 +436,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Buttons that adapt based on context and user patterns
 
 **Variants:**
+
 - Primary (solid fill): Main actions, AI-suggested next steps
 - Secondary (outline): Alternative actions
 - Ghost (no border): Tertiary actions
@@ -434,6 +451,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Display documents with integrated AI features and version tracking
 
 **Variants:**
+
 - Card view: Grid display with preview
 - List item: Compact row with metadata
 - Editor view: Full editing interface
@@ -448,6 +466,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Display tasks with natural language details and smart metadata
 
 **Variants:**
+
 - Compact (calendar): Minimal info for dense views
 - Standard (kanban): Full details with assignee avatar
 - Expanded (detail): All fields with AI insights
@@ -462,6 +481,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Display structured data with AI-powered insights and filtering
 
 **Variants:**
+
 - Standard: Traditional rows and columns
 - Smart: AI-highlighted important rows
 - Grouped: Collapsed sections by category
@@ -476,6 +496,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Non-blocking feedback for user actions and system events
 
 **Variants:**
+
 - Success (green): Action completed
 - Info (blue): System updates
 - Warning (amber): Important notices
@@ -491,6 +512,7 @@ Link: figma.com/[to-be-created]
 **Purpose:** Focus user attention for important decisions or complex inputs
 
 **Variants:**
+
 - Confirmation: Simple yes/no decisions
 - Form: Multi-field input
 - AI Assistant: Conversational interface
@@ -510,19 +532,20 @@ The design language positions the platform as a prestigious law firm's natural e
 
 ### Color Palette
 
-| Color Type | Hex Code | Usage |
-|------------|----------|--------|
-| Primary | #003B5C | Main navigation, primary buttons, headers |
-| Secondary | #0066A1 | Links, secondary actions, highlights |
-| Accent | #00A878 | AI suggestions, success states, smart actions |
-| Success | #10B981 | Positive feedback, confirmations |
-| Warning | #F59E0B | Cautions, important notices |
-| Error | #EF4444 | Errors, destructive actions |
-| Neutral | #64748B, #94A3B8, #CBD5E1, #F1F5F9 | Text, borders, backgrounds |
+| Color Type | Hex Code                           | Usage                                         |
+| ---------- | ---------------------------------- | --------------------------------------------- |
+| Primary    | #003B5C                            | Main navigation, primary buttons, headers     |
+| Secondary  | #0066A1                            | Links, secondary actions, highlights          |
+| Accent     | #00A878                            | AI suggestions, success states, smart actions |
+| Success    | #10B981                            | Positive feedback, confirmations              |
+| Warning    | #F59E0B                            | Cautions, important notices                   |
+| Error      | #EF4444                            | Errors, destructive actions                   |
+| Neutral    | #64748B, #94A3B8, #CBD5E1, #F1F5F9 | Text, borders, backgrounds                    |
 
 ### Typography
 
 #### Font Families
+
 - **Primary:** Inter - Excellent readability, full Romanian diacritic support (ă, â, î, ș, ț)
 - **Secondary:** Source Serif Pro - For legal document display, maintaining traditional feel
 - **Monospace:** JetBrains Mono - Code, IDs, system messages
@@ -530,12 +553,12 @@ The design language positions the platform as a prestigious law firm's natural e
 #### Type Scale
 
 | Element | Size | Weight | Line Height |
-|---------|------|--------|-------------|
-| H1 | 32px | 700 | 1.2 |
-| H2 | 24px | 600 | 1.3 |
-| H3 | 20px | 600 | 1.4 |
-| Body | 16px | 400 | 1.6 |
-| Small | 14px | 400 | 1.5 |
+| ------- | ---- | ------ | ----------- |
+| H1      | 32px | 700    | 1.2         |
+| H2      | 24px | 600    | 1.3         |
+| H3      | 20px | 600    | 1.4         |
+| Body    | 16px | 400    | 1.6         |
+| Small   | 14px | 400    | 1.5         |
 
 ### Iconography
 
@@ -559,32 +582,36 @@ The design language positions the platform as a prestigious law firm's natural e
 
 ### Breakpoints
 
-| Breakpoint | Min Width | Max Width | Target Devices |
-|------------|-----------|-----------|----------------|
-| Mobile | 320px | 767px | Phones (iPhone, Android) - Quick status checks, urgent communications |
-| Tablet | 768px | 1023px | iPads, Surface - Court/meeting use, document review |
-| Desktop | 1024px | 1919px | Laptops, standard monitors - Primary work environment |
-| Wide | 1920px | - | Large monitors, dual screens - Power user setups |
+| Breakpoint | Min Width | Max Width | Target Devices                                                        |
+| ---------- | --------- | --------- | --------------------------------------------------------------------- |
+| Mobile     | 320px     | 767px     | Phones (iPhone, Android) - Quick status checks, urgent communications |
+| Tablet     | 768px     | 1023px    | iPads, Surface - Court/meeting use, document review                   |
+| Desktop    | 1024px    | 1919px    | Laptops, standard monitors - Primary work environment                 |
+| Wide       | 1920px    | -         | Large monitors, dual screens - Power user setups                      |
 
 ### Adaptation Patterns
 
 **Layout Changes:**
+
 - Mobile: Single column, stacked navigation, command palette as primary interaction
 - Tablet: Two-column layouts where appropriate, collapsible sidebars, touch-optimized targets
 - Desktop: Full three-panel layouts (nav, content, AI assistant), dense information display
 - Wide: Additional panels visible simultaneously, expanded data tables, side-by-side document compare
 
 **Navigation Changes:**
+
 - Mobile: Bottom tab bar for primary sections, hamburger menu for full navigation
 - Tablet: Collapsible sidebar (icon-only when collapsed), persistent top bar
 - Desktop+: Full sidebar always visible, breadcrumbs fully expanded
 
 **Content Priority:**
+
 - Mobile: Hide non-essential columns in tables, prioritize next action/deadline
 - Tablet: Show core functionality, optional panels hidden by default
 - Desktop+: All features visible, advanced options accessible
 
 **Interaction Changes:**
+
 - Mobile: Larger touch targets (48px minimum), swipe gestures, voice input prominent
 - Tablet: Balance touch and keyboard, drag-and-drop simplified
 - Desktop: Full keyboard shortcuts, hover states, complex drag-and-drop
@@ -610,6 +637,7 @@ The design language positions the platform as a prestigious law firm's natural e
 ## Performance Considerations
 
 ### Performance Goals
+
 - **Page Load:** < 2 seconds on 10 Mbps connection
 - **Interaction Response:** < 100ms for user input feedback
 - **Animation FPS:** Consistent 60fps for all animations
@@ -621,6 +649,7 @@ Lazy load below-the-fold content and non-critical images. Use skeleton screens d
 ## Next Steps
 
 ### Immediate Actions
+
 1. Create Figma workspace and implement component library
 2. Build interactive prototype demonstrating critical user flows
 3. Conduct review session with pilot law firm stakeholders
@@ -628,6 +657,7 @@ Lazy load below-the-fold content and non-critical images. Use skeleton screens d
 5. Create detailed animation specifications for development handoff
 
 ### Design Handoff Checklist
+
 - ✅ All user flows documented
 - ✅ Component inventory complete
 - ⏳ Accessibility requirements defined

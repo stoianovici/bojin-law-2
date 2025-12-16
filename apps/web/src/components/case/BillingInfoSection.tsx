@@ -32,10 +32,13 @@ function centsToDollars(cents: number): string {
  * Billing Type Badge
  */
 function BillingTypeBadge({ billingType }: { billingType: BillingType }) {
-  const badgeColor = billingType === 'Hourly' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+  const badgeColor =
+    billingType === 'Hourly' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
 
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${badgeColor}`}>
+    <span
+      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${badgeColor}`}
+    >
       {billingType === 'Hourly' ? 'Hourly Billing' : 'Fixed Fee'}
     </span>
   );
@@ -98,28 +101,31 @@ export function BillingInfoSection({
                 <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
                   <span className="text-sm text-gray-700">Partner</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {customRates?.partnerRate != null
-                      ? `$${centsToDollars(customRates.partnerRate)}/hr`
-                      : <span className="text-gray-500 italic">Default rate</span>
-                    }
+                    {customRates?.partnerRate != null ? (
+                      `$${centsToDollars(customRates.partnerRate)}/hr`
+                    ) : (
+                      <span className="text-gray-500 italic">Default rate</span>
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
                   <span className="text-sm text-gray-700">Associate</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {customRates?.associateRate != null
-                      ? `$${centsToDollars(customRates.associateRate)}/hr`
-                      : <span className="text-gray-500 italic">Default rate</span>
-                    }
+                    {customRates?.associateRate != null ? (
+                      `$${centsToDollars(customRates.associateRate)}/hr`
+                    ) : (
+                      <span className="text-gray-500 italic">Default rate</span>
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
                   <span className="text-sm text-gray-700">Paralegal</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {customRates?.paralegalRate != null
-                      ? `$${centsToDollars(customRates.paralegalRate)}/hr`
-                      : <span className="text-gray-500 italic">Default rate</span>
-                    }
+                    {customRates?.paralegalRate != null ? (
+                      `$${centsToDollars(customRates.paralegalRate)}/hr`
+                    ) : (
+                      <span className="text-gray-500 italic">Default rate</span>
+                    )}
                   </span>
                 </div>
               </dd>
@@ -130,10 +136,11 @@ export function BillingInfoSection({
           {billingType === 'Hourly' && customRates != null && (
             <div className="pt-3 border-t border-gray-200">
               <p className="text-xs text-gray-500">
-                {customRates.partnerRate != null || customRates.associateRate != null || customRates.paralegalRate != null
+                {customRates.partnerRate != null ||
+                customRates.associateRate != null ||
+                customRates.paralegalRate != null
                   ? '✓ Using custom rates for this case'
-                  : 'Using firm default rates'
-                }
+                  : 'Using firm default rates'}
               </p>
             </div>
           )}

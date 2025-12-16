@@ -10,7 +10,7 @@
 ## DOCUMENT HEADER
 
 **NOTIFICARE AVOCATEASCA**
-*LEGAL NOTICE*
+_LEGAL NOTICE_
 
 ---
 
@@ -44,7 +44,7 @@ Baroul {{BAROU}}
 ## SALUTATION / FORMULA DE ADRESARE
 
 Stimată Doamnă/Stimate Domn,
-*Dear Sir/Madam,*
+_Dear Sir/Madam,_
 
 ---
 
@@ -52,7 +52,7 @@ Stimată Doamnă/Stimate Domn,
 
 Subscrisa {{FIRMA_NUME}}, prin avocat {{AVOCAT_NUME}}, înscris în Baroul {{BAROU}}, vă adresăm prezenta notificare avocatească în numele și pe seama clientului nostru, având în vedere următoarele:
 
-*The undersigned {{FIRMA_NUME}}, through attorney {{AVOCAT_NUME}}, registered with the {{BAROU}} Bar Association, addresses this legal notice to you on behalf of our client, considering the following:*
+_The undersigned {{FIRMA_NUME}}, through attorney {{AVOCAT_NUME}}, registered with the {{BAROU}} Bar Association, addresses this legal notice to you on behalf of our client, considering the following:_
 
 ---
 
@@ -65,18 +65,18 @@ Subscrisa {{FIRMA_NUME}}, prin avocat {{AVOCAT_NUME}}, înscris în Baroul {{BAR
 ## LEGAL BASIS / TEMEIUL LEGAL
 
 Conform prevederilor legale în vigoare, în special:
-*According to the legal provisions in force, particularly:*
+_According to the legal provisions in force, particularly:_
 
 - Art. {{ARTICOL_CIVIL_1}} Cod Civil
 - Art. {{ARTICOL_CIVIL_2}} Cod Civil
-{{TEMEI_LEGAL_SUPLIMENTAR}}
+  {{TEMEI_LEGAL_SUPLIMENTAR}}
 
 ---
 
 ## REQUEST / SOLICITARE
 
 Prin prezenta, vă **solicităm** următoarele:
-*Hereby, we **request** the following:*
+_Hereby, we **request** the following:_
 
 {{ACTIUNE_SOLICITATA}}
 
@@ -87,19 +87,22 @@ Prin prezenta, vă **solicităm** următoarele:
 ## STANDARD CLAUSES / CLAUZE STANDARD
 
 ### Termen / Deadline
+
 Vă solicităm să dați curs prezentei notificări **în termen de {{TERMEN_ZILE}} zile de la primirea prezentei**, sub sancțiunea decăderii din drepturi și a angajării răspunderii dumneavoastră juridice.
 
-*We request that you comply with this notice **within {{TERMEN_ZILE}} days from receipt**, under penalty of forfeiture of rights and engagement of your legal liability.*
+_We request that you comply with this notice **within {{TERMEN_ZILE}} days from receipt**, under penalty of forfeiture of rights and engagement of your legal liability._
 
 ### În caz contrar / Otherwise
+
 În cazul în care nu veți da curs prezentei notificări în termenul stabilit, **vom fi nevoiți să ne adresăm instanței competente** pentru apărarea drepturilor și intereselor clientului nostru, solicitând atât obligarea dumneavoastră la conformare, cât și acordarea de daune-interese pentru prejudiciile cauzate.
 
-*Should you fail to comply with this notice within the stipulated timeframe, **we will be forced to address the competent court** to defend our client's rights and interests, requesting both your compliance and compensation for damages caused.*
+_Should you fail to comply with this notice within the stipulated timeframe, **we will be forced to address the competent court** to defend our client's rights and interests, requesting both your compliance and compensation for damages caused._
 
 ### Cheltuieli / Costs
+
 Toate cheltuielile de judecată, inclusiv onorariile avocațiale, vor fi suportate de partea care cade în pretenții.
 
-*All court costs, including attorney fees, will be borne by the losing party.*
+_All court costs, including attorney fees, will be borne by the losing party._
 
 ---
 
@@ -108,14 +111,14 @@ Toate cheltuielile de judecată, inclusiv onorariile avocațiale, vor fi suporta
 {{CONSECINTE_NECONFORMARE}}
 
 Prezenta notificare reprezintă o ultimă încercare de soluționare amiabilă a situației.
-*This notice represents a final attempt at amicable resolution of the situation.*
+_This notice represents a final attempt at amicable resolution of the situation._
 
 ---
 
 ## CLOSING / FORMULA DE ÎNCHEIERE
 
 Cu stimă,
-*Respectfully,*
+_Respectfully,_
 
 ---
 
@@ -138,6 +141,7 @@ Data: {{DATA_EMITERE}}
 ## NOTES FOR USERS
 
 ### Required Variables
+
 - `{{DESTINATAR_NUME}}` - Recipient name
 - `{{DESTINATAR_ADRESA}}` - Recipient address
 - `{{FIRMA_NUME}}` - Law firm/company name
@@ -152,6 +156,7 @@ Data: {{DATA_EMITERE}}
 - `{{TERMEN_ZILE}}` - Number of days for compliance (e.g., "15", "30")
 
 ### Optional Variables
+
 - `{{ARTICOL_CIVIL_1}}` - First Civil Code article reference (default: "1350")
 - `{{ARTICOL_CIVIL_2}}` - Second Civil Code article reference (default: "1516")
 - `{{TEMEI_LEGAL_SUPLIMENTAR}}` - Additional legal basis
@@ -160,6 +165,7 @@ Data: {{DATA_EMITERE}}
 - `{{DATA_EMITERE}}` - Issuance date
 
 ### Usage Notes
+
 1. This is a formal legal notice under Romanian law
 2. Must be sent via registered mail with return receipt
 3. Creates legal record of demand before litigation
@@ -170,6 +176,7 @@ Data: {{DATA_EMITERE}}
    - Art. 1530 - Delay in performance
 
 ### Example Use Cases
+
 - Payment demands
 - Contract breach notifications
 - Cease and desist orders

@@ -33,9 +33,7 @@ export class EmbeddingGenerationService {
    * @param input - Generation input with text and parameters
    * @returns Embeddings with chunk information
    */
-  async generateEmbeddings(
-    input: GenerateEmbeddingsInput
-  ): Promise<GenerateEmbeddingsOutput> {
+  async generateEmbeddings(input: GenerateEmbeddingsInput): Promise<GenerateEmbeddingsOutput> {
     const startTime = Date.now();
     const maxChunkTokens = input.maxChunkTokens || 512;
 
@@ -51,10 +49,7 @@ export class EmbeddingGenerationService {
       // Generate embeddings for all chunks in batch
       const embeddings = await this.generateBatchEmbeddings(chunks);
 
-      const totalTokensUsed = chunks.reduce(
-        (sum, chunk) => sum + chunk.tokenCount,
-        0
-      );
+      const totalTokensUsed = chunks.reduce((sum, chunk) => sum + chunk.tokenCount, 0);
 
       const duration = Date.now() - startTime;
 
@@ -175,9 +170,7 @@ export class EmbeddingGenerationService {
    */
   private splitIntoSentences(text: string): string[] {
     // Split on sentence boundaries (., !, ?) followed by whitespace
-    return text
-      .split(/(?<=[.!?])\s+/)
-      .filter((sentence) => sentence.trim().length > 0);
+    return text.split(/(?<=[.!?])\s+/).filter((sentence) => sentence.trim().length > 0);
   }
 
   /**

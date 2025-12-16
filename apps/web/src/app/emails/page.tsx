@@ -24,9 +24,7 @@ export default function EmailsPage() {
       <div className="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              Email
-            </h1>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Email</h1>
             {stats && !statsLoading && (
               <div className="mt-1 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                 <span>{stats.totalEmails} total</span>

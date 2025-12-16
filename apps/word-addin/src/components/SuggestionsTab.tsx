@@ -57,18 +57,21 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
     }
   }, [selectedText, cursorContext, selectedType, onError]);
 
-  const handleApplySuggestion = useCallback(async (suggestion: Suggestion) => {
-    try {
-      if (suggestion.type === 'completion') {
-        await insertText(suggestion.content);
-      } else {
-        await replaceSelection(suggestion.content);
+  const handleApplySuggestion = useCallback(
+    async (suggestion: Suggestion) => {
+      try {
+        if (suggestion.type === 'completion') {
+          await insertText(suggestion.content);
+        } else {
+          await replaceSelection(suggestion.content);
+        }
+        setSelectedSuggestion(suggestion.id);
+      } catch (err: any) {
+        onError(err.message || 'Failed to apply suggestion');
       }
-      setSelectedSuggestion(suggestion.id);
-    } catch (err: any) {
-      onError(err.message || 'Failed to apply suggestion');
-    }
-  }, [onError]);
+    },
+    [onError]
+  );
 
   const getConfidenceClass = (confidence: number) => {
     if (confidence >= 0.8) return 'high';
@@ -115,17 +118,29 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
             </>
           ) : (
             <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2v4"/>
-                <path d="M12 18v4"/>
-                <path d="M4.93 4.93l2.83 2.83"/>
-                <path d="M16.24 16.24l2.83 2.83"/>
-                <path d="M2 12h4"/>
-                <path d="M18 12h4"/>
-                <path d="M4.93 19.07l2.83-2.83"/>
-                <path d="M16.24 7.76l2.83-2.83"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 2v4" />
+                <path d="M12 18v4" />
+                <path d="M4.93 4.93l2.83 2.83" />
+                <path d="M16.24 16.24l2.83 2.83" />
+                <path d="M2 12h4" />
+                <path d="M18 12h4" />
+                <path d="M4.93 19.07l2.83-2.83" />
+                <path d="M16.24 7.76l2.83-2.83" />
               </svg>
-              Get {selectedType === 'completion' ? 'Completions' : selectedType === 'alternative' ? 'Alternatives' : 'Precedents'}
+              Get{' '}
+              {selectedType === 'completion'
+                ? 'Completions'
+                : selectedType === 'alternative'
+                  ? 'Alternatives'
+                  : 'Precedents'}
             </>
           )}
         </button>
@@ -135,9 +150,16 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
       {suggestions.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div className="section-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
             Suggestions
           </div>
@@ -154,9 +176,7 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
                   {Math.round(suggestion.confidence * 100)}% match
                 </span>
                 {suggestion.source && (
-                  <span style={{ fontSize: 11, color: '#605e5c' }}>
-                    from: {suggestion.source}
-                  </span>
+                  <span style={{ fontSize: 11, color: '#605e5c' }}>from: {suggestion.source}</span>
                 )}
               </div>
               {suggestion.reasoning && (
@@ -172,8 +192,14 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
       {/* Empty State */}
       {!loading && suggestions.length === 0 && (
         <div className="empty-state" style={{ marginTop: 24 }}>
-          <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          <svg
+            className="empty-state-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
           <p className="empty-state-text">
             {selectedType === 'completion'

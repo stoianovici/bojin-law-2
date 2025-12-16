@@ -66,11 +66,7 @@ export interface TestProvidersOptions {
  * ```
  */
 function createTestProviders(options: TestProvidersOptions = {}) {
-  const {
-    initialRoute = '/',
-    themeMode = 'light',
-    locale = 'ro-RO',
-  } = options;
+  const { initialRoute = '/', themeMode = 'light', locale = 'ro-RO' } = options;
 
   /**
    * Placeholder wrapper component
@@ -135,7 +131,14 @@ export function renderWithProviders(
   ui: ReactElement,
   options: TestProvidersOptions & Omit<RenderOptions, 'wrapper'> = {}
 ): RenderResult {
-  const { initialRoute, initialStoreState, queryClientConfig, themeMode, locale, ...renderOptions } = options;
+  const {
+    initialRoute,
+    initialStoreState,
+    queryClientConfig,
+    themeMode,
+    locale,
+    ...renderOptions
+  } = options;
 
   const Wrapper = createTestProviders({
     initialRoute,

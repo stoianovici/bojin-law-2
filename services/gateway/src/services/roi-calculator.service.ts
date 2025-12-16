@@ -81,10 +81,7 @@ export class ROICalculatorService {
    * Calculate ROI dashboard data
    * AC: 6 - ROI calculator shows time savings from automation
    */
-  async calculateROI(
-    firmId: string,
-    filters: AnalyticsFilters
-  ): Promise<ROIDashboardResponse> {
+  async calculateROI(firmId: string, filters: AnalyticsFilters): Promise<ROIDashboardResponse> {
     // Check cache
     const cacheKey = this.getCacheKey(firmId, filters);
     const cached = await this.getFromCache(cacheKey);
@@ -216,8 +213,7 @@ export class ROICalculatorService {
 
     // Calculate adoption rate
     const totalTasks = templateTasksCreated + manualTasksCreated + nlpTasksCreated;
-    const templateAdoptionRate =
-      totalTasks > 0 ? (templateTasksCreated / totalTasks) * 100 : 0;
+    const templateAdoptionRate = totalTasks > 0 ? (templateTasksCreated / totalTasks) * 100 : 0;
 
     // Get previous period for comparison
     const periodLength = filters.dateRange.end.getTime() - filters.dateRange.start.getTime();
@@ -228,7 +224,11 @@ export class ROICalculatorService {
         end: new Date(filters.dateRange.start.getTime() - 1),
       },
     };
-    const previousMetrics = await this.calculateBasicMetrics(firmId, previousFilters, avgHourlyRate);
+    const previousMetrics = await this.calculateBasicMetrics(
+      firmId,
+      previousFilters,
+      avgHourlyRate
+    );
 
     let savingsGrowthPercent: number | undefined;
     if (previousMetrics.totalValueSaved > 0) {
@@ -307,10 +307,7 @@ export class ROICalculatorService {
   /**
    * Count auto-reminders set in period
    */
-  private async countAutoReminders(
-    firmId: string,
-    filters: AnalyticsFilters
-  ): Promise<number> {
+  private async countAutoReminders(firmId: string, filters: AnalyticsFilters): Promise<number> {
     // Count tasks with reminders set
     const tasksWithReminders = await this.prisma.task.count({
       where: {
@@ -354,10 +351,7 @@ export class ROICalculatorService {
   /**
    * Count auto-reassignments (OOO)
    */
-  private async countAutoReassignments(
-    firmId: string,
-    filters: AnalyticsFilters
-  ): Promise<number> {
+  private async countAutoReassignments(firmId: string, filters: AnalyticsFilters): Promise<number> {
     // Count task history entries for auto-reassignment
     // This would be recorded in TaskHistory with AssigneeChanged action
     const reassignments = await this.prisma.taskHistory.count({
@@ -413,8 +407,7 @@ export class ROICalculatorService {
 
       points.push({
         date: new Date(currentMonth),
-        timeSavedHours:
-          Math.round((monthMetrics.totalValueSaved / avgHourlyRate) * 100) / 100,
+        timeSavedHours: Math.round((monthMetrics.totalValueSaved / avgHourlyRate) * 100) / 100,
         valueSaved: Math.round(monthMetrics.totalValueSaved * 100) / 100,
       });
 
@@ -481,7 +474,10 @@ export class ROICalculatorService {
   /**
    * Get template time savings for a period
    */
-  async getTemplateTimeSavings(firmId: string, dateRange: { start: Date; end: Date }): Promise<number> {
+  async getTemplateTimeSavings(
+    firmId: string,
+    dateRange: { start: Date; end: Date }
+  ): Promise<number> {
     const templateTasks = await this.prisma.task.count({
       where: {
         firmId,

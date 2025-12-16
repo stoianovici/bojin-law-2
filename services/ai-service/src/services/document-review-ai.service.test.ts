@@ -189,9 +189,7 @@ describe('DocumentReviewAIService', () => {
     });
 
     it('should fall back to rule-based detection on AI failure', async () => {
-      (providerManager.execute as jest.Mock).mockRejectedValue(
-        new Error('AI service unavailable')
-      );
+      (providerManager.execute as jest.Mock).mockRejectedValue(new Error('AI service unavailable'));
 
       const result = await documentReviewAIService.analyzeDocumentForConcerns(
         mockDocumentContent,
@@ -258,10 +256,7 @@ describe('DocumentReviewAIService', () => {
       for (const concern of result.concerns) {
         if (concern.anchorText && concern.anchorStart > 0) {
           // Verify the anchor text exists at the calculated position
-          const foundText = mockDocumentContent.substring(
-            concern.anchorStart,
-            concern.anchorEnd
-          );
+          const foundText = mockDocumentContent.substring(concern.anchorStart, concern.anchorEnd);
           expect(foundText.toLowerCase()).toContain(
             concern.anchorText.toLowerCase().substring(0, 10)
           );
@@ -272,9 +267,7 @@ describe('DocumentReviewAIService', () => {
 
   describe('parseDocumentSections', () => {
     it('should parse document into sections', async () => {
-      const sections = await documentReviewAIService.parseDocumentSections(
-        mockDocumentContent
-      );
+      const sections = await documentReviewAIService.parseDocumentSections(mockDocumentContent);
 
       expect(sections).toBeInstanceOf(Array);
       expect(sections.length).toBeGreaterThan(0);
@@ -290,20 +283,14 @@ ARTICOLUL 2. OBLIGAȚII
 
 2.1 Prestatorul va furniza servicii.
 `;
-      const sections = await documentReviewAIService.parseDocumentSections(
-        documentWithArticles
-      );
+      const sections = await documentReviewAIService.parseDocumentSections(documentWithArticles);
 
-      const articleSections = sections.filter((s) =>
-        s.title.toLowerCase().includes('articol')
-      );
+      const articleSections = sections.filter((s) => s.title.toLowerCase().includes('articol'));
       expect(articleSections.length).toBeGreaterThan(0);
     });
 
     it('should track section positions', async () => {
-      const sections = await documentReviewAIService.parseDocumentSections(
-        mockDocumentContent
-      );
+      const sections = await documentReviewAIService.parseDocumentSections(mockDocumentContent);
 
       for (const section of sections) {
         expect(section.startIndex).toBeGreaterThanOrEqual(0);
@@ -314,9 +301,7 @@ ARTICOLUL 2. OBLIGAȚII
 
   describe('Rule-based detection', () => {
     it('should detect ambiguous language patterns', async () => {
-      (providerManager.execute as jest.Mock).mockRejectedValue(
-        new Error('Force rule-based')
-      );
+      (providerManager.execute as jest.Mock).mockRejectedValue(new Error('Force rule-based'));
 
       const contentWithAmbiguity = 'Payment shall be reasonable and/or as appropriate.';
 
@@ -333,9 +318,7 @@ ARTICOLUL 2. OBLIGAȚII
     });
 
     it('should check for missing clauses in contracts', async () => {
-      (providerManager.execute as jest.Mock).mockRejectedValue(
-        new Error('Force rule-based')
-      );
+      (providerManager.execute as jest.Mock).mockRejectedValue(new Error('Force rule-based'));
 
       const contractWithoutStandardClauses = 'Simple agreement with no standard clauses.';
 
@@ -345,18 +328,15 @@ ARTICOLUL 2. OBLIGAȚII
         mockContext
       );
 
-      const missingClauses = result.concerns.filter(
-        (c) => c.concernType === 'MISSING_CLAUSE'
-      );
+      const missingClauses = result.concerns.filter((c) => c.concernType === 'MISSING_CLAUSE');
       expect(missingClauses.length).toBeGreaterThan(0);
     });
 
     it('should detect outdated Romanian law references', async () => {
-      (providerManager.execute as jest.Mock).mockRejectedValue(
-        new Error('Force rule-based')
-      );
+      (providerManager.execute as jest.Mock).mockRejectedValue(new Error('Force rule-based'));
 
-      const contentWithOldLaw = 'În conformitate cu Legea nr. 31/1990 privind societățile comerciale.';
+      const contentWithOldLaw =
+        'În conformitate cu Legea nr. 31/1990 privind societățile comerciale.';
 
       const result = await documentReviewAIService.analyzeDocumentForConcerns(
         contentWithOldLaw,
@@ -364,16 +344,12 @@ ARTICOLUL 2. OBLIGAȚII
         { ...mockContext, language: 'ro' }
       );
 
-      const outdatedRefs = result.concerns.filter(
-        (c) => c.concernType === 'OUTDATED_REFERENCE'
-      );
+      const outdatedRefs = result.concerns.filter((c) => c.concernType === 'OUTDATED_REFERENCE');
       expect(outdatedRefs.length).toBeGreaterThan(0);
     });
 
     it('should handle Romanian missing clauses', async () => {
-      (providerManager.execute as jest.Mock).mockRejectedValue(
-        new Error('Force rule-based')
-      );
+      (providerManager.execute as jest.Mock).mockRejectedValue(new Error('Force rule-based'));
 
       const roContract = 'Contract simplu fără clauze standard.';
 
@@ -383,9 +359,7 @@ ARTICOLUL 2. OBLIGAȚII
         { ...mockContext, language: 'ro' }
       );
 
-      const missingClauses = result.concerns.filter(
-        (c) => c.concernType === 'MISSING_CLAUSE'
-      );
+      const missingClauses = result.concerns.filter((c) => c.concernType === 'MISSING_CLAUSE');
       expect(missingClauses.length).toBeGreaterThan(0);
     });
   });

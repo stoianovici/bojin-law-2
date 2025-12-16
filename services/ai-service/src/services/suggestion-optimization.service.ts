@@ -76,10 +76,10 @@ function getRedisClient(): Redis {
 // Scoring weights
 const SCORING_WEIGHTS = {
   baseScore: 0.25,
-  userPreference: 0.20,
+  userPreference: 0.2,
   typeSuccessRate: 0.25,
-  contextRelevance: 0.20,
-  timing: 0.10,
+  contextRelevance: 0.2,
+  timing: 0.1,
 };
 
 // Cache TTL
@@ -125,12 +125,7 @@ export class SuggestionOptimizationService {
     const rankedSuggestions: OptimizedSuggestion[] = [];
 
     for (const suggestion of suggestions) {
-      const ranking = await this.calculateRanking(
-        suggestion,
-        learningMetrics,
-        timingOpt,
-        context
-      );
+      const ranking = await this.calculateRanking(suggestion, learningMetrics, timingOpt, context);
 
       // Apply A/B test variant if applicable
       const abVariant = await this.getABTestVariant(suggestion.type);
@@ -287,8 +282,8 @@ export class SuggestionOptimizationService {
       };
 
       const relevantActions = actionTypeMap[suggestion.category] || [];
-      const recentRelevantCount = context.recentActions.filter(a =>
-        relevantActions.some(ra => a.includes(ra))
+      const recentRelevantCount = context.recentActions.filter((a) =>
+        relevantActions.some((ra) => a.includes(ra))
       ).length;
 
       if (recentRelevantCount > 0) {
@@ -302,10 +297,7 @@ export class SuggestionOptimizationService {
   /**
    * Calculate timing score based on user's engagement patterns
    */
-  private calculateTimingScore(
-    timingOpt: TimingOptimization | null,
-    currentTime?: Date
-  ): number {
+  private calculateTimingScore(timingOpt: TimingOptimization | null, currentTime?: Date): number {
     if (!timingOpt || !currentTime) {
       return 0.5; // Neutral if no timing data
     }
@@ -339,10 +331,7 @@ export class SuggestionOptimizationService {
   /**
    * Get timing optimization for a user
    */
-  async getTimingOptimization(
-    userId: string,
-    firmId: string
-  ): Promise<TimingOptimization | null> {
+  async getTimingOptimization(userId: string, firmId: string): Promise<TimingOptimization | null> {
     const cacheKey = `timing_opt:${userId}`;
 
     try {
@@ -411,9 +400,7 @@ export class SuggestionOptimizationService {
 
     for (let start = 0; start < 22; start++) {
       const windowCount =
-        (hourCounts[start] || 0) +
-        (hourCounts[start + 1] || 0) +
-        (hourCounts[start + 2] || 0);
+        (hourCounts[start] || 0) + (hourCounts[start + 1] || 0) + (hourCounts[start + 2] || 0);
 
       if (windowCount > peakCount) {
         peakCount = windowCount;
@@ -524,19 +511,17 @@ export class SuggestionOptimizationService {
       return `${hour12}:00 ${ampm}`;
     };
 
-    const optimalTimes = timingOpt.bestHoursOfDay
-      .slice(0, 3)
-      .map(h => formatHour(h));
+    const optimalTimes = timingOpt.bestHoursOfDay.slice(0, 3).map((h) => formatHour(h));
 
     const allHours = Array.from({ length: 24 }, (_, i) => i);
     const lowEngagementHours = allHours
-      .filter(h => !timingOpt.bestHoursOfDay.includes(h))
+      .filter((h) => !timingOpt.bestHoursOfDay.includes(h))
       .slice(0, 3);
 
-    const avoidTimes = lowEngagementHours.map(h => formatHour(h));
+    const avoidTimes = lowEngagementHours.map((h) => formatHour(h));
 
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const bestDayNames = timingOpt.bestDaysOfWeek.map(d => dayNames[d]);
+    const bestDayNames = timingOpt.bestDaysOfWeek.map((d) => dayNames[d]);
 
     return {
       optimalTimes,

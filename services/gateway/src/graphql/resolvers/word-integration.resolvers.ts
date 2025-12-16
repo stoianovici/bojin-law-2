@@ -57,11 +57,7 @@ export const wordIntegrationResolvers = {
     /**
      * Get lock status for a document
      */
-    documentLockStatus: async (
-      _: unknown,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    documentLockStatus: async (_: unknown, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       const lock = await wordIntegrationService.getDocumentLock(args.documentId);
@@ -95,11 +91,7 @@ export const wordIntegrationResolvers = {
     /**
      * Get track changes from a Word document
      */
-    documentTrackChanges: async (
-      _: unknown,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    documentTrackChanges: async (_: unknown, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       // Get document OneDrive ID
@@ -159,11 +151,7 @@ export const wordIntegrationResolvers = {
     /**
      * Get sync status for a document
      */
-    documentSyncStatus: async (
-      _: unknown,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    documentSyncStatus: async (_: unknown, args: { documentId: string }, context: Context) => {
       requireAuth(context);
 
       const document = await prisma.document.findUnique({
@@ -193,11 +181,7 @@ export const wordIntegrationResolvers = {
     /**
      * Open a document in Word desktop
      */
-    openInWord: async (
-      _: unknown,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    openInWord: async (_: unknown, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       logger.info('Opening document in Word', {
@@ -348,17 +332,10 @@ export const wordIntegrationResolvers = {
     /**
      * Resolve a document comment
      */
-    resolveDocumentComment: async (
-      _: unknown,
-      args: { commentId: string },
-      context: Context
-    ) => {
+    resolveDocumentComment: async (_: unknown, args: { commentId: string }, context: Context) => {
       const user = requireAuth(context);
 
-      const comment = await documentCommentsService.resolveComment(
-        args.commentId,
-        user.userId
-      );
+      const comment = await documentCommentsService.resolveComment(args.commentId, user.userId);
 
       // Get full comment with author
       const commentWithAuthor = (
@@ -376,11 +353,7 @@ export const wordIntegrationResolvers = {
     /**
      * Unresolve a document comment
      */
-    unresolveDocumentComment: async (
-      _: unknown,
-      args: { commentId: string },
-      context: Context
-    ) => {
+    unresolveDocumentComment: async (_: unknown, args: { commentId: string }, context: Context) => {
       requireAuth(context);
 
       const comment = await documentCommentsService.unresolveComment(args.commentId);
@@ -396,11 +369,7 @@ export const wordIntegrationResolvers = {
     /**
      * Delete a comment
      */
-    deleteComment: async (
-      _: unknown,
-      args: { commentId: string },
-      context: Context
-    ) => {
+    deleteComment: async (_: unknown, args: { commentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       // Get comment to verify ownership
@@ -427,11 +396,7 @@ export const wordIntegrationResolvers = {
     /**
      * Sync comments from Word
      */
-    syncCommentsFromWord: async (
-      _: unknown,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    syncCommentsFromWord: async (_: unknown, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       const document = await prisma.document.findUnique({
@@ -453,11 +418,7 @@ export const wordIntegrationResolvers = {
     /**
      * Sync comments to Word
      */
-    syncCommentsToWord: async (
-      _: unknown,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    syncCommentsToWord: async (_: unknown, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       const document = await prisma.document.findUnique({
@@ -492,11 +453,7 @@ export const wordIntegrationResolvers = {
     /**
      * Upload document to OneDrive
      */
-    uploadToOneDrive: async (
-      _: unknown,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    uploadToOneDrive: async (_: unknown, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       return oneDriveSyncService.uploadToOneDrive(args.documentId, user.accessToken);
@@ -506,25 +463,33 @@ export const wordIntegrationResolvers = {
   Subscription: {
     documentLockChanged: {
       subscribe: (_: unknown, args: { documentId: string }) => {
-        return pubsub.asyncIterableIterator(`${DOCUMENT_LOCK_CHANGED}.${args.documentId}` as keyof PubSubChannels);
+        return pubsub.asyncIterableIterator(
+          `${DOCUMENT_LOCK_CHANGED}.${args.documentId}` as keyof PubSubChannels
+        );
       },
     },
 
     commentAdded: {
       subscribe: (_: unknown, args: { documentId: string }) => {
-        return pubsub.asyncIterableIterator(`${COMMENT_ADDED}.${args.documentId}` as keyof PubSubChannels);
+        return pubsub.asyncIterableIterator(
+          `${COMMENT_ADDED}.${args.documentId}` as keyof PubSubChannels
+        );
       },
     },
 
     commentResolved: {
       subscribe: (_: unknown, args: { documentId: string }) => {
-        return pubsub.asyncIterableIterator(`${COMMENT_RESOLVED}.${args.documentId}` as keyof PubSubChannels);
+        return pubsub.asyncIterableIterator(
+          `${COMMENT_RESOLVED}.${args.documentId}` as keyof PubSubChannels
+        );
       },
     },
 
     documentSyncStatusChanged: {
       subscribe: (_: unknown, args: { documentId: string }) => {
-        return pubsub.asyncIterableIterator(`${DOCUMENT_SYNC_STATUS_CHANGED}.${args.documentId}` as keyof PubSubChannels);
+        return pubsub.asyncIterableIterator(
+          `${DOCUMENT_SYNC_STATUS_CHANGED}.${args.documentId}` as keyof PubSubChannels
+        );
       },
     },
   },

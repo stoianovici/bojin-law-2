@@ -142,12 +142,13 @@ describe('ResponseSuggestionService', () => {
       };
 
       // Mock low risk assessment
-      vi.mocked(require('./risk-assessment.service').riskAssessmentService.assessChangeRisk)
-        .mockResolvedValueOnce({
-          riskLevel: RiskLevel.LOW,
-          explanation: 'Minor change',
-          factors: [],
-        });
+      vi.mocked(
+        require('./risk-assessment.service').riskAssessmentService.assessChangeRisk
+      ).mockResolvedValueOnce({
+        riskLevel: RiskLevel.LOW,
+        explanation: 'Minor change',
+        factors: [],
+      });
 
       const result = await responseSuggestionService.generateSuggestionsForChange(
         lowRiskChange,
@@ -175,12 +176,13 @@ describe('ResponseSuggestionService', () => {
     });
 
     it('should generate rejection for high risk changes', async () => {
-      vi.mocked(require('./risk-assessment.service').riskAssessmentService.assessChangeRisk)
-        .mockResolvedValueOnce({
-          riskLevel: RiskLevel.HIGH,
-          explanation: 'High risk liability change',
-          factors: ['Removes liability cap'],
-        });
+      vi.mocked(
+        require('./risk-assessment.service').riskAssessmentService.assessChangeRisk
+      ).mockResolvedValueOnce({
+        riskLevel: RiskLevel.HIGH,
+        explanation: 'High risk liability change',
+        factors: ['Removes liability cap'],
+      });
 
       const highRiskChange: LegalChange = {
         ...mockChange,
@@ -207,39 +209,25 @@ describe('ResponseSuggestionService', () => {
         mockDocumentContext
       );
 
-      const hasClarification = result.some(
-        (s) => s.suggestionType === ResponseType.CLARIFICATION
-      );
+      const hasClarification = result.some((s) => s.suggestionType === ResponseType.CLARIFICATION);
       expect(hasClarification).toBe(true);
     });
   });
 
   describe('getResponseTypeLabel', () => {
     it('should return Romanian labels for ro language', () => {
-      const acceptLabel = responseSuggestionService.getResponseTypeLabel(
-        ResponseType.ACCEPT,
-        'ro'
-      );
+      const acceptLabel = responseSuggestionService.getResponseTypeLabel(ResponseType.ACCEPT, 'ro');
       expect(acceptLabel).toBe('Acceptare');
 
-      const rejectLabel = responseSuggestionService.getResponseTypeLabel(
-        ResponseType.REJECT,
-        'ro'
-      );
+      const rejectLabel = responseSuggestionService.getResponseTypeLabel(ResponseType.REJECT, 'ro');
       expect(rejectLabel).toBe('Respingere');
     });
 
     it('should return English labels for en language', () => {
-      const acceptLabel = responseSuggestionService.getResponseTypeLabel(
-        ResponseType.ACCEPT,
-        'en'
-      );
+      const acceptLabel = responseSuggestionService.getResponseTypeLabel(ResponseType.ACCEPT, 'en');
       expect(acceptLabel).toBe('Accept');
 
-      const rejectLabel = responseSuggestionService.getResponseTypeLabel(
-        ResponseType.REJECT,
-        'en'
-      );
+      const rejectLabel = responseSuggestionService.getResponseTypeLabel(ResponseType.REJECT, 'en');
       expect(rejectLabel).toBe('Reject');
     });
 
@@ -270,16 +258,12 @@ describe('ResponseSuggestionService', () => {
     });
 
     it('should return blue for COUNTER_PROPOSAL', () => {
-      const color = responseSuggestionService.getResponseTypeColor(
-        ResponseType.COUNTER_PROPOSAL
-      );
+      const color = responseSuggestionService.getResponseTypeColor(ResponseType.COUNTER_PROPOSAL);
       expect(color).toBe('blue');
     });
 
     it('should return yellow for CLARIFICATION', () => {
-      const color = responseSuggestionService.getResponseTypeColor(
-        ResponseType.CLARIFICATION
-      );
+      const color = responseSuggestionService.getResponseTypeColor(ResponseType.CLARIFICATION);
       expect(color).toBe('yellow');
     });
   });

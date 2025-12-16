@@ -43,15 +43,11 @@ export const requiresFinancialAccessTypeDefs = `
  * @param schema - GraphQL schema to transform
  * @returns Transformed schema with financial access controls
  */
-export function requiresFinancialAccessDirective(
-  directiveName: string = DIRECTIVE_NAME
-) {
+export function requiresFinancialAccessDirective(directiveName: string = DIRECTIVE_NAME) {
   return (schema: GraphQLSchema): GraphQLSchema => {
     return mapSchema(schema, {
       // Apply to object field definitions
-      [MapperKind.OBJECT_FIELD]: (
-        fieldConfig: GraphQLFieldConfig<any, Context>
-      ) => {
+      [MapperKind.OBJECT_FIELD]: (fieldConfig: GraphQLFieldConfig<any, Context>) => {
         // Check if field has the directive
         const directive = getDirective(schema, fieldConfig, directiveName)?.[0];
 
@@ -60,12 +56,7 @@ export function requiresFinancialAccessDirective(
           const { resolve = defaultFieldResolver } = fieldConfig;
 
           // Replace with wrapped resolver
-          fieldConfig.resolve = async function (
-            source,
-            args,
-            context: Context,
-            info
-          ) {
+          fieldConfig.resolve = async function (source, args, context: Context, info) {
             // Determine if this is a root Query/Mutation field
             const parentType = info.parentType.name;
             const isRootField = parentType === 'Query' || parentType === 'Mutation';
@@ -89,8 +80,7 @@ export function requiresFinancialAccessDirective(
             // Check if user has financial access (Partner or BusinessOwner)
             // Story 2.11.1: Added BusinessOwner role support
             const hasAccess =
-              context.user.role === 'Partner' ||
-              context.user.role === 'BusinessOwner';
+              context.user.role === 'Partner' || context.user.role === 'BusinessOwner';
 
             if (!hasAccess) {
               logUnauthorizedAccess(context, info.fieldName, context.user.role);
@@ -132,11 +122,7 @@ export function requiresFinancialAccessDirective(
  * @param fieldName - Name of the financial field accessed
  * @param userRole - Role of the user attempting access
  */
-function logUnauthorizedAccess(
-  context: Context,
-  fieldName: string,
-  userRole: string
-): void {
+function logUnauthorizedAccess(context: Context, fieldName: string, userRole: string): void {
   // Log at INFO level (not ERROR - this is expected behavior)
   console.info('Financial data access denied', {
     timestamp: new Date().toISOString(),
@@ -165,7 +151,5 @@ function logUnauthorizedAccess(
  * @returns true if user has financial access (is Partner or BusinessOwner)
  */
 export function hasFinancialAccess(context: Context): boolean {
-  return (
-    context.user?.role === 'Partner' || context.user?.role === 'BusinessOwner'
-  );
+  return context.user?.role === 'Partner' || context.user?.role === 'BusinessOwner';
 }

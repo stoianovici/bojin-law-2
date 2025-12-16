@@ -44,14 +44,35 @@ describe('TemplateExtractionService', () => {
     it('should extract templates from similar document clusters', async () => {
       const mockEmbedding = Array(1536).fill(0.1);
       const mockDocuments = [
-        { id: 'doc-1', textContent: 'Introduction\nContent\nConclusion', originalFilename: 'doc1.pdf', embeddings: [{ embedding: mockEmbedding }] },
-        { id: 'doc-2', textContent: 'Introduction\nText\nConclusion', originalFilename: 'doc2.pdf', embeddings: [{ embedding: mockEmbedding }] },
-        { id: 'doc-3', textContent: 'Introduction\nBody\nConclusion', originalFilename: 'doc3.pdf', embeddings: [{ embedding: mockEmbedding }] },
+        {
+          id: 'doc-1',
+          textContent: 'Introduction\nContent\nConclusion',
+          originalFilename: 'doc1.pdf',
+          embeddings: [{ embedding: mockEmbedding }],
+        },
+        {
+          id: 'doc-2',
+          textContent: 'Introduction\nText\nConclusion',
+          originalFilename: 'doc2.pdf',
+          embeddings: [{ embedding: mockEmbedding }],
+        },
+        {
+          id: 'doc-3',
+          textContent: 'Introduction\nBody\nConclusion',
+          originalFilename: 'doc3.pdf',
+          embeddings: [{ embedding: mockEmbedding }],
+        },
       ];
 
       (prisma.trainingDocument.findMany as jest.Mock)
         .mockResolvedValueOnce(mockDocuments) // First call with embeddings
-        .mockResolvedValueOnce(mockDocuments.map(d => ({ id: d.id, textContent: d.textContent, originalFilename: d.originalFilename }))); // Second call for cluster
+        .mockResolvedValueOnce(
+          mockDocuments.map((d) => ({
+            id: d.id,
+            textContent: d.textContent,
+            originalFilename: d.originalFilename,
+          }))
+        ); // Second call for cluster
 
       (embeddingGenerationService.calculateSimilarity as jest.Mock).mockReturnValue(0.9);
       (prisma.templateLibrary.create as jest.Mock).mockResolvedValue({});
@@ -103,7 +124,7 @@ describe('TemplateExtractionService', () => {
       ];
 
       (prisma.trainingDocument.findMany as jest.Mock).mockResolvedValue(mockDocuments);
-      (embeddingGenerationService.calculateSimilarity as jest.Mock).mockReturnValue(0.80);
+      (embeddingGenerationService.calculateSimilarity as jest.Mock).mockReturnValue(0.8);
 
       const result = await service.extractTemplates({
         category: 'Contract',
@@ -116,18 +137,35 @@ describe('TemplateExtractionService', () => {
     it('should store extracted templates', async () => {
       const mockEmbedding = Array(1536).fill(0.1);
       const mockDocuments = [
-        { id: 'doc-1', textContent: 'Header\nContent', originalFilename: 'doc1.pdf', embeddings: [{ embedding: mockEmbedding }] },
-        { id: 'doc-2', textContent: 'Header\nBody', originalFilename: 'doc2.pdf', embeddings: [{ embedding: mockEmbedding }] },
-        { id: 'doc-3', textContent: 'Header\nText', originalFilename: 'doc3.pdf', embeddings: [{ embedding: mockEmbedding }] },
+        {
+          id: 'doc-1',
+          textContent: 'Header\nContent',
+          originalFilename: 'doc1.pdf',
+          embeddings: [{ embedding: mockEmbedding }],
+        },
+        {
+          id: 'doc-2',
+          textContent: 'Header\nBody',
+          originalFilename: 'doc2.pdf',
+          embeddings: [{ embedding: mockEmbedding }],
+        },
+        {
+          id: 'doc-3',
+          textContent: 'Header\nText',
+          originalFilename: 'doc3.pdf',
+          embeddings: [{ embedding: mockEmbedding }],
+        },
       ];
 
       (prisma.trainingDocument.findMany as jest.Mock)
         .mockResolvedValueOnce(mockDocuments)
-        .mockResolvedValueOnce(mockDocuments.map(d => ({
-          id: d.id,
-          textContent: d.textContent,
-          originalFilename: d.originalFilename,
-        })));
+        .mockResolvedValueOnce(
+          mockDocuments.map((d) => ({
+            id: d.id,
+            textContent: d.textContent,
+            originalFilename: d.originalFilename,
+          }))
+        );
 
       (embeddingGenerationService.calculateSimilarity as jest.Mock).mockReturnValue(0.9);
       (prisma.templateLibrary.create as jest.Mock).mockResolvedValue({});
@@ -142,9 +180,9 @@ describe('TemplateExtractionService', () => {
         new Error('Database error')
       );
 
-      await expect(
-        service.extractTemplates({ category: 'Contract' })
-      ).rejects.toThrow('Database error');
+      await expect(service.extractTemplates({ category: 'Contract' })).rejects.toThrow(
+        'Database error'
+      );
     });
   });
 
@@ -174,9 +212,30 @@ describe('TemplateExtractionService', () => {
   describe('findCommonStructure', () => {
     it('should find common sections across structures', () => {
       const structures = [
-        { sections: [{ heading: 'Introduction', order: 0, commonPhrases: [] }, { heading: 'Conclusion', order: 1, commonPhrases: [] }], totalSections: 2, avgSectionLength: 100 },
-        { sections: [{ heading: 'Introduction', order: 0, commonPhrases: [] }, { heading: 'Conclusion', order: 1, commonPhrases: [] }], totalSections: 2, avgSectionLength: 120 },
-        { sections: [{ heading: 'Introduction', order: 0, commonPhrases: [] }, { heading: 'Conclusion', order: 1, commonPhrases: [] }], totalSections: 2, avgSectionLength: 110 },
+        {
+          sections: [
+            { heading: 'Introduction', order: 0, commonPhrases: [] },
+            { heading: 'Conclusion', order: 1, commonPhrases: [] },
+          ],
+          totalSections: 2,
+          avgSectionLength: 100,
+        },
+        {
+          sections: [
+            { heading: 'Introduction', order: 0, commonPhrases: [] },
+            { heading: 'Conclusion', order: 1, commonPhrases: [] },
+          ],
+          totalSections: 2,
+          avgSectionLength: 120,
+        },
+        {
+          sections: [
+            { heading: 'Introduction', order: 0, commonPhrases: [] },
+            { heading: 'Conclusion', order: 1, commonPhrases: [] },
+          ],
+          totalSections: 2,
+          avgSectionLength: 110,
+        },
       ];
 
       const common = (service as any).findCommonStructure(structures);

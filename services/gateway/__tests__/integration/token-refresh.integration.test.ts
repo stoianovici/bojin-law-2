@@ -6,7 +6,8 @@
  */
 
 // Set environment variables before imports
-process.env.SESSION_SECRET = 'test-session-secret-at-least-32-characters-long-for-integration-tests';
+process.env.SESSION_SECRET =
+  'test-session-secret-at-least-32-characters-long-for-integration-tests';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long';
 process.env.AZURE_AD_CLIENT_ID = 'test-client-id';
@@ -29,9 +30,7 @@ describe('Token Refresh Integration Tests', () => {
 
   describe('POST /auth/refresh', () => {
     it('should return 401 if no session exists', async () => {
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({});
+      const response = await request(app).post('/auth/refresh').send({});
 
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('no_session');
@@ -53,9 +52,7 @@ describe('Token Refresh Integration Tests', () => {
       // Note: In real tests, you'd go through the full OAuth flow
       // For this test, we'll directly test with a mocked session
 
-      const response = await agent
-        .post('/auth/refresh')
-        .send({});
+      const response = await agent.post('/auth/refresh').send({});
 
       // Since we can't easily mock express-session in integration tests,
       // this will return 401 no_session
@@ -68,22 +65,18 @@ describe('Token Refresh Integration Tests', () => {
     it('should return 401 if refresh token is invalid/expired', async () => {
       // Mock auth service to throw error
       const mockAuthService = require('../../src/services/auth.service');
-      mockAuthService.AuthService.prototype.refreshAccessToken = jest.fn().mockRejectedValue(
-        new Error('Invalid refresh token')
-      );
+      mockAuthService.AuthService.prototype.refreshAccessToken = jest
+        .fn()
+        .mockRejectedValue(new Error('Invalid refresh token'));
 
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({});
+      const response = await request(app).post('/auth/refresh').send({});
 
       expect(response.status).toBe(401);
     });
 
     it('should return 401 if no refresh token in session', async () => {
       // Test the case where session exists but has no refresh token
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({});
+      const response = await request(app).post('/auth/refresh').send({});
 
       expect(response.status).toBe(401);
       // Will get no_session or no_refresh_token error depending on session state
@@ -93,13 +86,11 @@ describe('Token Refresh Integration Tests', () => {
     it('should handle session destroy error gracefully on refresh failure', async () => {
       // Mock auth service to throw error (simulates refresh token expiry)
       const mockAuthService = require('../../src/services/auth.service');
-      mockAuthService.AuthService.prototype.refreshAccessToken = jest.fn().mockRejectedValue(
-        new Error('Refresh token expired')
-      );
+      mockAuthService.AuthService.prototype.refreshAccessToken = jest
+        .fn()
+        .mockRejectedValue(new Error('Refresh token expired'));
 
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({});
+      const response = await request(app).post('/auth/refresh').send({});
 
       // Should still return 401 even if session destroy fails
       expect(response.status).toBe(401);
@@ -114,9 +105,7 @@ describe('Token Refresh Integration Tests', () => {
         throw new Error('Unexpected JWT generation error');
       });
 
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({});
+      const response = await request(app).post('/auth/refresh').send({});
 
       // Should handle error gracefully
       expect(response.status).toBeGreaterThanOrEqual(400);

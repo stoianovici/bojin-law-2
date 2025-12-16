@@ -215,13 +215,11 @@ describe('AI Learning Resolvers Integration Tests', () => {
 
   describe('Query.myWritingStyleProfile', () => {
     it('should return writing style profile for authenticated user', async () => {
-      (mockPrisma.writingStyleProfile.findUnique as jest.Mock).mockResolvedValue(mockWritingProfile);
-
-      const result = await aiLearningResolvers.Query.myWritingStyleProfile(
-        {},
-        {},
-        testContext
+      (mockPrisma.writingStyleProfile.findUnique as jest.Mock).mockResolvedValue(
+        mockWritingProfile
       );
+
+      const result = await aiLearningResolvers.Query.myWritingStyleProfile({}, {}, testContext);
 
       expect(result).toBeDefined();
       expect(result?.formalityLevel).toBe(0.7);
@@ -234,11 +232,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
     it('should return null when no profile exists', async () => {
       (mockPrisma.writingStyleProfile.findUnique as jest.Mock).mockResolvedValue(null);
 
-      const result = await aiLearningResolvers.Query.myWritingStyleProfile(
-        {},
-        {},
-        testContext
-      );
+      const result = await aiLearningResolvers.Query.myWritingStyleProfile({}, {}, testContext);
 
       expect(result).toBeNull();
     });
@@ -254,11 +248,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
     it('should return user snippets', async () => {
       (personalSnippetsService.getUserSnippets as jest.Mock).mockResolvedValue([mockSnippet]);
 
-      const result = await aiLearningResolvers.Query.mySnippets(
-        {},
-        {},
-        testContext
-      );
+      const result = await aiLearningResolvers.Query.mySnippets({}, {}, testContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].shortcut).toBe('greet');
@@ -295,10 +285,9 @@ describe('AI Learning Resolvers Integration Tests', () => {
       );
 
       expect(result).toHaveLength(1);
-      expect(personalSnippetsService.searchSnippets).toHaveBeenCalledWith(
-        'user-test-123',
-        { query: 'greet' }
-      );
+      expect(personalSnippetsService.searchSnippets).toHaveBeenCalledWith('user-test-123', {
+        query: 'greet',
+      });
     });
   });
 
@@ -336,13 +325,11 @@ describe('AI Learning Resolvers Integration Tests', () => {
         preferredSections: [{ name: 'Parties', order: 1, required: true }],
         headerStyle: { format: 'numbered', numbering: 'decimal' },
       };
-      (documentStructurePreferenceService.getUserPreferences as jest.Mock).mockResolvedValue([mockPreference]);
+      (documentStructurePreferenceService.getUserPreferences as jest.Mock).mockResolvedValue([
+        mockPreference,
+      ]);
 
-      const result = await aiLearningResolvers.Query.myDocumentPreferences(
-        {},
-        {},
-        testContext
-      );
+      const result = await aiLearningResolvers.Query.myDocumentPreferences({}, {}, testContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].documentType).toBe('Contract');
@@ -353,7 +340,9 @@ describe('AI Learning Resolvers Integration Tests', () => {
         id: 'pref-1',
         documentType: 'Contract',
       };
-      (documentStructurePreferenceService.getPreferenceByType as jest.Mock).mockResolvedValue(mockPreference);
+      (documentStructurePreferenceService.getPreferenceByType as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
 
       const result = await aiLearningResolvers.Query.myDocumentPreferences(
         {},
@@ -375,11 +364,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
       };
       (responseTimePatternService.getUserPatterns as jest.Mock).mockResolvedValue([mockPattern]);
 
-      const result = await aiLearningResolvers.Query.myResponseTimePatterns(
-        {},
-        {},
-        testContext
-      );
+      const result = await aiLearningResolvers.Query.myResponseTimePatterns({}, {}, testContext);
 
       expect(result).toHaveLength(1);
       expect(result[0].averageResponseHours).toBe(4.5);
@@ -441,11 +426,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
         category: 'Greeting' as const,
       };
 
-      const result = await aiLearningResolvers.Mutation.createSnippet(
-        {},
-        { input },
-        testContext
-      );
+      const result = await aiLearningResolvers.Mutation.createSnippet({}, { input }, testContext);
 
       expect(result.shortcut).toBe('greet');
       expect(personalSnippetsService.createSnippet).toHaveBeenCalledWith(
@@ -482,10 +463,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
       );
 
       expect(result).toBe(true);
-      expect(personalSnippetsService.deleteSnippet).toHaveBeenCalledWith(
-        'snip-1',
-        'user-test-123'
-      );
+      expect(personalSnippetsService.deleteSnippet).toHaveBeenCalledWith('snip-1', 'user-test-123');
     });
   });
 
@@ -575,11 +553,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
         editLocation: 'body',
       };
 
-      const result = await aiLearningResolvers.Mutation.recordDraftEdit(
-        {},
-        { input },
-        testContext
-      );
+      const result = await aiLearningResolvers.Mutation.recordDraftEdit({}, { input }, testContext);
 
       expect(result).toBe(true);
       expect(draftEditTrackerService.trackDraftEdit).toHaveBeenCalledWith(
@@ -604,11 +578,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
       (mockPrisma.writingStyleProfile.findUnique as jest.Mock).mockResolvedValue(null);
       (mockPrisma.writingStyleProfile.create as jest.Mock).mockResolvedValue(mockWritingProfile);
 
-      const result = await aiLearningResolvers.Mutation.analyzeWritingStyle(
-        {},
-        {},
-        testContext
-      );
+      const result = await aiLearningResolvers.Mutation.analyzeWritingStyle({}, {}, testContext);
 
       expect(result).toBeDefined();
       expect(draftEditTrackerService.getUnanalyzedEdits).toHaveBeenCalledWith('user-test-123', 50);
@@ -620,11 +590,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
         { id: 'edit-2' },
       ]);
 
-      const result = await aiLearningResolvers.Mutation.analyzeWritingStyle(
-        {},
-        {},
-        testContext
-      );
+      const result = await aiLearningResolvers.Mutation.analyzeWritingStyle({}, {}, testContext);
 
       expect(result).toBeNull();
     });
@@ -632,7 +598,9 @@ describe('AI Learning Resolvers Integration Tests', () => {
 
   describe('Mutation.resetWritingStyleProfile', () => {
     it('should reset writing style profile', async () => {
-      (personalizationDashboardService.resetWritingStyleProfile as jest.Mock).mockResolvedValue(true);
+      (personalizationDashboardService.resetWritingStyleProfile as jest.Mock).mockResolvedValue(
+        true
+      );
 
       const result = await aiLearningResolvers.Mutation.resetWritingStyleProfile(
         {},
@@ -653,7 +621,9 @@ describe('AI Learning Resolvers Integration Tests', () => {
         styleAdaptationEnabled: true,
         snippetSuggestionsEnabled: false,
       };
-      (personalizationDashboardService.updatePersonalizationSettings as jest.Mock).mockResolvedValue(settings);
+      (
+        personalizationDashboardService.updatePersonalizationSettings as jest.Mock
+      ).mockResolvedValue(settings);
 
       const result = await aiLearningResolvers.Mutation.updatePersonalizationSettings(
         {},
@@ -670,11 +640,7 @@ describe('AI Learning Resolvers Integration Tests', () => {
     it('should clear all learning data', async () => {
       (personalizationDashboardService.clearAllLearningData as jest.Mock).mockResolvedValue(true);
 
-      const result = await aiLearningResolvers.Mutation.clearAllLearningData(
-        {},
-        {},
-        testContext
-      );
+      const result = await aiLearningResolvers.Mutation.clearAllLearningData({}, {}, testContext);
 
       expect(result).toBe(true);
       expect(personalizationDashboardService.clearAllLearningData).toHaveBeenCalledWith(

@@ -6,7 +6,18 @@ import { gql } from '@apollo/client';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useGenerateDraft, type EmailTone } from '../../hooks/useEmailDraft';
-import { X, Sparkles, Loader2, AlertCircle, RefreshCw, Send, CheckCircle, Save, Paperclip, FileIcon } from 'lucide-react';
+import {
+  X,
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  Send,
+  CheckCircle,
+  Save,
+  Paperclip,
+  FileIcon,
+} from 'lucide-react';
 
 // GraphQL mutations for sending emails
 const SEND_NEW_EMAIL = gql`
@@ -253,50 +264,53 @@ export function ComposeInterface() {
   };
 
   // Handle file selection for attachments
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
-    setAttachmentError(null);
+      setAttachmentError(null);
 
-    const newAttachments: AttachmentFile[] = [];
-    const errors: string[] = [];
+      const newAttachments: AttachmentFile[] = [];
+      const errors: string[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
 
-      // Check file count limit
-      if (attachments.length + newAttachments.length >= MAX_TOTAL_ATTACHMENTS) {
-        errors.push(`Maximum ${MAX_TOTAL_ATTACHMENTS} attachments allowed.`);
-        break;
+        // Check file count limit
+        if (attachments.length + newAttachments.length >= MAX_TOTAL_ATTACHMENTS) {
+          errors.push(`Maximum ${MAX_TOTAL_ATTACHMENTS} attachments allowed.`);
+          break;
+        }
+
+        // Check file size
+        if (file.size > MAX_ATTACHMENT_SIZE) {
+          errors.push(`"${file.name}" exceeds 3MB limit.`);
+          continue;
+        }
+
+        newAttachments.push({
+          id: `${Date.now()}-${i}`,
+          file,
+          name: file.name,
+          size: file.size,
+          contentType: file.type || 'application/octet-stream',
+        });
       }
 
-      // Check file size
-      if (file.size > MAX_ATTACHMENT_SIZE) {
-        errors.push(`"${file.name}" exceeds 3MB limit.`);
-        continue;
+      if (errors.length > 0) {
+        setAttachmentError(errors.join(' '));
       }
 
-      newAttachments.push({
-        id: `${Date.now()}-${i}`,
-        file,
-        name: file.name,
-        size: file.size,
-        contentType: file.type || 'application/octet-stream',
-      });
-    }
+      if (newAttachments.length > 0) {
+        setAttachments((prev) => [...prev, ...newAttachments]);
+      }
 
-    if (errors.length > 0) {
-      setAttachmentError(errors.join(' '));
-    }
-
-    if (newAttachments.length > 0) {
-      setAttachments((prev) => [...prev, ...newAttachments]);
-    }
-
-    // Reset input
-    e.target.value = '';
-  }, [attachments.length]);
+      // Reset input
+      e.target.value = '';
+    },
+    [attachments.length]
+  );
 
   // Remove attachment
   const handleRemoveAttachment = useCallback((attachmentId: string) => {
@@ -720,7 +734,8 @@ export function ComposeInterface() {
             </button>
             {lastSaved && (
               <span className="text-xs text-gray-400">
-                Salvat: {lastSaved.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                Salvat:{' '}
+                {lastSaved.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </div>

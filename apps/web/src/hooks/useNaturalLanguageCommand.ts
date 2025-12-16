@@ -72,11 +72,7 @@ export type AIAssistantSection =
   | 'admin'
   | 'settings';
 
-export type CommandStatus =
-  | 'SUCCESS'
-  | 'PARTIAL'
-  | 'FAILED'
-  | 'CLARIFICATION_NEEDED';
+export type CommandStatus = 'SUCCESS' | 'PARTIAL' | 'FAILED' | 'CLARIFICATION_NEEDED';
 
 export interface CommandParams {
   title?: string;
@@ -177,10 +173,7 @@ export function useNaturalLanguageCommand(caseId?: string, section?: AIAssistant
           status: 'FAILED',
           intent: 'UNKNOWN',
           confidence: 0,
-          message:
-            err instanceof Error
-              ? err.message
-              : 'A apărut o eroare la procesarea comenzii.',
+          message: err instanceof Error ? err.message : 'A apărut o eroare la procesarea comenzii.',
         };
         setResult(errorResult);
         return errorResult;

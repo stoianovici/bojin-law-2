@@ -259,17 +259,9 @@ export function useDocumentPreferenceManagement() {
     count,
   } = useDocumentPreferences();
 
-  const {
-    savePreference,
-    loading: saving,
-    error: saveError,
-  } = useSaveDocumentPreference();
+  const { savePreference, loading: saving, error: saveError } = useSaveDocumentPreference();
 
-  const {
-    deletePreference,
-    loading: deleting,
-    error: deleteError,
-  } = useDeleteDocumentPreference();
+  const { deletePreference, loading: deleting, error: deleteError } = useDeleteDocumentPreference();
 
   return {
     // Data

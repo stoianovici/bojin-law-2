@@ -31,12 +31,13 @@ NOW, THEREFORE, in consideration of the mutual covenants contained herein, the p
 2.2 **Bonus.** Employee {{BONUS_ELIGIBILITY}} be eligible for an annual performance bonus of up to {{BONUS_PERCENTAGE}}% of Base Salary, based on individual and company performance, payable {{BONUS_TIMING}}.
 
 2.3 **Benefits.** Employee shall be entitled to participate in all employee benefit plans maintained by Employer for similarly situated employees, including:
-   - Health insurance
-   - Dental and vision insurance
-   - Retirement plan (401(k) with {{COMPANY_MATCH}}% company match)
-   - Life insurance
-   - Disability insurance
-   - {{ADDITIONAL_BENEFITS}}
+
+- Health insurance
+- Dental and vision insurance
+- Retirement plan (401(k) with {{COMPANY_MATCH}}% company match)
+- Life insurance
+- Disability insurance
+- {{ADDITIONAL_BENEFITS}}
 
 2.4 **Paid Time Off.** Employee shall be entitled to {{PTO_DAYS}} days of paid time off ("PTO") per year, accruing at the rate of {{PTO_ACCRUAL_RATE}} days per month, subject to Employer's PTO policy.
 
@@ -51,39 +52,39 @@ NOW, THEREFORE, in consideration of the mutual covenants contained herein, the p
 3.2 **Notice Period.** Either party may terminate this Agreement by providing {{TERMINATION_NOTICE}} written notice to the other party.
 
 3.3 **Termination for Cause.** Employer may terminate Employee's employment immediately for Cause, without notice or severance. "Cause" means:
-   (a) Material breach of this Agreement;
-   (b) Willful misconduct, gross negligence, or dishonesty;
-   (c) Conviction of a felony or crime involving moral turpitude;
-   (d) Violation of Employer's policies or code of conduct;
-   (e) Failure to perform duties after written notice and reasonable opportunity to cure.
+(a) Material breach of this Agreement;
+(b) Willful misconduct, gross negligence, or dishonesty;
+(c) Conviction of a felony or crime involving moral turpitude;
+(d) Violation of Employer's policies or code of conduct;
+(e) Failure to perform duties after written notice and reasonable opportunity to cure.
 
 3.4 **Severance.** If Employer terminates Employee without Cause, Employee shall be entitled to severance pay equal to {{SEVERANCE_WEEKS}} weeks of Base Salary, subject to Employee's execution of a general release of claims.
 
 3.5 **Obligations Upon Termination.** Upon termination, Employee shall:
-   (a) Return all Company property, including documents, equipment, and access credentials;
-   (b) Resign from all officer and director positions held;
-   (c) Continue to be bound by confidentiality and non-compete obligations.
+(a) Return all Company property, including documents, equipment, and access credentials;
+(b) Resign from all officer and director positions held;
+(c) Continue to be bound by confidentiality and non-compete obligations.
 
 ## 4. CONFIDENTIAL INFORMATION
 
 4.1 **Confidentiality.** Employee acknowledges that during employment, Employee will have access to Confidential Information of Employer. "Confidential Information" includes all non-public business, technical, and financial information.
 
 4.2 **Non-Disclosure.** Employee agrees to:
-   (a) Hold all Confidential Information in strict confidence;
-   (b) Not disclose Confidential Information to any third party;
-   (c) Use Confidential Information solely for Employer's benefit;
-   (d) Not use Confidential Information for Employee's benefit or that of any third party.
+(a) Hold all Confidential Information in strict confidence;
+(b) Not disclose Confidential Information to any third party;
+(c) Use Confidential Information solely for Employer's benefit;
+(d) Not use Confidential Information for Employee's benefit or that of any third party.
 
 4.3 **Survival.** The confidentiality obligations shall survive termination of employment for {{CONFIDENTIALITY_PERIOD}}.
 
 ## 5. INTELLECTUAL PROPERTY
 
 5.1 **Work Product.** All inventions, discoveries, developments, improvements, works of authorship, and other intellectual property created by Employee during employment, whether individually or jointly with others, that:
-   (a) Relate to Employer's business or actual or demonstrably anticipated research or development; or
-   (b) Result from work performed for Employer; or
-   (c) Are developed using Employer's equipment, supplies, facilities, or Confidential Information;
+(a) Relate to Employer's business or actual or demonstrably anticipated research or development; or
+(b) Result from work performed for Employer; or
+(c) Are developed using Employer's equipment, supplies, facilities, or Confidential Information;
 
-   shall be the sole and exclusive property of Employer ("Work Product").
+shall be the sole and exclusive property of Employer ("Work Product").
 
 5.2 **Assignment.** Employee hereby assigns to Employer all right, title, and interest in and to all Work Product, including all intellectual property rights therein.
 
@@ -94,9 +95,9 @@ NOW, THEREFORE, in consideration of the mutual covenants contained herein, the p
 ## 6. NON-COMPETE AND NON-SOLICITATION
 
 6.1 **Non-Compete.** During employment and for {{NON_COMPETE_PERIOD}} following termination, Employee shall not, directly or indirectly:
-   (a) Engage in any business that competes with Employer within {{NON_COMPETE_TERRITORY}};
-   (b) Render services to any competitor of Employer;
-   (c) Have any financial interest in any competing business (except ownership of less than 2% of publicly traded securities).
+(a) Engage in any business that competes with Employer within {{NON_COMPETE_TERRITORY}};
+(b) Render services to any competitor of Employer;
+(c) Have any financial interest in any competing business (except ownership of less than 2% of publicly traded securities).
 
 6.2 **Non-Solicitation of Customers.** During employment and for {{NON_SOLICIT_CUSTOMERS_PERIOD}} following termination, Employee shall not solicit or attempt to solicit any customer or client of Employer for competing purposes.
 
@@ -107,10 +108,10 @@ NOW, THEREFORE, in consideration of the mutual covenants contained herein, the p
 ## 7. REPRESENTATIONS
 
 7.1 Employee represents and warrants that:
-   (a) Employee is not bound by any agreement that would prevent Employee from performing duties hereunder;
-   (b) Employee has the legal right to enter into this Agreement;
-   (c) All information provided to Employer is true and accurate;
-   (d) Employee is legally authorized to work in {{WORK_AUTHORIZATION_COUNTRY}}.
+(a) Employee is not bound by any agreement that would prevent Employee from performing duties hereunder;
+(b) Employee has the legal right to enter into this Agreement;
+(c) All information provided to Employer is true and accurate;
+(d) Employee is legally authorized to work in {{WORK_AUTHORIZATION_COUNTRY}}.
 
 ## 8. EMPLOYEE HANDBOOK
 
@@ -165,6 +166,7 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 **TEMPLATE VARIABLES:**
 
 **Parties:**
+
 - `{{EFFECTIVE_DATE}}`: Start date of employment
 - `{{COMPANY_NAME}}`: Employer legal name
 - `{{COMPANY_TYPE}}`: Entity type (corporation, LLC, etc.)
@@ -173,11 +175,13 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 - `{{EMPLOYEE_ADDRESS}}`: Employee residence address
 
 **Position:**
+
 - `{{POSITION_TITLE}}`: Job title
 - `{{REPORTS_TO}}`: Supervisor title/name
 - `{{JOB_DUTIES}}`: Detailed job responsibilities
 
 **Compensation:**
+
 - `{{BASE_SALARY}}`: Annual salary (e.g., "$120,000")
 - `{{PAY_FREQUENCY}}`: Pay period (e.g., "bi-weekly", "semi-monthly")
 - `{{BONUS_ELIGIBILITY}}`: "shall" or "may"
@@ -189,19 +193,23 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 - `{{PTO_ACCRUAL_RATE}}`: Monthly accrual (e.g., "1.67")
 
 **Termination:**
+
 - `{{TERMINATION_NOTICE}}`: Notice period (e.g., "two (2) weeks")
 - `{{SEVERANCE_WEEKS}}`: Severance duration (e.g., "8")
 
 **Confidentiality & IP:**
+
 - `{{CONFIDENTIALITY_PERIOD}}`: Duration after termination (e.g., "indefinitely" or "five (5) years")
 
 **Non-Compete:**
+
 - `{{NON_COMPETE_PERIOD}}`: Duration (e.g., "twelve (12) months") [Note: varies by state]
 - `{{NON_COMPETE_TERRITORY}}`: Geographic scope (e.g., "the United States")
 - `{{NON_SOLICIT_CUSTOMERS_PERIOD}}`: Duration (e.g., "twelve (12) months")
 - `{{NON_SOLICIT_EMPLOYEES_PERIOD}}`: Duration (e.g., "twelve (12) months")
 
 **Legal:**
+
 - `{{WORK_AUTHORIZATION_COUNTRY}}`: Country of employment (e.g., "the United States")
 - `{{DISPUTE_RESOLUTION_METHOD}}`: Dispute resolution approach
 - `{{DISPUTE_RESOLUTION_RULES}}`: Governing rules (e.g., "AAA Employment Arbitration Rules")
@@ -214,17 +222,20 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 **CRITICAL JURISDICTION NOTES:**
 
 **California:**
+
 - Non-compete clauses are generally VOID (Cal. Bus. & Prof. Code § 16600)
 - Remove Section 6.1 entirely
 - Non-solicit of employees may be unenforceable
 - Must include Labor Code notice of right to represent oneself
 
 **New York:**
+
 - Non-competes must be reasonable in time and scope
 - Threshold salary requirements for non-competes ($250,000+ for highest earners)
 - Must provide agreement 14 days before start date
 
 **Massachusetts:**
+
 - Non-compete Reform Act (M.G.L. c. 149, § 24L) requirements:
   - Maximum 12-month duration
   - Garden leave or other consideration required
@@ -232,25 +243,30 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
   - Not enforceable for non-exempt employees, students, or workers under 18
 
 **Illinois:**
+
 - Earnings threshold for non-competes ($75,000+)
 - 14-day advance notice required
 
 **Washington:**
+
 - Non-competes limited by compensation threshold
 - Independent legal advice encouraged
 
 **UK:**
+
 - Garden leave periods common
 - Restrictive covenants must be reasonable
 - Consider PILONs (Payment in Lieu of Notice)
 
 **EU:**
+
 - GDPR compliance for employee data
 - Works councils consultation may be required
 - Statutory minimum notice periods
 - Strong employee protections under local labor law
 
 **OPTIONAL CLAUSES:**
+
 - Equity compensation (stock options, RSUs)
 - Change of control provisions
 - Clawback provisions for executives

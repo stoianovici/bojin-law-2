@@ -188,7 +188,10 @@ export class ExtractionConversionService {
         title: request.overrides?.title || suggestion.title,
         description: request.overrides?.description || suggestion.description,
         assignedTo: request.overrides?.assignedTo || suggestion.suggestedAssignee || request.userId,
-        dueDate: request.overrides?.dueDate || suggestion.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        dueDate:
+          request.overrides?.dueDate ||
+          suggestion.dueDate ||
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         priority: request.overrides?.priority || suggestion.priority,
         type: request.overrides?.taskType || suggestion.taskType,
       };
@@ -314,9 +317,7 @@ export class ExtractionConversionService {
   }
 
   private getPriorityFromDate(dueDate: Date): TaskPriority {
-    const daysUntilDue = Math.ceil(
-      (dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    );
+    const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
     if (daysUntilDue <= 1) return TaskPriority.Urgent;
     if (daysUntilDue <= 3) return TaskPriority.High;
@@ -379,11 +380,7 @@ Source: Email ID ${commitment.emailId}`;
     confidence: number;
     emailId: string;
   }): string {
-    const parts = [
-      'Action item extracted from email communication.',
-      '',
-      actionItem.description,
-    ];
+    const parts = ['Action item extracted from email communication.', '', actionItem.description];
 
     if (actionItem.suggestedAssignee) {
       parts.push('', `Suggested assignee: ${actionItem.suggestedAssignee}`);
@@ -401,6 +398,8 @@ Source: Email ID ${commitment.emailId}`;
 }
 
 // Factory function
-export function createExtractionConversionService(prisma: PrismaClient): ExtractionConversionService {
+export function createExtractionConversionService(
+  prisma: PrismaClient
+): ExtractionConversionService {
   return new ExtractionConversionService(prisma);
 }

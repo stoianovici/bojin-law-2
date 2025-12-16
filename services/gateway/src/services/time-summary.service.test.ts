@@ -86,9 +86,7 @@ describe('TimeSummaryService', () => {
         { date: new Date('2025-12-01'), hours: 10.0, hourlyRate: 40000, billable: true },
       ];
 
-      const mockPreviousWeekEntries = [
-        { hours: 9.0, billable: true },
-      ];
+      const mockPreviousWeekEntries = [{ hours: 9.0, billable: true }];
 
       mockPrisma.timeEntry.findMany.mockResolvedValueOnce(mockCurrentWeekEntries as any);
       mockPrisma.timeEntry.findMany.mockResolvedValueOnce(mockPreviousWeekEntries as any);
@@ -104,9 +102,7 @@ describe('TimeSummaryService', () => {
         { date: new Date('2025-12-01'), hours: 8.0, hourlyRate: 40000, billable: true },
       ];
 
-      const mockPreviousWeekEntries = [
-        { hours: 10.0, billable: true },
-      ];
+      const mockPreviousWeekEntries = [{ hours: 10.0, billable: true }];
 
       mockPrisma.timeEntry.findMany.mockResolvedValueOnce(mockCurrentWeekEntries as any);
       mockPrisma.timeEntry.findMany.mockResolvedValueOnce(mockPreviousWeekEntries as any);
@@ -121,9 +117,7 @@ describe('TimeSummaryService', () => {
         { date: new Date('2025-12-01'), hours: 10.0, hourlyRate: 40000, billable: true },
       ];
 
-      const mockPreviousWeekEntries = [
-        { hours: 10.2, billable: true },
-      ];
+      const mockPreviousWeekEntries = [{ hours: 10.2, billable: true }];
 
       mockPrisma.timeEntry.findMany.mockResolvedValueOnce(mockCurrentWeekEntries as any);
       mockPrisma.timeEntry.findMany.mockResolvedValueOnce(mockPreviousWeekEntries as any);
@@ -161,7 +155,9 @@ describe('TimeSummaryService', () => {
       const result = await getWeeklySummary('user-123', weekStart);
 
       const monday = result.byDay.find((d: { dayOfWeek: string }) => d.dayOfWeek === 'Monday');
-      const wednesday = result.byDay.find((d: { dayOfWeek: string }) => d.dayOfWeek === 'Wednesday');
+      const wednesday = result.byDay.find(
+        (d: { dayOfWeek: string }) => d.dayOfWeek === 'Wednesday'
+      );
 
       expect(monday).toMatchObject({
         totalHours: 7.0,

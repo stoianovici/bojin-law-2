@@ -10,11 +10,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import {
-  TrendingUp,
-  AlertTriangle,
-  ExternalLink,
-} from 'lucide-react';
+import { TrendingUp, AlertTriangle, ExternalLink } from 'lucide-react';
 import { BaseWidget } from './BaseWidget';
 import { ListSkeleton, KPISkeleton } from './WidgetSkeleton';
 import { DeltaBadge } from '../DeltaBadge';
@@ -89,13 +85,7 @@ export interface ProfitabilityWidgetProps {
 /**
  * Case item component
  */
-function CaseItem({
-  caseData,
-  isTop,
-}: {
-  caseData: CaseProfitability;
-  isTop: boolean;
-}) {
+function CaseItem({ caseData, isTop }: { caseData: CaseProfitability; isTop: boolean }) {
   const marginColor =
     caseData.marginPercent >= 20
       ? 'text-green-600'
@@ -129,8 +119,7 @@ function CaseItem({
         <div className="flex items-center gap-2 mt-0.5">
           <span
             className={`text-xs px-1.5 py-0.5 rounded ${
-              BILLING_TYPE_COLORS[caseData.billingType] ||
-              'bg-gray-100 text-gray-600'
+              BILLING_TYPE_COLORS[caseData.billingType] || 'bg-gray-100 text-gray-600'
             }`}
           >
             {BILLING_TYPE_LABELS[caseData.billingType] || caseData.billingType}
@@ -165,9 +154,7 @@ export function ProfitabilityWidget({
   className = '',
 }: ProfitabilityWidgetProps) {
   // Sort and split into top/bottom performers
-  const sortedCases = [...profitabilityByCase].sort(
-    (a, b) => b.marginPercent - a.marginPercent
-  );
+  const sortedCases = [...profitabilityByCase].sort((a, b) => b.marginPercent - a.marginPercent);
   const topCases = sortedCases.slice(0, 5);
   const bottomCases = sortedCases
     .filter((c) => c.marginPercent < 20)
@@ -215,11 +202,7 @@ export function ProfitabilityWidget({
             </p>
             <div className="space-y-1">
               {topCases.map((caseData) => (
-                <CaseItem
-                  key={caseData.caseId}
-                  caseData={caseData}
-                  isTop={true}
-                />
+                <CaseItem key={caseData.caseId} caseData={caseData} isTop={true} />
               ))}
             </div>
           </div>
@@ -234,11 +217,7 @@ export function ProfitabilityWidget({
             </p>
             <div className="space-y-1">
               {bottomCases.map((caseData) => (
-                <CaseItem
-                  key={caseData.caseId}
-                  caseData={caseData}
-                  isTop={false}
-                />
+                <CaseItem key={caseData.caseId} caseData={caseData} isTop={false} />
               ))}
             </div>
           </div>

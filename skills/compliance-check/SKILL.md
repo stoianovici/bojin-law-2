@@ -37,15 +37,18 @@ Regulatory compliance validation skill that checks documents and processes again
 ## Input Format
 
 **Required:**
+
 - Document or process to check
 - Applicable regulation(s)
 
 **Optional:**
+
 - Industry vertical
 - Jurisdiction
 - Specific requirements to focus on
 
 **Example:**
+
 ```
 Check this privacy policy for GDPR compliance:
 [Policy text]
@@ -64,21 +67,25 @@ Focus: Data subject rights, consent mechanisms
 ## Overall Compliance: [COMPLIANT / PARTIAL / NON-COMPLIANT]
 
 ## Requirements Checklist
+
 - [✓] [Requirement] - Implemented
 - [⚠️] [Requirement] - Partial implementation
 - [✗] [Requirement] - Missing or non-compliant
 
 ## Compliance Gaps
+
 1. **[Gap Description]**
    - Requirement: [Specific regulation section]
    - Impact: [Risk level]
    - Remediation: [Specific actions needed]
 
 ## Recommendations
+
 1. [Priority 1 recommendations]
 2. [Priority 2 recommendations]
 
 ## Next Steps
+
 [Action plan with timeline]
 ```
 

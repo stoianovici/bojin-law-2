@@ -12,10 +12,14 @@ jest.mock('recharts', () => {
   const React = require('react');
   return {
     ResponsiveContainer: React.forwardRef(({ children }: any, ref: any) => (
-      <div ref={ref} data-testid="responsive-container">{children}</div>
+      <div ref={ref} data-testid="responsive-container">
+        {children}
+      </div>
     )),
     PieChart: React.forwardRef(({ children }: any, ref: any) => (
-      <div ref={ref} data-testid="pie-chart">{children}</div>
+      <div ref={ref} data-testid="pie-chart">
+        {children}
+      </div>
     )),
     Pie: () => null,
     Cell: () => null,

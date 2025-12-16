@@ -29,15 +29,18 @@ Expert legal research skill that helps find relevant case law, statutes, and leg
 ## Input Format
 
 **Required:**
+
 - Legal question or issue
 - Jurisdiction (federal, state, or specific court)
 
 **Optional:**
+
 - Date range for cases
 - Specific areas of law (contracts, torts, criminal, etc.)
 - Key terms or phrases to search
 
 **Example:**
+
 ```
 Research question: "Can an employer enforce a non-compete agreement against a software engineer in California?"
 Jurisdiction: California
@@ -47,18 +50,22 @@ Area of law: Employment law
 ## Output Format
 
 ### Case Research Summary
+
 ```markdown
 # Legal Research Memo
 
 ## Issue
+
 [Concise statement of the legal question]
 
 ## Short Answer
+
 [2-3 sentence answer with key holdings]
 
 ## Relevant Cases
 
 ### Primary Authority
+
 1. **[Case Name]**, [Citation] ([Court], [Year])
    - **Holding**: [Key legal principle]
    - **Facts**: [Relevant facts]
@@ -66,15 +73,19 @@ Area of law: Employment law
    - **Distinction**: [Any distinguishing factors]
 
 ### Secondary Authority
+
 [Supporting cases with briefer summaries]
 
 ## Statutory References
+
 - [Relevant statutes with citations]
 
 ## Analysis
+
 [Detailed analysis applying law to your facts]
 
 ## Conclusion
+
 [Summary and recommendations]
 ```
 

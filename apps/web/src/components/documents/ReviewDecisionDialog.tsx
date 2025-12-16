@@ -8,12 +8,7 @@
  */
 
 import * as React from 'react';
-import {
-  CheckCircle,
-  XCircle,
-  RotateCcw,
-  AlertTriangle,
-} from 'lucide-react';
+import { CheckCircle, XCircle, RotateCcw, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -110,9 +105,7 @@ export function ReviewDecisionDialog({
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Review Decision</DialogTitle>
-          <DialogDescription>
-            Make a decision on &quot;{documentName}&quot;
-          </DialogDescription>
+          <DialogDescription>Make a decision on &quot;{documentName}&quot;</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -141,8 +134,7 @@ export function ReviewDecisionDialog({
               {decisionOptions.map((option) => {
                 const Icon = option.icon;
                 const isSelected = selectedDecision === option.value;
-                const isDisabled =
-                  option.value === 'APPROVED' && !canApprove;
+                const isDisabled = option.value === 'APPROVED' && !canApprove;
 
                 return (
                   <button
@@ -150,9 +142,7 @@ export function ReviewDecisionDialog({
                     onClick={() => !isDisabled && setSelectedDecision(option.value)}
                     disabled={isDisabled}
                     className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
-                      isSelected
-                        ? option.bgColor
-                        : 'bg-background hover:bg-muted/50'
+                      isSelected ? option.bgColor : 'bg-background hover:bg-muted/50'
                     } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Icon className={`h-5 w-5 mt-0.5 ${option.color}`} />
@@ -170,9 +160,7 @@ export function ReviewDecisionDialog({
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {option.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{option.description}</p>
                     </div>
                   </button>
                 );
@@ -183,10 +171,7 @@ export function ReviewDecisionDialog({
           {/* Feedback */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Feedback{' '}
-              <span className="text-muted-foreground font-normal">
-                (required)
-              </span>
+              Feedback <span className="text-muted-foreground font-normal">(required)</span>
             </label>
             <Textarea
               value={feedback}
@@ -195,10 +180,10 @@ export function ReviewDecisionDialog({
                 selectedDecision === 'APPROVED'
                   ? 'Add approval notes...'
                   : selectedDecision === 'REJECTED'
-                  ? 'Explain why the document is rejected...'
-                  : selectedDecision === 'REVISION_REQUESTED'
-                  ? 'Describe what changes are needed...'
-                  : 'Select a decision to add feedback...'
+                    ? 'Explain why the document is rejected...'
+                    : selectedDecision === 'REVISION_REQUESTED'
+                      ? 'Describe what changes are needed...'
+                      : 'Select a decision to add feedback...'
               }
               rows={4}
             />
@@ -206,11 +191,7 @@ export function ReviewDecisionDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button
@@ -220,8 +201,8 @@ export function ReviewDecisionDialog({
               selectedDecision === 'REJECTED'
                 ? 'destructive'
                 : selectedDecision === 'REVISION_REQUESTED'
-                ? 'secondary'
-                : 'default'
+                  ? 'secondary'
+                  : 'default'
             }
           >
             {isSubmitting ? (

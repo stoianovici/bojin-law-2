@@ -42,11 +42,7 @@ export function UserProvider({ children }: UserProviderProps) {
     lastActive: new Date(),
   };
 
-  return (
-    <UserContext.Provider value={{ user }}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={{ user }}>{children}</UserContext.Provider>;
 }
 
 /**

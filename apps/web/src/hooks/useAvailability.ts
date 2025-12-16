@@ -135,12 +135,12 @@ export function useTeamAvailability(dateRange: DateRangeInput) {
  * Hook to create availability
  */
 export function useCreateAvailability() {
-  return useMutation<
-    { createAvailability: UserAvailability },
-    { input: CreateAvailabilityInput }
-  >(CREATE_AVAILABILITY, {
-    refetchQueries: ['GetMyAvailabilities', 'GetTeamAvailability'],
-  });
+  return useMutation<{ createAvailability: UserAvailability }, { input: CreateAvailabilityInput }>(
+    CREATE_AVAILABILITY,
+    {
+      refetchQueries: ['GetMyAvailabilities', 'GetTeamAvailability'],
+    }
+  );
 }
 
 /**

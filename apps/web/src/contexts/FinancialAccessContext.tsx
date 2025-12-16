@@ -52,9 +52,7 @@ export interface FinancialAccessContextType {
 }
 
 // Create context
-const FinancialAccessContext = createContext<
-  FinancialAccessContextType | undefined
->(undefined);
+const FinancialAccessContext = createContext<FinancialAccessContextType | undefined>(undefined);
 
 // Provider props
 export interface FinancialAccessProviderProps {
@@ -67,9 +65,7 @@ export interface FinancialAccessProviderProps {
  *
  * IMPORTANT: Must be rendered inside AuthProvider
  */
-export function FinancialAccessProvider({
-  children,
-}: FinancialAccessProviderProps) {
+export function FinancialAccessProvider({ children }: FinancialAccessProviderProps) {
   const { user, isAuthenticated } = useAuth();
 
   /**
@@ -110,9 +106,7 @@ export function FinancialAccessProvider({
   }, [isAuthenticated, user]);
 
   return (
-    <FinancialAccessContext.Provider value={value}>
-      {children}
-    </FinancialAccessContext.Provider>
+    <FinancialAccessContext.Provider value={value}>{children}</FinancialAccessContext.Provider>
   );
 }
 
@@ -138,9 +132,7 @@ export function FinancialAccessProvider({
 export function useFinancialAccess(): FinancialAccessContextType {
   const context = useContext(FinancialAccessContext);
   if (!context) {
-    throw new Error(
-      'useFinancialAccess must be used within a FinancialAccessProvider'
-    );
+    throw new Error('useFinancialAccess must be used within a FinancialAccessProvider');
   }
   return context;
 }

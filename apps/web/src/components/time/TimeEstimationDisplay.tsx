@@ -116,8 +116,7 @@ export function TimeEstimationDisplay({
                   <p className="text-2xl font-bold text-blue-700">{currentValue.toFixed(2)}h</p>
                   {estimation.range && (
                     <p className="text-xs text-gray-600">
-                      Range: {estimation.range.min.toFixed(1)}h - {estimation.range.max.toFixed(1)}
-                      h
+                      Range: {estimation.range.min.toFixed(1)}h - {estimation.range.max.toFixed(1)}h
                     </p>
                   )}
                 </div>

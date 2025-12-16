@@ -224,9 +224,9 @@ describe('MorningBriefingService', () => {
     it('should throw error if user not found', async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.generateMorningBriefing('unknown-user', 'firm-456')
-      ).rejects.toThrow('User not found');
+      await expect(service.generateMorningBriefing('unknown-user', 'firm-456')).rejects.toThrow(
+        'User not found'
+      );
     });
 
     it('should store briefing in database', async () => {
@@ -255,9 +255,7 @@ describe('MorningBriefingService', () => {
     it('should handle AI API errors gracefully', async () => {
       (providerManager.execute as jest.Mock).mockRejectedValue(new Error('API Error'));
 
-      await expect(
-        service.generateMorningBriefing('user-123', 'firm-456')
-      ).rejects.toThrow();
+      await expect(service.generateMorningBriefing('user-123', 'firm-456')).rejects.toThrow();
     });
 
     it('should handle invalid JSON response', async () => {

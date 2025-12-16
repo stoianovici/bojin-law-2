@@ -165,9 +165,7 @@ export const EmptySuggestions: Story = {
             <h3 className="text-sm font-medium text-gray-900 mb-1">
               Nu există sugestii disponibile
             </h3>
-            <p className="text-xs text-gray-500">
-              Începe să scrii pentru a primi sugestii AI
-            </p>
+            <p className="text-xs text-gray-500">Începe să scrii pentru a primi sugestii AI</p>
           </div>
         </div>
       );
@@ -188,7 +186,8 @@ export const RomanianDiacritics: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Verify Romanian diacritics in: Sugestii, Documente, Șabloane tabs and all content (ă, â, î, ș, ț)',
+        story:
+          'Verify Romanian diacritics in: Sugestii, Documente, Șabloane tabs and all content (ă, â, î, ș, ț)',
       },
     },
   },

@@ -163,7 +163,9 @@ async function aggregateFirmSnapshot(firmId: string, date: Date): Promise<void> 
   });
 
   if (existing) {
-    console.log(`[${WORKER_NAME}] Snapshot already exists for firm ${firmId} on ${date.toISOString().split('T')[0]}`);
+    console.log(
+      `[${WORKER_NAME}] Snapshot already exists for firm ${firmId} on ${date.toISOString().split('T')[0]}`
+    );
     return;
   }
 

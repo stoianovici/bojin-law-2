@@ -413,16 +413,16 @@ DevOps Team
 
 ### When to Send Each Template
 
-| Template | Timing | Audience |
-|----------|--------|----------|
-| 24 Hours Before | T-24h | Engineering, Product, Support |
-| 1 Hour Before | T-1h | Engineering |
-| Progress Updates | Every 15min during migration | Engineering |
-| Completion Success | Immediately after | Engineering, Product, Support |
-| Completion with Issues | Immediately after | Engineering |
-| Rollback Initiated | Immediately | Engineering, Management |
-| Rollback Complete | Immediately after | Engineering, Management |
-| Post-Mortem | 24-48h after | Engineering, Management |
+| Template               | Timing                       | Audience                      |
+| ---------------------- | ---------------------------- | ----------------------------- |
+| 24 Hours Before        | T-24h                        | Engineering, Product, Support |
+| 1 Hour Before          | T-1h                         | Engineering                   |
+| Progress Updates       | Every 15min during migration | Engineering                   |
+| Completion Success     | Immediately after            | Engineering, Product, Support |
+| Completion with Issues | Immediately after            | Engineering                   |
+| Rollback Initiated     | Immediately                  | Engineering, Management       |
+| Rollback Complete      | Immediately after            | Engineering, Management       |
+| Post-Mortem            | 24-48h after                 | Engineering, Management       |
 
 ### Customization Tips
 

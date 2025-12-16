@@ -7,15 +7,7 @@
  * Displays template and clause usage statistics
  */
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { FileText, Quote } from 'lucide-react';
 import type { TemplateUsageStats } from '@legal-platform/types';
 
@@ -39,7 +31,9 @@ export function TemplateUsageWidget({ data }: TemplateUsageWidgetProps) {
           <p className="text-sm text-gray-500">Template-uri si clauze populare</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-gray-900">{data.templateAdoptionRate.toFixed(0)}%</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {data.templateAdoptionRate.toFixed(0)}%
+          </p>
           <p className="text-sm text-gray-500">rata adoptie</p>
         </div>
       </div>

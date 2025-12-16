@@ -152,23 +152,26 @@ export class PersonalizationDashboardService {
    * Get snippet suggestions for a user
    * This aggregates detected patterns from email drafts and documents
    */
-  async getSnippetSuggestions(userId: string, limit: number = 5): Promise<{
-    content: string;
-    suggestedTitle: string;
-    suggestedShortcut: string;
-    category: SnippetCategory;
-    occurrenceCount: number;
-    confidence: number;
-  }[]> {
+  async getSnippetSuggestions(
+    userId: string,
+    limit: number = 5
+  ): Promise<
+    {
+      content: string;
+      suggestedTitle: string;
+      suggestedShortcut: string;
+      category: SnippetCategory;
+      occurrenceCount: number;
+      confidence: number;
+    }[]
+  > {
     // Get existing snippets to filter out already-saved phrases
     const existingSnippets = await prisma.personalSnippet.findMany({
       where: { userId },
       select: { content: true },
     });
 
-    const existingContents = new Set(
-      existingSnippets.map((s) => s.content.toLowerCase().trim())
-    );
+    const existingContents = new Set(existingSnippets.map((s) => s.content.toLowerCase().trim()));
 
     // Analyze recent draft edits for common phrases
     const recentEdits = await prisma.draftEditHistory.findMany({
@@ -297,10 +300,7 @@ export class PersonalizationDashboardService {
     );
 
     // Calculate overall average
-    const totalHours = patterns.reduce(
-      (sum, p) => sum + p.averageResponseHours * p.sampleCount,
-      0
-    );
+    const totalHours = patterns.reduce((sum, p) => sum + p.averageResponseHours * p.sampleCount, 0);
     const totalSamples = patterns.reduce((sum, p) => sum + p.sampleCount, 0);
 
     return {

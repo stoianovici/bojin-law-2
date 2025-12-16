@@ -66,7 +66,8 @@ interface GetDefaultRatesQueryResult {
  */
 export function useUpdateDefaultRates() {
   const [loading, setLoading] = useState(false);
-  const [updateDefaultRatesMutation] = useMutation<UpdateDefaultRatesMutationResult>(UPDATE_DEFAULT_RATES);
+  const [updateDefaultRatesMutation] =
+    useMutation<UpdateDefaultRatesMutationResult>(UPDATE_DEFAULT_RATES);
 
   const updateDefaultRates = async (input: UpdateDefaultRatesInput): Promise<UpdateResult> => {
     setLoading(true);

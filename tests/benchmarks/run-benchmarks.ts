@@ -100,9 +100,7 @@ async function runBenchmark(
   const p99 = percentile(latencies, 99);
   const mean = latencies.reduce((a, b) => a + b, 0) / latencies.length;
 
-  const passed = threshold
-    ? p95 <= threshold.p95 && p99 <= threshold.p99
-    : true;
+  const passed = threshold ? p95 <= threshold.p95 && p99 <= threshold.p99 : true;
 
   return {
     name,
@@ -140,7 +138,9 @@ async function documentGenerationBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.documentGeneration.haiku
   );
   results.push(haikuResult);
-  console.log(`  ${haikuResult.name}: p95=${haikuResult.p95Ms.toFixed(0)}ms ${haikuResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${haikuResult.name}: p95=${haikuResult.p95Ms.toFixed(0)}ms ${haikuResult.passed ? '✓' : '✗'}`
+  );
 
   // Sonnet TTFT benchmark
   const sonnetResult = await runBenchmark(
@@ -152,7 +152,9 @@ async function documentGenerationBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.documentGeneration.sonnet
   );
   results.push(sonnetResult);
-  console.log(`  ${sonnetResult.name}: p95=${sonnetResult.p95Ms.toFixed(0)}ms ${sonnetResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${sonnetResult.name}: p95=${sonnetResult.p95Ms.toFixed(0)}ms ${sonnetResult.passed ? '✓' : '✗'}`
+  );
 
   // Opus TTFT benchmark
   const opusResult = await runBenchmark(
@@ -164,7 +166,9 @@ async function documentGenerationBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.documentGeneration.opus
   );
   results.push(opusResult);
-  console.log(`  ${opusResult.name}: p95=${opusResult.p95Ms.toFixed(0)}ms ${opusResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${opusResult.name}: p95=${opusResult.p95Ms.toFixed(0)}ms ${opusResult.passed ? '✓' : '✗'}`
+  );
 
   const endTime = new Date();
 
@@ -197,7 +201,9 @@ async function searchBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.search.fullText
   );
   results.push(fullTextResult);
-  console.log(`  ${fullTextResult.name}: p95=${fullTextResult.p95Ms.toFixed(0)}ms ${fullTextResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${fullTextResult.name}: p95=${fullTextResult.p95Ms.toFixed(0)}ms ${fullTextResult.passed ? '✓' : '✗'}`
+  );
 
   // Semantic search benchmark
   const semanticResult = await runBenchmark(
@@ -210,7 +216,9 @@ async function searchBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.search.semantic
   );
   results.push(semanticResult);
-  console.log(`  ${semanticResult.name}: p95=${semanticResult.p95Ms.toFixed(0)}ms ${semanticResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${semanticResult.name}: p95=${semanticResult.p95Ms.toFixed(0)}ms ${semanticResult.passed ? '✓' : '✗'}`
+  );
 
   // Hybrid search benchmark
   const hybridResult = await runBenchmark(
@@ -223,7 +231,9 @@ async function searchBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.search.hybrid
   );
   results.push(hybridResult);
-  console.log(`  ${hybridResult.name}: p95=${hybridResult.p95Ms.toFixed(0)}ms ${hybridResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${hybridResult.name}: p95=${hybridResult.p95Ms.toFixed(0)}ms ${hybridResult.passed ? '✓' : '✗'}`
+  );
 
   const endTime = new Date();
 
@@ -255,7 +265,9 @@ async function versionComparisonBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.versionComparison.small
   );
   results.push(smallResult);
-  console.log(`  ${smallResult.name}: p95=${smallResult.p95Ms.toFixed(0)}ms ${smallResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${smallResult.name}: p95=${smallResult.p95Ms.toFixed(0)}ms ${smallResult.passed ? '✓' : '✗'}`
+  );
 
   // 10 page semantic diff
   const mediumResult = await runBenchmark(
@@ -267,7 +279,9 @@ async function versionComparisonBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.versionComparison.medium
   );
   results.push(mediumResult);
-  console.log(`  ${mediumResult.name}: p95=${mediumResult.p95Ms.toFixed(0)}ms ${mediumResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${mediumResult.name}: p95=${mediumResult.p95Ms.toFixed(0)}ms ${mediumResult.passed ? '✓' : '✗'}`
+  );
 
   // 50 page semantic diff
   const largeResult = await runBenchmark(
@@ -279,7 +293,9 @@ async function versionComparisonBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.versionComparison.large
   );
   results.push(largeResult);
-  console.log(`  ${largeResult.name}: p95=${largeResult.p95Ms.toFixed(0)}ms ${largeResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${largeResult.name}: p95=${largeResult.p95Ms.toFixed(0)}ms ${largeResult.passed ? '✓' : '✗'}`
+  );
 
   // 100 page semantic diff
   const xlargeResult = await runBenchmark(
@@ -291,7 +307,9 @@ async function versionComparisonBenchmarks(): Promise<BenchmarkSuite> {
     THRESHOLDS.versionComparison.xlarge
   );
   results.push(xlargeResult);
-  console.log(`  ${xlargeResult.name}: p95=${xlargeResult.p95Ms.toFixed(0)}ms ${xlargeResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `  ${xlargeResult.name}: p95=${xlargeResult.p95Ms.toFixed(0)}ms ${xlargeResult.passed ? '✓' : '✗'}`
+  );
 
   const endTime = new Date();
 
@@ -325,7 +343,7 @@ async function main(): Promise<void> {
 
   // Calculate summary
   const totalBenchmarks = suites.reduce((sum, s) => sum + s.results.length, 0);
-  const passed = suites.reduce((sum, s) => sum + s.results.filter(r => r.passed).length, 0);
+  const passed = suites.reduce((sum, s) => sum + s.results.filter((r) => r.passed).length, 0);
   const failed = totalBenchmarks - passed;
 
   // Generate report

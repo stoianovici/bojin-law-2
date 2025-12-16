@@ -58,11 +58,7 @@ function extractToken(req: Request): string | null {
  * @param res - Express response
  * @param next - Express next function
  */
-export function authenticateJWT(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function authenticateJWT(req: Request, res: Response, next: NextFunction): void {
   try {
     // Extract token from Authorization header
     const token = extractToken(req);
@@ -110,11 +106,7 @@ export function authenticateJWT(
  * @param res - Express response
  * @param next - Express next function
  */
-export function optionalAuthenticateJWT(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function optionalAuthenticateJWT(req: Request, res: Response, next: NextFunction): void {
   try {
     const token = extractToken(req);
 
@@ -177,11 +169,7 @@ export function requireRole(roles: Array<'Partner' | 'Associate' | 'Paralegal' |
  * @param res - Express response
  * @param next - Express next function
  */
-export function requireActiveUser(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function requireActiveUser(req: Request, res: Response, next: NextFunction): void {
   if (!req.user) {
     res.status(401).json({
       error: 'unauthorized',
@@ -195,10 +183,9 @@ export function requireActiveUser(
 
     if (req.user.status === 'Pending') {
       message =
-        'Your account is pending activation. Please contact your firm\'s partner for access.';
+        "Your account is pending activation. Please contact your firm's partner for access.";
     } else if (req.user.status === 'Inactive') {
-      message =
-        'Your account has been deactivated. Please contact your firm\'s partner.';
+      message = "Your account has been deactivated. Please contact your firm's partner.";
     } else {
       message = 'Access denied';
     }

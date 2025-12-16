@@ -260,9 +260,16 @@ export interface UseNLPTaskParserReturn {
   // Actions
   setInputText: (text: string) => void;
   parseInput: (text?: string) => Promise<NLPTaskParseResponse | null>;
-  resolveClarification: (questionId: string, answer: string) => Promise<NLPTaskParseResponse | null>;
+  resolveClarification: (
+    questionId: string,
+    answer: string
+  ) => Promise<NLPTaskParseResponse | null>;
   confirmTask: (corrections?: TaskCorrections) => Promise<any>;
-  recordResult: (wasAccepted: boolean, corrections?: TaskCorrections, taskId?: string) => Promise<void>;
+  recordResult: (
+    wasAccepted: boolean,
+    corrections?: TaskCorrections,
+    taskId?: string
+  ) => Promise<void>;
   reset: () => void;
 
   // Computed

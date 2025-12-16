@@ -187,4 +187,3 @@ export interface EmailReminderPayload {
   isOverdue: boolean;
   taskUrl: string;
 }
-

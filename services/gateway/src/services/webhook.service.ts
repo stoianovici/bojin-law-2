@@ -502,9 +502,7 @@ export class WebhookService {
    * @param accessToken - Graph API access token
    * @returns Created subscription
    */
-  async createDriveItemSubscription(
-    accessToken: string
-  ): Promise<GraphSubscription> {
+  async createDriveItemSubscription(accessToken: string): Promise<GraphSubscription> {
     logger.info('Creating drive item subscription for document sync');
 
     return await this.createSubscription({

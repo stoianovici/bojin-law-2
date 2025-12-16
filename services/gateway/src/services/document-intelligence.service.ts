@@ -131,21 +131,15 @@ export class DocumentIntelligenceService {
     }
 
     // Calculate all metrics in parallel
-    const [
-      velocity,
-      aiUtilization,
-      errorDetection,
-      timeSavings,
-      templateUsage,
-      qualityTrends,
-    ] = await Promise.all([
-      this.getDocumentVelocityStats(filters),
-      this.getAIUtilizationStats(filters),
-      this.getErrorDetectionStats(filters),
-      this.getTimeSavingsStats(filters),
-      this.getTemplateUsageStats(filters),
-      this.getDocumentQualityTrends(filters),
-    ]);
+    const [velocity, aiUtilization, errorDetection, timeSavings, templateUsage, qualityTrends] =
+      await Promise.all([
+        this.getDocumentVelocityStats(filters),
+        this.getAIUtilizationStats(filters),
+        this.getErrorDetectionStats(filters),
+        this.getTimeSavingsStats(filters),
+        this.getTemplateUsageStats(filters),
+        this.getDocumentQualityTrends(filters),
+      ]);
 
     const result: DocumentIntelligenceDashboard = {
       dateRange: {
@@ -488,9 +482,7 @@ export class DocumentIntelligenceService {
   // Error Detection Stats (AC: 3)
   // ============================================================================
 
-  async getErrorDetectionStats(
-    filters: DocumentIntelligenceFilters
-  ): Promise<ErrorDetectionStats> {
+  async getErrorDetectionStats(filters: DocumentIntelligenceFilters): Promise<ErrorDetectionStats> {
     const cacheKey = this.getCacheKey('errorDetection', filters);
     const cached = metricsCache.get(cacheKey) as CacheEntry<ErrorDetectionStats> | undefined;
     if (cached && cached.expiry > Date.now()) {
@@ -524,9 +516,7 @@ export class DocumentIntelligenceService {
     const totalConcernsDetected = concerns.length;
     const concernsResolvedBeforeFiling = concerns.filter((c) => c.dismissed).length;
     const detectionRate =
-      totalConcernsDetected > 0
-        ? (concernsResolvedBeforeFiling / totalConcernsDetected) * 100
-        : 0;
+      totalConcernsDetected > 0 ? (concernsResolvedBeforeFiling / totalConcernsDetected) * 100 : 0;
 
     // Group by severity
     const severityMap = new Map<ConcernSeverity, number>();
@@ -641,17 +631,12 @@ export class DocumentIntelligenceService {
       : DEFAULT_RATE_RON;
 
     let totalMinutesSaved = 0;
-    const userSavingsMap = new Map<
-      string,
-      { minutes: number; docs: number }
-    >();
-    const typeSavingsMap = new Map<
-      string,
-      { aiTime: number; count: number }
-    >();
+    const userSavingsMap = new Map<string, { minutes: number; docs: number }>();
+    const typeSavingsMap = new Map<string, { aiTime: number; count: number }>();
 
     for (const metric of draftMetrics) {
-      const baselineTime = MANUAL_BASELINE_TIMES_MAP[metric.documentType] || MANUAL_BASELINE_TIMES_MAP['Other'];
+      const baselineTime =
+        MANUAL_BASELINE_TIMES_MAP[metric.documentType] || MANUAL_BASELINE_TIMES_MAP['Other'];
       const actualTime = metric.timeToFinalizeMinutes!;
       const saved = Math.max(0, baselineTime - actualTime);
 
@@ -969,8 +954,6 @@ export class DocumentIntelligenceService {
 }
 
 // Export factory function
-export function createDocumentIntelligenceService(
-  context: Context
-): DocumentIntelligenceService {
+export function createDocumentIntelligenceService(context: Context): DocumentIntelligenceService {
   return new DocumentIntelligenceService(context);
 }

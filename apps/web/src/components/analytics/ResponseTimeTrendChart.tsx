@@ -136,11 +136,7 @@ function CustomTooltip({ active, payload, label, slaThreshold }: CustomTooltipPr
               />
               <span className="text-sm text-gray-600">Timp răspuns</span>
             </div>
-            <span
-              className={`font-semibold ${
-                isAboveSLA ? 'text-red-600' : 'text-emerald-600'
-              }`}
-            >
+            <span className={`font-semibold ${isAboveSLA ? 'text-red-600' : 'text-emerald-600'}`}>
               {formatHours(responseTime.value)}
             </span>
           </div>
@@ -150,15 +146,10 @@ function CustomTooltip({ active, payload, label, slaThreshold }: CustomTooltipPr
         {volume && (
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: COLORS.volumeBar }}
-              />
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.volumeBar }} />
               <span className="text-sm text-gray-600">Emailuri</span>
             </div>
-            <span className="font-semibold text-gray-900">
-              {volume.value.toLocaleString()}
-            </span>
+            <span className="font-semibold text-gray-900">{volume.value.toLocaleString()}</span>
           </div>
         )}
 
@@ -166,14 +157,10 @@ function CustomTooltip({ active, payload, label, slaThreshold }: CustomTooltipPr
         <div className="pt-2 mt-2 border-t">
           <div
             className={`text-xs font-medium px-2 py-1 rounded text-center ${
-              isAboveSLA
-                ? 'bg-red-100 text-red-700'
-                : 'bg-emerald-100 text-emerald-700'
+              isAboveSLA ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
             }`}
           >
-            {isAboveSLA
-              ? `Peste SLA (${slaThreshold}h)`
-              : `În SLA (${slaThreshold}h)`}
+            {isAboveSLA ? `Peste SLA (${slaThreshold}h)` : `În SLA (${slaThreshold}h)`}
           </div>
         </div>
       </div>
@@ -228,8 +215,7 @@ export function ResponseTimeTrendChart({
     }
 
     const responseTimes = chartData.map((d) => d.avgResponseTimeHours);
-    const avg =
-      responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+    const avg = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
     const max = Math.max(...responseTimes);
     const min = Math.min(...responseTimes);
     const daysAboveSLA = chartData.filter((d) => d.isAboveSLA).length;
@@ -252,13 +238,8 @@ export function ResponseTimeTrendChart({
   if (!trend || trend.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Tendință timp de răspuns
-        </h3>
-        <div
-          className="flex items-center justify-center text-gray-500"
-          style={{ height }}
-        >
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendință timp de răspuns</h3>
+        <div className="flex items-center justify-center text-gray-500" style={{ height }}>
           Nu există date de tendință disponibile
         </div>
       </div>
@@ -269,29 +250,18 @@ export function ResponseTimeTrendChart({
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Tendință timp de răspuns
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Tendință timp de răspuns</h3>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <div
-              className="w-3 h-0.5"
-              style={{ backgroundColor: COLORS.slaLine }}
-            />
-            <span className="text-gray-500">
-              SLA ({slaThresholdHours}h)
-            </span>
+            <div className="w-3 h-0.5" style={{ backgroundColor: COLORS.slaLine }} />
+            <span className="text-gray-500">SLA ({slaThresholdHours}h)</span>
           </div>
           <div
             className={`px-2 py-0.5 rounded text-xs font-medium ${
-              stats.daysAboveSLA > 0
-                ? 'bg-red-100 text-red-700'
-                : 'bg-emerald-100 text-emerald-700'
+              stats.daysAboveSLA > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
             }`}
           >
-            {stats.daysAboveSLA === 0
-              ? 'Toate în SLA'
-              : `${stats.daysAboveSLA} zile peste SLA`}
+            {stats.daysAboveSLA === 0 ? 'Toate în SLA' : `${stats.daysAboveSLA} zile peste SLA`}
           </div>
         </div>
       </div>
@@ -300,15 +270,11 @@ export function ResponseTimeTrendChart({
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <div className="text-xs text-gray-500">Medie perioadă</div>
-          <div className="text-lg font-bold text-gray-900">
-            {formatHours(stats.avg)}
-          </div>
+          <div className="text-lg font-bold text-gray-900">{formatHours(stats.avg)}</div>
         </div>
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <div className="text-xs text-gray-500">Minim</div>
-          <div className="text-lg font-bold text-emerald-600">
-            {formatHours(stats.min)}
-          </div>
+          <div className="text-lg font-bold text-emerald-600">{formatHours(stats.min)}</div>
         </div>
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <div className="text-xs text-gray-500">Maxim</div>
@@ -331,10 +297,7 @@ export function ResponseTimeTrendChart({
       {/* Chart */}
       <div style={{ height }} role="img" aria-label="Grafic tendință timp de răspuns">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-          >
+          <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis
               dataKey="dateLabel"
@@ -369,9 +332,7 @@ export function ResponseTimeTrendChart({
                 style: { textAnchor: 'middle', fill: '#6B7280', fontSize: 12 },
               }}
             />
-            <Tooltip
-              content={<CustomTooltip slaThreshold={slaThresholdHours} />}
-            />
+            <Tooltip content={<CustomTooltip slaThreshold={slaThresholdHours} />} />
             <Legend
               verticalAlign="bottom"
               height={36}
@@ -434,9 +395,7 @@ export function ResponseTimeTrendChart({
       {/* Recipient Type Context (if provided) */}
       {byRecipientType && byRecipientType.length > 0 && (
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Timp mediu per tip destinatar
-          </h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Timp mediu per tip destinatar</h4>
           <div className="flex flex-wrap gap-3">
             {byRecipientType.map((item) => (
               <div
@@ -455,9 +414,7 @@ export function ResponseTimeTrendChart({
                 >
                   {formatHours(item.metrics.avgResponseTimeHours)}
                 </span>
-                <span className="text-xs text-gray-400">
-                  ({item.volumeCount} emailuri)
-                </span>
+                <span className="text-xs text-gray-400">({item.volumeCount} emailuri)</span>
               </div>
             ))}
           </div>

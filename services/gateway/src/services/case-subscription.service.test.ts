@@ -92,9 +92,9 @@ describe('CaseSubscriptionService', () => {
     it('should throw error if case not found', async () => {
       prisma.case.findUnique.mockResolvedValue(null);
 
-      await expect(
-        caseSubscriptionService.subscribe('nonexistent', 'user-123')
-      ).rejects.toThrow('Case not found');
+      await expect(caseSubscriptionService.subscribe('nonexistent', 'user-123')).rejects.toThrow(
+        'Case not found'
+      );
     });
 
     it('should respect custom subscription options', async () => {
@@ -148,11 +148,9 @@ describe('CaseSubscriptionService', () => {
         digestEnabled: false,
       });
 
-      const result = await caseSubscriptionService.updateSubscription(
-        'case-123',
-        'user-123',
-        { digestEnabled: false }
-      );
+      const result = await caseSubscriptionService.updateSubscription('case-123', 'user-123', {
+        digestEnabled: false,
+      });
 
       expect(result.digestEnabled).toBe(false);
       expect(prisma.caseSubscription.update).toHaveBeenCalledWith({
@@ -220,7 +218,12 @@ describe('CaseSubscriptionService', () => {
     it('should return all subscriptions for a user', async () => {
       prisma.caseSubscription.findMany.mockResolvedValue([
         { ...mockSubscription, case: mockCase },
-        { ...mockSubscription, id: 'sub-456', caseId: 'case-456', case: { ...mockCase, id: 'case-456' } },
+        {
+          ...mockSubscription,
+          id: 'sub-456',
+          caseId: 'case-456',
+          case: { ...mockCase, id: 'case-456' },
+        },
       ]);
 
       const result = await caseSubscriptionService.getUserSubscriptions('user-123');
@@ -374,9 +377,7 @@ describe('CaseSubscriptionService', () => {
     ];
 
     it('should generate digest with activity summaries', async () => {
-      prisma.caseSubscription.findMany.mockResolvedValue([
-        { ...mockSubscription, case: mockCase },
-      ]);
+      prisma.caseSubscription.findMany.mockResolvedValue([{ ...mockSubscription, case: mockCase }]);
 
       const activityMap = new Map();
       activityMap.set('case-123', mockActivities);
@@ -402,7 +403,12 @@ describe('CaseSubscriptionService', () => {
     it('should skip cases with no activity', async () => {
       prisma.caseSubscription.findMany.mockResolvedValue([
         { ...mockSubscription, case: mockCase },
-        { ...mockSubscription, id: 'sub-456', caseId: 'case-456', case: { ...mockCase, id: 'case-456' } },
+        {
+          ...mockSubscription,
+          id: 'sub-456',
+          caseId: 'case-456',
+          case: { ...mockCase, id: 'case-456' },
+        },
       ]);
 
       const activityMap = new Map();
@@ -417,9 +423,7 @@ describe('CaseSubscriptionService', () => {
     });
 
     it('should categorize activity types correctly', async () => {
-      prisma.caseSubscription.findMany.mockResolvedValue([
-        { ...mockSubscription, case: mockCase },
-      ]);
+      prisma.caseSubscription.findMany.mockResolvedValue([{ ...mockSubscription, case: mockCase }]);
 
       const activities = [
         { ...mockActivities[0], activityType: 'TaskStatusChanged', title: 'Status changed' },

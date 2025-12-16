@@ -115,6 +115,21 @@ export function loadSchema(): string {
   );
   // OPS-022: Email-to-Case Timeline Integration
   const emailImportSchema = readFileSync(join(schemaDir, 'email-import.graphql'), 'utf-8');
+  // OPS-028: Classification Metadata UI
+  const globalEmailSourcesSchema = readFileSync(
+    join(schemaDir, 'global-email-sources.graphql'),
+    'utf-8'
+  );
+  // OPS-029: AI Email Classification Service
+  const emailClassificationSchema = readFileSync(
+    join(schemaDir, 'email-classification.graphql'),
+    'utf-8'
+  );
+  // OPS-031: Classification Review & Correction
+  const classificationReviewSchema = readFileSync(
+    join(schemaDir, 'classification-review.graphql'),
+    'utf-8'
+  );
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -156,6 +171,9 @@ export function loadSchema(): string {
     platformIntelligenceSchema,
     naturalLanguageCommandsSchema,
     emailImportSchema,
+    globalEmailSourcesSchema,
+    emailClassificationSchema,
+    classificationReviewSchema,
   ].join('\n\n');
 }
 

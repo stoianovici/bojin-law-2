@@ -6,7 +6,8 @@
  */
 
 // Set environment variables before imports
-process.env.SESSION_SECRET = 'test-session-secret-at-least-32-characters-long-for-integration-tests';
+process.env.SESSION_SECRET =
+  'test-session-secret-at-least-32-characters-long-for-integration-tests';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long';
 process.env.AZURE_AD_CLIENT_ID = 'test-client-id';
@@ -82,12 +83,10 @@ describe('Session Storage Integration Tests', () => {
       });
 
       // Make request to callback endpoint
-      const response = await request(app)
-        .get('/auth/callback')
-        .query({
-          code: 'mock-auth-code',
-          state: 'mock-state',
-        });
+      const response = await request(app).get('/auth/callback').query({
+        code: 'mock-auth-code',
+        state: 'mock-state',
+      });
 
       // Verify response
       expect(response.status).toBe(200);
@@ -152,12 +151,10 @@ describe('Session Storage Integration Tests', () => {
       });
 
       // Make request to callback endpoint
-      const response = await request(app)
-        .get('/auth/callback')
-        .query({
-          code: 'mock-auth-code',
-          state: 'mock-state',
-        });
+      const response = await request(app).get('/auth/callback').query({
+        code: 'mock-auth-code',
+        state: 'mock-state',
+      });
 
       // Verify response - should return 403 Forbidden
       expect(response.status).toBe(403);
@@ -217,12 +214,10 @@ describe('Session Storage Integration Tests', () => {
       });
 
       // Make request to callback endpoint
-      const response = await request(app)
-        .get('/auth/callback')
-        .query({
-          code: 'mock-auth-code',
-          state: 'mock-state',
-        });
+      const response = await request(app).get('/auth/callback').query({
+        code: 'mock-auth-code',
+        state: 'mock-state',
+      });
 
       // Verify response - should return 403 Forbidden
       expect(response.status).toBe(403);

@@ -28,7 +28,9 @@ export function BusinessTripTaskForm({ value, onChange, errors }: BusinessTripTa
         <Input
           id="destination"
           value={value.destination || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('destination', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('destination', e.target.value)
+          }
           placeholder="e.g., New York, NY"
           className={errors?.destination ? 'border-red-500' : ''}
         />
@@ -42,7 +44,9 @@ export function BusinessTripTaskForm({ value, onChange, errors }: BusinessTripTa
         <Textarea
           id="purpose"
           value={value.purpose || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('purpose', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            handleChange('purpose', e.target.value)
+          }
           placeholder="Business reason for the trip"
           rows={3}
           className={errors?.purpose ? 'border-red-500' : ''}
@@ -57,7 +61,9 @@ export function BusinessTripTaskForm({ value, onChange, errors }: BusinessTripTa
         <Textarea
           id="travelDetails"
           value={value.travelDetails || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('travelDetails', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            handleChange('travelDetails', e.target.value)
+          }
           placeholder="Flight/train details, departure/arrival times"
           rows={3}
         />
@@ -70,7 +76,9 @@ export function BusinessTripTaskForm({ value, onChange, errors }: BusinessTripTa
         <Textarea
           id="accommodationDetails"
           value={value.accommodationDetails || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('accommodationDetails', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            handleChange('accommodationDetails', e.target.value)
+          }
           placeholder="Hotel name, address, confirmation number"
           rows={2}
         />

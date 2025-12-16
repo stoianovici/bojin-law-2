@@ -39,7 +39,7 @@ function getMsalConfig(): Configuration {
   if (!clientId) {
     throw new Error(
       'AZURE_TRAINING_CLIENT_ID environment variable is required.\n' +
-      'Create an Azure AD app registration and set the client ID.'
+        'Create an Azure AD app registration and set the client ID.'
     );
   }
 
@@ -158,7 +158,11 @@ export async function login(): Promise<AuthenticationResult> {
 
   const deviceCodeRequest = {
     scopes: SCOPES,
-    deviceCodeCallback: (response: { message: string; userCode: string; verificationUri: string }) => {
+    deviceCodeCallback: (response: {
+      message: string;
+      userCode: string;
+      verificationUri: string;
+    }) => {
       console.log(chalk.yellow(response.message));
       console.log();
       console.log(chalk.gray('Or go to: ') + chalk.cyan(response.verificationUri));

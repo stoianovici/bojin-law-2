@@ -1,4 +1,5 @@
 # Implementation Guide: Case Management Enhancements
+
 ## Stories 2.8, 2.8.1 - 2.8.4
 
 **Target Audience:** Developers implementing case management enhancements
@@ -28,15 +29,16 @@
 
 This guide covers implementation of **five** case management features in sequence:
 
-| Story | Feature | Complexity | Est. Effort | Status |
-|-------|---------|------------|-------------|--------|
+| Story   | Feature               | Complexity | Est. Effort | Status          |
+| ------- | --------------------- | ---------- | ----------- | --------------- |
 | **2.8** | **Base Case CRUD UI** | **Medium** | **2 weeks** | **CHECK FIRST** |
-| 2.8.3 | Financial Visibility | High | 2-3 weeks | Enhancement |
-| 2.8.1 | Billing & Rates | Medium | 2-3 weeks | Enhancement |
-| 2.8.2 | Approval Workflow | Medium | 2 weeks | Enhancement |
-| 2.8.4 | Document Linking | High | 3-4 weeks | Enhancement |
+| 2.8.3   | Financial Visibility  | High       | 2-3 weeks   | Enhancement     |
+| 2.8.1   | Billing & Rates       | Medium     | 2-3 weeks   | Enhancement     |
+| 2.8.2   | Approval Workflow     | Medium     | 2 weeks     | Enhancement     |
+| 2.8.4   | Document Linking      | High       | 3-4 weeks   | Enhancement     |
 
 **Total Estimated Effort:**
+
 - **If Story 2.8 already done:** 9-12 weeks
 - **If Story 2.8 NOT done:** 11-14 weeks
 
@@ -47,6 +49,7 @@ This guide covers implementation of **five** case management features in sequenc
 Before starting implementation, verify if **Story 2.8 (Base Case CRUD UI)** is already implemented:
 
 ### Quick Check
+
 ```bash
 # Check for case pages
 ls apps/web/src/app/cases/page.tsx
@@ -61,6 +64,7 @@ grep -r "type Case" services/gateway/src/graphql/schema/
 ```
 
 **Or navigate to:** `http://localhost:3000/cases`
+
 - Can you see a case list? ✅ Story 2.8 likely done
 - Can you create a case? ✅ Story 2.8 likely done
 - 404 or blank page? ❌ Story 2.8 needs implementation
@@ -68,15 +72,18 @@ grep -r "type Case" services/gateway/src/graphql/schema/
 ### Decision Path
 
 **✅ If Story 2.8 IS IMPLEMENTED:**
+
 - Skip to Phase 1 (Story 2.8.3)
 - Follow original timeline (9-12 weeks)
 
 **❌ If Story 2.8 IS NOT IMPLEMENTED:**
+
 - Start with Phase 0 (Story 2.8)
 - This is the foundation - cannot skip!
 - Follow full timeline (11-14 weeks)
 
 **⚠️ If Story 2.8 IS PARTIALLY IMPLEMENTED:**
+
 - Review Story 2.8 acceptance criteria (see `docs/stories/2.8.story.md`)
 - Complete missing functionality before proceeding
 - Adjust timeline based on what's missing
@@ -86,6 +93,7 @@ grep -r "type Case" services/gateway/src/graphql/schema/
 ## Prerequisites
 
 ### Technical Knowledge Required
+
 - ✅ TypeScript & Node.js
 - ✅ GraphQL (schema, resolvers, directives)
 - ✅ React & Next.js 14 (App Router)
@@ -95,6 +103,7 @@ grep -r "type Case" services/gateway/src/graphql/schema/
 - ✅ Radix UI component library
 
 ### Project Setup Required
+
 - ✅ Development environment running
 - ✅ Database access and migration tools
 - ✅ GraphQL Playground available
@@ -102,6 +111,7 @@ grep -r "type Case" services/gateway/src/graphql/schema/
 - ✅ Testing framework configured (Jest, RTL, Playwright)
 
 ### Documentation to Review
+
 1. `docs/architecture/coding-standards.md`
 2. `docs/architecture/data-models.md`
 3. `docs/api/case-management-api.md`
@@ -154,18 +164,21 @@ PHASE 4: Integration & Testing (Week 13-14)
 ### Rationale for Order
 
 **Why Story 2.8 First (Phase 0)?**
+
 - Provides the base case UI that all other stories enhance
 - Stories 2.8.1-2.8.4 add features to case forms, detail pages, and workflows
 - Cannot implement enhancements without the base UI
 - **If already implemented, skip to Phase 1**
 
 **Why Financial Visibility Second (Phase 1)?**
+
 - Creates reusable authorization patterns
 - Story 2.8.1 depends on `<FinancialData>` wrapper
 - Establishes security foundation for financial features
 - Used throughout case UI from Story 2.8
 
 **Why Approval Workflow & Document Linking in Parallel (Phase 3)?**
+
 - Both extend Story 2.8 independently
 - No shared code or data models
 - Can be developed by separate developers/teams
@@ -180,6 +193,7 @@ PHASE 4: Integration & Testing (Week 13-14)
 **Story 2.8 provides the foundation for all case management enhancements.**
 
 This story implements:
+
 - Case list page with filtering (status, client, assigned user)
 - Create case form with client selection, case type, description
 - Case detail page with all case information
@@ -194,6 +208,7 @@ This story implements:
 **Before proceeding, determine if Story 2.8 is already implemented:**
 
 #### Method 1: File System Check
+
 ```bash
 # Check for case pages
 ls apps/web/src/app/cases/page.tsx
@@ -211,6 +226,7 @@ ls apps/web/src/components/case/
 ```
 
 #### Method 2: Application Check
+
 1. Navigate to `http://localhost:3000/cases`
 2. Expected functionality:
    - ✅ Case list displays
@@ -221,6 +237,7 @@ ls apps/web/src/components/case/
    - ✅ Can search cases
 
 #### Method 3: GraphQL Schema Check
+
 ```bash
 # Check if case schema exists
 cat services/gateway/src/graphql/schema/case.graphql
@@ -258,11 +275,13 @@ Does Story 2.8 exist?
 ### Full Documentation
 
 **For complete implementation details of Story 2.8, see:**
+
 - **Story Document:** `docs/stories/2.8.story.md` (742 lines, 21 tasks)
 - **Dev Notes:** Architecture, GraphQL API, component patterns
 - **Testing Strategy:** Unit, integration, E2E tests
 
 **Story 2.8 includes 6 phases:**
+
 1. Case List Page Component
 2. Create Case Form and Modal
 3. Case Detail Page with Inline Editing
@@ -324,12 +343,7 @@ export class RequiresFinancialAccessDirective extends SchemaDirectiveVisitor {
   visitFieldDefinition(field: GraphQLField<any, Context>) {
     const { resolve = defaultFieldResolver } = field;
 
-    field.resolve = async function (
-      source,
-      args,
-      context: Context,
-      info
-    ) {
+    field.resolve = async function (source, args, context: Context, info) {
       // Check if user is Partner
       if (context.user?.role !== 'Partner') {
         // Log unauthorized access attempt
@@ -815,9 +829,7 @@ export const caseResolvers = {
           // Inherit default rates if custom rates not provided
           customRates: input.customRates || firm.defaultRates,
           // Validate fixed amount if billing type is Fixed
-          fixedAmount: input.billingType === 'FIXED'
-            ? input.fixedAmount
-            : null,
+          fixedAmount: input.billingType === 'FIXED' ? input.fixedAmount : null,
         },
         include: {
           client: true,
@@ -911,7 +923,7 @@ function detectRateChanges(currentCase, input) {
 
 // Helper function to record rate changes
 async function recordRateChanges(context, caseId, changes, userId) {
-  const entries = changes.map(change => ({
+  const entries = changes.map((change) => ({
     caseId,
     changedBy: userId,
     changedAt: new Date(),
@@ -971,9 +983,7 @@ export default function BillingSettingsPage() {
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Partner Hourly Rate
-            </label>
+            <label className="block text-sm font-medium mb-2">Partner Hourly Rate</label>
             <input
               type="number"
               step="0.01"
@@ -988,9 +998,7 @@ export default function BillingSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Associate Hourly Rate
-            </label>
+            <label className="block text-sm font-medium mb-2">Associate Hourly Rate</label>
             <input
               type="number"
               step="0.01"
@@ -1000,9 +1008,7 @@ export default function BillingSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Paralegal Hourly Rate
-            </label>
+            <label className="block text-sm font-medium mb-2">Paralegal Hourly Rate</label>
             <input
               type="number"
               step="0.01"
@@ -1048,9 +1054,10 @@ export class KPIService {
     }
 
     // Calculate actual revenue
-    const actualRevenue = caseData.billingType === 'FIXED'
-      ? caseData.fixedAmount
-      : this.calculateHourlyRevenue(caseData.timeEntries, caseData.customRates);
+    const actualRevenue =
+      caseData.billingType === 'FIXED'
+        ? caseData.fixedAmount
+        : this.calculateHourlyRevenue(caseData.timeEntries, caseData.customRates);
 
     // Calculate projected hourly revenue
     const projectedRevenue = this.calculateHourlyRevenue(
@@ -1076,7 +1083,7 @@ export class KPIService {
     return timeEntries.reduce((total, entry) => {
       const userRole = entry.user.role.toLowerCase();
       const rate = rates[`${userRole}Rate`] || 0;
-      return total + (entry.hours * rate);
+      return total + entry.hours * rate;
     }, 0);
   }
 
@@ -1087,16 +1094,16 @@ export class KPIService {
     const cases = await this.prisma.case.findMany({
       where: {
         firmId,
-        openedDate: dateRange ? {
-          gte: dateRange.startDate,
-          lte: dateRange.endDate,
-        } : undefined,
+        openedDate: dateRange
+          ? {
+              gte: dateRange.startDate,
+              lte: dateRange.endDate,
+            }
+          : undefined,
       },
     });
 
-    return Promise.all(
-      cases.map(c => this.calculateCaseRevenueKPI(c.id))
-    );
+    return Promise.all(cases.map((c) => this.calculateCaseRevenueKPI(c.id)));
   }
 }
 ```
@@ -1130,7 +1137,13 @@ export async function up(knex: Knex): Promise<void> {
   // Create CaseApproval table
   await knex.schema.createTable('case_approvals', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
-    table.uuid('case_id').notNullable().unique().references('id').inTable('cases').onDelete('CASCADE');
+    table
+      .uuid('case_id')
+      .notNullable()
+      .unique()
+      .references('id')
+      .inTable('cases')
+      .onDelete('CASCADE');
     table.uuid('submitted_by').notNullable().references('id').inTable('users');
     table.timestamp('submitted_at').defaultTo(knex.fn.now());
     table.uuid('reviewed_by').nullable().references('id').inTable('users');
@@ -1327,15 +1340,12 @@ export const approvalResolvers = {
       });
 
       // Notify submitter
-      await context.notificationService.notify(
-        updatedCase.approval.submittedBy,
-        {
-          type: 'CaseApproved',
-          title: 'Case Approved',
-          message: `Your case "${updatedCase.title}" has been approved`,
-          link: `/cases/${updatedCase.id}`,
-        }
-      );
+      await context.notificationService.notify(updatedCase.approval.submittedBy, {
+        type: 'CaseApproved',
+        title: 'Case Approved',
+        message: `Your case "${updatedCase.title}" has been approved`,
+        link: `/cases/${updatedCase.id}`,
+      });
 
       return updatedCase;
     },
@@ -1375,15 +1385,12 @@ export const approvalResolvers = {
       });
 
       // Notify submitter
-      await context.notificationService.notify(
-        updatedCase.approval.submittedBy,
-        {
-          type: 'CaseRejected',
-          title: 'Case Rejected',
-          message: `Your case "${updatedCase.title}" was rejected. Reason: ${reason}`,
-          link: `/cases/${updatedCase.id}`,
-        }
-      );
+      await context.notificationService.notify(updatedCase.approval.submittedBy, {
+        type: 'CaseRejected',
+        title: 'Case Rejected',
+        message: `Your case "${updatedCase.title}" was rejected. Reason: ${reason}`,
+        link: `/cases/${updatedCase.id}`,
+      });
 
       return updatedCase;
     },
@@ -1454,9 +1461,7 @@ export default function PendingApprovalsPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">
-        Pending Case Approvals ({pendingCases.length})
-      </h1>
+      <h1 className="text-2xl font-bold mb-6">Pending Case Approvals ({pendingCases.length})</h1>
 
       {pendingCases.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
@@ -1464,14 +1469,12 @@ export default function PendingApprovalsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {pendingCases.map(caseData => (
+          {pendingCases.map((caseData) => (
             <div key={caseData.id} className="border rounded-lg p-4 bg-white">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-lg">{caseData.title}</h3>
-                  <p className="text-sm text-gray-600">
-                    Client: {caseData.client.name}
-                  </p>
+                  <p className="text-sm text-gray-600">Client: {caseData.client.name}</p>
                   <p className="text-sm text-gray-500 mt-1">
                     Submitted by {caseData.approval.submittedBy.firstName}{' '}
                     {caseData.approval.submittedBy.lastName} on{' '}
@@ -1496,10 +1499,7 @@ export default function PendingApprovalsPage() {
       )}
 
       {selectedCase && (
-        <ReviewCaseModal
-          case={selectedCase}
-          onClose={() => setSelectedCase(null)}
-        />
+        <ReviewCaseModal case={selectedCase} onClose={() => setSelectedCase(null)} />
       )}
     </div>
   );
@@ -1583,10 +1583,12 @@ if (!hasFinancialAccess) return null;
 ```tsx
 <FinancialData>
   <BillingSection />
-</FinancialData>
+</FinancialData>;
 
 // Instead of:
-{hasFinancialAccess && <BillingSection />}
+{
+  hasFinancialAccess && <BillingSection />;
+}
 ```
 
 ### Pattern 4: Audit Logging Helper
@@ -1649,7 +1651,7 @@ const cases = await prisma.case.findMany({
 // ✅ GOOD - Firm isolated
 const cases = await prisma.case.findMany({
   where: {
-    firmId: context.user.firmId,  // ALWAYS include this
+    firmId: context.user.firmId, // ALWAYS include this
     status: 'Active',
   },
 });
@@ -1745,6 +1747,7 @@ npm run migrate:down
 ### Unit Tests (70% of testing effort)
 
 **Backend:**
+
 ```typescript
 describe('Financial Access Directive', () => {
   it('returns null for non-Partners', async () => {
@@ -1762,6 +1765,7 @@ describe('Financial Access Directive', () => {
 ```
 
 **Frontend:**
+
 ```typescript
 describe('FinancialData Component', () => {
   it('hides children for non-Partners', () => {
@@ -1843,6 +1847,7 @@ test('Partner reviews and approves case', async ({ page }) => {
 ### Deployment Steps
 
 **Story 2.8.3 (Financial Visibility):**
+
 1. [ ] Deploy backend with GraphQL directive
 2. [ ] Verify directive works in production GraphQL Playground
 3. [ ] Deploy frontend with FinancialData component
@@ -1850,6 +1855,7 @@ test('Partner reviews and approves case', async ({ page }) => {
 5. [ ] Monitor logs for unauthorized access attempts
 
 **Story 2.8.1 (Billing & Rates):**
+
 1. [ ] Run database migration (add billing fields)
 2. [ ] Deploy backend with new resolvers
 3. [ ] Deploy frontend with billing UI
@@ -1857,6 +1863,7 @@ test('Partner reviews and approves case', async ({ page }) => {
 5. [ ] Test creating new cases with billing types
 
 **Story 2.8.2 (Approval Workflow):**
+
 1. [ ] Run database migration (add approval tables)
 2. [ ] Deploy backend with approval resolvers
 3. [ ] Deploy notification service updates
@@ -1865,6 +1872,7 @@ test('Partner reviews and approves case', async ({ page }) => {
 6. [ ] Verify notifications sent correctly
 
 **Story 2.8.4 (Document Linking):**
+
 1. [ ] Run database migration (add CaseDocument table)
 2. [ ] Run data migration (populate client IDs, create links)
 3. [ ] Deploy backend with new document resolvers
@@ -1899,21 +1907,25 @@ test('Partner reviews and approves case', async ({ page }) => {
 ### Common Issues
 
 **Issue: "Financial data not showing for Partners"**
+
 - Check: User role is correctly set in database
 - Check: FinancialAccessContext receiving correct user data
 - Check: GraphQL context includes user with correct role
 
 **Issue: "Associate can see financial data"**
+
 - Check: GraphQL directive applied to all financial fields
 - Check: Directive logic correctly checking role === 'Partner'
 - Check: Frontend using `<FinancialData>` wrapper correctly
 
 **Issue: "Case approval notifications not sent"**
+
 - Check: Notification service configured correctly
 - Check: User has notification preferences enabled
 - Check: Email service (if using email notifications) is working
 
 **Issue: "Document browser not showing documents"**
+
 - Check: Client ID correctly set on documents
 - Check: Case-Document links created in join table
 - Check: User has access to client (firm isolation)
@@ -1932,11 +1944,13 @@ test('Partner reviews and approves case', async ({ page }) => {
 This implementation guide provides a comprehensive roadmap for implementing Stories 2.8.1 - 2.8.4. Follow the recommended order, use the provided code examples as starting points, avoid common pitfalls, and test thoroughly at each stage.
 
 **Estimated Timeline:**
+
 - **Sprint 1-2 (Weeks 1-4):** Financial Visibility + Billing & Rates
 - **Sprint 3-4 (Weeks 5-8):** Approval Workflow + Document Linking (parallel)
 - **Sprint 5 (Weeks 9-10):** Integration testing, bug fixes, polish
 
 **Success Criteria:**
+
 - All acceptance criteria met for each story
 - 70%+ test coverage
 - No critical bugs in production

@@ -6,10 +6,7 @@
  */
 
 import { PrismaClient } from '@legal-platform/database';
-import {
-  getEstimateVsActualReport,
-  getTaskTypeAccuracy,
-} from './estimate-comparison.service';
+import { getEstimateVsActualReport, getTaskTypeAccuracy } from './estimate-comparison.service';
 import type { TimeEntryDateRange } from '@legal-platform/types';
 
 // Mock Prisma client
@@ -99,7 +96,9 @@ describe('EstimateComparisonService', () => {
 
       const result = await getEstimateVsActualReport('user-123', dateRange);
 
-      const researchAccuracy = result.byTaskType.find((t: { taskType: string }) => t.taskType === 'Research');
+      const researchAccuracy = result.byTaskType.find(
+        (t: { taskType: string }) => t.taskType === 'Research'
+      );
 
       expect(researchAccuracy).toMatchObject({
         taskType: 'Research',
@@ -127,7 +126,9 @@ describe('EstimateComparisonService', () => {
 
       const result = await getEstimateVsActualReport('user-123', dateRange);
 
-      const meetingAccuracy = result.byTaskType.find((t: { taskType: string }) => t.taskType === 'Meeting');
+      const meetingAccuracy = result.byTaskType.find(
+        (t: { taskType: string }) => t.taskType === 'Meeting'
+      );
 
       expect(meetingAccuracy).toMatchObject({
         variance: 1.0, // 3 - 2
@@ -236,9 +237,7 @@ describe('EstimateComparisonService', () => {
 
       expect(result.recommendations.length).toBeGreaterThan(0);
       expect(result.recommendations).toEqual(
-        expect.arrayContaining([
-          expect.stringMatching(/Research tasks/i),
-        ])
+        expect.arrayContaining([expect.stringMatching(/Research tasks/i)])
       );
     });
   });

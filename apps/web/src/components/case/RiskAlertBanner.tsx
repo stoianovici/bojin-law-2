@@ -22,7 +22,12 @@ import {
   UserX,
   Scale,
 } from 'lucide-react';
-import { useHighSeverityRisks, useResolveRisk, type RiskIndicator, type RiskType } from '../../hooks/useRiskIndicators';
+import {
+  useHighSeverityRisks,
+  useResolveRisk,
+  type RiskIndicator,
+  type RiskType,
+} from '../../hooks/useRiskIndicators';
 
 // ============================================================================
 // Types
@@ -115,17 +120,13 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
     >
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className="flex-shrink-0 text-red-500">
-          {getRiskIcon(risk.riskType)}
-        </div>
+        <div className="flex-shrink-0 text-red-500">{getRiskIcon(risk.riskType)}</div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center gap-2">
-            <span className="font-medium text-red-800">
-              {getRiskTypeLabel(risk.riskType)}
-            </span>
+            <span className="font-medium text-red-800">{getRiskTypeLabel(risk.riskType)}</span>
             <span
               className="px-2 py-0.5 rounded text-xs font-medium bg-red-200 text-red-900"
               aria-label="Severity: High"
@@ -254,9 +255,7 @@ export function RiskAlertBanner({ caseId, onViewEmail }: RiskAlertBannerProps) {
   const [resolveRiskMutation] = useResolveRisk();
 
   // Filter out dismissed risks
-  const visibleRisks = (data?.riskIndicators ?? []).filter(
-    (risk) => !dismissedIds.has(risk.id)
-  );
+  const visibleRisks = (data?.riskIndicators ?? []).filter((risk) => !dismissedIds.has(risk.id));
 
   const handleDismiss = useCallback((riskId: string) => {
     setDismissedIds((prev) => new Set([...prev, riskId]));

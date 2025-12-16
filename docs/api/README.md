@@ -24,6 +24,7 @@ Welcome to the Legal Platform API documentation. This directory contains compreh
 The Legal Platform uses **GraphQL** for its API, providing a flexible and efficient way to query and mutate data. The API is secured with **Azure AD OAuth 2.0** authentication and enforces multi-tenant firm isolation.
 
 **Key Features:**
+
 - 🔐 Enterprise-grade authentication via Azure AD
 - 🏢 Multi-tenant architecture with firm isolation
 - 📝 Comprehensive audit logging
@@ -33,13 +34,13 @@ The Legal Platform uses **GraphQL** for its API, providing a flexible and effici
 
 ### Quick Links
 
-| Resource | Description |
-|----------|-------------|
-| [GraphQL Playground](./playground-guide.md) | Interactive API explorer (dev only) |
-| [Schema Documentation](./schema/schema.md) | Auto-generated GraphQL schema docs |
-| [Case Management API](./case-management-api.md) | Case operations guide |
-| [Error Handling](./error-handling.md) | Error codes and handling patterns |
-| [API Collections](./collections/) | Postman/Insomnia request collections |
+| Resource                                        | Description                           |
+| ----------------------------------------------- | ------------------------------------- |
+| [GraphQL Playground](./playground-guide.md)     | Interactive API explorer (dev only)   |
+| [Schema Documentation](./schema/schema.md)      | Auto-generated GraphQL schema docs    |
+| [Case Management API](./case-management-api.md) | Case operations guide                 |
+| [Error Handling](./error-handling.md)           | Error codes and handling patterns     |
+| [API Collections](./collections/)               | Postman/Insomnia request collections  |
 | [Versioning Strategy](./versioning-strategy.md) | API versioning and deprecation policy |
 
 ---
@@ -75,12 +76,14 @@ sequenceDiagram
 #### 1. Obtain Access Token
 
 **Frontend authentication** (recommended):
+
 - Use the frontend application (`http://localhost:3000` in development)
 - Sign in with your Azure AD credentials
 - Session cookie is set automatically
 - All subsequent API requests include the session cookie
 
 **Backend authentication** (for testing/CLI):
+
 ```bash
 # Using Azure AD credentials
 curl -X POST https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token \
@@ -94,6 +97,7 @@ curl -X POST https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token \
 #### 2. Make Authenticated Requests
 
 **Using session cookie** (browser/frontend):
+
 ```javascript
 // Session cookie automatically included
 const response = await fetch('http://localhost:4000/graphql', {
@@ -111,22 +115,23 @@ const response = await fetch('http://localhost:4000/graphql', {
           status
         }
       }
-    `
-  })
+    `,
+  }),
 });
 ```
 
 **Using JWT token** (server-to-server):
+
 ```javascript
 const response = await fetch('http://localhost:4000/graphql', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    Authorization: 'Bearer YOUR_JWT_TOKEN',
   },
   body: JSON.stringify({
     query: '...',
-  })
+  }),
 });
 ```
 
@@ -137,15 +142,16 @@ All authenticated requests receive a user context:
 ```typescript
 interface Context {
   user?: {
-    id: string;        // User UUID
-    firmId: string;    // Firm UUID (for multi-tenancy)
-    role: UserRole;    // PARTNER | ASSOCIATE | PARALEGAL
-    email: string;     // User email
+    id: string; // User UUID
+    firmId: string; // Firm UUID (for multi-tenancy)
+    role: UserRole; // PARTNER | ASSOCIATE | PARALEGAL
+    email: string; // User email
   };
 }
 ```
 
 **Authorization Rules:**
+
 - All resolvers enforce authentication (user must exist)
 - Firm isolation: Users can only access data from their firm
 - Role-based permissions:
@@ -156,6 +162,7 @@ interface Context {
 ### Security Notes
 
 🔒 **Production Security:**
+
 - HTTPS enforced
 - Introspection disabled
 - Playground disabled
@@ -164,6 +171,7 @@ interface Context {
 - CORS restricted to allowed origins
 
 ⚠️ **Never:**
+
 - Trust client-provided user IDs
 - Expose sensitive data in error messages
 - Skip authorization checks
@@ -176,11 +184,13 @@ interface Context {
 ### GraphQL Endpoint
 
 **Development:**
+
 ```
 http://localhost:4000/graphql
 ```
 
 **Production:**
+
 ```
 https://api.legal-platform.com/graphql
 ```
@@ -225,31 +235,31 @@ curl -X POST http://localhost:4000/graphql \
 
 ### Core Documentation
 
-| Document | Description |
-|----------|-------------|
-| **[Playground Guide](./playground-guide.md)** | Interactive API testing with Apollo Sandbox |
-| **[Schema Documentation](./schema/schema.md)** | Auto-generated GraphQL schema reference |
-| **[Case Management API](./case-management-api.md)** | Detailed case operations guide |
-| **[Error Handling](./error-handling.md)** | Error codes, formats, and handling patterns |
-| **[Versioning Strategy](./versioning-strategy.md)** | API versioning and backward compatibility |
-| **[Breaking Changes](./breaking-changes.md)** | Breaking change communication process |
+| Document                                            | Description                                 |
+| --------------------------------------------------- | ------------------------------------------- |
+| **[Playground Guide](./playground-guide.md)**       | Interactive API testing with Apollo Sandbox |
+| **[Schema Documentation](./schema/schema.md)**      | Auto-generated GraphQL schema reference     |
+| **[Case Management API](./case-management-api.md)** | Detailed case operations guide              |
+| **[Error Handling](./error-handling.md)**           | Error codes, formats, and handling patterns |
+| **[Versioning Strategy](./versioning-strategy.md)** | API versioning and backward compatibility   |
+| **[Breaking Changes](./breaking-changes.md)**       | Breaking change communication process       |
 
 ### API Modules
 
-| Module | Status | Documentation |
-|--------|--------|---------------|
-| **Case Management** | ✅ Available | [case-management-api.md](./case-management-api.md) |
-| **Document Management** | 🚧 Coming Soon | TBD |
-| **Task Management** | 🚧 Coming Soon | TBD |
-| **Time Tracking** | 🚧 Coming Soon | TBD |
-| **Billing** | 🚧 Coming Soon | TBD |
-| **Reports & Analytics** | 🚧 Coming Soon | TBD |
+| Module                  | Status         | Documentation                                      |
+| ----------------------- | -------------- | -------------------------------------------------- |
+| **Case Management**     | ✅ Available   | [case-management-api.md](./case-management-api.md) |
+| **Document Management** | 🚧 Coming Soon | TBD                                                |
+| **Task Management**     | 🚧 Coming Soon | TBD                                                |
+| **Time Tracking**       | 🚧 Coming Soon | TBD                                                |
+| **Billing**             | 🚧 Coming Soon | TBD                                                |
+| **Reports & Analytics** | 🚧 Coming Soon | TBD                                                |
 
 ### Testing Collections
 
-| Tool | Collection | Description |
-|------|------------|-------------|
-| **Postman** | [collections/legal-platform.postman.json](./collections/legal-platform.postman.json) | Import into Postman for testing |
+| Tool         | Collection                                                                             | Description                      |
+| ------------ | -------------------------------------------------------------------------------------- | -------------------------------- |
+| **Postman**  | [collections/legal-platform.postman.json](./collections/legal-platform.postman.json)   | Import into Postman for testing  |
 | **Insomnia** | [collections/legal-platform.insomnia.json](./collections/legal-platform.insomnia.json) | Import into Insomnia for testing |
 
 ---
@@ -259,27 +269,32 @@ curl -X POST http://localhost:4000/graphql \
 ### Development Tools
 
 #### GraphQL Playground (Apollo Sandbox)
+
 - **URL:** http://localhost:4000/graphql
 - **Features:** Schema explorer, query testing, documentation
 - **Availability:** Development only
 - **Guide:** [playground-guide.md](./playground-guide.md)
 
 #### Schema Documentation Generator
+
 ```bash
 cd services/gateway
 pnpm docs:generate
 ```
+
 Generates markdown documentation from GraphQL schema files.
 
 ### API Testing Tools
 
 #### Postman
+
 1. Download [legal-platform.postman.json](./collections/legal-platform.postman.json)
 2. Import into Postman
 3. Configure environment variables (API_URL, AUTH_TOKEN)
 4. Run requests
 
 #### Insomnia
+
 1. Download [legal-platform.insomnia.json](./collections/legal-platform.insomnia.json)
 2. Import into Insomnia
 3. Configure environment variables
@@ -288,11 +303,13 @@ Generates markdown documentation from GraphQL schema files.
 ### Client Libraries
 
 #### JavaScript/TypeScript
+
 ```bash
 npm install @apollo/client graphql
 ```
 
 Example usage:
+
 ```typescript
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 
@@ -311,7 +328,7 @@ const { data } = await client.query({
         status
       }
     }
-  `
+  `,
 });
 ```
 
@@ -328,6 +345,7 @@ const { data } = await client.query({
 ### Reporting Bugs
 
 When reporting API bugs, please include:
+
 1. GraphQL query/mutation
 2. Variables used
 3. Expected vs actual response
@@ -338,6 +356,7 @@ When reporting API bugs, please include:
 ### Contributing
 
 To contribute to API documentation:
+
 1. Fork the repository
 2. Create a feature branch
 3. Update documentation in `docs/api/`
@@ -347,9 +366,9 @@ To contribute to API documentation:
 
 ## Changelog
 
-| Date | Version | Changes |
-|------|---------|---------|
-| 2025-11-21 | 1.0 | Initial API documentation release |
+| Date       | Version | Changes                           |
+| ---------- | ------- | --------------------------------- |
+| 2025-11-21 | 1.0     | Initial API documentation release |
 
 ---
 

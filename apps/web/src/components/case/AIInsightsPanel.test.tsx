@@ -55,9 +55,7 @@ describe('AIInsightsPanel', () => {
       ...mockSuggestions,
       { ...mockSuggestions[0], id: 'dismissed-1', dismissed: true },
     ];
-    render(
-      <AIInsightsPanel caseName={mockCaseName} suggestions={suggestionsWithDismissed} />
-    );
+    render(<AIInsightsPanel caseName={mockCaseName} suggestions={suggestionsWithDismissed} />);
 
     // Should only render non-dismissed suggestions
     expect(screen.queryAllByText(/acum 2 ore/)).toHaveLength(mockSuggestions.length);
@@ -97,9 +95,7 @@ describe('AIInsightsPanel', () => {
 
   it('should render footer note', () => {
     render(<AIInsightsPanel caseName={mockCaseName} suggestions={mockSuggestions} />);
-    expect(
-      screen.getByText(/Sugestiile AI sunt generate automat/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Sugestiile AI sunt generate automat/)).toBeInTheDocument();
   });
 
   it('should render suggestion icons based on type', () => {

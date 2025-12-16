@@ -1079,7 +1079,11 @@ export const emailResolvers = {
         };
       });
 
-      console.log('[permanentlyDeleteEmail] Deleted email with', result.attachmentsDeleted, 'attachments');
+      console.log(
+        '[permanentlyDeleteEmail] Deleted email with',
+        result.attachmentsDeleted,
+        'attachments'
+      );
 
       return result;
     },
@@ -1151,7 +1155,13 @@ export const emailResolvers = {
         };
       });
 
-      console.log('[bulkDeleteCaseEmails] Deleted', result.emailsDeleted, 'emails with', result.attachmentsDeleted, 'attachments');
+      console.log(
+        '[bulkDeleteCaseEmails] Deleted',
+        result.emailsDeleted,
+        'emails with',
+        result.attachmentsDeleted,
+        'attachments'
+      );
 
       return result;
     },

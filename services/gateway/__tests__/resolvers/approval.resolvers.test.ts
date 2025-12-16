@@ -8,7 +8,6 @@
  * Addresses QA Gate Issue: TEST-003 (Medium) - No audit log verification tests
  */
 
-
 import { prisma } from '@legal-platform/database';
 import { ApprovalStatus, CaseStatus, UserRole } from '@prisma/client';
 import { GraphQLError } from 'graphql';
@@ -109,13 +108,13 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     it('should throw FORBIDDEN error for Associates', async () => {
       mockContext.user.role = UserRole.Associate;
 
-      await expect(
-        approvalResolvers.Query.pendingCases({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(approvalResolvers.Query.pendingCases({}, {}, mockContext)).rejects.toThrow(
+        GraphQLError
+      );
 
-      await expect(
-        approvalResolvers.Query.pendingCases({}, {}, mockContext)
-      ).rejects.toThrow('Only Partners can view pending approvals');
+      await expect(approvalResolvers.Query.pendingCases({}, {}, mockContext)).rejects.toThrow(
+        'Only Partners can view pending approvals'
+      );
 
       expect(prisma.case.findMany).not.toHaveBeenCalled();
     });
@@ -123,9 +122,9 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     it('should throw FORBIDDEN error for Paralegals', async () => {
       mockContext.user.role = UserRole.Paralegal;
 
-      await expect(
-        approvalResolvers.Query.pendingCases({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(approvalResolvers.Query.pendingCases({}, {}, mockContext)).rejects.toThrow(
+        GraphQLError
+      );
 
       expect(prisma.case.findMany).not.toHaveBeenCalled();
     });
@@ -188,11 +187,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     it('should filter by status if provided', async () => {
       prisma.case.findMany.mockResolvedValue(mockCases);
 
-      await approvalResolvers.Query.myCases(
-        {},
-        { status: CaseStatus.Active },
-        mockContext
-      );
+      await approvalResolvers.Query.myCases({}, { status: CaseStatus.Active }, mockContext);
 
       const callArgs = prisma.case.findMany.mock.calls[0][0];
       expect(callArgs.where.status).toBe(CaseStatus.Active);
@@ -276,11 +271,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
-      await approvalResolvers.Mutation.approveCase(
-        {},
-        { caseId: 'case-1' },
-        mockContext
-      );
+      await approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, mockContext);
 
       expect(prisma.caseApproval.update).toHaveBeenCalledWith({
         where: { caseId: 'case-1' },
@@ -301,11 +292,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
-      await approvalResolvers.Mutation.approveCase(
-        {},
-        { caseId: 'case-1' },
-        mockContext
-      );
+      await approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, mockContext);
 
       expect(prisma.caseAuditLog.create).toHaveBeenCalledWith({
         data: {
@@ -395,16 +382,14 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     };
 
     it('should reject case successfully for Partner', async () => {
-      prisma.case.findUnique
-        .mockResolvedValueOnce(mockCase)
-        .mockResolvedValueOnce({
-          ...mockCase,
-          approval: {
-            ...mockCase.approval,
-            status: ApprovalStatus.Rejected,
-            rejectionReason: 'Needs more documentation',
-          },
-        });
+      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce({
+        ...mockCase,
+        approval: {
+          ...mockCase.approval,
+          status: ApprovalStatus.Rejected,
+          rejectionReason: 'Needs more documentation',
+        },
+      });
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
@@ -424,9 +409,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should update approval record with rejection details', async () => {
-      prisma.case.findUnique
-        .mockResolvedValueOnce(mockCase)
-        .mockResolvedValueOnce(mockCase);
+      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
@@ -453,9 +436,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should create audit log entry for rejection (AC9)', async () => {
-      prisma.case.findUnique
-        .mockResolvedValueOnce(mockCase)
-        .mockResolvedValueOnce(mockCase);
+      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
@@ -516,9 +497,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
 
     it('should sanitize rejection reason (XSS protection)', async () => {
       const longReason = 'a'.repeat(3000); // Exceeds 2000 char limit
-      prisma.case.findUnique
-        .mockResolvedValueOnce(mockCase)
-        .mockResolvedValueOnce(mockCase);
+      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
@@ -538,9 +517,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should trim whitespace from rejection reason', async () => {
-      prisma.case.findUnique
-        .mockResolvedValueOnce(mockCase)
-        .mockResolvedValueOnce(mockCase);
+      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
       prisma.caseApproval.update.mockResolvedValue({});
       prisma.caseAuditLog.create.mockResolvedValue({});
 
@@ -601,16 +578,14 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique
-        .mockResolvedValueOnce(mockCase)
-        .mockResolvedValueOnce({
-          ...mockCase,
-          approval: {
-            ...mockCase.approval,
-            status: ApprovalStatus.Pending,
-            revisionCount: 2,
-          },
-        });
+      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce({
+        ...mockCase,
+        approval: {
+          ...mockCase.approval,
+          status: ApprovalStatus.Pending,
+          revisionCount: 2,
+        },
+      });
       prisma.caseApproval.update.mockResolvedValue({
         revisionCount: 2,
       });
@@ -630,19 +605,13 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique
-        .mockResolvedValueOnce(mockCase)
-        .mockResolvedValueOnce(mockCase);
+      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
       prisma.caseApproval.update.mockResolvedValue({
         revisionCount: 2,
       });
       prisma.caseAuditLog.create.mockResolvedValue({});
 
-      await approvalResolvers.Mutation.resubmitCase(
-        {},
-        { caseId: 'case-1' },
-        mockContext
-      );
+      await approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, mockContext);
 
       expect(prisma.caseApproval.update).toHaveBeenCalledWith({
         where: { caseId: 'case-1' },
@@ -660,19 +629,13 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique
-        .mockResolvedValueOnce(mockCase)
-        .mockResolvedValueOnce(mockCase);
+      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
       prisma.caseApproval.update.mockResolvedValue({
         revisionCount: 2,
       });
       prisma.caseAuditLog.create.mockResolvedValue({});
 
-      await approvalResolvers.Mutation.resubmitCase(
-        {},
-        { caseId: 'case-1' },
-        mockContext
-      );
+      await approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, mockContext);
 
       expect(prisma.caseAuditLog.create).toHaveBeenCalledWith({
         data: {
@@ -752,11 +715,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
 
       prisma.case.findUnique.mockResolvedValue(mockCase);
 
-      const result = await approvalResolvers.CaseApproval.case(
-        { caseId: 'case-1' },
-        {},
-        {}
-      );
+      const result = await approvalResolvers.CaseApproval.case({ caseId: 'case-1' }, {}, {});
 
       expect(result).toEqual(mockCase);
       expect(prisma.case.findUnique).toHaveBeenCalledWith({
@@ -817,11 +776,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should return null if no reviewer', async () => {
-      const result = await approvalResolvers.CaseApproval.reviewedBy(
-        { reviewedBy: null },
-        {},
-        {}
-      );
+      const result = await approvalResolvers.CaseApproval.reviewedBy({ reviewedBy: null }, {}, {});
 
       expect(result).toBeNull();
       expect(prisma.user.findUnique).not.toHaveBeenCalled();

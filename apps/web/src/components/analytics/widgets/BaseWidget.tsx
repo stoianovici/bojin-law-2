@@ -95,9 +95,7 @@ export function BaseWidget({
   skeleton,
 }: BaseWidgetProps) {
   return (
-    <div
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 ${className}`}
-    >
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>

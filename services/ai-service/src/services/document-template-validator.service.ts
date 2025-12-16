@@ -38,7 +38,12 @@ export interface ValidationResult {
 }
 
 export interface ValidationError {
-  type: 'missing_section' | 'missing_field' | 'invalid_format' | 'missing_signature' | 'missing_date';
+  type:
+    | 'missing_section'
+    | 'missing_field'
+    | 'invalid_format'
+    | 'missing_signature'
+    | 'missing_date';
   field: string;
   message: string;
   location?: string;
@@ -116,13 +121,7 @@ export const ROMANIAN_LEGAL_TEMPLATES: Record<string, TemplateValidationRule> = 
       'prayer_for_relief',
       'certificate_of_service',
     ],
-    requiredFields: [
-      'court_name',
-      'case_number',
-      'party_names',
-      'motion_title',
-      'filing_date',
-    ],
+    requiredFields: ['court_name', 'case_number', 'party_names', 'motion_title', 'filing_date'],
     signatureBlocks: 1,
     dateFields: ['filing_date', 'service_date'],
     optionalSections: ['exhibits', 'memorandum_of_law'],
@@ -212,12 +211,7 @@ export const ROMANIAN_LEGAL_TEMPLATES: Record<string, TemplateValidationRule> = 
       'closing',
       'signature',
     ],
-    requiredFields: [
-      'client_name',
-      'matter_id',
-      'date',
-      'attorney_name',
-    ],
+    requiredFields: ['client_name', 'matter_id', 'date', 'attorney_name'],
     signatureBlocks: 1,
     dateFields: ['date'],
     optionalSections: ['billing_info', 'next_steps'],
@@ -234,12 +228,7 @@ export const ROMANIAN_LEGAL_TEMPLATES: Record<string, TemplateValidationRule> = 
       'relief_requested',
       'verification',
     ],
-    requiredFields: [
-      'court_name',
-      'case_number',
-      'plaintiff_name',
-      'defendant_name',
-    ],
+    requiredFields: ['court_name', 'case_number', 'plaintiff_name', 'defendant_name'],
     signatureBlocks: 1,
     dateFields: ['filing_date'],
     optionalSections: ['jury_demand', 'exhibits'],
@@ -248,14 +237,7 @@ export const ROMANIAN_LEGAL_TEMPLATES: Record<string, TemplateValidationRule> = 
   // Power of Attorney
   Procura: {
     documentType: 'Procura',
-    requiredSections: [
-      'grantor',
-      'grantee',
-      'powers_granted',
-      'scope',
-      'duration',
-      'signatures',
-    ],
+    requiredSections: ['grantor', 'grantee', 'powers_granted', 'scope', 'duration', 'signatures'],
     requiredFields: [
       'grantor_name',
       'grantor_id',
@@ -320,11 +302,13 @@ export class DocumentTemplateValidatorService {
         isValid: true, // Can't validate without template
         score: 1.0,
         errors: [],
-        warnings: [{
-          type: 'style_suggestion',
-          field: 'template',
-          message: `No validation template found for document type: ${documentType}`,
-        }],
+        warnings: [
+          {
+            type: 'style_suggestion',
+            field: 'template',
+            message: `No validation template found for document type: ${documentType}`,
+          },
+        ],
         suggestions: ['Consider creating a custom template for this document type'],
       };
     }
@@ -409,11 +393,11 @@ export class DocumentTemplateValidatorService {
     if (errors.length > 0) {
       suggestions.push('Review and address all validation errors before finalizing the document');
 
-      if (errors.some(e => e.type === 'missing_section')) {
+      if (errors.some((e) => e.type === 'missing_section')) {
         suggestions.push('Add the missing required sections to ensure document completeness');
       }
 
-      if (errors.some(e => e.type === 'missing_signature')) {
+      if (errors.some((e) => e.type === 'missing_signature')) {
         suggestions.push('Ensure all required signature blocks are present');
       }
     }
@@ -423,7 +407,8 @@ export class DocumentTemplateValidatorService {
     }
 
     // Calculate validation score
-    const totalChecks = template.requiredSections.length +
+    const totalChecks =
+      template.requiredSections.length +
       template.requiredFields.length +
       template.signatureBlocks +
       (template.customValidations?.length || 0);
@@ -485,7 +470,9 @@ export class DocumentTemplateValidatorService {
 
       if (firm?.defaultRates) {
         const rates = firm.defaultRates as Record<string, unknown>;
-        const customTemplates = rates.documentTemplates as Record<string, TemplateValidationRule> | undefined;
+        const customTemplates = rates.documentTemplates as
+          | Record<string, TemplateValidationRule>
+          | undefined;
 
         if (customTemplates && customTemplates[documentType]) {
           logger.debug('Using custom firm template', { firmId, documentType });
@@ -510,7 +497,7 @@ export class DocumentTemplateValidatorService {
   private sectionExists(content: string, section: string): boolean {
     const patterns = ROMANIAN_SECTION_PATTERNS[section];
     if (patterns) {
-      return patterns.some(pattern => pattern.test(content));
+      return patterns.some((pattern) => pattern.test(content));
     }
     // Fallback: check if section name appears in content
     return content.includes(section.toLowerCase().replace(/_/g, ' '));
@@ -522,7 +509,7 @@ export class DocumentTemplateValidatorService {
   private fieldExists(content: string, field: string): boolean {
     const patterns = ROMANIAN_FIELD_PATTERNS[field];
     if (patterns) {
-      return patterns.some(pattern => pattern.test(content));
+      return patterns.some((pattern) => pattern.test(content));
     }
     // Fallback: check if field name appears in content
     return content.includes(field.toLowerCase().replace(/_/g, ' '));
@@ -540,7 +527,7 @@ export class DocumentTemplateValidatorService {
       /\d{1,2}\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/i,
     ];
 
-    return datePatterns.some(pattern => pattern.test(content));
+    return datePatterns.some((pattern) => pattern.test(content));
   }
 
   /**
@@ -663,10 +650,7 @@ export class DocumentTemplateValidatorService {
   /**
    * Create or update a custom template for a firm
    */
-  async saveCustomTemplate(
-    firmId: string,
-    template: TemplateValidationRule
-  ): Promise<void> {
+  async saveCustomTemplate(firmId: string, template: TemplateValidationRule): Promise<void> {
     try {
       const firm = await prisma.firm.findUnique({
         where: { id: firmId },

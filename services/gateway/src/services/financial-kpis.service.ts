@@ -12,7 +12,11 @@
 
 import { prisma } from '@legal-platform/database';
 import { Prisma, BillingType, UserRole, CaseStatus } from '@prisma/client';
-import { getFinancialDataFilter, getFinancialDataScope, FinancialDataScope } from '../graphql/resolvers/utils/financialDataScope';
+import {
+  getFinancialDataFilter,
+  getFinancialDataScope,
+  FinancialDataScope,
+} from '../graphql/resolvers/utils/financialDataScope';
 import type { Context } from '../graphql/resolvers/case.resolvers';
 
 // ============================================================================
@@ -233,19 +237,13 @@ export class FinancialKPIsService {
   /**
    * Get count of cases in scope
    */
-  private async getCaseCount(
-    filter: Prisma.CaseWhereInput,
-    dateRange: DateRange
-  ): Promise<number> {
+  private async getCaseCount(filter: Prisma.CaseWhereInput, dateRange: DateRange): Promise<number> {
     return prisma.case.count({
       where: {
         ...filter,
         status: { not: 'Archived' },
         openedDate: { lte: dateRange.end },
-        OR: [
-          { closedDate: null },
-          { closedDate: { gte: dateRange.start } },
-        ],
+        OR: [{ closedDate: null }, { closedDate: { gte: dateRange.start } }],
       },
     });
   }
@@ -277,7 +275,7 @@ export class FinancialKPIsService {
       },
     });
 
-    const caseIds = cases.map(c => c.id);
+    const caseIds = cases.map((c) => c.id);
 
     // Get time entries for hourly revenue calculation
     const timeEntries = await prisma.timeEntry.findMany({
@@ -307,14 +305,14 @@ export class FinancialKPIsService {
 
     // Calculate fixed revenue (only from completed cases)
     let fixedRevenue = 0;
-    const fixedCases = cases.filter(c => c.billingType === 'Fixed' && c.status === 'Closed');
+    const fixedCases = cases.filter((c) => c.billingType === 'Fixed' && c.status === 'Closed');
     for (const c of fixedCases) {
       fixedRevenue += Number(c.fixedAmount || 0);
     }
 
     // Calculate retainer revenue
     let retainerRevenue = 0;
-    const retainerCases = cases.filter(c => c.billingType === 'Retainer');
+    const retainerCases = cases.filter((c) => c.billingType === 'Retainer');
     for (const c of retainerCases) {
       // Monthly retainer amount prorated to date range
       retainerRevenue += Number(c.retainerAmount || 0);
@@ -386,7 +384,7 @@ export class FinancialKPIsService {
 
     const avgHourlyRate = Number(avgRate._avg.hourlyRate || 0);
 
-    return timeEntries.map(entry => ({
+    return timeEntries.map((entry) => ({
       date: entry.date,
       revenue: Number(entry._sum.hours || 0) * avgHourlyRate,
       caseCount: entry._count.caseId,
@@ -415,7 +413,7 @@ export class FinancialKPIsService {
       select: { id: true },
     });
 
-    const caseIds = cases.map(c => c.id);
+    const caseIds = cases.map((c) => c.id);
 
     if (caseIds.length === 0) {
       return {
@@ -518,7 +516,7 @@ export class FinancialKPIsService {
       select: { id: true },
     });
 
-    const caseIds = cases.map(c => c.id);
+    const caseIds = cases.map((c) => c.id);
 
     if (caseIds.length === 0) {
       return {
@@ -606,7 +604,7 @@ export class FinancialKPIsService {
       },
     });
 
-    const caseIds = cases.map(c => c.id);
+    const caseIds = cases.map((c) => c.id);
 
     if (caseIds.length === 0) {
       return {
@@ -917,8 +915,8 @@ export class FinancialKPIsService {
     });
 
     const totalCases = cases.length;
-    const hourlyCount = cases.filter(c => c.billingType === 'Hourly').length;
-    const fixedCount = cases.filter(c => c.billingType === 'Fixed').length;
+    const hourlyCount = cases.filter((c) => c.billingType === 'Hourly').length;
+    const fixedCount = cases.filter((c) => c.billingType === 'Fixed').length;
 
     if (totalCases === 0) {
       return {
@@ -998,8 +996,11 @@ export class FinancialKPIsService {
 
     // Sort for top and underperforming
     const sortedByVariance = [...caseKPIs].sort((a, b) => b.variance - a.variance);
-    const topPerformingCases = sortedByVariance.filter(c => c.variance > 0).slice(0, 5);
-    const underperformingCases = sortedByVariance.filter(c => c.variance < 0).slice(-5).reverse();
+    const topPerformingCases = sortedByVariance.filter((c) => c.variance > 0).slice(0, 5);
+    const underperformingCases = sortedByVariance
+      .filter((c) => c.variance < 0)
+      .slice(-5)
+      .reverse();
 
     return {
       totalCases,

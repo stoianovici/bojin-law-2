@@ -9,7 +9,13 @@
  * - Gradual rollout logic (canary deployment)
  */
 
-import { ABTestFramework, ExperimentConfig, ExperimentMetrics, ExperimentVariant, Logger } from './ABTestFramework';
+import {
+  ABTestFramework,
+  ExperimentConfig,
+  ExperimentMetrics,
+  ExperimentVariant,
+  Logger,
+} from './ABTestFramework';
 import { RequestRouter, RoutingDecision } from '../routing/RequestRouter';
 import { AIRequest } from '../routing/SkillSelector';
 
@@ -21,11 +27,11 @@ import { AIRequest } from '../routing/SkillSelector';
  * Experiment success metrics thresholds
  */
 export interface SuccessMetrics {
-  maxCostIncrease: number;        // Maximum acceptable cost increase (%)
-  minCostReduction: number;        // Minimum required cost reduction (%)
+  maxCostIncrease: number; // Maximum acceptable cost increase (%)
+  minCostReduction: number; // Minimum required cost reduction (%)
   maxExecutionTimeIncrease: number; // Maximum acceptable time increase (ms)
-  minTokenReduction: number;       // Minimum required token reduction (%)
-  minQualityScore?: number;        // Minimum quality score (optional)
+  minTokenReduction: number; // Minimum required token reduction (%)
+  minQualityScore?: number; // Minimum quality score (optional)
 }
 
 /**
@@ -35,8 +41,8 @@ export interface RolloutConfig {
   enabled: boolean;
   stages: RolloutStage[];
   currentStage: number;
-  autoProgress: boolean;          // Automatically progress to next stage
-  progressThreshold: number;      // Success threshold to progress (0-1)
+  autoProgress: boolean; // Automatically progress to next stage
+  progressThreshold: number; // Success threshold to progress (0-1)
 }
 
 /**
@@ -44,9 +50,9 @@ export interface RolloutConfig {
  */
 export interface RolloutStage {
   name: string;
-  percentage: number;             // Percentage of users in treatment (0-100)
-  duration: number;               // Duration in minutes
-  minimumSamples: number;         // Minimum samples before evaluation
+  percentage: number; // Percentage of users in treatment (0-100)
+  duration: number; // Duration in minutes
+  minimumSamples: number; // Minimum samples before evaluation
   description: string;
 }
 
@@ -57,9 +63,9 @@ export interface AlertConfig {
   enabled: boolean;
   channels: AlertChannel[];
   thresholds: {
-    errorRatePercent: number;     // Alert if error rate exceeds this
-    costIncreasePercent: number;  // Alert if cost increases beyond this
-    executionTimeMs: number;      // Alert if execution time exceeds this
+    errorRatePercent: number; // Alert if error rate exceeds this
+    costIncreasePercent: number; // Alert if cost increases beyond this
+    executionTimeMs: number; // Alert if execution time exceeds this
   };
 }
 
@@ -147,8 +153,8 @@ export class ExperimentDeployment {
       name,
       description,
       assignmentStrategy: 'hash', // Consistent user assignment
-      significanceLevel: 0.05,    // 95% confidence
-      minimumSampleSize: 100,     // Minimum 100 samples per variant
+      significanceLevel: 0.05, // 95% confidence
+      minimumSampleSize: 100, // Minimum 100 samples per variant
       startDate: new Date(),
       active: true,
     };
@@ -158,11 +164,11 @@ export class ExperimentDeployment {
 
     // Configure success metrics (defaults from story AC#10)
     const successMetrics: SuccessMetrics = {
-      maxCostIncrease: 10,        // Max 10% cost increase
-      minCostReduction: 35,        // Target 35% cost reduction (AC#10)
+      maxCostIncrease: 10, // Max 10% cost increase
+      minCostReduction: 35, // Target 35% cost reduction (AC#10)
       maxExecutionTimeIncrease: 100, // Max 100ms overhead (AC#8)
-      minTokenReduction: 30,       // Min 30% token reduction
-      minQualityScore: 0.8,        // Min 80% quality score
+      minTokenReduction: 30, // Min 30% token reduction
+      minQualityScore: 0.8, // Min 80% quality score
       ...options?.successMetrics,
     };
     this.successMetrics.set(experimentId, successMetrics);
@@ -183,19 +189,22 @@ export class ExperimentDeployment {
       enabled: true,
       channels: ['log'],
       thresholds: {
-        errorRatePercent: 5,      // Alert if >5% error rate
-        costIncreasePercent: 20,   // Alert if >20% cost increase
-        executionTimeMs: 5000,     // Alert if >5s execution time
+        errorRatePercent: 5, // Alert if >5% error rate
+        costIncreasePercent: 20, // Alert if >20% cost increase
+        executionTimeMs: 5000, // Alert if >5s execution time
       },
       ...options?.alerts,
     };
     this.alertConfigs.set(experimentId, alertConfig);
 
     // Initialize tracking
-    this.errorCounts.set(experimentId, new Map([
-      ['control', 0],
-      ['treatment', 0],
-    ]));
+    this.errorCounts.set(
+      experimentId,
+      new Map([
+        ['control', 0],
+        ['treatment', 0],
+      ])
+    );
     this.alerts.set(experimentId, []);
     this.rolloutStartTimes.set(experimentId, new Date());
 
@@ -214,29 +223,29 @@ export class ExperimentDeployment {
     return [
       {
         name: 'Canary',
-        percentage: 5,              // Start with 5% of users
-        duration: 60,               // 1 hour
+        percentage: 5, // Start with 5% of users
+        duration: 60, // 1 hour
         minimumSamples: 50,
         description: 'Initial canary deployment to detect critical issues',
       },
       {
         name: 'Small Rollout',
-        percentage: 25,             // Expand to 25% of users
-        duration: 180,              // 3 hours
+        percentage: 25, // Expand to 25% of users
+        duration: 180, // 3 hours
         minimumSamples: 200,
         description: 'Small-scale rollout to validate metrics',
       },
       {
         name: 'Half Rollout',
-        percentage: 50,             // 50% of users (standard A/B test)
-        duration: 720,              // 12 hours
+        percentage: 50, // 50% of users (standard A/B test)
+        duration: 720, // 12 hours
         minimumSamples: 500,
         description: 'Half rollout for full A/B test comparison',
       },
       {
         name: 'Full Rollout',
-        percentage: 100,            // All users
-        duration: -1,               // Indefinite
+        percentage: 100, // All users
+        duration: -1, // Indefinite
         minimumSamples: 1000,
         description: 'Full deployment after successful validation',
       },
@@ -325,7 +334,7 @@ export class ExperimentDeployment {
     const crypto = require('crypto');
     const hash = crypto.createHash('sha256').update(userId).digest('hex');
     const numericHash = parseInt(hash.substring(0, 8), 16);
-    const userPercentile = (numericHash % 100);
+    const userPercentile = numericHash % 100;
 
     return userPercentile < percentage;
   }
@@ -396,9 +405,10 @@ export class ExperimentDeployment {
 
     // Check if enough samples to analyze
     const experiment = this.framework.getExperiment(experimentId)!;
-    if (sampleSizes.control >= experiment.minimumSampleSize &&
-        sampleSizes.treatment >= experiment.minimumSampleSize) {
-
+    if (
+      sampleSizes.control >= experiment.minimumSampleSize &&
+      sampleSizes.treatment >= experiment.minimumSampleSize
+    ) {
       try {
         const analysis = this.framework.analyzeExperiment(experimentId);
 
@@ -499,7 +509,13 @@ export class ExperimentDeployment {
     if (!rolloutConfig || !rolloutConfig.enabled) {
       return {
         shouldProgress: false,
-        currentStage: { name: 'None', percentage: 100, duration: -1, minimumSamples: 0, description: 'Rollout not enabled' },
+        currentStage: {
+          name: 'None',
+          percentage: 100,
+          duration: -1,
+          minimumSamples: 0,
+          description: 'Rollout not enabled',
+        },
         recommendation: 'Rollout not enabled',
       };
     }
@@ -633,8 +649,10 @@ export class ExperimentDeployment {
     let recommendation: DeploymentStatus['recommendation'] = 'continue';
 
     // Try to get analysis if enough samples
-    if (sampleSizes.control >= experiment.minimumSampleSize &&
-        sampleSizes.treatment >= experiment.minimumSampleSize) {
+    if (
+      sampleSizes.control >= experiment.minimumSampleSize &&
+      sampleSizes.treatment >= experiment.minimumSampleSize
+    ) {
       try {
         const analysis = this.framework.analyzeExperiment(experimentId);
 
@@ -656,7 +674,7 @@ export class ExperimentDeployment {
           recommendation = 'full_rollout';
         } else if (analysis.relativeDifference.cost > successMetrics.maxCostIncrease) {
           recommendation = 'rollback';
-        } else if (alerts.some(a => a.severity === 'critical')) {
+        } else if (alerts.some((a) => a.severity === 'critical')) {
           recommendation = 'stop';
         }
       } catch (_error) {

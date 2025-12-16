@@ -129,7 +129,9 @@ async function processReminderInterval(
     },
   });
 
-  console.log(`[${daysUntilDue}d] Found ${tasks.length} tasks due on ${targetDate.toLocaleDateString()}`);
+  console.log(
+    `[${daysUntilDue}d] Found ${tasks.length} tasks due on ${targetDate.toLocaleDateString()}`
+  );
 
   for (const task of tasks) {
     const reminderKey = `${task.id}-${daysUntilDue}d`;
@@ -265,16 +267,21 @@ function isWeekend(date: Date): boolean {
 // Store reminders with timestamps for selective cleanup
 const reminderTimestamps = new Map<string, number>();
 
-setInterval(() => {
-  if (sentReminders.size > 10000) {
-    // Keep reminders from last 7 days only
-    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    for (const [key, timestamp] of reminderTimestamps.entries()) {
-      if (timestamp < sevenDaysAgo) {
-        sentReminders.delete(key);
-        reminderTimestamps.delete(key);
+setInterval(
+  () => {
+    if (sentReminders.size > 10000) {
+      // Keep reminders from last 7 days only
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      for (const [key, timestamp] of reminderTimestamps.entries()) {
+        if (timestamp < sevenDaysAgo) {
+          sentReminders.delete(key);
+          reminderTimestamps.delete(key);
+        }
       }
+      console.log(
+        `[Task Reminder Worker] Cleaned up old reminders. Current size: ${sentReminders.size}`
+      );
     }
-    console.log(`[Task Reminder Worker] Cleaned up old reminders. Current size: ${sentReminders.size}`);
-  }
-}, 24 * 60 * 60 * 1000); // Once per day
+  },
+  24 * 60 * 60 * 1000
+); // Once per day

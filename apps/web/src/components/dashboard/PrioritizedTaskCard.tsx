@@ -9,12 +9,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Task } from '@legal-platform/types';
 
 export interface PrioritizedTaskData {
@@ -67,15 +62,9 @@ export function PrioritizedTaskCard({
 
   if (!task) {
     return (
-      <Card
-        role="article"
-        aria-label="Task unavailable"
-        className="opacity-50"
-      >
+      <Card role="article" aria-label="Task unavailable" className="opacity-50">
         <CardContent className="p-4">
-          <p className="text-sm text-muted-foreground">
-            Task-ul nu este disponibil
-          </p>
+          <p className="text-sm text-muted-foreground">Task-ul nu este disponibil</p>
         </CardContent>
       </Card>
     );
@@ -98,14 +87,12 @@ export function PrioritizedTaskCard({
                 priorityLevel === 'high'
                   ? 'bg-red-500'
                   : priorityLevel === 'medium'
-                  ? 'bg-yellow-500'
-                  : 'bg-green-500'
+                    ? 'bg-yellow-500'
+                    : 'bg-green-500'
               }`}
               aria-hidden="true"
             />
-            <span className="text-lg font-medium text-muted-foreground">
-              #{priority}
-            </span>
+            <span className="text-lg font-medium text-muted-foreground">#{priority}</span>
           </div>
 
           {/* Priority badge with tooltip */}
@@ -127,9 +114,7 @@ export function PrioritizedTaskCard({
         </div>
 
         {/* Task title */}
-        <h4 className="mt-2 font-medium text-foreground line-clamp-2">
-          {task.title}
-        </h4>
+        <h4 className="mt-2 font-medium text-foreground line-clamp-2">{task.title}</h4>
 
         {/* Task details */}
         <div className="mt-2 space-y-1 text-sm text-muted-foreground">

@@ -52,9 +52,7 @@ describe('EditRatesModal', () => {
 
   describe('Rendering', () => {
     it('renders nothing when isOpen is false', () => {
-      const { container } = render(
-        <EditRatesModal {...defaultProps} isOpen={false} />
-      );
+      const { container } = render(<EditRatesModal {...defaultProps} isOpen={false} />);
       expect(container.firstChild).toBeNull();
     });
 
@@ -130,15 +128,12 @@ describe('EditRatesModal', () => {
         paralegalRate: 18000, // $180.00
       };
 
-      render(
-        <EditRatesModal
-          {...defaultProps}
-          currentCustomRates={customRates}
-        />
-      );
+      render(<EditRatesModal {...defaultProps} currentCustomRates={customRates} />);
 
       // Custom rates checkbox should be checked
-      const checkbox = screen.getByRole('checkbox', { name: /use custom rates/i }) as HTMLInputElement;
+      const checkbox = screen.getByRole('checkbox', {
+        name: /use custom rates/i,
+      }) as HTMLInputElement;
       expect(checkbox.checked).toBe(true);
     });
   });

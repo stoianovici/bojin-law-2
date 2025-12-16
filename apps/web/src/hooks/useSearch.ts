@@ -200,10 +200,7 @@ interface UseSearchReturn {
  * Hook for performing AI-powered search across cases and documents
  */
 export function useSearch(options: UseSearchOptions = {}): UseSearchReturn {
-  const {
-    defaultMode = 'HYBRID',
-    defaultLimit = 20,
-  } = options;
+  const { defaultMode = 'HYBRID', defaultLimit = 20 } = options;
 
   const [query, setQuery] = useState('');
   const [searchMode, setSearchMode] = useState<SearchMode>(defaultMode);

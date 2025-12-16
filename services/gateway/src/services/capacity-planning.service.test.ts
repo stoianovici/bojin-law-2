@@ -165,10 +165,7 @@ describe('CapacityPlanningService', () => {
         end: new Date('2025-12-03'),
       };
 
-      mockPrisma.user.findMany.mockResolvedValue([
-        { id: 'user-1' },
-        { id: 'user-2' },
-      ]);
+      mockPrisma.user.findMany.mockResolvedValue([{ id: 'user-1' }, { id: 'user-2' }]);
 
       mockWorkloadService.getUserDailyCapacity.mockResolvedValue(8);
       mockWorkloadService.calculateDailyWorkload.mockResolvedValue({
@@ -205,9 +202,7 @@ describe('CapacityPlanningService', () => {
     });
 
     it('should return Medium risk for some bottlenecks', () => {
-      const bottlenecks = [
-        { severity: 'Warning', overageHours: 4 },
-      ] as any[];
+      const bottlenecks = [{ severity: 'Warning', overageHours: 4 }] as any[];
 
       const teamCapacity = [
         { totalCapacity: 40, totalAllocated: 35 },
@@ -254,9 +249,10 @@ describe('CapacityPlanningService', () => {
     });
 
     it('should return empty array when no issues', () => {
-      const result = service.generateRecommendations([], [
-        { totalCapacity: 40, totalAllocated: 20 },
-      ]);
+      const result = service.generateRecommendations(
+        [],
+        [{ totalCapacity: 40, totalAllocated: 20 }]
+      );
 
       expect(result.length).toBe(0);
     });

@@ -1,4 +1,5 @@
 # Document Type Discovery - Week 1 Complete Reference
+
 ## Story 2.12.1 Implementation Documentation
 
 **Created:** 2025-11-19
@@ -103,6 +104,7 @@ Bojin-law 2/
 Tracks all discovered document types with metrics.
 
 **Key Columns:**
+
 ```sql
 discovered_type_original     VARCHAR(500)   -- "Contract de Vanzare-Cumparare"
 discovered_type_normalized   VARCHAR(255)   -- "contract_vanzare_cumparare"
@@ -178,6 +180,7 @@ manual_edits_count        INTEGER      -- Post-generation edits
 ### Views (3)
 
 **`document_discovery_metrics`**
+
 ```sql
 SELECT * FROM document_discovery_metrics
 ORDER BY week DESC LIMIT 10;
@@ -185,6 +188,7 @@ ORDER BY week DESC LIMIT 10;
 ```
 
 **`template_effectiveness_report`**
+
 ```sql
 SELECT * FROM template_effectiveness_report
 WHERE usage_count > 0
@@ -193,6 +197,7 @@ ORDER BY effectiveness_score DESC;
 ```
 
 **`template_creation_candidates`**
+
 ```sql
 SELECT * FROM template_creation_candidates LIMIT 20;
 -- Top priority types needing templates (>20 occurrences, pending status)
@@ -214,6 +219,7 @@ async discoverAndRegister(
 ```
 
 **Does:**
+
 1. Normalizes document type name
 2. Checks if type exists in registry
 3. Creates new entry OR updates existing
@@ -222,6 +228,7 @@ async discoverAndRegister(
 6. Returns result with action recommendation
 
 **Usage:**
+
 ```typescript
 import { documentTypeDiscovery } from './document-type-discovery.service';
 
@@ -241,17 +248,18 @@ if (result.thresholdsMet?.autoCreate) {
 Converts any document type to consistent format:
 
 ```typescript
-normalizeTypeName("Contract de Vânzare-Cumpărare")
+normalizeTypeName('Contract de Vânzare-Cumpărare');
 // → "contract_de_vanzare_cumparare"
 
-normalizeTypeName("NOTIFICARE AVOCATEASCA")
+normalizeTypeName('NOTIFICARE AVOCATEASCA');
 // → "notificare_avocateasca"
 
-normalizeTypeName("Întâmpinare")
+normalizeTypeName('Întâmpinare');
 // → "intampinare"
 ```
 
 **Handles:**
+
 - Romanian diacritics: ă→a, â→a, î→i, ș→s, ț→t
 - Special characters → underscores
 - Lowercase conversion
@@ -261,13 +269,13 @@ normalizeTypeName("Întâmpinare")
 
 Infers category from type name and AI analysis:
 
-| Document Type | Category | Skill |
-|---------------|----------|-------|
-| Contract de Vanzare | `contract` | contract-analysis |
+| Document Type          | Category         | Skill             |
+| ---------------------- | ---------------- | ----------------- |
+| Contract de Vanzare    | `contract`       | contract-analysis |
 | Notificare Avocateasca | `correspondence` | document-drafting |
-| Intampinare | `court_filing` | document-drafting |
-| Opinion Legal | `opinion` | legal-research |
-| Audit GDPR | `compliance` | compliance-check |
+| Intampinare            | `court_filing`   | document-drafting |
+| Opinion Legal          | `opinion`        | legal-research    |
+| Audit GDPR             | `compliance`     | compliance-check  |
 
 #### 3. Priority Scoring
 
@@ -281,12 +289,14 @@ Priority = (Frequency × 0.35) +
 ```
 
 **Frequency Score:** Based on occurrence count
+
 - 100+ occurrences → 1.0
 - 50+ occurrences → 0.85
 - 20+ occurrences → 0.55
 - <5 occurrences → 0.10
 
 **Business Value:** Based on template potential + clauses + structure
+
 - High template potential + 5+ clauses + structured → 0.9+
 - Medium potential + 3 clauses + semi-structured → 0.6-0.8
 - Low potential + few clauses + unstructured → <0.5
@@ -294,10 +304,11 @@ Priority = (Frequency × 0.35) +
 **Complexity:** From AI analysis (0-1 scale)
 
 **Recency:** Time since first discovered
+
 - <7 days → 1.0
 - <14 days → 0.8
 - <30 days → 0.6
-- >60 days → 0.2
+- > 60 days → 0.2
 
 #### 4. Threshold Detection
 
@@ -306,23 +317,24 @@ const THRESHOLDS = {
   AUTO_CREATE: {
     minOccurrences: 50,
     minFrequencyScore: 0.75,
-    minBusinessValue: 0.70,
+    minBusinessValue: 0.7,
     minConfidence: 0.85,
   },
   QUEUE_FOR_REVIEW: {
     minOccurrences: 20,
-    minFrequencyScore: 0.50,
-    minBusinessValue: 0.50,
-    minConfidence: 0.70,
+    minFrequencyScore: 0.5,
+    minBusinessValue: 0.5,
+    minConfidence: 0.7,
   },
   MAP_TO_EXISTING: {
     maxOccurrences: 19,
-    similarityThreshold: 0.80,
+    similarityThreshold: 0.8,
   },
 };
 ```
 
 **Actions:**
+
 - **Auto-Create:** 50+ occurrences + high scores → Create template automatically
 - **Queue for Review:** 20-49 occurrences → Manual review needed
 - **Map to Existing:** <20 occurrences → Map to similar existing type
@@ -365,6 +377,7 @@ private async saveAnalysisResults(results: AIAnalysisResult[]) {
 ```
 
 **Key Points:**
+
 - ✅ Automatic - triggers on every document import
 - ✅ Non-blocking - uses `Promise.allSettled()`
 - ✅ Graceful - errors don't fail the batch
@@ -378,26 +391,28 @@ private async saveAnalysisResults(results: AIAnalysisResult[]) {
 
 ### Romanian Document Types (10)
 
-| Type | Occurrences | Priority | Status |
-|------|-------------|----------|--------|
-| Notificare Avocateasca | 89 | 0.82 | pending |
-| Contract de Vanzare-Cumparare | 67 | 0.80 | auto_mapped |
-| Intampinare | 54 | 0.78 | pending |
-| Somatie de Plata | 48 | 0.74 | pending |
-| Cerere de Chemare in Judecata | 42 | 0.77 | pending |
-| Contract de Prestari Servicii | 35 | 0.70 | auto_mapped |
-| Contract de Inchiriere | 28 | 0.66 | auto_mapped |
-| Imputernicire Avocatiala | 24 | 0.62 | pending |
+| Type                          | Occurrences | Priority | Status      |
+| ----------------------------- | ----------- | -------- | ----------- |
+| Notificare Avocateasca        | 89          | 0.82     | pending     |
+| Contract de Vanzare-Cumparare | 67          | 0.80     | auto_mapped |
+| Intampinare                   | 54          | 0.78     | pending     |
+| Somatie de Plata              | 48          | 0.74     | pending     |
+| Cerere de Chemare in Judecata | 42          | 0.77     | pending     |
+| Contract de Prestari Servicii | 35          | 0.70     | auto_mapped |
+| Contract de Inchiriere        | 28          | 0.66     | auto_mapped |
+| Imputernicire Avocatiala      | 24          | 0.62     | pending     |
 
 ### Templates (2)
 
 **1. Notificare Avocateasca (Legal Notice)**
+
 - 8 sections with bilingual labels
 - Standard clauses in Romanian/English
 - Variable mappings for substitution
 - Civil Code references
 
 **2. Somatie de Plata (Payment Notice)**
+
 - 5 sections (creditor, debtor, debt, deadline, consequences)
 - Variable mappings for amounts, dates
 - Standard debt collection clauses
@@ -405,6 +420,7 @@ private async saveAnalysisResults(results: AIAnalysisResult[]) {
 ### Patterns (5)
 
 Common Romanian legal phrases:
+
 - "în termen de 15 zile de la primirea prezentei" (45 occurrences)
 - "sub sancțiunea decăderii din drepturi" (38 occurrences)
 - "vom fi nevoiți să ne adresăm instanței" (52 occurrences)
@@ -418,17 +434,17 @@ Common Romanian legal phrases:
 
 ### Coverage
 
-| Category | Tests | What's Tested |
-|----------|-------|---------------|
-| Normalization | 15 | Romanian/English, diacritics, edge cases |
-| Category Inference | 4 | Contract, correspondence, court filing detection |
-| Frequency Scoring | 7 | All occurrence ranges (1-100+) |
-| Business Value | 3 | Template potential, clauses, structure |
-| Recency | 2 | Time-based priority decay |
-| Priority Composite | 3 | Algorithm correctness, weight validation |
-| Thresholds | 3 | Auto-create, review, map detection |
-| Translation | 3 | Romanian→English, unknown types |
-| Skill Mapping | 5 | All skill categories + fallback |
+| Category           | Tests | What's Tested                                    |
+| ------------------ | ----- | ------------------------------------------------ |
+| Normalization      | 15    | Romanian/English, diacritics, edge cases         |
+| Category Inference | 4     | Contract, correspondence, court filing detection |
+| Frequency Scoring  | 7     | All occurrence ranges (1-100+)                   |
+| Business Value     | 3     | Template potential, clauses, structure           |
+| Recency            | 2     | Time-based priority decay                        |
+| Priority Composite | 3     | Algorithm correctness, weight validation         |
+| Thresholds         | 3     | Auto-create, review, map detection               |
+| Translation        | 3     | Romanian→English, unknown types                  |
+| Skill Mapping      | 5     | All skill categories + fallback                  |
 
 ### Example Test
 
@@ -441,8 +457,8 @@ it('should normalize Romanian document names correctly', () => {
 it('should calculate correct priority scores', () => {
   const score = service.calculatePriorityScore({
     frequencyScore: 0.85,
-    complexityScore: 0.70,
-    businessValueScore: 0.80,
+    complexityScore: 0.7,
+    businessValueScore: 0.8,
     firstSeenDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
   });
   expect(score).toBeGreaterThanOrEqual(0.75);
@@ -483,7 +499,7 @@ const stats = await documentTypeDiscovery.getDiscoveryStats();
 ```typescript
 const candidates = await documentTypeDiscovery.getTemplateCreationCandidates(10);
 
-candidates.forEach(c => {
+candidates.forEach((c) => {
   console.log(`${c.discoveredTypeOriginal}: ${c.totalOccurrences} occurrences`);
   console.log(`  Priority: ${c.priorityScore}, Status: ${c.mappingStatus}`);
 });
@@ -564,16 +580,19 @@ ORDER BY week DESC LIMIT 4;
 ## Next Steps: Week 2
 
 ### Task 4: Decision Engine
+
 - [ ] Implement threshold rules engine
 - [ ] Build confidence scoring system
 - [ ] Create auto-mapping logic with ML similarity
 
 ### Task 5: Romanian Templates (First 3)
+
 - [ ] Notificare Avocateasca - Complete template implementation
 - [ ] Contract de Vanzare-Cumparare - Full contract template
 - [ ] Intampinare - Court document template
 
 ### Task 6: Template Integration
+
 - [ ] Add templates to Document Drafting skill
 - [ ] Variable substitution system
 - [ ] Test with real Romanian legal documents
@@ -587,6 +606,7 @@ ORDER BY week DESC LIMIT 4;
 ### Discovery Not Triggering
 
 **Check:**
+
 ```bash
 # AI analyzer running?
 ps aux | grep node
@@ -632,13 +652,13 @@ psql $DATABASE_URL -f packages/database/migrations/002_add_discovery_tables.sql
 
 **Benchmarks (M1 Mac, PostgreSQL 14):**
 
-| Operation | Time |
-|-----------|------|
-| Normalization | <1ms |
-| Discovery (new) | ~80ms |
+| Operation          | Time  |
+| ------------------ | ----- |
+| Normalization      | <1ms  |
+| Discovery (new)    | ~80ms |
 | Discovery (update) | ~50ms |
-| Get stats | ~10ms |
-| Get candidates | ~20ms |
+| Get stats          | ~10ms |
+| Get candidates     | ~20ms |
 
 **Tested:** 1,000 types, 50,000 instances - all operations <100ms
 
@@ -676,6 +696,7 @@ docs/stories/2.12.1.story.md
 **Developer:** James (Dev Agent)
 
 **For next session:**
+
 1. Review this document
 2. Run migration if not deployed
 3. Verify discovery working

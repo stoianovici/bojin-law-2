@@ -302,7 +302,8 @@ function ThreadSummarySection({ summary }: ThreadSummarySectionProps) {
           {summary.positionChanges.length > 0 && (
             <div className="p-2 bg-orange-50 rounded border border-orange-200">
               <p className="text-xs text-orange-700 font-medium">
-                {summary.positionChanges.length} position change{summary.positionChanges.length !== 1 ? 's' : ''} detected
+                {summary.positionChanges.length} position change
+                {summary.positionChanges.length !== 1 ? 's' : ''} detected
               </p>
             </div>
           )}
@@ -366,8 +367,13 @@ export function EmailIntelligenceSidebar({
   onHighlightExtraction,
 }: EmailIntelligenceSidebarProps) {
   // Fetch extracted items for the case (if assigned)
-  const { deadlines, commitments, actionItems, questions, loading: itemsLoading } =
-    usePendingExtractedItems(caseId || '');
+  const {
+    deadlines,
+    commitments,
+    actionItems,
+    questions,
+    loading: itemsLoading,
+  } = usePendingExtractedItems(caseId || '');
 
   // Fetch thread summary
   const { data: summaryData, loading: summaryLoading } = useThreadSummary(conversationId);

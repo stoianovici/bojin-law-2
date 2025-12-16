@@ -12,10 +12,12 @@
 
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { clsx } from 'clsx';
+import { ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { UnifiedTimeline } from '../../communication/UnifiedTimeline';
 import { EmailImportWizard } from '../EmailImportWizard';
+import { CaseConversationSummaryPanel } from '../../communication/CaseConversationSummaryPanel';
 
 export interface CommunicationsTabProps {
   caseId?: string;
@@ -30,6 +32,8 @@ export interface CommunicationsTabProps {
  * Requires a caseId to function properly.
  */
 export function CommunicationsTab({ caseId, caseTitle, className }: CommunicationsTabProps) {
+  const [isAISummaryExpanded, setIsAISummaryExpanded] = useState(false);
+
   // Callback to refresh timeline after email import
   const handleImportSuccess = useCallback(() => {
     // The UnifiedTimeline will auto-refresh when emails are linked to case
@@ -56,6 +60,31 @@ export function CommunicationsTab({ caseId, caseTitle, className }: Communicatio
             onSuccess={handleImportSuccess}
           />
         </div>
+      </div>
+
+      {/* AI Thread Summary Section */}
+      <div className="border-b border-gray-200">
+        <button
+          onClick={() => setIsAISummaryExpanded(!isAISummaryExpanded)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+          aria-expanded={isAISummaryExpanded}
+          aria-controls="ai-summary-panel"
+        >
+          <div className="flex items-center gap-2">
+            <Brain className="h-4 w-4 text-purple-500" aria-hidden="true" />
+            <span className="text-sm font-medium text-gray-700">Rezumat AI Thread-uri</span>
+          </div>
+          {isAISummaryExpanded ? (
+            <ChevronUp className="h-4 w-4 text-gray-400" aria-hidden="true" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-gray-400" aria-hidden="true" />
+          )}
+        </button>
+        {isAISummaryExpanded && (
+          <div id="ai-summary-panel" className="px-4 pb-4">
+            <CaseConversationSummaryPanel caseId={caseId} />
+          </div>
+        )}
       </div>
 
       {/* Timeline */}

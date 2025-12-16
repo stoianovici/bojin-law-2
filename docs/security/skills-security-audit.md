@@ -35,17 +35,20 @@ Security audit conducted on Claude Skills infrastructure implemented in Stories 
 ✅ **PASS** - Sandboxing is handled by Anthropic's production infrastructure
 
 **Strengths:**
+
 - Leverages Anthropic's battle-tested sandboxing environment
 - No custom VM/container management required
 - Reduces attack surface by not implementing custom execution
 - Beta flag provides controlled access to code execution features
 
 **Recommendations:**
+
 - Document Anthropic's sandboxing guarantees in runbook
 - Monitor for beta API updates and security patches
 - Implement timeout limits for long-running code executions (currently 30s default)
 
 **Evidence:**
+
 ```typescript
 // File: services/ai-service/src/clients/AnthropicEnhancedClient.ts:24
 codeExecutionBetaVersion?: string; // Default: 'code-execution-2025-08-25'
@@ -64,6 +67,7 @@ enableCodeExecution?: boolean; // Feature flag
 ### Current Implementation
 
 Validation includes:
+
 - Required field checks (display_name, description, content)
 - Content length limits (max 1MB)
 - Semver version format validation
@@ -77,15 +81,16 @@ Validation includes:
 
 **Validation Checks:**
 
-| Check | Status | Details |
-|-------|--------|---------|
-| Required Fields | ✅ | display_name, description, content validated |
-| Content Size Limit | ✅ | 1MB maximum enforced |
-| Version Format | ✅ | Semver regex: `^\d+\.\d+\.\d+$` |
-| Config Bounds | ✅ | max_tokens (1-200K), temperature (0-1) |
-| Dangerous Patterns | ✅ | Blocks `eval()`, `exec()`, `system()`, `rm -rf` |
+| Check              | Status | Details                                         |
+| ------------------ | ------ | ----------------------------------------------- |
+| Required Fields    | ✅     | display_name, description, content validated    |
+| Content Size Limit | ✅     | 1MB maximum enforced                            |
+| Version Format     | ✅     | Semver regex: `^\d+\.\d+\.\d+$`                 |
+| Config Bounds      | ✅     | max_tokens (1-200K), temperature (0-1)          |
+| Dangerous Patterns | ✅     | Blocks `eval()`, `exec()`, `system()`, `rm -rf` |
 
 **Evidence:**
+
 ```typescript
 // File: services/ai-service/src/skills/SkillsManager.ts:282-290
 private validateSkillContent(content: string, errors: string[] = []): void {
@@ -101,12 +106,14 @@ private validateSkillContent(content: string, errors: string[] = []): void {
 ```
 
 **Strengths:**
+
 - Multi-layer validation approach
 - Clear error messages for debugging
 - Prevents common injection patterns
 - Size limits prevent memory exhaustion
 
 **Weaknesses:**
+
 - Pattern list is limited (see recommendations below)
 - No unicode normalization before pattern matching
 - No check for obfuscated code patterns
@@ -114,23 +121,25 @@ private validateSkillContent(content: string, errors: string[] = []): void {
 **Recommendations:**
 
 🟡 **MEDIUM PRIORITY**: Expand dangerous pattern detection:
+
 ```typescript
 const dangerousPatterns = [
   /eval\(/gi,
   /exec\(/gi,
   /system\(/gi,
   /rm\s+-rf/gi,
-  /child_process/gi,         // Node.js process spawning
-  /require\(['"]fs['"]\)/gi,  // File system access
-  /\$\{.*eval/gi,             // Template literal injection
-  /import\(['"].*['"]\)/gi,   // Dynamic imports
-  /new\s+Function/gi,         // Function constructor
-  /setTimeout\(/gi,           // Potential DoS via infinite loops
+  /child_process/gi, // Node.js process spawning
+  /require\(['"]fs['"]\)/gi, // File system access
+  /\$\{.*eval/gi, // Template literal injection
+  /import\(['"].*['"]\)/gi, // Dynamic imports
+  /new\s+Function/gi, // Function constructor
+  /setTimeout\(/gi, // Potential DoS via infinite loops
   /setInterval\(/gi,
 ];
 ```
 
 🟡 **MEDIUM PRIORITY**: Add unicode normalization:
+
 ```typescript
 import { normalize } from 'unicode-normalization';
 
@@ -150,18 +159,21 @@ private validateSkillContent(content: string, errors: string[] = []): void {
 ## 3. Injection Attack Prevention
 
 **Locations**:
+
 - `services/ai-service/src/skills/SkillsManager.ts:282-299`
 - `services/ai-service/src/skills/SkillsAPIClient.ts:52-88`
 
 ### Current Implementation
 
 **Input Sanitization:**
+
 - Skills content validated for dangerous patterns
 - FormData used for uploads (prevents JSON injection)
 - Query parameters properly escaped via `URLSearchParams`
 - No direct SQL queries (uses Anthropic API)
 
 **Output Encoding:**
+
 - All API responses properly typed
 - No direct HTML rendering of skill content
 - JSON stringification for config objects
@@ -171,6 +183,7 @@ private validateSkillContent(content: string, errors: string[] = []): void {
 ✅ **PASS** - Adequate injection prevention
 
 **Evidence:**
+
 ```typescript
 // File: services/ai-service/src/skills/SkillsAPIClient.ts:56-70
 const formData = new FormData();
@@ -186,12 +199,14 @@ if (payload.config) {
 ```
 
 **Strengths:**
+
 - FormData automatically handles encoding
 - URLSearchParams prevents query injection
 - No direct database access (API-mediated)
 - Typed interfaces enforce data structure
 
 **Weaknesses:**
+
 - No Content Security Policy (CSP) headers
 - No rate limiting on skill uploads
 - No CSRF token validation (if exposed via web UI)
@@ -199,6 +214,7 @@ if (payload.config) {
 **Recommendations:**
 
 🟢 **LOW PRIORITY**: Add rate limiting for skill uploads:
+
 ```typescript
 // Implement in API middleware
 const rateLimit = require('express-rate-limit');
@@ -220,6 +236,7 @@ app.post('/api/skills/upload', skillUploadLimiter, ...);
 ## 4. API Key Security
 
 **Locations**:
+
 - `services/ai-service/src/skills/SkillsAPIClient.ts:32-42`
 - `services/ai-service/src/skills/SkillsAPIClient.ts:200-203`
 - `services/ai-service/src/clients/AnthropicEnhancedClient.ts:70-75`
@@ -227,12 +244,14 @@ app.post('/api/skills/upload', skillUploadLimiter, ...);
 ### Current Implementation
 
 **API Key Handling:**
+
 - API keys passed via constructor (not hardcoded)
 - Stored in private class fields
 - Transmitted via HTTP headers (`x-api-key`)
 - Validation on initialization
 
 **Environment Configuration:**
+
 - Keys loaded from environment variables
 - Never logged or exposed in responses
 - Not included in error messages
@@ -242,6 +261,7 @@ app.post('/api/skills/upload', skillUploadLimiter, ...);
 ✅ **PASS** - Secure API key handling
 
 **Evidence:**
+
 ```typescript
 // File: services/ai-service/src/skills/SkillsAPIClient.ts:32-42
 constructor(config: SkillsClientConfig) {
@@ -262,12 +282,14 @@ const headers = {
 ```
 
 **Strengths:**
+
 - Keys never hardcoded in source
 - Proper initialization validation
 - Private field encapsulation
 - HTTPS enforced for API calls
 
 **Weaknesses:**
+
 - No key rotation mechanism
 - No key expiration validation
 - No audit logging for key usage
@@ -275,6 +297,7 @@ const headers = {
 **Recommendations:**
 
 📋 **DOCUMENTATION**: Document key rotation procedure in runbook:
+
 ```markdown
 ## API Key Rotation Procedure
 
@@ -308,12 +331,14 @@ const headers = {
 ✅ **PASS** - Isolation handled by Anthropic
 
 **Strengths:**
+
 - Complete isolation via external API
 - No shared state between skill executions
 - Stateless request/response model
 - Anthropic handles multi-tenancy security
 
 **Weaknesses:**
+
 - Dependent on Anthropic's security posture
 - No visibility into isolation implementation
 - Cannot audit Anthropic's infrastructure
@@ -334,6 +359,7 @@ const headers = {
 **Status**: NOT IMPLEMENTED (Out of scope for Skills API client)
 
 **Recommendation**: Implement auth middleware for skill management endpoints:
+
 - JWT token validation
 - Role-based access control (RBAC)
 - Skill ownership verification
@@ -342,11 +368,13 @@ const headers = {
 ### Logging & Monitoring
 
 **Current Implementation**:
+
 - Request/response logging in SkillsAPIClient
 - Console logging for debugging
 - No structured security event logging
 
 **Recommendations**:
+
 - Implement structured security logging (Winston)
 - Log all skill uploads, updates, deletions
 - Include user ID, timestamp, IP address
@@ -355,6 +383,7 @@ const headers = {
 ### Error Handling
 
 **Current Implementation**:
+
 - Custom error types (SkillAPIError, SkillUploadError, SkillValidationError)
 - Error details not exposed to end users
 - Stack traces sanitized in production
@@ -376,21 +405,23 @@ const headers = {
 
 ### Vulnerabilities Identified
 
-| ID | Severity | Issue | Remediation | Status |
-|----|----------|-------|-------------|--------|
-| SEC-01 | Medium | Limited dangerous pattern detection | Expand pattern list | Open |
-| SEC-02 | Medium | No unicode normalization | Add unicode handling | Open |
-| SEC-03 | Low | No rate limiting on uploads | Implement rate limiter | Open |
-| SEC-04 | Low | No API key rotation mechanism | Document procedure | Open |
+| ID     | Severity | Issue                               | Remediation            | Status |
+| ------ | -------- | ----------------------------------- | ---------------------- | ------ |
+| SEC-01 | Medium   | Limited dangerous pattern detection | Expand pattern list    | Open   |
+| SEC-02 | Medium   | No unicode normalization            | Add unicode handling   | Open   |
+| SEC-03 | Low      | No rate limiting on uploads         | Implement rate limiter | Open   |
+| SEC-04 | Low      | No API key rotation mechanism       | Document procedure     | Open   |
 
 ### Compliance Notes
 
 **GDPR Considerations:**
+
 - Skills may process user data - ensure consent
 - Right to deletion: implement skill cascade delete
 - Data minimization: limit skill content retention
 
 **OWASP Top 10 Coverage:**
+
 - ✅ Injection: Prevented via validation and FormData
 - ✅ Broken Authentication: Handled by Anthropic
 - ✅ Sensitive Data Exposure: API keys properly secured

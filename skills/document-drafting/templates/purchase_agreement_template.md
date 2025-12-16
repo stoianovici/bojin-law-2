@@ -21,6 +21,7 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 1.1 **Assets to be Purchased.** Subject to the terms and conditions of this Agreement, Seller agrees to sell, transfer, assign, and deliver to Buyer, and Buyer agrees to purchase from Seller, the following assets (collectively, the "Purchased Assets"):
 
 (a) **Tangible Personal Property:**
+
 - Equipment and machinery: {{EQUIPMENT_LIST}}
 - Furniture and fixtures: {{FURNITURE_LIST}}
 - Inventory: {{INVENTORY_DESCRIPTION}}
@@ -28,6 +29,7 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 - Supplies and materials: {{SUPPLIES_LIST}}
 
 (b) **Intangible Assets:**
+
 - Intellectual property: {{IP_LIST}} (trademarks, patents, copyrights, trade secrets)
 - Customer lists and records: {{CUSTOMER_DATA}}
 - Supplier lists and contacts: {{SUPPLIER_DATA}}
@@ -36,22 +38,26 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 - Software licenses (transferable): {{SOFTWARE_LICENSES}}
 
 (c) **Contracts and Agreements:**
+
 - Customer contracts listed in Schedule A
 - Supplier contracts listed in Schedule B
 - Lease agreements: {{LEASE_AGREEMENTS}}
 - Other contracts: {{OTHER_CONTRACTS}}
 
 (d) **Books and Records:**
+
 - Financial records (last {{RECORDS_PERIOD}} years)
 - Customer and supplier correspondence
 - Operational manuals and procedures
 - Warranties and guarantees
 
 (e) **Real Property (if applicable):**
+
 - Real property located at: {{REAL_PROPERTY_ADDRESS}}
 - Legal description: {{LEGAL_DESCRIPTION}}
 
-1.2 **Excluded Assets.** The following assets of Seller shall be excluded from this transaction ("Excluded Assets"):
+  1.2 **Excluded Assets.** The following assets of Seller shall be excluded from this transaction ("Excluded Assets"):
+
 - Cash and cash equivalents
 - Accounts receivable as of {{CLOSING_DATE}}
 - {{EXCLUDED_ASSET_1}}
@@ -59,13 +65,15 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 - Tax refunds relating to pre-Closing periods
 - Corporate books and minute books
 
-1.3 **Assumed Liabilities.** Buyer shall assume and agree to pay, perform, and discharge only the following liabilities of Seller (the "Assumed Liabilities"):
+  1.3 **Assumed Liabilities.** Buyer shall assume and agree to pay, perform, and discharge only the following liabilities of Seller (the "Assumed Liabilities"):
+
 - Accounts payable in the ordinary course of business as of {{CLOSING_DATE}}, not exceeding ${{MAX_PAYABLES}}
 - Obligations under assumed contracts listed in Sections 1.1(c)
 - {{ASSUMED_LIABILITY_1}}
 - {{ASSUMED_LIABILITY_2}}
 
-1.4 **Excluded Liabilities.** Buyer shall not assume any liabilities of Seller except the Assumed Liabilities. All other liabilities shall remain the sole responsibility of Seller, including:
+  1.4 **Excluded Liabilities.** Buyer shall not assume any liabilities of Seller except the Assumed Liabilities. All other liabilities shall remain the sole responsibility of Seller, including:
+
 - Tax liabilities for pre-Closing periods
 - Litigation and claims arising before Closing
 - Environmental liabilities from pre-Closing operations
@@ -76,42 +84,46 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 
 2.1 **Purchase Price.** The total purchase price for the Purchased Assets shall be {{CURRENCY}} ${{PURCHASE_PRICE}} (the "Purchase Price"), allocated as follows:
 
-| Asset Category | Allocated Value |
-|----------------|-----------------|
-| Tangible Personal Property | ${{TANGIBLE_ALLOCATION}} |
-| Inventory | ${{INVENTORY_ALLOCATION}} |
-| Intangible Assets | ${{INTANGIBLE_ALLOCATION}} |
-| Goodwill | ${{GOODWILL_ALLOCATION}} |
-| Real Property | ${{REAL_PROPERTY_ALLOCATION}} |
-| **Total** | **${{PURCHASE_PRICE}}** |
+| Asset Category             | Allocated Value               |
+| -------------------------- | ----------------------------- |
+| Tangible Personal Property | ${{TANGIBLE_ALLOCATION}}      |
+| Inventory                  | ${{INVENTORY_ALLOCATION}}     |
+| Intangible Assets          | ${{INTANGIBLE_ALLOCATION}}    |
+| Goodwill                   | ${{GOODWILL_ALLOCATION}}      |
+| Real Property              | ${{REAL_PROPERTY_ALLOCATION}} |
+| **Total**                  | **${{PURCHASE_PRICE}}**       |
 
 2.2 **Payment Method.** The Purchase Price shall be paid as follows:
 
 **Option A - Cash Payment:**
+
 - Payment in full at Closing by wire transfer to {{SELLER_BANK_DETAILS}}
 
 **Option B - Installment Payment:**
+
 - Down payment at Closing: ${{DOWN_PAYMENT}}
 - Installment payments: ${{INSTALLMENT_AMOUNT}} {{INSTALLMENT_FREQUENCY}} for {{INSTALLMENT_TERM}}
 - Interest rate: {{INTEREST_RATE}}% per annum
 - Secured by: {{COLLATERAL_DESCRIPTION}}
 
 **Option C - Earnout Structure:**
+
 - Payment at Closing: ${{BASE_PAYMENT}}
 - Earnout payments based on post-Closing performance:
   - Year 1: ${{EARNOUT_YEAR_1}} if {{EARNOUT_METRIC_1}} achieved
   - Year 2: ${{EARNOUT_YEAR_2}} if {{EARNOUT_METRIC_2}} achieved
   - Maximum earnout: ${{MAX_EARNOUT}}
 
-2.3 **Deposit.** Buyer has deposited ${{DEPOSIT_AMOUNT}} with {{ESCROW_AGENT}} as earnest money, to be applied toward the Purchase Price at Closing or returned per Section 10.3.
+  2.3 **Deposit.** Buyer has deposited ${{DEPOSIT_AMOUNT}} with {{ESCROW_AGENT}} as earnest money, to be applied toward the Purchase Price at Closing or returned per Section 10.3.
 
-2.4 **Purchase Price Adjustments.** The Purchase Price shall be adjusted at Closing for:
+  2.4 **Purchase Price Adjustments.** The Purchase Price shall be adjusted at Closing for:
+
 - Proration of rent, utilities, taxes, and insurance
 - Inventory valuation adjustments (based on physical count)
 - Accounts receivable collections (if applicable)
 - Working capital adjustments per Section 2.5
 
-2.5 **Working Capital Adjustment.** If the actual working capital at Closing differs from the target working capital of ${{TARGET_WORKING_CAPITAL}}, the Purchase Price shall be adjusted dollar-for-dollar. Settlement shall occur within {{ADJUSTMENT_PERIOD}} after final determination.
+  2.5 **Working Capital Adjustment.** If the actual working capital at Closing differs from the target working capital of ${{TARGET_WORKING_CAPITAL}}, the Purchase Price shall be adjusted dollar-for-dollar. Settlement shall occur within {{ADJUSTMENT_PERIOD}} after final determination.
 
 ## 3. CLOSING
 
@@ -231,30 +243,32 @@ Exceptions: Seller may own up to {{PASSIVE_OWNERSHIP_THRESHOLD}}% of any publicl
 ## 9. INDEMNIFICATION
 
 9.1 **Survival.** The representations and warranties shall survive Closing for:
+
 - General representations: {{GENERAL_SURVIVAL_PERIOD}}
 - Tax representations: {{TAX_SURVIVAL_PERIOD}}
 - Title and environmental representations: {{TITLE_SURVIVAL_PERIOD}}
 - Fundamental representations (organization, authority, title): {{FUNDAMENTAL_SURVIVAL_PERIOD}}
 
-9.2 **Indemnification by Seller.** Seller shall indemnify Buyer for losses arising from:
-(a) Breach of any representation or warranty;
-(b) Breach of any covenant or obligation;
-(c) Excluded Liabilities;
-(d) Pre-Closing tax liabilities;
-(e) Claims relating to pre-Closing operations.
+  9.2 **Indemnification by Seller.** Seller shall indemnify Buyer for losses arising from:
+  (a) Breach of any representation or warranty;
+  (b) Breach of any covenant or obligation;
+  (c) Excluded Liabilities;
+  (d) Pre-Closing tax liabilities;
+  (e) Claims relating to pre-Closing operations.
 
-9.3 **Indemnification by Buyer.** Buyer shall indemnify Seller for losses arising from:
-(a) Breach of any representation or warranty;
-(b) Breach of any covenant or obligation;
-(c) Assumed Liabilities;
-(d) Post-Closing operations.
+  9.3 **Indemnification by Buyer.** Buyer shall indemnify Seller for losses arising from:
+  (a) Breach of any representation or warranty;
+  (b) Breach of any covenant or obligation;
+  (c) Assumed Liabilities;
+  (d) Post-Closing operations.
 
-9.4 **Limitations on Indemnification.**
+  9.4 **Limitations on Indemnification.**
+
 - **Threshold (Basket):** No indemnification until aggregate claims exceed ${{INDEMNITY_THRESHOLD}}, then only for amounts exceeding the threshold.
 - **Cap:** Maximum indemnification liability is ${{INDEMNITY_CAP}}, except for (i) fraud, (ii) willful breach, and (iii) fundamental representations (capped at Purchase Price).
 - **Sole Remedy:** Indemnification is the exclusive remedy, except for fraud or injunctive relief.
 
-9.5 **Claims Procedure.** The indemnified party must provide written notice of claims within {{CLAIMS_NOTICE_PERIOD}}. The indemnifying party has {{CLAIMS_DEFENSE_PERIOD}} to assume defense of third-party claims.
+  9.5 **Claims Procedure.** The indemnified party must provide written notice of claims within {{CLAIMS_NOTICE_PERIOD}}. The indemnifying party has {{CLAIMS_DEFENSE_PERIOD}} to assume defense of third-party claims.
 
 ## 10. TERMINATION
 
@@ -266,11 +280,13 @@ Exceptions: Seller may own up to {{PASSIVE_OWNERSHIP_THRESHOLD}}% of any publicl
 (e) By either Party if the other Party materially breaches.
 
 10.2 **Effect of Termination.** Upon termination, this Agreement shall be void except for:
+
 - Confidentiality obligations (Section 6.4)
 - Expense allocation (Section 11.4)
 - Termination fee provisions (Section 10.3)
 
-10.3 **Termination Fee/Deposit.**
+  10.3 **Termination Fee/Deposit.**
+
 - If Buyer terminates without cause, Seller retains the deposit (${{DEPOSIT_AMOUNT}}) as liquidated damages.
 - If Seller terminates without cause, Seller refunds deposit plus {{TERMINATION_FEE_PERCENTAGE}}% of Purchase Price.
 
@@ -279,11 +295,12 @@ Exceptions: Seller may own up to {{PASSIVE_OWNERSHIP_THRESHOLD}}% of any publicl
 11.1 **Governing Law.** This Agreement shall be governed by the laws of {{GOVERNING_STATE}}, without regard to conflicts of law principles.
 
 11.2 **Dispute Resolution.**
+
 - **Mediation:** Disputes shall first be submitted to mediation with {{MEDIATOR_ORGANIZATION}}.
 - **Arbitration (Optional):** If mediation fails, disputes shall be resolved by binding arbitration under {{ARBITRATION_RULES}}.
 - **Litigation:** If no arbitration, jurisdiction is in the courts of {{JURISDICTION}}.
 
-11.3 **Notices.** All notices shall be in writing and delivered to:
+  11.3 **Notices.** All notices shall be in writing and delivered to:
 
 **Seller:** {{SELLER_NOTICE_ADDRESS}}
 **Buyer:** {{BUYER_NOTICE_ADDRESS}}
@@ -310,19 +327,19 @@ Exceptions: Seller may own up to {{PASSIVE_OWNERSHIP_THRESHOLD}}% of any publicl
 
 {{SELLER_NAME}}
 
-By: _______________________________
+By: **************\_\_\_**************
 Name: {{SELLER_SIGNATORY}}
 Title: {{SELLER_TITLE}}
-Date: ______________
+Date: ******\_\_******
 
 **BUYER:**
 
 {{BUYER_NAME}}
 
-By: _______________________________
+By: **************\_\_\_**************
 Name: {{BUYER_SIGNATORY}}
 Title: {{BUYER_TITLE}}
-Date: ______________
+Date: ******\_\_******
 
 ---
 
@@ -347,21 +364,25 @@ Date: ______________
 ## JURISDICTION-SPECIFIC NOTES
 
 **California:**
+
 - Bus. & Prof. Code § 16600 limits non-compete enforceability to sale of business
 - Non-competes must be limited to goodwill protection
 - Bulk Sales Act (UCC Div. 6) may require creditor notice
 
 **New York:**
+
 - Non-competes must be reasonable in scope and necessary to protect legitimate business interests
 - Consider successor liability under Labor Law § 220-b
 - Sales tax clearance certificate recommended
 
 **Delaware:**
+
 - Business-asset sales not subject to bulk sales law
 - Non-competes generally enforceable if reasonable
 - Title insurance recommended for real property
 
 **UK:**
+
 - Non-competes enforceable if reasonable and protect legitimate business interests (goodwill, trade secrets)
 - VAT implications - consider TOGC (Transfer of Going Concern) relief
 - TUPE regulations may require employee transfer

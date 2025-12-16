@@ -35,7 +35,9 @@ export function ResearchTaskForm({ value, onChange, errors }: ResearchTaskFormPr
         <Input
           id="researchTopic"
           value={value.researchTopic || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('researchTopic', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('researchTopic', e.target.value)
+          }
           placeholder="e.g., Precedents on contract enforcement"
           className={errors?.researchTopic ? 'border-red-500' : ''}
         />
@@ -51,7 +53,9 @@ export function ResearchTaskForm({ value, onChange, errors }: ResearchTaskFormPr
         <Input
           id="jurisdiction"
           value={value.jurisdiction || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('jurisdiction', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('jurisdiction', e.target.value)
+          }
           placeholder="e.g., Federal, State, County"
         />
       </div>
@@ -63,7 +67,9 @@ export function ResearchTaskForm({ value, onChange, errors }: ResearchTaskFormPr
         <Textarea
           id="sources"
           value={value.sources?.join('\n') || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleSourcesChange(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            handleSourcesChange(e.target.value)
+          }
           placeholder="Enter URLs or document references, one per line"
           rows={4}
         />
@@ -76,7 +82,9 @@ export function ResearchTaskForm({ value, onChange, errors }: ResearchTaskFormPr
         <Textarea
           id="findings"
           value={value.findings || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('findings', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            handleChange('findings', e.target.value)
+          }
           placeholder="Key findings from research (optional)"
           rows={4}
         />

@@ -50,10 +50,7 @@ export async function POST(request: NextRequest) {
     // Validate role
     const validRoles: UserRole[] = ['Partner', 'Associate', 'Paralegal', 'BusinessOwner'];
     if (!validRoles.includes(role)) {
-      return NextResponse.json(
-        { error: 'invalid_role', message: 'Rol invalid' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'invalid_role', message: 'Rol invalid' }, { status: 400 });
     }
 
     // Find target user

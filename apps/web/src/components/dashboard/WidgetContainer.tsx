@@ -5,7 +5,14 @@
 
 'use client';
 
-import React, { type ReactNode, useState, useRef, useEffect, createContext, useContext } from 'react';
+import React, {
+  type ReactNode,
+  useState,
+  useRef,
+  useEffect,
+  createContext,
+  useContext,
+} from 'react';
 import { Card } from '@legal-platform/ui';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { clsx } from 'clsx';
@@ -29,7 +36,9 @@ const WidgetExpansionContext = createContext<WidgetExpansionContextType | null>(
 export function useWidgetExpansion() {
   const context = useContext(WidgetExpansionContext);
   if (!context) {
-    throw new Error('useWidgetExpansion must be used within a WidgetContainer with enableExpansion=true');
+    throw new Error(
+      'useWidgetExpansion must be used within a WidgetContainer with enableExpansion=true'
+    );
   }
   return context;
 }
@@ -290,7 +299,10 @@ export function WidgetContainer({
   );
 
   const content = (
-    <div ref={contentRef} className={clsx(enableExpansion && 'transition-all duration-300 ease-in-out')}>
+    <div
+      ref={contentRef}
+      className={clsx(enableExpansion && 'transition-all duration-300 ease-in-out')}
+    >
       {isLoading ? <WidgetSkeleton /> : children}
     </div>
   );

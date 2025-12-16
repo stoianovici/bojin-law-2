@@ -22,10 +22,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import type {
-  DocumentQualityAnalytics,
-  IssueCategory,
-} from '@legal-platform/types';
+import type { DocumentQualityAnalytics, IssueCategory } from '@legal-platform/types';
 
 // ============================================================================
 // Types
@@ -141,7 +138,13 @@ interface MetricCardProps {
   bgClass?: string;
 }
 
-function MetricCard({ title, value, subtitle, colorClass = 'text-gray-900', bgClass = 'bg-gray-50' }: MetricCardProps) {
+function MetricCard({
+  title,
+  value,
+  subtitle,
+  colorClass = 'text-gray-900',
+  bgClass = 'bg-gray-50',
+}: MetricCardProps) {
   return (
     <div className={`rounded-lg p-4 ${bgClass}`}>
       <div className="text-xs text-gray-500 mb-1">{title}</div>
@@ -161,8 +164,8 @@ function FirstTimeRightGauge({ percent }: FirstTimeRightGaugeProps) {
     percent >= QUALITY_THRESHOLDS.firstTimeRight.good
       ? '#10B981'
       : percent >= QUALITY_THRESHOLDS.firstTimeRight.medium
-      ? '#F59E0B'
-      : '#EF4444';
+        ? '#F59E0B'
+        : '#EF4444';
 
   // SVG circle parameters
   const size = 120;
@@ -200,14 +203,10 @@ function FirstTimeRightGauge({ percent }: FirstTimeRightGaugeProps) {
         </svg>
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-2xl font-bold ${colorClass}`}>
-            {percent.toFixed(0)}%
-          </span>
+          <span className={`text-2xl font-bold ${colorClass}`}>{percent.toFixed(0)}%</span>
         </div>
       </div>
-      <div className="mt-2 text-sm text-gray-600 text-center">
-        Corect din prima
-      </div>
+      <div className="mt-2 text-sm text-gray-600 text-center">Corect din prima</div>
     </div>
   );
 }
@@ -231,12 +230,7 @@ function IssuesByCategoryChart({ data, onCategoryClick }: IssuesByCategoryChartP
       <BarChart data={data} layout="vertical" margin={{ left: 80, right: 20 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
         <XAxis type="number" tick={{ fontSize: 12 }} />
-        <YAxis
-          type="category"
-          dataKey="label"
-          tick={{ fontSize: 12 }}
-          width={80}
-        />
+        <YAxis type="category" dataKey="label" tick={{ fontSize: 12 }} width={80} />
         <Tooltip
           formatter={(value: number) => [value, 'Probleme']}
           labelFormatter={(label) => `Categorie: ${label}`}
@@ -283,11 +277,7 @@ function QualityTrendChart({ data, onDateClick }: QualityTrendChartProps) {
         }}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-        <XAxis
-          dataKey="dateLabel"
-          tick={{ fontSize: 12, fill: '#6B7280' }}
-          tickLine={false}
-        />
+        <XAxis dataKey="dateLabel" tick={{ fontSize: 12, fill: '#6B7280' }} tickLine={false} />
         <YAxis
           domain={[0, 100]}
           tick={{ fontSize: 12, fill: '#6B7280' }}
@@ -376,12 +366,9 @@ export function DocumentQualityPanel({
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Calitate documente
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Calitate documente</h3>
         <div className="text-sm text-gray-500">
-          {revisionMetrics.totalDocumentsCreated.toLocaleString()} documente
-          analizate
+          {revisionMetrics.totalDocumentsCreated.toLocaleString()} documente analizate
         </div>
       </div>
 
@@ -450,14 +437,9 @@ export function DocumentQualityPanel({
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         {/* Issues by Category */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Probleme pe categorie
-          </h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Probleme pe categorie</h4>
           <div className="bg-gray-50 rounded-lg p-4">
-            <IssuesByCategoryChart
-              data={categoryChartData}
-              onCategoryClick={onCategoryClick}
-            />
+            <IssuesByCategoryChart data={categoryChartData} onCategoryClick={onCategoryClick} />
           </div>
           {/* Category Legend */}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -467,10 +449,7 @@ export function DocumentQualityPanel({
                 className="flex items-center gap-1.5 px-2 py-1 rounded text-xs hover:bg-gray-100 transition-colors"
                 onClick={() => onCategoryClick?.(item.category)}
               >
-                <div
-                  className="w-2.5 h-2.5 rounded"
-                  style={{ backgroundColor: item.color }}
-                />
+                <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: item.color }} />
                 <span className="text-gray-600">{item.label}</span>
                 <span className="text-gray-400">({item.count})</span>
               </button>
@@ -480,9 +459,7 @@ export function DocumentQualityPanel({
 
         {/* Review Metrics Summary */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Statistici revizuiri
-          </h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Statistici revizuiri</h4>
           <div className="bg-gray-50 rounded-lg p-4 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Total revizuiri</span>
@@ -498,17 +475,14 @@ export function DocumentQualityPanel({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Medie probleme/revizuire</span>
-              <span className="font-semibold">
-                {errorMetrics.avgIssuesPerReview.toFixed(2)}
-              </span>
+              <span className="font-semibold">{errorMetrics.avgIssuesPerReview.toFixed(2)}</span>
             </div>
             <div className="pt-2 border-t">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Rată succes</span>
                 <span className="font-semibold text-emerald-600">
                   {(
-                    ((errorMetrics.totalReviewsCompleted -
-                      errorMetrics.reviewsWithIssues) /
+                    ((errorMetrics.totalReviewsCompleted - errorMetrics.reviewsWithIssues) /
                       Math.max(errorMetrics.totalReviewsCompleted, 1)) *
                     100
                   ).toFixed(1)}
@@ -522,9 +496,7 @@ export function DocumentQualityPanel({
 
       {/* Quality Trend */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">
-          Tendință calitate în timp
-        </h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">Tendință calitate în timp</h4>
         <div className="bg-gray-50 rounded-lg p-4">
           <QualityTrendChart data={trendChartData} onDateClick={onDateClick} />
         </div>
@@ -539,20 +511,13 @@ export function DocumentQualityPanel({
       <div className="sr-only">
         <h4>Rezumat calitate documente</h4>
         <ul>
+          <li>Corect din prima: {revisionMetrics.firstTimeRightPercent.toFixed(1)}%</li>
           <li>
-            Corect din prima: {revisionMetrics.firstTimeRightPercent.toFixed(1)}%
+            Medie revizuiri per document: {revisionMetrics.avgRevisionsPerDocument.toFixed(2)}
           </li>
+          <li>Documente fără revizuiri: {revisionMetrics.documentsWithZeroRevisions}</li>
           <li>
-            Medie revizuiri per document:{' '}
-            {revisionMetrics.avgRevisionsPerDocument.toFixed(2)}
-          </li>
-          <li>
-            Documente fără revizuiri:{' '}
-            {revisionMetrics.documentsWithZeroRevisions}
-          </li>
-          <li>
-            Timp mediu rezolvare probleme:{' '}
-            {formatHours(errorMetrics.issueResolutionTimeHours)}
+            Timp mediu rezolvare probleme: {formatHours(errorMetrics.issueResolutionTimeHours)}
           </li>
         </ul>
         <h4>Probleme pe categorie</h4>

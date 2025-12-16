@@ -48,16 +48,19 @@ if (process.env.SESSION_SECRET.length < 32) {
 }
 
 // Check if Redis is available (development fallback to memory store)
-const useMemoryStore = process.env.NODE_ENV !== 'production' && process.env.USE_MEMORY_SESSION === 'true';
+const useMemoryStore =
+  process.env.NODE_ENV !== 'production' && process.env.USE_MEMORY_SESSION === 'true';
 
 // Redis session store configuration (only if not using memory store)
-const redisStore = useMemoryStore ? undefined : new RedisStore({
-  client: redis,
-  prefix: 'sess:', // Session key prefix in Redis
-  ttl: SESSION_TTL_SECONDS, // 7 days in seconds
-  disableTouch: false, // Enable session refresh on activity
-  disableTTL: false, // Enable TTL expiration
-});
+const redisStore = useMemoryStore
+  ? undefined
+  : new RedisStore({
+      client: redis,
+      prefix: 'sess:', // Session key prefix in Redis
+      ttl: SESSION_TTL_SECONDS, // 7 days in seconds
+      disableTouch: false, // Enable session refresh on activity
+      disableTTL: false, // Enable TTL expiration
+    });
 
 if (useMemoryStore) {
   console.warn('⚠️  Using in-memory session store (sessions will not persist across restarts)');

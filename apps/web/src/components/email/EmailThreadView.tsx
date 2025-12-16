@@ -69,14 +69,18 @@ interface EmailThreadViewProps {
 }
 
 export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProps) {
-  const { thread, loading, error, markRead, assignToCase, refetch } = useEmailThread(conversationId);
+  const { thread, loading, error, markRead, assignToCase, refetch } =
+    useEmailThread(conversationId);
   const { participants } = useThreadParticipants(conversationId);
   const { user } = useAuth();
   const { deleteEmail, loading: deleting } = useDeleteEmail();
   const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set());
   const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [showIntelligence, setShowIntelligence] = useState(false);
-  const [_highlightedExtraction, setHighlightedExtraction] = useState<{ emailId: string; extractionId: string } | null>(null);
+  const [_highlightedExtraction, setHighlightedExtraction] = useState<{
+    emailId: string;
+    extractionId: string;
+  } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Check if user can delete (Partner or BusinessOwner)
@@ -137,13 +141,16 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
   };
 
   // Story 5.3: Handle Reply with AI
-  const handleReplyWithAI = useCallback((emailId?: string) => {
-    const latestEmail = thread?.emails?.[thread.emails.length - 1];
-    setReplyToEmailId(emailId || latestEmail?.id || null);
-    setShowDraftPanel(true);
-    setShowComposer(false);
-    setActiveDraft(null);
-  }, [thread?.emails]);
+  const handleReplyWithAI = useCallback(
+    (emailId?: string) => {
+      const latestEmail = thread?.emails?.[thread.emails.length - 1];
+      setReplyToEmailId(emailId || latestEmail?.id || null);
+      setShowDraftPanel(true);
+      setShowComposer(false);
+      setActiveDraft(null);
+    },
+    [thread?.emails]
+  );
 
   const handleDraftSelect = useCallback((draft: EmailDraft) => {
     setActiveDraft(draft);
@@ -266,72 +273,68 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
             </div>
           </div>
 
-        {/* Case assignment */}
-        <div className="mt-3 flex items-center gap-2">
-          {thread.case ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                Assigned to:
-              </span>
-              <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                {thread.case.caseNumber} - {thread.case.title}
-              </span>
+          {/* Case assignment */}
+          <div className="mt-3 flex items-center gap-2">
+            {thread.case ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Assigned to:</span>
+                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                  {thread.case.caseNumber} - {thread.case.title}
+                </span>
+                <button
+                  onClick={() => setShowCaseSelector(true)}
+                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                >
+                  Change
+                </button>
+              </div>
+            ) : (
               <button
                 onClick={() => setShowCaseSelector(true)}
-                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
               >
-                Change
+                <FolderIcon />
+                Assign to Case
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowCaseSelector(true)}
-              className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              <FolderIcon />
-              Assign to Case
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Participants */}
-      {participants.length > 0 && (
-        <div className="border-b border-gray-200 p-3 dark:border-gray-700">
-          <div className="flex flex-wrap gap-2">
-            {participants.slice(0, 5).map((p: any) => (
-              <span
-                key={p.email}
-                className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-              >
-                {p.name || p.email}
-                {p.roles.includes('sender') && (
-                  <span className="ml-1 text-gray-400">({p.messageCount})</span>
-                )}
-              </span>
-            ))}
-            {participants.length > 5 && (
-              <span className="text-xs text-gray-500">
-                +{participants.length - 5} more
-              </span>
             )}
           </div>
         </div>
-      )}
 
-      {/* Email messages */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-4">
-          {thread.emails.map((email: Email) => (
-            <EmailMessage
-              key={email.id}
-              email={email}
-              expanded={expandedEmails.has(email.id)}
-              onToggle={() => toggleEmail(email.id)}
-            />
-          ))}
+        {/* Participants */}
+        {participants.length > 0 && (
+          <div className="border-b border-gray-200 p-3 dark:border-gray-700">
+            <div className="flex flex-wrap gap-2">
+              {participants.slice(0, 5).map((p: any) => (
+                <span
+                  key={p.email}
+                  className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                >
+                  {p.name || p.email}
+                  {p.roles.includes('sender') && (
+                    <span className="ml-1 text-gray-400">({p.messageCount})</span>
+                  )}
+                </span>
+              ))}
+              {participants.length > 5 && (
+                <span className="text-xs text-gray-500">+{participants.length - 5} more</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Email messages */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {thread.emails.map((email: Email) => (
+              <EmailMessage
+                key={email.id}
+                email={email}
+                expanded={expandedEmails.has(email.id)}
+                onToggle={() => toggleEmail(email.id)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
 
         {/* Case assignment modal */}
         {showCaseSelector && (
@@ -356,28 +359,33 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
         )}
 
         {/* Story 5.3: Email Composer */}
-        {showComposer && activeDraft && replyToEmailId && (() => {
-          const emailToReply = thread.emails.find((e: Email) => e.id === replyToEmailId) || thread.emails[thread.emails.length - 1];
-          return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <div className="w-full max-w-3xl rounded-lg bg-white shadow-xl dark:bg-gray-900">
-                <EmailComposer
-                  draft={activeDraft}
-                  originalEmail={{
-                    id: emailToReply.id,
-                    subject: emailToReply.subject,
-                    from: emailToReply.from,
-                    bodyPreview: emailToReply.bodyPreview,
-                    receivedDateTime: emailToReply.receivedDateTime,
-                  }}
-                  onClose={handleComposerClose}
-                  onSent={handleDraftSent}
-                  onDiscard={handleComposerClose}
-                />
+        {showComposer &&
+          activeDraft &&
+          replyToEmailId &&
+          (() => {
+            const emailToReply =
+              thread.emails.find((e: Email) => e.id === replyToEmailId) ||
+              thread.emails[thread.emails.length - 1];
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="w-full max-w-3xl rounded-lg bg-white shadow-xl dark:bg-gray-900">
+                  <EmailComposer
+                    draft={activeDraft}
+                    originalEmail={{
+                      id: emailToReply.id,
+                      subject: emailToReply.subject,
+                      from: emailToReply.from,
+                      bodyPreview: emailToReply.bodyPreview,
+                      receivedDateTime: emailToReply.receivedDateTime,
+                    }}
+                    onClose={handleComposerClose}
+                    onSent={handleDraftSent}
+                    onDiscard={handleComposerClose}
+                  />
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
 
         {/* Delete confirmation dialog */}
         {showDeleteConfirm && (
@@ -387,8 +395,9 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
                 Confirmare ștergere
               </h3>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                Sigur doriți să ștergeți permanent această conversație cu {thread.messageCount} {thread.messageCount === 1 ? 'mesaj' : 'mesaje'}?
-                Această acțiune nu poate fi anulată.
+                Sigur doriți să ștergeți permanent această conversație cu {thread.messageCount}{' '}
+                {thread.messageCount === 1 ? 'mesaj' : 'mesaje'}? Această acțiune nu poate fi
+                anulată.
               </p>
               <div className="mt-4 flex justify-end gap-3">
                 <button
@@ -474,7 +483,10 @@ function EmailMessage({
 
       {/* Expanded content */}
       {expanded && (
-        <div id={`email-content-${email.id}`} className="border-t border-gray-200 dark:border-gray-700">
+        <div
+          id={`email-content-${email.id}`}
+          className="border-t border-gray-200 dark:border-gray-700"
+        >
           {/* Recipients */}
           <div className="border-b border-gray-100 p-4 text-sm dark:border-gray-800">
             <div className="flex gap-2">
@@ -578,9 +590,22 @@ function TrashIcon() {
   );
 }
 
-function AttachmentIcon({ className, 'aria-label': ariaLabel }: { className?: string; 'aria-label'?: string }) {
+function AttachmentIcon({
+  className,
+  'aria-label': ariaLabel,
+}: {
+  className?: string;
+  'aria-label'?: string;
+}) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={ariaLabel} role={ariaLabel ? 'img' : undefined}>
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      aria-label={ariaLabel}
+      role={ariaLabel ? 'img' : undefined}
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"

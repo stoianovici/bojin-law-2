@@ -97,11 +97,15 @@ function Badge({ type, value }: BadgeProps) {
     },
   };
 
-  const colorClass = config[type][value as keyof (typeof config)[typeof type]] || 'bg-gray-100 text-gray-700';
+  const colorClass =
+    config[type][value as keyof (typeof config)[typeof type]] || 'bg-gray-100 text-gray-700';
 
   return (
     <span
-      className={clsx('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium', colorClass)}
+      className={clsx(
+        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+        colorClass
+      )}
       aria-label={`${type === 'severity' ? 'Severity' : type === 'priority' ? 'Priority' : 'Confidence'}: ${value}`}
     >
       {value}
@@ -143,7 +147,11 @@ function DeadlineItem({ deadline }: DeadlineItemProps) {
           <span
             className={clsx(
               'text-xs',
-              isOverdue ? 'text-red-600 font-medium' : isUrgent ? 'text-orange-600' : 'text-gray-500'
+              isOverdue
+                ? 'text-red-600 font-medium'
+                : isUrgent
+                  ? 'text-orange-600'
+                  : 'text-gray-500'
             )}
           >
             {format(dueDate, 'MMM d')}
@@ -210,7 +218,9 @@ function RiskItem({ risk }: RiskItemProps) {
             <p className="text-sm font-medium text-gray-900 truncate">{risk.description}</p>
           </div>
           <div className="flex items-center gap-2 mt-1 ml-6">
-            <span className="text-xs text-gray-500">{risk.type.replace(/([A-Z])/g, ' $1').trim()}</span>
+            <span className="text-xs text-gray-500">
+              {risk.type.replace(/([A-Z])/g, ' $1').trim()}
+            </span>
             <span className="text-gray-300">|</span>
             <a
               href={`/cases/${risk.caseId}?tab=intelligence`}
@@ -300,19 +310,28 @@ export function IntelligenceWidget({
         {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="text-center p-2 bg-blue-50 rounded">
-            <div className="text-lg font-bold text-blue-700" aria-label={`${summary.totalPendingItems} pending items`}>
+            <div
+              className="text-lg font-bold text-blue-700"
+              aria-label={`${summary.totalPendingItems} pending items`}
+            >
               {summary.totalPendingItems}
             </div>
             <div className="text-xs text-blue-600">Pending</div>
           </div>
           <div className="text-center p-2 bg-orange-50 rounded">
-            <div className="text-lg font-bold text-orange-700" aria-label={`${summary.urgentDeadlines} urgent deadlines`}>
+            <div
+              className="text-lg font-bold text-orange-700"
+              aria-label={`${summary.urgentDeadlines} urgent deadlines`}
+            >
               {summary.urgentDeadlines}
             </div>
             <div className="text-xs text-orange-600">Urgent</div>
           </div>
           <div className="text-center p-2 bg-red-50 rounded">
-            <div className="text-lg font-bold text-red-700" aria-label={`${summary.highSeverityRisks} high severity risks`}>
+            <div
+              className="text-lg font-bold text-red-700"
+              aria-label={`${summary.highSeverityRisks} high severity risks`}
+            >
               {summary.highSeverityRisks}
             </div>
             <div className="text-xs text-red-600">High Risks</div>
@@ -325,7 +344,8 @@ export function IntelligenceWidget({
             <div className="flex items-center gap-2 text-sm text-red-800">
               <AlertTriangle className="h-4 w-4" aria-hidden="true" />
               <span className="font-medium">
-                {highSeverityRisks.length} high severity risk{highSeverityRisks.length !== 1 ? 's' : ''} require attention
+                {highSeverityRisks.length} high severity risk
+                {highSeverityRisks.length !== 1 ? 's' : ''} require attention
               </span>
             </div>
           </div>

@@ -30,10 +30,7 @@ export async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
 /**
  * Extract text from document based on file extension
  */
-export async function extractText(
-  buffer: Buffer,
-  filename: string
-): Promise<ExtractionResult> {
+export async function extractText(buffer: Buffer, filename: string): Promise<ExtractionResult> {
   const ext = filename.split('.').pop()?.toLowerCase();
 
   let text: string;

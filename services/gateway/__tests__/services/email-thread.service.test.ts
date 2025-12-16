@@ -51,9 +51,21 @@ describe('EmailThreadService', () => {
   describe('groupEmailsIntoThreads', () => {
     it('should group emails by conversationId', () => {
       const emails = [
-        createMockEmail({ id: 'email-1', conversationId: 'conv-1', receivedDateTime: new Date('2024-12-10T10:00:00Z') }),
-        createMockEmail({ id: 'email-2', conversationId: 'conv-1', receivedDateTime: new Date('2024-12-10T11:00:00Z') }),
-        createMockEmail({ id: 'email-3', conversationId: 'conv-2', receivedDateTime: new Date('2024-12-10T09:00:00Z') }),
+        createMockEmail({
+          id: 'email-1',
+          conversationId: 'conv-1',
+          receivedDateTime: new Date('2024-12-10T10:00:00Z'),
+        }),
+        createMockEmail({
+          id: 'email-2',
+          conversationId: 'conv-1',
+          receivedDateTime: new Date('2024-12-10T11:00:00Z'),
+        }),
+        createMockEmail({
+          id: 'email-3',
+          conversationId: 'conv-2',
+          receivedDateTime: new Date('2024-12-10T09:00:00Z'),
+        }),
       ];
 
       const threads = service.groupEmailsIntoThreads(emails as any);
@@ -69,9 +81,21 @@ describe('EmailThreadService', () => {
 
     it('should sort emails within thread chronologically', () => {
       const emails = [
-        createMockEmail({ id: 'email-2', conversationId: 'conv-1', receivedDateTime: new Date('2024-12-10T12:00:00Z') }),
-        createMockEmail({ id: 'email-1', conversationId: 'conv-1', receivedDateTime: new Date('2024-12-10T10:00:00Z') }),
-        createMockEmail({ id: 'email-3', conversationId: 'conv-1', receivedDateTime: new Date('2024-12-10T14:00:00Z') }),
+        createMockEmail({
+          id: 'email-2',
+          conversationId: 'conv-1',
+          receivedDateTime: new Date('2024-12-10T12:00:00Z'),
+        }),
+        createMockEmail({
+          id: 'email-1',
+          conversationId: 'conv-1',
+          receivedDateTime: new Date('2024-12-10T10:00:00Z'),
+        }),
+        createMockEmail({
+          id: 'email-3',
+          conversationId: 'conv-1',
+          receivedDateTime: new Date('2024-12-10T14:00:00Z'),
+        }),
       ];
 
       const threads = service.groupEmailsIntoThreads(emails as any);
@@ -84,9 +108,21 @@ describe('EmailThreadService', () => {
 
     it('should sort threads by last message date (newest first)', () => {
       const emails = [
-        createMockEmail({ id: 'email-1', conversationId: 'conv-1', receivedDateTime: new Date('2024-12-09T10:00:00Z') }),
-        createMockEmail({ id: 'email-2', conversationId: 'conv-2', receivedDateTime: new Date('2024-12-10T10:00:00Z') }),
-        createMockEmail({ id: 'email-3', conversationId: 'conv-3', receivedDateTime: new Date('2024-12-08T10:00:00Z') }),
+        createMockEmail({
+          id: 'email-1',
+          conversationId: 'conv-1',
+          receivedDateTime: new Date('2024-12-09T10:00:00Z'),
+        }),
+        createMockEmail({
+          id: 'email-2',
+          conversationId: 'conv-2',
+          receivedDateTime: new Date('2024-12-10T10:00:00Z'),
+        }),
+        createMockEmail({
+          id: 'email-3',
+          conversationId: 'conv-3',
+          receivedDateTime: new Date('2024-12-08T10:00:00Z'),
+        }),
       ];
 
       const threads = service.groupEmailsIntoThreads(emails as any);
@@ -142,9 +178,24 @@ describe('EmailThreadService', () => {
 
     it('should use first email subject (normalized) for thread', () => {
       const emails = [
-        createMockEmail({ id: 'email-1', conversationId: 'conv-1', subject: 'Contract Review', receivedDateTime: new Date('2024-12-10T10:00:00Z') }),
-        createMockEmail({ id: 'email-2', conversationId: 'conv-1', subject: 'Re: Contract Review', receivedDateTime: new Date('2024-12-10T11:00:00Z') }),
-        createMockEmail({ id: 'email-3', conversationId: 'conv-1', subject: 'RE: Contract Review', receivedDateTime: new Date('2024-12-10T12:00:00Z') }),
+        createMockEmail({
+          id: 'email-1',
+          conversationId: 'conv-1',
+          subject: 'Contract Review',
+          receivedDateTime: new Date('2024-12-10T10:00:00Z'),
+        }),
+        createMockEmail({
+          id: 'email-2',
+          conversationId: 'conv-1',
+          subject: 'Re: Contract Review',
+          receivedDateTime: new Date('2024-12-10T11:00:00Z'),
+        }),
+        createMockEmail({
+          id: 'email-3',
+          conversationId: 'conv-1',
+          subject: 'RE: Contract Review',
+          receivedDateTime: new Date('2024-12-10T12:00:00Z'),
+        }),
       ];
 
       const threads = service.groupEmailsIntoThreads(emails as any);
@@ -297,9 +348,7 @@ describe('EmailThreadService', () => {
 
   describe('parseMessageHeaders', () => {
     it('should parse In-Reply-To header', () => {
-      const headers = [
-        { name: 'In-Reply-To', value: '<original-message-id@example.com>' },
-      ];
+      const headers = [{ name: 'In-Reply-To', value: '<original-message-id@example.com>' }];
 
       const result = service.parseMessageHeaders(headers);
 
@@ -373,9 +422,7 @@ describe('EmailThreadService', () => {
     });
 
     it('should handle empty subject', () => {
-      const emails = [
-        createMockEmail({ subject: '', conversationId: 'conv-1' }),
-      ];
+      const emails = [createMockEmail({ subject: '', conversationId: 'conv-1' })];
 
       const threads = service.groupEmailsIntoThreads(emails as any);
 
@@ -383,9 +430,7 @@ describe('EmailThreadService', () => {
     });
 
     it('should handle subject with only prefixes', () => {
-      const emails = [
-        createMockEmail({ subject: 'Re: ', conversationId: 'conv-1' }),
-      ];
+      const emails = [createMockEmail({ subject: 'Re: ', conversationId: 'conv-1' })];
 
       const threads = service.groupEmailsIntoThreads(emails as any);
 

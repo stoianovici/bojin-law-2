@@ -71,14 +71,10 @@ function MetricCard({ icon, label, value, subValue, trend, color, bgColor }: Met
       <div className="flex-1 min-w-0">
         <div className="text-xs text-gray-500 truncate">{label}</div>
         <div className="text-xl font-bold text-gray-900 truncate">{value}</div>
-        {subValue && (
-          <div className="text-xs text-gray-500 truncate">{subValue}</div>
-        )}
+        {subValue && <div className="text-xs text-gray-500 truncate">{subValue}</div>}
         {trend !== undefined && (
           <div
-            className={`text-xs font-medium ${
-              trend >= 0 ? 'text-emerald-600' : 'text-red-600'
-            }`}
+            className={`text-xs font-medium ${trend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
           >
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}% vs. perioada anterioară
           </div>

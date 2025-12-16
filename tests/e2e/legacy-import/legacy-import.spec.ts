@@ -170,7 +170,9 @@ class CategorizationPage {
     await this.page.waitForLoadState('networkidle');
   }
 
-  async applyFilter(filterType: 'all' | 'categorized' | 'uncategorized' | 'skipped' | 'sent' | 'received') {
+  async applyFilter(
+    filterType: 'all' | 'categorized' | 'uncategorized' | 'skipped' | 'sent' | 'received'
+  ) {
     await this.page.getByRole('button', { name: new RegExp(filterType, 'i') }).click();
     await this.page.waitForLoadState('networkidle');
   }
@@ -460,10 +462,7 @@ test.describe('Story 3.2.5: Legacy Document Import E2E Tests', () => {
       await expect(dashboardPage.categoryList).toBeVisible();
 
       // Merge duplicate categories
-      await dashboardPage.mergeCategories(
-        ['Contracts', 'Contract '],
-        'Contract'
-      );
+      await dashboardPage.mergeCategories(['Contracts', 'Contract '], 'Contract');
 
       // Verify merge succeeded
       await expect(page.getByText(/merged successfully/i)).toBeVisible();

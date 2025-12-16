@@ -185,9 +185,7 @@ describe('Case Archival and Authorization Integration Tests', () => {
 
       // Verify tooltip explains why button is disabled
       await waitFor(() => {
-        expect(
-          screen.getByText(/only closed cases can be archived/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/only closed cases can be archived/i)).toBeInTheDocument();
       });
     });
 
@@ -326,9 +324,7 @@ describe('Case Archival and Authorization Integration Tests', () => {
       });
 
       // Verify "Add Team Member" button is not visible
-      expect(
-        screen.queryByRole('button', { name: /add team member/i })
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /add team member/i })).not.toBeInTheDocument();
 
       // Verify remove buttons are not visible for team members
       const teamSection = screen.getByText(/team members/i).closest('section');

@@ -17,18 +17,21 @@ We provide security updates for the following versions:
 This platform is designed and operated under the following security principles:
 
 ### Data Classification
+
 - **Privileged Legal Data**: Attorney-client communications, case strategy documents
 - **Personal Identifiable Information (PII)**: Client names, contact information, identification numbers
 - **Confidential Business Information**: Firm operations, financial data
 - **Authentication Credentials**: Passwords, API keys, tokens
 
 ### Compliance Requirements
+
 - **GDPR**: European data protection regulation compliance
 - **Romanian Data Protection Law**: Local privacy regulation compliance
 - **Attorney-Client Privilege**: Professional confidentiality obligations
 - **Microsoft 365 Security Standards**: Integration security requirements
 
 ### Technical Security Measures
+
 - **Encryption at Rest**: All data encrypted in Azure Blob Storage and PostgreSQL
 - **Encryption in Transit**: TLS 1.3 for all communications
 - **Authentication**: Azure AD integration with MFA support
@@ -81,23 +84,27 @@ We take security reports seriously and follow this timeline:
 We use the following severity classification:
 
 #### Critical
+
 - Remote code execution
 - Authentication bypass
 - Unauthorized access to privileged legal data
 - Data exfiltration vulnerabilities
 
 #### High
+
 - Privilege escalation
 - SQL injection or other injection attacks
 - Cross-site scripting (XSS) with data access
 - Denial of service affecting availability
 
 #### Medium
+
 - Information disclosure (non-privileged data)
 - Cross-site request forgery (CSRF)
 - Security misconfiguration
 
 #### Low
+
 - Minor information leaks
 - Issues with limited impact
 
@@ -122,12 +129,14 @@ We deeply appreciate security researchers who help keep our platform secure:
 ## Security Best Practices for Developers
 
 ### Code Review Requirements
+
 - All code must pass security-focused code review
 - Use automated security scanning in CI/CD pipeline
 - Follow OWASP Top 10 guidelines
 - Never commit secrets or credentials
 
 ### Development Standards
+
 - **Input Validation**: Validate and sanitize all user input
 - **Output Encoding**: Properly encode output to prevent XSS
 - **Parameterized Queries**: Use prepared statements for database queries
@@ -137,12 +146,14 @@ We deeply appreciate security researchers who help keep our platform secure:
 - **Logging**: Log security events but never log sensitive data
 
 ### Secrets Management
+
 - **Never commit** `.env` files, credentials, or API keys
 - Use **Azure Key Vault** for all secrets
 - Rotate credentials regularly
 - Use separate credentials for each environment
 
 ### Dependencies
+
 - Keep all dependencies up-to-date
 - Review security advisories for dependencies
 - Use `pnpm audit` regularly to check for vulnerabilities
@@ -180,14 +191,17 @@ In the event of a security incident:
 ## Contact Information
 
 ### Security Team
+
 - **Email**: security@legal-platform.example.com
 - **Emergency Hotline**: [To be determined]
 - **PGP Key**: [To be published]
 
 ### Compliance Officer
+
 - **Email**: compliance@legal-platform.example.com
 
 ### Data Protection Officer (DPO)
+
 - **Email**: dpo@legal-platform.example.com
 - **Required by**: GDPR Article 37
 

@@ -14,9 +14,7 @@ export function initializeDatabase(connectionString?: string): PrismaClient {
   if (prisma) return prisma;
 
   prisma = new PrismaClient({
-    datasources: connectionString
-      ? { db: { url: connectionString } }
-      : undefined,
+    datasources: connectionString ? { db: { url: connectionString } } : undefined,
   });
 
   return prisma;

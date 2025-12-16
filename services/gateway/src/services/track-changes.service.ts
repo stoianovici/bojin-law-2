@@ -9,11 +9,7 @@
 import { createGraphClient, graphEndpoints } from '../config/graph.config';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
-import {
-  TrackChange,
-  TrackChangeType,
-  TrackChangesSummary,
-} from '@legal-platform/types';
+import { TrackChange, TrackChangeType, TrackChangesSummary } from '@legal-platform/types';
 import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
 import JSZip from 'jszip';
@@ -136,10 +132,7 @@ export class TrackChangesService {
   /**
    * Download DOCX file from OneDrive
    */
-  private async downloadDocx(
-    accessToken: string,
-    oneDriveId: string
-  ): Promise<Buffer> {
+  private async downloadDocx(accessToken: string, oneDriveId: string): Promise<Buffer> {
     return retryWithBackoff(
       async () => {
         try {
@@ -261,9 +254,7 @@ export class TrackChangesService {
 
     // Process formatting changes (w:rPrChange)
     if (node.rPrChange) {
-      const formatChanges = Array.isArray(node.rPrChange)
-        ? node.rPrChange
-        : [node.rPrChange];
+      const formatChanges = Array.isArray(node.rPrChange) ? node.rPrChange : [node.rPrChange];
       for (const fc of formatChanges) {
         const change = this.parseFormatChangeNode(fc, paragraphIndex);
         if (change) {
@@ -361,10 +352,7 @@ export class TrackChangesService {
   /**
    * Parse a format change node (w:rPrChange)
    */
-  private parseFormatChangeNode(
-    node: any,
-    paragraphIndex: number
-  ): TrackChange | null {
+  private parseFormatChangeNode(node: any, paragraphIndex: number): TrackChange | null {
     try {
       const attrs = node.$ || {};
       const author = attrs.author || 'Unknown';
@@ -408,9 +396,7 @@ export class TrackChangesService {
 
     // Check for deleted text nodes (w:delText)
     if (node.delText) {
-      const delTextNodes = Array.isArray(node.delText)
-        ? node.delText
-        : [node.delText];
+      const delTextNodes = Array.isArray(node.delText) ? node.delText : [node.delText];
       for (const dt of delTextNodes) {
         if (typeof dt === 'string') {
           text += dt;

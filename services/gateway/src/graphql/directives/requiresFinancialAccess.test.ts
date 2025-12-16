@@ -59,14 +59,15 @@ function createTestSchema(): GraphQLSchema {
 // Helper to create mock context
 function createMockContext(role: string | null, authenticated: boolean = true): Context {
   return {
-    user: authenticated && role
-      ? {
-          id: 'user-123',
-          firmId: 'firm-456',
-          role,
-          email: 'test@example.com',
-        }
-      : undefined,
+    user:
+      authenticated && role
+        ? {
+            id: 'user-123',
+            firmId: 'firm-456',
+            role,
+            email: 'test@example.com',
+          }
+        : undefined,
   } as Context;
 }
 

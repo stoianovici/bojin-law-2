@@ -14,10 +14,10 @@
 
 import { ErrorCategory, parseGraphError } from '../../src/utils/graph-error-handler';
 import {
-    CircuitState,
-    getCircuitBreakerState,
-    resetCircuitBreakers,
-    retryWithBackoff,
+  CircuitState,
+  getCircuitBreakerState,
+  resetCircuitBreakers,
+  retryWithBackoff,
 } from '../../src/utils/retry.util';
 
 // Set test environment

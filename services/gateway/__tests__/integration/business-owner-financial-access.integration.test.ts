@@ -65,7 +65,7 @@ const mockCases = [
     id: 'case-1',
     title: 'ABC Corp v. XYZ Inc',
     status: 'Active',
-    value: 50000.00,
+    value: 50000.0,
     billingType: 'Hourly',
     customRates: { partnerRate: 500, associateRate: 300, paralegalRate: 150 },
     description: 'Commercial litigation',
@@ -75,7 +75,7 @@ const mockCases = [
     id: 'case-2',
     title: 'Estate of Smith',
     status: 'Active',
-    value: 25000.00,
+    value: 25000.0,
     billingType: 'Fixed',
     customRates: null,
     description: 'Probate matter',
@@ -86,12 +86,11 @@ const mockCases = [
 // Test resolvers
 const resolvers = {
   Query: {
-    case: (_: unknown, args: { id: string }) =>
-      mockCases.find(c => c.id === args.id),
+    case: (_: unknown, args: { id: string }) => mockCases.find((c) => c.id === args.id),
     cases: () => mockCases,
     firmFinancials: () => ({
-      totalRevenue: 750000.00,
-      pendingInvoices: 125000.00,
+      totalRevenue: 750000.0,
+      pendingInvoices: 125000.0,
       casesWithFinancials: mockCases,
     }),
   },
@@ -116,14 +115,15 @@ function createMockContext(
   userId: string = 'user-123',
   firmId: string = 'firm-456'
 ): Context {
-  const user = authenticated && role
-    ? {
-        id: userId,
-        firmId,
-        role,
-        email: `${role.toLowerCase()}@example.com`,
-      }
-    : undefined;
+  const user =
+    authenticated && role
+      ? {
+          id: userId,
+          firmId,
+          role,
+          email: `${role.toLowerCase()}@example.com`,
+        }
+      : undefined;
 
   // Calculate financial data scope based on role
   let financialDataScope: 'own' | 'firm' | null = null;
@@ -182,7 +182,7 @@ describe('Story 2.11.1: Business Owner Financial Access Integration', () => {
       expect(data?.cases[0]).toMatchObject({
         id: 'case-1',
         title: 'ABC Corp v. XYZ Inc',
-        value: 50000.00,
+        value: 50000.0,
         billingType: 'Hourly',
         customRates: {
           partnerRate: 500,
@@ -213,8 +213,8 @@ describe('Story 2.11.1: Business Owner Financial Access Integration', () => {
       expect(result.errors).toBeUndefined();
       const data = result.data as { firmFinancials: any };
       expect(data?.firmFinancials).toMatchObject({
-        totalRevenue: 750000.00,
-        pendingInvoices: 125000.00,
+        totalRevenue: 750000.0,
+        pendingInvoices: 125000.0,
       });
       expect(data?.firmFinancials.casesWithFinancials).toHaveLength(2);
     });
@@ -245,7 +245,7 @@ describe('Story 2.11.1: Business Owner Financial Access Integration', () => {
       expect(result.errors).toBeUndefined();
       const data = result.data as { cases: any[] };
       expect(data?.cases).toHaveLength(2);
-      expect(data?.cases[0].value).toBe(50000.00);
+      expect(data?.cases[0].value).toBe(50000.0);
       expect(data?.cases[0].billingType).toBe('Hourly');
     });
 

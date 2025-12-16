@@ -169,9 +169,7 @@ describe('Search Resolvers', () => {
 
       const resolver = searchResolvers.Query.search;
 
-      await expect(resolver(null, args, { user: null })).rejects.toThrow(
-        'Authentication required'
-      );
+      await expect(resolver(null, args, { user: null })).rejects.toThrow('Authentication required');
     });
 
     it('should handle search mode SEMANTIC', async () => {
@@ -341,9 +339,7 @@ describe('Search Resolvers', () => {
     it('should throw error if user not authenticated', async () => {
       const resolver = searchResolvers.Query.recentSearches;
 
-      await expect(resolver(null, {}, { user: null })).rejects.toThrow(
-        'Authentication required'
-      );
+      await expect(resolver(null, {}, { user: null })).rejects.toThrow('Authentication required');
     });
   });
 
@@ -487,9 +483,7 @@ describe('Search Resolvers', () => {
 
       const resolver = searchResolvers.Query.search;
 
-      await expect(resolver(null, args, mockContext)).rejects.toThrow(
-        'Search service unavailable'
-      );
+      await expect(resolver(null, args, mockContext)).rejects.toThrow('Search service unavailable');
     });
 
     it('should handle empty query gracefully', async () => {

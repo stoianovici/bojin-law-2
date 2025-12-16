@@ -602,7 +602,11 @@ export class NaturalLanguageCommandService {
     const intentMessages: Record<CommandIntent, { message: string; action: SuggestedAction }> = {
       [CommandIntent.CREATE_TASK]: {
         message: 'Deschideți formularul pentru creare sarcină.',
-        action: { type: 'OPEN_TASK_DIALOG', label: 'Creează sarcină', params: { caseId, prefill: commandText } },
+        action: {
+          type: 'OPEN_TASK_DIALOG',
+          label: 'Creează sarcină',
+          params: { caseId, prefill: commandText },
+        },
       },
       [CommandIntent.ADD_DOCUMENT]: {
         message: 'Deschideți dialogul pentru încărcare document.',
@@ -610,7 +614,11 @@ export class NaturalLanguageCommandService {
       },
       [CommandIntent.SCHEDULE_DEADLINE]: {
         message: 'Deschideți formularul pentru programare termen.',
-        action: { type: 'OPEN_DEADLINE_DIALOG', label: 'Programează termen', params: { caseId, prefill: commandText } },
+        action: {
+          type: 'OPEN_DEADLINE_DIALOG',
+          label: 'Programează termen',
+          params: { caseId, prefill: commandText },
+        },
       },
       [CommandIntent.EMAIL_CLIENT]: {
         message: 'Deschideți dialogul pentru trimitere email.',
@@ -646,7 +654,11 @@ export class NaturalLanguageCommandService {
       case CommandIntent.CREATE_TASK:
         return [
           { type: 'CREATE_TASK', label: 'Creează sarcină', params: {} },
-          { type: 'CREATE_TASK_RESEARCH', label: 'Sarcină cercetare', params: { taskType: 'Research' } },
+          {
+            type: 'CREATE_TASK_RESEARCH',
+            label: 'Sarcină cercetare',
+            params: { taskType: 'Research' },
+          },
         ];
       case CommandIntent.ADD_DOCUMENT:
         return [{ type: 'OPEN_UPLOAD_DIALOG', label: 'Încarcă document', params: {} }];

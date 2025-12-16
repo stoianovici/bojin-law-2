@@ -11,6 +11,7 @@
 The webhook service unit tests have mock configuration issues causing 8 out of 22 tests to fail. The root cause is a Jest lifecycle limitation where `jest.clearAllMocks()` in `beforeEach` clears mock implementations, breaking the Graph API client mock chain.
 
 **Current Test Results:**
+
 - ✅ 14/22 tests passing (64%)
 - ❌ 8/22 tests failing (36%)
 - ✅ Core functionality validated via 37 passing integration tests
@@ -35,6 +36,7 @@ services/gateway/__tests__/services/webhook.service.test.ts
 ## Error Messages
 
 **Example Error (createSubscription tests):**
+
 ```
 TypeError: Cannot read properties of undefined (reading 'id')
 
@@ -46,6 +48,7 @@ TypeError: Cannot read properties of undefined (reading 'id')
 ```
 
 **Example Error (deleteSubscription tests):**
+
 ```
 expect(jest.fn()).toHaveBeenCalledWith(...expected)
 
@@ -58,6 +61,7 @@ Number of calls: 0
 ### The Problem
 
 The service implementation uses this call chain:
+
 ```typescript
 // In webhook.service.ts
 const client = Client.init({ authProvider: ... });
@@ -65,6 +69,7 @@ const graphSubscription = await client.api('/subscriptions').post(subscriptionRe
 ```
 
 Expected mock chain:
+
 1. `Client.init()` returns a client object
 2. `client.api('/subscriptions')` returns an API builder object
 3. `apiBuilder.post(data)` returns the response
@@ -111,6 +116,7 @@ beforeEach(() => {
 ```
 
 **What happens:**
+
 1. Module mock is set up ONCE when Jest loads the test file
 2. `mockReturnValue()` sets up the chain at module load time
 3. `beforeEach` runs `jest.clearAllMocks()` which clears:
@@ -121,6 +127,7 @@ beforeEach(() => {
 ## What's Been Tried
 
 ### Attempt 1: QA Reviewer's First Fix (Lines 35-39, 100-105)
+
 ```javascript
 // Changed from mockReturnValue to mockImplementation
 mockApi.mockImplementation(() => ({
@@ -133,7 +140,8 @@ mockApi.mockImplementation(() => ({
 beforeEach(() => {
   jest.clearAllMocks();
 
-  mockApi.mockImplementation(() => ({ // ⚠️ Gets cleared by clearAllMocks anyway
+  mockApi.mockImplementation(() => ({
+    // ⚠️ Gets cleared by clearAllMocks anyway
     post: mockPost,
     patch: mockPatch,
     delete: mockDelete,
@@ -144,6 +152,7 @@ beforeEach(() => {
 **Result:** Still failed - `mockImplementation()` also gets cleared by `clearAllMocks()`
 
 ### Attempt 2: Dev Agent's Pattern from graph.service.test.ts
+
 ```javascript
 // Tried using require() inside each test to get fresh mock references
 it('should test something', () => {
@@ -209,6 +218,7 @@ beforeEach(() => {
 ### Option 1: Remove jest.clearAllMocks() (Simple but Risky)
 
 **Approach:**
+
 ```javascript
 beforeEach(() => {
   // jest.clearAllMocks(); // Remove this line
@@ -224,21 +234,25 @@ beforeEach(() => {
 ```
 
 **Pros:**
+
 - Simple fix
 - Preserves mock chain set up in module mock
 
 **Cons:**
+
 - Mock call history accumulates across tests
 - May cause test interdependencies
 - Goes against Jest best practices
 
 **Validation:**
+
 - Run tests to ensure no cross-test pollution
 - Check that each test still works in isolation
 
 ### Option 2: Restructure Mock Setup (More Complex but Cleaner)
 
 **Approach:**
+
 ```javascript
 // At module level - create mock factories
 const createMockGraphClient = () => {
@@ -288,17 +302,20 @@ describe('WebhookService', () => {
 ```
 
 **Pros:**
+
 - Follows Jest best practices
 - Explicit mock setup in each test lifecycle
 - No cross-test pollution
 
 **Cons:**
+
 - More verbose
 - Requires restructuring entire test file
 
 ### Option 3: Use jest.resetAllMocks() Instead (Middle Ground)
 
 **Approach:**
+
 ```javascript
 beforeEach(() => {
   jest.resetAllMocks(); // Instead of clearAllMocks
@@ -320,6 +337,7 @@ beforeEach(() => {
 ```
 
 **Difference:**
+
 - `clearAllMocks()`: Clears call history AND return values/implementations
 - `resetAllMocks()`: Clears call history, return values, AND resets to initial state
 - `restoreAllMocks()`: Only for spies, restores original implementation
@@ -327,11 +345,13 @@ beforeEach(() => {
 ### Option 4: Compare Byte-for-Byte with graph.service.test.ts
 
 **Approach:**
+
 1. Copy the EXACT mock setup from graph.service.test.ts
 2. Adapt it to webhook.service.test.ts use case
 3. Test incrementally to find the exact difference
 
 **Steps:**
+
 ```bash
 # Compare the two files
 diff services/gateway/__tests__/services/graph.service.test.ts \
@@ -339,6 +359,7 @@ diff services/gateway/__tests__/services/graph.service.test.ts \
 ```
 
 **Focus areas:**
+
 - Mock setup structure (lines 24-55 in graph.service.test.ts)
 - beforeEach setup (lines 64-79 in graph.service.test.ts)
 - How mocks are used in tests (line 225+ in graph.service.test.ts)
@@ -385,6 +406,7 @@ module.exports = {
 ```
 
 Then in test file:
+
 ```javascript
 beforeEach(() => {
   const GraphClient = require('@microsoft/microsoft-graph-client');
@@ -395,17 +417,20 @@ beforeEach(() => {
 ## Success Criteria
 
 ✅ **All 22 tests pass consistently**
+
 - All `createSubscription` tests pass (4 tests)
 - All `renewSubscription` tests pass (3 tests)
 - All `deleteSubscription` tests pass (3 tests)
 - All query tests remain passing (12 tests)
 
 ✅ **No test interdependencies**
+
 - Tests pass when run individually: `npx jest -t "should create a subscription successfully"`
 - Tests pass when run in suite: `npx jest webhook.service.test.ts`
 - Tests pass when run in different orders
 
 ✅ **Mock isolation maintained**
+
 - Each test gets clean mock state
 - No call history leaks between tests
 - Mock return values properly reset
@@ -429,15 +454,18 @@ npx jest --clearCache
 ## Reference Files
 
 **Primary Files:**
+
 - `services/gateway/__tests__/services/webhook.service.test.ts` - File to fix
 - `services/gateway/src/services/webhook.service.ts` - Service implementation
 - `services/gateway/__tests__/services/graph.service.test.ts` - Working reference
 
 **Related Documentation:**
+
 - `docs/qa/gates/2.5-microsoft-graph-api-integration-foundation.yml` - QA gate details
 - `docs/stories/2.5.story.md` - Story context and previous fix attempts
 
 **Jest Documentation:**
+
 - https://jestjs.io/docs/mock-functions
 - https://jestjs.io/docs/jest-object#jestclearallmocks
 - https://jestjs.io/docs/manual-mocks
@@ -445,12 +473,14 @@ npx jest --clearCache
 ## Additional Context
 
 **Core Functionality Status:**
+
 - ✅ Service implementation is correct
 - ✅ Integration tests validate real behavior (37 passing)
 - ⚠️ Only unit test mocking is broken
 - ✅ Production code is safe to deploy
 
 **Why This Matters:**
+
 - Unit tests provide fast feedback during development
 - Mock issues make test-driven development harder
 - Currently relying only on slower integration tests for coverage
@@ -459,18 +489,22 @@ npx jest --clearCache
 ## Recommended Approach
 
 **Step 1:** Start with Option 4 (Compare with graph.service.test.ts)
+
 - Understand WHY it works when webhook tests don't
 - Document the exact difference
 
 **Step 2:** Try Option 1 (Remove clearAllMocks) as quick validation
+
 - If it works, proves the hypothesis
 - May or may not be acceptable as final solution
 
 **Step 3:** Implement Option 2 or Option 5 for production-ready fix
+
 - Choose based on team coding standards
 - Ensure comprehensive testing
 
 **Step 4:** Update documentation
+
 - Document the chosen approach in test file comments
 - Update story 2.5 with resolution
 - Add learnings to team knowledge base

@@ -8,19 +8,8 @@
  */
 
 import { useMemo } from 'react';
-import {
-  Activity,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  CheckCircle,
-  User,
-} from 'lucide-react';
-import type {
-  TeamWorkloadSummary,
-  UserWorkload,
-  WorkloadStatus,
-} from '@legal-platform/types';
+import { Activity, TrendingUp, TrendingDown, AlertCircle, CheckCircle, User } from 'lucide-react';
+import type { TeamWorkloadSummary, UserWorkload, WorkloadStatus } from '@legal-platform/types';
 
 interface WorkloadMeterProps {
   data: TeamWorkloadSummary;
@@ -71,13 +60,7 @@ function getProgressColor(status: WorkloadStatus): string {
   }
 }
 
-function UserWorkloadCard({
-  workload,
-  onClick,
-}: {
-  workload: UserWorkload;
-  onClick?: () => void;
-}) {
+function UserWorkloadCard({ workload, onClick }: { workload: UserWorkload; onClick?: () => void }) {
   const config = STATUS_CONFIG[workload.status];
   const Icon = config.icon;
   const progressPercent = Math.min(100, workload.averageUtilization);

@@ -123,19 +123,19 @@ describe('InlineSuggestion', () => {
 
   describe('Confidence display', () => {
     it('should show high confidence indicator', () => {
-      render(<InlineSuggestion {...defaultProps} confidence={0.90} />);
+      render(<InlineSuggestion {...defaultProps} confidence={0.9} />);
 
       expect(screen.getByText(/90%/i)).toBeInTheDocument();
     });
 
     it('should style confidence based on level', () => {
-      const { rerender } = render(<InlineSuggestion {...defaultProps} confidence={0.90} />);
+      const { rerender } = render(<InlineSuggestion {...defaultProps} confidence={0.9} />);
       expect(screen.getByText(/90%/i)).toHaveClass('text-green-600');
 
-      rerender(<InlineSuggestion {...defaultProps} confidence={0.70} />);
+      rerender(<InlineSuggestion {...defaultProps} confidence={0.7} />);
       expect(screen.getByText(/70%/i)).toHaveClass('text-yellow-600');
 
-      rerender(<InlineSuggestion {...defaultProps} confidence={0.40} />);
+      rerender(<InlineSuggestion {...defaultProps} confidence={0.4} />);
       expect(screen.getByText(/40%/i)).toHaveClass('text-red-600');
     });
   });

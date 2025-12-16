@@ -14,10 +14,7 @@ describe('PST Parser Service', () => {
   describe('Helper Functions', () => {
     describe('isSentFolder detection', () => {
       // Testing via exported function behavior indirectly through ExtractedAttachment
-      const createAttachment = (
-        folderPath: string,
-        receivedDate: Date
-      ): ExtractedAttachment => ({
+      const createAttachment = (folderPath: string, receivedDate: Date): ExtractedAttachment => ({
         id: 'test-id',
         fileName: 'test.pdf',
         fileExtension: 'pdf',
@@ -50,24 +47,21 @@ describe('PST Parser Service', () => {
       it('should detect Romanian "Trimise" folder as sent', () => {
         const folderPath = 'Elemente Trimise/Clienti';
         expect(
-          folderPath.toLowerCase().includes('trimise') ||
-            folderPath.toLowerCase().includes('sent')
+          folderPath.toLowerCase().includes('trimise') || folderPath.toLowerCase().includes('sent')
         ).toBe(true);
       });
 
       it('should detect Inbox folder as received', () => {
         const folderPath = 'Inbox/Clients';
         expect(
-          folderPath.toLowerCase().includes('sent') ||
-            folderPath.toLowerCase().includes('trimise')
+          folderPath.toLowerCase().includes('sent') || folderPath.toLowerCase().includes('trimise')
         ).toBe(false);
       });
 
       it('should detect custom folders as received', () => {
         const folderPath = 'Archive/2023/Legal';
         expect(
-          folderPath.toLowerCase().includes('sent') ||
-            folderPath.toLowerCase().includes('trimise')
+          folderPath.toLowerCase().includes('sent') || folderPath.toLowerCase().includes('trimise')
         ).toBe(false);
       });
     });
@@ -121,10 +115,7 @@ describe('PST Parser Service', () => {
   });
 
   describe('groupByMonth', () => {
-    const createMockAttachment = (
-      id: string,
-      monthYear: string
-    ): ExtractedAttachment => ({
+    const createMockAttachment = (id: string, monthYear: string): ExtractedAttachment => ({
       id,
       fileName: `file-${id}.pdf`,
       fileExtension: 'pdf',

@@ -22,7 +22,10 @@ import type {
   PlatformDateRange,
   PlatformIntelligenceDashboard,
 } from '@legal-platform/types';
-import { getPlatformIntelligenceService, PlatformIntelligenceService } from './platform-intelligence.service';
+import {
+  getPlatformIntelligenceService,
+  PlatformIntelligenceService,
+} from './platform-intelligence.service';
 import { R2StorageService, getR2StorageService } from './r2-storage.service';
 
 // Export rate limit: 10 per hour per firm
@@ -75,10 +78,7 @@ export class DashboardExportService {
   /**
    * Export dashboard to specified format
    */
-  async exportDashboard(
-    firmId: string,
-    options: ExportOptions
-  ): Promise<ExportResult> {
+  async exportDashboard(firmId: string, options: ExportOptions): Promise<ExportResult> {
     // Check rate limit
     await this.checkRateLimit(firmId);
 
@@ -174,9 +174,7 @@ export class DashboardExportService {
    * Generate PDF export
    * Note: Full implementation would use puppeteer or pdfkit
    */
-  private async generatePDF(
-    data: Partial<PlatformIntelligenceDashboard>
-  ): Promise<Buffer> {
+  private async generatePDF(data: Partial<PlatformIntelligenceDashboard>): Promise<Buffer> {
     // Create a simple text-based PDF for now
     // In production, this would use puppeteer to render HTML or pdfkit for native PDF
     const content = this.generateTextReport(data);
@@ -198,7 +196,10 @@ stream
 BT
 /F1 10 Tf
 50 750 Td
-${content.split('\n').map((line, i) => `(${line.replace(/[()\\]/g, '\\$&')}) Tj 0 -12 Td`).join('\n')}
+${content
+  .split('\n')
+  .map((line, i) => `(${line.replace(/[()\\]/g, '\\$&')}) Tj 0 -12 Td`)
+  .join('\n')}
 ET
 endstream
 endobj
@@ -224,9 +225,7 @@ startxref
    * Generate Excel export
    * Note: Full implementation would use xlsx library
    */
-  private async generateExcel(
-    data: Partial<PlatformIntelligenceDashboard>
-  ): Promise<Buffer> {
+  private async generateExcel(data: Partial<PlatformIntelligenceDashboard>): Promise<Buffer> {
     // For now, generate CSV content (xlsx library would be used in production)
     return this.generateCSV(data);
   }
@@ -234,15 +233,15 @@ startxref
   /**
    * Generate CSV export
    */
-  private async generateCSV(
-    data: Partial<PlatformIntelligenceDashboard>
-  ): Promise<Buffer> {
+  private async generateCSV(data: Partial<PlatformIntelligenceDashboard>): Promise<Buffer> {
     const lines: string[] = [];
 
     // Header
     lines.push('Platform Intelligence Dashboard Export');
     lines.push(`Generated: ${data.generatedAt?.toISOString()}`);
-    lines.push(`Date Range: ${data.dateRange?.startDate.toISOString()} to ${data.dateRange?.endDate.toISOString()}`);
+    lines.push(
+      `Date Range: ${data.dateRange?.startDate.toISOString()} to ${data.dateRange?.endDate.toISOString()}`
+    );
     lines.push(`Health Score: ${data.platformHealthScore}`);
     lines.push('');
 
@@ -261,9 +260,15 @@ startxref
     if (data.communication) {
       lines.push('COMMUNICATION ANALYTICS');
       lines.push('Metric,Value');
-      lines.push(`Avg Response Time (hours),${data.communication.currentResponseTime.avgResponseTimeHours}`);
-      lines.push(`Median Response Time (hours),${data.communication.currentResponseTime.medianResponseTimeHours}`);
-      lines.push(`P90 Response Time (hours),${data.communication.currentResponseTime.p90ResponseTimeHours}`);
+      lines.push(
+        `Avg Response Time (hours),${data.communication.currentResponseTime.avgResponseTimeHours}`
+      );
+      lines.push(
+        `Median Response Time (hours),${data.communication.currentResponseTime.medianResponseTimeHours}`
+      );
+      lines.push(
+        `P90 Response Time (hours),${data.communication.currentResponseTime.p90ResponseTimeHours}`
+      );
       lines.push(`Emails Analyzed,${data.communication.currentResponseTime.totalEmailsAnalyzed}`);
       lines.push(`Within SLA %,${data.communication.currentResponseTime.withinSLAPercent}`);
       if (data.communication.baselineComparison) {
@@ -278,7 +283,9 @@ startxref
       lines.push('Metric,Value');
       lines.push(`Documents Created,${data.documentQuality.revisionMetrics.totalDocumentsCreated}`);
       lines.push(`Avg Revisions,${data.documentQuality.revisionMetrics.avgRevisionsPerDocument}`);
-      lines.push(`First Time Right %,${data.documentQuality.revisionMetrics.firstTimeRightPercent}`);
+      lines.push(
+        `First Time Right %,${data.documentQuality.revisionMetrics.firstTimeRightPercent}`
+      );
       lines.push(`Reviews Completed,${data.documentQuality.errorMetrics.totalReviewsCompleted}`);
       lines.push(`Reviews with Issues,${data.documentQuality.errorMetrics.reviewsWithIssues}`);
       lines.push('');
@@ -306,7 +313,9 @@ startxref
       lines.push('');
       lines.push('User,Requests,Tokens,Adoption Score');
       for (const user of data.aiUtilization.byUser) {
-        lines.push(`${user.userName},${user.totalRequests},${user.totalTokens},${user.adoptionScore}`);
+        lines.push(
+          `${user.userName},${user.totalRequests},${user.totalTokens},${user.adoptionScore}`
+        );
       }
       lines.push('');
     }
@@ -348,11 +357,15 @@ startxref
     }
 
     if (data.communication) {
-      lines.push(`Avg Response: ${data.communication.currentResponseTime.avgResponseTimeHours} hours`);
+      lines.push(
+        `Avg Response: ${data.communication.currentResponseTime.avgResponseTimeHours} hours`
+      );
     }
 
     if (data.documentQuality) {
-      lines.push(`First Time Right: ${data.documentQuality.revisionMetrics.firstTimeRightPercent}%`);
+      lines.push(
+        `First Time Right: ${data.documentQuality.revisionMetrics.firstTimeRightPercent}%`
+      );
     }
 
     if (data.taskCompletion) {

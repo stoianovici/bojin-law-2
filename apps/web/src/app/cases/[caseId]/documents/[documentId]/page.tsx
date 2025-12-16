@@ -250,11 +250,7 @@ function DocumentDetailContent() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push(`/cases/${caseId}`)}
-              >
+              <Button variant="ghost" size="icon" onClick={() => router.push(`/cases/${caseId}`)}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-3">
@@ -341,9 +337,7 @@ function DocumentDetailContent() {
                   </CardHeader>
                   <CardContent>
                     <div className="aspect-[3/4] bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-muted-foreground">
-                        Document preview not available
-                      </p>
+                      <p className="text-muted-foreground">Document preview not available</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -360,16 +354,16 @@ function DocumentDetailContent() {
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Status</label>
                       <div className="mt-1">
-                        <Badge
-                          variant={document.status === 'FINAL' ? 'default' : 'secondary'}
-                        >
+                        <Badge variant={document.status === 'FINAL' ? 'default' : 'secondary'}>
                           {document.status}
                         </Badge>
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Uploaded by</label>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Uploaded by
+                      </label>
                       <div className="mt-1 flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span>
@@ -379,7 +373,9 @@ function DocumentDetailContent() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Upload Date</label>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Upload Date
+                      </label>
                       <div className="mt-1 flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>{format(new Date(document.uploadedAt), 'PPP')}</span>
@@ -387,7 +383,9 @@ function DocumentDetailContent() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Last Modified</label>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Last Modified
+                      </label>
                       <div className="mt-1 flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>{format(new Date(document.updatedAt), 'PPP')}</span>
@@ -440,11 +438,7 @@ function DocumentDetailContent() {
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0">
                       <CardTitle className="text-base">Latest Version</CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setActiveTab('versions')}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => setActiveTab('versions')}>
                         View All
                       </Button>
                     </CardHeader>

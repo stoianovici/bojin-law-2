@@ -8,10 +8,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  DeadlineWarning,
-  SuggestedAction,
-} from '@legal-platform/types';
+import { DeadlineWarning, SuggestedAction } from '@legal-platform/types';
 import { Logger } from 'winston';
 import logger from '../lib/logger';
 
@@ -73,10 +70,7 @@ export class DeadlineWarningService {
     // Fetch tasks with due dates
     const tasks = await prisma.task.findMany({
       where,
-      orderBy: [
-        { dueDate: 'asc' },
-        { priority: 'desc' },
-      ],
+      orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }],
       include: {
         case: {
           select: {
@@ -86,17 +80,19 @@ export class DeadlineWarningService {
             client: { select: { name: true } },
           },
         },
-        dependsOn: options?.includeDependencies ? {
-          include: {
-            dependsOnTask: {
-              select: {
-                id: true,
-                title: true,
-                status: true,
+        dependsOn: options?.includeDependencies
+          ? {
+              include: {
+                dependsOnTask: {
+                  select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                  },
+                },
               },
-            },
-          },
-        } : undefined,
+            }
+          : undefined,
       },
     });
 
@@ -132,11 +128,12 @@ export class DeadlineWarningService {
       const severity = this.calculateSeverity(daysUntilDue);
 
       // Get blocked by tasks (incomplete dependencies)
-      const blockedBy = options?.includeDependencies && task.dependsOn
-        ? task.dependsOn
-            .filter(dep => dep.dependsOnTask && dep.dependsOnTask.status !== 'Completed')
-            .map(dep => dep.dependsOnTask!.title)
-        : undefined;
+      const blockedBy =
+        options?.includeDependencies && task.dependsOn
+          ? task.dependsOn
+              .filter((dep) => dep.dependsOnTask && dep.dependsOnTask.status !== 'Completed')
+              .map((dep) => dep.dependsOnTask!.title)
+          : undefined;
 
       const warning: DeadlineWarning = {
         taskId: task.id,
@@ -204,9 +201,9 @@ export class DeadlineWarningService {
       userId,
       firmId,
       totalWarnings: warnings.length,
-      critical: warnings.filter(w => w.severity === 'critical').length,
-      warning: warnings.filter(w => w.severity === 'warning').length,
-      info: warnings.filter(w => w.severity === 'info').length,
+      critical: warnings.filter((w) => w.severity === 'critical').length,
+      warning: warnings.filter((w) => w.severity === 'warning').length,
+      info: warnings.filter((w) => w.severity === 'info').length,
     });
 
     return warnings;
@@ -215,10 +212,7 @@ export class DeadlineWarningService {
   /**
    * Get deadline warnings for a specific case
    */
-  async getCaseDeadlineWarnings(
-    caseId: string,
-    firmId: string
-  ): Promise<DeadlineWarning[]> {
+  async getCaseDeadlineWarnings(caseId: string, firmId: string): Promise<DeadlineWarning[]> {
     // Get all tasks for the case, regardless of assignee
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -274,10 +268,7 @@ export class DeadlineWarningService {
   /**
    * Get overdue deadlines
    */
-  async getOverdueDeadlines(
-    userId: string,
-    firmId: string
-  ): Promise<DeadlineWarning[]> {
+  async getOverdueDeadlines(userId: string, firmId: string): Promise<DeadlineWarning[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -299,7 +290,7 @@ export class DeadlineWarningService {
       },
     });
 
-    return tasks.map(task => {
+    return tasks.map((task) => {
       const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
       const daysUntilDue = this.calculateDaysUntilDue(dueDate);
 
@@ -489,7 +480,10 @@ export class DeadlineWarningService {
   /**
    * Get summary statistics for deadline warnings
    */
-  async getDeadlineStats(userId: string, firmId: string): Promise<{
+  async getDeadlineStats(
+    userId: string,
+    firmId: string
+  ): Promise<{
     total: number;
     critical: number;
     warning: number;
@@ -501,9 +495,9 @@ export class DeadlineWarningService {
 
     return {
       total: warnings.length + overdue.length,
-      critical: warnings.filter(w => w.severity === 'critical').length,
-      warning: warnings.filter(w => w.severity === 'warning').length,
-      info: warnings.filter(w => w.severity === 'info').length,
+      critical: warnings.filter((w) => w.severity === 'critical').length,
+      warning: warnings.filter((w) => w.severity === 'warning').length,
+      info: warnings.filter((w) => w.severity === 'info').length,
       overdue: overdue.length,
     };
   }

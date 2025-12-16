@@ -402,9 +402,7 @@ export class HealthChecker {
   /**
    * Extract service health from Promise.allSettled result
    */
-  private extractServiceHealth(
-    result: PromiseSettledResult<ServiceHealth>
-  ): ServiceHealth {
+  private extractServiceHealth(result: PromiseSettledResult<ServiceHealth>): ServiceHealth {
     if (result.status === 'fulfilled') {
       return result.value;
     }
@@ -526,7 +524,9 @@ export class HealthChecker {
     lines.push('');
     lines.push('RESOURCE USAGE');
     lines.push('-'.repeat(80));
-    lines.push(`  Memory:  ${result.resourceUsage.memoryUsageMB}MB (${result.resourceUsage.memoryPercentage}%)`);
+    lines.push(
+      `  Memory:  ${result.resourceUsage.memoryUsageMB}MB (${result.resourceUsage.memoryPercentage}%)`
+    );
     lines.push(`  CPU:     ${result.resourceUsage.cpuUsagePercent}%`);
 
     lines.push('');

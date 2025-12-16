@@ -53,13 +53,7 @@ const DocumentIcon = ({ className }: { className?: string }) => (
 );
 
 const EditIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -70,13 +64,7 @@ const EditIcon = () => (
 );
 
 const DeleteIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -87,53 +75,20 @@ const DeleteIcon = () => (
 );
 
 const MoveUpIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 15l7-7 7 7"
-    />
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
   </svg>
 );
 
 const MoveDownIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M19 9l-7 7-7-7"
-    />
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
 
 const PlusIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M12 4v16m8-8H4"
-    />
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
   </svg>
 );
 
@@ -357,9 +312,7 @@ function HeaderStyleEditor({
           <input
             type="checkbox"
             checked={headerStyle.includeDate}
-            onChange={(e) =>
-              onHeaderStyleChange({ ...headerStyle, includeDate: e.target.checked })
-            }
+            onChange={(e) => onHeaderStyleChange({ ...headerStyle, includeDate: e.target.checked })}
             className="rounded border-gray-300"
           />
           <span className="text-sm">Include data</span>
@@ -399,7 +352,9 @@ function PreviewPanel({
     if (headerStyle.format !== 'numbered') return '';
     switch (headerStyle.numbering) {
       case 'roman':
-        return ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][index] || `${index + 1}`;
+        return (
+          ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][index] || `${index + 1}`
+        );
       case 'alpha':
         return String.fromCharCode(65 + index);
       default:
@@ -437,18 +392,14 @@ function PreviewPanel({
               {section.name}
               {section.required && <span className="text-red-500 ml-1">*</span>}
             </div>
-            <div className="ml-4 text-muted-foreground text-xs">
-              [Conținut secțiune...]
-            </div>
+            <div className="ml-4 text-muted-foreground text-xs">[Conținut secțiune...]</div>
           </div>
         ))}
       </div>
 
       {/* Footer */}
       {footerContent && (
-        <div className="border-t pt-2 mt-4 text-xs text-muted-foreground">
-          {footerContent}
-        </div>
+        <div className="border-t pt-2 mt-4 text-xs text-muted-foreground">{footerContent}</div>
       )}
     </div>
   );
@@ -473,7 +424,8 @@ function PreferenceEditorDialog({
   loading: boolean;
 }) {
   const [sections, setSections] = useState<DocumentSection[]>(
-    (preference?.preferredSections as unknown as DocumentSection[]) || getDefaultSections(documentType)
+    (preference?.preferredSections as unknown as DocumentSection[]) ||
+      getDefaultSections(documentType)
   );
   const [headerStyle, setHeaderStyle] = useState<HeaderStyle>(
     (preference?.headerStyle as unknown as HeaderStyle) || getDefaultHeaderStyle()
@@ -484,9 +436,12 @@ function PreferenceEditorDialog({
   React.useEffect(() => {
     if (open) {
       setSections(
-        (preference?.preferredSections as unknown as DocumentSection[]) || getDefaultSections(documentType)
+        (preference?.preferredSections as unknown as DocumentSection[]) ||
+          getDefaultSections(documentType)
       );
-      setHeaderStyle((preference?.headerStyle as unknown as HeaderStyle) || getDefaultHeaderStyle());
+      setHeaderStyle(
+        (preference?.headerStyle as unknown as HeaderStyle) || getDefaultHeaderStyle()
+      );
       setFooterContent(preference?.footerContent || '');
     }
   }, [preference, documentType, open]);
@@ -520,10 +475,7 @@ function PreferenceEditorDialog({
           <div className="space-y-6">
             <SectionEditor sections={sections} onSectionsChange={setSections} />
 
-            <HeaderStyleEditor
-              headerStyle={headerStyle}
-              onHeaderStyleChange={setHeaderStyle}
-            />
+            <HeaderStyleEditor headerStyle={headerStyle} onHeaderStyleChange={setHeaderStyle} />
 
             <div>
               <label className="text-sm font-medium" htmlFor="footerContent">
@@ -566,9 +518,7 @@ function PreferenceEditorDialog({
 /**
  * Main DocumentPreferencesManager component
  */
-export function DocumentPreferencesManager({
-  className = '',
-}: DocumentPreferencesManagerProps) {
+export function DocumentPreferencesManager({ className = '' }: DocumentPreferencesManagerProps) {
   const {
     preferences,
     configuredTypes,
@@ -587,13 +537,13 @@ export function DocumentPreferencesManager({
   const [typeToDelete, setTypeToDelete] = useState<string | null>(null);
 
   const availableTypes = getAvailableDocumentTypes();
-  const unconfiguredTypes = availableTypes.filter(
-    (type) => !configuredTypes.includes(type)
-  );
+  const unconfiguredTypes = availableTypes.filter((type) => !configuredTypes.includes(type));
 
   const selectedPreference = useMemo(() => {
     if (!selectedType) return null;
-    return preferences.find((p: DocumentStructurePreference) => p.documentType === selectedType) || null;
+    return (
+      preferences.find((p: DocumentStructurePreference) => p.documentType === selectedType) || null
+    );
   }, [selectedType, preferences]);
 
   const handleEdit = (type: string) => {
@@ -627,9 +577,7 @@ export function DocumentPreferencesManager({
       <Card className={className}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center h-32">
-            <div className="animate-pulse text-muted-foreground">
-              Se încarcă preferințele...
-            </div>
+            <div className="animate-pulse text-muted-foreground">Se încarcă preferințele...</div>
           </div>
         </CardContent>
       </Card>
@@ -669,12 +617,8 @@ export function DocumentPreferencesManager({
         <CardContent>
           <Tabs defaultValue="configured" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="configured">
-                Configurate ({configuredTypes.length})
-              </TabsTrigger>
-              <TabsTrigger value="available">
-                Disponibile ({unconfiguredTypes.length})
-              </TabsTrigger>
+              <TabsTrigger value="configured">Configurate ({configuredTypes.length})</TabsTrigger>
+              <TabsTrigger value="available">Disponibile ({unconfiguredTypes.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="configured" className="space-y-3">
@@ -694,9 +638,7 @@ export function DocumentPreferencesManager({
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {formatDocumentType(pref.documentType)}
-                        </span>
+                        <span className="font-medium">{formatDocumentType(pref.documentType)}</span>
                         <Badge variant="secondary">
                           {(pref.preferredSections as DocumentSection[])?.length || 0} secțiuni
                         </Badge>
@@ -734,14 +676,8 @@ export function DocumentPreferencesManager({
                   key={type}
                   className="flex items-center justify-between p-3 border rounded-lg border-dashed"
                 >
-                  <span className="text-muted-foreground">
-                    {formatDocumentType(type)}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddNew(type)}
-                  >
+                  <span className="text-muted-foreground">{formatDocumentType(type)}</span>
+                  <Button variant="outline" size="sm" onClick={() => handleAddNew(type)}>
                     <PlusIcon />
                     Configurează
                   </Button>
@@ -777,8 +713,8 @@ export function DocumentPreferencesManager({
             <DialogTitle>Șterge preferințele</DialogTitle>
             <DialogDescription>
               Ești sigur că vrei să ștergi preferințele pentru{' '}
-              {typeToDelete ? formatDocumentType(typeToDelete) : ''}? Această
-              acțiune nu poate fi anulată.
+              {typeToDelete ? formatDocumentType(typeToDelete) : ''}? Această acțiune nu poate fi
+              anulată.
             </DialogDescription>
           </DialogHeader>
 
@@ -786,11 +722,7 @@ export function DocumentPreferencesManager({
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Anulează
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={deleting}
-            >
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={deleting}>
               {deleting ? 'Se șterge...' : 'Șterge'}
             </Button>
           </DialogFooter>
@@ -835,10 +767,8 @@ export function DocumentPreferencesCard({ className = '' }: { className?: string
         {mostUsed && (
           <div className="text-xs text-muted-foreground">
             Cel mai folosit:{' '}
-            <span className="font-medium">
-              {formatDocumentType(mostUsed.documentType)}
-            </span>{' '}
-            ({mostUsed.usageCount} utilizări)
+            <span className="font-medium">{formatDocumentType(mostUsed.documentType)}</span> (
+            {mostUsed.usageCount} utilizări)
           </div>
         )}
 

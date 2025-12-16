@@ -32,9 +32,7 @@ export class SemanticSearchService {
 
     try {
       // Generate query embedding
-      const queryEmbedding = await embeddingGenerationService.generateQueryEmbedding(
-        input.query
-      );
+      const queryEmbedding = await embeddingGenerationService.generateQueryEmbedding(input.query);
 
       // Convert embedding to pgvector format string
       const embeddingStr = `[${queryEmbedding.join(',')}]`;
@@ -137,10 +135,7 @@ export class SemanticSearchService {
    * @param limit - Maximum patterns to return
    * @returns Top patterns
    */
-  async getCategoryPatterns(
-    category: string,
-    limit: number = 10
-  ): Promise<any[]> {
+  async getCategoryPatterns(category: string, limit: number = 10): Promise<any[]> {
     return prisma.documentPattern.findMany({
       where: { category },
       orderBy: { frequency: 'desc' },
@@ -154,16 +149,10 @@ export class SemanticSearchService {
    * @param limit - Maximum templates to return
    * @returns Top templates
    */
-  async getCategoryTemplates(
-    category: string,
-    limit: number = 5
-  ): Promise<any[]> {
+  async getCategoryTemplates(category: string, limit: number = 5): Promise<any[]> {
     return prisma.templateLibrary.findMany({
       where: { category },
-      orderBy: [
-        { qualityScore: 'desc' },
-        { usageCount: 'desc' },
-      ],
+      orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
       take: limit,
     });
   }
@@ -179,14 +168,16 @@ export class SemanticSearchService {
     query: string,
     category?: string,
     limit: number = 10
-  ): Promise<Array<{
-    id: string;
-    category: string;
-    originalFilename: string;
-    textContent: string;
-    rank: number;
-    headline: string;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      category: string;
+      originalFilename: string;
+      textContent: string;
+      rank: number;
+      headline: string;
+    }>
+  > {
     const startTime = Date.now();
 
     try {
@@ -296,15 +287,17 @@ export class SemanticSearchService {
     category?: string,
     limit: number = 10,
     semanticWeight: number = 0.7
-  ): Promise<Array<{
-    documentId: string;
-    category: string;
-    filename: string;
-    chunkText: string;
-    combinedScore: number;
-    semanticScore: number;
-    textScore: number;
-  }>> {
+  ): Promise<
+    Array<{
+      documentId: string;
+      category: string;
+      filename: string;
+      chunkText: string;
+      combinedScore: number;
+      semanticScore: number;
+      textScore: number;
+    }>
+  > {
     const startTime = Date.now();
 
     try {
@@ -315,14 +308,17 @@ export class SemanticSearchService {
       ]);
 
       // Create a map to combine scores
-      const combinedMap = new Map<string, {
-        documentId: string;
-        category: string;
-        filename: string;
-        chunkText: string;
-        semanticScore: number;
-        textScore: number;
-      }>();
+      const combinedMap = new Map<
+        string,
+        {
+          documentId: string;
+          category: string;
+          filename: string;
+          chunkText: string;
+          semanticScore: number;
+          textScore: number;
+        }
+      >();
 
       // Add semantic results
       for (const result of semanticResults.results) {
@@ -358,9 +354,7 @@ export class SemanticSearchService {
       const results = Array.from(combinedMap.values())
         .map((item) => ({
           ...item,
-          combinedScore:
-            item.semanticScore * semanticWeight +
-            item.textScore * textWeight,
+          combinedScore: item.semanticScore * semanticWeight + item.textScore * textWeight,
         }))
         .sort((a, b) => b.combinedScore - a.combinedScore)
         .slice(0, limit);

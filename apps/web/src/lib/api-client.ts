@@ -11,10 +11,7 @@ let refreshPromise: Promise<boolean> | null = null;
  * Custom fetch wrapper with automatic token refresh
  * Automatically retries requests with refreshed token on 401 errors
  */
-export async function fetchWithAuth(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
+export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   // Always include credentials (session cookie)
   const requestOptions: RequestInit = {
     ...options,

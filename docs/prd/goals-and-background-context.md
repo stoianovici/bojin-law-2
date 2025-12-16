@@ -17,7 +17,7 @@ Romanian law firms currently operate with fragmented tools that create costly in
 
 ## Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|---------|
-| Nov 2024 | 1.0 | Initial PRD creation based on Project Brief | John (PM) |
-| Nov 2024 | 1.1 | Comprehensive update with 9 new stories addressing all validation issues | BMad Master |
+| Date     | Version | Description                                                              | Author      |
+| -------- | ------- | ------------------------------------------------------------------------ | ----------- |
+| Nov 2024 | 1.0     | Initial PRD creation based on Project Brief                              | John (PM)   |
+| Nov 2024 | 1.1     | Comprehensive update with 9 new stories addressing all validation issues | BMad Master |

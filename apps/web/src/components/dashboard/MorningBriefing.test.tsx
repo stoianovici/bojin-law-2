@@ -150,7 +150,9 @@ describe('MorningBriefing', () => {
 
       render(<MorningBriefing />);
 
-      expect(screen.getByTestId('briefing-skeleton') || screen.getByRole('status')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('briefing-skeleton') || screen.getByRole('status')
+      ).toBeInTheDocument();
     });
   });
 

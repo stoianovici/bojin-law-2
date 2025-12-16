@@ -6,13 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import {
-  redis,
-  sessionManager,
-  cacheManager,
-  checkRedisHealth,
-  getRedisConfig,
-} from '../redis';
+import { redis, sessionManager, cacheManager, checkRedisHealth, getRedisConfig } from '../redis';
 
 describe('Redis Client', () => {
   beforeAll(async () => {

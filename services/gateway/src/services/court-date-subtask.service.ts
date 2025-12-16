@@ -6,12 +6,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  Task as PrismaTask,
-  TaskTypeEnum,
-  TaskStatus,
-  TaskPriority,
-} from '@prisma/client';
+import { Task as PrismaTask, TaskTypeEnum, TaskStatus, TaskPriority } from '@prisma/client';
 import { COURT_DATE_PREP_SUBTASKS } from '@legal-platform/types';
 
 export class CourtDateSubtaskService {
@@ -19,9 +14,7 @@ export class CourtDateSubtaskService {
    * Generate preparation subtasks for a Court Date task
    * Calculates due dates based on hearing date and skips past-due subtasks
    */
-  async generatePreparationSubtasks(
-    courtDateTask: PrismaTask
-  ): Promise<PrismaTask[]> {
+  async generatePreparationSubtasks(courtDateTask: PrismaTask): Promise<PrismaTask[]> {
     // Verify task is a CourtDate type
     if (courtDateTask.type !== TaskTypeEnum.CourtDate) {
       throw new Error('Task must be of type CourtDate');
@@ -33,7 +26,7 @@ export class CourtDateSubtaskService {
 
     // Get hearing type from metadata for template replacement
     const metadata = courtDateTask.typeMetadata as Record<string, unknown> | null;
-    const hearingType = metadata?.hearingType as string || 'hearing';
+    const hearingType = (metadata?.hearingType as string) || 'hearing';
 
     // Generate each subtask from template
     for (const template of COURT_DATE_PREP_SUBTASKS) {
@@ -70,7 +63,7 @@ export class CourtDateSubtaskService {
     }
 
     // Update parent task metadata with subtask IDs
-    const subtaskIds = subtasksCreated.map(s => s.id);
+    const subtaskIds = subtasksCreated.map((s) => s.id);
     const updatedMetadata = {
       ...(metadata || {}),
       preparationSubtaskIds: subtaskIds,

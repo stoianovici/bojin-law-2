@@ -16,10 +16,7 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     // Get session with related data
@@ -55,10 +52,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // Get document statistics by status
@@ -107,11 +101,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate batch progress
-    const completedBatches = session.batches.filter((b: { completedAt: Date | null }) => b.completedAt !== null).length;
-    const assignedBatches = session.batches.filter((b: { assignedTo: string | null }) => b.assignedTo !== null).length;
+    const completedBatches = session.batches.filter(
+      (b: { completedAt: Date | null }) => b.completedAt !== null
+    ).length;
+    const assignedBatches = session.batches.filter(
+      (b: { assignedTo: string | null }) => b.assignedTo !== null
+    ).length;
 
     // Get unique users working on session
-    const activeUsers = new Set(session.batches.filter((b: { assignedTo: string | null }) => b.assignedTo).map((b: { assignedTo: string | null }) => b.assignedTo));
+    const activeUsers = new Set(
+      session.batches
+        .filter((b: { assignedTo: string | null }) => b.assignedTo)
+        .map((b: { assignedTo: string | null }) => b.assignedTo)
+    );
 
     // Calculate overall progress percentage
     const totalDocs = session.totalDocuments;
@@ -145,20 +147,21 @@ export async function GET(request: NextRequest) {
         total: session.batches.length,
         assigned: assignedBatches,
         completed: completedBatches,
-        items: session.batches.map((b: typeof session.batches[number]) => ({
+        items: session.batches.map((b: (typeof session.batches)[number]) => ({
           id: b.id,
           monthYear: b.monthYear,
           assignedTo: b.assignedTo,
           documentCount: b.documentCount,
-          progress: b.documentCount > 0
-            ? Math.round(((b.categorizedCount + b.skippedCount) / b.documentCount) * 100)
-            : 100,
+          progress:
+            b.documentCount > 0
+              ? Math.round(((b.categorizedCount + b.skippedCount) / b.documentCount) * 100)
+              : 100,
           isComplete: b.completedAt !== null,
         })),
       },
 
       // Category breakdown
-      categories: session.categories.map((c: typeof session.categories[number]) => ({
+      categories: session.categories.map((c: (typeof session.categories)[number]) => ({
         id: c.id,
         name: c.name,
         documentCount: c.documentCount,
@@ -174,9 +177,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Session progress error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

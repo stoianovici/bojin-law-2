@@ -228,19 +228,20 @@ function VersionCompareContent() {
   });
 
   // Fetch comparison if we have both versions
-  const { data: comparisonData, loading: comparisonLoading, error: comparisonError } = useQuery<CompareVersionsData>(
-    COMPARE_VERSIONS,
-    {
-      variables: {
-        input: {
-          documentId,
-          fromVersionId: selectedFromVersion,
-          toVersionId: selectedToVersion,
-        },
+  const {
+    data: comparisonData,
+    loading: comparisonLoading,
+    error: comparisonError,
+  } = useQuery<CompareVersionsData>(COMPARE_VERSIONS, {
+    variables: {
+      input: {
+        documentId,
+        fromVersionId: selectedFromVersion,
+        toVersionId: selectedToVersion,
       },
-      skip: !selectedFromVersion || !selectedToVersion || !documentId,
-    }
-  );
+    },
+    skip: !selectedFromVersion || !selectedToVersion || !documentId,
+  });
 
   const versions = timelineData?.documentVersionTimeline?.versions || [];
   const comparison = comparisonData?.compareVersions;
@@ -258,9 +259,7 @@ function VersionCompareContent() {
     const newTo = type === 'to' ? versionId : selectedToVersion;
 
     if (newFrom && newTo) {
-      router.push(
-        `/cases/${caseId}/documents/${documentId}/compare?from=${newFrom}&to=${newTo}`
-      );
+      router.push(`/cases/${caseId}/documents/${documentId}/compare?from=${newFrom}&to=${newTo}`);
     }
   };
 
@@ -325,39 +324,41 @@ function VersionCompareContent() {
         <div className="flex items-center gap-4">
           {/* Version Selectors */}
           <div className="flex items-center gap-2">
-            <Select value={selectedFromVersion} onValueChange={(v: string) => handleVersionChange('from', v)}>
+            <Select
+              value={selectedFromVersion}
+              onValueChange={(v: string) => handleVersionChange('from', v)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="From version" />
               </SelectTrigger>
               <SelectContent>
-                {versions.map((v: VersionTimelineData['documentVersionTimeline']['versions'][number]) => (
-                  <SelectItem
-                    key={v.id}
-                    value={v.id}
-                    disabled={v.id === selectedToVersion}
-                  >
-                    Version {v.versionNumber} - {v.createdBy?.firstName}
-                  </SelectItem>
-                ))}
+                {versions.map(
+                  (v: VersionTimelineData['documentVersionTimeline']['versions'][number]) => (
+                    <SelectItem key={v.id} value={v.id} disabled={v.id === selectedToVersion}>
+                      Version {v.versionNumber} - {v.createdBy?.firstName}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
 
             <span className="text-muted-foreground">→</span>
 
-            <Select value={selectedToVersion} onValueChange={(v: string) => handleVersionChange('to', v)}>
+            <Select
+              value={selectedToVersion}
+              onValueChange={(v: string) => handleVersionChange('to', v)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="To version" />
               </SelectTrigger>
               <SelectContent>
-                {versions.map((v: VersionTimelineData['documentVersionTimeline']['versions'][number]) => (
-                  <SelectItem
-                    key={v.id}
-                    value={v.id}
-                    disabled={v.id === selectedFromVersion}
-                  >
-                    Version {v.versionNumber} - {v.createdBy?.firstName}
-                  </SelectItem>
-                ))}
+                {versions.map(
+                  (v: VersionTimelineData['documentVersionTimeline']['versions'][number]) => (
+                    <SelectItem key={v.id} value={v.id} disabled={v.id === selectedFromVersion}>
+                      Version {v.versionNumber} - {v.createdBy?.firstName}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -464,10 +465,7 @@ function VersionCompareContent() {
             </Button>
           </div>
           <div className="h-[calc(100%-44px)] overflow-hidden">
-            <ResponseSuggestionPanel
-              selectedChange={selectedChange}
-              documentId={documentId}
-            />
+            <ResponseSuggestionPanel selectedChange={selectedChange} documentId={documentId} />
           </div>
         </div>
       )}

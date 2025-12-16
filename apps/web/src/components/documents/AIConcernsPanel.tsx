@@ -8,23 +8,11 @@
  */
 
 import * as React from 'react';
-import {
-  AlertTriangle,
-  AlertCircle,
-  Info,
-  Check,
-  X,
-  Sparkles,
-  RefreshCw,
-} from 'lucide-react';
+import { AlertTriangle, AlertCircle, Info, Check, X, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface AIReviewConcern {
   id: string;
@@ -92,9 +80,7 @@ export function AIConcernsPanel({
   onNavigateToConcern,
   isLoading = false,
 }: AIConcernsPanelProps) {
-  const [expandedConcerns, setExpandedConcerns] = React.useState<Set<string>>(
-    new Set()
-  );
+  const [expandedConcerns, setExpandedConcerns] = React.useState<Set<string>>(new Set());
   const [dismissingId, setDismissingId] = React.useState<string | null>(null);
 
   const activeConcerns = concerns.filter((c) => !c.dismissed);
@@ -134,12 +120,7 @@ export function AIConcernsPanel({
             <Sparkles className="h-4 w-4" />
             AI Analysis
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRegenerate}
-            disabled={isLoading}
-          >
+          <Button variant="outline" size="sm" onClick={onRegenerate} disabled={isLoading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Re-analyze
           </Button>
@@ -147,21 +128,13 @@ export function AIConcernsPanel({
 
         {/* Summary badges */}
         <div className="flex gap-2 mt-2">
-          {errorCount > 0 && (
-            <Badge variant="destructive">
-              {errorCount} Critical
-            </Badge>
-          )}
+          {errorCount > 0 && <Badge variant="destructive">{errorCount} Critical</Badge>}
           {warningCount > 0 && (
             <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
               {warningCount} Warnings
             </Badge>
           )}
-          {infoCount > 0 && (
-            <Badge variant="outline">
-              {infoCount} Suggestions
-            </Badge>
-          )}
+          {infoCount > 0 && <Badge variant="outline">{infoCount} Suggestions</Badge>}
           {activeConcerns.length === 0 && (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
               <Check className="mr-1 h-3 w-3" />
@@ -198,9 +171,7 @@ export function AIConcernsPanel({
                   open={isExpanded}
                   onOpenChange={() => toggleExpanded(concern.id)}
                 >
-                  <div
-                    className={`rounded-lg border p-3 ${config.bgColor} ${config.borderColor}`}
-                  >
+                  <div className={`rounded-lg border p-3 ${config.bgColor} ${config.borderColor}`}>
                     <CollapsibleTrigger className="flex w-full items-start justify-between gap-2 text-left">
                       <div className="flex items-start gap-2 flex-1">
                         <Icon className={`h-4 w-4 mt-0.5 ${config.color}`} />
@@ -244,9 +215,7 @@ export function AIConcernsPanel({
                       )}
 
                       <div className="bg-background/50 rounded p-2 text-sm">
-                        <span className="font-medium text-xs block mb-1">
-                          Relevant text:
-                        </span>
+                        <span className="font-medium text-xs block mb-1">Relevant text:</span>
                         <p className="italic text-muted-foreground">
                           &quot;{concern.anchorText.substring(0, 200)}
                           {concern.anchorText.length > 200 ? '...' : ''}&quot;
@@ -255,9 +224,7 @@ export function AIConcernsPanel({
 
                       {concern.suggestedFix && (
                         <div className="bg-background/50 rounded p-2 text-sm">
-                          <span className="font-medium text-xs block mb-1">
-                            Suggested fix:
-                          </span>
+                          <span className="font-medium text-xs block mb-1">Suggested fix:</span>
                           <p>{concern.suggestedFix}</p>
                         </div>
                       )}

@@ -23,10 +23,7 @@ export interface DocumentListProps {
  * Status Badge Component
  */
 function StatusBadge({ status }: { status: DocumentStatus }) {
-  const statusConfig: Record<
-    DocumentStatus,
-    { label: string; className: string }
-  > = {
+  const statusConfig: Record<DocumentStatus, { label: string; className: string }> = {
     Draft: { label: 'Ciornă', className: 'bg-gray-100 text-gray-800 border-gray-200' },
     Review: {
       label: 'În Revizuire',
@@ -48,7 +45,7 @@ function StatusBadge({ status }: { status: DocumentStatus }) {
     <span
       className={clsx(
         'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border',
-        config.className,
+        config.className
       )}
     >
       {config.label}
@@ -103,9 +100,7 @@ export function DocumentList({
       return documents;
     }
     const query = searchQuery.toLowerCase();
-    return documents.filter((doc) =>
-      doc.title.toLowerCase().includes(query),
-    );
+    return documents.filter((doc) => doc.title.toLowerCase().includes(query));
   }, [documents, searchQuery]);
 
   return (
@@ -118,12 +113,7 @@ export function DocumentList({
             onClick={onNewDocument}
             className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            <svg
-              className="w-4 h-4 mr-1.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -194,9 +184,7 @@ export function DocumentList({
                 onClick={() => onSelectDocument?.(document)}
                 className={clsx(
                   'cursor-pointer transition-colors',
-                  selectedDocumentId === document.id
-                    ? 'bg-blue-50'
-                    : 'hover:bg-gray-50',
+                  selectedDocumentId === document.id ? 'bg-blue-50' : 'hover:bg-gray-50'
                 )}
               >
                 <td className="px-4 py-3">
@@ -214,9 +202,7 @@ export function DocumentList({
                         d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                       />
                     </svg>
-                    <span className="font-medium text-gray-900 truncate">
-                      {document.title}
-                    </span>
+                    <span className="font-medium text-gray-900 truncate">{document.title}</span>
                     {document.aiGenerated && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
                         AI
@@ -258,15 +244,9 @@ export function DocumentList({
               />
             </svg>
             <p className="text-sm font-medium">
-              {searchQuery
-                ? 'Niciun document găsit'
-                : 'Niciun document disponibil'}
+              {searchQuery ? 'Niciun document găsit' : 'Niciun document disponibil'}
             </p>
-            {searchQuery && (
-              <p className="text-xs mt-1">
-                Încercați să căutați cu alți termeni
-              </p>
-            )}
+            {searchQuery && <p className="text-xs mt-1">Încercați să căutați cu alți termeni</p>}
           </div>
         )}
       </div>

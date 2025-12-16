@@ -32,7 +32,7 @@ type ContactCandidate {
 """
 Date range for email import preview
 """
-type DateRange {
+type EmailImportDateRange {
   start: DateTime
   end: DateTime
 }
@@ -45,7 +45,7 @@ type EmailImportPreview {
   emailCount: Int!
 
   """Date range of matching emails"""
-  dateRange: DateRange!
+  dateRange: EmailImportDateRange!
 
   """Unique contacts discovered from email participants"""
   contacts: [ContactCandidate!]!

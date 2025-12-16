@@ -11,11 +11,13 @@
 This document provides a comprehensive taxonomy of all financial fields in the application's GraphQL schema. These fields contain sensitive financial information and require **Partner role** to access.
 
 **Access Control:**
+
 - ✅ **Partners**: Full access to all financial data
 - ❌ **Associates**: No access (fields return `null`)
 - ❌ **Paralegals**: No access (fields return `null`)
 
 **Enforcement:**
+
 - **Backend**: GraphQL directive `@requiresFinancialAccess`
 - **Frontend**: React wrapper component `<FinancialData>`
 - **Routing**: Route guards on financial pages
@@ -24,14 +26,14 @@ This document provides a comprehensive taxonomy of all financial fields in the a
 
 ## Financial Field Categories
 
-| Category | Description | Story Implemented |
-|----------|-------------|-------------------|
-| **Case Management** | Case value, billing type, rates | 2.8, 2.8.1 |
-| **Time Tracking** | Hourly rates, billable amounts | 2.8.1+ |
-| **Billing & Invoicing** | Invoices, line items | Future |
-| **Payments** | Payment records, transactions | Future |
-| **KPIs & Reports** | Financial metrics, analytics | Future |
-| **Settings** | Default rates, billing config | 2.8.1 |
+| Category                | Description                     | Story Implemented |
+| ----------------------- | ------------------------------- | ----------------- |
+| **Case Management**     | Case value, billing type, rates | 2.8, 2.8.1        |
+| **Time Tracking**       | Hourly rates, billable amounts  | 2.8.1+            |
+| **Billing & Invoicing** | Invoices, line items            | Future            |
+| **Payments**            | Payment records, transactions   | Future            |
+| **KPIs & Reports**      | Financial metrics, analytics    | Future            |
+| **Settings**            | Default rates, billing config   | 2.8.1             |
 
 ---
 
@@ -39,11 +41,12 @@ This document provides a comprehensive taxonomy of all financial fields in the a
 
 ### Current Implementation (Story 2.8)
 
-| Field | Type | Description | Nullable |
-|-------|------|-------------|----------|
-| `Case.value` | `Float` | Monetary value of the case | Yes |
+| Field        | Type    | Description                | Nullable |
+| ------------ | ------- | -------------------------- | -------- |
+| `Case.value` | `Float` | Monetary value of the case | Yes      |
 
 **GraphQL Schema:**
+
 ```graphql
 type Case {
   # ... other fields
@@ -52,6 +55,7 @@ type Case {
 ```
 
 **Access Pattern:**
+
 ```typescript
 // Partner query
 const { data } = useQuery(GET_CASE);
@@ -66,14 +70,15 @@ console.log(data.case.value); // Returns: null
 
 ### Future Implementation (Story 2.8.1 - Billing & Rates)
 
-| Field | Type | Description | Nullable |
-|-------|------|-------------|----------|
-| `Case.billingType` | `BillingType` | Hourly or Fixed fee | No |
-| `Case.fixedAmount` | `Float` | Fixed fee amount (if applicable) | Yes |
-| `Case.customRates` | `CustomRates` | Custom hourly rates per role | Yes |
-| `Case.rateHistory` | `[RateHistoryEntry!]!` | History of rate changes | No (empty array) |
+| Field              | Type                   | Description                      | Nullable         |
+| ------------------ | ---------------------- | -------------------------------- | ---------------- |
+| `Case.billingType` | `BillingType`          | Hourly or Fixed fee              | No               |
+| `Case.fixedAmount` | `Float`                | Fixed fee amount (if applicable) | Yes              |
+| `Case.customRates` | `CustomRates`          | Custom hourly rates per role     | Yes              |
+| `Case.rateHistory` | `[RateHistoryEntry!]!` | History of rate changes          | No (empty array) |
 
 **GraphQL Schema (Future):**
+
 ```graphql
 enum BillingType {
   HOURLY
@@ -110,12 +115,13 @@ type Case {
 
 ### Future Implementation (Story 2.8.1+)
 
-| Field | Type | Description | Nullable |
-|-------|------|-------------|----------|
-| `TimeEntry.rate` | `Float` | Hourly rate for this entry | No |
-| `TimeEntry.billableAmount` | `Float` | Calculated amount (hours × rate) | No |
+| Field                      | Type    | Description                      | Nullable |
+| -------------------------- | ------- | -------------------------------- | -------- |
+| `TimeEntry.rate`           | `Float` | Hourly rate for this entry       | No       |
+| `TimeEntry.billableAmount` | `Float` | Calculated amount (hours × rate) | No       |
 
 **GraphQL Schema (Future):**
+
 ```graphql
 type TimeEntry {
   id: UUID!
@@ -132,12 +138,13 @@ type TimeEntry {
 ```
 
 **Calculation Logic:**
+
 ```typescript
 // Backend resolver
 billableAmount: (parent, _, context) => {
   // Only Partners see this calculation
   return parent.hours * parent.rate;
-}
+};
 
 // Associates enter hours only, never see rates
 ```
@@ -148,11 +155,12 @@ billableAmount: (parent, _, context) => {
 
 ### Future Implementation (Story 2.8.1)
 
-| Field | Type | Description | Nullable |
-|-------|------|-------------|----------|
-| `Firm.defaultRates` | `DefaultRates` | Default hourly rates by role | Yes |
+| Field               | Type           | Description                  | Nullable |
+| ------------------- | -------------- | ---------------------------- | -------- |
+| `Firm.defaultRates` | `DefaultRates` | Default hourly rates by role | Yes      |
 
 **GraphQL Schema (Future):**
+
 ```graphql
 type DefaultRates {
   partnerRate: Float!
@@ -170,6 +178,7 @@ type Firm {
 ```
 
 **Usage:**
+
 - Partners set default rates in Settings page
 - New cases inherit default rates (as custom rates)
 - Associates/Paralegals never see or set rates
@@ -180,11 +189,12 @@ type Firm {
 
 ### Future Implementation
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field       | Type      | Description                      |
+| ----------- | --------- | -------------------------------- |
 | `Invoice.*` | `Invoice` | Entire Invoice type is financial |
 
 **GraphQL Schema (Future):**
+
 ```graphql
 # Entire type is financial - Partners only
 type Invoice @requiresFinancialAccess {
@@ -209,11 +219,12 @@ type Invoice @requiresFinancialAccess {
 
 ### Future Implementation
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field       | Type      | Description                      |
+| ----------- | --------- | -------------------------------- |
 | `Payment.*` | `Payment` | Entire Payment type is financial |
 
 **GraphQL Schema (Future):**
+
 ```graphql
 # Entire type is financial - Partners only
 type Payment @requiresFinancialAccess {
@@ -233,11 +244,12 @@ type Payment @requiresFinancialAccess {
 
 ### Future Implementation
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field   | Type  | Description             |
+| ------- | ----- | ----------------------- |
 | `KPI.*` | `KPI` | All financial KPI types |
 
 **GraphQL Schema (Future):**
+
 ```graphql
 # All financial metrics - Partners only
 type RevenueKPI @requiresFinancialAccess {
@@ -262,6 +274,7 @@ type BillingMetrics @requiresFinancialAccess {
 ### Backend Implementation
 
 **Directive Definition:**
+
 ```typescript
 // services/gateway/src/graphql/directives/requiresFinancialAccess.ts
 import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
@@ -292,6 +305,7 @@ export class RequiresFinancialAccessDirective extends SchemaDirectiveVisitor {
 ```
 
 **Schema Registration:**
+
 ```graphql
 directive @requiresFinancialAccess on FIELD_DEFINITION
 ```
@@ -299,6 +313,7 @@ directive @requiresFinancialAccess on FIELD_DEFINITION
 ### Frontend Implementation
 
 **FinancialData Wrapper:**
+
 ```tsx
 import { FinancialData } from '@/components/auth/FinancialData';
 
@@ -350,11 +365,13 @@ When adding new financial fields to the schema, follow this checklist:
 ## Security Considerations
 
 **Defense in Depth:**
+
 1. **Backend**: GraphQL directive (primary security control)
 2. **Frontend**: UI hiding (UX enhancement)
 3. **Routing**: Route guards (prevent unnecessary requests)
 
 **Important Rules:**
+
 - ✅ Backend authorization is **the only** security control
 - ❌ **Never** trust frontend to enforce security
 - ✅ Frontend hiding is for UX only (clean interface)
@@ -362,6 +379,7 @@ When adding new financial fields to the schema, follow this checklist:
 - ✅ Logs used for security monitoring and compliance
 
 **Firm Isolation:**
+
 - Financial visibility enforced **per firm**
 - Partner in Firm A cannot see Firm B's financial data
 - Directive validates both `role` AND `firmId`
@@ -373,6 +391,7 @@ When adding new financial fields to the schema, follow this checklist:
 ### Unit Tests
 
 **Backend:**
+
 ```typescript
 describe('Financial Access Directive', () => {
   it('returns null for Associates', async () => {
@@ -399,6 +418,7 @@ describe('Financial Access Directive', () => {
 ```
 
 **Frontend:**
+
 ```typescript
 describe('FinancialData Component', () => {
   it('hides children for non-Partners', () => {
@@ -424,6 +444,7 @@ describe('FinancialData Component', () => {
 ### Integration Tests
 
 Test complete workflows for each role:
+
 - ✅ Associate creates case without seeing financial fields
 - ✅ Partner creates case with full financial data
 - ✅ Associate queries case → financial fields return null
@@ -434,6 +455,7 @@ Test complete workflows for each role:
 ## Logging and Monitoring
 
 **Unauthorized Access Logs:**
+
 ```json
 {
   "level": "info",
@@ -447,6 +469,7 @@ Test complete workflows for each role:
 ```
 
 **Monitoring:**
+
 - Weekly review of access attempts
 - Alert on unusual patterns (100+ attempts from single user)
 - Use logs for compliance audits (SOC 2, GDPR)
@@ -456,12 +479,14 @@ Test complete workflows for each role:
 ## Compliance
 
 Financial visibility controls support:
+
 - **SOC 2**: Access control requirements
 - **GDPR**: Data minimization principle
 - **Attorney-Client Privilege**: Confidentiality of financial arrangements
 - **State Bar Requirements**: Firm financial confidentiality
 
 **Audit Trail:**
+
 - All access attempts logged (authorized and unauthorized)
 - Logs immutable and retained per compliance requirements
 - Demonstrates access control enforcement for auditors
@@ -479,6 +504,6 @@ Financial visibility controls support:
 
 ## Change Log
 
-| Date | Version | Change | Author |
-|------|---------|--------|--------|
-| 2025-11-22 | 1.0 | Initial documentation | James (dev agent) |
+| Date       | Version | Change                | Author            |
+| ---------- | ------- | --------------------- | ----------------- |
+| 2025-11-22 | 1.0     | Initial documentation | James (dev agent) |

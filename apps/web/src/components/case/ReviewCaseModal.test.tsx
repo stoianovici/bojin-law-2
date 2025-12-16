@@ -177,9 +177,7 @@ describe('ReviewCaseModal', () => {
       expect(checkbox).toBeChecked();
 
       // Should show edit mode notice
-      expect(
-        screen.getByText(/Inline editing is not yet implemented/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Inline editing is not yet implemented/i)).toBeInTheDocument();
     });
   });
 
@@ -254,9 +252,7 @@ describe('ReviewCaseModal', () => {
       fireEvent.click(rejectButton);
 
       expect(screen.getByText('Provide Rejection Reason')).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText(/Explain what needs to be changed/i)
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Explain what needs to be changed/i)).toBeInTheDocument();
     });
 
     it('should validate minimum rejection reason length', () => {
@@ -276,9 +272,7 @@ describe('ReviewCaseModal', () => {
       const textarea = screen.getByPlaceholderText(/Explain what needs to be changed/i);
       fireEvent.change(textarea, { target: { value: 'Short' } });
 
-      expect(
-        screen.getByText(/Reason must be at least 10 characters/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Reason must be at least 10 characters/i)).toBeInTheDocument();
 
       const submitButton = screen.getByRole('button', { name: /Submit Rejection/i });
       expect(submitButton).toBeDisabled();

@@ -286,7 +286,7 @@ describe('WordIntegrationService', () => {
       });
     });
 
-    it('should throw error when trying to release another user\'s lock', async () => {
+    it("should throw error when trying to release another user's lock", async () => {
       const existingLock = {
         userId: 'other-user',
         lockToken: 'other-token',
@@ -297,9 +297,9 @@ describe('WordIntegrationService', () => {
 
       mockRedis.get.mockResolvedValue(JSON.stringify(existingLock));
 
-      await expect(
-        service.releaseDocumentLock('doc-123', 'user-123')
-      ).rejects.toThrow('Cannot release lock owned by another user');
+      await expect(service.releaseDocumentLock('doc-123', 'user-123')).rejects.toThrow(
+        'Cannot release lock owned by another user'
+      );
     });
 
     it('should succeed when no lock exists (idempotent)', async () => {
@@ -345,9 +345,9 @@ describe('WordIntegrationService', () => {
     it('should throw error when lock not found', async () => {
       mockRedis.get.mockResolvedValue(null);
 
-      await expect(
-        service.renewDocumentLock('doc-123', 'any-token')
-      ).rejects.toThrow('Lock not found or expired');
+      await expect(service.renewDocumentLock('doc-123', 'any-token')).rejects.toThrow(
+        'Lock not found or expired'
+      );
     });
 
     it('should throw error with invalid token', async () => {
@@ -361,9 +361,9 @@ describe('WordIntegrationService', () => {
 
       mockRedis.get.mockResolvedValue(JSON.stringify(existingLock));
 
-      await expect(
-        service.renewDocumentLock('doc-123', 'wrong-token')
-      ).rejects.toThrow('Invalid lock token');
+      await expect(service.renewDocumentLock('doc-123', 'wrong-token')).rejects.toThrow(
+        'Invalid lock token'
+      );
     });
   });
 

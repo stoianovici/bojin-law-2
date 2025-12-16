@@ -111,12 +111,7 @@ describe('Azure AD Authentication Configuration', () => {
     it('should export correct auth scopes', () => {
       const { authScopes, defaultScopes } = require('../../src/config/auth.config');
 
-      expect(authScopes.openid).toEqual([
-        'openid',
-        'profile',
-        'email',
-        'offline_access',
-      ]);
+      expect(authScopes.openid).toEqual(['openid', 'profile', 'email', 'offline_access']);
       expect(authScopes.graph.userRead).toEqual(['User.Read']);
       expect(authScopes.graph.userReadBasicAll).toEqual(['User.ReadBasic.All']);
 
@@ -189,9 +184,7 @@ describe('Azure AD Authentication Configuration', () => {
       const result = validateAuthConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'AZURE_AD_CLIENT_SECRET must be at least 16 characters'
-      );
+      expect(result.errors).toContain('AZURE_AD_CLIENT_SECRET must be at least 16 characters');
     });
 
     it('should reject invalid redirect URI format', () => {

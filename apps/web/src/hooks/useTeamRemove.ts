@@ -32,40 +32,37 @@ export interface RemoveTeamMemberInput {
 export function useTeamRemove() {
   const { addNotification } = useNotificationStore();
 
-  const [removeTeamMemberMutation, { loading, error }] = useMutation(
-    REMOVE_TEAM_MEMBER_MUTATION,
-    {
-      onCompleted: () => {
-        addNotification({
-          type: 'success',
-          title: 'Success',
-          message: 'Team member removed successfully',
-        });
-      },
-      onError: (error) => {
-        // Map GraphQL error codes to user-friendly messages
-        let message = 'Failed to remove team member';
+  const [removeTeamMemberMutation, { loading, error }] = useMutation(REMOVE_TEAM_MEMBER_MUTATION, {
+    onCompleted: () => {
+      addNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'Team member removed successfully',
+      });
+    },
+    onError: (error) => {
+      // Map GraphQL error codes to user-friendly messages
+      let message = 'Failed to remove team member';
 
-        if (error.message.includes('FORBIDDEN')) {
-          message = "You don't have permission to remove team members";
-        } else if (error.message.includes('NOT_FOUND')) {
-          message = 'Case or team member not found';
-        } else if (error.message.includes('BAD_USER_INPUT')) {
-          message = 'Invalid input. Cannot remove this team member.';
-        } else if (error.message.includes('last') || error.message.includes('Lead')) {
-          message = 'Cannot remove the last Lead from the case';
-        }
+      if (error.message.includes('FORBIDDEN')) {
+        message = "You don't have permission to remove team members";
+      } else if (error.message.includes('NOT_FOUND')) {
+        message = 'Case or team member not found';
+      } else if (error.message.includes('BAD_USER_INPUT')) {
+        message = 'Invalid input. Cannot remove this team member.';
+      } else if (error.message.includes('last') || error.message.includes('Lead')) {
+        message = 'Cannot remove the last Lead from the case';
+      }
 
-        addNotification({
-          type: 'error',
-          title: 'Error',
-          message,
-        });
-      },
-      // Refetch case query to update team members list
-      refetchQueries: ['GetCase'],
-    }
-  );
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message,
+      });
+    },
+    // Refetch case query to update team members list
+    refetchQueries: ['GetCase'],
+  });
 
   const removeTeamMember = async (input: RemoveTeamMemberInput) => {
     try {

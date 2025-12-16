@@ -46,47 +46,19 @@ const LightbulbIcon = ({ className }: { className?: string }) => (
 );
 
 const CloseIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M6 18L18 6M6 6l12 12"
-    />
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
 const CheckIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 13l4 4L19 7"
-    />
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
 const EditIcon = () => (
-  <svg
-    className="h-4 w-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -145,9 +117,7 @@ function CustomizeDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Personalizează Task-ul</DialogTitle>
-          <DialogDescription>
-            Ajustează detaliile task-ului înainte de a-l crea
-          </DialogDescription>
+          <DialogDescription>Ajustează detaliile task-ului înainte de a-l crea</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -234,9 +204,7 @@ function DismissDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Respinge sugestia</DialogTitle>
-          <DialogDescription>
-            Ajută-ne să îmbunătățim sugestiile prin feedback
-          </DialogDescription>
+          <DialogDescription>Ajută-ne să îmbunătățim sugestiile prin feedback</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -266,9 +234,7 @@ function DismissDialog({
               onChange={(e) => setDontShowAgain(e.target.checked)}
               className="rounded border-gray-300"
             />
-            <span className="text-sm">
-              Nu mai sugera acest tip de task pentru acest context
-            </span>
+            <span className="text-sm">Nu mai sugera acest tip de task pentru acest context</span>
           </label>
         </div>
 
@@ -326,9 +292,7 @@ function BannerPrompt({
           </Badge>
         </div>
         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-          <span>
-            Pattern: {suggestion.pattern.patternName}
-          </span>
+          <span>Pattern: {suggestion.pattern.patternName}</span>
           <span>
             Încredere: {getConfidenceLabel(suggestion.confidence)} (
             {Math.round(suggestion.confidence * 100)}%)
@@ -337,21 +301,11 @@ function BannerPrompt({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <Button
-          size="sm"
-          onClick={onAccept}
-          disabled={accepting}
-          className="gap-1"
-        >
+        <Button size="sm" onClick={onAccept} disabled={accepting} className="gap-1">
           <CheckIcon />
           {accepting ? 'Se creează...' : 'Acceptă'}
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onCustomize}
-          className="gap-1"
-        >
+        <Button variant="outline" size="sm" onClick={onCustomize} className="gap-1">
           <EditIcon />
           Personalizează
         </Button>
@@ -428,20 +382,10 @@ function ToastPrompt({
         </div>
 
         <div className="flex items-center gap-2 mt-4">
-          <Button
-            size="sm"
-            onClick={onAccept}
-            disabled={accepting}
-            className="flex-1"
-          >
+          <Button size="sm" onClick={onAccept} disabled={accepting} className="flex-1">
             {accepting ? 'Se creează...' : 'Acceptă'}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onCustomize}
-            className="flex-1"
-          >
+          <Button variant="outline" size="sm" onClick={onCustomize} className="flex-1">
             Personalizează
           </Button>
         </div>
@@ -494,12 +438,7 @@ function InlinePrompt({
         >
           {accepting ? '...' : 'Acceptă'}
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onCustomize}
-          className="h-7 text-xs"
-        >
+        <Button variant="ghost" size="sm" onClick={onCustomize} className="h-7 text-xs">
           Edit
         </Button>
         <Button
@@ -634,13 +573,8 @@ TaskSuggestionPrompt.displayName = 'TaskSuggestionPrompt';
  * Simple hook wrapper for embedding suggestion prompts
  */
 export function useTaskSuggestion(context: TriggerContext | null) {
-  const {
-    suggestion,
-    hasSuggestion,
-    loading,
-    acceptSuggestion,
-    dismissSuggestion,
-  } = useTaskSuggestionWatcher(context);
+  const { suggestion, hasSuggestion, loading, acceptSuggestion, dismissSuggestion } =
+    useTaskSuggestionWatcher(context);
 
   return {
     suggestion,

@@ -37,7 +37,8 @@ export const DeadlineItem: Story = {
     messageId: 'msg-456',
     caseId: 'case-789',
     prefillTitle: 'Revizuire contract',
-    prefillDescription: 'Termen extras din email: Revizuirea contractului cu clientul Tech Solutions SRL trebuie finalizată până la data menționată.',
+    prefillDescription:
+      'Termen extras din email: Revizuirea contractului cu clientul Tech Solutions SRL trebuie finalizată până la data menționată.',
     prefillDueDate: new Date('2025-11-20'),
     prefillPriority: 'High',
     onSave: (taskData: any) => {
@@ -87,7 +88,8 @@ export const ActionItem: Story = {
     messageId: 'msg-456',
     caseId: 'case-789',
     prefillTitle: 'Pregătire raport legal',
-    prefillDescription: 'Acțiune extrasă din email: Pregătirea raportului legal pentru cazul Tech Solutions SRL',
+    prefillDescription:
+      'Acțiune extrasă din email: Pregătirea raportului legal pentru cazul Tech Solutions SRL',
     prefillPriority: 'High',
     prefillAssignedTo: 'Avocat senior',
     onSave: (taskData: any) => {
@@ -179,7 +181,8 @@ export const FullyPopulated: Story = {
     messageId: 'msg-456',
     caseId: 'case-789',
     prefillTitle: 'Depunere raport final',
-    prefillDescription: 'Raportul final trebuie depus la instanță cu toate documentele justificative anexate. Asigurați-vă că sunt incluse toate semnăturile necesare.',
+    prefillDescription:
+      'Raportul final trebuie depus la instanță cu toate documentele justificative anexate. Asigurați-vă că sunt incluse toate semnăturile necesare.',
     prefillDueDate: new Date('2025-12-01'),
     prefillPriority: 'High',
     prefillAssignedTo: 'Avocat senior',
@@ -205,7 +208,8 @@ export const LowPriority: Story = {
     messageId: 'msg-456',
     caseId: 'case-789',
     prefillTitle: 'Actualizare bază de date clienți',
-    prefillDescription: 'Acțiune extrasă din email: Actualizarea informațiilor de contact pentru client',
+    prefillDescription:
+      'Acțiune extrasă din email: Actualizarea informațiilor de contact pentru client',
     prefillDueDate: new Date('2025-11-25'),
     prefillPriority: 'Low',
     onSave: (taskData: any) => {
@@ -245,7 +249,8 @@ export const RomanianLabels: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates Romanian language support throughout the form (Tip Task, Titlu, Descriere, Atribuit, Scadență, Prioritate, Salvează Task, Anulează)',
+        story:
+          'Demonstrates Romanian language support throughout the form (Tip Task, Titlu, Descriere, Atribuit, Scadență, Prioritate, Salvează Task, Anulează)',
       },
     },
   },
@@ -277,7 +282,8 @@ export const InteractiveExample: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Try pressing Ctrl+Enter to save or Escape to cancel. The component supports keyboard shortcuts for improved UX.',
+        story:
+          'Try pressing Ctrl+Enter to save or Escape to cancel. The component supports keyboard shortcuts for improved UX.',
       },
     },
   },

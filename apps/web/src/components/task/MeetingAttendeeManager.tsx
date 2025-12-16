@@ -170,7 +170,9 @@ export function MeetingAttendeeManager({
                 <label className="block text-sm font-medium mb-1">Name</label>
                 <Input
                   value={externalName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExternalName(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setExternalName(e.target.value)
+                  }
                   placeholder="External attendee name"
                 />
               </div>
@@ -179,7 +181,9 @@ export function MeetingAttendeeManager({
                 <Input
                   type="email"
                   value={externalEmail}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExternalEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setExternalEmail(e.target.value)
+                  }
                   placeholder="email@example.com"
                 />
               </div>
@@ -217,9 +221,7 @@ export function MeetingAttendeeManager({
       </div>
 
       <div>
-        <h3 className="text-sm font-medium mb-3">
-          Attendees ({attendees.length})
-        </h3>
+        <h3 className="text-sm font-medium mb-3">Attendees ({attendees.length})</h3>
 
         {attendees.length === 0 ? (
           <div className="text-center py-8 border rounded-lg bg-gray-50">

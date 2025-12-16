@@ -185,8 +185,26 @@ describe('Batch Allocation Service', () => {
         .mockResolvedValueOnce([]) // User's existing batches (none)
         .mockResolvedValueOnce([
           // All batches already assigned to other users
-          { id: 'batch-1', monthYear: '2019-01', assignedTo: 'user-A', documentCount: 40, categorizedCount: 10, skippedCount: 0, completedAt: null, updatedAt: new Date() },
-          { id: 'batch-2', monthYear: '2019-02', assignedTo: 'user-B', documentCount: 35, categorizedCount: 5, skippedCount: 0, completedAt: null, updatedAt: new Date() },
+          {
+            id: 'batch-1',
+            monthYear: '2019-01',
+            assignedTo: 'user-A',
+            documentCount: 40,
+            categorizedCount: 10,
+            skippedCount: 0,
+            completedAt: null,
+            updatedAt: new Date(),
+          },
+          {
+            id: 'batch-2',
+            monthYear: '2019-02',
+            assignedTo: 'user-B',
+            documentCount: 35,
+            categorizedCount: 5,
+            skippedCount: 0,
+            completedAt: null,
+            updatedAt: new Date(),
+          },
         ])
         .mockResolvedValueOnce([]); // No batches found after update (no stalled batches either)
 
@@ -340,8 +358,22 @@ describe('Batch Allocation Service', () => {
           skippedCount: 0,
         },
         // Two unassigned batches
-        { id: 'batch-3', sessionId: mockSessionId, assignedTo: null, documentCount: 25, categorizedCount: 0, skippedCount: 0 },
-        { id: 'batch-4', sessionId: mockSessionId, assignedTo: null, documentCount: 20, categorizedCount: 0, skippedCount: 0 },
+        {
+          id: 'batch-3',
+          sessionId: mockSessionId,
+          assignedTo: null,
+          documentCount: 25,
+          categorizedCount: 0,
+          skippedCount: 0,
+        },
+        {
+          id: 'batch-4',
+          sessionId: mockSessionId,
+          assignedTo: null,
+          documentCount: 20,
+          categorizedCount: 0,
+          skippedCount: 0,
+        },
       ];
 
       (prisma.documentBatch.findMany as jest.Mock).mockResolvedValue(allBatches);
@@ -364,9 +396,27 @@ describe('Batch Allocation Service', () => {
         categorizedCount: 200,
         skippedCount: 50,
         batches: [
-          { id: 'b1', assignedTo: 'user-A', documentCount: 100, categorizedCount: 100, skippedCount: 0 },
-          { id: 'b2', assignedTo: 'user-A', documentCount: 100, categorizedCount: 100, skippedCount: 0 },
-          { id: 'b3', assignedTo: 'user-B', documentCount: 100, categorizedCount: 0, skippedCount: 50 },
+          {
+            id: 'b1',
+            assignedTo: 'user-A',
+            documentCount: 100,
+            categorizedCount: 100,
+            skippedCount: 0,
+          },
+          {
+            id: 'b2',
+            assignedTo: 'user-A',
+            documentCount: 100,
+            categorizedCount: 100,
+            skippedCount: 0,
+          },
+          {
+            id: 'b3',
+            assignedTo: 'user-B',
+            documentCount: 100,
+            categorizedCount: 0,
+            skippedCount: 50,
+          },
           { id: 'b4', assignedTo: null, documentCount: 100, categorizedCount: 0, skippedCount: 0 },
           { id: 'b5', assignedTo: null, documentCount: 100, categorizedCount: 0, skippedCount: 0 },
         ],
@@ -389,9 +439,7 @@ describe('Batch Allocation Service', () => {
     it('should throw error for non-existent session', async () => {
       (prisma.legacyImportSession.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(getSessionProgress('invalid-session')).rejects.toThrow(
-        'Session not found'
-      );
+      await expect(getSessionProgress('invalid-session')).rejects.toThrow('Session not found');
     });
 
     it('should handle zero documents gracefully', async () => {
@@ -680,9 +728,7 @@ describe('Batch Allocation Service', () => {
       ];
 
       const stalledBatches = batches.filter(
-        (b) =>
-          b.updatedAt < stalledThreshold &&
-          b.categorizedCount < b.documentCount
+        (b) => b.updatedAt < stalledThreshold && b.categorizedCount < b.documentCount
       );
 
       expect(stalledBatches.length).toBe(1);

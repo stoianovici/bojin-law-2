@@ -479,11 +479,7 @@ describe('Case Billing Resolvers - Story 2.8.1', () => {
 
       (prisma.caseRateHistory.findMany as jest.Mock).mockResolvedValue(mockHistory);
 
-      const result = await caseResolvers.Case.rateHistory(
-        { id: 'case-001' },
-        {},
-        mockContext
-      );
+      const result = await caseResolvers.Case.rateHistory({ id: 'case-001' }, {}, mockContext);
 
       expect(result).toHaveLength(2);
       expect(result[0].rateType).toBe('PARTNER');
@@ -499,11 +495,7 @@ describe('Case Billing Resolvers - Story 2.8.1', () => {
     it('should limit results to 50 entries', async () => {
       (prisma.caseRateHistory.findMany as jest.Mock).mockResolvedValue([]);
 
-      await caseResolvers.Case.rateHistory(
-        { id: 'case-001' },
-        {},
-        mockContext
-      );
+      await caseResolvers.Case.rateHistory({ id: 'case-001' }, {}, mockContext);
 
       expect(prisma.caseRateHistory.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -527,11 +519,7 @@ describe('Case Billing Resolvers - Story 2.8.1', () => {
 
       (prisma.caseRateHistory.findMany as jest.Mock).mockResolvedValue(mockHistory);
 
-      const result = await caseResolvers.Case.rateHistory(
-        { id: 'case-001' },
-        {},
-        mockContext
-      );
+      const result = await caseResolvers.Case.rateHistory({ id: 'case-001' }, {}, mockContext);
 
       expect(result[0].rateType).toBe('PARALEGAL');
     });

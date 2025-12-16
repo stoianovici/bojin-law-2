@@ -6,11 +6,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  BulkCommunicationStatus,
-  CommunicationChannel,
-  NotificationType,
-} from '@prisma/client';
+import { BulkCommunicationStatus, CommunicationChannel, NotificationType } from '@prisma/client';
 import { Client } from '@microsoft/microsoft-graph-client';
 import 'isomorphic-fetch';
 
@@ -48,9 +44,7 @@ let isRunning = false;
  * Start the bulk communication worker
  * This handles scheduled communications via cron-like interval
  */
-export function startBulkCommunicationWorker(
-  config: Partial<BulkWorkerConfig> = {}
-): void {
+export function startBulkCommunicationWorker(config: Partial<BulkWorkerConfig> = {}): void {
   if (isRunning) {
     console.log('[Bulk Communication Worker] Already running');
     return;
@@ -133,7 +127,9 @@ async function processScheduledCommunications(config: BulkWorkerConfig): Promise
     return;
   }
 
-  console.log(`[Bulk Communication Worker] Found ${scheduledComms.length} scheduled communications due`);
+  console.log(
+    `[Bulk Communication Worker] Found ${scheduledComms.length} scheduled communications due`
+  );
 
   for (const comm of scheduledComms) {
     // Start processing each scheduled communication
@@ -217,7 +213,9 @@ export async function processBulkCommunication(
       }
 
       const batch = pendingLogs.slice(i, i + config.batchSize);
-      console.log(`[Bulk Communication Worker] Processing batch ${Math.floor(i / config.batchSize) + 1}`);
+      console.log(
+        `[Bulk Communication Worker] Processing batch ${Math.floor(i / config.batchSize) + 1}`
+      );
 
       // Process batch with rate limiting
       const results = await processBatch(batch, bulkComm, firmId, config);
@@ -276,12 +274,7 @@ async function processBatch(
     await waitForRateLimit(firmId, config.rateLimit);
 
     // Try to send with retries
-    const success = await sendWithRetry(
-      log,
-      bulkComm,
-      config.maxRetries,
-      config.retryDelayMs
-    );
+    const success = await sendWithRetry(log, bulkComm, config.maxRetries, config.retryDelayMs);
 
     if (success) {
       sent++;
@@ -415,7 +408,9 @@ async function sendCompletionNotification(
     data: {
       userId: bulkComm.createdBy,
       type: NotificationType.BulkCommunicationCompleted,
-      title: isSuccess ? 'Bulk Communication Completed' : 'Bulk Communication Completed with Errors',
+      title: isSuccess
+        ? 'Bulk Communication Completed'
+        : 'Bulk Communication Completed with Errors',
       message: isSuccess
         ? `Your bulk communication "${bulkComm.subject}" was sent successfully to ${bulkComm.sentCount} recipients.`
         : `Your bulk communication "${bulkComm.subject}" completed: ${bulkComm.sentCount} sent, ${bulkComm.failedCount} failed.`,
@@ -450,7 +445,9 @@ async function waitForRateLimit(firmId: string, rateLimit: number): Promise<void
   // Wait if rate limit exceeded
   if (state.count >= rateLimit) {
     const waitTime = state.resetAt - now;
-    console.log(`[Bulk Communication Worker] Rate limit reached for firm ${firmId}, waiting ${waitTime}ms`);
+    console.log(
+      `[Bulk Communication Worker] Rate limit reached for firm ${firmId}, waiting ${waitTime}ms`
+    );
     await delay(waitTime);
 
     // Reset after waiting
@@ -489,7 +486,9 @@ async function sendEmail(payload: EmailPayload): Promise<void> {
   if (!accessToken) {
     // In development/testing, just log and simulate success
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[Bulk Communication Worker] [DEV] Would send email to ${payload.to}: ${payload.subject}`);
+      console.log(
+        `[Bulk Communication Worker] [DEV] Would send email to ${payload.to}: ${payload.subject}`
+      );
       await delay(50); // Simulate network delay
       return;
     }
@@ -586,11 +585,14 @@ export async function getBulkCommunicationProgress(bulkCommId: string): Promise<
 // ============================================================================
 
 // Clean up rate limit state periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [firmId, state] of firmRateLimits.entries()) {
-    if (now >= state.resetAt + 60000) {
-      firmRateLimits.delete(firmId);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [firmId, state] of firmRateLimits.entries()) {
+      if (now >= state.resetAt + 60000) {
+        firmRateLimits.delete(firmId);
+      }
     }
-  }
-}, 5 * 60 * 1000); // Every 5 minutes
+  },
+  5 * 60 * 1000
+); // Every 5 minutes

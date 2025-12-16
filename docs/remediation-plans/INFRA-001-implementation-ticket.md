@@ -17,12 +17,14 @@
 All integration tests across the Bojin Law Platform are currently **blocked and cannot execute** due to a Jest/MSW configuration issue. The `until-async` ES module from MSW's dependencies is not being transformed by Jest, preventing 28+ integration tests from running.
 
 **Impact:**
+
 - ❌ **0 integration tests executable** (28+ tests written but blocked)
 - ❌ **~20% of testing strategy missing** (integration layer)
 - ❌ **No automated validation** of complete user workflows
 - ⚠️ **Affects multiple stories:** 2.8, 2.8.3, 2.8.4, 2.9+
 
 **Current State:**
+
 - ✅ Unit tests: 221/221 passing (100%)
 - ❌ Integration tests: 28+ written, 0 executable
 
@@ -75,27 +77,31 @@ All integration tests across the Bojin Law Platform are currently **blocked and 
 - [ ] **Task 2.1:** Update `apps/web/jest.config.js`
 
   Add ESM support configuration:
+
   ```javascript
   const customJestConfig = {
     // ... existing config
     extensionsToTreatAsEsm: ['.ts', '.tsx'],
     transform: {
-      '^.+\\.(ts|tsx)$': ['@swc/jest', {
-        jsc: {
-          parser: {
-            syntax: 'typescript',
-            tsx: true,
-          },
-          transform: {
-            react: {
-              runtime: 'automatic',
+      '^.+\\.(ts|tsx)$': [
+        '@swc/jest',
+        {
+          jsc: {
+            parser: {
+              syntax: 'typescript',
+              tsx: true,
+            },
+            transform: {
+              react: {
+                runtime: 'automatic',
+              },
             },
           },
+          module: {
+            type: 'es6',
+          },
         },
-        module: {
-          type: 'es6',
-        },
-      }],
+      ],
     },
   };
   ```
@@ -103,6 +109,7 @@ All integration tests across the Bojin Law Platform are currently **blocked and 
 - [ ] **Task 2.2:** Update `apps/web/package.json` test scripts
 
   Add Node.js ESM flag:
+
   ```json
   {
     "scripts": {
@@ -114,6 +121,7 @@ All integration tests across the Bojin Law Platform are currently **blocked and 
   ```
 
 - [ ] **Task 2.3:** Install additional dependencies (if needed)
+
   ```bash
   pnpm add -D @swc/jest @swc/core
   ```
@@ -129,15 +137,19 @@ All integration tests across the Bojin Law Platform are currently **blocked and 
 ### Phase 3: Testing & Validation (2-3 hours)
 
 - [ ] **Task 3.1:** Run all unit tests
+
   ```bash
   pnpm test
   ```
+
   **Expected:** 221/221 tests passing (no regressions)
 
 - [ ] **Task 3.2:** Run integration tests
+
   ```bash
   pnpm test integration.test
   ```
+
   **Expected:** All integration tests execute (may have some failures)
 
 - [ ] **Task 3.3:** Validate GraphQL mocking
@@ -214,12 +226,14 @@ All integration tests across the Bojin Law Platform are currently **blocked and 
 ### Recommended Solution: Jest ESM Mode (Option 2)
 
 **Why this approach:**
+
 - ✅ Permanent solution (not a workaround)
 - ✅ Future-proof for all ESM dependencies
 - ✅ Aligns with modern JavaScript standards
 - ✅ Scalable for future test infrastructure
 
 **Alternatives considered:**
+
 - ❌ **Option 1:** Downgrade MSW to v1.x - Temporary fix, technical debt
 - ❌ **Option 3:** Hybrid test environments - Over-engineered
 - ❌ **Option 4:** Manual mocks - 40+ hours, worse outcomes
@@ -231,14 +245,17 @@ All integration tests across the Bojin Law Platform are currently **blocked and 
 ## 🚨 Risks & Mitigation
 
 ### Risk 1: ESM breaks existing unit tests
+
 - **Likelihood:** Medium
 - **Mitigation:** Implement in feature branch, full regression testing before merge
 
 ### Risk 2: Performance degradation
+
 - **Likelihood:** Low-Medium
 - **Mitigation:** Use `@swc/jest` for faster transforms, benchmark before/after
 
 ### Risk 3: CI/CD pipeline breaks
+
 - **Likelihood:** Low
 - **Mitigation:** Test pipeline in draft PR, have rollback ready
 
@@ -251,6 +268,7 @@ All integration tests across the Bojin Law Platform are currently **blocked and 
 If critical issues are found during implementation:
 
 1. **Immediate Rollback:**
+
    ```bash
    git revert <commit-hash>
    pnpm install
@@ -258,9 +276,9 @@ If critical issues are found during implementation:
    ```
 
 2. **Trigger Conditions:**
-   - >20% of unit tests failing
+   - > 20% of unit tests failing
    - Integration tests still not executable
-   - >3x slower test runs
+   - > 3x slower test runs
    - Developer workflow blocked >2 hours
 
 3. **Fallback Strategy:**
@@ -288,17 +306,20 @@ If critical issues are found during implementation:
 ## 📚 Resources & References
 
 ### Documentation
+
 - **Remediation Plan:** `docs/remediation-plans/jest-msw-integration-tests-fix.md`
 - **Current Setup Issues:** `apps/web/src/app/cases/INTEGRATION_TESTS_README.md`
 - **Testing Strategy:** `docs/architecture/testing-strategy.md`
 
 ### Technical References
+
 - [Jest ESM Support](https://jestjs.io/docs/ecmascript-modules)
 - [Next.js Testing Guide](https://nextjs.org/docs/testing)
 - [MSW Documentation](https://mswjs.io/docs/)
 - [MSW v2 Migration](https://mswjs.io/docs/migrations/1.x-to-2.x)
 
 ### Related Stories
+
 - Story 2.8: Case CRUD Operations UI (integration tests blocked)
 - Story 2.8.3: Role-Based Financial Visibility (integration tests blocked)
 - Future Stories: 2.8.4, 2.9+ (will benefit from this fix)
@@ -308,19 +329,23 @@ If critical issues are found during implementation:
 ## 💬 Comments & Notes
 
 ### Implementation Notes
+
 - **Estimated Effort:** 6-8 hours for senior developer
 - **Timeline:** 1-2 days if worked consecutively
 - **Recommended:** Allocate full sprint for thorough testing
 - **Team Impact:** Minimal (transparent to most developers)
 
 ### Success Metrics
+
 - Integration test execution rate: 0% → 100%
 - Integration test pass rate: Target ≥80%
 - Unit test stability: Maintain 100% pass rate
 - Developer satisfaction: Post-implementation survey
 
 ### Follow-up Work
+
 After this issue is resolved:
+
 - Add more integration tests for new features
 - Consider E2E test setup (Playwright)
 - Improve test coverage to 80%+ of user workflows
@@ -344,18 +369,21 @@ After this issue is resolved:
 ## ✅ Checklist for Assignee
 
 Before starting:
+
 - [ ] Read full remediation plan: `docs/remediation-plans/jest-msw-integration-tests-fix.md`
 - [ ] Review current Jest configuration: `apps/web/jest.config.js`
 - [ ] Check out feature branch: `git checkout -b infra/jest-esm-mode`
 - [ ] Ensure Node.js 18+ installed
 
 During implementation:
+
 - [ ] Follow Phase 1-5 tasks sequentially
 - [ ] Document any deviations from plan
 - [ ] Track time spent per phase
 - [ ] Take notes for team knowledge sharing
 
 Before submitting PR:
+
 - [ ] All tests passing locally
 - [ ] Documentation updated
 - [ ] Self-review of changes

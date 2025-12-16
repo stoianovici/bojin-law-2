@@ -86,7 +86,7 @@ export function validateTaskByType(input: CreateTaskInput): ValidationResult {
     }
   } else if (typeValidationRules && typeValidationRules.length > 0) {
     // If there are required fields but no metadata provided
-    const requiredFields = typeValidationRules.filter(r => r.required);
+    const requiredFields = typeValidationRules.filter((r) => r.required);
     if (requiredFields.length > 0) {
       errors.push({
         field: 'typeMetadata',
@@ -106,7 +106,7 @@ export function validateTaskByType(input: CreateTaskInput): ValidationResult {
  */
 export function validateTypeMetadata(
   type: TaskType,
-  metadata: Record<string, unknown>,
+  metadata: Record<string, unknown>
 ): ValidationResult {
   const errors: ValidationError[] = [];
   const rules = TASK_TYPE_VALIDATION_RULES[type];

@@ -272,16 +272,16 @@ describe('Proactive Suggestions GraphQL Integration Tests', () => {
 
     it('should respect user aiSuggestionLevel preference', async () => {
       // With moderate level, filter out low confidence suggestions
-      const filteredSuggestions = mockSuggestions.filter(s => s.confidence >= 0.5);
+      const filteredSuggestions = mockSuggestions.filter((s) => s.confidence >= 0.5);
       mockPrisma.aISuggestion.findMany.mockResolvedValue(filteredSuggestions as any);
 
-      expect(filteredSuggestions.every(s => s.confidence >= 0.5)).toBe(true);
+      expect(filteredSuggestions.every((s) => s.confidence >= 0.5)).toBe(true);
     });
 
     it('should include different suggestion types', async () => {
       mockPrisma.aISuggestion.findMany.mockResolvedValue(mockSuggestions as any);
 
-      const types = mockSuggestions.map(s => s.type);
+      const types = mockSuggestions.map((s) => s.type);
       expect(types).toContain('TaskSuggestion');
       expect(types).toContain('DeadlineWarning');
     });
@@ -366,9 +366,7 @@ describe('Proactive Suggestions GraphQL Integration Tests', () => {
         dueDate: daysFromNow(1),
         daysUntilDue: 1,
         severity: 'critical',
-        suggestedActions: [
-          { action: 'start_task', description: 'Start working on task' },
-        ],
+        suggestedActions: [{ action: 'start_task', description: 'Start working on task' }],
       },
       {
         taskId: 'task-2',
@@ -398,17 +396,17 @@ describe('Proactive Suggestions GraphQL Integration Tests', () => {
     it('should include severity based on days until due', async () => {
       const warnings = mockWarnings;
 
-      const critical = warnings.find(w => w.daysUntilDue <= 3);
+      const critical = warnings.find((w) => w.daysUntilDue <= 3);
       expect(critical?.severity).toBe('critical');
 
-      const warning = warnings.find(w => w.daysUntilDue > 3 && w.daysUntilDue <= 7);
+      const warning = warnings.find((w) => w.daysUntilDue > 3 && w.daysUntilDue <= 7);
       expect(warning?.severity).toBe('warning');
     });
 
     it('should include suggested actions', async () => {
       const warnings = mockWarnings;
 
-      const warningWithActions = warnings.find(w => w.suggestedActions.length > 0);
+      const warningWithActions = warnings.find((w) => w.suggestedActions.length > 0);
       expect(warningWithActions).toBeDefined();
       expect(warningWithActions?.suggestedActions[0]).toHaveProperty('action');
     });
@@ -431,9 +429,7 @@ describe('Proactive Suggestions GraphQL Integration Tests', () => {
           suggestion: 'Add witness signatures for additional legal protection.',
         },
       ],
-      suggestions: [
-        'Consider adding notarization clause.',
-      ],
+      suggestions: ['Consider adding notarization clause.'],
     };
 
     it('should return completeness score for document', async () => {
@@ -456,9 +452,7 @@ describe('Proactive Suggestions GraphQL Integration Tests', () => {
 
       expect(result.missingItems.length).toBeGreaterThan(0);
       expect(result.missingItems[0]).toHaveProperty('severity');
-      expect(['required', 'recommended', 'optional']).toContain(
-        result.missingItems[0].severity
-      );
+      expect(['required', 'recommended', 'optional']).toContain(result.missingItems[0].severity);
     });
 
     it('should include AI suggestions for improvement', async () => {

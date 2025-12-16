@@ -1,6 +1,7 @@
 # Error Handling Strategy
 
 ## Error Response Format
+
 ```typescript
 interface ApiError {
   error: {
@@ -16,6 +17,7 @@ interface ApiError {
 ```
 
 ## Error Categories
+
 - Validation Errors (400)
 - Authentication Errors (401)
 - Authorization Errors (403)

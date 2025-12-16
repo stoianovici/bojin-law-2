@@ -31,7 +31,10 @@ export interface CaseHeaderProps {
  */
 function StatusBadge({ status }: { status: CaseStatus }) {
   const statusConfig: Record<CaseStatus, { label: string; className: string }> = {
-    PendingApproval: { label: 'Pending Approval', className: 'bg-orange-100 text-orange-800 border-orange-200' }, // Story 2.8.2
+    PendingApproval: {
+      label: 'Pending Approval',
+      className: 'bg-orange-100 text-orange-800 border-orange-200',
+    }, // Story 2.8.2
     Active: { label: 'Activ', className: 'bg-green-100 text-green-800 border-green-200' },
     OnHold: { label: 'Suspendat', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
     Closed: { label: 'Închis', className: 'bg-gray-100 text-gray-800 border-gray-200' },

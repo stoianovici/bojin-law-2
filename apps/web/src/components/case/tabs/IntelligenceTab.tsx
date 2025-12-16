@@ -13,22 +13,13 @@
  */
 
 import { useState } from 'react';
-import {
-  Brain,
-  AlertTriangle,
-  Calendar,
-  MessageSquare,
-  RefreshCw,
-} from 'lucide-react';
+import { Brain, AlertTriangle, Calendar, MessageSquare, RefreshCw } from 'lucide-react';
 import { ExtractedItemsPanel } from '../../communication/ExtractedItemsPanel';
 import { RiskIndicatorsPanel } from '../RiskIndicatorsPanel';
 import { RiskAlertBanner } from '../RiskAlertBanner';
 import { CalendarSuggestions } from '../../communication/CalendarSuggestions';
 import { CaseThreadSummariesPanel } from '../../communication/ThreadSummaryPanel';
-import {
-  useExtractedItemsCounts,
-  useCaseThreadSummaries,
-} from '../../../hooks/useExtractedItems';
+import { useExtractedItemsCounts, useCaseThreadSummaries } from '../../../hooks/useExtractedItems';
 import { useRiskIndicators } from '../../../hooks/useRiskIndicators';
 
 // ============================================================================
@@ -72,9 +63,7 @@ function IntelligenceSummary({ caseId }: IntelligenceSummaryProps) {
       {/* Pending Items */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <div className="text-sm text-gray-500 mb-1">Pending Items</div>
-        <div className="text-2xl font-bold text-gray-900">
-          {counts?.total ?? 0}
-        </div>
+        <div className="text-2xl font-bold text-gray-900">{counts?.total ?? 0}</div>
         <div className="text-xs text-gray-400 mt-1">
           {counts?.deadlines ?? 0} deadlines, {counts?.actionItems ?? 0} actions
         </div>
@@ -83,23 +72,15 @@ function IntelligenceSummary({ caseId }: IntelligenceSummaryProps) {
       {/* Commitments */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <div className="text-sm text-gray-500 mb-1">Commitments</div>
-        <div className="text-2xl font-bold text-blue-600">
-          {counts?.commitments ?? 0}
-        </div>
-        <div className="text-xs text-gray-400 mt-1">
-          Tracked from emails
-        </div>
+        <div className="text-2xl font-bold text-blue-600">{counts?.commitments ?? 0}</div>
+        <div className="text-xs text-gray-400 mt-1">Tracked from emails</div>
       </div>
 
       {/* Questions */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <div className="text-sm text-gray-500 mb-1">Unanswered Questions</div>
-        <div className="text-2xl font-bold text-purple-600">
-          {counts?.questions ?? 0}
-        </div>
-        <div className="text-xs text-gray-400 mt-1">
-          Requiring response
-        </div>
+        <div className="text-2xl font-bold text-purple-600">{counts?.questions ?? 0}</div>
+        <div className="text-xs text-gray-400 mt-1">Requiring response</div>
       </div>
 
       {/* Active Risks */}
@@ -163,11 +144,7 @@ function Section({ title, icon, badge, children, defaultExpanded = true }: Secti
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {isExpanded && (
-        <div className="p-4 border-t border-gray-200">
-          {children}
-        </div>
-      )}
+      {isExpanded && <div className="p-4 border-t border-gray-200">{children}</div>}
     </div>
   );
 }
@@ -209,9 +186,7 @@ export function IntelligenceTab({ caseId }: IntelligenceTabProps) {
       </div>
 
       {/* Risk Alert Banner for high-severity risks */}
-      {highSeverityRisks && highSeverityRisks.length > 0 && (
-        <RiskAlertBanner caseId={caseId} />
-      )}
+      {highSeverityRisks && highSeverityRisks.length > 0 && <RiskAlertBanner caseId={caseId} />}
 
       {/* Intelligence Summary */}
       <IntelligenceSummary caseId={caseId} />
@@ -226,10 +201,7 @@ export function IntelligenceTab({ caseId }: IntelligenceTabProps) {
             icon={<Brain className="h-5 w-5 text-blue-500" aria-hidden="true" />}
             badge={itemsData?.extractedItemsCounts?.total}
           >
-            <ExtractedItemsPanel
-              caseId={caseId}
-              onAddToCalendar={handleAddToCalendar}
-            />
+            <ExtractedItemsPanel caseId={caseId} onAddToCalendar={handleAddToCalendar} />
           </Section>
 
           {/* Calendar Suggestions */}
@@ -260,10 +232,7 @@ export function IntelligenceTab({ caseId }: IntelligenceTabProps) {
             badge={threadsData?.caseThreadSummaries?.length}
             defaultExpanded={false}
           >
-            <CaseThreadSummariesPanel
-              caseId={caseId}
-              onEmailClick={handleEmailClick}
-            />
+            <CaseThreadSummariesPanel caseId={caseId} onEmailClick={handleEmailClick} />
           </Section>
         </div>
       </div>

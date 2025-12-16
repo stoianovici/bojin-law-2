@@ -11,12 +11,7 @@ import React from 'react';
 import { useQuery, useSubscription } from '@apollo/client/react';
 import { gql } from '@apollo/client/core';
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Lock, Unlock, Clock, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -99,10 +94,13 @@ export function DocumentLockStatus({
   className,
 }: DocumentLockStatusProps) {
   // Query lock status
-  const { data, loading, error, refetch } = useQuery<DocumentLockStatusData>(GET_DOCUMENT_LOCK_STATUS, {
-    variables: { documentId },
-    pollInterval: 60000, // Poll every minute as backup
-  });
+  const { data, loading, error, refetch } = useQuery<DocumentLockStatusData>(
+    GET_DOCUMENT_LOCK_STATUS,
+    {
+      variables: { documentId },
+      pollInterval: 60000, // Poll every minute as backup
+    }
+  );
 
   // Subscribe to lock changes
   useSubscription(DOCUMENT_LOCK_CHANGED, {
@@ -154,9 +152,7 @@ export function DocumentLockStatus({
   const userInitials = lockedBy
     ? `${lockedBy.firstName?.[0] || ''}${lockedBy.lastName?.[0] || ''}`
     : '??';
-  const userName = lockedBy
-    ? `${lockedBy.firstName} ${lockedBy.lastName}`
-    : 'Unknown User';
+  const userName = lockedBy ? `${lockedBy.firstName} ${lockedBy.lastName}` : 'Unknown User';
   const expiresAt = lock?.expiresAt ? new Date(lock.expiresAt) : null;
   const expiresIn = expiresAt ? formatDistanceToNow(expiresAt, { addSuffix: true }) : '';
 
@@ -181,7 +177,9 @@ export function DocumentLockStatus({
             </Badge>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{currentUserHoldsLock ? 'You are editing this document' : `Locked by ${userName}`}</p>
+            <p>
+              {currentUserHoldsLock ? 'You are editing this document' : `Locked by ${userName}`}
+            </p>
             <p className="text-xs text-muted-foreground">via {sessionTypeLabel}</p>
           </TooltipContent>
         </Tooltip>
@@ -204,7 +202,9 @@ export function DocumentLockStatus({
           </TooltipTrigger>
           <TooltipContent>
             <div className="space-y-1">
-              <p>{currentUserHoldsLock ? 'You are editing this document' : `Locked by ${userName}`}</p>
+              <p>
+                {currentUserHoldsLock ? 'You are editing this document' : `Locked by ${userName}`}
+              </p>
               <p className="text-xs text-muted-foreground">via {sessionTypeLabel}</p>
               {expiresAt && (
                 <p className="text-xs text-muted-foreground">Lock expires {expiresIn}</p>
@@ -218,15 +218,21 @@ export function DocumentLockStatus({
 
   // Detailed variant
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-lg border ${currentUserHoldsLock ? 'border-blue-200 bg-blue-50' : 'border-orange-200 bg-orange-50'} ${className}`}>
+    <div
+      className={`flex items-center gap-3 p-3 rounded-lg border ${currentUserHoldsLock ? 'border-blue-200 bg-blue-50' : 'border-orange-200 bg-orange-50'} ${className}`}
+    >
       <Avatar className="h-8 w-8">
-        <AvatarFallback className={currentUserHoldsLock ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}>
+        <AvatarFallback
+          className={currentUserHoldsLock ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}
+        >
           {currentUserHoldsLock ? <User className="h-4 w-4" /> : userInitials}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <Lock className={`h-4 w-4 ${currentUserHoldsLock ? 'text-blue-500' : 'text-orange-500'}`} />
+          <Lock
+            className={`h-4 w-4 ${currentUserHoldsLock ? 'text-blue-500' : 'text-orange-500'}`}
+          />
           <span className="font-medium text-sm">
             {currentUserHoldsLock ? 'You are editing' : `Locked by ${userName}`}
           </span>

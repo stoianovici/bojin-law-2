@@ -112,10 +112,7 @@ export function PrivacySelector({
   const handleLevelSelect = useCallback(
     (level: PrivacyLevel) => {
       // Show warning when restricting access
-      if (
-        currentLevel === 'Normal' &&
-        level !== 'Normal'
-      ) {
+      if (currentLevel === 'Normal' && level !== 'Normal') {
         setShowWarning(true);
       }
 
@@ -137,9 +134,7 @@ export function PrivacySelector({
   // Handle viewer toggle
   const handleViewerToggle = useCallback((viewerId: string) => {
     setSelectedViewers((prev) =>
-      prev.includes(viewerId)
-        ? prev.filter((id) => id !== viewerId)
-        : [...prev, viewerId]
+      prev.includes(viewerId) ? prev.filter((id) => id !== viewerId) : [...prev, viewerId]
     );
   }, []);
 
@@ -195,13 +190,9 @@ export function PrivacySelector({
         aria-haspopup="listbox"
       >
         <PrivacyIcon level={currentLevel} className="h-4 w-4" />
-        {!compact && (
-          <span className="text-gray-700">{getLevelLabel(currentLevel)}</span>
-        )}
+        {!compact && <span className="text-gray-700">{getLevelLabel(currentLevel)}</span>}
         <ChevronDown
-          className={`h-4 w-4 text-gray-400 transition-transform ${
-            isOpen ? 'rotate-180' : ''
-          }`}
+          className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -209,11 +200,7 @@ export function PrivacySelector({
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={handleCancel}
-            aria-hidden="true"
-          />
+          <div className="fixed inset-0 z-10" onClick={handleCancel} aria-hidden="true" />
 
           {/* Panel */}
           <div
@@ -226,9 +213,7 @@ export function PrivacySelector({
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-600" />
                   <div>
-                    <p className="text-sm font-medium text-yellow-800">
-                      Restricting Access
-                    </p>
+                    <p className="text-sm font-medium text-yellow-800">Restricting Access</p>
                     <p className="text-xs text-yellow-700">
                       This will limit who can view this communication.
                     </p>
@@ -248,9 +233,7 @@ export function PrivacySelector({
                   type="button"
                   onClick={() => handleLevelSelect(level.level)}
                   className={`flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
-                    selectedLevel === level.level
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'hover:bg-gray-50'
+                    selectedLevel === level.level ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
                   }`}
                   role="option"
                   aria-selected={selectedLevel === level.level}
@@ -259,9 +242,7 @@ export function PrivacySelector({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{level.label}</span>
-                      {selectedLevel === level.level && (
-                        <Check className="h-4 w-4 text-blue-600" />
-                      )}
+                      {selectedLevel === level.level && <Check className="h-4 w-4 text-blue-600" />}
                     </div>
                     <p className="text-xs text-gray-500">{level.description}</p>
                   </div>
@@ -298,9 +279,7 @@ export function PrivacySelector({
                           <div className="truncate text-sm font-medium text-gray-900">
                             {member.firstName} {member.lastName}
                           </div>
-                          <div className="truncate text-xs text-gray-500">
-                            {member.role}
-                          </div>
+                          <div className="truncate text-xs text-gray-500">{member.role}</div>
                         </div>
                       </label>
                     ))}

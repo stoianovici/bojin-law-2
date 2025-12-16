@@ -6,11 +6,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  TaskAttendee,
-  TaskTypeEnum,
-  AttendeeResponse,
-} from '@prisma/client';
+import { TaskAttendee, TaskTypeEnum, AttendeeResponse } from '@prisma/client';
 
 export interface AttendeeInput {
   userId?: string; // Internal user
@@ -76,11 +72,7 @@ export class MeetingAttendeeService {
   /**
    * Remove an attendee from a Meeting task
    */
-  async removeAttendee(
-    taskId: string,
-    attendeeId: string,
-    firmId: string
-  ): Promise<void> {
+  async removeAttendee(taskId: string, attendeeId: string, firmId: string): Promise<void> {
     // Verify task belongs to firm
     const task = await prisma.task.findFirst({
       where: {

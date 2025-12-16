@@ -18,18 +18,12 @@ import {
 describe('Infrastructure Integration Tests', () => {
   beforeAll(async () => {
     // Ensure connections are established
-    await Promise.all([
-      prisma.$connect(),
-      redis.ping(),
-    ]);
+    await Promise.all([prisma.$connect(), redis.ping()]);
   });
 
   afterAll(async () => {
     // Clean up connections
-    await Promise.all([
-      prisma.$disconnect(),
-      redis.quit(),
-    ]);
+    await Promise.all([prisma.$disconnect(), redis.quit()]);
   });
 
   describe('PostgreSQL Database', () => {
@@ -80,9 +74,7 @@ describe('Infrastructure Integration Tests', () => {
     });
 
     it('should handle concurrent database connections', async () => {
-      const promises = Array.from({ length: 10 }, (_, i) =>
-        prisma.$queryRaw`SELECT ${i} AS value`
-      );
+      const promises = Array.from({ length: 10 }, (_, i) => prisma.$queryRaw`SELECT ${i} AS value`);
 
       const results = await Promise.all(promises);
 
@@ -263,9 +255,7 @@ describe('Infrastructure Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle database errors gracefully', async () => {
-      await expect(
-        prisma.$queryRaw`SELECT * FROM nonexistent_table`
-      ).rejects.toThrow();
+      await expect(prisma.$queryRaw`SELECT * FROM nonexistent_table`).rejects.toThrow();
     });
 
     it('should handle Redis errors gracefully', async () => {

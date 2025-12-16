@@ -90,7 +90,7 @@ describe('DiscoveryStatusService', () => {
           totalOccurrences: 50,
           priorityScore: 0.85,
           mappingStatus: 'mapped',
-          confidence: 0.90,
+          confidence: 0.9,
           lastDiscovered: new Date('2025-11-19'),
           estimatedTimeSavings: 2.5,
           estimatedMonthlySavings: '€1042/month',
@@ -200,13 +200,7 @@ describe('DiscoveryStatusService', () => {
 
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE document_type_registry'),
-        [
-          'document-drafting',
-          0.95,
-          'John Doe',
-          'Manual review',
-          '123',
-        ]
+        ['document-drafting', 0.95, 'John Doe', 'Manual review', '123']
       );
     });
   });
@@ -281,9 +275,7 @@ describe('DiscoveryStatusService', () => {
       const result = await service.getDiscoveryTrends(7);
 
       expect(result).toEqual(mockTrends);
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining("INTERVAL '7 days'")
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining("INTERVAL '7 days'"));
     });
 
     it('should default to 30 days', async () => {
@@ -291,9 +283,7 @@ describe('DiscoveryStatusService', () => {
 
       await service.getDiscoveryTrends();
 
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining("INTERVAL '30 days'")
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining("INTERVAL '30 days'"));
     });
   });
 });

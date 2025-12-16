@@ -5,11 +5,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  DocumentEditorStore,
-  DocumentMetadata,
-  ActiveView,
-} from '@legal-platform/types';
+import type { DocumentEditorStore, DocumentMetadata, ActiveView } from '@legal-platform/types';
 
 const initialState = {
   isAIPanelCollapsed: false,
@@ -52,12 +48,10 @@ export const useDocumentEditorStore = create<DocumentEditorStore>()(
           };
         }),
 
-      setActiveView: (view: ActiveView) =>
-        set({ activeView: view }),
+      setActiveView: (view: ActiveView) => set({ activeView: view }),
 
       // Document actions
-      setCurrentDocument: (document: DocumentMetadata | null) =>
-        set({ currentDocument: document }),
+      setCurrentDocument: (document: DocumentMetadata | null) => set({ currentDocument: document }),
 
       // Reset
       resetState: () => set(initialState),
@@ -80,13 +74,11 @@ export const useDocumentEditorStore = create<DocumentEditorStore>()(
 );
 
 // Selectors for optimized re-renders
-export const selectIsAIPanelCollapsed = (state: DocumentEditorStore) =>
-  state.isAIPanelCollapsed;
+export const selectIsAIPanelCollapsed = (state: DocumentEditorStore) => state.isAIPanelCollapsed;
 
 export const selectIsCommentsSidebarOpen = (state: DocumentEditorStore) =>
   state.isCommentsSidebarOpen;
 
 export const selectActiveView = (state: DocumentEditorStore) => state.activeView;
 
-export const selectCurrentDocument = (state: DocumentEditorStore) =>
-  state.currentDocument;
+export const selectCurrentDocument = (state: DocumentEditorStore) => state.currentDocument;

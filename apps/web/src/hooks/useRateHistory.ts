@@ -69,13 +69,10 @@ interface UseRateHistoryResult {
  * @returns Rate history, loading state, and error
  */
 export function useRateHistory(caseId: string): UseRateHistoryResult {
-  const { data, loading, error, refetch } = useQuery<GetRateHistoryQueryResult>(
-    GET_RATE_HISTORY,
-    {
-      variables: { caseId },
-      skip: !caseId,
-    }
-  );
+  const { data, loading, error, refetch } = useQuery<GetRateHistoryQueryResult>(GET_RATE_HISTORY, {
+    variables: { caseId },
+    skip: !caseId,
+  });
 
   return {
     history: data?.case?.rateHistory || [],

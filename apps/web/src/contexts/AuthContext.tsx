@@ -293,6 +293,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+      // Wait for any pending redirect to complete first
+      await msalInstance.handleRedirectPromise();
+
       await msalInstance.loginRedirect(loginRequest);
     } catch (error: unknown) {
       console.error('Login error:', error);

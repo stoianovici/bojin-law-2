@@ -44,8 +44,22 @@ describe('Category Management', () => {
   describe('Category Sync (GET /api/sync-categories)', () => {
     it('should return all active categories for a session', async () => {
       const mockCategories = [
-        { id: 'cat-1', sessionId: 'session-1', name: 'Contract', documentCount: 42, createdBy: 'user-1', createdAt: new Date() },
-        { id: 'cat-2', sessionId: 'session-1', name: 'Notificare', documentCount: 18, createdBy: 'user-2', createdAt: new Date() },
+        {
+          id: 'cat-1',
+          sessionId: 'session-1',
+          name: 'Contract',
+          documentCount: 42,
+          createdBy: 'user-1',
+          createdAt: new Date(),
+        },
+        {
+          id: 'cat-2',
+          sessionId: 'session-1',
+          name: 'Notificare',
+          documentCount: 18,
+          createdBy: 'user-2',
+          createdAt: new Date(),
+        },
       ];
 
       (prisma.importCategory.findMany as jest.Mock).mockResolvedValue(mockCategories);
@@ -66,7 +80,13 @@ describe('Category Management', () => {
 
     it('should exclude merged categories', async () => {
       const mockCategories = [
-        { id: 'cat-1', sessionId: 'session-1', name: 'Contract', documentCount: 42, mergedInto: null },
+        {
+          id: 'cat-1',
+          sessionId: 'session-1',
+          name: 'Contract',
+          documentCount: 42,
+          mergedInto: null,
+        },
       ];
 
       (prisma.importCategory.findMany as jest.Mock).mockResolvedValue(mockCategories);
@@ -98,8 +118,8 @@ describe('Category Management', () => {
       });
 
       expect(sorted[0].name).toBe('Alpha'); // Same count, alphabetically first
-      expect(sorted[1].name).toBe('Zeta');  // Same count, alphabetically second
-      expect(sorted[2].name).toBe('Beta');  // Lower count
+      expect(sorted[1].name).toBe('Zeta'); // Same count, alphabetically second
+      expect(sorted[2].name).toBe('Beta'); // Lower count
     });
   });
 
@@ -306,8 +326,20 @@ describe('Category Management', () => {
     };
 
     const mockSourceCategories = [
-      { id: 'cat-source-1', sessionId: 'session-1', name: 'Contracts', documentCount: 18, mergedInto: null },
-      { id: 'cat-source-2', sessionId: 'session-1', name: 'Contract ', documentCount: 3, mergedInto: null },
+      {
+        id: 'cat-source-1',
+        sessionId: 'session-1',
+        name: 'Contracts',
+        documentCount: 18,
+        mergedInto: null,
+      },
+      {
+        id: 'cat-source-2',
+        sessionId: 'session-1',
+        name: 'Contract ',
+        documentCount: 3,
+        mergedInto: null,
+      },
     ];
 
     it('should merge multiple categories into target', async () => {
@@ -430,9 +462,7 @@ describe('Category Management', () => {
       };
 
       // When finding categories with mergedInto: null, this should be excluded
-      const categories = [alreadyMergedCategory].filter(
-        (c) => c.mergedInto === null
-      );
+      const categories = [alreadyMergedCategory].filter((c) => c.mergedInto === null);
 
       expect(categories.length).toBe(0);
     });

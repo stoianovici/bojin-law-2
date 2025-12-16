@@ -159,11 +159,7 @@ describe('Textarea', () => {
 
     it('has correct ARIA attributes for error state', () => {
       render(
-        <Textarea
-          label="Description"
-          validationState="error"
-          errorMessage="Required field"
-        />
+        <Textarea label="Description" validationState="error" errorMessage="Required field" />
       );
       const textarea = screen.getByLabelText('Description');
       expect(textarea).toHaveAttribute('aria-invalid', 'true');

@@ -6,7 +6,15 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { ClaudeModel, AIOperationType, AITokenUsageRecord, AIUsageStats, AIModelUsage, AIOperationUsage, AIDateRange } from '@legal-platform/types';
+import {
+  ClaudeModel,
+  AIOperationType,
+  AITokenUsageRecord,
+  AIUsageStats,
+  AIModelUsage,
+  AIOperationUsage,
+  AIDateRange,
+} from '@legal-platform/types';
 import { config } from '../config';
 
 // Initialize Prisma client (will be injected in production)
@@ -171,25 +179,32 @@ export class TokenTrackerService {
       requestCount: totalRequests,
       avgLatencyMs: aggregates._avg.latencyMs || 0,
       cacheHitRate,
-      byModel: byModel.map((m): AIModelUsage => ({
-        model: m.modelUsed,
-        tokens: m._sum.totalTokens || 0,
-        costCents: m._sum.costCents || 0,
-        requestCount: m._count,
-      })),
-      byOperation: byOperation.map((o): AIOperationUsage => ({
-        operation: o.operationType as AIOperationType,
-        tokens: o._sum.totalTokens || 0,
-        costCents: o._sum.costCents || 0,
-        requestCount: o._count,
-      })),
+      byModel: byModel.map(
+        (m): AIModelUsage => ({
+          model: m.modelUsed,
+          tokens: m._sum.totalTokens || 0,
+          costCents: m._sum.costCents || 0,
+          requestCount: m._count,
+        })
+      ),
+      byOperation: byOperation.map(
+        (o): AIOperationUsage => ({
+          operation: o.operationType as AIOperationType,
+          tokens: o._sum.totalTokens || 0,
+          costCents: o._sum.costCents || 0,
+          requestCount: o._count,
+        })
+      ),
     };
   }
 
   /**
    * Get usage by user
    */
-  async getUsageByUser(firmId: string, dateRange: AIDateRange): Promise<Map<string, { tokens: number; costCents: number }>> {
+  async getUsageByUser(
+    firmId: string,
+    dateRange: AIDateRange
+  ): Promise<Map<string, { tokens: number; costCents: number }>> {
     const results = await prisma.aITokenUsage.groupBy({
       by: ['userId'],
       where: {
@@ -222,7 +237,10 @@ export class TokenTrackerService {
   /**
    * Get usage by case
    */
-  async getUsageByCase(firmId: string, dateRange: AIDateRange): Promise<Map<string, { tokens: number; costCents: number }>> {
+  async getUsageByCase(
+    firmId: string,
+    dateRange: AIDateRange
+  ): Promise<Map<string, { tokens: number; costCents: number }>> {
     const results = await prisma.aITokenUsage.groupBy({
       by: ['caseId'],
       where: {
@@ -255,7 +273,10 @@ export class TokenTrackerService {
   /**
    * Get daily usage trend
    */
-  async getDailyUsageTrend(firmId: string, dateRange: AIDateRange): Promise<Array<{ date: string; tokens: number; costCents: number; requests: number }>> {
+  async getDailyUsageTrend(
+    firmId: string,
+    dateRange: AIDateRange
+  ): Promise<Array<{ date: string; tokens: number; costCents: number; requests: number }>> {
     const records = await prisma.aITokenUsage.findMany({
       where: {
         firmId,

@@ -88,11 +88,7 @@ interface ResponsePatternsCardProps {
 /**
  * Day of week heatmap component
  */
-function DayOfWeekHeatmap({
-  patterns,
-}: {
-  patterns: ResponseTimePattern[];
-}) {
+function DayOfWeekHeatmap({ patterns }: { patterns: ResponseTimePattern[] }) {
   // Aggregate day patterns
   const aggregatedPattern = useMemo(() => {
     const dayData: Record<string, number[]> = {
@@ -177,11 +173,7 @@ function DayOfWeekHeatmap({
 /**
  * Time of day chart component
  */
-function TimeOfDayChart({
-  patterns,
-}: {
-  patterns: ResponseTimePattern[];
-}) {
+function TimeOfDayChart({ patterns }: { patterns: ResponseTimePattern[] }) {
   // Aggregate time of day patterns
   const aggregatedPattern = useMemo(() => {
     const timeData: Record<string, number[]> = {
@@ -263,11 +255,7 @@ function TimeOfDayChart({
 /**
  * Task type breakdown component
  */
-function TaskTypeBreakdown({
-  patterns,
-}: {
-  patterns: ResponseTimePattern[];
-}) {
+function TaskTypeBreakdown({ patterns }: { patterns: ResponseTimePattern[] }) {
   const sortedPatterns = useMemo(() => {
     return [...patterns].sort((a, b) => a.averageResponseHours - b.averageResponseHours);
   }, [patterns]);
@@ -322,11 +310,7 @@ function TaskTypeBreakdown({
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all ${
-                    score >= 70
-                      ? 'bg-green-500'
-                      : score >= 40
-                        ? 'bg-yellow-500'
-                        : 'bg-red-500'
+                    score >= 70 ? 'bg-green-500' : score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
                   }`}
                   style={{ width: `${percentage}%` }}
                 />
@@ -357,9 +341,7 @@ function SummaryStats({
     <div className="grid grid-cols-2 gap-4">
       <div className="p-3 bg-muted/30 rounded-lg">
         <div className="text-xs text-muted-foreground">Timp mediu răspuns</div>
-        <div className="text-lg font-semibold mt-1">
-          {summary.averageResponseTime}
-        </div>
+        <div className="text-lg font-semibold mt-1">{summary.averageResponseTime}</div>
       </div>
       <div className="p-3 bg-muted/30 rounded-lg">
         <div className="text-xs text-muted-foreground">Total task-uri analizate</div>
@@ -388,11 +370,7 @@ function SummaryStats({
 /**
  * Accessibility table for screen readers
  */
-function AccessibilityTable({
-  patterns,
-}: {
-  patterns: ResponseTimePattern[];
-}) {
+function AccessibilityTable({ patterns }: { patterns: ResponseTimePattern[] }) {
   return (
     <table className="sr-only">
       <caption>Tabel cu pattern-uri de timp de răspuns</caption>
@@ -423,25 +401,15 @@ function AccessibilityTable({
 /**
  * Main ResponsePatternsCard component
  */
-export function ResponsePatternsCard({
-  className = '',
-}: ResponsePatternsCardProps) {
-  const {
-    patterns,
-    summary,
-    loading,
-    error,
-    hasPatterns,
-  } = useResponsePatternManagement();
+export function ResponsePatternsCard({ className = '' }: ResponsePatternsCardProps) {
+  const { patterns, summary, loading, error, hasPatterns } = useResponsePatternManagement();
 
   if (loading && patterns.length === 0) {
     return (
       <Card className={className}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center h-32">
-            <div className="animate-pulse text-muted-foreground">
-              Se încarcă pattern-urile...
-            </div>
+            <div className="animate-pulse text-muted-foreground">Se încarcă pattern-urile...</div>
           </div>
         </CardContent>
       </Card>
@@ -564,16 +532,12 @@ export function ResponsePatternsCompact({ className = '' }: { className?: string
             {summary.peakProductivityTime && (
               <div className="text-xs text-muted-foreground">
                 Cea mai productivă zi:{' '}
-                <span className="font-medium text-blue-600">
-                  {summary.peakProductivityTime}
-                </span>
+                <span className="font-medium text-blue-600">{summary.peakProductivityTime}</span>
               </div>
             )}
           </>
         ) : (
-          <p className="text-xs text-muted-foreground text-center py-2">
-            Date insuficiente
-          </p>
+          <p className="text-xs text-muted-foreground text-center py-2">Date insuficiente</p>
         )}
       </CardContent>
     </Card>

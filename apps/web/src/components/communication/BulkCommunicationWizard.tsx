@@ -18,10 +18,7 @@ import {
   type RecipientFilter,
   type CustomRecipient,
 } from '@/hooks/useBulkCommunication';
-import {
-  useTemplates,
-  type CommunicationTemplate,
-} from '@/hooks/useCommunicationTemplates';
+import { useTemplates, type CommunicationTemplate } from '@/hooks/useCommunicationTemplates';
 import {
   X,
   ChevronLeft,
@@ -154,13 +151,16 @@ export function BulkCommunicationWizard({
   }, []);
 
   // Handle template selection
-  const handleTemplateSelect = useCallback((template: CommunicationTemplate) => {
-    updateState({
-      templateId: template.id,
-      subject: template.subject || '',
-      body: template.body,
-    });
-  }, [updateState]);
+  const handleTemplateSelect = useCallback(
+    (template: CommunicationTemplate) => {
+      updateState({
+        templateId: template.id,
+        subject: template.subject || '',
+        body: template.body,
+      });
+    },
+    [updateState]
+  );
 
   // Handle send
   const handleSend = useCallback(async () => {
@@ -217,10 +217,7 @@ export function BulkCommunicationWizard({
       <div className={`flex flex-col ${className}`}>
         <div className="flex items-center justify-between border-b pb-4">
           <h2 className="text-lg font-semibold text-gray-900">Sending Communications</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
-          >
+          <button onClick={onClose} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -326,9 +323,7 @@ export function BulkCommunicationWizard({
               recipientFilter={state.recipientFilter}
               onRecipientTypeChange={(type) => updateState({ recipientType: type })}
               onFilterChange={(filter) => updateState({ recipientFilter: filter })}
-              onRecipientsResolved={(recipients) =>
-                updateState({ resolvedRecipients: recipients })
-              }
+              onRecipientsResolved={(recipients) => updateState({ resolvedRecipients: recipients })}
               caseId={caseId}
             />
             {state.resolvedRecipients.length > 0 && (
@@ -420,8 +415,8 @@ export function BulkCommunicationWizard({
                 <div>
                   <div className="text-sm font-medium text-gray-700">Recipients</div>
                   <div className="text-sm text-gray-600">
-                    {getRecipientTypeLabel(state.recipientType)} -{' '}
-                    {state.resolvedRecipients.length} recipient
+                    {getRecipientTypeLabel(state.recipientType)} - {state.resolvedRecipients.length}{' '}
+                    recipient
                     {state.resolvedRecipients.length !== 1 ? 's' : ''}
                   </div>
                 </div>
@@ -554,7 +549,7 @@ export function BulkCommunicationWizard({
                 disabled={creating || sending || !canProceed}
                 className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {(creating || sending) ? (
+                {creating || sending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : state.useSchedule ? (
                   <Calendar className="h-4 w-4" />

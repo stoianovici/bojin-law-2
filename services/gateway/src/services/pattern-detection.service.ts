@@ -16,7 +16,12 @@
  * - Store detected patterns in TaskPatternAnalysis table
  */
 
-import { PrismaClient as PrismaClientType, TaskTypeEnum, CaseType, TaskPatternType } from '@prisma/client';
+import {
+  PrismaClient as PrismaClientType,
+  TaskTypeEnum,
+  CaseType,
+  TaskPatternType,
+} from '@prisma/client';
 import type {
   PatternDetectionResponse,
   TaskCoOccurrencePattern,
@@ -172,7 +177,8 @@ export class PatternDetectionService {
       // Find tasks created within the time window
       for (let i = 0; i < sorted.length; i++) {
         const windowTasks: TaskForPattern[] = [sorted[i]];
-        const windowEnd = sorted[i].createdAt.getTime() + CO_OCCURRENCE_WINDOW_HOURS * 60 * 60 * 1000;
+        const windowEnd =
+          sorted[i].createdAt.getTime() + CO_OCCURRENCE_WINDOW_HOURS * 60 * 60 * 1000;
 
         for (let j = i + 1; j < sorted.length; j++) {
           if (sorted[j].createdAt.getTime() <= windowEnd) {
@@ -208,7 +214,10 @@ export class PatternDetectionService {
             } else {
               const assignees = new Map<string, { name: string; count: number }>();
               for (const task of windowTasks) {
-                assignees.set(task.assignedTo, { name: `${task.assignee.firstName} ${task.assignee.lastName}`, count: 1 });
+                assignees.set(task.assignedTo, {
+                  name: `${task.assignee.firstName} ${task.assignee.lastName}`,
+                  count: 1,
+                });
               }
               patternCounts.set(patternKey, {
                 taskTypes: sortedTypes as TaskTypeEnum[],
@@ -284,9 +293,15 @@ export class PatternDetectionService {
           }
         } else {
           const assignees = new Map<string, { name: string; count: number }>();
-          assignees.set(current.assignedTo, { name: `${current.assignee.firstName} ${current.assignee.lastName}`, count: 1 });
+          assignees.set(current.assignedTo, {
+            name: `${current.assignee.firstName} ${current.assignee.lastName}`,
+            count: 1,
+          });
           if (current.assignedTo !== next.assignedTo) {
-            assignees.set(next.assignedTo, { name: `${next.assignee.firstName} ${next.assignee.lastName}`, count: 1 });
+            assignees.set(next.assignedTo, {
+              name: `${next.assignee.firstName} ${next.assignee.lastName}`,
+              count: 1,
+            });
           }
 
           sequenceCounts.set(sequenceKey, {
@@ -484,10 +499,7 @@ export class PatternDetectionService {
   /**
    * Get sample cases for a pattern
    */
-  private async getSampleCases(
-    taskTypes: string[],
-    limit: number
-  ): Promise<PatternSampleCase[]> {
+  private async getSampleCases(taskTypes: string[], limit: number): Promise<PatternSampleCase[]> {
     // Find cases that have all the task types
     const cases = await this.prisma.case.findMany({
       where: {

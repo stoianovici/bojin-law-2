@@ -93,7 +93,9 @@ describe('Case Detail Page Integration Tests', () => {
 
       // Verify loading skeleton or spinner is displayed
       // Note: Adjust selector based on actual loading component implementation
-      expect(screen.getByTestId('loading-skeleton') || screen.getByText(/loading/i)).toBeInTheDocument();
+      expect(
+        screen.getByTestId('loading-skeleton') || screen.getByText(/loading/i)
+      ).toBeInTheDocument();
 
       // Wait for data to load
       await waitFor(() => {

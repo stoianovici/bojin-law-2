@@ -89,9 +89,7 @@ const priorityConfig = {
 function formatRelativeDate(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
-  const diffDays = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
@@ -99,16 +97,12 @@ function formatRelativeDate(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-function getDueDateStatus(
-  dueDate?: string
-): { label: string; isOverdue: boolean } | null {
+function getDueDateStatus(dueDate?: string): { label: string; isOverdue: boolean } | null {
   if (!dueDate) return null;
 
   const due = new Date(dueDate);
   const now = new Date();
-  const diffDays = Math.ceil(
-    (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) return { label: `${Math.abs(diffDays)}d overdue`, isOverdue: true };
   if (diffDays === 0) return { label: 'Due today', isOverdue: false };
@@ -128,9 +122,7 @@ export function PendingReviewsDashboard({
   onBatchReview,
   isPartner = false,
 }: PendingReviewsDashboardProps) {
-  const [selectedReviews, setSelectedReviews] = React.useState<Set<string>>(
-    new Set()
-  );
+  const [selectedReviews, setSelectedReviews] = React.useState<Set<string>>(new Set());
   const [priorityFilter, setPriorityFilter] = React.useState<string>('all');
   const [sortBy, setSortBy] = React.useState<'date' | 'priority' | 'due'>('priority');
 
@@ -224,9 +216,7 @@ export function PendingReviewsDashboard({
                 <Clock className="h-4 w-4 text-green-600" />
                 <span className="text-sm text-muted-foreground">Avg. Time</span>
               </div>
-              <p className="text-2xl font-bold">
-                {Math.round(statistics.averageReviewTimeHours)}h
-              </p>
+              <p className="text-2xl font-bold">{Math.round(statistics.averageReviewTimeHours)}h</p>
             </CardContent>
           </Card>
         </div>
@@ -283,9 +273,7 @@ export function PendingReviewsDashboard({
 
         <CardContent>
           {filteredReviews.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No pending reviews.
-            </p>
+            <p className="text-sm text-muted-foreground text-center py-8">No pending reviews.</p>
           ) : (
             <div className="space-y-2">
               {/* Select All (Partner only) */}
@@ -297,9 +285,7 @@ export function PendingReviewsDashboard({
                     onChange={toggleSelectAll}
                     className="h-4 w-4 rounded border-gray-300"
                   />
-                  <span className="text-sm text-muted-foreground">
-                    Select all
-                  </span>
+                  <span className="text-sm text-muted-foreground">Select all</span>
                 </div>
               )}
 
@@ -331,12 +317,8 @@ export function PendingReviewsDashboard({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium truncate">
-                          {review.document.fileName}
-                        </span>
-                        <Badge
-                          className={`text-xs ${priorityConfig[review.priority].color}`}
-                        >
+                        <span className="font-medium truncate">{review.document.fileName}</span>
+                        <Badge className={`text-xs ${priorityConfig[review.priority].color}`}>
                           {priorityConfig[review.priority].label}
                         </Badge>
                         {review.revisionNumber > 0 && (
@@ -376,9 +358,7 @@ export function PendingReviewsDashboard({
                       </div>
                     </div>
 
-                    <Badge
-                      variant={review.status === 'IN_REVIEW' ? 'default' : 'secondary'}
-                    >
+                    <Badge variant={review.status === 'IN_REVIEW' ? 'default' : 'secondary'}>
                       {review.status === 'IN_REVIEW' ? 'In Review' : 'Pending'}
                     </Badge>
                   </div>

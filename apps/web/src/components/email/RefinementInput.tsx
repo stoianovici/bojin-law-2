@@ -55,9 +55,7 @@ export function RefinementInput({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-          AI Refinement
-        </h4>
+        <h4 className="text-sm font-medium text-gray-900 dark:text-white">AI Refinement</h4>
         {refinementHistory.length > 0 && (
           <button
             onClick={() => setShowHistory(!showHistory)}
@@ -117,11 +115,7 @@ export function RefinementInput({
 
       {/* Refinement history */}
       {showHistory && refinementHistory.length > 0 && (
-        <div
-          className="space-y-2"
-          role="list"
-          aria-label="Refinement history"
-        >
+        <div className="space-y-2" role="list" aria-label="Refinement history">
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
             Recent refinements:
           </p>
@@ -135,8 +129,8 @@ export function RefinementInput({
                 &ldquo;{refinement.instruction}&rdquo;
               </p>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {new Date(refinement.createdAt).toLocaleString()} ·{' '}
-                {refinement.tokensUsed} tokens used
+                {new Date(refinement.createdAt).toLocaleString()} · {refinement.tokensUsed} tokens
+                used
               </p>
             </div>
           ))}

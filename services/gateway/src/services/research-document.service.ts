@@ -6,11 +6,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  TaskDocumentLink,
-  TaskTypeEnum,
-  TaskDocumentLinkType,
-} from '@prisma/client';
+import { TaskDocumentLink, TaskTypeEnum, TaskDocumentLinkType } from '@prisma/client';
 
 export class ResearchDocumentService {
   /**
@@ -87,11 +83,7 @@ export class ResearchDocumentService {
   /**
    * Unlink a document from a Research task
    */
-  async unlinkDocument(
-    taskId: string,
-    documentId: string,
-    firmId: string
-  ): Promise<void> {
+  async unlinkDocument(taskId: string, documentId: string, firmId: string): Promise<void> {
     // Verify task belongs to firm
     const task = await prisma.task.findFirst({
       where: {
@@ -116,10 +108,7 @@ export class ResearchDocumentService {
   /**
    * Get all linked documents for a task
    */
-  async getLinkedDocuments(
-    taskId: string,
-    firmId: string
-  ): Promise<TaskDocumentLink[]> {
+  async getLinkedDocuments(taskId: string, firmId: string): Promise<TaskDocumentLink[]> {
     // Verify task belongs to firm
     const task = await prisma.task.findFirst({
       where: {

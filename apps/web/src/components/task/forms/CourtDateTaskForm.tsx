@@ -28,7 +28,9 @@ export function CourtDateTaskForm({ value, onChange, errors }: CourtDateTaskForm
         <Input
           id="courtName"
           value={value.courtName || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('courtName', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('courtName', e.target.value)
+          }
           placeholder="e.g., Superior Court of California"
           className={errors?.courtName ? 'border-red-500' : ''}
         />
@@ -42,7 +44,9 @@ export function CourtDateTaskForm({ value, onChange, errors }: CourtDateTaskForm
         <Input
           id="courtRoom"
           value={value.courtRoom || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('courtRoom', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('courtRoom', e.target.value)
+          }
           placeholder="e.g., Room 302"
         />
       </div>
@@ -54,7 +58,9 @@ export function CourtDateTaskForm({ value, onChange, errors }: CourtDateTaskForm
         <Input
           id="caseNumber"
           value={value.caseNumber || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('caseNumber', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('caseNumber', e.target.value)
+          }
           placeholder="e.g., CV-2024-001234"
           className={errors?.caseNumber ? 'border-red-500' : ''}
         />
@@ -68,7 +74,9 @@ export function CourtDateTaskForm({ value, onChange, errors }: CourtDateTaskForm
         <Input
           id="hearingType"
           value={value.hearingType || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('hearingType', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('hearingType', e.target.value)
+          }
           placeholder="e.g., Hearing, Trial, Motion, Arraignment"
           className={errors?.hearingType ? 'border-red-500' : ''}
         />
@@ -82,7 +90,9 @@ export function CourtDateTaskForm({ value, onChange, errors }: CourtDateTaskForm
         <Input
           id="judge"
           value={value.judge || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('judge', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('judge', e.target.value)
+          }
           placeholder="Judge name"
         />
       </div>
@@ -94,7 +104,9 @@ export function CourtDateTaskForm({ value, onChange, errors }: CourtDateTaskForm
         <Textarea
           id="preparationNotes"
           value={value.preparationNotes || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('preparationNotes', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            handleChange('preparationNotes', e.target.value)
+          }
           placeholder="Special preparation requirements or notes"
           rows={4}
         />

@@ -114,22 +114,24 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
     for (const metric of performanceMetrics) {
       console.log(
         `${metric.testName}: ${metric.executionTimeMs}ms ` +
-        `(${metric.caseCount} cases, ${metric.timeEntryCount} entries, ` +
-        `cache: ${metric.isCacheHit ? 'HIT' : 'MISS'})`
+          `(${metric.caseCount} cases, ${metric.timeEntryCount} entries, ` +
+          `cache: ${metric.isCacheHit ? 'HIT' : 'MISS'})`
       );
     }
 
     // Calculate averages
-    const cacheMisses = performanceMetrics.filter(m => !m.isCacheHit);
-    const cacheHits = performanceMetrics.filter(m => m.isCacheHit);
+    const cacheMisses = performanceMetrics.filter((m) => !m.isCacheHit);
+    const cacheHits = performanceMetrics.filter((m) => m.isCacheHit);
 
     if (cacheMisses.length > 0) {
-      const avgCacheMiss = cacheMisses.reduce((sum, m) => sum + m.executionTimeMs, 0) / cacheMisses.length;
+      const avgCacheMiss =
+        cacheMisses.reduce((sum, m) => sum + m.executionTimeMs, 0) / cacheMisses.length;
       console.log(`\nAverage cache MISS time: ${avgCacheMiss.toFixed(2)}ms`);
     }
 
     if (cacheHits.length > 0) {
-      const avgCacheHit = cacheHits.reduce((sum, m) => sum + m.executionTimeMs, 0) / cacheHits.length;
+      const avgCacheHit =
+        cacheHits.reduce((sum, m) => sum + m.executionTimeMs, 0) / cacheHits.length;
       console.log(`Average cache HIT time: ${avgCacheHit.toFixed(2)}ms`);
     }
 
@@ -143,7 +145,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
   describe('Task 14: Performance Baseline', () => {
     it('measures baseline performance with small dataset (5 cases, 50 entries)', async () => {
       const cases = createMockCases(5);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 10);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -178,7 +180,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
 
     it('measures baseline performance with medium dataset (25 cases, 500 entries)', async () => {
       const cases = createMockCases(25);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 20);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -213,7 +215,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
 
     it('measures baseline performance with large dataset (100 cases, 2000 entries)', async () => {
       const cases = createMockCases(100);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 20);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -248,7 +250,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
 
     it('verifies parallel calculation improves performance', async () => {
       const cases = createMockCases(50);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 20);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -294,7 +296,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
   describe('Task 15: Cache Effectiveness', () => {
     it('verifies cache improves subsequent request performance', async () => {
       const cases = createMockCases(50);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 20);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -345,7 +347,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
 
     it('verifies cache respects 5-minute TTL', async () => {
       const cases = createMockCases(10);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 10);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -375,7 +377,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
 
     it('verifies cache key includes user and date range', async () => {
       const cases = createMockCases(10);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 10);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -406,7 +408,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
 
     it('verifies clearKpiCache invalidates all cached data', async () => {
       const cases = createMockCases(10);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 10);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -445,7 +447,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
 
     it('verifies different date ranges use different cache entries', async () => {
       const cases = createMockCases(10);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 10);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);
@@ -481,7 +483,7 @@ describe('Story 2.11.5: Performance and Cache Integration Tests', () => {
 
     it('measures cache hit performance improvement ratio', async () => {
       const cases = createMockCases(75);
-      const caseIds = cases.map(c => c.id);
+      const caseIds = cases.map((c) => c.id);
       const timeEntries = createMockTimeEntries(caseIds, 25);
 
       jest.mocked(prisma.case.findMany).mockResolvedValue(cases as any);

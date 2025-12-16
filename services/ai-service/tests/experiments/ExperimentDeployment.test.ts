@@ -78,11 +78,7 @@ describe('ExperimentDeployment', () => {
     });
 
     it('should configure 50/50 split with hash-based assignment', () => {
-      deployment.deploySkillsExperiment(
-        'skills-test-2',
-        'Skills Test',
-        'Test description'
-      );
+      deployment.deploySkillsExperiment('skills-test-2', 'Skills Test', 'Test description');
 
       const experiment = framework.getExperiment('skills-test-2');
       expect(experiment?.assignmentStrategy).toBe('hash');
@@ -91,11 +87,7 @@ describe('ExperimentDeployment', () => {
     });
 
     it('should configure success metrics with defaults', () => {
-      deployment.deploySkillsExperiment(
-        'skills-test-3',
-        'Skills Test',
-        'Test description'
-      );
+      deployment.deploySkillsExperiment('skills-test-3', 'Skills Test', 'Test description');
 
       const status = deployment.getDeploymentStatus('skills-test-3');
       expect(status).toBeDefined();
@@ -111,23 +103,16 @@ describe('ExperimentDeployment', () => {
         minQualityScore: 0.9,
       };
 
-      deployment.deploySkillsExperiment(
-        'skills-test-4',
-        'Skills Test',
-        'Test description',
-        { successMetrics: customMetrics }
-      );
+      deployment.deploySkillsExperiment('skills-test-4', 'Skills Test', 'Test description', {
+        successMetrics: customMetrics,
+      });
 
       const status = deployment.getDeploymentStatus('skills-test-4');
       expect(status).toBeDefined();
     });
 
     it('should configure gradual rollout by default', () => {
-      deployment.deploySkillsExperiment(
-        'skills-test-5',
-        'Skills Test',
-        'Test description'
-      );
+      deployment.deploySkillsExperiment('skills-test-5', 'Skills Test', 'Test description');
 
       const status = deployment.getDeploymentStatus('skills-test-5');
       expect(status.rolloutStage).toBe(0);
@@ -135,11 +120,7 @@ describe('ExperimentDeployment', () => {
     });
 
     it('should configure monitoring alerts by default', () => {
-      deployment.deploySkillsExperiment(
-        'skills-test-6',
-        'Skills Test',
-        'Test description'
-      );
+      deployment.deploySkillsExperiment('skills-test-6', 'Skills Test', 'Test description');
 
       const alerts = deployment.getAlerts('skills-test-6');
       expect(alerts).toBeDefined();
@@ -153,11 +134,7 @@ describe('ExperimentDeployment', () => {
 
   describe('routeWithExperiment', () => {
     beforeEach(() => {
-      deployment.deploySkillsExperiment(
-        'routing-test',
-        'Routing Test',
-        'Test routing'
-      );
+      deployment.deploySkillsExperiment('routing-test', 'Routing Test', 'Test routing');
     });
 
     it('should assign users consistently to same variant', async () => {
@@ -232,33 +209,34 @@ describe('ExperimentDeployment', () => {
 
       expect(treatmentUserId).not.toBe('');
 
-      const result = await deployment.routeWithExperiment('routing-test-treatment', treatmentUserId, request);
+      const result = await deployment.routeWithExperiment(
+        'routing-test-treatment',
+        treatmentUserId,
+        request
+      );
       expect(result.variant).toBe('treatment');
       // Skills may or may not be selected depending on pattern matching
     });
 
     it('should respect rollout percentage', async () => {
       // Deploy with 0% rollout (canary not started)
-      deployment.deploySkillsExperiment(
-        'rollout-test',
-        'Rollout Test',
-        'Test rollout',
-        {
-          rollout: {
-            enabled: true,
-            stages: [{
+      deployment.deploySkillsExperiment('rollout-test', 'Rollout Test', 'Test rollout', {
+        rollout: {
+          enabled: true,
+          stages: [
+            {
               name: 'Test',
               percentage: 0,
               duration: 60,
               minimumSamples: 10,
               description: 'Test stage',
-            }],
-            currentStage: 0,
-            autoProgress: false,
-            progressThreshold: 0.8,
-          },
-        }
-      );
+            },
+          ],
+          currentStage: 0,
+          autoProgress: false,
+          progressThreshold: 0.8,
+        },
+      });
 
       const request: AIRequest = {
         task: 'Test task',
@@ -271,11 +249,7 @@ describe('ExperimentDeployment', () => {
     });
 
     it('should route inactive experiment to treatment by default', async () => {
-      deployment.deploySkillsExperiment(
-        'inactive-test',
-        'Inactive Test',
-        'Test inactive'
-      );
+      deployment.deploySkillsExperiment('inactive-test', 'Inactive Test', 'Test inactive');
 
       framework.stopExperiment('inactive-test');
 
@@ -295,11 +269,7 @@ describe('ExperimentDeployment', () => {
 
   describe('recordExperimentMetrics', () => {
     beforeEach(() => {
-      deployment.deploySkillsExperiment(
-        'metrics-test',
-        'Metrics Test',
-        'Test metrics'
-      );
+      deployment.deploySkillsExperiment('metrics-test', 'Metrics Test', 'Test metrics');
     });
 
     it('should record metrics for control variant', async () => {
@@ -353,22 +323,17 @@ describe('ExperimentDeployment', () => {
 
   describe('alerts', () => {
     beforeEach(() => {
-      deployment.deploySkillsExperiment(
-        'alerts-test',
-        'Alerts Test',
-        'Test alerts',
-        {
-          alerts: {
-            enabled: true,
-            channels: ['log'],
-            thresholds: {
-              errorRatePercent: 5,
-              costIncreasePercent: 20,
-              executionTimeMs: 2000,
-            },
+      deployment.deploySkillsExperiment('alerts-test', 'Alerts Test', 'Test alerts', {
+        alerts: {
+          enabled: true,
+          channels: ['log'],
+          thresholds: {
+            errorRatePercent: 5,
+            costIncreasePercent: 20,
+            executionTimeMs: 2000,
           },
-        }
-      );
+        },
+      });
     });
 
     it('should create alert for high error rate', async () => {
@@ -386,7 +351,7 @@ describe('ExperimentDeployment', () => {
 
       // Should trigger error rate alert
       const alerts = deployment.getAlerts('alerts-test');
-      const errorRateAlerts = alerts.filter(a => a.type === 'error_rate');
+      const errorRateAlerts = alerts.filter((a) => a.type === 'error_rate');
       expect(errorRateAlerts.length).toBeGreaterThan(0);
     });
 
@@ -548,11 +513,7 @@ describe('ExperimentDeployment', () => {
 
   describe('getDeploymentStatus', () => {
     beforeEach(() => {
-      deployment.deploySkillsExperiment(
-        'status-test',
-        'Status Test',
-        'Test status'
-      );
+      deployment.deploySkillsExperiment('status-test', 'Status Test', 'Test status');
     });
 
     it('should get deployment status', () => {
@@ -579,7 +540,7 @@ describe('ExperimentDeployment', () => {
       // Record great metrics showing 40% cost reduction
       for (let i = 0; i < 100; i++) {
         const controlMetrics: ExperimentMetrics = {
-          costPerRequest: 0.10,
+          costPerRequest: 0.1,
           executionTimeMs: 2000,
           tokenUsage: 10000,
           timestamp: new Date(),
@@ -608,11 +569,7 @@ describe('ExperimentDeployment', () => {
 
   describe('stopDeployment', () => {
     beforeEach(() => {
-      deployment.deploySkillsExperiment(
-        'stop-test',
-        'Stop Test',
-        'Test stop'
-      );
+      deployment.deploySkillsExperiment('stop-test', 'Stop Test', 'Test stop');
     });
 
     it('should stop experiment deployment', () => {
@@ -631,11 +588,7 @@ describe('ExperimentDeployment', () => {
   describe('end-to-end deployment', () => {
     it('should complete full experiment lifecycle', async () => {
       // 1. Deploy experiment
-      deployment.deploySkillsExperiment(
-        'e2e-test',
-        'End-to-End Test',
-        'Complete lifecycle test'
-      );
+      deployment.deploySkillsExperiment('e2e-test', 'End-to-End Test', 'Complete lifecycle test');
 
       // 2. Route requests through experiment
       const request: AIRequest = {

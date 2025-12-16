@@ -90,13 +90,17 @@ const mockThread: CommunicationThread = {
 };
 
 // Mock store
-const createMockStore = (thread: CommunicationThread | null, expandedIds: Set<string> = new Set()) => ({
+const createMockStore = (
+  thread: CommunicationThread | null,
+  expandedIds: Set<string> = new Set()
+) => ({
   getSelectedThread: () => thread,
   expandedMessageIds: expandedIds,
   toggleMessageExpanded: (id: string) => alert(`Toggle message: ${id}`),
   expandAllMessages: () => alert('Expand all messages'),
   collapseAllMessages: () => alert('Collapse all messages'),
-  openCompose: (mode: string, threadId: string) => alert(`Open compose in ${mode} mode for thread ${threadId}`),
+  openCompose: (mode: string, threadId: string) =>
+    alert(`Open compose in ${mode} mode for thread ${threadId}`),
   threads: thread ? [thread] : [],
   setThreads: (threads: CommunicationThread[]) => console.log('Set threads:', threads),
 });
@@ -128,16 +132,17 @@ type Story = StoryObj<typeof MessageView>;
 export const Default: Story = {
   decorators: [
     (Story: React.ComponentType) => {
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'Default view showing thread header with case name, message count, and action buttons. Messages are collapsed by default.',
+        story:
+          'Default view showing thread header with case name, message count, and action buttons. Messages are collapsed by default.',
       },
     },
   },
@@ -149,16 +154,17 @@ export const Default: Story = {
 export const NoThreadSelected: Story = {
   decorators: [
     (Story: React.ComponentType) => {
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(null)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(null));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'When no thread is selected, shows a message prompting the user to select a conversation.',
+        story:
+          'When no thread is selected, shows a message prompting the user to select a conversation.',
       },
     },
   },
@@ -171,16 +177,17 @@ export const MessagesExpanded: Story = {
   decorators: [
     (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1', 'msg-2']);
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread, expandedIds)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread, expandedIds));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'Shows expanded messages with full content, attachments, and reply buttons. Click on a message to expand/collapse it.',
+        story:
+          'Shows expanded messages with full content, attachments, and reply buttons. Click on a message to expand/collapse it.',
       },
     },
   },
@@ -193,16 +200,17 @@ export const WithReplyButton: Story = {
   decorators: [
     (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1']);
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread, expandedIds)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread, expandedIds));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'When a message is expanded, shows the "Răspunde" (Reply) button. Clicking it opens the compose modal with pre-populated data.',
+        story:
+          'When a message is expanded, shows the "Răspunde" (Reply) button. Clicking it opens the compose modal with pre-populated data.',
       },
     },
   },
@@ -215,9 +223,9 @@ export const WithAttachment: Story = {
   decorators: [
     (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1']);
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread, expandedIds)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread, expandedIds));
       return <Story />;
     },
   ],
@@ -236,16 +244,17 @@ export const WithAttachment: Story = {
 export const WithUnconvertedItemsWarning: Story = {
   decorators: [
     (Story: React.ComponentType) => {
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'Shows warning message when there are unconverted extracted items (deadlines, commitments, action items). Helps user decide when to mark thread as processed.',
+        story:
+          'Shows warning message when there are unconverted extracted items (deadlines, commitments, action items). Helps user decide when to mark thread as processed.',
       },
     },
   },
@@ -257,16 +266,17 @@ export const WithUnconvertedItemsWarning: Story = {
 export const MarkAsProcessedButton: Story = {
   decorators: [
     (Story: React.ComponentType) => {
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'The "Marchează ca Procesat" button allows users to move the thread from the inbox to the case communication tab.',
+        story:
+          'The "Marchează ca Procesat" button allows users to move the thread from the inbox to the case communication tab.',
       },
     },
   },
@@ -288,16 +298,17 @@ export const ProcessedThread: Story = {
           actionItems: [],
         },
       };
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(processedThread)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(processedThread));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'Thread that has been marked as processed. No warning about unconverted items since all have been handled.',
+        story:
+          'Thread that has been marked as processed. No warning about unconverted items since all have been handled.',
       },
     },
   },
@@ -343,16 +354,17 @@ export const LongConversation: Story = {
           },
         ],
       };
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(longThread)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(longThread));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'Thread with multiple messages (4 messages). Shows "Extinde tot" / "Restrânge tot" toggle button.',
+        story:
+          'Thread with multiple messages (4 messages). Shows "Extinde tot" / "Restrânge tot" toggle button.',
       },
     },
   },
@@ -365,16 +377,17 @@ export const RomanianLanguage: Story = {
   decorators: [
     (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1']);
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread, expandedIds)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread, expandedIds));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates Romanian language support throughout: "Extinde tot", "Restrânge tot", "Marchează ca Procesat", "Răspunde", "Au mai rămas X elemente neconvertite", "mesaje".',
+        story:
+          'Demonstrates Romanian language support throughout: "Extinde tot", "Restrânge tot", "Marchează ca Procesat", "Răspunde", "Au mai rămas X elemente neconvertite", "mesaje".',
       },
     },
   },
@@ -395,9 +408,9 @@ export const EmptyThread: Story = {
           actionItems: [],
         },
       };
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(emptyThread)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(emptyThread));
       return <Story />;
     },
   ],
@@ -417,16 +430,17 @@ export const AllMessagesExpanded: Story = {
   decorators: [
     (Story: React.ComponentType) => {
       const allExpandedIds = new Set(['msg-1', 'msg-2']);
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread, allExpandedIds)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread, allExpandedIds));
       return <Story />;
     },
   ],
   parameters: {
     docs: {
       description: {
-        story: 'All messages in thread are expanded. The button shows "Restrânge tot" to allow collapsing all at once.',
+        story:
+          'All messages in thread are expanded. The button shows "Restrânge tot" to allow collapsing all at once.',
       },
     },
   },
@@ -439,9 +453,9 @@ export const Mobile: Story = {
   decorators: [
     (Story: React.ComponentType) => {
       const expandedIds = new Set(['msg-1']);
-      jest.spyOn(require('@/stores/communication.store'), 'useCommunicationStore').mockReturnValue(
-        createMockStore(mockThread, expandedIds)
-      );
+      jest
+        .spyOn(require('@/stores/communication.store'), 'useCommunicationStore')
+        .mockReturnValue(createMockStore(mockThread, expandedIds));
       return <Story />;
     },
   ],

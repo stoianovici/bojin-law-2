@@ -285,9 +285,9 @@ describe('SubtaskService', () => {
     it('should throw error if parent task not found', async () => {
       prisma.task.findFirst.mockResolvedValue(null);
 
-      await expect(
-        subtaskService.getSubtasks('parent-123', 'firm-123')
-      ).rejects.toThrow('Parent task not found or access denied');
+      await expect(subtaskService.getSubtasks('parent-123', 'firm-123')).rejects.toThrow(
+        'Parent task not found or access denied'
+      );
     });
   });
 
@@ -416,10 +416,7 @@ describe('SubtaskService', () => {
     });
 
     it('should return 100% when all completed', async () => {
-      prisma.task.findMany.mockResolvedValue([
-        { status: 'Completed' },
-        { status: 'Completed' },
-      ]);
+      prisma.task.findMany.mockResolvedValue([{ status: 'Completed' }, { status: 'Completed' }]);
 
       const result = await subtaskService.getSubtaskProgress('parent-123');
 
@@ -433,10 +430,7 @@ describe('SubtaskService', () => {
 
   describe('areAllSubtasksComplete', () => {
     it('should return true when all subtasks are completed', async () => {
-      prisma.task.findMany.mockResolvedValue([
-        { status: 'Completed' },
-        { status: 'Completed' },
-      ]);
+      prisma.task.findMany.mockResolvedValue([{ status: 'Completed' }, { status: 'Completed' }]);
 
       const result = await subtaskService.areAllSubtasksComplete('parent-123');
 
@@ -444,10 +438,7 @@ describe('SubtaskService', () => {
     });
 
     it('should return false when some subtasks are incomplete', async () => {
-      prisma.task.findMany.mockResolvedValue([
-        { status: 'Completed' },
-        { status: 'Pending' },
-      ]);
+      prisma.task.findMany.mockResolvedValue([{ status: 'Completed' }, { status: 'Pending' }]);
 
       const result = await subtaskService.areAllSubtasksComplete('parent-123');
 

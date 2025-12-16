@@ -160,8 +160,12 @@ export class CostValidator {
     lines.push('-'.repeat(100));
     lines.push(`  Analysis Period:        ${report.summary.analysisPeriod}`);
     lines.push(`  Total Requests:         ${report.summary.totalRequests.toLocaleString()}`);
-    lines.push(`  Target Savings:         ${(report.summary.targetSavingsPercentage * 100).toFixed(0)}% ($${report.summary.targetSavings.toFixed(2)})`);
-    lines.push(`  Achieved Savings:       ${(report.summary.achievedSavingsPercentage * 100).toFixed(1)}% ($${report.summary.achievedSavings.toFixed(2)})`);
+    lines.push(
+      `  Target Savings:         ${(report.summary.targetSavingsPercentage * 100).toFixed(0)}% ($${report.summary.targetSavings.toFixed(2)})`
+    );
+    lines.push(
+      `  Achieved Savings:       ${(report.summary.achievedSavingsPercentage * 100).toFixed(1)}% ($${report.summary.achievedSavings.toFixed(2)})`
+    );
     lines.push(`  Target Status:          ${report.summary.targetMet ? '✅ MET' : '❌ NOT MET'}`);
     lines.push('');
 
@@ -170,23 +174,43 @@ export class CostValidator {
     lines.push('-'.repeat(100));
     lines.push('');
     lines.push('  BASELINE (Without Skills):');
-    lines.push(`    Total Requests:       ${report.analysis.baseline.totalRequests.toLocaleString()}`);
-    lines.push(`    Total Tokens:         ${report.analysis.baseline.totalTokens.toLocaleString()}`);
+    lines.push(
+      `    Total Requests:       ${report.analysis.baseline.totalRequests.toLocaleString()}`
+    );
+    lines.push(
+      `    Total Tokens:         ${report.analysis.baseline.totalTokens.toLocaleString()}`
+    );
     lines.push(`    Total Cost:           $${report.analysis.baseline.totalCost.toFixed(2)}`);
-    lines.push(`    Avg Cost/Request:     $${report.analysis.baseline.averageCostPerRequest.toFixed(4)}`);
+    lines.push(
+      `    Avg Cost/Request:     $${report.analysis.baseline.averageCostPerRequest.toFixed(4)}`
+    );
     lines.push('');
     lines.push('  ACTUAL (With Skills):');
-    lines.push(`    Total Requests:       ${report.analysis.actual.totalRequests.toLocaleString()}`);
+    lines.push(
+      `    Total Requests:       ${report.analysis.actual.totalRequests.toLocaleString()}`
+    );
     lines.push(`    Total Tokens:         ${report.analysis.actual.totalTokens.toLocaleString()}`);
-    lines.push(`    Tokens Saved:         ${report.analysis.actual.totalTokensSaved.toLocaleString()}`);
+    lines.push(
+      `    Tokens Saved:         ${report.analysis.actual.totalTokensSaved.toLocaleString()}`
+    );
     lines.push(`    Total Cost:           $${report.analysis.actual.totalCost.toFixed(2)}`);
-    lines.push(`    Avg Cost/Request:     $${report.analysis.actual.averageCostPerRequest.toFixed(4)}`);
-    lines.push(`    Skills Usage Rate:    ${(report.analysis.actual.skillsUsageRate * 100).toFixed(1)}%`);
+    lines.push(
+      `    Avg Cost/Request:     $${report.analysis.actual.averageCostPerRequest.toFixed(4)}`
+    );
+    lines.push(
+      `    Skills Usage Rate:    ${(report.analysis.actual.skillsUsageRate * 100).toFixed(1)}%`
+    );
     lines.push('');
     lines.push('  SAVINGS:');
-    lines.push(`    Tokens Saved:         ${report.analysis.savings.totalTokensSaved.toLocaleString()} (${(report.analysis.savings.tokenSavingsPercentage * 100).toFixed(1)}%)`);
-    lines.push(`    Cost Saved:           $${report.analysis.savings.totalCostSaved.toFixed(2)} (${(report.analysis.savings.costSavingsPercentage * 100).toFixed(1)}%)`);
-    lines.push(`    Avg Savings/Request:  $${report.analysis.savings.averageSavingsPerRequest.toFixed(4)}`);
+    lines.push(
+      `    Tokens Saved:         ${report.analysis.savings.totalTokensSaved.toLocaleString()} (${(report.analysis.savings.tokenSavingsPercentage * 100).toFixed(1)}%)`
+    );
+    lines.push(
+      `    Cost Saved:           $${report.analysis.savings.totalCostSaved.toFixed(2)} (${(report.analysis.savings.costSavingsPercentage * 100).toFixed(1)}%)`
+    );
+    lines.push(
+      `    Avg Savings/Request:  $${report.analysis.savings.averageSavingsPerRequest.toFixed(4)}`
+    );
     lines.push('');
 
     // Achievements
@@ -208,7 +232,7 @@ export class CostValidator {
         lines.push(`     Potential:  ${opp.potentialImprovement}`);
         lines.push(`     Est. Savings: $${opp.estimatedAdditionalSavings.toFixed(2)}`);
         lines.push(`     Actions:`);
-        opp.actionItems.forEach(action => {
+        opp.actionItems.forEach((action) => {
           lines.push(`       - ${action}`);
         });
         lines.push('');
@@ -241,9 +265,7 @@ export class CostValidator {
     const now = Date.now();
     const periodStart = now - days * 24 * 60 * 60 * 1000;
 
-    const relevantLogs = requestLogs.filter(
-      log => log.timestamp.getTime() >= periodStart
-    );
+    const relevantLogs = requestLogs.filter((log) => log.timestamp.getTime() >= periodStart);
 
     if (relevantLogs.length === 0) {
       return {
@@ -268,7 +290,7 @@ export class CostValidator {
       const inputTokens = tokensWithoutSkills * 0.6;
       const outputTokens = tokensWithoutSkills * 0.4;
       // Use Sonnet pricing as baseline (most common without optimization)
-      const cost = (inputTokens / 1_000_000) * 3.00 + (outputTokens / 1_000_000) * 15.00;
+      const cost = (inputTokens / 1_000_000) * 3.0 + (outputTokens / 1_000_000) * 15.0;
       return sum + cost;
     }, 0);
 
@@ -289,9 +311,7 @@ export class CostValidator {
     const now = Date.now();
     const periodStart = now - days * 24 * 60 * 60 * 1000;
 
-    const relevantLogs = requestLogs.filter(
-      log => log.timestamp.getTime() >= periodStart
-    );
+    const relevantLogs = requestLogs.filter((log) => log.timestamp.getTime() >= periodStart);
 
     if (relevantLogs.length === 0) {
       return {
@@ -309,11 +329,11 @@ export class CostValidator {
     const totalTokens = relevantLogs.reduce((sum, log) => sum + log.tokensUsed, 0);
     const totalTokensSaved = relevantLogs.reduce((sum, log) => sum + log.tokensSaved, 0);
     const totalCost = relevantLogs.reduce((sum, log) => sum + log.cost, 0);
-    const requestsWithSkills = relevantLogs.filter(log => log.skillsUsed.length > 0).length;
+    const requestsWithSkills = relevantLogs.filter((log) => log.skillsUsed.length > 0).length;
 
     // Count model distribution
     const modelCounts = { haiku: 0, sonnet: 0, opus: 0 };
-    relevantLogs.forEach(log => {
+    relevantLogs.forEach((log) => {
       if (log.model.includes('haiku')) modelCounts.haiku++;
       else if (log.model.includes('sonnet')) modelCounts.sonnet++;
       else if (log.model.includes('opus')) modelCounts.opus++;
@@ -337,12 +357,14 @@ export class CostValidator {
   private analyzeSavings(baseline: BaselineMetrics, actual: ActualMetrics): SavingsAnalysis {
     const totalTokensSaved = actual.totalTokensSaved;
     const totalTokensBaseline = baseline.totalTokens;
-    const tokenSavingsPercentage = totalTokensBaseline > 0 ? totalTokensSaved / totalTokensBaseline : 0;
+    const tokenSavingsPercentage =
+      totalTokensBaseline > 0 ? totalTokensSaved / totalTokensBaseline : 0;
 
     const totalCostSaved = baseline.totalCost - actual.totalCost;
     const costSavingsPercentage = baseline.totalCost > 0 ? totalCostSaved / baseline.totalCost : 0;
 
-    const averageSavingsPerRequest = actual.totalRequests > 0 ? totalCostSaved / actual.totalRequests : 0;
+    const averageSavingsPerRequest =
+      actual.totalRequests > 0 ? totalCostSaved / actual.totalRequests : 0;
 
     const meetsTarget = costSavingsPercentage >= this.targetSavingsPercentage;
 
@@ -387,16 +409,17 @@ export class CostValidator {
     }
 
     // Check if model distribution can be optimized
-    const haikuPercentage = analysis.actual.totalRequests > 0
-      ? analysis.actual.modelDistribution.haiku / analysis.actual.totalRequests
-      : 0;
+    const haikuPercentage =
+      analysis.actual.totalRequests > 0
+        ? analysis.actual.modelDistribution.haiku / analysis.actual.totalRequests
+        : 0;
 
     if (haikuPercentage < 0.6) {
       opportunities.push({
         area: 'Model Distribution Optimization',
         currentState: `${(haikuPercentage * 100).toFixed(1)}% Haiku usage`,
         potentialImprovement: 'Increase Haiku usage to 60%+ with better skill effectiveness',
-        estimatedAdditionalSavings: analysis.savings.totalCostSaved * 0.10, // Estimate 10% more savings
+        estimatedAdditionalSavings: analysis.savings.totalCostSaved * 0.1, // Estimate 10% more savings
         priority: 'medium',
         actionItems: [
           'Improve skill quality to achieve higher effectiveness scores',
@@ -436,7 +459,7 @@ export class CostValidator {
 
     if (analysis.meetsTarget) {
       achievements.push(
-        `✅ Achieved ${(analysis.savings.costSavingsPercentage * 100).toFixed(1)}% cost savings, exceeding ${(analysis.targetSavingsPercentage * 100)}% target (AC#10)`
+        `✅ Achieved ${(analysis.savings.costSavingsPercentage * 100).toFixed(1)}% cost savings, exceeding ${analysis.targetSavingsPercentage * 100}% target (AC#10)`
       );
     }
 
@@ -458,9 +481,10 @@ export class CostValidator {
       );
     }
 
-    const haikuPercentage = analysis.actual.totalRequests > 0
-      ? analysis.actual.modelDistribution.haiku / analysis.actual.totalRequests
-      : 0;
+    const haikuPercentage =
+      analysis.actual.totalRequests > 0
+        ? analysis.actual.modelDistribution.haiku / analysis.actual.totalRequests
+        : 0;
 
     if (haikuPercentage > 0.4) {
       achievements.push(
@@ -484,12 +508,16 @@ export class CostValidator {
       recommendations.push('Continue monitoring to maintain cost savings above 35% target');
       recommendations.push('Document and share best practices for skills integration');
     } else {
-      recommendations.push(`Implement high-priority optimizations to reach ${(analysis.targetSavingsPercentage * 100)}% target`);
+      recommendations.push(
+        `Implement high-priority optimizations to reach ${analysis.targetSavingsPercentage * 100}% target`
+      );
       recommendations.push('Review and improve underperforming skills');
     }
 
     if (opportunities.length > 0) {
-      recommendations.push(`Address ${opportunities.filter(o => o.priority === 'high').length} high-priority optimization opportunities`);
+      recommendations.push(
+        `Address ${opportunities.filter((o) => o.priority === 'high').length} high-priority optimization opportunities`
+      );
     }
 
     recommendations.push('Schedule weekly cost review meetings to track trends');

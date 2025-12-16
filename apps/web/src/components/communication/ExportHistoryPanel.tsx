@@ -172,11 +172,21 @@ export function ExportHistoryPanel({
             className="grid grid-cols-12 gap-4 border-b border-gray-200 bg-gray-50 px-4 py-3 text-xs font-medium uppercase text-gray-500"
             role="row"
           >
-            <div className="col-span-3" role="columnheader">Format</div>
-            <div className="col-span-2" role="columnheader">Entries</div>
-            <div className="col-span-2" role="columnheader">Status</div>
-            <div className="col-span-3" role="columnheader">Created</div>
-            <div className="col-span-2 text-right" role="columnheader">Actions</div>
+            <div className="col-span-3" role="columnheader">
+              Format
+            </div>
+            <div className="col-span-2" role="columnheader">
+              Entries
+            </div>
+            <div className="col-span-2" role="columnheader">
+              Status
+            </div>
+            <div className="col-span-3" role="columnheader">
+              Created
+            </div>
+            <div className="col-span-2 text-right" role="columnheader">
+              Actions
+            </div>
           </div>
 
           {/* Table Body */}
@@ -214,9 +224,7 @@ export function ExportHistoryPanel({
 
                 {/* Created */}
                 <div className="col-span-3 flex flex-col justify-center" role="cell">
-                  <span className="text-sm text-gray-900">
-                    {formatDate(exportItem.createdAt)}
-                  </span>
+                  <span className="text-sm text-gray-900">{formatDate(exportItem.createdAt)}</span>
                   {exportItem.status === 'Completed' && exportItem.expiresAt && (
                     <span className="text-xs text-gray-500">
                       {formatExpiryTime(exportItem.expiresAt)}
@@ -253,9 +261,7 @@ export function ExportHistoryPanel({
       )}
 
       {/* Info Footer */}
-      <p className="mt-3 text-xs text-gray-500">
-        Exports are automatically deleted after 7 days
-      </p>
+      <p className="mt-3 text-xs text-gray-500">Exports are automatically deleted after 7 days</p>
     </div>
   );
 }

@@ -1,0 +1,176 @@
+# Global Email Sources GraphQL Schema
+# OPS-028: Classification Metadata UI
+#
+# Firm-level configuration for court/authority email addresses
+# Used by AI email classification to identify institutional senders
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+"""
+Global email source category for classification
+- Court: Courts and tribunals (instanțe)
+- Notary: Notary offices (notariate)
+- Bailiff: Bailiff offices (executori judecătorești)
+- Authority: Government authorities (autorități)
+- Other: Other institutional sources
+"""
+enum GlobalEmailSourceCategory {
+  Court
+  Notary
+  Bailiff
+  Authority
+  Other
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Global email source configuration
+Represents an institutional email source (court, authority, etc.)
+shared across all cases in a firm
+"""
+type GlobalEmailSource {
+  """Unique identifier"""
+  id: UUID!
+
+  """Firm this source belongs to"""
+  firmId: UUID!
+
+  """Category of the email source"""
+  category: GlobalEmailSourceCategory!
+
+  """Display name (e.g., 'Tribunalul București')"""
+  name: String!
+
+  """Email domains for this source (e.g., ['just.ro', 'tribunalul-bucuresti.ro'])"""
+  domains: [String!]!
+
+  """Specific email addresses (e.g., ['grefa@tribunal.ro'])"""
+  emails: [String!]!
+
+  """Hint for AI classification when emails from this source are detected"""
+  classificationHint: String
+
+  """Timestamp when created"""
+  createdAt: DateTime!
+
+  """Timestamp when last updated"""
+  updatedAt: DateTime!
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for creating a global email source
+"""
+input CreateGlobalEmailSourceInput {
+  """Category of the email source"""
+  category: GlobalEmailSourceCategory!
+
+  """Display name (required, 2-200 characters)"""
+  name: String!
+
+  """Email domains for this source (optional)"""
+  domains: [String!]
+
+  """Specific email addresses (optional)"""
+  emails: [String!]
+
+  """Classification hint for AI (optional)"""
+  classificationHint: String
+}
+
+"""
+Input for updating a global email source
+All fields optional - only provided fields are updated
+"""
+input UpdateGlobalEmailSourceInput {
+  """Updated category"""
+  category: GlobalEmailSourceCategory
+
+  """Updated display name"""
+  name: String
+
+  """Updated email domains"""
+  domains: [String!]
+
+  """Updated email addresses"""
+  emails: [String!]
+
+  """Updated classification hint"""
+  classificationHint: String
+}
+
+"""
+Input for updating case classification metadata
+Used by the case settings panel to add keywords, reference numbers, etc.
+"""
+input UpdateCaseClassificationInput {
+  """Keywords for email matching (e.g., ['apartament', 'floreasca'])"""
+  keywords: [String!]
+
+  """Reference numbers (court file numbers, contract refs, e.g., ['1234/3/2024'])"""
+  referenceNumbers: [String!]
+
+  """Email subject patterns for matching (glob-style)"""
+  subjectPatterns: [String!]
+
+  """Free text guidance for AI classifier"""
+  classificationNotes: String
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get all global email sources for the current firm
+  Returns sources sorted by category then name
+  Authorization: Authenticated users in the firm
+  """
+  globalEmailSources: [GlobalEmailSource!]!
+
+  """
+  Get a single global email source by ID
+  Returns null if not found or not in user's firm
+  Authorization: Authenticated users in the firm
+  """
+  globalEmailSource(id: UUID!): GlobalEmailSource
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Create a new global email source
+  Authorization: Partner role required
+  """
+  createGlobalEmailSource(input: CreateGlobalEmailSourceInput!): GlobalEmailSource!
+
+  """
+  Update an existing global email source
+  Authorization: Partner role required
+  """
+  updateGlobalEmailSource(id: UUID!, input: UpdateGlobalEmailSourceInput!): GlobalEmailSource!
+
+  """
+  Delete a global email source
+  Authorization: Partner role required
+  """
+  deleteGlobalEmailSource(id: UUID!): Boolean!
+
+  """
+  Update case classification metadata
+  Authorization: User must be on case team OR be a Partner
+  """
+  updateCaseClassification(caseId: UUID!, input: UpdateCaseClassificationInput!): Case!
+}

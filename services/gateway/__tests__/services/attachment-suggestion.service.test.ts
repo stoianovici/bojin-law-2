@@ -5,7 +5,10 @@
  * Tests attachment suggestion generation and relevance scoring
  */
 
-import { AttachmentSuggestionService, type Email } from '../../src/services/attachment-suggestion.service';
+import {
+  AttachmentSuggestionService,
+  type Email,
+} from '../../src/services/attachment-suggestion.service';
 
 // Mock Prisma
 jest.mock('@legal-platform/database', () => ({
@@ -190,7 +193,8 @@ describe('AttachmentSuggestionService', () => {
     it('should classify court-related emails', () => {
       const classifyEmailIntent = (service as any).classifyEmailIntent.bind(service);
 
-      const courtContent = 'The court hearing is scheduled for next week. Please prepare the motion.';
+      const courtContent =
+        'The court hearing is scheduled for next week. Please prepare the motion.';
       const result = classifyEmailIntent(courtContent);
 
       expect(result).toBe('court_filing');

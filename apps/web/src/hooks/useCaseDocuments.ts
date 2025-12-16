@@ -138,13 +138,14 @@ interface UseCaseDocumentsResult {
  * @returns Case documents with context, loading state, error, and refetch function
  */
 export function useCaseDocuments(caseId: string): UseCaseDocumentsResult {
-  const { data, loading, error, refetch } = useQuery<
-    { caseDocuments: CaseDocumentWithContext[] }
-  >(GET_CASE_DOCUMENTS, {
-    variables: { caseId },
-    fetchPolicy: 'cache-and-network',
-    skip: !caseId,
-  });
+  const { data, loading, error, refetch } = useQuery<{ caseDocuments: CaseDocumentWithContext[] }>(
+    GET_CASE_DOCUMENTS,
+    {
+      variables: { caseId },
+      fetchPolicy: 'cache-and-network',
+      skip: !caseId,
+    }
+  );
 
   return {
     documents: data?.caseDocuments || [],

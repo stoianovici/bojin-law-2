@@ -57,10 +57,11 @@ export function BulkProgressIndicator({
   const { cancel, loading: cancelling } = useCancelBulkCommunication();
 
   // Fetch failed recipients when panel is expanded
-  const { failedRecipients, total: failedTotal, loading: loadingFailed } = useBulkFailedRecipients(
-    id,
-    { enabled: showFailedRecipients }
-  );
+  const {
+    failedRecipients,
+    total: failedTotal,
+    loading: loadingFailed,
+  } = useBulkFailedRecipients(id, { enabled: showFailedRecipients });
 
   // Handle cancel
   const handleCancel = useCallback(async () => {
@@ -112,7 +113,14 @@ export function BulkProgressIndicator({
     return null;
   }
 
-  const { totalRecipients, sentCount, failedCount, pendingCount, percentComplete, estimatedTimeRemaining } = progress;
+  const {
+    totalRecipients,
+    sentCount,
+    failedCount,
+    pendingCount,
+    percentComplete,
+    estimatedTimeRemaining,
+  } = progress;
 
   return (
     <div
@@ -147,11 +155,7 @@ export function BulkProgressIndicator({
             disabled={cancelling}
             className="flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
-            {cancelling ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <X className="h-3 w-3" />
-            )}
+            {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
             Cancel
           </button>
         )}
@@ -168,11 +172,7 @@ export function BulkProgressIndicator({
         <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
           <div
             className={`h-full transition-all duration-500 ease-out ${
-              isComplete
-                ? hasFailed
-                  ? 'bg-yellow-500'
-                  : 'bg-green-500'
-                : 'bg-blue-500'
+              isComplete ? (hasFailed ? 'bg-yellow-500' : 'bg-green-500') : 'bg-blue-500'
             }`}
             style={{ width: `${percentComplete}%` }}
             role="progressbar"
@@ -226,8 +226,8 @@ export function BulkProgressIndicator({
                 {failedCount} message{failedCount !== 1 ? 's' : ''} failed to send
               </p>
               <p className="mt-1 text-xs text-yellow-700">
-                Failed recipients may have invalid email addresses or temporary delivery issues.
-                You can retry sending to failed recipients later.
+                Failed recipients may have invalid email addresses or temporary delivery issues. You
+                can retry sending to failed recipients later.
               </p>
               {isComplete && (
                 <button

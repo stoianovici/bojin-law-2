@@ -50,6 +50,9 @@ import { aiLearningResolvers } from './resolvers/ai-learning.resolvers';
 import { platformIntelligenceResolvers } from './resolvers/platform-intelligence.resolvers';
 import { naturalLanguageCommandsResolvers } from './resolvers/natural-language-commands.resolvers';
 import { emailImportResolvers } from './resolvers/email-import.resolvers';
+import { globalEmailSourcesResolvers } from './resolvers/global-email-sources.resolvers';
+import { emailClassificationResolvers } from './resolvers/email-classification.resolvers';
+import { classificationReviewResolvers } from './resolvers/classification-review.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -95,6 +98,9 @@ const resolvers = {
     ...aiLearningResolvers.Query,
     ...platformIntelligenceResolvers.Query,
     ...emailImportResolvers.Query,
+    ...globalEmailSourcesResolvers.Query,
+    ...emailClassificationResolvers.Query,
+    ...classificationReviewResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -121,6 +127,9 @@ const resolvers = {
     ...platformIntelligenceResolvers.Mutation,
     ...naturalLanguageCommandsResolvers.Mutation,
     ...emailImportResolvers.Mutation,
+    ...globalEmailSourcesResolvers.Mutation,
+    ...emailClassificationResolvers.Mutation,
+    ...classificationReviewResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -236,8 +245,19 @@ const resolvers = {
   CommandStatus: naturalLanguageCommandsResolvers.CommandStatus,
   // Email Import resolvers (OPS-022)
   EmailImportPreview: emailImportResolvers.EmailImportPreview,
-  DateRange: emailImportResolvers.DateRange,
+  EmailImportDateRange: emailImportResolvers.EmailImportDateRange,
   ContactCandidate: emailImportResolvers.ContactCandidate,
+  // Global Email Sources resolvers (OPS-028)
+  GlobalEmailSource: globalEmailSourcesResolvers.GlobalEmailSource,
+  // Email Classification resolvers (OPS-029, OPS-030)
+  ClassificationResult: emailClassificationResolvers.ClassificationResult,
+  AlternativeCase: emailClassificationResolvers.AlternativeCase,
+  CaseClassificationSummary: emailClassificationResolvers.CaseClassificationSummary,
+  CaseClassificationMetadata: emailClassificationResolvers.CaseClassificationMetadata,
+  CaseImportSummary: emailClassificationResolvers.CaseImportSummary,
+  // Classification Review resolvers (OPS-031)
+  PendingClassificationItem: classificationReviewResolvers.PendingClassificationItem,
+  EmailClassificationLog: classificationReviewResolvers.EmailClassificationLog,
 };
 
 /**

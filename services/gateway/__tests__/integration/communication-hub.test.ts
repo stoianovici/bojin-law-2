@@ -290,7 +290,12 @@ describe('Communication Hub Integration', () => {
             { name: 'clientName', description: 'Client name', required: true },
             { name: 'caseNumber', description: 'Case number', required: true },
             { name: 'updateContent', description: 'Update details', required: true },
-            { name: 'firmName', description: 'Law firm name', required: false, defaultValue: 'Our Law Firm' },
+            {
+              name: 'firmName',
+              description: 'Law firm name',
+              required: false,
+              defaultValue: 'Our Law Firm',
+            },
           ],
           isActive: true,
           isGlobal: false,
@@ -651,10 +656,7 @@ describe('Communication Hub Integration', () => {
       const entriesForAllowedViewer = await prisma.communicationEntry.findMany({
         where: {
           caseId: TEST_CASE_ID,
-          OR: [
-            { privacyLevel: PrivacyLevel.Normal },
-            { allowedViewers: { has: TEST_USER_ID_2 } },
-          ],
+          OR: [{ privacyLevel: PrivacyLevel.Normal }, { allowedViewers: { has: TEST_USER_ID_2 } }],
         },
       });
 

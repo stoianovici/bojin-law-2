@@ -113,9 +113,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                   locale: ro,
                 })}
               </span>
-              {comment.editedAt && (
-                <span className="text-xs text-gray-400">(editat)</span>
-              )}
+              {comment.editedAt && <span className="text-xs text-gray-400">(editat)</span>}
             </div>
 
             {isEditing ? (
@@ -184,10 +182,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
 
             {/* Reply form */}
             {replyingTo === comment.id && (
-              <form
-                onSubmit={(e) => handleSubmit(e, comment.id)}
-                className="mt-3 space-y-2"
-              >
+              <form onSubmit={(e) => handleSubmit(e, comment.id)} className="mt-3 space-y-2">
                 <MentionAutocomplete
                   value={editContent}
                   onChange={setEditContent}
@@ -241,18 +236,12 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
   }
 
   if (error) {
-    return (
-      <div className="text-red-600 text-sm">
-        Eroare la încărcarea comentariilor
-      </div>
-    );
+    return <div className="text-red-600 text-sm">Eroare la încărcarea comentariilor</div>;
   }
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-gray-900">
-        Comentarii ({comments.length})
-      </h3>
+      <h3 className="font-semibold text-gray-900">Comentarii ({comments.length})</h3>
 
       {/* New comment form */}
       <form onSubmit={(e) => handleSubmit(e)} className="space-y-2">
@@ -303,9 +292,7 @@ function renderContentWithMentions(
     <React.Fragment key={index}>
       {part}
       {mentions[index] && (
-        <span className="text-blue-600 font-medium bg-blue-50 px-1 rounded">
-          {mentions[index]}
-        </span>
+        <span className="text-blue-600 font-medium bg-blue-50 px-1 rounded">{mentions[index]}</span>
       )}
     </React.Fragment>
   ));

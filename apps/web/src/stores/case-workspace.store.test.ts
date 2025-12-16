@@ -45,14 +45,9 @@ describe('useCaseWorkspaceStore', () => {
 
     it('should switch between all tab types', () => {
       const { result } = renderHook(() => useCaseWorkspaceStore());
-      const tabs: Array<'overview' | 'documents' | 'tasks' | 'communications' | 'time-entries' | 'notes'> = [
-        'overview',
-        'documents',
-        'tasks',
-        'communications',
-        'time-entries',
-        'notes',
-      ];
+      const tabs: Array<
+        'overview' | 'documents' | 'tasks' | 'communications' | 'time-entries' | 'notes'
+      > = ['overview', 'documents', 'tasks', 'communications', 'time-entries', 'notes'];
 
       tabs.forEach((tab) => {
         act(() => {

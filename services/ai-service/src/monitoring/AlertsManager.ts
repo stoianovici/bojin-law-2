@@ -628,8 +628,7 @@ export class AlertsManager {
    */
   async generateDailySummary(): Promise<EmailReport> {
     const last24Hours = this.alertHistory.filter(
-      (alert) =>
-        alert.triggeredAt.getTime() > Date.now() - 24 * 60 * 60 * 1000
+      (alert) => alert.triggeredAt.getTime() > Date.now() - 24 * 60 * 60 * 1000
     );
 
     const criticalCount = last24Hours.filter((a) => a.severity === 'critical').length;
@@ -649,7 +648,16 @@ Total Alerts:    ${last24Hours.length}
 
 ACTIVE ALERTS
 =============
-${this.activeAlerts.size > 0 ? Array.from(this.activeAlerts.values()).map((a) => `- [${a.severity.toUpperCase()}] ${a.name} (triggered at ${a.triggeredAt.toISOString()})`).join('\n') : 'None'}
+${
+  this.activeAlerts.size > 0
+    ? Array.from(this.activeAlerts.values())
+        .map(
+          (a) =>
+            `- [${a.severity.toUpperCase()}] ${a.name} (triggered at ${a.triggeredAt.toISOString()})`
+        )
+        .join('\n')
+    : 'None'
+}
 
 CURRENT METRICS
 ===============
@@ -657,7 +665,14 @@ ${this.lastMetrics ? this.formatMetrics(this.lastMetrics) : 'No recent metrics'}
 
 RECENT ALERTS (Last 24h)
 ========================
-${last24Hours.length > 0 ? last24Hours.slice(0, 10).map((a) => `- [${a.severity.toUpperCase()}] ${a.name} at ${a.triggeredAt.toISOString()}`).join('\n') : 'None'}
+${
+  last24Hours.length > 0
+    ? last24Hours
+        .slice(0, 10)
+        .map((a) => `- [${a.severity.toUpperCase()}] ${a.name} at ${a.triggeredAt.toISOString()}`)
+        .join('\n')
+    : 'None'
+}
     `.trim();
 
     return {

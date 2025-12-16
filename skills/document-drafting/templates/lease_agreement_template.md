@@ -44,43 +44,43 @@ Legal Description: {{LEGAL_DESCRIPTION}}
 - **Annual Base Rent:** ${{ANNUAL_RENT}} per year
 - **Payment Due:** First day of each calendar month
 
-3.2 **Security Deposit.** Tenant shall deposit with Landlord the sum of ${{SECURITY_DEPOSIT}} as security for Tenant's faithful performance. Landlord may apply the security deposit to cure any default by Tenant.
+  3.2 **Security Deposit.** Tenant shall deposit with Landlord the sum of ${{SECURITY_DEPOSIT}} as security for Tenant's faithful performance. Landlord may apply the security deposit to cure any default by Tenant.
 
-3.3 **Additional Rent.** In addition to Base Rent, Tenant shall pay the following additional rent ("Additional Rent"):
-   (a) **Common Area Maintenance (CAM):** ${{CAM_AMOUNT}} per month (estimated: ${{CAM_ESTIMATE}}/sq ft/year)
-   (b) **Property Taxes:** Tenant's proportionate share ({{TAX_PERCENTAGE}}%) of annual property taxes
-   (c) **Insurance:** Tenant's proportionate share ({{INSURANCE_PERCENTAGE}}%) of building insurance premiums
-   (d) **Utilities:** {{UTILITIES_RESPONSIBILITY}}
+  3.3 **Additional Rent.** In addition to Base Rent, Tenant shall pay the following additional rent ("Additional Rent"):
+  (a) **Common Area Maintenance (CAM):** ${{CAM_AMOUNT}} per month (estimated: ${{CAM_ESTIMATE}}/sq ft/year)
+  (b) **Property Taxes:** Tenant's proportionate share ({{TAX_PERCENTAGE}}%) of annual property taxes
+  (c) **Insurance:** Tenant's proportionate share ({{INSURANCE_PERCENTAGE}}%) of building insurance premiums
+  (d) **Utilities:** {{UTILITIES_RESPONSIBILITY}}
 
-3.4 **Rent Escalation.** Base Rent shall increase annually on each anniversary of the Commencement Date by {{ESCALATION_RATE}}% or the Consumer Price Index (CPI), whichever is {{ESCALATION_METHOD}}, not to exceed {{MAX_ESCALATION}}% per year.
+  3.4 **Rent Escalation.** Base Rent shall increase annually on each anniversary of the Commencement Date by {{ESCALATION_RATE}}% or the Consumer Price Index (CPI), whichever is {{ESCALATION_METHOD}}, not to exceed {{MAX_ESCALATION}}% per year.
 
-3.5 **Late Charges.** Rent not received within {{GRACE_PERIOD}} after the due date shall incur a late fee of {{LATE_FEE_PERCENTAGE}}% of the overdue amount, plus interest at {{INTEREST_RATE}}% per annum.
+  3.5 **Late Charges.** Rent not received within {{GRACE_PERIOD}} after the due date shall incur a late fee of {{LATE_FEE_PERCENTAGE}}% of the overdue amount, plus interest at {{INTEREST_RATE}}% per annum.
 
 ## 4. USE OF PREMISES
 
 4.1 **Permitted Use.** Tenant shall use the Premises solely for {{PERMITTED_USE}} and for no other purpose without Landlord's prior written consent.
 
 4.2 **Prohibited Uses.** Tenant shall not use the Premises for any unlawful purpose or in any manner that:
-   (a) Violates any governmental law, ordinance, or regulation;
-   (b) Constitutes a nuisance or unreasonably disturbs other tenants;
-   (c) Increases insurance premiums or causes insurance cancellation;
-   (d) Exceeds building occupancy limits or safety codes.
+(a) Violates any governmental law, ordinance, or regulation;
+(b) Constitutes a nuisance or unreasonably disturbs other tenants;
+(c) Increases insurance premiums or causes insurance cancellation;
+(d) Exceeds building occupancy limits or safety codes.
 
 4.3 **Compliance with Laws.** Tenant shall comply with all applicable federal, state, and local laws, ordinances, and regulations, including ADA, OSHA, environmental laws, and building codes.
 
 ## 5. MAINTENANCE AND REPAIRS
 
 5.1 **Landlord's Obligations.** Landlord shall maintain in good repair:
-   (a) Structural components (roof, exterior walls, foundation);
-   (b) Common areas and facilities;
-   (c) Building systems (HVAC main systems, plumbing, electrical main lines);
-   (d) Exterior windows and doors.
+(a) Structural components (roof, exterior walls, foundation);
+(b) Common areas and facilities;
+(c) Building systems (HVAC main systems, plumbing, electrical main lines);
+(d) Exterior windows and doors.
 
 5.2 **Tenant's Obligations.** Tenant shall maintain in good repair:
-   (a) Interior of Premises (walls, floors, ceilings);
-   (b) Fixtures, equipment, and appliances within Premises;
-   (c) HVAC units serving Premises exclusively;
-   (d) Plate glass, interior doors, and locks.
+(a) Interior of Premises (walls, floors, ceilings);
+(b) Fixtures, equipment, and appliances within Premises;
+(c) HVAC units serving Premises exclusively;
+(d) Plate glass, interior doors, and locks.
 
 5.3 **Damage by Tenant.** Tenant shall be responsible for repairs necessitated by Tenant's negligence, misuse, or alterations.
 
@@ -95,10 +95,10 @@ Legal Description: {{LEGAL_DESCRIPTION}}
 ## 7. INSURANCE
 
 7.1 **Tenant's Insurance.** Tenant shall maintain at its expense:
-   (a) Commercial General Liability Insurance: ${{LIABILITY_LIMIT}} per occurrence
-   (b) Property Insurance: Full replacement value of Tenant's personal property
-   (c) Business Interruption Insurance: {{BUSINESS_INTERRUPTION_COVERAGE}}
-   (d) Workers' Compensation: As required by law
+(a) Commercial General Liability Insurance: ${{LIABILITY_LIMIT}} per occurrence
+(b) Property Insurance: Full replacement value of Tenant's personal property
+(c) Business Interruption Insurance: {{BUSINESS_INTERRUPTION_COVERAGE}}
+(d) Workers' Compensation: As required by law
 
 7.2 **Landlord's Insurance.** Landlord shall maintain insurance on the building structure and common areas.
 
@@ -109,9 +109,9 @@ Legal Description: {{LEGAL_DESCRIPTION}}
 ## 8. DAMAGE AND DESTRUCTION
 
 8.1 **Partial Damage.** If the Premises are partially damaged by fire or other casualty:
-   (a) Landlord shall restore if restoration can be completed within {{RESTORATION_PERIOD}};
-   (b) Rent shall abate proportionately during restoration;
-   (c) If restoration exceeds {{RESTORATION_PERIOD}}, either Party may terminate.
+(a) Landlord shall restore if restoration can be completed within {{RESTORATION_PERIOD}};
+(b) Rent shall abate proportionately during restoration;
+(c) If restoration exceeds {{RESTORATION_PERIOD}}, either Party may terminate.
 
 8.2 **Total Destruction.** If the Premises are substantially destroyed (>{{DESTRUCTION_THRESHOLD}}%), either Party may terminate this Lease by written notice within {{TERMINATION_NOTICE_PERIOD}}.
 
@@ -130,9 +130,9 @@ Legal Description: {{LEGAL_DESCRIPTION}}
 10.1 **Landlord's Consent Required.** Tenant shall not assign this Lease or sublet the Premises without Landlord's prior written consent, which consent shall not be unreasonably withheld, conditioned, or delayed.
 
 10.2 **Standards for Consent.** Landlord may withhold consent if:
-   (a) Proposed assignee/subtenant has insufficient financial strength or creditworthiness;
-   (b) Proposed use is incompatible with building character or other tenancies;
-   (c) Proposed assignee/subtenant is an existing tenant in the building.
+(a) Proposed assignee/subtenant has insufficient financial strength or creditworthiness;
+(b) Proposed use is incompatible with building character or other tenancies;
+(c) Proposed assignee/subtenant is an existing tenant in the building.
 
 10.3 **Profit Sharing.** {{SUBLEASE_PROFIT}}% of any sublease profit (amount exceeding Tenant's rent) shall be paid to Landlord.
 
@@ -141,21 +141,21 @@ Legal Description: {{LEGAL_DESCRIPTION}}
 ## 11. DEFAULT AND REMEDIES
 
 11.1 **Events of Default.** The following shall constitute events of default:
-   (a) Failure to pay rent within {{DEFAULT_CURE_PERIOD}} after written notice;
-   (b) Breach of any other covenant that remains uncured for {{COVENANT_CURE_PERIOD}} after notice;
-   (c) Tenant's bankruptcy, insolvency, or assignment for benefit of creditors;
-   (d) Abandonment of Premises.
+(a) Failure to pay rent within {{DEFAULT_CURE_PERIOD}} after written notice;
+(b) Breach of any other covenant that remains uncured for {{COVENANT_CURE_PERIOD}} after notice;
+(c) Tenant's bankruptcy, insolvency, or assignment for benefit of creditors;
+(d) Abandonment of Premises.
 
 11.2 **Landlord's Remedies.** Upon default, Landlord may:
-   (a) Terminate this Lease and recover possession;
-   (b) Re-enter and re-let the Premises for Tenant's account;
-   (c) Recover all damages including unpaid rent, re-letting costs, and attorney's fees;
-   (d) Continue the Lease and enforce all rights.
+(a) Terminate this Lease and recover possession;
+(b) Re-enter and re-let the Premises for Tenant's account;
+(c) Recover all damages including unpaid rent, re-letting costs, and attorney's fees;
+(d) Continue the Lease and enforce all rights.
 
 11.3 **Tenant's Remedies.** If Landlord defaults (e.g., fails to maintain Premises), Tenant may:
-   (a) Cure the default and offset costs against rent after {{TENANT_CURE_NOTICE}} notice;
-   (b) Terminate if Landlord fails to cure within {{LANDLORD_CURE_PERIOD}};
-   (c) Pursue damages.
+(a) Cure the default and offset costs against rent after {{TENANT_CURE_NOTICE}} notice;
+(b) Terminate if Landlord fails to cure within {{LANDLORD_CURE_PERIOD}};
+(c) Pursue damages.
 
 ## 12. SURRENDER OF PREMISES
 
@@ -204,19 +204,19 @@ Legal Description: {{LEGAL_DESCRIPTION}}
 
 {{LANDLORD_NAME}}
 
-By: _______________________________
+By: **************\_\_\_**************
 Name: {{LANDLORD_SIGNATORY}}
 Title: {{LANDLORD_TITLE}}
-Date: ______________
+Date: ******\_\_******
 
 **TENANT:**
 
 {{TENANT_NAME}}
 
-By: _______________________________
+By: **************\_\_\_**************
 Name: {{TENANT_SIGNATORY}}
 Title: {{TENANT_TITLE}}
-Date: ______________
+Date: ******\_\_******
 
 ---
 
@@ -242,21 +242,25 @@ Tenant shall have the right to install signage on {{SIGNAGE_LOCATION}}, subject 
 ## JURISDICTION-SPECIFIC NOTES
 
 **California:**
+
 - Civil Code § 1951.2 governs commercial lease damages
 - Include seismic safety disclosure per Cal. Health & Safety Code § 19147.5
 - Comply with ADA accessibility requirements
 
 **New York:**
+
 - Real Property Law § 231 governs commercial leases
 - Include rider for NYC Building Code compliance
 - Energy benchmarking required for buildings >50,000 sq ft (Local Law 84)
 
 **Texas:**
+
 - Property Code § 93 governs commercial lease remedies
 - Include Texas Tax Code § 11.13 property tax exemption notice
 - Disclosure of registered sex offenders database
 
 **UK (Commercial):**
+
 - Comply with Landlord and Tenant Act 1954 (security of tenure)
 - Include rent review clause per RICS standards
 - Service charge capped at reasonable market rates

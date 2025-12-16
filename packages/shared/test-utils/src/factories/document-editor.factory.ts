@@ -145,16 +145,14 @@ export function createMockSimilarDocuments(count: number = 5): MockSimilarDocume
     {
       id: '3',
       title: 'Contract Consultanță - StartUp Hub SRL',
-      snippet:
-        'Contract consultanță pentru startup, include clauze IP și consultanță societară...',
+      snippet: 'Contract consultanță pentru startup, include clauze IP și consultanță societară...',
       date: '2024-08-10',
       similarity: 87,
     },
     {
       id: '4',
       title: 'Acord Servicii Juridice - Innovation Labs',
-      snippet:
-        'Servicii juridice recurente, focus pe protecție date și contracte comerciale...',
+      snippet: 'Servicii juridice recurente, focus pe protecție date și contracte comerciale...',
       date: '2024-07-05',
       similarity: 82,
     },

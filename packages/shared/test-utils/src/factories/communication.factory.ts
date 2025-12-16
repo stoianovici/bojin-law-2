@@ -106,7 +106,11 @@ export function createMockAttachment(): Attachment {
     id: generateId(),
     filename: randomItem(filenames),
     fileSize: Math.floor(Math.random() * 5000000) + 100000, // 100KB to 5MB
-    mimeType: randomItem(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
+    mimeType: randomItem([
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]),
     downloadUrl: `/api/mock/attachments/${generateId()}`,
   };
 }
@@ -114,7 +118,9 @@ export function createMockAttachment(): Attachment {
 /**
  * Creates a mock participant
  */
-export function createMockParticipant(role: 'sender' | 'recipient' | 'cc' | 'bcc' = 'recipient'): CommunicationParticipant {
+export function createMockParticipant(
+  role: 'sender' | 'recipient' | 'cc' | 'bcc' = 'recipient'
+): CommunicationParticipant {
   const name = randomItem(ROMANIAN_NAMES);
   const domain = randomItem(ROMANIAN_EMAIL_DOMAINS);
   const email = `${name.toLowerCase().replace(' ', '.')}${domain}`;
@@ -130,9 +136,14 @@ export function createMockParticipant(role: 'sender' | 'recipient' | 'cc' | 'bcc
 /**
  * Creates a mock communication message
  */
-export function createMockMessage(threadId: string, options?: { isFromUser?: boolean; daysAgo?: number }): CommunicationMessage {
+export function createMockMessage(
+  threadId: string,
+  options?: { isFromUser?: boolean; daysAgo?: number }
+): CommunicationMessage {
   const sender = createMockParticipant('sender');
-  const recipients = Array.from({ length: Math.floor(Math.random() * 2) + 1 }, () => createMockParticipant('recipient'));
+  const recipients = Array.from({ length: Math.floor(Math.random() * 2) + 1 }, () =>
+    createMockParticipant('recipient')
+  );
   const hasAttachments = Math.random() > 0.7;
 
   return {
@@ -141,7 +152,7 @@ export function createMockMessage(threadId: string, options?: { isFromUser?: boo
     senderId: sender.userId,
     senderName: sender.name,
     senderEmail: sender.email,
-    recipientIds: recipients.map(r => r.userId),
+    recipientIds: recipients.map((r) => r.userId),
     subject: randomItem(ROMANIAN_SUBJECTS),
     body: randomItem(ROMANIAN_BODIES),
     htmlBody: `<p>${randomItem(ROMANIAN_BODIES).replace(/\n/g, '<br />')}</p>`,
@@ -155,7 +166,10 @@ export function createMockMessage(threadId: string, options?: { isFromUser?: boo
 /**
  * Creates mock extracted deadlines
  */
-export function createMockExtractedDeadlines(messageIds: string[], options?: { withConversions?: boolean; withDismissals?: boolean }): ExtractedDeadline[] {
+export function createMockExtractedDeadlines(
+  messageIds: string[],
+  options?: { withConversions?: boolean; withDismissals?: boolean }
+): ExtractedDeadline[] {
   if (Math.random() > 0.6) return []; // 40% chance of having deadlines
 
   const count = Math.floor(Math.random() * 2) + 1;
@@ -172,7 +186,9 @@ export function createMockExtractedDeadlines(messageIds: string[], options?: { w
       convertedToTaskId: isConverted ? generateId() : undefined,
       isDismissed: isDismissed || undefined,
       dismissedAt: isDismissed ? randomDateWithinDays(3) : undefined,
-      dismissReason: isDismissed ? randomItem(['Nu este relevant', 'Deja gestionat', 'Informație incorectă', 'Altul']) : undefined,
+      dismissReason: isDismissed
+        ? randomItem(['Nu este relevant', 'Deja gestionat', 'Informație incorectă', 'Altul'])
+        : undefined,
     };
   });
 }
@@ -180,7 +196,10 @@ export function createMockExtractedDeadlines(messageIds: string[], options?: { w
 /**
  * Creates mock extracted commitments
  */
-export function createMockExtractedCommitments(messageIds: string[], options?: { withConversions?: boolean; withDismissals?: boolean }): ExtractedCommitment[] {
+export function createMockExtractedCommitments(
+  messageIds: string[],
+  options?: { withConversions?: boolean; withDismissals?: boolean }
+): ExtractedCommitment[] {
   if (Math.random() > 0.5) return []; // 50% chance of having commitments
 
   const count = Math.floor(Math.random() * 2) + 1;
@@ -203,7 +222,9 @@ export function createMockExtractedCommitments(messageIds: string[], options?: {
       convertedToTaskId: isConverted ? generateId() : undefined,
       isDismissed: isDismissed || undefined,
       dismissedAt: isDismissed ? randomDateWithinDays(3) : undefined,
-      dismissReason: isDismissed ? randomItem(['Nu este relevant', 'Deja gestionat', 'Informație incorectă', 'Altul']) : undefined,
+      dismissReason: isDismissed
+        ? randomItem(['Nu este relevant', 'Deja gestionat', 'Informație incorectă', 'Altul'])
+        : undefined,
     };
   });
 }
@@ -211,7 +232,10 @@ export function createMockExtractedCommitments(messageIds: string[], options?: {
 /**
  * Creates mock extracted action items
  */
-export function createMockExtractedActionItems(messageIds: string[], options?: { withConversions?: boolean; withDismissals?: boolean }): ExtractedActionItem[] {
+export function createMockExtractedActionItems(
+  messageIds: string[],
+  options?: { withConversions?: boolean; withDismissals?: boolean }
+): ExtractedActionItem[] {
   if (Math.random() > 0.6) return []; // 40% chance of having action items
 
   const count = Math.floor(Math.random() * 3) + 1;
@@ -235,7 +259,9 @@ export function createMockExtractedActionItems(messageIds: string[], options?: {
       convertedToTaskId: isConverted ? generateId() : undefined,
       isDismissed: isDismissed || undefined,
       dismissedAt: isDismissed ? randomDateWithinDays(3) : undefined,
-      dismissReason: isDismissed ? randomItem(['Nu este relevant', 'Deja gestionat', 'Informație incorectă', 'Altul']) : undefined,
+      dismissReason: isDismissed
+        ? randomItem(['Nu este relevant', 'Deja gestionat', 'Informație incorectă', 'Altul'])
+        : undefined,
     };
   });
 }
@@ -243,7 +269,10 @@ export function createMockExtractedActionItems(messageIds: string[], options?: {
 /**
  * Creates mock extracted items
  */
-export function createMockExtractedItems(messageIds: string[], options?: { withConversions?: boolean; withDismissals?: boolean }): ExtractedItems {
+export function createMockExtractedItems(
+  messageIds: string[],
+  options?: { withConversions?: boolean; withDismissals?: boolean }
+): ExtractedItems {
   return {
     deadlines: createMockExtractedDeadlines(messageIds, options),
     commitments: createMockExtractedCommitments(messageIds, options),
@@ -271,11 +300,11 @@ export function createMockCommunicationThread(options?: {
     createMockMessage(threadId, { daysAgo: (messageCount - i) * 2 })
   );
 
-  const messageIds = messages.map(m => m.id);
+  const messageIds = messages.map((m) => m.id);
   const participants: CommunicationParticipant[] = [];
 
-  messages.forEach(msg => {
-    if (!participants.some(p => p.userId === msg.senderId)) {
+  messages.forEach((msg) => {
+    if (!participants.some((p) => p.userId === msg.senderId)) {
       participants.push({
         userId: msg.senderId,
         name: msg.senderName,
@@ -286,7 +315,7 @@ export function createMockCommunicationThread(options?: {
   });
 
   const lastMessage = messages[messages.length - 1]!;
-  const hasAttachments = messages.some(m => m.attachments.length > 0);
+  const hasAttachments = messages.some((m) => m.attachments.length > 0);
   const isProcessed = options?.isProcessed ?? Math.random() > 0.7; // 30% chance of being processed
 
   return {
@@ -326,9 +355,12 @@ export function createMockAIDraftResponse(
   tone: 'formal' | 'professional' | 'brief' = 'professional'
 ): AIDraftResponse {
   const draftBodies = {
-    formal: 'Stimate domn/Stimată doamnă,\n\nCu referire la comunicarea dumneavoastră din data de [data], vă mulțumim pentru solicitarea transmisă.\n\nÎn conformitate cu dispozițiile legale aplicabile și jurisprudența în materie, apreciem că situația prezentată necesită următoarele măsuri:\n\n1. Verificarea documentației existente\n2. Solicitarea de clarificări suplimentare\n3. Stabilirea unui termen de finalizare\n\nVă rugăm să ne transmiteți confirmare cu privire la aspectele menționate mai sus.\n\nCu deosebită considerație,\n[Numele dumneavoastră]',
-    professional: 'Bună ziua,\n\nVă mulțumesc pentru mesajul transmis.\n\nAm analizat situația prezentată și consider că cea mai bună abordare ar fi următoarea:\n\n- Să ne întâlnim pentru o discuție detaliată\n- Să pregătim documentația necesară\n- Să stabilim pașii următori\n\nAș aprecia dacă îmi puteți confirma disponibilitatea pentru săptămâna viitoare.\n\nCu stimă,\n[Numele dumneavoastră]',
-    brief: 'Bună ziua,\n\nAm primit mesajul dumneavoastră. Voi reveni cu un răspuns detaliat până la sfârșitul săptămânii.\n\nÎntre timp, vă rog să-mi transmiteți documentele menționate.\n\nMulțumesc,\n[Numele dumneavoastră]',
+    formal:
+      'Stimate domn/Stimată doamnă,\n\nCu referire la comunicarea dumneavoastră din data de [data], vă mulțumim pentru solicitarea transmisă.\n\nÎn conformitate cu dispozițiile legale aplicabile și jurisprudența în materie, apreciem că situația prezentată necesită următoarele măsuri:\n\n1. Verificarea documentației existente\n2. Solicitarea de clarificări suplimentare\n3. Stabilirea unui termen de finalizare\n\nVă rugăm să ne transmiteți confirmare cu privire la aspectele menționate mai sus.\n\nCu deosebită considerație,\n[Numele dumneavoastră]',
+    professional:
+      'Bună ziua,\n\nVă mulțumesc pentru mesajul transmis.\n\nAm analizat situația prezentată și consider că cea mai bună abordare ar fi următoarea:\n\n- Să ne întâlnim pentru o discuție detaliată\n- Să pregătim documentația necesară\n- Să stabilim pașii următori\n\nAș aprecia dacă îmi puteți confirma disponibilitatea pentru săptămâna viitoare.\n\nCu stimă,\n[Numele dumneavoastră]',
+    brief:
+      'Bună ziua,\n\nAm primit mesajul dumneavoastră. Voi reveni cu un răspuns detaliat până la sfârșitul săptămânii.\n\nÎntre timp, vă rog să-mi transmiteți documentele menționate.\n\nMulțumesc,\n[Numele dumneavoastră]',
   };
 
   return {
@@ -336,7 +368,8 @@ export function createMockAIDraftResponse(
     threadId,
     tone,
     draftBody: draftBodies[tone],
-    suggestedAttachments: Math.random() > 0.5 ? ['Contract actualizat', 'Rezumat jurisprudență'] : [],
+    suggestedAttachments:
+      Math.random() > 0.5 ? ['Contract actualizat', 'Rezumat jurisprudență'] : [],
     confidence: randomItem(['Low', 'Medium', 'High'] as const),
     generatedAt: new Date(),
   };
@@ -379,7 +412,8 @@ export function createMockTaskFromCommunication(
   } else if ('commitmentText' in extractedItem) {
     // ExtractedCommitment
     title = extractedItem.commitmentText;
-    dueDate = 'date' in extractedItem ? extractedItem.date as Date : randomFutureDateWithinDays(14);
+    dueDate =
+      'date' in extractedItem ? (extractedItem.date as Date) : randomFutureDateWithinDays(14);
     priority = 'Medium';
   } else if ('description' in extractedItem && 'priority' in extractedItem) {
     // ExtractedActionItem

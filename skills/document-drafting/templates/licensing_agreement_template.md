@@ -35,97 +35,110 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 ## 2. GRANT OF LICENSE
 
 2.1 **License Grant.** Subject to the terms and conditions of this Agreement, Licensor hereby grants to Licensee a {{LICENSE_TYPE}} to:
+
 - Install and use the Software for the Licensed Purpose;
 - Access and use the Documentation;
 - Make {{BACKUP_COPIES}} archival copies for backup purposes only.
 
 **License Types:**
+
 - **Option A - Perpetual License:** Non-expiring license with ongoing support and maintenance
 - **Option B - Subscription License:** License for {{SUBSCRIPTION_TERM}} with automatic renewal
 - **Option C - Trial/Evaluation License:** {{TRIAL_PERIOD}} trial license for evaluation purposes only
 
 **License Scope:**
+
 - **Non-Exclusive:** Licensor may license Software to others
 - **{{TRANSFERABILITY}}:** {{TRANSFER_TERMS}} (Transferable / Non-Transferable)
 - **Territory:** Licensed for use within {{GEOGRAPHIC_TERRITORY}}
 
-2.2 **Deployment Options.**
+  2.2 **Deployment Options.**
 
 **Option A - On-Premise Deployment:**
+
 - Licensee may install Software on {{MAX_INSTALLATIONS}} server(s) or device(s)
 - Location: {{INSTALLATION_LOCATIONS}}
 - CPU/Core restrictions: {{CPU_RESTRICTIONS}}
 
 **Option B - SaaS/Cloud Deployment:**
+
 - Licensor hosts Software; Licensee accesses via {{ACCESS_METHOD}}
 - Uptime SLA: {{UPTIME_SLA}}% availability
 - Data storage location: {{DATA_CENTER_LOCATION}}
 - Concurrent user limit: {{CONCURRENT_USERS}}
 
 **Option C - Hybrid Deployment:**
+
 - Both on-premise and cloud access permitted
 - Primary deployment: {{PRIMARY_DEPLOYMENT}}
 - Failover/DR deployment: {{DR_DEPLOYMENT}}
 
-2.3 **License Restrictions.** Licensee shall NOT:
-(a) Reverse engineer, decompile, or disassemble the Software;
-(b) Modify, adapt, translate, or create derivative works of the Software;
-(c) Remove, alter, or obscure proprietary notices or labels;
-(d) Rent, lease, sublicense, distribute, or transfer the Software to third parties;
-(e) Use the Software to develop competing products;
-(f) Use the Software beyond the scope of Licensed Purpose or Authorized Users;
-(g) Use the Software to process third-party data without authorization;
-(h) Benchmark or publish performance comparisons without prior written consent.
+  2.3 **License Restrictions.** Licensee shall NOT:
+  (a) Reverse engineer, decompile, or disassemble the Software;
+  (b) Modify, adapt, translate, or create derivative works of the Software;
+  (c) Remove, alter, or obscure proprietary notices or labels;
+  (d) Rent, lease, sublicense, distribute, or transfer the Software to third parties;
+  (e) Use the Software to develop competing products;
+  (f) Use the Software beyond the scope of Licensed Purpose or Authorized Users;
+  (g) Use the Software to process third-party data without authorization;
+  (h) Benchmark or publish performance comparisons without prior written consent.
 
-2.4 **Reservation of Rights.** Licensor reserves all rights not explicitly granted herein. This is a license, not a sale. Licensee acquires no ownership rights in the Software.
+  2.4 **Reservation of Rights.** Licensor reserves all rights not explicitly granted herein. This is a license, not a sale. Licensee acquires no ownership rights in the Software.
 
 ## 3. FEES AND PAYMENT
 
 3.1 **License Fees.** Licensee shall pay Licensor the following fees:
 
 **Option A - Perpetual License:**
+
 - One-time license fee: ${{PERPETUAL_FEE}}
 - Annual maintenance and support: ${{ANNUAL_MAINTENANCE}} ({{MAINTENANCE_PERCENTAGE}}% of license fee)
 
 **Option B - Subscription Licensing:**
+
 - Annual subscription: ${{ANNUAL_SUBSCRIPTION}}/year
 - Monthly subscription: ${{MONTHLY_SUBSCRIPTION}}/month
 - Pricing tier: {{PRICING_TIER}} (based on users/usage/features)
 
 **Option C - Usage-Based Pricing:**
+
 - Per-user fee: ${{PER_USER_FEE}}/user/month
 - Per-transaction fee: ${{PER_TRANSACTION_FEE}}/transaction
 - Data processing fee: ${{DATA_FEE}}/GB processed
 - API call fee: ${{API_FEE}}/1000 calls
 
-3.2 **Payment Terms.**
+  3.2 **Payment Terms.**
+
 - Invoicing: {{INVOICING_FREQUENCY}} (annual, quarterly, monthly)
 - Payment due: {{PAYMENT_TERMS}} net {{PAYMENT_DAYS}}
 - Method: Wire transfer to {{PAYMENT_ACCOUNT}} or credit card via {{PAYMENT_PROCESSOR}}
 - Late payments: {{LATE_FEE}}% per month plus suspension rights
 
-3.3 **Taxes.** All fees are exclusive of taxes. Licensee is responsible for all sales, use, VAT, GST, and similar taxes, except taxes on Licensor's income.
+  3.3 **Taxes.** All fees are exclusive of taxes. Licensee is responsible for all sales, use, VAT, GST, and similar taxes, except taxes on Licensor's income.
 
-3.4 **Fee Adjustments.** Licensor may increase fees upon {{FEE_INCREASE_NOTICE}} written notice, effective on renewal. Increases limited to {{MAX_FEE_INCREASE}}% per year or CPI, whichever is less.
+  3.4 **Fee Adjustments.** Licensor may increase fees upon {{FEE_INCREASE_NOTICE}} written notice, effective on renewal. Increases limited to {{MAX_FEE_INCREASE}}% per year or CPI, whichever is less.
 
-3.5 **Overuse Fees.** If Licensee exceeds licensed capacity (users, installations, usage limits), Licensee shall pay overuse fees of {{OVERUSE_FEE_RATE}} times the standard rate for excess usage.
+  3.5 **Overuse Fees.** If Licensee exceeds licensed capacity (users, installations, usage limits), Licensee shall pay overuse fees of {{OVERUSE_FEE_RATE}} times the standard rate for excess usage.
 
 ## 4. TERM AND TERMINATION
 
 4.1 **Term.**
+
 - **Perpetual License:** This Agreement commences on the Effective Date and continues perpetually unless terminated per Section 4.2.
 - **Subscription License:** Initial term of {{INITIAL_TERM}}, automatically renewing for successive {{RENEWAL_TERM}} periods unless terminated.
 
-4.2 **Termination.**
+  4.2 **Termination.**
 
 (a) **By Licensee:** Licensee may terminate:
-   - Perpetual: Upon {{LICENSEE_TERMINATION_NOTICE}} written notice (no refund)
-   - Subscription: By providing notice before renewal date (no refund for current period)
+
+- Perpetual: Upon {{LICENSEE_TERMINATION_NOTICE}} written notice (no refund)
+- Subscription: By providing notice before renewal date (no refund for current period)
 
 (b) **By Licensor:** Licensor may terminate immediately if:
-   - Licensee breaches and fails to cure within {{CURE_PERIOD}}
-   - Licensee fails to pay fees within {{PAYMENT_GRACE_PERIOD}}
-   - Licensee becomes insolvent or files for bankruptcy
+
+- Licensee breaches and fails to cure within {{CURE_PERIOD}}
+- Licensee fails to pay fees within {{PAYMENT_GRACE_PERIOD}}
+- Licensee becomes insolvent or files for bankruptcy
 
 (c) **Mutual Termination:** By written agreement of both Parties.
 
@@ -137,6 +150,7 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 (e) Sections {{SURVIVING_SECTIONS}} (IP, Confidentiality, Warranty Disclaimer, Liability, General) shall survive.
 
 4.4 **Refunds.**
+
 - Perpetual licenses: No refunds after {{REFUND_PERIOD}} from purchase date
 - Subscription: No refunds for partial periods
 - Trial/Evaluation: No fees, no refunds
@@ -145,26 +159,28 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 
 5.1 **Support Services.** Licensor shall provide support services per the Support Schedule below:
 
-| Support Tier | Response Time | Channels | Hours | Annual Cost |
-|--------------|---------------|----------|-------|-------------|
-| Standard | {{STANDARD_RESPONSE}} | Email, Portal | Business hours | Included |
-| Premium | {{PREMIUM_RESPONSE}} | Phone, Email, Portal | {{PREMIUM_HOURS}} | ${{PREMIUM_COST}} |
-| Enterprise | {{ENTERPRISE_RESPONSE}} | Dedicated contact | 24/7/365 | ${{ENTERPRISE_COST}} |
+| Support Tier | Response Time           | Channels             | Hours             | Annual Cost          |
+| ------------ | ----------------------- | -------------------- | ----------------- | -------------------- |
+| Standard     | {{STANDARD_RESPONSE}}   | Email, Portal        | Business hours    | Included             |
+| Premium      | {{PREMIUM_RESPONSE}}    | Phone, Email, Portal | {{PREMIUM_HOURS}} | ${{PREMIUM_COST}}    |
+| Enterprise   | {{ENTERPRISE_RESPONSE}} | Dedicated contact    | 24/7/365          | ${{ENTERPRISE_COST}} |
 
 Licensee's support tier: {{SELECTED_TIER}}
 
 5.2 **Software Updates.** Licensor shall provide:
+
 - **Minor Updates:** Bug fixes and patches (included in maintenance)
 - **Major Updates:** New features and versions ({{MAJOR_UPDATE_TERMS}}: included / additional fee of {{UPGRADE_FEE}})
 - **Deployment:** Updates deployed {{UPDATE_DEPLOYMENT}} (automatically / on request / on-premise)
 
-5.3 **Exclusions.** Support does not include:
+  5.3 **Exclusions.** Support does not include:
+
 - Third-party software or hardware issues
 - Customizations or modifications by Licensee
 - Issues caused by Licensee's misuse or unauthorized modifications
 - Problems in unsupported environments
 
-5.4 **End of Life.** Licensor may discontinue support for Software versions older than {{EOL_PERIOD}}, provided {{EOL_NOTICE}} advance notice.
+  5.4 **End of Life.** Licensor may discontinue support for Software versions older than {{EOL_PERIOD}}, provided {{EOL_NOTICE}} advance notice.
 
 ## 6. INTELLECTUAL PROPERTY
 
@@ -226,6 +242,7 @@ Security measures include: {{SECURITY_MEASURES}} (encryption, access controls, m
 These remedies are Licensee's sole and exclusive remedies for breach of warranty.
 
 9.3 **DISCLAIMER.** EXCEPT AS EXPRESSLY SET FORTH IN SECTION 9.1, THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. LICENSOR DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING:
+
 - MERCHANTABILITY
 - FITNESS FOR A PARTICULAR PURPOSE
 - NON-INFRINGEMENT
@@ -238,22 +255,24 @@ Licensor does not warrant that the Software will meet Licensee's requirements or
 ## 10. LIMITATION OF LIABILITY
 
 10.1 **Cap on Liability.** EXCEPT FOR EXCLUDED CLAIMS (SECTION 10.3), EACH PARTY'S TOTAL AGGREGATE LIABILITY SHALL NOT EXCEED:
+
 - **Perpetual License:** The greater of (a) fees paid in the 12 months preceding the claim, or (b) ${{LIABILITY_CAP_MINIMUM}}.
 - **Subscription License:** Fees paid in the {{LIABILITY_PERIOD}} preceding the claim.
 
-10.2 **Exclusion of Damages.** IN NO EVENT SHALL EITHER PARTY BE LIABLE FOR:
+  10.2 **Exclusion of Damages.** IN NO EVENT SHALL EITHER PARTY BE LIABLE FOR:
+
 - INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR EXEMPLARY DAMAGES
 - LOSS OF PROFITS, REVENUE, DATA, OR USE
 - BUSINESS INTERRUPTION
 - COST OF SUBSTITUTE PRODUCTS OR SERVICES
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-10.3 **Exceptions.** The limitations in Sections 10.1 and 10.2 do not apply to:
-(a) Either Party's indemnification obligations (Section 11);
-(b) Licensee's payment obligations;
-(c) Licensee's breach of license restrictions or unauthorized use;
-(d) Either Party's breach of confidentiality;
-(e) Gross negligence or willful misconduct.
+  10.3 **Exceptions.** The limitations in Sections 10.1 and 10.2 do not apply to:
+  (a) Either Party's indemnification obligations (Section 11);
+  (b) Licensee's payment obligations;
+  (c) Licensee's breach of license restrictions or unauthorized use;
+  (d) Either Party's breach of confidentiality;
+  (e) Gross negligence or willful misconduct.
 
 ## 11. INDEMNIFICATION
 
@@ -299,29 +318,30 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 13.1 **Governing Law.** This Agreement shall be governed by the laws of {{GOVERNING_STATE}}, without regard to conflicts of law principles. The UN Convention on Contracts for the International Sale of Goods shall not apply.
 
 13.2 **Dispute Resolution.**
+
 - **Informal Resolution:** Disputes shall first be escalated to executives of both Parties for {{EXECUTIVE_RESOLUTION_PERIOD}}.
 - **Arbitration (Optional):** Unresolved disputes shall be resolved by binding arbitration under {{ARBITRATION_RULES}} in {{ARBITRATION_LOCATION}}.
 - **Litigation:** If no arbitration, exclusive jurisdiction in {{JURISDICTION_COURTS}}.
 
-13.3 **Notices.** All notices shall be in writing and delivered to:
-**Licensor:** {{LICENSOR_NOTICE_ADDRESS}}
-**Licensee:** {{LICENSEE_NOTICE_ADDRESS}}
+  13.3 **Notices.** All notices shall be in writing and delivered to:
+  **Licensor:** {{LICENSOR_NOTICE_ADDRESS}}
+  **Licensee:** {{LICENSEE_NOTICE_ADDRESS}}
 
-13.4 **Assignment.** Licensee may not assign this Agreement without Licensor's prior written consent. Licensor may assign to an affiliate or successor without consent.
+  13.4 **Assignment.** Licensee may not assign this Agreement without Licensor's prior written consent. Licensor may assign to an affiliate or successor without consent.
 
-13.5 **Entire Agreement.** This Agreement (including all schedules, exhibits, and order forms) constitutes the entire agreement and supersedes all prior agreements.
+  13.5 **Entire Agreement.** This Agreement (including all schedules, exhibits, and order forms) constitutes the entire agreement and supersedes all prior agreements.
 
-13.6 **Amendments.** Licensor may amend this Agreement upon {{AMENDMENT_NOTICE}} notice. Continued use after amendment constitutes acceptance. For material changes, Licensee may terminate within {{TERMINATION_AFTER_AMENDMENT}}.
+  13.6 **Amendments.** Licensor may amend this Agreement upon {{AMENDMENT_NOTICE}} notice. Continued use after amendment constitutes acceptance. For material changes, Licensee may terminate within {{TERMINATION_AFTER_AMENDMENT}}.
 
-13.7 **Severability.** If any provision is held invalid, the remainder shall continue in full force and effect.
+  13.7 **Severability.** If any provision is held invalid, the remainder shall continue in full force and effect.
 
-13.8 **Waiver.** No waiver of any provision shall be deemed a continuing waiver.
+  13.8 **Waiver.** No waiver of any provision shall be deemed a continuing waiver.
 
-13.9 **Force Majeure.** Neither Party shall be liable for delays or failures due to causes beyond its reasonable control (natural disasters, war, strikes, pandemics, government actions).
+  13.9 **Force Majeure.** Neither Party shall be liable for delays or failures due to causes beyond its reasonable control (natural disasters, war, strikes, pandemics, government actions).
 
-13.10 **Independent Contractors.** The Parties are independent contractors. No agency, partnership, or joint venture is created.
+  13.10 **Independent Contractors.** The Parties are independent contractors. No agency, partnership, or joint venture is created.
 
-13.11 **Publicity.** {{PUBLICITY_TERMS}} (Licensor may list Licensee as customer / mutual approval required for press releases).
+  13.11 **Publicity.** {{PUBLICITY_TERMS}} (Licensor may list Licensee as customer / mutual approval required for press releases).
 
 ## SIGNATURES
 
@@ -329,19 +349,19 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 {{LICENSOR_NAME}}
 
-By: _______________________________
+By: **************\_\_\_**************
 Name: {{LICENSOR_SIGNATORY}}
 Title: {{LICENSOR_TITLE}}
-Date: ______________
+Date: ******\_\_******
 
 **LICENSEE:**
 
 {{LICENSEE_NAME}}
 
-By: _______________________________
+By: **************\_\_\_**************
 Name: {{LICENSEE_SIGNATORY}}
 Title: {{LICENSEE_TITLE}}
-Date: ______________
+Date: ******\_\_******
 
 ---
 
@@ -358,22 +378,26 @@ Date: ______________
 ## JURISDICTION-SPECIFIC NOTES
 
 **California:**
+
 - Limitation of liability enforceable per Civil Code § 1668, except for willful misconduct
 - Export restrictions apply to encryption software (EAR)
 - CCPA obligations for processing California resident data
 
 **European Union:**
+
 - GDPR compliance required for personal data processing
 - Standard Contractual Clauses for data transfers outside EU
 - Right to data portability (Art. 20 GDPR)
 - Data breach notification within 72 hours (Art. 33 GDPR)
 
 **UK:**
+
 - UK GDPR and Data Protection Act 2018 compliance
 - International Data Transfer Agreement (IDTA) for data transfers
 - ICO registration may be required
 
 **New York:**
+
 - NY SHIELD Act security requirements for private information
 - Strong enforcement of non-compete and IP provisions
 - Arbitration clauses generally enforceable

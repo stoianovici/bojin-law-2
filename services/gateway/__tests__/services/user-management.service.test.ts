@@ -193,12 +193,7 @@ describe('UserManagementService', () => {
       mockPrisma.user.update.mockResolvedValue(mockActivatedUser);
       mockPrisma.userAuditLog.create.mockResolvedValue({});
 
-      const result = await userManagementService.activateUser(
-        userId,
-        firmId,
-        role,
-        adminUserId
-      );
+      const result = await userManagementService.activateUser(userId, firmId, role, adminUserId);
 
       expect(result).toEqual(mockActivatedUser);
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
@@ -253,12 +248,7 @@ describe('UserManagementService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockActiveUser);
 
       await expect(
-        userManagementService.activateUser(
-          'user-123',
-          'firm-123',
-          UserRole.Associate,
-          'admin-123'
-        )
+        userManagementService.activateUser('user-123', 'firm-123', UserRole.Associate, 'admin-123')
       ).rejects.toThrow('User cannot be activated. Current status: Active. Expected: Pending');
     });
 
@@ -372,10 +362,7 @@ describe('UserManagementService', () => {
       mockPrisma.user.update.mockResolvedValue(mockDeactivatedUser);
       mockPrisma.userAuditLog.create.mockResolvedValue({});
 
-      const result = await userManagementService.deactivateUser(
-        userId,
-        adminUserId
-      );
+      const result = await userManagementService.deactivateUser(userId, adminUserId);
 
       expect(result).toEqual(mockDeactivatedUser);
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
@@ -421,9 +408,9 @@ describe('UserManagementService', () => {
 
       mockPrisma.user.findUnique.mockResolvedValue(mockInactiveUser);
 
-      await expect(
-        userManagementService.deactivateUser('user-123', 'admin-123')
-      ).rejects.toThrow('User cannot be deactivated. Current status: Inactive. Expected: Active');
+      await expect(userManagementService.deactivateUser('user-123', 'admin-123')).rejects.toThrow(
+        'User cannot be deactivated. Current status: Inactive. Expected: Active'
+      );
     });
 
     it('should throw error if trying to deactivate own account (SEC-002)', async () => {
@@ -446,9 +433,9 @@ describe('UserManagementService', () => {
 
       mockPrisma.user.findUnique.mockResolvedValue(mockActiveUser);
 
-      await expect(
-        userManagementService.deactivateUser(userId, adminUserId)
-      ).rejects.toThrow('Cannot deactivate your own account');
+      await expect(userManagementService.deactivateUser(userId, adminUserId)).rejects.toThrow(
+        'Cannot deactivate your own account'
+      );
     });
   });
 
@@ -481,11 +468,7 @@ describe('UserManagementService', () => {
       mockPrisma.user.update.mockResolvedValue(mockUpdatedUser);
       mockPrisma.userAuditLog.create.mockResolvedValue({});
 
-      const result = await userManagementService.updateUserRole(
-        userId,
-        newRole,
-        adminUserId
-      );
+      const result = await userManagementService.updateUserRole(userId, newRole, adminUserId);
 
       expect(result).toEqual(mockUpdatedUser);
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
@@ -510,11 +493,7 @@ describe('UserManagementService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await expect(
-        userManagementService.updateUserRole(
-          'nonexistent-user',
-          UserRole.Partner,
-          'admin-123'
-        )
+        userManagementService.updateUserRole('nonexistent-user', UserRole.Partner, 'admin-123')
       ).rejects.toThrow('User not found: nonexistent-user');
     });
 
@@ -584,11 +563,7 @@ describe('UserManagementService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockActiveUser);
 
       await expect(
-        userManagementService.updateUserRole(
-          'user-123',
-          'InvalidRole' as any,
-          'admin-123'
-        )
+        userManagementService.updateUserRole('user-123', 'InvalidRole' as any, 'admin-123')
       ).rejects.toThrow('Invalid role: InvalidRole');
     });
   });

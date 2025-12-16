@@ -9,10 +9,7 @@ export { WritingStyleCard, WritingStyleCardCompact } from './WritingStyleCard';
 // Snippets
 export { SnippetLibrary } from './SnippetLibrary';
 export { SnippetEditor, SnippetEditorDialog } from './SnippetEditor';
-export {
-  SnippetSuggestionPanel,
-  SnippetSuggestionBadge,
-} from './SnippetSuggestionPanel';
+export { SnippetSuggestionPanel, SnippetSuggestionBadge } from './SnippetSuggestionPanel';
 export {
   SnippetAutocomplete,
   SnippetPickerButton,
@@ -20,26 +17,14 @@ export {
 } from './SnippetAutocomplete';
 
 // Task Patterns
-export {
-  TaskPatternsManager,
-  TaskPatternsCard,
-} from './TaskPatternsManager';
-export {
-  TaskSuggestionPrompt,
-  useTaskSuggestion,
-} from './TaskSuggestionPrompt';
+export { TaskPatternsManager, TaskPatternsCard } from './TaskPatternsManager';
+export { TaskSuggestionPrompt, useTaskSuggestion } from './TaskSuggestionPrompt';
 
 // Document Preferences
-export {
-  DocumentPreferencesManager,
-  DocumentPreferencesCard,
-} from './DocumentPreferencesManager';
+export { DocumentPreferencesManager, DocumentPreferencesCard } from './DocumentPreferencesManager';
 
 // Response Patterns
-export {
-  ResponsePatternsCard,
-  ResponsePatternsCompact,
-} from './ResponsePatternsCard';
+export { ResponsePatternsCard, ResponsePatternsCompact } from './ResponsePatternsCard';
 
 // Deadline Suggestions
 export {

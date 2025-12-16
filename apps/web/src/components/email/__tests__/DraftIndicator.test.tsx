@@ -53,21 +53,21 @@ describe('DraftIndicator', () => {
 
   describe('Confidence Display', () => {
     it('should display high confidence (>= 0.8) with green indicator', () => {
-      render(<DraftIndicator status="Generated" confidence={0.90} />);
+      render(<DraftIndicator status="Generated" confidence={0.9} />);
 
       expect(screen.getByText(/90%/i)).toBeInTheDocument();
       expect(screen.getByText(/90%/i)).toHaveClass('text-green-600');
     });
 
     it('should display medium confidence (0.6-0.8) with yellow indicator', () => {
-      render(<DraftIndicator status="Generated" confidence={0.70} />);
+      render(<DraftIndicator status="Generated" confidence={0.7} />);
 
       expect(screen.getByText(/70%/i)).toBeInTheDocument();
       expect(screen.getByText(/70%/i)).toHaveClass('text-yellow-600');
     });
 
     it('should display low confidence (< 0.6) with red indicator', () => {
-      render(<DraftIndicator status="Generated" confidence={0.50} />);
+      render(<DraftIndicator status="Generated" confidence={0.5} />);
 
       expect(screen.getByText(/50%/i)).toBeInTheDocument();
       expect(screen.getByText(/50%/i)).toHaveClass('text-red-600');

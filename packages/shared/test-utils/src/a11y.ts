@@ -4,7 +4,11 @@
  */
 
 import type { Page } from '@playwright/test';
-import { injectAxe, checkA11y as axeCheckA11y, getViolations as axeGetViolations } from 'axe-playwright';
+import {
+  injectAxe,
+  checkA11y as axeCheckA11y,
+  getViolations as axeGetViolations,
+} from 'axe-playwright';
 import type { Result, ElementContext, RunOptions, ImpactValue } from 'axe-core';
 
 /**
@@ -42,9 +46,7 @@ export const axeConfig: RunOptions = {
  * Rules to disable for specific test scenarios
  * Use sparingly and only when necessary with proper justification
  */
-export const getAxeConfigWithDisabledRules = (
-  disabledRules: string[]
-): RunOptions => ({
+export const getAxeConfigWithDisabledRules = (disabledRules: string[]): RunOptions => ({
   ...axeConfig,
   rules: disabledRules.reduce(
     (acc, rule) => ({
@@ -166,9 +168,7 @@ export function formatViolations(violations: Result[]): string {
     .map((violation, index) => {
       const nodeInfo = violation.nodes
         .map((node: any) => {
-          const target = Array.isArray(node.target)
-            ? node.target.join(' ')
-            : node.target;
+          const target = Array.isArray(node.target) ? node.target.join(' ') : node.target;
           return `      Selector: ${target}\n      HTML: ${node.html}`;
         })
         .join('\n\n');

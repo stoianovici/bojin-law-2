@@ -122,8 +122,18 @@ describe('TrainingPipelineService', () => {
 
     it('should process discovered documents in batches', async () => {
       const mockDocuments = [
-        { oneDriveFileId: 'file-1', fileName: 'doc1.pdf', category: 'Contract', folderPath: '/path' },
-        { oneDriveFileId: 'file-2', fileName: 'doc2.pdf', category: 'Contract', folderPath: '/path' },
+        {
+          oneDriveFileId: 'file-1',
+          fileName: 'doc1.pdf',
+          category: 'Contract',
+          folderPath: '/path',
+        },
+        {
+          oneDriveFileId: 'file-2',
+          fileName: 'doc2.pdf',
+          category: 'Contract',
+          folderPath: '/path',
+        },
       ];
 
       (documentDiscoveryService.discoverDocuments as jest.Mock).mockResolvedValue({
@@ -164,7 +174,12 @@ describe('TrainingPipelineService', () => {
 
     it('should handle document processing failures gracefully', async () => {
       const mockDocuments = [
-        { oneDriveFileId: 'file-1', fileName: 'doc1.pdf', category: 'Contract', folderPath: '/path' },
+        {
+          oneDriveFileId: 'file-1',
+          fileName: 'doc1.pdf',
+          category: 'Contract',
+          folderPath: '/path',
+        },
       ];
 
       (documentDiscoveryService.discoverDocuments as jest.Mock).mockResolvedValue({
@@ -217,9 +232,9 @@ describe('TrainingPipelineService', () => {
         new Error('Critical failure')
       );
 
-      await expect(
-        service.runPipeline('manual', mockAccessToken, mockCategories)
-      ).rejects.toThrow('Critical failure');
+      await expect(service.runPipeline('manual', mockAccessToken, mockCategories)).rejects.toThrow(
+        'Critical failure'
+      );
 
       expect(prisma.trainingPipelineRun.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -233,7 +248,12 @@ describe('TrainingPipelineService', () => {
 
     it('should track total tokens used', async () => {
       const mockDocuments = [
-        { oneDriveFileId: 'file-1', fileName: 'doc1.pdf', category: 'Contract', folderPath: '/path' },
+        {
+          oneDriveFileId: 'file-1',
+          fileName: 'doc1.pdf',
+          category: 'Contract',
+          folderPath: '/path',
+        },
       ];
 
       (documentDiscoveryService.discoverDocuments as jest.Mock).mockResolvedValue({
@@ -241,9 +261,7 @@ describe('TrainingPipelineService', () => {
         totalFound: 1,
       });
 
-      (documentDiscoveryService.downloadFile as jest.Mock).mockResolvedValue(
-        Buffer.from('test')
-      );
+      (documentDiscoveryService.downloadFile as jest.Mock).mockResolvedValue(Buffer.from('test'));
 
       (textExtractionService.extractText as jest.Mock).mockResolvedValue({
         text: 'text',
@@ -330,7 +348,12 @@ describe('TrainingPipelineService', () => {
   describe('retry logic', () => {
     it('should retry failed document processing up to 3 times', async () => {
       const mockDocuments = [
-        { oneDriveFileId: 'file-1', fileName: 'doc1.pdf', category: 'Contract', folderPath: '/path' },
+        {
+          oneDriveFileId: 'file-1',
+          fileName: 'doc1.pdf',
+          category: 'Contract',
+          folderPath: '/path',
+        },
       ];
 
       (documentDiscoveryService.discoverDocuments as jest.Mock).mockResolvedValue({

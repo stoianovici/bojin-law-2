@@ -76,11 +76,7 @@ describe('TaskCard', () => {
     const handleTaskClick = jest.fn();
     const handleMenuClick = jest.fn();
     render(
-      <TaskCard
-        task={mockTask}
-        onTaskClick={handleTaskClick}
-        onMenuClick={handleMenuClick}
-      />
+      <TaskCard task={mockTask} onTaskClick={handleTaskClick} onMenuClick={handleMenuClick} />
     );
 
     const menuButton = screen.getByLabelText('Opțiuni sarcină');
@@ -109,9 +105,7 @@ describe('TaskCard', () => {
   });
 
   it('should render different priority levels correctly', () => {
-    const { rerender } = render(
-      <TaskCard task={{ ...mockTask, priority: 'High' }} />
-    );
+    const { rerender } = render(<TaskCard task={{ ...mockTask, priority: 'High' }} />);
     expect(screen.getByText('Înaltă')).toBeInTheDocument();
 
     rerender(<TaskCard task={{ ...mockTask, priority: 'Medium' }} />);

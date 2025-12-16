@@ -73,11 +73,7 @@ export function CaseActivityFeed({ caseId, compact = false }: CaseActivityFeedPr
   }
 
   if (error) {
-    return (
-      <div className="text-red-600 text-sm">
-        Eroare la încărcarea activității
-      </div>
-    );
+    return <div className="text-red-600 text-sm">Eroare la încărcarea activității</div>;
   }
 
   const entries = feed?.entries || [];
@@ -104,9 +100,7 @@ export function CaseActivityFeed({ caseId, compact = false }: CaseActivityFeedPr
 
       {/* Activity list */}
       {entries.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center py-4">
-          Nicio activitate de afișat
-        </p>
+        <p className="text-gray-500 text-sm text-center py-4">Nicio activitate de afișat</p>
       ) : (
         <div className="space-y-3">
           {entries.map((entry) => (
@@ -127,10 +121,7 @@ export function CaseActivityFeed({ caseId, compact = false }: CaseActivityFeedPr
             </button>
           ) : (
             feed?.hasMore && (
-              <button
-                onClick={loadMore}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
+              <button onClick={loadMore} className="text-sm text-blue-600 hover:text-blue-800">
                 Încarcă mai multe
               </button>
             )
@@ -169,13 +160,9 @@ function ActivityEntryItem({ entry, compact }: ActivityEntryItemProps) {
               <span className="font-medium text-gray-900">{actorName}</span>
               <span className="text-gray-600 ml-1">- {label}</span>
             </p>
-            <p className="text-sm text-gray-700 font-medium truncate">
-              {entry.title}
-            </p>
+            <p className="text-sm text-gray-700 font-medium truncate">{entry.title}</p>
             {!compact && entry.summary && (
-              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                {entry.summary}
-              </p>
+              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{entry.summary}</p>
             )}
           </div>
 

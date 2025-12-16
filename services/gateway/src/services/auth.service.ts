@@ -84,9 +84,7 @@ export class AuthService {
     const codeVerifier = randomBytes(32).toString('base64url');
 
     // Generate code challenge (SHA256 hash of verifier)
-    const codeChallenge = createHash('sha256')
-      .update(codeVerifier)
-      .digest('base64url');
+    const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
 
     return {
       codeVerifier,
@@ -156,9 +154,7 @@ export class AuthService {
   ): Promise<AuthenticationResult> {
     // Verify state parameter (CSRF protection)
     if (state !== expectedState) {
-      throw new Error(
-        'State parameter mismatch. Possible CSRF attack detected.'
-      );
+      throw new Error('State parameter mismatch. Possible CSRF attack detected.');
     }
 
     try {
@@ -171,8 +167,7 @@ export class AuthService {
       };
 
       // Exchange code for tokens
-      const authResult =
-        await this.msalClient.acquireTokenByCode(tokenRequest);
+      const authResult = await this.msalClient.acquireTokenByCode(tokenRequest);
 
       return authResult;
     } catch (error: any) {
@@ -191,9 +186,7 @@ export class AuthService {
    * @returns Authentication result with new access token
    * @throws Error if token refresh fails
    */
-  async refreshAccessToken(
-    refreshToken: string
-  ): Promise<AuthenticationResult> {
+  async refreshAccessToken(refreshToken: string): Promise<AuthenticationResult> {
     try {
       // Create refresh token request
       const refreshRequest: RefreshTokenRequest = {
@@ -202,8 +195,7 @@ export class AuthService {
       };
 
       // Refresh access token
-      const authResult =
-        await this.msalClient.acquireTokenByRefreshToken(refreshRequest);
+      const authResult = await this.msalClient.acquireTokenByRefreshToken(refreshRequest);
 
       if (!authResult) {
         throw new Error('Token refresh failed: No authentication result returned');
@@ -219,9 +211,7 @@ export class AuthService {
         oauthError.error === OAuthError.InvalidGrant ||
         oauthError.error === OAuthError.InteractionRequired
       ) {
-        throw new Error(
-          'Refresh token expired or invalid. User must re-authenticate.'
-        );
+        throw new Error('Refresh token expired or invalid. User must re-authenticate.');
       }
 
       throw new Error(
@@ -270,10 +260,7 @@ export class AuthService {
     // Extract user profile from ID token claims
     // Ref: https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens
     const azureAdId = idTokenClaims.oid || idTokenClaims.sub; // Object ID (preferred) or Subject
-    const email =
-      idTokenClaims.preferred_username ||
-      idTokenClaims.email ||
-      idTokenClaims.upn; // Email address
+    const email = idTokenClaims.preferred_username || idTokenClaims.email || idTokenClaims.upn; // Email address
     const firstName = idTokenClaims.given_name || '';
     const lastName = idTokenClaims.family_name || '';
 
@@ -282,9 +269,7 @@ export class AuthService {
     }
 
     if (!email) {
-      throw new Error(
-        'Missing required claim: email (preferred_username, email, or upn)'
-      );
+      throw new Error('Missing required claim: email (preferred_username, email, or upn)');
     }
 
     return {

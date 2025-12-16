@@ -18,14 +18,7 @@ export interface DocumentRetrievalTaskFormProps {
   errors?: Record<string, string>;
 }
 
-const SOURCE_LOCATIONS = [
-  'Court',
-  'Client',
-  'Registry',
-  'Third Party',
-  'Archives',
-  'Other',
-];
+const SOURCE_LOCATIONS = ['Court', 'Client', 'Registry', 'Third Party', 'Archives', 'Other'];
 
 const RETRIEVAL_METHODS = ['Physical', 'Electronic', 'Request'] as const;
 
@@ -50,7 +43,9 @@ export function DocumentRetrievalTaskForm({
         <Textarea
           id="documentDescription"
           value={value.documentDescription || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('documentDescription', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('documentDescription', e.target.value)
+          }
           placeholder="Describe the document to retrieve"
           rows={3}
           className={errors?.documentDescription ? 'border-red-500' : ''}
@@ -111,7 +106,9 @@ export function DocumentRetrievalTaskForm({
         <Input
           id="trackingNumber"
           value={value.trackingNumber || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('trackingNumber', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            handleChange('trackingNumber', e.target.value)
+          }
           placeholder="Tracking or reference number"
         />
       </div>

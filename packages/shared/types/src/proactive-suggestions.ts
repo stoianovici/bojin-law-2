@@ -13,21 +13,11 @@ export type ProactiveSuggestionType =
   | 'FollowUp'
   | 'RiskAlert';
 
-export type SuggestionCategory =
-  | 'Task'
-  | 'Communication'
-  | 'Document'
-  | 'Calendar'
-  | 'Compliance';
+export type SuggestionCategory = 'Task' | 'Communication' | 'Document' | 'Calendar' | 'Compliance';
 
 export type SuggestionPriority = 'Low' | 'Normal' | 'High' | 'Urgent';
 
-export type SuggestionStatus =
-  | 'Pending'
-  | 'Accepted'
-  | 'Dismissed'
-  | 'Expired'
-  | 'AutoApplied';
+export type SuggestionStatus = 'Pending' | 'Accepted' | 'Dismissed' | 'Expired' | 'AutoApplied';
 
 // User action types for tracking
 export interface UserAction {
@@ -197,14 +187,20 @@ export interface SuggestionAnalytics {
   dismissedCount: number;
   acceptanceRate: number;
   averageResponseTimeMs: number;
-  byType: Record<ProactiveSuggestionType, {
-    count: number;
-    acceptanceRate: number;
-  }>;
-  byCategory: Record<SuggestionCategory, {
-    count: number;
-    acceptanceRate: number;
-  }>;
+  byType: Record<
+    ProactiveSuggestionType,
+    {
+      count: number;
+      acceptanceRate: number;
+    }
+  >;
+  byCategory: Record<
+    SuggestionCategory,
+    {
+      count: number;
+      acceptanceRate: number;
+    }
+  >;
 }
 
 // AI prompt templates
@@ -295,11 +291,14 @@ Return as JSON:
 `;
 
 // Document completeness rules for Romanian legal documents
-export const DOCUMENT_COMPLETENESS_RULES: Record<string, {
-  required: string[];
-  recommended: string[];
-  signatureBlocks: number;
-}> = {
+export const DOCUMENT_COMPLETENESS_RULES: Record<
+  string,
+  {
+    required: string[];
+    recommended: string[];
+    signatureBlocks: number;
+  }
+> = {
   Contract: {
     required: ['parties', 'object', 'price', 'signatures', 'date'],
     recommended: ['witnesses', 'notarization'],

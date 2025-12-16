@@ -232,9 +232,7 @@ export const NotificareAvocateascaTemplate: RomanianTemplateDefinition = {
 /**
  * Generate a formatted legal notice document from the template
  */
-export function generateNotificareAvocateasca(
-  variables: Record<string, string>
-): string {
+export function generateNotificareAvocateasca(variables: Record<string, string>): string {
   const template = NotificareAvocateascaTemplate;
   let document = '';
 
@@ -274,9 +272,10 @@ export function generateNotificareAvocateasca(
 /**
  * Validate that all required variables are provided
  */
-export function validateNotificareVariables(
-  variables: Record<string, string>
-): { valid: boolean; missing: string[] } {
+export function validateNotificareVariables(variables: Record<string, string>): {
+  valid: boolean;
+  missing: string[];
+} {
   const template = NotificareAvocateascaTemplate;
   const missing: string[] = [];
 

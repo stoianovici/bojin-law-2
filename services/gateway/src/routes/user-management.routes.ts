@@ -264,10 +264,7 @@ userManagementRouter.post(
       const adminUserId = req.user!.userId;
 
       // Deactivate user
-      const updatedUser = await userManagementService.deactivateUser(
-        userId,
-        adminUserId
-      );
+      const updatedUser = await userManagementService.deactivateUser(userId, adminUserId);
 
       res.json({
         success: true,

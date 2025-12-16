@@ -119,9 +119,7 @@ export function useTeamMembers(caseId: string) {
     (privacyLevel: PrivacyLevel): TeamMember[] => {
       switch (privacyLevel) {
         case 'AttorneyOnly':
-          return teamMembers.filter((m) =>
-            ['Partner', 'Associate'].includes(m.role)
-          );
+          return teamMembers.filter((m) => ['Partner', 'Associate'].includes(m.role));
         case 'PartnerOnly':
           return teamMembers.filter((m) => m.role === 'Partner');
         default:
@@ -182,45 +180,54 @@ export function usePrivacyLevels() {
     return levels.find((l) => l.level === level);
   }, []);
 
-  const getLevelLabel = useCallback((level: PrivacyLevel): string => {
-    return getLevelConfig(level)?.label || level;
-  }, [getLevelConfig]);
-
-  const getLevelDescription = useCallback((level: PrivacyLevel): string => {
-    return getLevelConfig(level)?.description || '';
-  }, [getLevelConfig]);
-
-  const getLevelColor = useCallback((level: PrivacyLevel): string => {
-    return getLevelConfig(level)?.color || 'bg-gray-100 text-gray-700';
-  }, [getLevelConfig]);
-
-  const getLevelIcon = useCallback((level: PrivacyLevel): string => {
-    return getLevelConfig(level)?.icon || '👥';
-  }, [getLevelConfig]);
-
-  const requiresViewerSelection = useCallback((level: PrivacyLevel): boolean => {
-    return getLevelConfig(level)?.requiresViewerSelection || false;
-  }, [getLevelConfig]);
-
-  const canUserSetPrivacy = useCallback(
-    (userRole: string, targetLevel: PrivacyLevel): boolean => {
-      // Only Partners can set Partner-only
-      if (targetLevel === 'PartnerOnly' && userRole !== 'Partner') {
-        return false;
-      }
-
-      // Only attorneys can set Attorney-only
-      if (
-        targetLevel === 'AttorneyOnly' &&
-        !['Partner', 'Associate'].includes(userRole)
-      ) {
-        return false;
-      }
-
-      return true;
+  const getLevelLabel = useCallback(
+    (level: PrivacyLevel): string => {
+      return getLevelConfig(level)?.label || level;
     },
-    []
+    [getLevelConfig]
   );
+
+  const getLevelDescription = useCallback(
+    (level: PrivacyLevel): string => {
+      return getLevelConfig(level)?.description || '';
+    },
+    [getLevelConfig]
+  );
+
+  const getLevelColor = useCallback(
+    (level: PrivacyLevel): string => {
+      return getLevelConfig(level)?.color || 'bg-gray-100 text-gray-700';
+    },
+    [getLevelConfig]
+  );
+
+  const getLevelIcon = useCallback(
+    (level: PrivacyLevel): string => {
+      return getLevelConfig(level)?.icon || '👥';
+    },
+    [getLevelConfig]
+  );
+
+  const requiresViewerSelection = useCallback(
+    (level: PrivacyLevel): boolean => {
+      return getLevelConfig(level)?.requiresViewerSelection || false;
+    },
+    [getLevelConfig]
+  );
+
+  const canUserSetPrivacy = useCallback((userRole: string, targetLevel: PrivacyLevel): boolean => {
+    // Only Partners can set Partner-only
+    if (targetLevel === 'PartnerOnly' && userRole !== 'Partner') {
+      return false;
+    }
+
+    // Only attorneys can set Attorney-only
+    if (targetLevel === 'AttorneyOnly' && !['Partner', 'Associate'].includes(userRole)) {
+      return false;
+    }
+
+    return true;
+  }, []);
 
   const getAvailableLevels = useCallback(
     (userRole: string): PrivacyConfig[] => {

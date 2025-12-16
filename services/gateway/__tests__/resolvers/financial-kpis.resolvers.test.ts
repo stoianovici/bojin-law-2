@@ -87,9 +87,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       calculateKPIs: jest.fn().mockResolvedValue(mockKPIsResult),
     };
 
-    (financialKPIsService.createFinancialKPIsService as jest.Mock).mockReturnValue(
-      mockService
-    );
+    (financialKPIsService.createFinancialKPIsService as jest.Mock).mockReturnValue(mockService);
   });
 
   // ============================================================================
@@ -98,16 +96,10 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
 
   describe('Query: financialKPIs', () => {
     it('should return KPIs for Partner with managed cases scope', async () => {
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(result).toEqual(mockKPIsResult);
-      expect(financialKPIsService.createFinancialKPIsService).toHaveBeenCalledWith(
-        mockContext
-      );
+      expect(financialKPIsService.createFinancialKPIsService).toHaveBeenCalledWith(mockContext);
       expect(mockService.calculateKPIs).toHaveBeenCalledWith(undefined);
     });
 
@@ -123,11 +115,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       };
       mockService.calculateKPIs.mockResolvedValue(firmWideKPIs);
 
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(result.dataScope).toBe('FIRM');
       expect(result.caseCount).toBe(50);
@@ -165,13 +153,13 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
     it('should throw UNAUTHENTICATED error if no user in context', async () => {
       mockContext.user = undefined;
 
-      await expect(
-        financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext)).rejects.toThrow(
+        GraphQLError
+      );
 
-      await expect(
-        financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext)
-      ).rejects.toThrow('Authentication required');
+      await expect(financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext)).rejects.toThrow(
+        'Authentication required'
+      );
     });
 
     it('should throw BAD_USER_INPUT error for invalid date format', async () => {
@@ -181,11 +169,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       };
 
       await expect(
-        financialKPIsResolvers.Query.financialKPIs(
-          {},
-          { dateRange: invalidDateRange },
-          mockContext
-        )
+        financialKPIsResolvers.Query.financialKPIs({}, { dateRange: invalidDateRange }, mockContext)
       ).rejects.toThrow('Invalid date format');
     });
 
@@ -196,11 +180,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       };
 
       await expect(
-        financialKPIsResolvers.Query.financialKPIs(
-          {},
-          { dateRange: invalidDateRange },
-          mockContext
-        )
+        financialKPIsResolvers.Query.financialKPIs({}, { dateRange: invalidDateRange }, mockContext)
       ).rejects.toThrow('dateRange.start must be before dateRange.end');
     });
 
@@ -211,11 +191,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       };
 
       await expect(
-        financialKPIsResolvers.Query.financialKPIs(
-          {},
-          { dateRange: invalidDateRange },
-          mockContext
-        )
+        financialKPIsResolvers.Query.financialKPIs({}, { dateRange: invalidDateRange }, mockContext)
       ).rejects.toThrow('Date range cannot exceed 1 year');
     });
 
@@ -244,11 +220,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       mockContext.user!.role = 'Partner';
       mockContext.financialDataScope = 'own';
 
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(result.dataScope).toBe('OWN');
       expect(financialKPIsService.createFinancialKPIsService).toHaveBeenCalledWith(
@@ -266,11 +238,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       const firmKPIs = { ...mockKPIsResult, dataScope: 'FIRM' };
       mockService.calculateKPIs.mockResolvedValue(firmKPIs);
 
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(result.dataScope).toBe('FIRM');
       expect(financialKPIsService.createFinancialKPIsService).toHaveBeenCalledWith(
@@ -293,11 +261,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
     it('resolver should not throw for Partner (directive allows)', async () => {
       mockContext.user!.role = 'Partner';
 
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(result).toBeDefined();
     });
@@ -305,11 +269,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
     it('resolver should not throw for BusinessOwner (directive allows)', async () => {
       mockContext.user!.role = 'BusinessOwner';
 
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(result).toBeDefined();
     });
@@ -328,9 +288,9 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       const serviceError = new Error('Database connection failed');
       mockService.calculateKPIs.mockRejectedValue(serviceError);
 
-      await expect(
-        financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext)
-      ).rejects.toThrow('Database connection failed');
+      await expect(financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext)).rejects.toThrow(
+        'Database connection failed'
+      );
     });
 
     it('should handle GraphQL errors from service', async () => {
@@ -339,9 +299,9 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       });
       mockService.calculateKPIs.mockRejectedValue(graphqlError);
 
-      await expect(
-        financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext)
-      ).rejects.toThrow(GraphQLError);
+      await expect(financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext)).rejects.toThrow(
+        GraphQLError
+      );
     });
   });
 
@@ -354,9 +314,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
       await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(financialKPIsService.createFinancialKPIsService).toHaveBeenCalledTimes(1);
-      expect(financialKPIsService.createFinancialKPIsService).toHaveBeenCalledWith(
-        mockContext
-      );
+      expect(financialKPIsService.createFinancialKPIsService).toHaveBeenCalledWith(mockContext);
     });
 
     it('should pass parsed date range to service', async () => {
@@ -365,11 +323,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
         end: '2024-03-31',
       };
 
-      await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        { dateRange },
-        mockContext
-      );
+      await financialKPIsResolvers.Query.financialKPIs({}, { dateRange }, mockContext);
 
       const calledArg = mockService.calculateKPIs.mock.calls[0][0];
       expect(calledArg.start).toBeInstanceOf(Date);
@@ -383,11 +337,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
 
   describe('Response Structure', () => {
     it('should return all required KPI fields', async () => {
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       // Revenue metrics
       expect(result).toHaveProperty('totalRevenue');
@@ -421,11 +371,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
     });
 
     it('should include correct nested structure for revenueByBillingType', async () => {
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(result.revenueByBillingType).toHaveProperty('hourly');
       expect(result.revenueByBillingType).toHaveProperty('fixed');
@@ -433,11 +379,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
     });
 
     it('should include correct nested structure for utilizationByRole', async () => {
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(Array.isArray(result.utilizationByRole)).toBe(true);
       if (result.utilizationByRole.length > 0) {
@@ -449,11 +391,7 @@ describe('Financial KPIs Resolvers - Story 2.11.3', () => {
     });
 
     it('should include correct nested structure for profitabilityByCase', async () => {
-      const result = await financialKPIsResolvers.Query.financialKPIs(
-        {},
-        {},
-        mockContext
-      );
+      const result = await financialKPIsResolvers.Query.financialKPIs({}, {}, mockContext);
 
       expect(Array.isArray(result.profitabilityByCase)).toBe(true);
       if (result.profitabilityByCase.length > 0) {

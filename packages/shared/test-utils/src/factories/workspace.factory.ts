@@ -5,7 +5,12 @@
  */
 
 import { faker } from '@faker-js/faker';
-import type { DocumentNode, DocumentNodeOverrides, AISuggestion, AISuggestionOverrides } from '@legal-platform/types';
+import type {
+  DocumentNode,
+  DocumentNodeOverrides,
+  AISuggestion,
+  AISuggestionOverrides,
+} from '@legal-platform/types';
 import { createCase } from './case.factory';
 import { createCaseTeamMembers } from './case.factory';
 import { createDocuments, createDocumentVersions } from './document.factory';
@@ -17,12 +22,24 @@ import { createTasks } from './task.factory';
  * @returns DocumentNode entity
  */
 export function createDocumentNode(overrides: DocumentNodeOverrides = {}): DocumentNode {
-  const isFolder = overrides.type === 'folder' || (overrides.type === undefined && faker.datatype.boolean({ probability: 0.3 }));
+  const isFolder =
+    overrides.type === 'folder' ||
+    (overrides.type === undefined && faker.datatype.boolean({ probability: 0.3 }));
 
   return {
     id: faker.string.uuid(),
     name: isFolder
-      ? faker.helpers.arrayElement(['Contracts', 'Motions', 'Correspondence', 'Research', 'Evidence', 'Court Filings', 'Contracte', 'Cereri', 'Corespondenţă'])
+      ? faker.helpers.arrayElement([
+          'Contracts',
+          'Motions',
+          'Correspondence',
+          'Research',
+          'Evidence',
+          'Court Filings',
+          'Contracte',
+          'Cereri',
+          'Corespondenţă',
+        ])
       : faker.system.fileName({ extensionCount: 1 }),
     type: isFolder ? 'folder' : 'file',
     children: isFolder ? [] : undefined,
@@ -65,7 +82,9 @@ export function createDocumentTree(depth: number = 0, maxDepth: number = 3): Doc
  * @returns AISuggestion entity
  */
 export function createAISuggestion(overrides: AISuggestionOverrides = {}): AISuggestion {
-  const type = overrides.type || faker.helpers.arrayElement(['document', 'deadline', 'task', 'precedent', 'communication']);
+  const type =
+    overrides.type ||
+    faker.helpers.arrayElement(['document', 'deadline', 'task', 'precedent', 'communication']);
 
   const suggestionTexts: Record<typeof type, string[]> = {
     document: [
@@ -125,7 +144,10 @@ export function createAISuggestion(overrides: AISuggestionOverrides = {}): AISug
  * @param overrides - Partial AISuggestion object to override default values
  * @returns Array of AISuggestion entities
  */
-export function createAISuggestions(count: number, overrides: AISuggestionOverrides = {}): AISuggestion[] {
+export function createAISuggestions(
+  count: number,
+  overrides: AISuggestionOverrides = {}
+): AISuggestion[] {
   return Array.from({ length: count }, () => createAISuggestion(overrides));
 }
 
@@ -175,7 +197,7 @@ export function createMockCaseWorkspace() {
   const documents = createDocuments(faker.number.int({ min: 12, max: 18 }), { caseId: theCase.id });
 
   // Add versions to documents
-  const documentsWithVersions = documents.map(doc => ({
+  const documentsWithVersions = documents.map((doc) => ({
     ...doc,
     versions: createDocumentVersions(faker.number.int({ min: 2, max: 4 }), doc.id),
   }));

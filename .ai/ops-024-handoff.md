@@ -15,6 +15,7 @@
 ### 1. Added Debug Tooling
 
 Created `scripts/render-debug.sh` providing direct access to:
+
 - Runtime logs via Render API
 - Deployment status and history
 - Environment variable management
@@ -22,6 +23,7 @@ Created `scripts/render-debug.sh` providing direct access to:
 - GraphQL query execution
 
 Commands:
+
 ```bash
 ./scripts/render-debug.sh logs [gateway|web] [n]  # View logs
 ./scripts/render-debug.sh errors [gateway|web]    # Error logs only
@@ -38,6 +40,7 @@ Discovered gateway was pointing to deleted Redis instance.
 - **New**: `redis://red-d4u2jg9r0fns739ht570:6379` (legal-platform-redis-new)
 
 Fixed via Render API:
+
 ```bash
 curl -X PUT "https://api.render.com/v1/services/$GATEWAY_ID/env-vars/REDIS_URL" \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
@@ -52,12 +55,12 @@ curl -X PUT "https://api.render.com/v1/services/$GATEWAY_ID/env-vars/REDIS_URL" 
 
 ## Current State
 
-| Component | Status |
-|-----------|--------|
-| Documents Tab | ✅ Working |
-| Gateway | ✅ Live (healthy) |
-| Web | ✅ Live |
-| Redis | ✅ Connected (new instance) |
+| Component     | Status                      |
+| ------------- | --------------------------- |
+| Documents Tab | ✅ Working                  |
+| Gateway       | ✅ Live (healthy)           |
+| Web           | ✅ Live                     |
+| Redis         | ✅ Connected (new instance) |
 
 ## What's Accessible Now
 
@@ -68,6 +71,7 @@ curl -X PUT "https://api.render.com/v1/services/$GATEWAY_ID/env-vars/REDIS_URL" 
 5. **GraphQL**: Can query production API
 
 **Not Accessible** (Render limitation):
+
 - Direct PostgreSQL access (internal only)
 - SSH/shell to containers
 - Real-time log streaming (polling only)

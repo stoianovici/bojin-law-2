@@ -62,26 +62,32 @@ export function useCaseTypes(options: UseCaseTypesOptions = {}) {
     return data?.caseTypes ?? [];
   }, [data?.caseTypes]);
 
-  const createCaseType = useCallback(async (name: string, code: string): Promise<{ success: boolean; caseType?: CaseTypeOption; error?: string }> => {
-    try {
-      const result = await createCaseTypeMutation({
-        variables: {
-          input: { name, code },
-        },
-      });
+  const createCaseType = useCallback(
+    async (
+      name: string,
+      code: string
+    ): Promise<{ success: boolean; caseType?: CaseTypeOption; error?: string }> => {
+      try {
+        const result = await createCaseTypeMutation({
+          variables: {
+            input: { name, code },
+          },
+        });
 
-      if (result.data?.createCaseType) {
-        // Refetch to update the list
-        await refetch();
-        return { success: true, caseType: result.data.createCaseType };
+        if (result.data?.createCaseType) {
+          // Refetch to update the list
+          await refetch();
+          return { success: true, caseType: result.data.createCaseType };
+        }
+
+        return { success: false, error: 'Eroare la crearea tipului de dosar' };
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Eroare necunoscută';
+        return { success: false, error: errorMessage };
       }
-
-      return { success: false, error: 'Eroare la crearea tipului de dosar' };
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Eroare necunoscută';
-      return { success: false, error: errorMessage };
-    }
-  }, [createCaseTypeMutation, refetch]);
+    },
+    [createCaseTypeMutation, refetch]
+  );
 
   return {
     caseTypes,

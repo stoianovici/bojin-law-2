@@ -283,12 +283,7 @@ export async function getLockStatistics(): Promise<{
   const now = new Date();
   const soonThreshold = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes from now
 
-  const [
-    totalLocks,
-    expiredLocks,
-    locksExpiringSoon,
-    locksByType,
-  ] = await Promise.all([
+  const [totalLocks, expiredLocks, locksExpiringSoon, locksByType] = await Promise.all([
     prisma.documentLock.count(),
     prisma.documentLock.count({
       where: { expiresAt: { lt: now } },

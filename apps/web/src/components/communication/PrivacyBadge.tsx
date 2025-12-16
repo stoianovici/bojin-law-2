@@ -8,18 +8,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  usePrivacyLevels,
-  type PrivacyLevel,
-} from '@/hooks/useCommunicationPrivacy';
-import {
-  Lock,
-  Unlock,
-  Users,
-  Briefcase,
-  Crown,
-  Info,
-} from 'lucide-react';
+import { usePrivacyLevels, type PrivacyLevel } from '@/hooks/useCommunicationPrivacy';
+import { Lock, Unlock, Users, Briefcase, Crown, Info } from 'lucide-react';
 
 // ============================================================================
 // Types
@@ -39,13 +29,7 @@ interface PrivacyBadgeProps {
 // Helper Components
 // ============================================================================
 
-const PrivacyIcon = ({
-  level,
-  className = '',
-}: {
-  level: PrivacyLevel;
-  className?: string;
-}) => {
+const PrivacyIcon = ({ level, className = '' }: { level: PrivacyLevel; className?: string }) => {
   const iconProps = { className };
 
   switch (level) {
@@ -104,9 +88,7 @@ export function PrivacyBadge({
 
   // Determine ARIA label
   const ariaLabel = `Privacy: ${getLevelLabel(level)}${
-    allowedViewers.length > 0
-      ? `. Visible to ${allowedViewers.map((v) => v.name).join(', ')}`
-      : ''
+    allowedViewers.length > 0 ? `. Visible to ${allowedViewers.map((v) => v.name).join(', ')}` : ''
   }`;
 
   return (
@@ -147,9 +129,7 @@ export function PrivacyBadge({
               >
                 <PrivacyIcon level={level} className="h-3.5 w-3.5" />
               </span>
-              <span className="font-medium text-gray-900">
-                {getLevelLabel(level)}
-              </span>
+              <span className="font-medium text-gray-900">{getLevelLabel(level)}</span>
             </div>
 
             {/* Description */}
@@ -216,10 +196,7 @@ export function PrivacyIndicator({
   }
 
   return (
-    <span
-      className={`inline-flex items-center ${className}`}
-      title={`${level} privacy`}
-    >
+    <span className={`inline-flex items-center ${className}`} title={`${level} privacy`}>
       <PrivacyIcon level={level} className={`h-3.5 w-3.5 ${getLevelColor(level).split(' ')[1]}`} />
     </span>
   );

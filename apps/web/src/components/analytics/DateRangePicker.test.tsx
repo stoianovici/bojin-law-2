@@ -266,9 +266,7 @@ describe('DateRangePicker', () => {
 
       // Get all buttons with "Last 30 Days" text (one is trigger, one is preset)
       const presetButtons = screen.getAllByText('Last 30 Days');
-      const presetButton = presetButtons.find((btn) =>
-        btn.classList.contains('bg-blue-600')
-      );
+      const presetButton = presetButtons.find((btn) => btn.classList.contains('bg-blue-600'));
 
       expect(presetButton).toBeDefined();
     });

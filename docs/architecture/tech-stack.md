@@ -201,6 +201,7 @@ Story 3.4 (Word Integration with Live AI Assistance) requires a Microsoft Word A
 
 **Rationale for Exception:**
 The Word Add-in is a separate application deployed to Microsoft AppSource. Using Microsoft's recommended UI framework ensures:
+
 1. Approval for Microsoft 365 marketplace distribution
 2. Consistent user experience within Word
 3. Proper Office.js integration patterns

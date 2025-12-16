@@ -45,8 +45,12 @@ describe('AISuggestionWidget', () => {
     render(<AISuggestionWidget widget={mockWidget} />);
 
     expect(screen.getByText('Recomandări AI')).toBeInTheDocument();
-    expect(screen.getByText('Revizuiește cazul #2345 - termen urgent în 3 zile')).toBeInTheDocument();
-    expect(screen.getByText('Echipa ta are 15% mai multe ore facturabile luna aceasta')).toBeInTheDocument();
+    expect(
+      screen.getByText('Revizuiește cazul #2345 - termen urgent în 3 zile')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Echipa ta are 15% mai multe ore facturabile luna aceasta')
+    ).toBeInTheDocument();
   });
 
   it('renders loading state when isLoading is true', () => {
@@ -78,7 +82,9 @@ describe('AISuggestionWidget', () => {
 
     // After dismiss animation, the suggestion should not be visible
     setTimeout(() => {
-      expect(screen.queryByText('Revizuiește cazul #2345 - termen urgent în 3 zile')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Revizuiește cazul #2345 - termen urgent în 3 zile')
+      ).not.toBeInTheDocument();
     }, 300);
   });
 

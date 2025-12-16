@@ -702,9 +702,7 @@ test.describe('Task Collaboration E2E Tests', () => {
       });
 
       await mockGraphQL(page, 'GetSubtasks', {
-        subtasks: [
-          { id: 'subtask-1', title: 'Subtask 1', status: 'Pending' },
-        ],
+        subtasks: [{ id: 'subtask-1', title: 'Subtask 1', status: 'Pending' }],
       });
 
       await mockGraphQL(page, 'ToggleSubtask', {
@@ -746,9 +744,7 @@ test.describe('Task Collaboration E2E Tests', () => {
       await page.goto('/cases/case-123');
 
       // Verify subscribe button visible
-      await expect(
-        page.getByRole('button', { name: /subscribe|follow/i })
-      ).toBeVisible();
+      await expect(page.getByRole('button', { name: /subscribe|follow/i })).toBeVisible();
     });
 
     test('should subscribe to case', async ({ page }) => {
@@ -779,9 +775,7 @@ test.describe('Task Collaboration E2E Tests', () => {
       await page.getByRole('button', { name: /subscribe|follow/i }).click();
 
       // Verify subscribed state
-      await expect(
-        page.getByRole('button', { name: /subscribed|following/i })
-      ).toBeVisible();
+      await expect(page.getByRole('button', { name: /subscribed|following/i })).toBeVisible();
     });
 
     test('should update subscription preferences', async ({ page }) => {
@@ -930,9 +924,7 @@ test.describe('Task Collaboration E2E Tests', () => {
       await page.goto('/cases/case-123');
 
       // Verify load more button exists
-      await expect(
-        page.getByRole('button', { name: /load more|see more/i })
-      ).toBeVisible();
+      await expect(page.getByRole('button', { name: /load more|see more/i })).toBeVisible();
     });
   });
 

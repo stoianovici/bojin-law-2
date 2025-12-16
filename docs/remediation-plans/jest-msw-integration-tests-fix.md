@@ -34,11 +34,13 @@ Cannot find module 'until-async' from 'node_modules/msw/...'
 ### Current Workarounds
 
 **Attempted fixes that have NOT resolved the issue:**
+
 1. Added `transformIgnorePatterns` to `apps/web/jest.config.js` (lines 38-40)
 2. Added `whatwg-fetch` polyfill to `jest.setup.js`
 3. Added Stream API polyfills (ReadableStream, WritableStream, TransformStream)
 
 **Current state:**
+
 - ✅ Unit tests: 221/221 passing (100% pass rate)
 - ❌ Integration tests: 28+ tests written but **0 executable**
 - ❌ All integration test files blocked: `*.integration.test.tsx`
@@ -48,12 +50,14 @@ Cannot find module 'until-async' from 'node_modules/msw/...'
 **Primary Cause:** Jest's CommonJS transformation pipeline cannot process ES modules from `node_modules` even with `transformIgnorePatterns` configuration.
 
 **Contributing Factors:**
+
 1. MSW v2.x made breaking change from CommonJS to ESM
 2. Jest's default mode is CommonJS (Node.js traditional module system)
 3. Next.js Jest configuration (`next/jest`) does not enable ESM mode by default
 4. Mixing ESM dependencies with CJS test environment creates incompatibility
 
 **Why This Affects ALL Integration Tests:**
+
 - Integration tests require realistic API mocking (MSW)
 - MSW is the industry-standard GraphQL mocking library
 - All integration test files import MSW handlers/server
@@ -65,22 +69,24 @@ Cannot find module 'until-async' from 'node_modules/msw/...'
 
 ### Business Impact
 
-| Impact Area | Severity | Description |
-|-------------|----------|-------------|
-| **Test Coverage** | 🔴 Critical | Missing ~20% of testing strategy (integration layer) |
-| **Development Velocity** | 🟡 Medium | Developers cannot validate complete user workflows locally |
-| **Deployment Risk** | 🔴 Critical | No automated validation of multi-component interactions |
-| **Technical Debt** | 🟡 Medium | Accumulating unexecutable test code (28+ tests) |
-| **Story Completion** | 🟡 Medium | Stories 2.8, 2.8.3 marked "Ready for Done" with incomplete testing |
+| Impact Area              | Severity    | Description                                                        |
+| ------------------------ | ----------- | ------------------------------------------------------------------ |
+| **Test Coverage**        | 🔴 Critical | Missing ~20% of testing strategy (integration layer)               |
+| **Development Velocity** | 🟡 Medium   | Developers cannot validate complete user workflows locally         |
+| **Deployment Risk**      | 🔴 Critical | No automated validation of multi-component interactions            |
+| **Technical Debt**       | 🟡 Medium   | Accumulating unexecutable test code (28+ tests)                    |
+| **Story Completion**     | 🟡 Medium   | Stories 2.8, 2.8.3 marked "Ready for Done" with incomplete testing |
 
 ### Technical Impact
 
 **Affected Stories:**
+
 - Story 2.8 (Case CRUD Operations UI) - 4 integration test files blocked
 - Story 2.8.3 (Role-Based Financial Visibility) - 1 integration test file blocked
 - Story 2.8.4, 2.9, 2.11+ - Future integration tests will be blocked
 
 **Affected Files:**
+
 ```
 apps/web/src/app/cases/page.integration.test.tsx
 apps/web/src/app/cases/[caseId]/page.integration.test.tsx
@@ -91,6 +97,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ```
 
 **Testing Gap:**
+
 - ❌ No validation of complete user workflows (create case → view → edit → archive)
 - ❌ No validation of GraphQL query/mutation integration
 - ❌ No validation of multi-component state management
@@ -100,6 +107,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### User Impact
 
 **Low direct user impact** (code quality issue, not feature blocker)
+
 - Users are not directly affected by this testing infrastructure issue
 - However, **increased risk of bugs** reaching production without integration test validation
 
@@ -110,16 +118,19 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Option 1: Downgrade MSW to v1.x (CommonJS Compatible)
 
 **Approach:**
+
 - Downgrade `msw` from `~2.7.0` to `^1.3.2` (last v1 release)
 - MSW v1.x uses CommonJS and works with Jest's default configuration
 - No Jest configuration changes needed
 
 **Pros:**
+
 - ✅ **Quick fix** - Minimal changes, 1-2 hours implementation
 - ✅ **Low risk** - Well-tested v1.x version
 - ✅ **Works with current Jest setup** - No configuration changes
 
 **Cons:**
+
 - ❌ **Short-term solution** - MSW v1.x will eventually reach EOL
 - ❌ **Missing v2 features** - GraphQL handler improvements, better TypeScript support
 - ❌ **Technical debt** - Will need to migrate to v2.x eventually
@@ -134,18 +145,21 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Option 2: Enable Jest ESM Mode (Recommended)
 
 **Approach:**
+
 - Configure Jest to run in ES Module mode
 - Update `jest.config.js` to use `preset: "next/jest"` with ESM support
 - Add `"type": "module"` to package.json or use `.mjs` extension for config
 - Update test imports to use ESM syntax
 
 **Pros:**
+
 - ✅ **Permanent solution** - Aligns with modern JavaScript ecosystem
 - ✅ **Future-proof** - No migration needed when MSW updates
 - ✅ **Best practice** - ES modules are the JavaScript standard
 - ✅ **Scalable** - Works with all future ESM dependencies
 
 **Cons:**
+
 - ⚠️ **Medium complexity** - Requires Jest configuration updates and testing
 - ⚠️ **Potential compatibility issues** - Some CommonJS packages may need adjustments
 - ⚠️ **Learning curve** - Team needs to understand ESM vs CJS differences
@@ -155,6 +169,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 **Long-term Viability:** ✅ Permanent fix
 
 **Implementation Steps:**
+
 1. Research Next.js 14 + Jest ESM configuration patterns
 2. Update `apps/web/jest.config.js` to enable ESM mode
 3. Add Node.js `--experimental-vm-modules` flag to Jest command
@@ -168,16 +183,19 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Option 3: Hybrid Approach - Separate Test Environments
 
 **Approach:**
+
 - Keep unit tests in CommonJS mode (current setup)
 - Create separate Jest configuration for integration tests with ESM mode
 - Use different test commands: `pnpm test:unit` vs `pnpm test:integration`
 
 **Pros:**
+
 - ✅ **Isolated risk** - Unit tests unaffected by ESM changes
 - ✅ **Gradual migration** - Can transition to full ESM over time
 - ✅ **Flexibility** - Different configurations for different test types
 
 **Cons:**
+
 - ❌ **Increased complexity** - Two Jest configs to maintain
 - ❌ **Slower test runs** - Cannot run all tests in single command
 - ❌ **Developer confusion** - Need to remember which command for which tests
@@ -192,15 +210,18 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Option 4: Replace MSW with Manual Mocks
 
 **Approach:**
+
 - Remove MSW dependency entirely
 - Create manual GraphQL mock utilities using Apollo MockedProvider
 - Manually mock all GraphQL operations in integration tests
 
 **Pros:**
+
 - ✅ **No dependency issues** - Full control over mocking layer
 - ✅ **Works with current setup** - No Jest configuration changes
 
 **Cons:**
+
 - ❌ **Labor intensive** - Requires rewriting all integration test mocks
 - ❌ **Lost tooling** - MSW provides realistic network interception
 - ❌ **Maintenance burden** - Manual mocks harder to maintain
@@ -226,11 +247,13 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 5. **Scalability:** Benefits all future ESM dependencies, not just MSW.
 
 **Why NOT Other Options:**
+
 - **Option 1 (Downgrade):** Kicks the can down the road, technical debt accumulation
 - **Option 3 (Hybrid):** Over-engineered, introduces unnecessary complexity
 - **Option 4 (Manual Mocks):** Extreme effort with worse outcomes
 
 **Risk Mitigation:**
+
 - Implement in separate branch with full regression testing
 - Run full test suite (unit + integration) before merging
 - Document ESM setup for team onboarding
@@ -243,12 +266,14 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Phase 1: Research & Planning (1-2 hours)
 
 **Tasks:**
+
 1. Research official Next.js + Jest ESM configuration docs
 2. Review community examples (GitHub, Stack Overflow)
 3. Identify potential compatibility issues with current setup
 4. Document required Jest configuration changes
 
 **Deliverables:**
+
 - Technical research document with configuration examples
 - List of potential risks and mitigation strategies
 
@@ -257,34 +282,40 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Phase 2: Configuration & Setup (2-3 hours)
 
 **Tasks:**
+
 1. Update `apps/web/jest.config.js`:
+
    ```javascript
    // Add experimental ESM support
    const customJestConfig = {
      // ... existing config
      extensionsToTreatAsEsm: ['.ts', '.tsx'],
      transform: {
-       '^.+\\.(ts|tsx)$': ['@swc/jest', {
-         jsc: {
-           parser: {
-             syntax: 'typescript',
-             tsx: true,
-           },
-           transform: {
-             react: {
-               runtime: 'automatic',
+       '^.+\\.(ts|tsx)$': [
+         '@swc/jest',
+         {
+           jsc: {
+             parser: {
+               syntax: 'typescript',
+               tsx: true,
+             },
+             transform: {
+               react: {
+                 runtime: 'automatic',
+               },
              },
            },
+           module: {
+             type: 'es6',
+           },
          },
-         module: {
-           type: 'es6',
-         },
-       }],
+       ],
      },
    };
    ```
 
 2. Update `apps/web/package.json` test script:
+
    ```json
    {
      "scripts": {
@@ -297,6 +328,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 4. Install any additional dependencies (e.g., `@swc/jest` for faster transforms)
 
 **Deliverables:**
+
 - Updated Jest configuration files
 - Updated package.json scripts
 - Installation of any required dependencies
@@ -306,6 +338,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Phase 3: Testing & Validation (2-3 hours)
 
 **Tasks:**
+
 1. Run all unit tests: `pnpm test` (verify no regressions)
 2. Run integration tests: `pnpm test integration.test` (verify MSW loads)
 3. Test specific scenarios:
@@ -317,6 +350,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 6. Performance check (ensure tests don't run significantly slower)
 
 **Success Criteria:**
+
 - ✅ All unit tests pass (221/221)
 - ✅ All integration tests execute (28+ tests)
 - ✅ Integration test pass rate >80% (some may need fixture adjustments)
@@ -324,6 +358,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 - ✅ Test run time <2x slower than current unit tests
 
 **Deliverables:**
+
 - Test execution report (pass/fail counts)
 - List of any failing tests with root causes
 - Performance comparison (before/after)
@@ -333,6 +368,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Phase 4: Documentation & Rollout (1 hour)
 
 **Tasks:**
+
 1. Update `apps/web/src/app/cases/INTEGRATION_TESTS_README.md`:
    - Remove "Known Setup Issues" section
    - Add "Jest ESM Configuration" section explaining setup
@@ -345,6 +381,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 4. Update CI/CD pipeline if needed (GitHub Actions, etc.)
 
 **Deliverables:**
+
 - Updated documentation files
 - Team communication (Slack/email/PR description)
 - CI/CD pipeline validation
@@ -354,6 +391,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Phase 5: Story Updates (30 minutes)
 
 **Tasks:**
+
 1. Update Story 2.8 status:
    - Remove "Integration tests blocked" note
    - Update QA results with integration test execution
@@ -362,6 +400,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 4. Update future stories (2.8.4, 2.9+) to reflect working integration test setup
 
 **Deliverables:**
+
 - Updated story status files
 - Cleaned up temporary documentation
 
@@ -418,6 +457,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 ### Rollback Procedure
 
 1. **Immediate Rollback** (if critical issues found):
+
    ```bash
    git revert <commit-hash>
    pnpm install
@@ -450,6 +490,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 **Likelihood:** Medium
 **Impact:** High
 **Mitigation:**
+
 - Implement in feature branch, not main
 - Run full test suite before merging
 - Test on multiple developer machines before rollout
@@ -462,6 +503,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 **Likelihood:** Low-Medium
 **Impact:** Medium
 **Mitigation:**
+
 - Benchmark test run times before and after
 - Use `@swc/jest` for faster transforms instead of `ts-jest`
 - Consider parallel test execution: `jest --maxWorkers=4`
@@ -474,6 +516,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 **Likelihood:** Low
 **Impact:** Medium
 **Mitigation:**
+
 - Review all `devDependencies` for ESM compatibility
 - Test common packages: React Testing Library, testing utilities
 - Check Next.js GitHub issues for known ESM problems
@@ -486,6 +529,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 **Likelihood:** Low
 **Impact:** Low
 **Mitigation:**
+
 - Provide ESM vs CJS comparison guide in documentation
 - Include examples in testing strategy docs
 - Host knowledge-sharing session (15-minute demo)
@@ -498,6 +542,7 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 **Likelihood:** Low
 **Impact:** High
 **Mitigation:**
+
 - Test CI/CD pipeline in draft PR before merging
 - Update GitHub Actions workflow if needed
 - Verify Node.js version supports ESM (Node 16+)
@@ -509,11 +554,11 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 
 ### Personnel
 
-| Role | Estimated Hours | Responsibilities |
-|------|-----------------|------------------|
-| **Senior Developer** | 6-8 hours | Jest configuration, testing, troubleshooting |
-| **QA Engineer** | 2-3 hours | Test validation, regression testing |
-| **Tech Lead** | 1-2 hours | Review, approval, risk assessment |
+| Role                 | Estimated Hours | Responsibilities                             |
+| -------------------- | --------------- | -------------------------------------------- |
+| **Senior Developer** | 6-8 hours       | Jest configuration, testing, troubleshooting |
+| **QA Engineer**      | 2-3 hours       | Test validation, regression testing          |
+| **Tech Lead**        | 1-2 hours       | Review, approval, risk assessment            |
 
 **Total Effort:** 9-13 hours
 
@@ -526,13 +571,13 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 
 ### Timeline
 
-| Phase | Duration | Dependencies |
-|-------|----------|--------------|
-| Research & Planning | 1-2 hours | None |
-| Configuration & Setup | 2-3 hours | Phase 1 complete |
-| Testing & Validation | 2-3 hours | Phase 2 complete |
-| Documentation & Rollout | 1 hour | Phase 3 complete |
-| Story Updates | 30 minutes | Phase 4 complete |
+| Phase                   | Duration   | Dependencies     |
+| ----------------------- | ---------- | ---------------- |
+| Research & Planning     | 1-2 hours  | None             |
+| Configuration & Setup   | 2-3 hours  | Phase 1 complete |
+| Testing & Validation    | 2-3 hours  | Phase 2 complete |
+| Documentation & Rollout | 1 hour     | Phase 3 complete |
+| Story Updates           | 30 minutes | Phase 4 complete |
 
 **Total Timeline:** 1-2 days (if worked consecutively)
 **Recommended:** Allocate 1 sprint for thorough testing
@@ -614,11 +659,11 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 
 ### C. Decision Log
 
-| Date | Decision | Rationale | Decision Maker |
-|------|----------|-----------|----------------|
-| 2025-11-22 | Created remediation plan | Multiple stories blocked by testing infrastructure issue | Mary (Business Analyst) |
+| Date       | Decision                                      | Rationale                                                                                                                             | Decision Maker           |
+| ---------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 2025-11-22 | Created remediation plan                      | Multiple stories blocked by testing infrastructure issue                                                                              | Mary (Business Analyst)  |
 | 2025-11-22 | **Selected Option 1 (Downgrade MSW to v1.x)** | Option 2 (ESM Mode) caused 66 test suite failures due to Jest ESM compatibility issues. MSW v1.x provides immediate working solution. | Senior Developer (James) |
-| 2025-11-22 | Implementation completed | MSW downgraded to v1.3.5, graphql handlers updated, integration tests now executable | Senior Developer (James) |
+| 2025-11-22 | Implementation completed                      | MSW downgraded to v1.3.5, graphql handlers updated, integration tests now executable                                                  | Senior Developer (James) |
 
 ### D. Glossary
 
@@ -641,9 +686,9 @@ apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx
 
 **Change History:**
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-11-22 | Mary | Initial remediation plan created |
+| Version | Date       | Author | Changes                          |
+| ------- | ---------- | ------ | -------------------------------- |
+| 1.0     | 2025-11-22 | Mary   | Initial remediation plan created |
 
 ---
 
@@ -692,11 +737,13 @@ Initial implementation attempted **Option 2 (Jest ESM Mode)** but encountered cr
 ### Results
 
 **Before Implementation:**
+
 - ❌ 0 integration tests executable
 - ❌ Error: `Cannot find module 'until-async'`
 - ❌ All integration test files blocked
 
 **After Implementation:**
+
 - ✅ All integration tests executable
 - ✅ No module loading errors
 - ✅ MSW v1.x loads successfully in Jest CommonJS mode
@@ -714,6 +761,7 @@ Initial implementation attempted **Option 2 (Jest ESM Mode)** but encountered cr
 ### Technical Debt Acknowledged
 
 **Future Work (Not Blocking):**
+
 - Consider MSW v2 migration when Jest ESM support stabilizes (likely 2026+)
 - Monitor Jest and MSW for better ESM integration
 - Re-evaluate Option 2 (ESM Mode) in future sprint if ecosystem matures
@@ -752,6 +800,7 @@ Initial implementation attempted **Option 2 (Jest ESM Mode)** but encountered cr
 **Validation Performed By:** James (Full Stack Developer)
 **Date:** 2025-11-22
 **Infrastructure Changes Required:**
+
 - Fixed `apps/web/jest.config.js` moduleNameMapper paths:
   - Corrected `@legal-platform/romanian-templates` path (was pointing to wrong directory)
   - Updated `@legal-platform/test-utils` to use built CommonJS dist file
@@ -760,6 +809,7 @@ Initial implementation attempted **Option 2 (Jest ESM Mode)** but encountered cr
 - Added Apollo Client dependencies to `transformIgnorePatterns`
 
 **Story 2.8: Case CRUD Operations UI**
+
 - **Tests run:** 36 integration tests (4 test files)
 - **Tests passed:** 2
 - **Pass rate:** 5.6%
@@ -771,6 +821,7 @@ Initial implementation attempted **Option 2 (Jest ESM Mode)** but encountered cr
   - `archival-and-authorization.integration.test.tsx`: 0 passed, 10 failed
 
 **Story 2.8.3: Role-Based Financial Visibility**
+
 - **Tests run:** 13 integration tests (1 test file)
 - **Tests passed:** 0
 - **Pass rate:** 0%
@@ -779,6 +830,7 @@ Initial implementation attempted **Option 2 (Jest ESM Mode)** but encountered cr
   - `financial-visibility.integration.test.tsx`: 0 passed, 13 failed
 
 **Overall Results:**
+
 - **Total tests:** 49 integration tests
 - **Total passing:** 2 tests (4.1%)
 - **Total failing:** 47 tests (95.9%)
@@ -797,12 +849,14 @@ Initial implementation attempted **Option 2 (Jest ESM Mode)** but encountered cr
 ### Failure Analysis
 
 **Type A (Infrastructure) Failures:** NONE ✅
+
 - No module resolution errors
 - No MSW loading errors
 - No Jest/ESM compatibility issues
 - All tests execute without infrastructure errors
 
 **Type B (Test Implementation) Failures:** 47 tests
+
 - **Root Cause:** GraphQL mock data configuration incomplete after MSW v1.x migration
 - **Common Pattern:** GraphQL handlers returning 500 errors or incorrect mock data
 - **Impact:** Does NOT block story completion - infrastructure goal achieved
@@ -819,6 +873,7 @@ Test implementation failures (47 tests) are expected and normal debugging work -
 **Stories 2.8 and 2.8.3 are unblocked** and ready to move to "Done" status pending final QA review.
 
 **Future Work (Optional):**
+
 - Fix individual integration test mock data configurations (tracked separately)
 - Monitor Jest and MSW ecosystems for ESM stability improvements
 - Re-evaluate MSW v2 migration when Jest ESM support matures (likely 2026+)

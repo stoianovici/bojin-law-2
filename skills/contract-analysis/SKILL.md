@@ -44,9 +44,11 @@ Expert contract analysis skill that identifies clauses, assesses risks, and prov
 ## Input Format
 
 **Required:**
+
 - Contract text (plain text, markdown, or structured format)
 
 **Optional:**
+
 - Contract type (e.g., "NDA", "Service Agreement", "Employment")
 - Jurisdiction (e.g., "California", "UK", "EU")
 - Specific concerns or focus areas
@@ -57,9 +59,11 @@ Expert contract analysis skill that identifies clauses, assesses risks, and prov
 # Contract Analysis Report
 
 ## Executive Summary
+
 [Brief 2-3 sentence overview of contract and key findings]
 
 ## Contract Metadata
+
 - **Type**: [Contract Type]
 - **Parties**: [Identified parties]
 - **Jurisdiction**: [Governing jurisdiction if specified]
@@ -67,28 +71,35 @@ Expert contract analysis skill that identifies clauses, assesses risks, and prov
 ## Clause Analysis
 
 ### Present Clauses
-| Clause Type | Location | Quality Score | Notes |
-|-------------|----------|---------------|-------|
-| [Type] | Section X | ⭐⭐⭐⭐ | [Brief assessment] |
+
+| Clause Type | Location  | Quality Score | Notes              |
+| ----------- | --------- | ------------- | ------------------ |
+| [Type]      | Section X | ⭐⭐⭐⭐      | [Brief assessment] |
 
 ### Missing Critical Clauses
+
 - ⚠️ **[Clause Name]**: [Why it's needed]
 
 ## Risk Assessment
 
 ### HIGH Priority Risks
+
 - 🔴 **[Risk Description]**: [Impact and mitigation strategy]
 
 ### MEDIUM Priority Risks
+
 - 🟡 **[Risk Description]**: [Impact and mitigation strategy]
 
 ### LOW Priority Risks
+
 - 🟢 **[Risk Description]**: [Impact and mitigation strategy]
 
 ## Unusual Terms Detected
+
 - [Description of unusual or non-standard language]
 
 ## Recommendations
+
 1. [Specific actionable recommendation]
 2. [...]
 
@@ -105,18 +116,21 @@ Expert contract analysis skill that identifies clauses, assesses risks, and prov
 ## Usage Examples
 
 ### Example 1: Quick Contract Review
+
 ```
 Input: "Review this NDA for risks: [contract text]"
 Output: [Structured risk assessment with clause analysis]
 ```
 
 ### Example 2: Detailed Clause Extraction
+
 ```
 Input: "Extract all clauses from this service agreement and rate their quality: [contract text]"
 Output: [Complete clause breakdown with quality scores]
 ```
 
 ### Example 3: Compliance Check
+
 ```
 Input: "Check if this employment contract has all required clauses for California: [contract text]"
 Output: [Missing clause detection + compliance report]

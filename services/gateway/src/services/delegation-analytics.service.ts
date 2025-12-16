@@ -12,7 +12,12 @@
  * - Generate AI-powered training suggestions
  */
 
-import { PrismaClient as PrismaClientType, TaskStatus, DelegationStatus, TaskTypeEnum } from '@prisma/client';
+import {
+  PrismaClient as PrismaClientType,
+  TaskStatus,
+  DelegationStatus,
+  TaskTypeEnum,
+} from '@prisma/client';
 import Redis from 'ioredis';
 import type {
   AnalyticsFilters,
@@ -110,17 +115,13 @@ export class DelegationAnalyticsService {
     const topDelegationFlows = this.calculateDelegationFlows(delegations);
 
     // Calculate firm-wide success rate
-    const completedDelegations = delegations.filter(
-      (d) => d.status === DelegationStatus.Accepted
-    );
+    const completedDelegations = delegations.filter((d) => d.status === DelegationStatus.Accepted);
     const onTimeDelegations = completedDelegations.filter((d) => {
       if (!d.sourceTask.completedAt) return false;
       return new Date(d.sourceTask.completedAt) <= new Date(d.sourceTask.dueDate);
     });
     const firmWideSuccessRate =
-      completedDelegations.length > 0
-        ? onTimeDelegations.length / completedDelegations.length
-        : 0;
+      completedDelegations.length > 0 ? onTimeDelegations.length / completedDelegations.length : 0;
 
     // Identify training opportunities
     const trainingOpportunities = this.identifyTrainingOpportunities(byUser);
@@ -155,10 +156,7 @@ export class DelegationAnalyticsService {
           },
         },
         ...(filters.userIds?.length && {
-          OR: [
-            { delegatedTo: { in: filters.userIds } },
-            { delegatedBy: { in: filters.userIds } },
-          ],
+          OR: [{ delegatedTo: { in: filters.userIds } }, { delegatedBy: { in: filters.userIds } }],
         }),
       },
       select: {
@@ -263,17 +261,13 @@ export class DelegationAnalyticsService {
 
     for (const [userId, data] of userMap) {
       // Calculate overall success rate
-      const completedReceived = data.received.filter(
-        (d) => d.status === DelegationStatus.Accepted
-      );
+      const completedReceived = data.received.filter((d) => d.status === DelegationStatus.Accepted);
       const onTimeReceived = completedReceived.filter((d) => {
         if (!d.sourceTask.completedAt) return false;
         return new Date(d.sourceTask.completedAt) <= new Date(d.sourceTask.dueDate);
       });
       const successRate =
-        completedReceived.length > 0
-          ? onTimeReceived.length / completedReceived.length
-          : 0;
+        completedReceived.length > 0 ? onTimeReceived.length / completedReceived.length : 0;
 
       // Calculate average completion time
       const completionTimes = completedReceived
@@ -380,8 +374,7 @@ export class DelegationAnalyticsService {
         toUserId: flow.toUserId,
         toUserName: flow.toUserName,
         count: flow.total,
-        avgSuccessRate:
-          flow.total > 0 ? Math.round((flow.successful / flow.total) * 100) / 100 : 0,
+        avgSuccessRate: flow.total > 0 ? Math.round((flow.successful / flow.total) * 100) / 100 : 0,
       }))
       .sort((a, b) => b.count - a.count);
   }
@@ -412,9 +405,7 @@ export class DelegationAnalyticsService {
 
     // Sort by priority
     const priorityOrder: Record<TrainingPriority, number> = { high: 3, medium: 2, low: 1 };
-    return suggestions.sort(
-      (a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]
-    );
+    return suggestions.sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
   }
 
   /**

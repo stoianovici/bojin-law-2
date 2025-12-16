@@ -104,9 +104,9 @@ describe('OOOReassignmentService', () => {
     it('should throw error when availability not found', async () => {
       mockPrisma.userAvailability.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.processOOOReassignments(userId, availabilityId)
-      ).rejects.toThrow('Availability not found');
+      await expect(service.processOOOReassignments(userId, availabilityId)).rejects.toThrow(
+        'Availability not found'
+      );
     });
 
     it('should throw error when availability belongs to different user', async () => {
@@ -115,9 +115,9 @@ describe('OOOReassignmentService', () => {
         userId: 'other-user',
       });
 
-      await expect(
-        service.processOOOReassignments(userId, availabilityId)
-      ).rejects.toThrow('Availability does not belong to this user');
+      await expect(service.processOOOReassignments(userId, availabilityId)).rejects.toThrow(
+        'Availability does not belong to this user'
+      );
     });
 
     it('should skip tasks when no suitable delegate available', async () => {
@@ -244,11 +244,7 @@ describe('OOOReassignmentService', () => {
         assignedTo: 'new-assignee',
       });
 
-      const result = await service.reassignTask(
-        'task-1',
-        'new-assignee',
-        'OOO reassignment'
-      );
+      const result = await service.reassignTask('task-1', 'new-assignee', 'OOO reassignment');
 
       expect(result.success).toBe(true);
       expect(result.newAssignee).toBe('new-assignee');
@@ -261,11 +257,7 @@ describe('OOOReassignmentService', () => {
     it('should return error on update failure', async () => {
       mockPrisma.task.update.mockRejectedValue(new Error('Update failed'));
 
-      const result = await service.reassignTask(
-        'task-1',
-        'new-assignee',
-        'OOO reassignment'
-      );
+      const result = await service.reassignTask('task-1', 'new-assignee', 'OOO reassignment');
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();

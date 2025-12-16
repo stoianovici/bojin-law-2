@@ -5,7 +5,14 @@
  */
 
 import { faker } from '@faker-js/faker';
-import type { Document, DocumentType, DocumentStatus, DocumentOverrides, DocumentVersion, DocumentVersionOverrides } from '@legal-platform/types';
+import type {
+  Document,
+  DocumentType,
+  DocumentStatus,
+  DocumentOverrides,
+  DocumentVersion,
+  DocumentVersionOverrides,
+} from '@legal-platform/types';
 
 /**
  * Generate a mock Azure Blob Storage URL
@@ -83,8 +90,19 @@ function generateDocumentTitle(type: DocumentType): string {
  * @returns Document entity
  */
 export function createDocument(overrides: DocumentOverrides = {}): Document {
-  const type = overrides.type || faker.helpers.arrayElement<DocumentType>(['Contract', 'Motion', 'Letter', 'Memo', 'Pleading', 'Other']);
-  const status = overrides.status || faker.helpers.arrayElement<DocumentStatus>(['Draft', 'Review', 'Approved', 'Filed']);
+  const type =
+    overrides.type ||
+    faker.helpers.arrayElement<DocumentType>([
+      'Contract',
+      'Motion',
+      'Letter',
+      'Memo',
+      'Pleading',
+      'Other',
+    ]);
+  const status =
+    overrides.status ||
+    faker.helpers.arrayElement<DocumentStatus>(['Draft', 'Review', 'Approved', 'Filed']);
   const aiGenerated = overrides.aiGenerated ?? faker.datatype.boolean({ probability: 0.3 }); // 30% AI-generated
   const id = overrides.id || faker.string.uuid();
 
@@ -210,7 +228,11 @@ export function createDocumentVersion(overrides: DocumentVersionOverrides = {}):
  * @param overrides - Partial DocumentVersion object to override default values
  * @returns Array of DocumentVersion entities
  */
-export function createDocumentVersions(count: number, documentId: string, overrides: DocumentVersionOverrides = {}): DocumentVersion[] {
+export function createDocumentVersions(
+  count: number,
+  documentId: string,
+  overrides: DocumentVersionOverrides = {}
+): DocumentVersion[] {
   return Array.from({ length: count }, (_, index) =>
     createDocumentVersion({
       documentId,

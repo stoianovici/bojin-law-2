@@ -282,9 +282,12 @@ export function useDefaultTemplate(caseType?: CaseType) {
 
 // Hook: Create template
 export function useCreateTemplate() {
-  const [mutate, { data, loading, error }] = useMutation<CreateTaskTemplateData>(CREATE_TASK_TEMPLATE, {
-    refetchQueries: [{ query: GET_TASK_TEMPLATES }],
-  });
+  const [mutate, { data, loading, error }] = useMutation<CreateTaskTemplateData>(
+    CREATE_TASK_TEMPLATE,
+    {
+      refetchQueries: [{ query: GET_TASK_TEMPLATES }],
+    }
+  );
 
   const createTemplate = async (input: Record<string, unknown>) => {
     const result = await mutate({ variables: { input } });
@@ -296,9 +299,12 @@ export function useCreateTemplate() {
 
 // Hook: Update template
 export function useUpdateTemplate() {
-  const [mutate, { data, loading, error }] = useMutation<UpdateTaskTemplateData>(UPDATE_TASK_TEMPLATE, {
-    refetchQueries: [{ query: GET_TASK_TEMPLATES }],
-  });
+  const [mutate, { data, loading, error }] = useMutation<UpdateTaskTemplateData>(
+    UPDATE_TASK_TEMPLATE,
+    {
+      refetchQueries: [{ query: GET_TASK_TEMPLATES }],
+    }
+  );
 
   const updateTemplate = async (id: string, input: Record<string, unknown>) => {
     const result = await mutate({ variables: { id, input } });
@@ -310,9 +316,12 @@ export function useUpdateTemplate() {
 
 // Hook: Delete template
 export function useDeleteTemplate() {
-  const [mutate, { data, loading, error }] = useMutation<DeleteTaskTemplateData>(DELETE_TASK_TEMPLATE, {
-    refetchQueries: [{ query: GET_TASK_TEMPLATES }],
-  });
+  const [mutate, { data, loading, error }] = useMutation<DeleteTaskTemplateData>(
+    DELETE_TASK_TEMPLATE,
+    {
+      refetchQueries: [{ query: GET_TASK_TEMPLATES }],
+    }
+  );
 
   const deleteTemplate = async (id: string) => {
     const result = await mutate({ variables: { id } });
@@ -324,9 +333,12 @@ export function useDeleteTemplate() {
 
 // Hook: Duplicate template
 export function useDuplicateTemplate() {
-  const [mutate, { data, loading, error }] = useMutation<DuplicateTaskTemplateData>(DUPLICATE_TASK_TEMPLATE, {
-    refetchQueries: [{ query: GET_TASK_TEMPLATES }],
-  });
+  const [mutate, { data, loading, error }] = useMutation<DuplicateTaskTemplateData>(
+    DUPLICATE_TASK_TEMPLATE,
+    {
+      refetchQueries: [{ query: GET_TASK_TEMPLATES }],
+    }
+  );
 
   const duplicateTemplate = async (id: string, newName: string) => {
     const result = await mutate({ variables: { id, newName } });

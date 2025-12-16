@@ -21,12 +21,7 @@ const CheckIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 13l4 4L19 7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
@@ -183,8 +178,7 @@ export function MissingItemsChecklist({
     onItemCheck?.(item);
   };
 
-  const isChecked = (item: MissingItem) =>
-    checkedItems.has(`${item.item}-${item.section}`);
+  const isChecked = (item: MissingItem) => checkedItems.has(`${item.item}-${item.section}`);
 
   const renderItem = (item: MissingItem, index: number) => {
     const config = severityConfig[item.severity] || severityConfig.optional;
@@ -232,9 +226,7 @@ export function MissingItemsChecklist({
           </div>
 
           {item.section && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Secțiune: {item.section}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">Secțiune: {item.section}</p>
           )}
 
           {item.suggestion && (
@@ -291,9 +283,7 @@ export function MissingItemsChecklist({
           {renderGroup(groupedItems.optional || [], 'optional', 'Opțional')}
         </>
       ) : (
-        <ul className="space-y-2">
-          {items.map((item, index) => renderItem(item, index))}
-        </ul>
+        <ul className="space-y-2">{items.map((item, index) => renderItem(item, index))}</ul>
       )}
 
       {/* AI Suggestions */}
@@ -305,10 +295,7 @@ export function MissingItemsChecklist({
           </h4>
           <ul className="space-y-1">
             {suggestions.map((suggestion, index) => (
-              <li
-                key={index}
-                className="text-sm text-purple-700 flex items-start gap-2"
-              >
+              <li key={index} className="text-sm text-purple-700 flex items-start gap-2">
                 <span className="text-purple-400">•</span>
                 {suggestion}
               </li>

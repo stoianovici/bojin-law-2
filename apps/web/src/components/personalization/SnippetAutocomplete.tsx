@@ -8,7 +8,11 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { useSnippetAutocomplete, useSnippets, useRecordSnippetUsage } from '@/hooks/usePersonalSnippets';
+import {
+  useSnippetAutocomplete,
+  useSnippets,
+  useRecordSnippetUsage,
+} from '@/hooks/usePersonalSnippets';
 import type { PersonalSnippet, SnippetCategory } from '@legal-platform/types';
 
 // Category colors
@@ -76,9 +80,7 @@ function AutocompleteDropdown({
 
   if (matches.length === 0) {
     return (
-      <div className="p-3 text-sm text-muted-foreground text-center">
-        Niciun snippet găsit
-      </div>
+      <div className="p-3 text-sm text-muted-foreground text-center">Niciun snippet găsit</div>
     );
   }
 
@@ -103,18 +105,12 @@ function AutocompleteDropdown({
           <SnippetIcon className="shrink-0 mt-0.5 text-muted-foreground" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-sm truncate">
-                {snippet.title}
-              </span>
-              <Badge
-                className={`text-[10px] shrink-0 ${CATEGORY_COLORS[snippet.category]}`}
-              >
+              <span className="font-medium text-sm truncate">{snippet.title}</span>
+              <Badge className={`text-[10px] shrink-0 ${CATEGORY_COLORS[snippet.category]}`}>
                 {snippet.category}
               </Badge>
             </div>
-            <code className="text-xs text-muted-foreground">
-              /{snippet.shortcut}
-            </code>
+            <code className="text-xs text-muted-foreground">/{snippet.shortcut}</code>
             <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
               {snippet.content.substring(0, 60)}
               {snippet.content.length > 60 ? '...' : ''}
@@ -139,8 +135,7 @@ export function SnippetAutocomplete({
 }: SnippetAutocompleteProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const { isActive, query, matches, insertSnippet } =
-    useSnippetAutocomplete(text, cursorPosition);
+  const { isActive, query, matches, insertSnippet } = useSnippetAutocomplete(text, cursorPosition);
 
   // Reset selection when matches change
   useEffect(() => {
@@ -163,9 +158,7 @@ export function SnippetAutocomplete({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            Math.min(prev + 1, matches.length - 1)
-          );
+          setSelectedIndex((prev) => Math.min(prev + 1, matches.length - 1));
           return;
         case 'ArrowUp':
           e.preventDefault();
@@ -217,9 +210,7 @@ export function SnippetAutocomplete({
         <span className="text-xs font-medium text-muted-foreground">
           Snippet-uri {query && `pentru "${query}"`}
         </span>
-        <span className="text-xs text-muted-foreground">
-          ↑↓ navighează · Enter selectează
-        </span>
+        <span className="text-xs text-muted-foreground">↑↓ navighează · Enter selectează</span>
       </div>
 
       {/* List */}
@@ -344,11 +335,7 @@ export function SnippetPickerButton({
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-            aria-hidden="true"
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true" />
 
           {/* Dropdown */}
           <div
@@ -372,9 +359,7 @@ export function SnippetPickerButton({
             <div className="max-h-[250px] overflow-auto">
               {filteredSnippets.length === 0 ? (
                 <div className="p-4 text-sm text-muted-foreground text-center">
-                  {searchQuery
-                    ? 'Niciun snippet găsit'
-                    : 'Niciun snippet salvat'}
+                  {searchQuery ? 'Niciun snippet găsit' : 'Niciun snippet salvat'}
                 </div>
               ) : (
                 <>
@@ -392,13 +377,9 @@ export function SnippetPickerButton({
                       <SnippetIcon className="shrink-0 mt-0.5 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm truncate">
-                            {snippet.title}
-                          </span>
+                          <span className="font-medium text-sm truncate">{snippet.title}</span>
                         </div>
-                        <code className="text-xs text-muted-foreground">
-                          /{snippet.shortcut}
-                        </code>
+                        <code className="text-xs text-muted-foreground">/{snippet.shortcut}</code>
                       </div>
                     </button>
                   ))}

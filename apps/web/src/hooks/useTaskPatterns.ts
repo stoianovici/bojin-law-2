@@ -197,9 +197,7 @@ export function useTaskPatterns(activeOnly?: boolean) {
 
   // Most triggered patterns (top 5)
   const mostTriggered = useMemo(() => {
-    return [...patterns]
-      .sort((a, b) => b.occurrenceCount - a.occurrenceCount)
-      .slice(0, 5);
+    return [...patterns].sort((a, b) => b.occurrenceCount - a.occurrenceCount).slice(0, 5);
   }, [patterns]);
 
   // Active patterns count
@@ -389,25 +387,13 @@ export function useTaskPatternManagement(activeOnly?: boolean) {
     activeCount,
   } = useTaskPatterns(activeOnly);
 
-  const {
-    updatePattern,
-    loading: updating,
-    error: updateError,
-  } = useUpdateTaskPattern();
+  const { updatePattern, loading: updating, error: updateError } = useUpdateTaskPattern();
 
   const { togglePattern, loading: toggling } = useToggleTaskPattern();
 
-  const {
-    deletePattern,
-    loading: deleting,
-    error: deleteError,
-  } = useDeleteTaskPattern();
+  const { deletePattern, loading: deleting, error: deleteError } = useDeleteTaskPattern();
 
-  const {
-    resetPatterns,
-    loading: resetting,
-    error: resetError,
-  } = useResetTaskPatterns();
+  const { resetPatterns, loading: resetting, error: resetError } = useResetTaskPatterns();
 
   return {
     // Data
@@ -442,14 +428,9 @@ export function useTaskPatternManagement(activeOnly?: boolean) {
  * Used in case/document views to show relevant suggestions
  */
 export function useTaskSuggestionWatcher(context: TriggerContext | null) {
-  const { suggestion, loading, error, refetch, hasSuggestion } =
-    useSuggestTask(context);
+  const { suggestion, loading, error, refetch, hasSuggestion } = useSuggestTask(context);
 
-  const {
-    acceptSuggestion,
-    loading: accepting,
-    error: acceptError,
-  } = useAcceptTaskSuggestion();
+  const { acceptSuggestion, loading: accepting, error: acceptError } = useAcceptTaskSuggestion();
 
   const {
     dismissSuggestion,

@@ -23,7 +23,12 @@ interface ImproveTabProps {
   onError: (error: string) => void;
 }
 
-const IMPROVEMENT_OPTIONS: { type: ImprovementType; icon: string; title: string; description: string }[] = [
+const IMPROVEMENT_OPTIONS: {
+  type: ImprovementType;
+  icon: string;
+  title: string;
+  description: string;
+}[] = [
   {
     type: 'clarity',
     icon: '💡',
@@ -96,9 +101,16 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
     <div className="section">
       {/* Improvement Type Selector */}
       <div className="section-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 20h9"/>
-          <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
         </svg>
         Select Improvement Type
       </div>
@@ -131,9 +143,16 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
             </>
           ) : (
             <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9"/>
-                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
               Improve Text
             </>
@@ -145,9 +164,16 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
       {result && (
         <div style={{ marginTop: 16 }}>
           <div className="section-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 11 12 14 22 4"/>
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
             </svg>
             Improved Text
           </div>
@@ -179,28 +205,35 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
 
           {/* Apply Button */}
           <div className="action-buttons" style={{ marginTop: 12 }}>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setResult(null)}
-            >
+            <button className="btn btn-secondary" onClick={() => setResult(null)}>
               Discard
             </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleApply}
-              disabled={applied}
-            >
+            <button className="btn btn-primary" onClick={handleApply} disabled={applied}>
               {applied ? (
                 <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                   Applied
                 </>
               ) : (
                 <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                   Apply Changes
                 </>
@@ -217,12 +250,19 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
       {/* Empty State */}
       {!loading && !result && (
         <div className="empty-state" style={{ marginTop: 24 }}>
-          <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          <svg
+            className="empty-state-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
           <p className="empty-state-text">
-            Select text and choose an improvement type to get AI-powered suggestions for better legal writing.
+            Select text and choose an improvement type to get AI-powered suggestions for better
+            legal writing.
           </p>
         </div>
       )}

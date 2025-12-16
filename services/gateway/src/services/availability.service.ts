@@ -403,10 +403,7 @@ export class AvailabilityService {
    * @param firmId - Firm ID for isolation check
    * @returns Availability record or null
    */
-  async getAvailabilityById(
-    id: string,
-    firmId: string
-  ): Promise<UserAvailability | null> {
+  async getAvailabilityById(id: string, firmId: string): Promise<UserAvailability | null> {
     const record = await this.prisma.userAvailability.findFirst({
       where: {
         id,

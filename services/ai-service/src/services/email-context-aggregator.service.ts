@@ -42,7 +42,11 @@ export class EmailContextAggregatorService {
   /**
    * Aggregate case context optimized for email drafting
    */
-  async aggregateCaseContext(caseId: string, emailId: string, firmId: string): Promise<CaseContext> {
+  async aggregateCaseContext(
+    caseId: string,
+    emailId: string,
+    firmId: string
+  ): Promise<CaseContext> {
     const cacheKey = this.buildCacheKey(caseId, emailId, firmId);
 
     // Try to get from cache
@@ -91,8 +95,8 @@ export class EmailContextAggregatorService {
             name: caseData.client!.name,
             email: (caseData.client!.contactInfo as { email?: string })?.email,
           },
-          opposingParties: caseData.actors!
-            .filter((a) => a.role === 'OpposingParty' || a.role === 'OpposingCounsel')
+          opposingParties: caseData
+            .actors!.filter((a) => a.role === 'OpposingParty' || a.role === 'OpposingCounsel')
             .map((a) => ({
               id: a.id,
               name: a.name,
@@ -529,18 +533,27 @@ export class EmailContextAggregatorService {
       // Map to communication history format
       const summary: CommunicationHistorySummary = {
         threadId,
-        keyDiscussionPoints: threadAnalysisResult.keyArguments.map((a: { argument: string; party: string; date: string }) => ({
-          point: a.argument,
-          party: a.party,
-          date: a.date,
-        })),
+        keyDiscussionPoints: threadAnalysisResult.keyArguments.map(
+          (a: { argument: string; party: string; date: string }) => ({
+            point: a.argument,
+            party: a.party,
+            date: a.date,
+          })
+        ),
         unansweredQuestions: this.extractUnansweredQuestions(emails),
-        positionChanges: threadAnalysisResult.positionChanges.map((p: { date: string; previousPosition: string; newPosition: string; trigger?: string }) => ({
-          date: p.date,
-          previousPosition: p.previousPosition,
-          newPosition: p.newPosition,
-          trigger: p.trigger,
-        })),
+        positionChanges: threadAnalysisResult.positionChanges.map(
+          (p: {
+            date: string;
+            previousPosition: string;
+            newPosition: string;
+            trigger?: string;
+          }) => ({
+            date: p.date,
+            previousPosition: p.previousPosition,
+            newPosition: p.newPosition,
+            trigger: p.trigger,
+          })
+        ),
         agreements: this.extractAgreements(threadAnalysisResult),
         opposingCounselPosition: threadAnalysisResult.opposingCounselPosition,
         overallSentiment: threadAnalysisResult.overallSentiment,

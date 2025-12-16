@@ -7,10 +7,7 @@
 
 import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
-import type {
-  AssignmentSuggestionResponse,
-  SkillType,
-} from '@legal-platform/types';
+import type { AssignmentSuggestionResponse, SkillType } from '@legal-platform/types';
 
 // GraphQL Operations
 const GET_ASSIGNMENT_SUGGESTIONS = gql`

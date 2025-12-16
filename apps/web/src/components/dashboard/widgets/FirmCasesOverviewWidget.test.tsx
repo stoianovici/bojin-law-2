@@ -298,7 +298,7 @@ describe('FirmCasesOverviewWidget', () => {
 
     // Check that at-risk cases are rendered as clickable items with role="button"
     const atRiskItems = screen.getAllByRole('button');
-    const atRiskCaseItems = atRiskItems.filter(item =>
+    const atRiskCaseItems = atRiskItems.filter((item) =>
       item.getAttribute('aria-label')?.includes('Caz cu risc')
     );
     expect(atRiskCaseItems.length).toBe(2); // Two at-risk cases

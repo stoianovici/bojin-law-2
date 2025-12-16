@@ -37,9 +37,19 @@ describe('PatternAnalysisService', () => {
   describe('identifyPatterns', () => {
     it('should identify phrase patterns from documents', async () => {
       const mockDocuments = [
-        { id: 'doc-1', textContent: 'The party hereby agrees to the terms and conditions set forth in this agreement.' },
-        { id: 'doc-2', textContent: 'The party hereby agrees to fulfill all obligations as specified herein.' },
-        { id: 'doc-3', textContent: 'The party hereby agrees to abide by the rules and regulations.' },
+        {
+          id: 'doc-1',
+          textContent:
+            'The party hereby agrees to the terms and conditions set forth in this agreement.',
+        },
+        {
+          id: 'doc-2',
+          textContent: 'The party hereby agrees to fulfill all obligations as specified herein.',
+        },
+        {
+          id: 'doc-3',
+          textContent: 'The party hereby agrees to abide by the rules and regulations.',
+        },
       ];
 
       (prisma.trainingDocument.findMany as jest.Mock).mockResolvedValue(mockDocuments);
@@ -71,10 +81,12 @@ describe('PatternAnalysisService', () => {
     });
 
     it('should respect minFrequency threshold', async () => {
-      const mockDocuments = Array(5).fill(null).map((_, i) => ({
-        id: `doc-${i}`,
-        textContent: 'The quick brown fox jumps over the lazy dog',
-      }));
+      const mockDocuments = Array(5)
+        .fill(null)
+        .map((_, i) => ({
+          id: `doc-${i}`,
+          textContent: 'The quick brown fox jumps over the lazy dog',
+        }));
 
       (prisma.trainingDocument.findMany as jest.Mock).mockResolvedValue(mockDocuments);
       (prisma.trainingDocument.findUnique as jest.Mock).mockResolvedValue({ category: 'Test' });
@@ -93,7 +105,10 @@ describe('PatternAnalysisService', () => {
 
     it('should identify structural patterns (headings)', async () => {
       const mockDocuments = [
-        { id: 'doc-1', textContent: 'Introduction:\nSome content here\nConclusion:\nFinal thoughts' },
+        {
+          id: 'doc-1',
+          textContent: 'Introduction:\nSome content here\nConclusion:\nFinal thoughts',
+        },
         { id: 'doc-2', textContent: 'Introduction:\nOther content\nConclusion:\nEnd notes' },
         { id: 'doc-3', textContent: 'Introduction:\nMore content\nConclusion:\nClosing remarks' },
       ];
@@ -103,16 +118,18 @@ describe('PatternAnalysisService', () => {
 
       const result = await service.identifyPatterns({ category: 'Document' });
 
-      const structurePatterns = result.patterns.filter(p => p.patternType === 'structure');
+      const structurePatterns = result.patterns.filter((p) => p.patternType === 'structure');
       // Should find common headings
       expect(result).toBeDefined();
     });
 
     it('should store patterns in database', async () => {
-      const mockDocuments = Array(4).fill(null).map((_, i) => ({
-        id: `doc-${i}`,
-        textContent: 'The liability clause states that all parties must comply with regulations.',
-      }));
+      const mockDocuments = Array(4)
+        .fill(null)
+        .map((_, i) => ({
+          id: `doc-${i}`,
+          textContent: 'The liability clause states that all parties must comply with regulations.',
+        }));
 
       (prisma.trainingDocument.findMany as jest.Mock).mockResolvedValue(mockDocuments);
       (prisma.trainingDocument.findUnique as jest.Mock).mockResolvedValue({ category: 'Contract' });
@@ -125,10 +142,13 @@ describe('PatternAnalysisService', () => {
     });
 
     it('should calculate confidence scores correctly', async () => {
-      const mockDocuments = Array(10).fill(null).map((_, i) => ({
-        id: `doc-${i}`,
-        textContent: 'This is a common phrase that appears in many documents for testing purposes.',
-      }));
+      const mockDocuments = Array(10)
+        .fill(null)
+        .map((_, i) => ({
+          id: `doc-${i}`,
+          textContent:
+            'This is a common phrase that appears in many documents for testing purposes.',
+        }));
 
       (prisma.trainingDocument.findMany as jest.Mock).mockResolvedValue(mockDocuments);
       (prisma.trainingDocument.findUnique as jest.Mock).mockResolvedValue({ category: 'Test' });
@@ -147,17 +167,19 @@ describe('PatternAnalysisService', () => {
         new Error('Database error')
       );
 
-      await expect(
-        service.identifyPatterns({ category: 'Contract' })
-      ).rejects.toThrow('Database error');
+      await expect(service.identifyPatterns({ category: 'Contract' })).rejects.toThrow(
+        'Database error'
+      );
     });
 
     it('should limit patterns to top 50', async () => {
       // Create documents with many unique phrases
-      const mockDocuments = Array(100).fill(null).map((_, i) => ({
-        id: `doc-${i}`,
-        textContent: `This is document number ${i} with unique content that varies`,
-      }));
+      const mockDocuments = Array(100)
+        .fill(null)
+        .map((_, i) => ({
+          id: `doc-${i}`,
+          textContent: `This is document number ${i} with unique content that varies`,
+        }));
 
       (prisma.trainingDocument.findMany as jest.Mock).mockResolvedValue(mockDocuments);
       (prisma.trainingDocument.findUnique as jest.Mock).mockResolvedValue({ category: 'Test' });
@@ -166,7 +188,7 @@ describe('PatternAnalysisService', () => {
       const result = await service.identifyPatterns({ category: 'Test' });
 
       // Phrase patterns should be limited to 50
-      const phrasePatterns = result.patterns.filter(p => p.patternType === 'phrase');
+      const phrasePatterns = result.patterns.filter((p) => p.patternType === 'phrase');
       expect(phrasePatterns.length).toBeLessThanOrEqual(50);
     });
   });

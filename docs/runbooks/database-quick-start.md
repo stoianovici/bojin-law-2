@@ -42,6 +42,7 @@ docker ps | grep postgres
 ```
 
 **Expected Output:**
+
 ```
 CONTAINER ID   IMAGE         PORTS                    STATUS
 abc123def456   postgres:16   0.0.0.0:5432->5432/tcp   Up 2 minutes
@@ -109,6 +110,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ```
 
 **Expected Output:**
+
 ```
                  List of installed extensions
     Name     | Version |   Schema   |         Description
@@ -136,6 +138,7 @@ pnpm db:migrate:deploy
 ```
 
 **What this does:**
+
 1. Compares Prisma schema with database
 2. Generates migration SQL (if schema changed)
 3. Applies migration to database
@@ -151,6 +154,7 @@ pnpm db:migrate:status
 ```
 
 **Example Output:**
+
 ```
 Database schema is up to date!
 
@@ -183,6 +187,7 @@ pnpm db:migrate
 ```
 
 **Migration Naming Convention:**
+
 - Use lowercase with underscores
 - Be descriptive: `add_user_roles` not `update_schema`
 - Indicate action: `add_`, `remove_`, `modify_`, `create_`
@@ -201,6 +206,7 @@ pnpm db:seed
 **Note:** Seed script is currently ready but requires Prisma models to be added in Stories 2.4, 2.6, 2.7, 2.8. See `prisma/seed.ts` for structure.
 
 **What gets seeded:**
+
 - 1 Demo law firm
 - 5 Users (1 Partner, 2 Associates, 2 Paralegals)
 - 10 Sample cases (various statuses and types)
@@ -221,6 +227,7 @@ pnpm prisma:studio
 **Access:** Opens browser at http://localhost:5555
 
 **Features:**
+
 - View all tables
 - Edit data inline
 - Run queries
@@ -243,6 +250,7 @@ pnpm db:seed
 ```
 
 **When to use:**
+
 - Database in inconsistent state
 - Want fresh start
 - Migration conflicts
@@ -314,13 +322,13 @@ await prisma.notification.create({
   data: {
     user_id: userId,
     message: 'New case assigned to you',
-    read: false
-  }
+    read: false,
+  },
 });
 
 // Query notifications
 const unread = await prisma.notification.findMany({
-  where: { user_id: userId, read: false }
+  where: { user_id: userId, read: false },
 });
 ```
 
@@ -357,6 +365,7 @@ psql legal_platform_dev -c "\d users"
 ```
 
 **Column appears in schema:**
+
 ```
 Column      | Type         | Nullable
 phone_number| varchar(255) | YES
@@ -371,34 +380,39 @@ phone_number| varchar(255) | YES
 **Safe Approach (Expand-Contract Pattern):**
 
 **Phase 1: Add new column**
+
 ```bash
 # Update schema: add full_name (nullable)
 pnpm db:migrate  # Name: "add_user_full_name"
 ```
 
 **Phase 2: Dual-write**
+
 ```typescript
 // Application code writes to both
 await prisma.user.create({
   data: {
-    name: fullName,      // Old
-    full_name: fullName  // New
-  }
+    name: fullName, // Old
+    full_name: fullName, // New
+  },
 });
 ```
 
 **Phase 3: Backfill**
+
 ```sql
 UPDATE users SET full_name = name WHERE full_name IS NULL;
 ```
 
 **Phase 4: Switch reads**
+
 ```typescript
 // Read from new column
 const userName = user.full_name;
 ```
 
 **Phase 5: Remove old column**
+
 ```bash
 # Update schema: remove name
 pnpm db:migrate  # Name: "remove_user_name"
@@ -443,6 +457,7 @@ CREATE INDEX CONCURRENTLY "cases_status_idx" ON "cases"("status");
 ```
 
 **Why CONCURRENTLY:**
+
 - Doesn't lock table during index creation
 - Safe for production
 - Takes longer but zero downtime
@@ -454,6 +469,7 @@ CREATE INDEX CONCURRENTLY "cases_status_idx" ON "cases"("status");
 ### Issue: "Database does not exist"
 
 **Error:**
+
 ```
 Error: Can't reach database server at `localhost:5432`
 ```
@@ -480,6 +496,7 @@ createdb legal_platform_dev
 ### Issue: "Extension not found"
 
 **Error:**
+
 ```
 Error: Type "vector" does not exist
 ```
@@ -503,6 +520,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ### Issue: "Migration conflict"
 
 **Error:**
+
 ```
 Error: Migration conflict detected
 ```
@@ -527,6 +545,7 @@ pnpm db:migrate:resolve --rolled-back [migration-name]
 ### Issue: "Prisma Client not generated"
 
 **Error:**
+
 ```
 Error: @prisma/client did not initialize yet
 ```
@@ -547,6 +566,7 @@ pnpm build
 ### Issue: "Connection pool exhausted"
 
 **Error:**
+
 ```
 Error: Prepared statement "p1" already exists
 ```
@@ -569,6 +589,7 @@ docker-compose restart postgres
 ### Issue: "Permission denied"
 
 **Error:**
+
 ```
 ERROR: permission denied for schema public
 ```
@@ -711,12 +732,12 @@ WHERE state = 'idle in transaction' AND query_start < NOW() - INTERVAL '10 minut
 
 ## Environment Variables Reference
 
-| Variable | Description | Default | Example |
-|----------|-------------|---------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Required | `postgresql://user:pass@host:5432/db` |
-| `DATABASE_POOL_SIZE` | Connection pool size | 10 | 20 |
-| `DATABASE_MAX_CONNECTIONS` | Max connections | 20 | 50 |
-| `REDIS_URL` | Redis connection string | Required | `redis://localhost:6379` |
+| Variable                   | Description                  | Default  | Example                               |
+| -------------------------- | ---------------------------- | -------- | ------------------------------------- |
+| `DATABASE_URL`             | PostgreSQL connection string | Required | `postgresql://user:pass@host:5432/db` |
+| `DATABASE_POOL_SIZE`       | Connection pool size         | 10       | 20                                    |
+| `DATABASE_MAX_CONNECTIONS` | Max connections              | 20       | 50                                    |
+| `REDIS_URL`                | Redis connection string      | Required | `redis://localhost:6379`              |
 
 ---
 
@@ -731,6 +752,6 @@ WHERE state = 'idle in transaction' AND query_start < NOW() - INTERVAL '10 minut
 
 **Document Version History:**
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-11-20 | Dev Agent | Initial creation |
+| Version | Date       | Author    | Changes          |
+| ------- | ---------- | --------- | ---------------- |
+| 1.0     | 2025-11-20 | Dev Agent | Initial creation |

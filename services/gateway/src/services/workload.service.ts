@@ -139,10 +139,7 @@ export class WorkloadService {
    * @param dateRange - Date range to calculate
    * @returns User workload metrics
    */
-  async calculateUserWorkload(
-    userId: string,
-    dateRange: WorkloadDateRange
-  ): Promise<UserWorkload> {
+  async calculateUserWorkload(userId: string, dateRange: WorkloadDateRange): Promise<UserWorkload> {
     // Get user info
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -179,8 +176,7 @@ export class WorkloadService {
     // Calculate aggregates
     const weeklyAllocated = dailyWorkloads.reduce((sum, d) => sum + d.allocatedHours, 0);
     const weeklyCapacity = dailyWorkloads.reduce((sum, d) => sum + d.capacityHours, 0);
-    const averageUtilization =
-      weeklyCapacity > 0 ? (weeklyAllocated / weeklyCapacity) * 100 : 0;
+    const averageUtilization = weeklyCapacity > 0 ? (weeklyAllocated / weeklyCapacity) * 100 : 0;
 
     // Determine status
     const status = this.getWorkloadStatus(averageUtilization);

@@ -40,16 +40,30 @@ const CASE_STATUSES: { value: CaseStatus; label: string }[] = [
 const DOCUMENT_TYPES: { value: string; label: string }[] = [
   { value: 'application/pdf', label: 'PDF' },
   { value: 'application/msword', label: 'Word (DOC)' },
-  { value: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', label: 'Word (DOCX)' },
+  {
+    value: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    label: 'Word (DOCX)',
+  },
   { value: 'application/vnd.ms-excel', label: 'Excel (XLS)' },
-  { value: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', label: 'Excel (XLSX)' },
+  {
+    value: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    label: 'Excel (XLSX)',
+  },
   { value: 'image/jpeg', label: 'Imagine JPEG' },
   { value: 'image/png', label: 'Imagine PNG' },
 ];
 
 const SEARCH_MODES: { value: SearchMode; label: string; description: string }[] = [
-  { value: 'HYBRID', label: 'Căutare inteligentă', description: 'Cele mai bune rezultate folosind AI + cuvinte cheie' },
-  { value: 'FULL_TEXT', label: 'Căutare după cuvinte cheie', description: 'Potrivire exactă a cuvintelor cheie' },
+  {
+    value: 'HYBRID',
+    label: 'Căutare inteligentă',
+    description: 'Cele mai bune rezultate folosind AI + cuvinte cheie',
+  },
+  {
+    value: 'FULL_TEXT',
+    label: 'Căutare după cuvinte cheie',
+    description: 'Potrivire exactă a cuvintelor cheie',
+  },
   { value: 'SEMANTIC', label: 'Căutare AI', description: 'Găsește conținut similar' },
 ];
 
@@ -139,7 +153,9 @@ export function SearchFiltersPanel({
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg ${className}`}>
+    <div
+      className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg ${className}`}
+    >
       {/* Header */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -172,12 +188,7 @@ export function SearchFiltersPanel({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 

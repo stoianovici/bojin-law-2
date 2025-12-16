@@ -72,10 +72,7 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="text-sm font-medium text-gray-900 mb-1">{label}</p>
       {payload.map((entry: any, index: number) => (
         <div key={index} className="flex items-center gap-2 text-sm">
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-gray-600">{entry.name}:</span>
           <span className="font-medium">{formatCurrency(entry.value)}</span>
         </div>
@@ -126,10 +123,7 @@ export function RevenueTrendWidget({
     >
       <div className="h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={chartData}
-            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-          >
+          <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis
               dataKey="date"
@@ -145,12 +139,7 @@ export function RevenueTrendWidget({
             />
             <Tooltip content={<CustomTooltip />} />
             {comparisonEnabled && previousTrend && (
-              <Legend
-                verticalAlign="top"
-                height={36}
-                iconType="line"
-                iconSize={12}
-              />
+              <Legend verticalAlign="top" height={36} iconType="line" iconSize={12} />
             )}
             <Line
               type="monotone"

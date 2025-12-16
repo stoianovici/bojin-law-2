@@ -67,11 +67,7 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
   }
 
   if (!data) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        Nu există date despre delegări
-      </div>
-    );
+    return <div className="text-center py-8 text-gray-500">Nu există date despre delegări</div>;
   }
 
   const successRateData = data.byUser.map((user, index) => ({
@@ -82,9 +78,7 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
     color: COLORS[index % COLORS.length],
   }));
 
-  const selectedUserData = selectedUser
-    ? data.byUser.find((u) => u.userId === selectedUser)
-    : null;
+  const selectedUserData = selectedUser ? data.byUser.find((u) => u.userId === selectedUser) : null;
 
   return (
     <div className="space-y-6">
@@ -93,9 +87,7 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-blue-800">Analize delegări</h3>
-            <p className="text-sm text-blue-600">
-              Tipare de delegare și performanța echipei
-            </p>
+            <p className="text-sm text-blue-600">Tipare de delegare și performanța echipei</p>
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold text-blue-600">
@@ -112,7 +104,10 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
           {[
             { id: 'overview', label: 'Sumar echipă' },
             { id: 'flows', label: 'Fluxuri delegare' },
-            { id: 'training', label: `Oportunități instruire (${data.trainingOpportunities.length})` },
+            {
+              id: 'training',
+              label: `Oportunități instruire (${data.trainingOpportunities.length})`,
+            },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -257,9 +252,7 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
                 key={`${flow.fromUserId}-${flow.toUserId}`}
                 className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
               >
-                <div className="text-lg font-bold text-gray-400 w-6">
-                  {index + 1}
-                </div>
+                <div className="text-lg font-bold text-gray-400 w-6">{index + 1}</div>
                 <div className="flex items-center gap-2 flex-1">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
@@ -308,23 +301,22 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
                 {opportunity.suggestions.map((suggestion, index) => {
                   const priority = PRIORITY_BADGES[suggestion.priority] || PRIORITY_BADGES.medium;
                   return (
-                    <div
-                      key={index}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                    >
+                    <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
-                            {suggestion.skillArea}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded ${priority.bg} ${priority.text}`}>
+                          <span className="font-medium text-gray-900">{suggestion.skillArea}</span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${priority.bg} ${priority.text}`}
+                          >
                             {suggestion.priority}
                           </span>
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">{suggestion.reason}</p>
                       <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                        <span className="text-xs font-medium text-blue-800">Acțiune sugerată: </span>
+                        <span className="text-xs font-medium text-blue-800">
+                          Acțiune sugerată:{' '}
+                        </span>
                         <span className="text-xs text-blue-700">{suggestion.suggestedAction}</span>
                       </div>
                     </div>

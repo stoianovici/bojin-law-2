@@ -387,7 +387,7 @@ export const graphqlHandlers = [
 
     // Apply status filter
     if (variables.status) {
-      filteredCases = filteredCases.filter(c => c.status === variables.status);
+      filteredCases = filteredCases.filter((c) => c.status === variables.status);
     }
 
     // Apply assignedToMe filter
@@ -405,7 +405,7 @@ export const graphqlHandlers = [
 
   // Query: case
   graphql.query('GetCase', ({ variables }) => {
-    const caseData = mockCases.find(c => c.id === variables.id);
+    const caseData = mockCases.find((c) => c.id === variables.id);
 
     if (!caseData) {
       return HttpResponse.json({
@@ -431,7 +431,7 @@ export const graphqlHandlers = [
   graphql.query('SearchCases', ({ variables }) => {
     const query = variables.query.toLowerCase();
     const results = mockCases.filter(
-      c =>
+      (c) =>
         c.title.toLowerCase().includes(query) ||
         c.caseNumber.toLowerCase().includes(query) ||
         c.description.toLowerCase().includes(query) ||
@@ -486,7 +486,7 @@ export const graphqlHandlers = [
 
   // Mutation: updateCase
   graphql.mutation('UpdateCase', ({ variables }) => {
-    const caseIndex = mockCases.findIndex(c => c.id === variables.id);
+    const caseIndex = mockCases.findIndex((c) => c.id === variables.id);
 
     if (caseIndex === -1) {
       return HttpResponse.json({
@@ -517,7 +517,7 @@ export const graphqlHandlers = [
 
   // Mutation: archiveCase
   graphql.mutation('ArchiveCase', ({ variables }) => {
-    const caseIndex = mockCases.findIndex(c => c.id === variables.id);
+    const caseIndex = mockCases.findIndex((c) => c.id === variables.id);
 
     if (caseIndex === -1) {
       return HttpResponse.json({
@@ -669,7 +669,7 @@ export const graphqlHandlers = [
 
   // Query: caseRateHistory
   graphql.query('GetCaseRateHistory', ({ variables }) => {
-    const caseData = mockCases.find(c => c.id === variables.caseId);
+    const caseData = mockCases.find((c) => c.id === variables.caseId);
 
     if (!caseData) {
       return HttpResponse.json({
@@ -696,7 +696,7 @@ export const graphqlHandlers = [
 
   // Query: caseRevenueKPI
   graphql.query('GetCaseRevenueKPI', ({ variables }) => {
-    const caseData = mockCases.find(c => c.id === variables.caseId);
+    const caseData = mockCases.find((c) => c.id === variables.caseId);
 
     if (!caseData) {
       return HttpResponse.json({

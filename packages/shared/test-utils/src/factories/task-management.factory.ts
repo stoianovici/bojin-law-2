@@ -175,38 +175,46 @@ function generateRomanianName(): string {
  * Create a single mock task
  */
 export function createMockTask(overrides?: Partial<Task>): Task {
-  const taskType = overrides?.type || faker.helpers.arrayElement([
-    'Research',
-    'DocumentCreation',
-    'DocumentRetrieval',
-    'CourtDate',
-    'Meeting',
-    'BusinessTrip',
-  ] as TaskType[]);
+  const taskType =
+    overrides?.type ||
+    faker.helpers.arrayElement([
+      'Research',
+      'DocumentCreation',
+      'DocumentRetrieval',
+      'CourtDate',
+      'Meeting',
+      'BusinessTrip',
+    ] as TaskType[]);
 
   const now = new Date();
-  const dueDate = overrides?.dueDate || faker.date.between({
-    from: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-    to: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-  });
+  const dueDate =
+    overrides?.dueDate ||
+    faker.date.between({
+      from: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      to: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    });
 
   const title = overrides?.title || faker.helpers.arrayElement(taskTitlesByType[taskType]);
   const description =
     overrides?.description || faker.helpers.arrayElement(taskDescriptionsByType[taskType]);
 
-  const status = overrides?.status || faker.helpers.arrayElement([
-    'Pending',
-    'InProgress',
-    'Completed',
-    'Cancelled',
-  ] as Task['status'][]);
+  const status =
+    overrides?.status ||
+    faker.helpers.arrayElement([
+      'Pending',
+      'InProgress',
+      'Completed',
+      'Cancelled',
+    ] as Task['status'][]);
 
-  const priority = overrides?.priority || faker.helpers.weightedArrayElement([
-    { value: 'Low' as const, weight: 2 },
-    { value: 'Medium' as const, weight: 4 },
-    { value: 'High' as const, weight: 3 },
-    { value: 'Urgent' as const, weight: 1 },
-  ]);
+  const priority =
+    overrides?.priority ||
+    faker.helpers.weightedArrayElement([
+      { value: 'Low' as const, weight: 2 },
+      { value: 'Medium' as const, weight: 4 },
+      { value: 'High' as const, weight: 3 },
+      { value: 'Urgent' as const, weight: 1 },
+    ]);
 
   // Generate type-specific metadata
   const metadata: Record<string, unknown> = {};

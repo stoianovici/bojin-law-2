@@ -24,14 +24,12 @@ describe('PatternExtractionService', () => {
         },
         {
           id: 'doc2',
-          content:
-            'Conform prevederilor Art. 1350 din Codul Civil, obligațiile sunt clare.',
+          content: 'Conform prevederilor Art. 1350 din Codul Civil, obligațiile sunt clare.',
           typeId: 'type1',
         },
         {
           id: 'doc3',
-          content:
-            'Conform prevederilor Art. 1350 din Codul Civil, drepturile sunt respectate.',
+          content: 'Conform prevederilor Art. 1350 din Codul Civil, drepturile sunt respectate.',
           typeId: 'type1',
         },
       ];

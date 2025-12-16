@@ -23,6 +23,7 @@ By using the Service, you accept these Terms. If you don't agree, don't use the 
 ## 4. USER CONDUCT
 
 **Prohibited Activities:**
+
 - Illegal activities or content
 - Harassment, hate speech, or threats
 - Spam or unsolicited promotions
@@ -97,9 +98,11 @@ Questions? Contact us at: {{CONTACT_EMAIL}}
 ---
 
 **TEMPLATE VARIABLES:**
+
 - LAST_UPDATED, SERVICE_NAME, WEBSITE_URL, SERVICE_DESCRIPTION, MINIMUM_AGE, COMPANY_NAME, ADDITIONAL_PROHIBITED_CONDUCT, DMCA_EMAIL, PRICING_MODEL, SUBSCRIPTION_FEE, BILLING_PERIOD, PAYMENT_PROCESSOR, CANCELLATION_NOTICE, LIABILITY_CAP, PRIVACY_POLICY_URL, NOTIFICATION_METHOD, JURISDICTION, DISPUTE_METHOD, CLASS_WAIVER (yes/no), CONTACT_EMAIL, COMPANY_ADDRESS
 
 **JURISDICTION NOTES:**
+
 - **California (CCPA):** Add "Do Not Sell My Personal Information" link
 - **EU (GDPR):** Include data subject rights, DPO contact, legal basis for processing
 - **Australia (ACL):** Cannot exclude guarantees under Australian Consumer Law

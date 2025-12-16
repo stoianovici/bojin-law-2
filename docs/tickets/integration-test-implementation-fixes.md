@@ -24,6 +24,7 @@ Following the resolution of infrastructure issue INFRA-001, all 49 integration t
 After migrating from MSW v2.x to MSW v1.x to resolve infrastructure issues, the GraphQL mock handlers need to be updated with correct mock data and response configurations.
 
 **Common Failure Patterns:**
+
 1. **GraphQL 500 Errors:** Handlers returning 500 errors instead of mock data
 2. **Missing Mock Data:** Tests expecting specific responses that aren't configured
 3. **Mock Data Mismatches:** Mock responses not matching test expectations
@@ -36,6 +37,7 @@ After migrating from MSW v2.x to MSW v1.x to resolve infrastructure issues, the 
 ### Story 2.8: Case CRUD Operations UI (34 failing tests)
 
 #### `page.integration.test.tsx` (3 failures)
+
 - ❌ "should complete full case creation flow: open modal → fill form → submit → verify in list"
   - **Cause:** GraphQL returning 500 error instead of case list mock data
 - ❌ "should show validation errors when form is submitted with invalid data"
@@ -44,6 +46,7 @@ After migrating from MSW v2.x to MSW v1.x to resolve infrastructure issues, the 
   - **Cause:** GraphQL returning 500 error
 
 #### `[caseId]/page.integration.test.tsx` (10 failures)
+
 - ❌ "should load and display case details with all related data"
   - **Cause:** GraphQL returning 500 error instead of case detail mock data
 - ❌ "should display loading state while fetching case data"
@@ -66,7 +69,9 @@ After migrating from MSW v2.x to MSW v1.x to resolve infrastructure issues, the 
   - **Cause:** GraphQL mutation mock returning 500 error
 
 #### `search-and-filters.integration.test.tsx` (11 failures)
+
 All tests failing due to GraphQL search/filter mock handlers not returning correct data:
+
 - ❌ "should search cases: type query → verify results → select case → navigate"
 - ❌ "should highlight matching text in search results"
 - ❌ "should show 'No results found' when search returns empty"
@@ -80,7 +85,9 @@ All tests failing due to GraphQL search/filter mock handlers not returning corre
 - ❌ "should show filtered empty state when no cases match filters"
 
 #### `archival-and-authorization.integration.test.tsx` (10 failures)
+
 All tests failing due to GraphQL mock handlers not configured for different user roles:
+
 - ❌ "should archive case: open case → archive → confirm → verify status"
 - ❌ "should disable archive button when case status is not Closed"
 - ❌ "should handle archive mutation error (BAD_USER_INPUT)"
@@ -97,7 +104,9 @@ All tests failing due to GraphQL mock handlers not configured for different user
 ### Story 2.8.3: Role-Based Financial Visibility (13 failures)
 
 #### `financial-visibility.integration.test.tsx` (13 failures)
+
 All tests failing due to GraphQL mock handlers not returning role-specific financial data:
+
 - ❌ "should display case value for Partner users"
 - ❌ "should display billing information section for Partner users"
 - ❌ "should hide case value from Associate users"
@@ -117,16 +126,18 @@ All tests failing due to GraphQL mock handlers not returning role-specific finan
 ## Recommended Fix Approach
 
 ### Phase 1: Review MSW v1 Handler Configuration (2-3 hours)
+
 1. Review `apps/web/src/test-utils/mocks/graphql-handlers.ts`
 2. Verify all handlers use correct MSW v1.x syntax:
    ```javascript
    graphql.query('GetCases', (req, res, ctx) => {
-     return res(ctx.data({ cases: mockCases }))
-   })
+     return res(ctx.data({ cases: mockCases }));
+   });
    ```
 3. Check for handlers that need mock data updates
 
 ### Phase 2: Fix Core Mock Data (4-6 hours)
+
 1. **Case List Queries:** Fix `GetCases` handler to return proper mock data
 2. **Case Detail Queries:** Fix `GetCase` handler with complete case data
 3. **Mutations:** Fix `CreateCase`, `UpdateCase`, `ArchiveCase` handlers
@@ -134,12 +145,14 @@ All tests failing due to GraphQL mock handlers not returning role-specific finan
 5. **Role-Based Data:** Configure handlers to return different data based on user role in context
 
 ### Phase 3: Test-Specific Fixes (6-10 hours)
+
 1. Run tests in small groups (by file)
 2. Fix mock data mismatches for each test
 3. Add error scenario handlers (404, 403, validation errors)
 4. Configure timing for loading state tests
 
 ### Phase 4: Validation (2-3 hours)
+
 1. Run full integration test suite
 2. Target: 80%+ pass rate
 3. Document any remaining failures
@@ -150,6 +163,7 @@ All tests failing due to GraphQL mock handlers not returning role-specific finan
 ## Success Criteria
 
 **Must Have:**
+
 - [ ] All GraphQL handlers return valid mock data (not 500 errors)
 - [ ] Case list and detail tests passing (>80% pass rate)
 - [ ] Search and filter tests passing (>80% pass rate)
@@ -157,6 +171,7 @@ All tests failing due to GraphQL mock handlers not returning role-specific finan
 - [ ] Overall integration test pass rate >80% (40+ of 49 tests passing)
 
 **Nice to Have:**
+
 - [ ] 95%+ integration test pass rate (47+ of 49 tests passing)
 - [ ] All error scenarios properly tested
 - [ ] Performance of mock handlers verified (no slow tests)
@@ -168,6 +183,7 @@ All tests failing due to GraphQL mock handlers not returning role-specific finan
 **Total:** 14-22 hours
 
 **Breakdown:**
+
 - Review and analysis: 2-3 hours
 - Mock data fixes: 4-6 hours
 - Individual test fixes: 6-10 hours
@@ -184,6 +200,7 @@ All tests failing due to GraphQL mock handlers not returning role-specific finan
 **Risk if Not Fixed:** Medium - Integration test coverage gap reduces confidence in refactoring and feature changes
 
 **Benefits of Fixing:**
+
 - Full integration test coverage for critical user workflows
 - Confidence in refactoring and feature changes
 - Automated validation of GraphQL API integration
@@ -194,9 +211,11 @@ All tests failing due to GraphQL mock handlers not returning role-specific finan
 ## Files to Modify
 
 **Primary:**
+
 - `apps/web/src/test-utils/mocks/graphql-handlers.ts` - Update all mock handlers
 
 **Secondary (if needed):**
+
 - Individual test files may need assertion updates
 - Mock data fixtures may need expansion
 

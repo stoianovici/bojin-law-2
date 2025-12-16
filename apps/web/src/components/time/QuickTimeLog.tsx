@@ -149,7 +149,9 @@ export function QuickTimeLog({
               id="quick-hours"
               type="text"
               value={hoursInput}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setHoursInput(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setHoursInput(e.target.value)
+              }
               placeholder="1.5 or 1:30"
               className={errors.hours ? 'border-red-500' : ''}
               disabled={isSubmitting || isLoading}
@@ -186,9 +188,7 @@ export function QuickTimeLog({
             className={errors.description ? 'border-red-500' : ''}
             disabled={isSubmitting || isLoading}
           />
-          {errors.description && (
-            <p className="text-xs text-red-500 mt-1">{errors.description}</p>
-          )}
+          {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
         </div>
 
         {/* Submit Error */}

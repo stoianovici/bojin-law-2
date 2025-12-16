@@ -24,10 +24,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!templateId) {
-      return NextResponse.json(
-        { error: 'Template ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Template ID is required' }, { status: 400 });
     }
 
     const service = new TemplateUsageTrackingService();

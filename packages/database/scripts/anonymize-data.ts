@@ -42,7 +42,8 @@ function generateAnonymousEmail(index: number): string {
 
 // Helper: Generate lorem ipsum text
 function generateLoremIpsum(length: 'short' | 'medium' | 'long'): string {
-  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+  const lorem =
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
   const sizes = {
     short: lorem.substring(0, 50),
     medium: lorem + ' ' + lorem.substring(0, 100),

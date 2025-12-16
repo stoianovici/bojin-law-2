@@ -42,7 +42,8 @@ function seedUUID(entityType: string, identifier: string | number): string {
     hash.substring(0, 8),
     hash.substring(8, 12),
     '4' + hash.substring(13, 16), // Version 4
-    ((parseInt(hash.substring(16, 18), 16) & 0x3f) | 0x80).toString(16).padStart(2, '0') + hash.substring(18, 20), // Variant
+    ((parseInt(hash.substring(16, 18), 16) & 0x3f) | 0x80).toString(16).padStart(2, '0') +
+      hash.substring(18, 20), // Variant
     hash.substring(20, 32),
   ].join('-');
 }
@@ -79,7 +80,8 @@ const IDs = {
   caseTeam: (caseNum: number, userKey: string) => seedUUID('case-team', `${caseNum}-${userKey}`),
 
   // Case Actors
-  caseActor: (caseNum: number, role: string, index: number = 0) => seedUUID('case-actor', `${caseNum}-${role}-${index}`),
+  caseActor: (caseNum: number, role: string, index: number = 0) =>
+    seedUUID('case-actor', `${caseNum}-${role}-${index}`),
 
   // Approvals
   approval: (caseNum: number) => seedUUID('approval', caseNum.toString()),
@@ -1005,20 +1007,20 @@ async function main() {
   // Designed to create realistic KPI data with mix of profitable/unprofitable Fixed Fee cases
   // Fixed Fee cases need enough time entries so projected hourly ≈ fixed amount (some above, some below)
   const timeEntryCountsPerCase: Record<number, number> = {
-    1: 25,  // Hourly case - high activity litigation
-    2: 18,  // Fixed $25k - should be ~profitable (18 entries × ~4.5hrs avg × $350 avg = ~$28k projected)
-    3: 20,  // Hourly Advisory
-    4: 0,   // PendingApproval - no time logged yet
-    5: 12,  // OnHold Hourly
-    6: 10,  // Closed Fixed $12k - profitable (10 × 3hrs × $300 = ~$9k projected)
-    7: 0,   // Archived Fixed - old case
-    8: 22,  // Hourly Criminal - premium rates
-    9: 35,  // Fixed $85k - UNPROFITABLE (35 × 4.5hrs × $400 avg = ~$63k, but need more for loss)
+    1: 25, // Hourly case - high activity litigation
+    2: 18, // Fixed $25k - should be ~profitable (18 entries × ~4.5hrs avg × $350 avg = ~$28k projected)
+    3: 20, // Hourly Advisory
+    4: 0, // PendingApproval - no time logged yet
+    5: 12, // OnHold Hourly
+    6: 10, // Closed Fixed $12k - profitable (10 × 3hrs × $300 = ~$9k projected)
+    7: 0, // Archived Fixed - old case
+    8: 22, // Hourly Criminal - premium rates
+    9: 35, // Fixed $85k - UNPROFITABLE (35 × 4.5hrs × $400 avg = ~$63k, but need more for loss)
     10: 18, // Hourly Other
     11: 25, // Closed Hourly
     12: 40, // Fixed $500k - M&A, needs lots of hours to be realistic
-    13: 0,  // PendingApproval - no time yet
-    14: 4,  // Fixed $3k - small case, profitable (4 × 2hrs × $200 = ~$1.6k projected)
+    13: 0, // PendingApproval - no time yet
+    14: 4, // Fixed $3k - small case, profitable (4 × 2hrs × $200 = ~$1.6k projected)
     15: 30, // Closed Hourly
     16: 22, // Closed Fixed $15k - slightly unprofitable
     17: 28, // Closed Hourly
@@ -1045,29 +1047,31 @@ async function main() {
     if (entryCount === 0) continue;
 
     // Get team members for this case
-    const caseTeamMembers = caseTeams.filter(ct => ct.caseId === caseItem.id);
+    const caseTeamMembers = caseTeams.filter((ct) => ct.caseId === caseItem.id);
 
     for (let j = 0; j < entryCount; j++) {
       // Pick a team member deterministically
       const teamMember = caseTeamMembers[j % caseTeamMembers.length];
-      const user = users.find(u => u.id === teamMember.userId);
+      const user = users.find((u) => u.id === teamMember.userId);
 
       // Determine hourly rate based on user role and case custom rates
       let hourlyRate: number;
       const defaultRates = firm.defaultRates as any;
       if (caseItem.customRates) {
         const customRates = caseItem.customRates as any;
-        hourlyRate = user?.role === 'Partner'
-          ? customRates.partnerRate || defaultRates.partnerRate
-          : user?.role === 'Associate'
-          ? customRates.associateRate || defaultRates.associateRate
-          : customRates.paralegalRate || defaultRates.paralegalRate;
+        hourlyRate =
+          user?.role === 'Partner'
+            ? customRates.partnerRate || defaultRates.partnerRate
+            : user?.role === 'Associate'
+              ? customRates.associateRate || defaultRates.associateRate
+              : customRates.paralegalRate || defaultRates.paralegalRate;
       } else {
-        hourlyRate = user?.role === 'Partner'
-          ? defaultRates.partnerRate
-          : user?.role === 'Associate'
-          ? defaultRates.associateRate
-          : defaultRates.paralegalRate;
+        hourlyRate =
+          user?.role === 'Partner'
+            ? defaultRates.partnerRate
+            : user?.role === 'Associate'
+              ? defaultRates.associateRate
+              : defaultRates.paralegalRate;
       }
 
       // Deterministic hours
@@ -1119,42 +1123,252 @@ async function main() {
   // Realistic Romanian legal documents data
   const documentTemplates = [
     // Client: ABC Industries (index 0) - Corporate/Commercial
-    { clientIdx: 0, fileName: 'Contract de Furnizare Produse - ABC Industries.pdf', fileType: 'application/pdf', size: 245000, status: 'FINAL' as const, description: 'Contract furnizare produse industriale' },
-    { clientIdx: 0, fileName: 'Anexa 1 - Specificatii Tehnice.pdf', fileType: 'application/pdf', size: 180000, status: 'FINAL' as const, description: 'Specificatii tehnice produse' },
-    { clientIdx: 0, fileName: 'Cerere de Chemare in Judecata - Litigiu Comercial.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 85000, status: 'FINAL' as const, description: 'Actiune in instanta impotriva XYZ Logistics' },
-    { clientIdx: 0, fileName: 'Intampinare - Dosar 1234-2025.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 92000, status: 'DRAFT' as const, description: 'Raspuns la cererea reconventionala' },
-    { clientIdx: 0, fileName: 'Memoriu de Aparare.pdf', fileType: 'application/pdf', size: 156000, status: 'FINAL' as const, description: 'Memoriu pentru termenul din 15.02.2025' },
-    { clientIdx: 0, fileName: 'Procura Speciala - Reprezentare Instanta.pdf', fileType: 'application/pdf', size: 45000, status: 'FINAL' as const, description: 'Imputernicire avocatiala' },
-    { clientIdx: 0, fileName: 'Raport Expertiza Contabila.pdf', fileType: 'application/pdf', size: 890000, status: 'FINAL' as const, description: 'Expertiza privind prejudiciul' },
-    { clientIdx: 0, fileName: 'Act Aditional nr. 2 - Contract Furnizare.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 67000, status: 'DRAFT' as const, description: 'Modificare termene livrare' },
-    { clientIdx: 0, fileName: 'Notificare Reziliere Contract.pdf', fileType: 'application/pdf', size: 38000, status: 'FINAL' as const, description: 'Notificare conform art. 12 din contract' },
-    { clientIdx: 0, fileName: 'Dovada Comunicare - Notificare.pdf', fileType: 'application/pdf', size: 125000, status: 'FINAL' as const, description: 'Confirmare primire notificare' },
+    {
+      clientIdx: 0,
+      fileName: 'Contract de Furnizare Produse - ABC Industries.pdf',
+      fileType: 'application/pdf',
+      size: 245000,
+      status: 'FINAL' as const,
+      description: 'Contract furnizare produse industriale',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Anexa 1 - Specificatii Tehnice.pdf',
+      fileType: 'application/pdf',
+      size: 180000,
+      status: 'FINAL' as const,
+      description: 'Specificatii tehnice produse',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Cerere de Chemare in Judecata - Litigiu Comercial.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 85000,
+      status: 'FINAL' as const,
+      description: 'Actiune in instanta impotriva XYZ Logistics',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Intampinare - Dosar 1234-2025.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 92000,
+      status: 'DRAFT' as const,
+      description: 'Raspuns la cererea reconventionala',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Memoriu de Aparare.pdf',
+      fileType: 'application/pdf',
+      size: 156000,
+      status: 'FINAL' as const,
+      description: 'Memoriu pentru termenul din 15.02.2025',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Procura Speciala - Reprezentare Instanta.pdf',
+      fileType: 'application/pdf',
+      size: 45000,
+      status: 'FINAL' as const,
+      description: 'Imputernicire avocatiala',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Raport Expertiza Contabila.pdf',
+      fileType: 'application/pdf',
+      size: 890000,
+      status: 'FINAL' as const,
+      description: 'Expertiza privind prejudiciul',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Act Aditional nr. 2 - Contract Furnizare.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 67000,
+      status: 'DRAFT' as const,
+      description: 'Modificare termene livrare',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Notificare Reziliere Contract.pdf',
+      fileType: 'application/pdf',
+      size: 38000,
+      status: 'FINAL' as const,
+      description: 'Notificare conform art. 12 din contract',
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Dovada Comunicare - Notificare.pdf',
+      fileType: 'application/pdf',
+      size: 125000,
+      status: 'FINAL' as const,
+      description: 'Confirmare primire notificare',
+    },
 
     // Client: Familia Popescu (index 1) - Family/Real Estate
-    { clientIdx: 1, fileName: 'Contract de Vanzare-Cumparare Imobil.pdf', fileType: 'application/pdf', size: 320000, status: 'FINAL' as const, description: 'Apartament str. Florilor 42, Cluj-Napoca' },
-    { clientIdx: 1, fileName: 'Extras Carte Funciara.pdf', fileType: 'application/pdf', size: 89000, status: 'FINAL' as const, description: 'CF nr. 123456 Cluj-Napoca' },
-    { clientIdx: 1, fileName: 'Certificat Fiscal.pdf', fileType: 'application/pdf', size: 56000, status: 'FINAL' as const, description: 'Certificat fiscal pentru vanzare' },
-    { clientIdx: 1, fileName: 'Testament Olograf - Draft.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 42000, status: 'DRAFT' as const, description: 'Proiect testament' },
-    { clientIdx: 1, fileName: 'Declaratie Notariala - Succesiune.pdf', fileType: 'application/pdf', size: 78000, status: 'FINAL' as const, description: 'Declaratie acceptare succesiune' },
-    { clientIdx: 1, fileName: 'Certificat de Mostenitor.pdf', fileType: 'application/pdf', size: 95000, status: 'FINAL' as const, description: 'Certificat eliberat BNP Ionescu' },
+    {
+      clientIdx: 1,
+      fileName: 'Contract de Vanzare-Cumparare Imobil.pdf',
+      fileType: 'application/pdf',
+      size: 320000,
+      status: 'FINAL' as const,
+      description: 'Apartament str. Florilor 42, Cluj-Napoca',
+    },
+    {
+      clientIdx: 1,
+      fileName: 'Extras Carte Funciara.pdf',
+      fileType: 'application/pdf',
+      size: 89000,
+      status: 'FINAL' as const,
+      description: 'CF nr. 123456 Cluj-Napoca',
+    },
+    {
+      clientIdx: 1,
+      fileName: 'Certificat Fiscal.pdf',
+      fileType: 'application/pdf',
+      size: 56000,
+      status: 'FINAL' as const,
+      description: 'Certificat fiscal pentru vanzare',
+    },
+    {
+      clientIdx: 1,
+      fileName: 'Testament Olograf - Draft.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 42000,
+      status: 'DRAFT' as const,
+      description: 'Proiect testament',
+    },
+    {
+      clientIdx: 1,
+      fileName: 'Declaratie Notariala - Succesiune.pdf',
+      fileType: 'application/pdf',
+      size: 78000,
+      status: 'FINAL' as const,
+      description: 'Declaratie acceptare succesiune',
+    },
+    {
+      clientIdx: 1,
+      fileName: 'Certificat de Mostenitor.pdf',
+      fileType: 'application/pdf',
+      size: 95000,
+      status: 'FINAL' as const,
+      description: 'Certificat eliberat BNP Ionescu',
+    },
 
     // Client: Tech Innovations (index 2) - IT/IP/Corporate
-    { clientIdx: 2, fileName: 'Contract de Licenta Software.pdf', fileType: 'application/pdf', size: 210000, status: 'FINAL' as const, description: 'Licenta Enterprise pentru platforma SaaS' },
-    { clientIdx: 2, fileName: 'NDA - Acord de Confidentialitate.pdf', fileType: 'application/pdf', size: 85000, status: 'FINAL' as const, description: 'NDA bilateral cu partener strategic' },
-    { clientIdx: 2, fileName: 'Statut SRL - Actualizat 2025.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 125000, status: 'DRAFT' as const, description: 'Modificare obiect de activitate' },
-    { clientIdx: 2, fileName: 'Hotarare AGA - Majorare Capital.pdf', fileType: 'application/pdf', size: 67000, status: 'FINAL' as const, description: 'HAGA majorare capital social' },
-    { clientIdx: 2, fileName: 'Contract de Cesiune Parti Sociale.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 98000, status: 'DRAFT' as const, description: 'Cesiune 15% parti sociale' },
-    { clientIdx: 2, fileName: 'Due Diligence Report - M&A.pdf', fileType: 'application/pdf', size: 1250000, status: 'FINAL' as const, description: 'Raport DD pentru achizitie' },
-    { clientIdx: 2, fileName: 'Term Sheet - Investitie Serie A.pdf', fileType: 'application/pdf', size: 156000, status: 'DRAFT' as const, description: 'Termeni investitie 2M EUR' },
-    { clientIdx: 2, fileName: 'Politica GDPR - Protectia Datelor.pdf', fileType: 'application/pdf', size: 189000, status: 'FINAL' as const, description: 'Politica conformitate GDPR' },
-    { clientIdx: 2, fileName: 'Contract de Munca - Model Director.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 95000, status: 'FINAL' as const, description: 'CIM director executiv' },
+    {
+      clientIdx: 2,
+      fileName: 'Contract de Licenta Software.pdf',
+      fileType: 'application/pdf',
+      size: 210000,
+      status: 'FINAL' as const,
+      description: 'Licenta Enterprise pentru platforma SaaS',
+    },
+    {
+      clientIdx: 2,
+      fileName: 'NDA - Acord de Confidentialitate.pdf',
+      fileType: 'application/pdf',
+      size: 85000,
+      status: 'FINAL' as const,
+      description: 'NDA bilateral cu partener strategic',
+    },
+    {
+      clientIdx: 2,
+      fileName: 'Statut SRL - Actualizat 2025.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 125000,
+      status: 'DRAFT' as const,
+      description: 'Modificare obiect de activitate',
+    },
+    {
+      clientIdx: 2,
+      fileName: 'Hotarare AGA - Majorare Capital.pdf',
+      fileType: 'application/pdf',
+      size: 67000,
+      status: 'FINAL' as const,
+      description: 'HAGA majorare capital social',
+    },
+    {
+      clientIdx: 2,
+      fileName: 'Contract de Cesiune Parti Sociale.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 98000,
+      status: 'DRAFT' as const,
+      description: 'Cesiune 15% parti sociale',
+    },
+    {
+      clientIdx: 2,
+      fileName: 'Due Diligence Report - M&A.pdf',
+      fileType: 'application/pdf',
+      size: 1250000,
+      status: 'FINAL' as const,
+      description: 'Raport DD pentru achizitie',
+    },
+    {
+      clientIdx: 2,
+      fileName: 'Term Sheet - Investitie Serie A.pdf',
+      fileType: 'application/pdf',
+      size: 156000,
+      status: 'DRAFT' as const,
+      description: 'Termeni investitie 2M EUR',
+    },
+    {
+      clientIdx: 2,
+      fileName: 'Politica GDPR - Protectia Datelor.pdf',
+      fileType: 'application/pdf',
+      size: 189000,
+      status: 'FINAL' as const,
+      description: 'Politica conformitate GDPR',
+    },
+    {
+      clientIdx: 2,
+      fileName: 'Contract de Munca - Model Director.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 95000,
+      status: 'FINAL' as const,
+      description: 'CIM director executiv',
+    },
 
     // Client: Familia Ionescu (index 3) - Family Law/Divorce
-    { clientIdx: 3, fileName: 'Cerere de Divort.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 58000, status: 'DRAFT' as const, description: 'Cerere divort cu copii minori' },
-    { clientIdx: 3, fileName: 'Conventie Privind Custodia.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 72000, status: 'DRAFT' as const, description: 'Proiect conventie custodie comuna' },
-    { clientIdx: 3, fileName: 'Inventar Bunuri Comune.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size: 45000, status: 'DRAFT' as const, description: 'Lista bunuri de partajat' },
-    { clientIdx: 3, fileName: 'Certificat de Casatorie.pdf', fileType: 'application/pdf', size: 28000, status: 'FINAL' as const, description: 'Copie certificat casatorie' },
-    { clientIdx: 3, fileName: 'Acte Proprietate Apartament.pdf', fileType: 'application/pdf', size: 450000, status: 'FINAL' as const, description: 'Documente apartament comun' },
+    {
+      clientIdx: 3,
+      fileName: 'Cerere de Divort.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 58000,
+      status: 'DRAFT' as const,
+      description: 'Cerere divort cu copii minori',
+    },
+    {
+      clientIdx: 3,
+      fileName: 'Conventie Privind Custodia.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 72000,
+      status: 'DRAFT' as const,
+      description: 'Proiect conventie custodie comuna',
+    },
+    {
+      clientIdx: 3,
+      fileName: 'Inventar Bunuri Comune.xlsx',
+      fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      size: 45000,
+      status: 'DRAFT' as const,
+      description: 'Lista bunuri de partajat',
+    },
+    {
+      clientIdx: 3,
+      fileName: 'Certificat de Casatorie.pdf',
+      fileType: 'application/pdf',
+      size: 28000,
+      status: 'FINAL' as const,
+      description: 'Copie certificat casatorie',
+    },
+    {
+      clientIdx: 3,
+      fileName: 'Acte Proprietate Apartament.pdf',
+      fileType: 'application/pdf',
+      size: 450000,
+      status: 'FINAL' as const,
+      description: 'Documente apartament comun',
+    },
   ];
 
   const documents = [];
@@ -1189,7 +1403,7 @@ async function main() {
 
     // Link document to appropriate case(s) based on client
     // Find cases for this client
-    const clientCases = cases.filter(c => c.clientId === client.id);
+    const clientCases = cases.filter((c) => c.clientId === client.id);
     if (clientCases.length > 0) {
       // Link to first matching case as original
       const primaryCase = clientCases[i % clientCases.length];
@@ -1247,14 +1461,20 @@ async function main() {
   console.log(`  - Clients: ${allClients.length} (Story 2.6 - Case Management)`);
   console.log(`  - Cases: ${cases.length} (Story 2.6, 2.8.1, 2.8.2)`);
   console.log(`    • ${cases.filter((c) => c.status === 'Active').length} Active cases`);
-  console.log(`    • ${cases.filter((c) => c.status === 'PendingApproval').length} Pending Approval cases`);
+  console.log(
+    `    • ${cases.filter((c) => c.status === 'PendingApproval').length} Pending Approval cases`
+  );
   console.log(`    • ${cases.filter((c) => c.status === 'OnHold').length} OnHold cases`);
   console.log(`    • ${cases.filter((c) => c.status === 'Closed').length} Closed cases`);
   console.log(`    • ${cases.filter((c) => c.status === 'Archived').length} Archived case`);
   console.log(`  - Billing Configuration:`);
-  console.log(`    • ${cases.filter((c) => c.billingType === 'Hourly').length} Hourly billing cases`);
+  console.log(
+    `    • ${cases.filter((c) => c.billingType === 'Hourly').length} Hourly billing cases`
+  );
   console.log(`    • ${cases.filter((c) => c.billingType === 'Fixed').length} Fixed fee cases`);
-  console.log(`    • ${cases.filter((c) => c.customRates !== null).length} cases with custom rates`);
+  console.log(
+    `    • ${cases.filter((c) => c.customRates !== null).length} cases with custom rates`
+  );
   console.log(`  - Approval Workflow:`);
   console.log(`    • ${approvals.length} cases pending approval`);
   console.log(`  - Rate History: ${rateHistories.length} rate changes tracked`);
@@ -1270,8 +1490,12 @@ async function main() {
   const totalValue = cases.reduce((sum, c) => sum + Number(c.value || 0), 0);
   console.log(`  - Total case value: $${totalValue.toLocaleString()}`);
   console.log(`  - Average case value: $${Math.round(totalValue / cases.length).toLocaleString()}`);
-  console.log(`  - Largest case: $${Math.max(...cases.map((c) => Number(c.value || 0))).toLocaleString()}`);
-  console.log(`  - Smallest case: $${Math.min(...cases.map((c) => Number(c.value || 0))).toLocaleString()}`);
+  console.log(
+    `  - Largest case: $${Math.max(...cases.map((c) => Number(c.value || 0))).toLocaleString()}`
+  );
+  console.log(
+    `  - Smallest case: $${Math.min(...cases.map((c) => Number(c.value || 0))).toLocaleString()}`
+  );
   console.log('');
   console.log('To view data: npx prisma studio');
 }

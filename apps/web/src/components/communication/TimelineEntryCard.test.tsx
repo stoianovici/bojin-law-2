@@ -39,9 +39,7 @@ describe('TimelineEntryCard', () => {
     bodyPreview: 'This is a test email...',
     senderName: 'John Doe',
     senderEmail: 'john@example.com',
-    recipients: [
-      { name: 'Jane Smith', email: 'jane@example.com', type: 'to' },
-    ],
+    recipients: [{ name: 'Jane Smith', email: 'jane@example.com', type: 'to' }],
     hasAttachments: false,
     attachments: [],
     privacyLevel: 'Normal',
@@ -117,8 +115,20 @@ describe('TimelineEntryCard', () => {
       ...mockEntry,
       hasAttachments: true,
       attachments: [
-        { id: 'att-1', fileName: 'doc.pdf', fileSize: 1024, mimeType: 'application/pdf', downloadUrl: '/doc.pdf' },
-        { id: 'att-2', fileName: 'image.png', fileSize: 2048, mimeType: 'image/png', downloadUrl: '/image.png' },
+        {
+          id: 'att-1',
+          fileName: 'doc.pdf',
+          fileSize: 1024,
+          mimeType: 'application/pdf',
+          downloadUrl: '/doc.pdf',
+        },
+        {
+          id: 'att-2',
+          fileName: 'image.png',
+          fileSize: 2048,
+          mimeType: 'image/png',
+          downloadUrl: '/image.png',
+        },
       ],
     };
 
@@ -182,13 +192,7 @@ describe('TimelineEntryCard', () => {
   });
 
   it('should set aria attributes', () => {
-    render(
-      <TimelineEntryCard
-        entry={mockEntry}
-        aria-setsize={10}
-        aria-posinset={3}
-      />
-    );
+    render(<TimelineEntryCard entry={mockEntry} aria-setsize={10} aria-posinset={3} />);
 
     const article = screen.getByRole('article');
     expect(article).toHaveAttribute('aria-setsize', '10');

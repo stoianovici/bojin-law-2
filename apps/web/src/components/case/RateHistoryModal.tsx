@@ -69,7 +69,10 @@ function TimelineEntry({ entry, isLast }: { entry: RateHistoryEntry; isLast: boo
     <div className="relative pb-8">
       {/* Timeline connector line */}
       {!isLast && (
-        <span className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
+        <span
+          className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200"
+          aria-hidden="true"
+        />
       )}
 
       <div className="relative flex items-start space-x-3">
@@ -105,9 +108,7 @@ function TimelineEntry({ entry, isLast }: { entry: RateHistoryEntry; isLast: boo
 
           {/* Rate change details */}
           <div className="flex items-center space-x-3 mb-2">
-            <span className="text-sm text-gray-600">
-              ${centsToDollars(entry.oldRate)}
-            </span>
+            <span className="text-sm text-gray-600">${centsToDollars(entry.oldRate)}</span>
             <span className="text-gray-400">→</span>
             <span className="text-sm font-semibold text-gray-900">
               ${centsToDollars(entry.newRate)}
@@ -150,9 +151,7 @@ function EmptyState() {
         />
       </svg>
       <h3 className="mt-2 text-sm font-medium text-gray-900">No rate changes</h3>
-      <p className="mt-1 text-sm text-gray-500">
-        This case has no rate change history yet.
-      </p>
+      <p className="mt-1 text-sm text-gray-500">This case has no rate change history yet.</p>
     </div>
   );
 }
@@ -191,7 +190,10 @@ export function RateHistoryModal({ caseId, isOpen, onClose }: RateHistoryModalPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40"
+      onClick={onClose}
+    >
       {/* Modal Content */}
       <div
         className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col"
@@ -206,7 +208,12 @@ export function RateHistoryModal({ caseId, isOpen, onClose }: RateHistoryModalPr
             aria-label="Close"
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>

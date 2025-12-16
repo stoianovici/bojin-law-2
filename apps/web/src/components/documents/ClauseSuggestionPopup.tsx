@@ -109,10 +109,13 @@ export function ClauseSuggestionPopup({
   }, [isVisible, onDismiss]);
 
   // Accept suggestion and add to history
-  const handleAccept = useCallback((suggestion: ClauseSuggestion) => {
-    setHistory((prev) => [suggestion, ...prev.slice(0, 9)]);
-    onAccept(suggestion);
-  }, [onAccept]);
+  const handleAccept = useCallback(
+    (suggestion: ClauseSuggestion) => {
+      setHistory((prev) => [suggestion, ...prev.slice(0, 9)]);
+      onAccept(suggestion);
+    },
+    [onAccept]
+  );
 
   // Get source badge styling
   const getSourceBadge = (source: ClauseSource) => {
@@ -169,9 +172,7 @@ export function ClauseSuggestionPopup({
     >
       {/* Header */}
       <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-600">
-          Sugestii ({suggestions.length})
-        </span>
+        <span className="text-xs font-medium text-gray-600">Sugestii ({suggestions.length})</span>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <span className="flex items-center gap-1">
             <kbd className="px-1 py-0.5 bg-gray-200 rounded text-[10px] font-mono">Tab</kbd>
@@ -185,11 +186,7 @@ export function ClauseSuggestionPopup({
       </div>
 
       {/* Suggestions List */}
-      <ul
-        className="overflow-y-auto"
-        style={{ maxHeight }}
-        role="listbox"
-      >
+      <ul className="overflow-y-auto" style={{ maxHeight }} role="listbox">
         {suggestions.map((suggestion, index) => (
           <li
             key={suggestion.id}
@@ -206,9 +203,7 @@ export function ClauseSuggestionPopup({
             aria-selected={index === selectedIndex}
           >
             {/* Suggestion Text */}
-            <div className="text-sm text-gray-800 mb-1.5 line-clamp-2">
-              {suggestion.text}
-            </div>
+            <div className="text-sm text-gray-800 mb-1.5 line-clamp-2">{suggestion.text}</div>
 
             {/* Metadata Row */}
             <div className="flex items-center justify-between gap-2">
@@ -245,7 +240,8 @@ export function ClauseSuggestionPopup({
       {/* Footer */}
       <div className="px-3 py-1.5 bg-gray-50 border-t border-gray-100">
         <p className="text-[10px] text-gray-400 text-center">
-          Folosiți <kbd className="px-0.5 bg-gray-200 rounded">↑</kbd> <kbd className="px-0.5 bg-gray-200 rounded">↓</kbd> pentru navigare
+          Folosiți <kbd className="px-0.5 bg-gray-200 rounded">↑</kbd>{' '}
+          <kbd className="px-0.5 bg-gray-200 rounded">↓</kbd> pentru navigare
         </p>
       </div>
     </div>
@@ -262,40 +258,43 @@ export function useClauseSuggestions(documentId: string, documentType: DocumentT
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Connect to SSE stream
-  const connect = useCallback((userId: string, firmId: string) => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+  const connect = useCallback(
+    (userId: string, firmId: string) => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
 
-    try {
-      const url = new URL('/api/ai/suggestions/stream', window.location.origin);
-      url.searchParams.set('documentId', documentId);
-      url.searchParams.set('userId', userId);
-      url.searchParams.set('firmId', firmId);
+      try {
+        const url = new URL('/api/ai/suggestions/stream', window.location.origin);
+        url.searchParams.set('documentId', documentId);
+        url.searchParams.set('userId', userId);
+        url.searchParams.set('firmId', firmId);
 
-      const eventSource = new EventSource(url.toString());
+        const eventSource = new EventSource(url.toString());
 
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'suggestion' && data.data) {
-            setSuggestions((prev) => [...prev, data.data]);
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'suggestion' && data.data) {
+              setSuggestions((prev) => [...prev, data.data]);
+            }
+          } catch (e) {
+            console.error('Failed to parse SSE message:', e);
           }
-        } catch (e) {
-          console.error('Failed to parse SSE message:', e);
-        }
-      };
+        };
 
-      eventSource.onerror = () => {
-        setError('Conexiune pierdută. Reconectare...');
-        // Auto-reconnect handled by EventSource
-      };
+        eventSource.onerror = () => {
+          setError('Conexiune pierdută. Reconectare...');
+          // Auto-reconnect handled by EventSource
+        };
 
-      eventSourceRef.current = eventSource;
-    } catch (e) {
-      setError('Nu s-a putut conecta la serviciul de sugestii');
-    }
-  }, [documentId]);
+        eventSourceRef.current = eventSource;
+      } catch (e) {
+        setError('Nu s-a putut conecta la serviciul de sugestii');
+      }
+    },
+    [documentId]
+  );
 
   // Disconnect from SSE stream
   const disconnect = useCallback(() => {
@@ -306,46 +305,44 @@ export function useClauseSuggestions(documentId: string, documentType: DocumentT
   }, []);
 
   // Request suggestions for current text
-  const requestSuggestions = useCallback(async (
-    currentText: string,
-    cursorPosition: number,
-    userId: string,
-    firmId: string
-  ) => {
-    setIsLoading(true);
-    setError(null);
-    setSuggestions([]);
+  const requestSuggestions = useCallback(
+    async (currentText: string, cursorPosition: number, userId: string, firmId: string) => {
+      setIsLoading(true);
+      setError(null);
+      setSuggestions([]);
 
-    try {
-      const response = await fetch('/api/ai/suggestions/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          documentId,
-          documentType,
-          currentText,
-          cursorPosition,
-          userId,
-          firmId,
-        }),
-      });
+      try {
+        const response = await fetch('/api/ai/suggestions/request', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            documentId,
+            documentType,
+            currentText,
+            cursorPosition,
+            userId,
+            firmId,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to request suggestions');
+        if (!response.ok) {
+          throw new Error('Failed to request suggestions');
+        }
+
+        const data = await response.json();
+        if (data.suggestions) {
+          setSuggestions(data.suggestions);
+        }
+      } catch (e) {
+        setError('Nu s-au putut obține sugestii');
+      } finally {
+        setIsLoading(false);
       }
-
-      const data = await response.json();
-      if (data.suggestions) {
-        setSuggestions(data.suggestions);
-      }
-    } catch (e) {
-      setError('Nu s-au putut obține sugestii');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [documentId, documentType]);
+    },
+    [documentId, documentType]
+  );
 
   // Clear suggestions
   const clearSuggestions = useCallback(() => {

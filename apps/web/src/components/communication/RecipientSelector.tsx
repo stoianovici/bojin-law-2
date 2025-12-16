@@ -193,7 +193,14 @@ export function RecipientSelector({
     };
 
     resolve();
-  }, [recipientType, selectedCases, selectedCaseTypes, customRecipients, onFilterChange, onRecipientsResolved]);
+  }, [
+    recipientType,
+    selectedCases,
+    selectedCaseTypes,
+    customRecipients,
+    onFilterChange,
+    onRecipientsResolved,
+  ]);
 
   // Add custom recipient
   const handleAddCustomRecipient = useCallback(() => {
@@ -225,18 +232,14 @@ export function RecipientSelector({
   // Toggle case selection
   const handleCaseToggle = useCallback((caseId: string) => {
     setSelectedCases((prev) =>
-      prev.includes(caseId)
-        ? prev.filter((id) => id !== caseId)
-        : [...prev, caseId]
+      prev.includes(caseId) ? prev.filter((id) => id !== caseId) : [...prev, caseId]
     );
   }, []);
 
   // Toggle case type selection
   const handleCaseTypeToggle = useCallback((typeId: string) => {
     setSelectedCaseTypes((prev) =>
-      prev.includes(typeId)
-        ? prev.filter((id) => id !== typeId)
-        : [...prev, typeId]
+      prev.includes(typeId) ? prev.filter((id) => id !== typeId) : [...prev, typeId]
     );
   }, []);
 
@@ -244,9 +247,7 @@ export function RecipientSelector({
     <div className={`space-y-4 ${className}`}>
       {/* Recipient Type Selection */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-700">
-          Recipient Type
-        </label>
+        <label className="mb-2 block text-sm font-medium text-gray-700">Recipient Type</label>
         <div
           className="grid grid-cols-1 gap-2 sm:grid-cols-2"
           role="radiogroup"
@@ -292,9 +293,7 @@ export function RecipientSelector({
         {/* Case Clients / Case Team */}
         {(recipientType === 'CaseClients' || recipientType === 'CaseTeam') && (
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Select Cases
-            </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Select Cases</label>
             <div className="max-h-48 space-y-2 overflow-y-auto">
               {MOCK_CASES.map((caseItem) => (
                 <label
@@ -308,9 +307,7 @@ export function RecipientSelector({
                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {caseItem.title}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900">{caseItem.title}</div>
                     <div className="text-xs text-gray-500">{caseItem.caseNumber}</div>
                   </div>
                 </label>
@@ -371,26 +368,20 @@ export function RecipientSelector({
           <div className="space-y-4">
             {/* Add Recipient Form */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Add Recipient
-              </label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Add Recipient</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Name"
                   value={newRecipient.name}
-                  onChange={(e) =>
-                    setNewRecipient((prev) => ({ ...prev, name: e.target.value }))
-                  }
+                  onChange={(e) => setNewRecipient((prev) => ({ ...prev, name: e.target.value }))}
                   className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                 />
                 <input
                   type="email"
                   placeholder="Email"
                   value={newRecipient.email}
-                  onChange={(e) =>
-                    setNewRecipient((prev) => ({ ...prev, email: e.target.value }))
-                  }
+                  onChange={(e) => setNewRecipient((prev) => ({ ...prev, email: e.target.value }))}
                   className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -423,9 +414,7 @@ export function RecipientSelector({
                       className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
                     >
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {recipient.name}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{recipient.name}</div>
                         <div className="text-xs text-gray-500">{recipient.email}</div>
                       </div>
                       <button

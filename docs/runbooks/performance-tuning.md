@@ -9,20 +9,21 @@
 
 ## Performance Targets (AC#4, AC#6)
 
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| P95 Response Time | <5s | >7s |
-| P99 Response Time | <10s | >15s |
-| Error Rate | <2% | >5% |
-| Timeout Rate | <1% | >2% |
-| Cache Hit Rate | >40% | <30% |
-| Routing Overhead | <100ms | >200ms |
+| Metric            | Target | Alert Threshold |
+| ----------------- | ------ | --------------- |
+| P95 Response Time | <5s    | >7s             |
+| P99 Response Time | <10s   | >15s            |
+| Error Rate        | <2%    | >5%             |
+| Timeout Rate      | <1%    | >2%             |
+| Cache Hit Rate    | >40%   | <30%            |
+| Routing Overhead  | <100ms | >200ms          |
 
 ---
 
 ## Performance Optimization Checklist
 
 ### Execution Performance
+
 - [ ] Skills cache hit rate >40%
 - [ ] Routing overhead <100ms (from Story 2.13)
 - [ ] Skill execution <5s (AC#4)
@@ -38,6 +39,7 @@
 **Problem**: Low cache hit rate (<30%)
 
 **Diagnosis**:
+
 ```bash
 # Check cache metrics
 redis-cli -u $REDIS_URL INFO stats | grep -E "keyspace_hits|keyspace_misses"
@@ -54,15 +56,15 @@ echo "Cache hit rate: $rate%"
 ```typescript
 // Option 1: Increase cache TTL
 const skillsManager = new SkillsManager(apiClient, {
-  cacheTTL: 7200,  // Increase from 3600 (2 hours)
-  maxCacheSize: 200,  // Increase from 100
+  cacheTTL: 7200, // Increase from 3600 (2 hours)
+  maxCacheSize: 200, // Increase from 100
 });
 
 // Option 2: Proactive cache warming
 async function warmCache() {
-  const popularSkills = await getPopularSkills(limit=20);
+  const popularSkills = await getPopularSkills((limit = 20));
   for (const skillId of popularSkills) {
-    await skillsManager.getSkill(skillId, useCache=true);
+    await skillsManager.getSkill(skillId, (useCache = true));
   }
 }
 
@@ -74,12 +76,13 @@ setInterval(warmCache, 60 * 60 * 1000);
 async function prefetchSkillsForPattern(pattern: string) {
   const recommendations = await skillsRegistry.recommendSkills(pattern);
   for (const rec of recommendations.slice(0, 3)) {
-    await skillsManager.getSkill(rec.skillId, useCache=true);
+    await skillsManager.getSkill(rec.skillId, (useCache = true));
   }
 }
 ```
 
 **Expected Impact**:
+
 - Cache hit rate: 30% → 50%
 - Average response time: -20%
 - Cost reduction: +5%
@@ -91,6 +94,7 @@ async function prefetchSkillsForPattern(pattern: string) {
 **Problem**: High routing overhead (>100ms)
 
 **Diagnosis**:
+
 ```typescript
 const profiler = new PerformanceProfiler();
 
@@ -109,7 +113,7 @@ console.log(`Routing time: ${routingTime}ms`);
 // File: services/ai-service/src/skills/SkillsRegistry.ts
 
 // Before: Sequential pattern matching
-patterns.forEach(pattern => {
+patterns.forEach((pattern) => {
   if (pattern.test(query)) matches.push(skillId);
 });
 
@@ -117,7 +121,7 @@ patterns.forEach(pattern => {
 for (const pattern of patterns) {
   if (pattern.test(query)) {
     matches.push(skillId);
-    break;  // Stop on first match if priority-based
+    break; // Stop on first match if priority-based
   }
 }
 
@@ -125,7 +129,7 @@ for (const pattern of patterns) {
 const recommendationCache = new Map<string, SkillRecommendation[]>();
 
 async function getCachedRecommendations(query: string) {
-  const cacheKey = hash(query);  // Simple hash function
+  const cacheKey = hash(query); // Simple hash function
   if (recommendationCache.has(cacheKey)) {
     return recommendationCache.get(cacheKey);
   }
@@ -140,6 +144,7 @@ async function getCachedRecommendations(query: string) {
 ```
 
 **Expected Impact**:
+
 - Routing time: 150ms → 50ms
 - Overall latency: -100ms
 - Throughput: +15%
@@ -151,6 +156,7 @@ async function getCachedRecommendations(query: string) {
 **Problem**: Slow skill execution (>5s p95)
 
 **Diagnosis**:
+
 ```typescript
 const slowSkills = await db.query(`
   SELECT
@@ -172,9 +178,9 @@ const slowSkills = await db.query(`
 // Option 1: Reduce max_tokens
 await skillsManager.updateSkill(skillId, {
   config: {
-    max_tokens: 4000,  // Reduce from 8000
+    max_tokens: 4000, // Reduce from 8000
     temperature: 0.3,
-  }
+  },
 });
 
 // Option 2: Optimize skill prompts
@@ -194,8 +200,8 @@ class SkillExecutor {
     }
 
     try {
-      const result = await this.executeSkill(skillId, params, timeout=30000);
-      this.timeouts.set(skillId, 0);  // Reset on success
+      const result = await this.executeSkill(skillId, params, (timeout = 30000));
+      this.timeouts.set(skillId, 0); // Reset on success
       return result;
     } catch (error) {
       if (error.name === 'TimeoutError') {
@@ -208,6 +214,7 @@ class SkillExecutor {
 ```
 
 **Expected Impact**:
+
 - P95 execution time: 6s → 4s
 - Timeout rate: 3% → 0.5%
 - User satisfaction: +10%
@@ -219,6 +226,7 @@ class SkillExecutor {
 **Problem**: Slow queries for skill metadata
 
 **Diagnosis**:
+
 ```sql
 -- Enable query timing
 \timing
@@ -264,6 +272,7 @@ await redis.setex(
 ```
 
 **Expected Impact**:
+
 - Query time: 500ms → 50ms
 - Database CPU: -30%
 - Overall latency: -200ms
@@ -275,6 +284,7 @@ await redis.setex(
 **Problem**: High latency to Anthropic API
 
 **Diagnosis**:
+
 ```bash
 # Measure API latency
 time curl -H "x-api-key: $ANTHROPIC_API_KEY" \
@@ -316,6 +326,7 @@ const [skill1, skill2, skill3] = await Promise.all([
 ```
 
 **Expected Impact**:
+
 - API latency: -20ms avg
 - Connection overhead: -50ms
 - Throughput: +25%
@@ -408,7 +419,7 @@ const result = validatePerformanceBudget(metrics);
 
 if (!result.passed) {
   console.error('Performance budget violations:');
-  result.violations.forEach(v => console.error(`- ${v}`));
+  result.violations.forEach((v) => console.error(`- ${v}`));
 }
 ```
 
@@ -429,6 +440,7 @@ node --inspect services/ai-service/dist/index.js
 ```
 
 **Common fixes**:
+
 - Clear cache periodically
 - Limit cache size
 - Fix memory leaks
@@ -445,6 +457,7 @@ node --prof-process isolate-*.log > profile.txt
 ```
 
 **Common fixes**:
+
 - Optimize regex patterns
 - Reduce synchronous operations
 - Implement worker threads
@@ -462,6 +475,6 @@ node --prof-process isolate-*.log > profile.txt
 
 ## Change Log
 
-| Date | Version | Changes | Author |
-|------|---------|---------|--------|
-| 2025-11-19 | 1.0 | Initial guide creation | James (Dev Agent) |
+| Date       | Version | Changes                | Author            |
+| ---------- | ------- | ---------------------- | ----------------- |
+| 2025-11-19 | 1.0     | Initial guide creation | James (Dev Agent) |

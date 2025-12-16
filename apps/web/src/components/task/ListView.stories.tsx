@@ -128,7 +128,8 @@ export const SortableColumns: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Faceți clic pe antetele coloanelor pentru a sorta (Titlu, Tip, Asignat, Termen, Prioritate, Status)',
+        story:
+          'Faceți clic pe antetele coloanelor pentru a sorta (Titlu, Tip, Asignat, Termen, Prioritate, Status)',
       },
     },
   },

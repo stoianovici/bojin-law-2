@@ -46,9 +46,12 @@ const ADOPTION_THRESHOLDS = {
 // Helper Functions
 // ============================================================================
 
-function getAdoptionLevel(
-  score: number
-): { label: string; color: string; bg: string; icon: string } {
+function getAdoptionLevel(score: number): {
+  label: string;
+  color: string;
+  bg: string;
+  icon: string;
+} {
   if (score >= ADOPTION_THRESHOLDS.excellent) {
     return {
       label: 'Excelent',
@@ -132,13 +135,7 @@ interface SortHeaderProps {
   onSort: (field: SortField) => void;
 }
 
-function SortHeader({
-  field,
-  label,
-  currentSort,
-  direction,
-  onSort,
-}: SortHeaderProps) {
+function SortHeader({ field, label, currentSort, direction, onSort }: SortHeaderProps) {
   const isActive = currentSort === field;
   return (
     <button
@@ -148,11 +145,7 @@ function SortHeader({
       }`}
     >
       {label}
-      {isActive && (
-        <span className="text-blue-600">
-          {direction === 'asc' ? '↑' : '↓'}
-        </span>
-      )}
+      {isActive && <span className="text-blue-600">{direction === 'asc' ? '↑' : '↓'}</span>}
     </button>
   );
 }
@@ -165,13 +158,7 @@ interface UserRowProps {
   onClick?: () => void;
 }
 
-function UserRow({
-  user,
-  rank,
-  featuresUsedCount,
-  totalFeatures,
-  onClick,
-}: UserRowProps) {
+function UserRow({ user, rank, featuresUsedCount, totalFeatures, onClick }: UserRowProps) {
   const adoptionLevel = getAdoptionLevel(user.adoptionScore);
   const rankBadge = getRankBadge(rank);
   const isTopThree = rank <= 3;
@@ -193,22 +180,17 @@ function UserRow({
       {/* User Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900 truncate">
-            {user.userName}
-          </span>
+          <span className="font-medium text-gray-900 truncate">{user.userName}</span>
           {isTopThree && <span>{adoptionLevel.icon}</span>}
         </div>
         <div className="text-xs text-gray-500">
-          {formatNumber(user.totalRequests)} cereri •{' '}
-          {featuresUsedCount}/{totalFeatures} funcții
+          {formatNumber(user.totalRequests)} cereri • {featuresUsedCount}/{totalFeatures} funcții
         </div>
       </div>
 
       {/* Adoption Score */}
       <div className="text-right">
-        <div className="text-lg font-bold text-gray-900">
-          {user.adoptionScore}%
-        </div>
+        <div className="text-lg font-bold text-gray-900">{user.adoptionScore}%</div>
         <span
           className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${adoptionLevel.bg} ${adoptionLevel.color}`}
         >
@@ -227,10 +209,10 @@ function UserRow({
                 user.adoptionScore >= ADOPTION_THRESHOLDS.excellent
                   ? '#10B981'
                   : user.adoptionScore >= ADOPTION_THRESHOLDS.good
-                  ? '#3B82F6'
-                  : user.adoptionScore >= ADOPTION_THRESHOLDS.moderate
-                  ? '#F59E0B'
-                  : '#EF4444',
+                    ? '#3B82F6'
+                    : user.adoptionScore >= ADOPTION_THRESHOLDS.moderate
+                      ? '#F59E0B'
+                      : '#EF4444',
             }}
           />
         </div>
@@ -244,12 +226,7 @@ function UserRow({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5l7 7-7 7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       )}
     </button>
@@ -342,12 +319,8 @@ export function UserAdoptionLeaderboard({
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Clasament adopție AI
-        </h3>
-        <div className="text-sm text-gray-500">
-          {users.length} utilizatori
-        </div>
+        <h3 className="text-lg font-semibold text-gray-900">Clasament adopție AI</h3>
+        <div className="text-sm text-gray-500">{users.length} utilizatori</div>
       </div>
 
       {/* Sort Controls */}
@@ -413,16 +386,12 @@ export function UserAdoptionLeaderboard({
                 className="w-full flex items-center justify-between p-2 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">
-                    {user.userName}
-                  </span>
+                  <span className="text-sm font-medium text-gray-900">{user.userName}</span>
                   <span className="text-xs text-gray-500">
                     {formatNumber(user.totalRequests)} cereri
                   </span>
                 </div>
-                <span className="text-sm font-bold text-amber-700">
-                  {user.adoptionScore}%
-                </span>
+                <span className="text-sm font-bold text-amber-700">{user.adoptionScore}%</span>
               </button>
             ))}
             {underutilizedUsers.length > 3 && (

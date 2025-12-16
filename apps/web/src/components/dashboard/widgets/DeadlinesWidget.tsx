@@ -73,7 +73,9 @@ function TimelineItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="flex-1">
-            <h4 className={clsx('text-sm font-semibold', isUrgent ? 'text-red-700' : 'text-gray-900')}>
+            <h4
+              className={clsx('text-sm font-semibold', isUrgent ? 'text-red-700' : 'text-gray-900')}
+            >
               {deadline.description}
             </h4>
             <div className="flex items-center gap-2 mt-1">
@@ -180,7 +182,8 @@ export function DeadlinesWidget({
                   />
                 </svg>
                 <span>
-                  {urgentCount} termen{urgentCount > 1 ? 'e' : ''} urgent{urgentCount > 1 ? 'e' : ''}
+                  {urgentCount} termen{urgentCount > 1 ? 'e' : ''} urgent
+                  {urgentCount > 1 ? 'e' : ''}
                 </span>
               </div>
             </div>

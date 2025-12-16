@@ -64,19 +64,44 @@ const AllSizesStory = () => {
   return (
     <>
       <div className="flex gap-2">
-        <Button onClick={() => { setSize('sm'); setOpen(true); }}>Small</Button>
-        <Button onClick={() => { setSize('md'); setOpen(true); }}>Medium</Button>
-        <Button onClick={() => { setSize('lg'); setOpen(true); }}>Large</Button>
-        <Button onClick={() => { setSize('xl'); setOpen(true); }}>Extra Large</Button>
+        <Button
+          onClick={() => {
+            setSize('sm');
+            setOpen(true);
+          }}
+        >
+          Small
+        </Button>
+        <Button
+          onClick={() => {
+            setSize('md');
+            setOpen(true);
+          }}
+        >
+          Medium
+        </Button>
+        <Button
+          onClick={() => {
+            setSize('lg');
+            setOpen(true);
+          }}
+        >
+          Large
+        </Button>
+        <Button
+          onClick={() => {
+            setSize('xl');
+            setOpen(true);
+          }}
+        >
+          Extra Large
+        </Button>
       </div>
-      <Modal
-        open={open}
-        onOpenChange={setOpen}
-        title={`Modal ${size.toUpperCase()}`}
-        size={size}
-      >
+      <Modal open={open} onOpenChange={setOpen} title={`Modal ${size.toUpperCase()}`} size={size}>
         <p>Acesta este un modal de mărime {size}.</p>
-        <Button className="mt-4" onClick={() => setOpen(false)}>Închide</Button>
+        <Button className="mt-4" onClick={() => setOpen(false)}>
+          Închide
+        </Button>
       </Modal>
     </>
   );

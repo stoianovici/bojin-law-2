@@ -11,11 +11,7 @@
  * [Source: docs/architecture/external-apis.md#anthropic-claude-api]
  */
 
-import {
-  AIOperationType,
-  ClaudeModel,
-  TaskComplexity,
-} from '@legal-platform/types';
+import { AIOperationType, ClaudeModel, TaskComplexity } from '@legal-platform/types';
 import { providerManager, ProviderRequest } from './provider-manager.service';
 import { modelRouter } from './model-router.service';
 import { tokenTracker } from './token-tracker.service';
@@ -295,32 +291,32 @@ export class ThreadAnalysisService {
   // Private Methods
   // ============================================================================
 
-  private buildThreadAnalysisPrompt(
-    emails: EmailInThread[],
-    caseContext: CaseContext
-  ): string {
+  private buildThreadAnalysisPrompt(emails: EmailInThread[], caseContext: CaseContext): string {
     // Sort emails chronologically
     const sortedEmails = [...emails].sort(
       (a, b) => new Date(a.receivedDateTime).getTime() - new Date(b.receivedDateTime).getTime()
     );
 
     // Format emails for the prompt
-    const emailsFormatted = sortedEmails.map((email, index) => {
-      const date = email.receivedDateTime instanceof Date
-        ? email.receivedDateTime.toISOString().split('T')[0]
-        : String(email.receivedDateTime).split('T')[0];
+    const emailsFormatted = sortedEmails
+      .map((email, index) => {
+        const date =
+          email.receivedDateTime instanceof Date
+            ? email.receivedDateTime.toISOString().split('T')[0]
+            : String(email.receivedDateTime).split('T')[0];
 
-      const fromLabel = email.isFromUser ? '[LAW FIRM]' : '[EXTERNAL]';
-      const fromName = email.from.name || email.from.address;
+        const fromLabel = email.isFromUser ? '[LAW FIRM]' : '[EXTERNAL]';
+        const fromName = email.from.name || email.from.address;
 
-      return `--- Email ${index + 1} (ID: ${email.id}) ---
+        return `--- Email ${index + 1} (ID: ${email.id}) ---
 Date: ${date}
 From: ${fromLabel} ${fromName} <${email.from.address}>
 Subject: ${email.subject}
 
 ${email.bodyContent}
 --- End Email ${index + 1} ---`;
-    }).join('\n\n');
+      })
+      .join('\n\n');
 
     return `Analyze this email thread in the context of case: "${caseContext.title}"
 Case Number: ${caseContext.caseNumber}
@@ -378,11 +374,13 @@ Analyze this thread to identify the opposing counsel's position, key arguments, 
     const validParties = ['client', 'opposingCounsel', 'court', 'other'];
 
     return args
-      .filter((a): a is Record<string, unknown> =>
-        typeof a === 'object' && a !== null &&
-        typeof (a as Record<string, unknown>).argument === 'string'
+      .filter(
+        (a): a is Record<string, unknown> =>
+          typeof a === 'object' &&
+          a !== null &&
+          typeof (a as Record<string, unknown>).argument === 'string'
       )
-      .map(a => ({
+      .map((a) => ({
         party: validParties.includes(String(a.party))
           ? (String(a.party) as 'client' | 'opposingCounsel' | 'court' | 'other')
           : 'other',
@@ -397,12 +395,14 @@ Analyze this thread to identify the opposing counsel's position, key arguments, 
     if (!Array.isArray(changes)) return [];
 
     return changes
-      .filter((c): c is Record<string, unknown> =>
-        typeof c === 'object' && c !== null &&
-        typeof (c as Record<string, unknown>).previousPosition === 'string' &&
-        typeof (c as Record<string, unknown>).newPosition === 'string'
+      .filter(
+        (c): c is Record<string, unknown> =>
+          typeof c === 'object' &&
+          c !== null &&
+          typeof (c as Record<string, unknown>).previousPosition === 'string' &&
+          typeof (c as Record<string, unknown>).newPosition === 'string'
       )
-      .map(c => ({
+      .map((c) => ({
         date: String(c.date || new Date().toISOString().split('T')[0]),
         previousPosition: String(c.previousPosition),
         newPosition: String(c.newPosition),
@@ -420,9 +420,7 @@ Analyze this thread to identify the opposing counsel's position, key arguments, 
 
   private validateUrgency(value: unknown): 'low' | 'medium' | 'high' {
     const valid = ['low', 'medium', 'high'];
-    return valid.includes(String(value))
-      ? (String(value) as 'low' | 'medium' | 'high')
-      : 'low';
+    return valid.includes(String(value)) ? (String(value) as 'low' | 'medium' | 'high') : 'low';
   }
 
   private emptyResult(conversationId: string, startTime: number): ThreadSummaryResult {

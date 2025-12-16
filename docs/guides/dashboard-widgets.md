@@ -50,12 +50,12 @@ All widgets extend the base `Widget` type from `@legal-platform/types`:
 
 ```typescript
 export interface Widget {
-  id: string;                    // Unique identifier (e.g., 'supervised-cases')
-  type: WidgetType;              // Widget type enum
-  title: string;                 // Display title (supports i18n)
-  description?: string;          // Optional description
-  isCollapsed?: boolean;         // Collapse state
-  refreshedAt?: Date;            // Last refresh timestamp
+  id: string; // Unique identifier (e.g., 'supervised-cases')
+  type: WidgetType; // Widget type enum
+  title: string; // Display title (supports i18n)
+  description?: string; // Optional description
+  isCollapsed?: boolean; // Collapse state
+  refreshedAt?: Date; // Last refresh timestamp
 }
 ```
 
@@ -76,9 +76,11 @@ export interface Widget {
 The Partner role has access to operational oversight widgets:
 
 #### 1. Supervised Cases Widget
+
 **Purpose**: Track cases where the Partner is the supervising attorney
 
 **Features**:
+
 - List of cases with status and risk indicators
 - Shows case number, client name, assigned attorney
 - Color-coded risk levels (red/yellow/green)
@@ -90,9 +92,11 @@ The Partner role has access to operational oversight widgets:
 **File**: `apps/web/src/components/dashboard/widgets/SupervisedCasesWidget.tsx`
 
 #### 2. Firm Cases Overview Widget
+
 **Purpose**: Firm-wide case management with AI insights
 
 **Features**:
+
 - 3 tabbed views:
   - **At Risk**: Cases requiring immediate attention
   - **High Value**: High-value cases requiring supervision
@@ -106,9 +110,11 @@ The Partner role has access to operational oversight widgets:
 **File**: `apps/web/src/components/dashboard/widgets/FirmCasesOverviewWidget.tsx`
 
 #### 3. Firm Tasks Overview Widget
+
 **Purpose**: Aggregate firm task metrics
 
 **Features**:
+
 - Key metrics display:
   - Overdue tasks count
   - Due today count
@@ -122,9 +128,11 @@ The Partner role has access to operational oversight widgets:
 **File**: `apps/web/src/components/dashboard/widgets/FirmTasksOverviewWidget.tsx`
 
 #### 4. Employee Workload Widget
+
 **Purpose**: Monitor employee utilization and capacity
 
 **Features**:
+
 - Daily/Weekly view toggle
 - Employee list with utilization percentages
 - Color-coded status indicators:
@@ -142,9 +150,11 @@ The Partner role has access to operational oversight widgets:
 **File**: `apps/web/src/components/dashboard/widgets/EmployeeWorkloadWidget.tsx`
 
 #### 5. My Tasks Widget
+
 **Purpose**: Partner's personal task management
 
 **Features**:
+
 - List of tasks assigned to the Partner
 - Due date indicators
 - Priority badges
@@ -156,9 +166,11 @@ The Partner role has access to operational oversight widgets:
 **File**: `apps/web/src/components/dashboard/widgets/TodayTasksWidget.tsx`
 
 #### 6. AI Suggestions Widget
+
 **Purpose**: AI-powered insights and recommendations
 
 **Features**:
+
 - AI-generated suggestions for case management
 - Priority indicators
 - Actionable recommendations
@@ -173,9 +185,11 @@ The Partner role has access to operational oversight widgets:
 The Analytics section (Partner-only) displays KPI widgets moved from the main dashboard in Story 1.6:
 
 #### 1. Firm KPIs Widget
+
 **Purpose**: High-level firm metrics
 
 **Features**:
+
 - Active cases count
 - Active clients count
 - Pending approvals count
@@ -185,9 +199,11 @@ The Analytics section (Partner-only) displays KPI widgets moved from the main da
 **File**: `apps/web/src/components/dashboard/widgets/FirmKPIsWidget.tsx`
 
 #### 2. Billable Hours Chart Widget
+
 **Purpose**: Visualize billable hours trends
 
 **Features**:
+
 - Line/bar chart with recharts
 - Monthly breakdown
 - Year-over-year comparison
@@ -196,9 +212,11 @@ The Analytics section (Partner-only) displays KPI widgets moved from the main da
 **File**: `apps/web/src/components/dashboard/widgets/BillableHoursChartWidget.tsx`
 
 #### 3. Case Distribution Widget
+
 **Purpose**: Visualize case distribution by status/type
 
 **Features**:
+
 - Pie/donut chart
 - Status breakdown
 - Category filtering
@@ -206,9 +224,11 @@ The Analytics section (Partner-only) displays KPI widgets moved from the main da
 **File**: `apps/web/src/components/dashboard/widgets/CaseDistributionWidget.tsx`
 
 #### 4. Pending Approvals Widget
+
 **Purpose**: Track items awaiting approval
 
 **Features**:
+
 - List of pending documents
 - List of pending timesheets
 - Approval action buttons
@@ -612,6 +632,7 @@ Daily Utilization (%) = (Total Estimated Hours for Today / Standard Daily Hours)
 ```
 
 Where:
+
 - **Total Estimated Hours**: Sum of all task hours assigned for the current day
 - **Standard Daily Hours**: 8 hours (configurable per employee)
 
@@ -624,6 +645,7 @@ Weekly Utilization (%) = (Total Estimated Hours This Week / Standard Weekly Hour
 ```
 
 Where:
+
 - **Total Estimated Hours**: Sum of all task hours assigned for the current week (Monday-Friday)
 - **Standard Weekly Hours**: 40 hours (configurable per employee)
 
@@ -631,15 +653,16 @@ Where:
 
 Employee status is determined by utilization percentage:
 
-| Utilization | Status | Color | Icon |
-|------------|---------|-------|------|
-| > 100% | Over-utilized | Red | ⚠️ |
-| 70-100% | Optimal | Green | ✓ |
-| < 70% | Under-utilized | Yellow | ⏸️ |
+| Utilization | Status         | Color  | Icon |
+| ----------- | -------------- | ------ | ---- |
+| > 100%      | Over-utilized  | Red    | ⚠️   |
+| 70-100%     | Optimal        | Green  | ✓    |
+| < 70%       | Under-utilized | Yellow | ⏸️   |
 
 #### 4. Task Breakdown
 
 The detail row shows task breakdown by:
+
 - **Task Type**: Research, Drafting, Client Meeting, Court Appearance, Review, Administrative
 - **Estimated Hours**: Hours allocated per task
 - **Due Date**: Task deadline
@@ -653,9 +676,7 @@ Key functions:
 
 ```typescript
 // Calculate utilization for display
-const utilization = viewMode === 'daily'
-  ? employee.dailyUtilization
-  : employee.weeklyUtilization;
+const utilization = viewMode === 'daily' ? employee.dailyUtilization : employee.weeklyUtilization;
 
 // Determine status
 const getStatus = (utilization: number): 'over' | 'optimal' | 'under' => {

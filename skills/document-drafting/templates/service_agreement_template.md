@@ -37,13 +37,13 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 2.2 **Termination for Convenience.** Either Party may terminate this Agreement upon {{TERMINATION_NOTICE}} written notice to the other Party.
 
 2.3 **Termination for Cause.** Either Party may terminate this Agreement immediately upon written notice if the other Party:
-   (a) Materially breaches this Agreement and fails to cure such breach within {{CURE_PERIOD}} after written notice;
-   (b) Becomes insolvent, files for bankruptcy, or makes an assignment for the benefit of creditors.
+(a) Materially breaches this Agreement and fails to cure such breach within {{CURE_PERIOD}} after written notice;
+(b) Becomes insolvent, files for bankruptcy, or makes an assignment for the benefit of creditors.
 
 2.4 **Effect of Termination.** Upon termination:
-   (a) Client shall pay Service Provider for all Services performed up to the termination date;
-   (b) Service Provider shall deliver all work product and Client property;
-   (c) The provisions that by their nature should survive termination shall so survive.
+(a) Client shall pay Service Provider for all Services performed up to the termination date;
+(b) Service Provider shall deliver all work product and Client property;
+(c) The provisions that by their nature should survive termination shall so survive.
 
 ## 3. COMPENSATION
 
@@ -78,14 +78,14 @@ Options: Hourly rate of ${{HOURLY_RATE}}/hour | Fixed fee of ${{FIXED_FEE}} | Re
 ## 6. REPRESENTATIONS AND WARRANTIES
 
 6.1 **Service Provider Warranties.** Service Provider represents and warrants that:
-   (a) It has the right and authority to enter into this Agreement;
-   (b) The Services shall be performed in a professional and workmanlike manner;
-   (c) The Work Product shall be original and shall not infringe any third-party intellectual property rights;
-   (d) It maintains all necessary licenses, permits, and insurance to perform the Services.
+(a) It has the right and authority to enter into this Agreement;
+(b) The Services shall be performed in a professional and workmanlike manner;
+(c) The Work Product shall be original and shall not infringe any third-party intellectual property rights;
+(d) It maintains all necessary licenses, permits, and insurance to perform the Services.
 
 6.2 **Client Warranties.** Client represents and warrants that:
-   (a) It has the authority to enter into this Agreement;
-   (b) It will provide timely access to information and personnel necessary for Service Provider to perform the Services.
+(a) It has the authority to enter into this Agreement;
+(b) It will provide timely access to information and personnel necessary for Service Provider to perform the Services.
 
 6.3 **Disclaimer.** EXCEPT AS EXPRESSLY SET FORTH HEREIN, SERVICE PROVIDER MAKES NO WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -100,13 +100,13 @@ Options: Hourly rate of ${{HOURLY_RATE}}/hour | Fixed fee of ${{FIXED_FEE}} | Re
 ## 8. INDEMNIFICATION
 
 8.1 **Service Provider Indemnification.** Service Provider shall indemnify, defend, and hold harmless Client from and against any claims, damages, losses, and expenses arising from:
-   (a) Breach of this Agreement by Service Provider;
-   (b) Negligence or willful misconduct of Service Provider;
-   (c) Infringement of third-party intellectual property rights by the Work Product.
+(a) Breach of this Agreement by Service Provider;
+(b) Negligence or willful misconduct of Service Provider;
+(c) Infringement of third-party intellectual property rights by the Work Product.
 
 8.2 **Client Indemnification.** Client shall indemnify, defend, and hold harmless Service Provider from and against any claims, damages, losses, and expenses arising from:
-   (a) Breach of this Agreement by Client;
-   (b) Use of the Work Product by Client in a manner not authorized by this Agreement.
+(a) Breach of this Agreement by Client;
+(b) Use of the Work Product by Client in a manner not authorized by this Agreement.
 
 ## 9. INDEPENDENT CONTRACTOR
 
@@ -119,6 +119,7 @@ Options: Hourly rate of ${{HOURLY_RATE}}/hour | Fixed fee of ${{FIXED_FEE}} | Re
 ## 10. INSURANCE
 
 Service Provider shall maintain the following insurance coverage throughout the Term:
+
 - Professional Liability Insurance: ${{PROFESSIONAL_LIABILITY_AMOUNT}}
 - General Liability Insurance: ${{GENERAL_LIABILITY_AMOUNT}}
 - Workers' Compensation (if applicable)
@@ -172,12 +173,14 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 **TEMPLATE VARIABLES:**
 
 **Parties:**
+
 - `{{EFFECTIVE_DATE}}`: Agreement start date
 - `{{CLIENT_NAME}}`, `{{PROVIDER_NAME}}`: Legal entity names
 - `{{CLIENT_TYPE}}`, `{{PROVIDER_TYPE}}`: Entity type (corporation, LLC, individual, etc.)
 - `{{CLIENT_ADDRESS}}`, `{{PROVIDER_ADDRESS}}`: Business addresses
 
 **Services:**
+
 - `{{SERVICES_DESCRIPTION}}`: Detailed description of services to be provided
 - `{{DELIVERABLES_LIST}}`: Specific deliverables with dates
 - `{{START_DATE}}`, `{{END_DATE}}`: Service period
@@ -185,6 +188,7 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 - `{{CURE_PERIOD}}`: Time to fix breaches (e.g., "fifteen (15) days")
 
 **Compensation:**
+
 - `{{FEE_STRUCTURE}}`: Choose hourly, fixed fee, or retainer
 - `{{HOURLY_RATE}}`: Hourly rate (if applicable)
 - `{{FIXED_FEE}}`: Total project fee (if applicable)
@@ -195,23 +199,28 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 - `{{LATE_FEE_RATE}}`: Interest rate for late payments (e.g., "1.5")
 
 **IP & Confidentiality:**
+
 - `{{IP_OWNER}}`: Who owns work product (typically "Client")
 - `{{CONFIDENTIALITY_PERIOD}}`: Duration of confidentiality (e.g., "three (3) years")
 
 **Liability:**
+
 - `{{LIABILITY_CAP}}`: Maximum liability (e.g., "the total fees paid under this Agreement")
 
 **Insurance:**
+
 - `{{PROFESSIONAL_LIABILITY_AMOUNT}}`: Professional liability coverage amount
 - `{{GENERAL_LIABILITY_AMOUNT}}`: General liability coverage amount
 
 **Legal:**
+
 - `{{JURISDICTION}}`: Governing law and venue
 - `{{DISPUTE_RESOLUTION}}`: Dispute resolution method
 - `{{CLIENT_SIGNATORY_NAME}}`, `{{PROVIDER_SIGNATORY_NAME}}`: Signer names
 - `{{CLIENT_SIGNATORY_TITLE}}`, `{{PROVIDER_SIGNATORY_TITLE}}`: Signer titles
 
 **OPTIONAL CLAUSES:**
+
 - Add non-compete clause if restricting competitive work
 - Add non-solicitation clause to prevent poaching
 - Add milestone payment schedule for phased projects
@@ -220,6 +229,7 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 - Customize IP ownership for joint development projects
 
 **JURISDICTION VARIATIONS:**
+
 - **California:** Add provision for California Labor Code § 2750.3 (ABC test for independent contractors)
 - **New York:** Add provision referencing NY General Obligations Law § 5-1401 (choice of law)
 - **UK:** Reference Supply of Goods and Services Act 1982, adjust payment terms to comply with Late Payment of Commercial Debts (Interest) Act 1998

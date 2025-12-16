@@ -53,9 +53,7 @@ describe('DeltaBadge', () => {
       direction: 'up',
     };
 
-    const { container } = render(
-      <DeltaBadge delta={delta} positiveIsGood={true} />
-    );
+    const { container } = render(<DeltaBadge delta={delta} positiveIsGood={true} />);
 
     expect(container.firstChild).toHaveClass('bg-green-100');
     expect(container.firstChild).toHaveClass('text-green-700');
@@ -68,9 +66,7 @@ describe('DeltaBadge', () => {
       direction: 'up',
     };
 
-    const { container } = render(
-      <DeltaBadge delta={delta} positiveIsGood={false} />
-    );
+    const { container } = render(<DeltaBadge delta={delta} positiveIsGood={false} />);
 
     expect(container.firstChild).toHaveClass('bg-red-100');
     expect(container.firstChild).toHaveClass('text-red-700');
@@ -97,9 +93,6 @@ describe('DeltaBadge', () => {
 
     const { container } = render(<DeltaBadge delta={delta} />);
 
-    expect(container.firstChild).toHaveAttribute(
-      'title',
-      'Change: +1,000'
-    );
+    expect(container.firstChild).toHaveAttribute('title', 'Change: +1,000');
   });
 });

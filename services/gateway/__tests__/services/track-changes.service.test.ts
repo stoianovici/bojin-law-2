@@ -92,9 +92,27 @@ describe('TrackChangesService', () => {
     it('should count mixed changes correctly', () => {
       const trackChanges = [
         { id: '1', type: 'INSERTION', authorName: 'John', content: 'added', timestamp: new Date() },
-        { id: '2', type: 'DELETION', authorName: 'John', content: 'removed', timestamp: new Date() },
-        { id: '3', type: 'MODIFICATION', authorName: 'Jane', content: 'changed', timestamp: new Date() },
-        { id: '4', type: 'FORMAT_CHANGE', authorName: 'Jane', content: 'Format', timestamp: new Date() },
+        {
+          id: '2',
+          type: 'DELETION',
+          authorName: 'John',
+          content: 'removed',
+          timestamp: new Date(),
+        },
+        {
+          id: '3',
+          type: 'MODIFICATION',
+          authorName: 'Jane',
+          content: 'changed',
+          timestamp: new Date(),
+        },
+        {
+          id: '4',
+          type: 'FORMAT_CHANGE',
+          authorName: 'Jane',
+          content: 'Format',
+          timestamp: new Date(),
+        },
       ];
 
       const result = service.formatChangesSummary(trackChanges as any);
@@ -180,7 +198,9 @@ describe('TrackChangesService', () => {
     });
 
     it('should handle parsing errors gracefully', async () => {
-      (JSZip as unknown as { loadAsync: jest.Mock }).loadAsync.mockRejectedValue(new Error('Invalid ZIP'));
+      (JSZip as unknown as { loadAsync: jest.Mock }).loadAsync.mockRejectedValue(
+        new Error('Invalid ZIP')
+      );
 
       const result = await service.extractTrackChanges('doc-123', 'token', 'onedrive-123');
 

@@ -24,7 +24,9 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(BASE_URL);
       // Ensure Partner role is active (default)
-      const roleSwitcher = page.locator('[data-testid="role-switcher"], [aria-label="Select role"]');
+      const roleSwitcher = page.locator(
+        '[data-testid="role-switcher"], [aria-label="Select role"]'
+      );
       if (await roleSwitcher.isVisible()) {
         const roleText = await roleSwitcher.textContent();
         if (!roleText?.includes('Partner')) {
@@ -102,7 +104,10 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
       await page.waitForLoadState('networkidle');
 
       // Find date range picker button
-      const datePickerButton = page.locator('button').filter({ hasText: /date|range|period/i }).first();
+      const datePickerButton = page
+        .locator('button')
+        .filter({ hasText: /date|range|period/i })
+        .first();
       if (await datePickerButton.isVisible()) {
         await datePickerButton.click();
 
@@ -134,7 +139,9 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
       await page.waitForLoadState('networkidle');
 
       // Find refresh button
-      const refreshButton = page.locator('[title="Refresh data"], button:has(svg.lucide-refresh-cw)');
+      const refreshButton = page.locator(
+        '[title="Refresh data"], button:has(svg.lucide-refresh-cw)'
+      );
       if (await refreshButton.isVisible()) {
         await refreshButton.click();
         // Page should still be on analytics after refresh
@@ -151,7 +158,9 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(BASE_URL);
       // Switch to BusinessOwner role
-      const roleSwitcher = page.locator('[data-testid="role-switcher"], [aria-label="Select role"]');
+      const roleSwitcher = page.locator(
+        '[data-testid="role-switcher"], [aria-label="Select role"]'
+      );
       if (await roleSwitcher.isVisible()) {
         await roleSwitcher.click();
         await page.click('text=/BusinessOwner|Business Owner/i');
@@ -231,7 +240,9 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
       await page.goto(BASE_URL);
 
       // Switch to Associate role
-      const roleSwitcher = page.locator('[data-testid="role-switcher"], [aria-label="Select role"]');
+      const roleSwitcher = page.locator(
+        '[data-testid="role-switcher"], [aria-label="Select role"]'
+      );
       if (await roleSwitcher.isVisible()) {
         await roleSwitcher.click();
         await page.click('text=Associate');
@@ -255,7 +266,9 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
       await page.goto(BASE_URL);
 
       // Switch to Associate role
-      const roleSwitcher = page.locator('[data-testid="role-switcher"], [aria-label="Select role"]');
+      const roleSwitcher = page.locator(
+        '[data-testid="role-switcher"], [aria-label="Select role"]'
+      );
       if (await roleSwitcher.isVisible()) {
         await roleSwitcher.click();
         await page.click('text=Associate');
@@ -282,7 +295,9 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
       await page.goto(BASE_URL);
 
       // Switch to Associate role
-      const roleSwitcher = page.locator('[data-testid="role-switcher"], [aria-label="Select role"]');
+      const roleSwitcher = page.locator(
+        '[data-testid="role-switcher"], [aria-label="Select role"]'
+      );
       if (await roleSwitcher.isVisible()) {
         await roleSwitcher.click();
         await page.click('text=Associate');
@@ -305,7 +320,9 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
       await page.goto(BASE_URL);
 
       // Switch to Paralegal role
-      const roleSwitcher = page.locator('[data-testid="role-switcher"], [aria-label="Select role"]');
+      const roleSwitcher = page.locator(
+        '[data-testid="role-switcher"], [aria-label="Select role"]'
+      );
       if (await roleSwitcher.isVisible()) {
         await roleSwitcher.click();
         await page.click('text=Paralegal');
@@ -329,7 +346,9 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
       await page.goto(BASE_URL);
 
       // Switch to Associate role
-      const roleSwitcher = page.locator('[data-testid="role-switcher"], [aria-label="Select role"]');
+      const roleSwitcher = page.locator(
+        '[data-testid="role-switcher"], [aria-label="Select role"]'
+      );
       if (await roleSwitcher.isVisible()) {
         await roleSwitcher.click();
         await page.click('text=Associate');
@@ -403,7 +422,7 @@ test.describe('Financial Dashboard E2E Tests (Story 2.11.5)', () => {
 
       // Look for skeleton or loading indicators
       const skeleton = page.locator('.animate-pulse, [data-loading="true"]');
-      const hasSkeletons = await skeleton.count() > 0;
+      const hasSkeletons = (await skeleton.count()) > 0;
 
       // Either has skeletons or loads fast enough we don't see them
       expect(hasSkeletons || true).toBeTruthy();

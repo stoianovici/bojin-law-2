@@ -136,7 +136,9 @@ export function DOCXViewer({ url, onLoadSuccess, onLoadError }: DOCXViewerProps)
       </div>
 
       {/* Custom styles for rendered DOCX content - using dangerouslySetInnerHTML to avoid jsx/global prop issues */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .docx-content {
           font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
@@ -181,7 +183,9 @@ export function DOCXViewer({ url, onLoadSuccess, onLoadError }: DOCXViewerProps)
           margin-left: 1.5em;
           margin-bottom: 0.5em;
         }
-      ` }} />
+      `,
+        }}
+      />
     </div>
   );
 }

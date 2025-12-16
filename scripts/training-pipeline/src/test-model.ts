@@ -62,7 +62,9 @@ async function main() {
   console.log(chalk.cyan('Verifying dimensions...\n'));
   const allCorrect = embeddings.every((e) => e.embedding.length === EMBEDDING_DIMENSIONS);
   if (allCorrect) {
-    console.log(chalk.green(`  ✅ All embeddings have correct dimensions (${EMBEDDING_DIMENSIONS})\n`));
+    console.log(
+      chalk.green(`  ✅ All embeddings have correct dimensions (${EMBEDDING_DIMENSIONS})\n`)
+    );
   } else {
     console.log(chalk.red(`  ❌ Dimension mismatch!\n`));
   }

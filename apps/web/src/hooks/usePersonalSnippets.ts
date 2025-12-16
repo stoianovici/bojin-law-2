@@ -7,11 +7,7 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useCallback, useMemo } from 'react';
-import type {
-  PersonalSnippet,
-  SnippetCategory,
-  SnippetSuggestion,
-} from '@legal-platform/types';
+import type { PersonalSnippet, SnippetCategory, SnippetSuggestion } from '@legal-platform/types';
 
 // ====================
 // GraphQL Fragments
@@ -211,10 +207,7 @@ export function useSnippets(category?: SnippetCategory) {
   const recentlyUsed = useMemo(() => {
     return [...snippets]
       .filter((s) => s.lastUsedAt)
-      .sort(
-        (a, b) =>
-          new Date(b.lastUsedAt!).getTime() - new Date(a.lastUsedAt!).getTime()
-      )
+      .sort((a, b) => new Date(b.lastUsedAt!).getTime() - new Date(a.lastUsedAt!).getTime())
       .slice(0, 5);
   }, [snippets]);
 
@@ -294,9 +287,7 @@ export function useCreateSnippet() {
   const createSnippet = async (input: CreateSnippetInput) => {
     // Validate shortcut format
     if (!/^[a-zA-Z0-9_-]+$/.test(input.shortcut)) {
-      throw new Error(
-        'Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore'
-      );
+      throw new Error('Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore');
     }
 
     if (input.shortcut.length > 50) {
@@ -328,9 +319,7 @@ export function useUpdateSnippet() {
   const updateSnippet = async (id: string, input: UpdateSnippetInput) => {
     // Validate shortcut format if provided
     if (input.shortcut && !/^[a-zA-Z0-9_-]+$/.test(input.shortcut)) {
-      throw new Error(
-        'Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore'
-      );
+      throw new Error('Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore');
     }
 
     const result = await update({ variables: { id, input } });
@@ -528,7 +517,11 @@ export function usePersonalSnippets(category?: SnippetCategory) {
   const { deleteSnippet, loading: deleting, error: deleteError } = useDeleteSnippet();
   const { recordUsage, loading: recordingUsage } = useRecordSnippetUsage();
   const { acceptSuggestion, loading: accepting, error: acceptError } = useAcceptSnippetSuggestion();
-  const { dismissSuggestion, loading: dismissing, error: dismissError } = useDismissSnippetSuggestion();
+  const {
+    dismissSuggestion,
+    loading: dismissing,
+    error: dismissError,
+  } = useDismissSnippetSuggestion();
 
   return {
     // Snippets data
@@ -602,8 +595,7 @@ export function useSnippetAutocomplete(text: string, cursorPosition: number) {
     // Find matching snippets
     const matches = snippets.filter(
       (s: PersonalSnippet) =>
-        s.shortcut.toLowerCase().includes(query) ||
-        s.title.toLowerCase().includes(query)
+        s.shortcut.toLowerCase().includes(query) || s.title.toLowerCase().includes(query)
     );
 
     return {

@@ -23,11 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   CheckCircle,
   XCircle,
@@ -114,13 +110,14 @@ export function ResponseSuggestionPanel({
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const { data: existingSuggestions, loading: loadingSuggestions, refetch } = useQuery<ResponseSuggestionsData>(
-    GET_RESPONSE_SUGGESTIONS,
-    {
-      variables: { changeId: selectedChange?.id },
-      skip: !selectedChange?.id,
-    }
-  );
+  const {
+    data: existingSuggestions,
+    loading: loadingSuggestions,
+    refetch,
+  } = useQuery<ResponseSuggestionsData>(GET_RESPONSE_SUGGESTIONS, {
+    variables: { changeId: selectedChange?.id },
+    skip: !selectedChange?.id,
+  });
 
   const [generateSuggestions, { loading: generating }] = useMutation(
     GENERATE_RESPONSE_SUGGESTIONS,
@@ -179,9 +176,7 @@ export function ResponseSuggestionPanel({
           </Badge>
         );
       case 'REJECT':
-        return (
-          <Badge variant="destructive">Reject</Badge>
-        );
+        return <Badge variant="destructive">Reject</Badge>;
       case 'COUNTER_PROPOSAL':
         return (
           <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -263,10 +258,7 @@ export function ResponseSuggestionPanel({
             </div>
             <div className="flex-1">
               <label className="text-sm font-medium mb-1.5 block">Language</label>
-              <Select
-                value={language}
-                onValueChange={(v: string) => setLanguage(v as 'ro' | 'en')}
-              >
+              <Select value={language} onValueChange={(v: string) => setLanguage(v as 'ro' | 'en')}>
                 <SelectTrigger>
                   <Globe className="h-4 w-4 mr-2" />
                   <SelectValue />

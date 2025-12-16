@@ -14,7 +14,13 @@
  * - Indexed queries on dueDate and status
  */
 
-import { PrismaClient as PrismaClientType, TaskStatus, TaskTypeEnum, TaskPriority, Prisma } from '@prisma/client';
+import {
+  PrismaClient as PrismaClientType,
+  TaskStatus,
+  TaskTypeEnum,
+  TaskPriority,
+  Prisma,
+} from '@prisma/client';
 import Redis from 'ioredis';
 import type {
   AnalyticsFilters,
@@ -274,12 +280,13 @@ export class OverdueAnalysisService {
 
     // Pattern 2: Task Type Delays
     const byType = this.groupByType(tasks);
-    const avgDaysOverdue = tasks.reduce((sum, t) => {
-      const days = Math.floor(
-        (now.getTime() - new Date(t.dueDate).getTime()) / (1000 * 60 * 60 * 24)
-      );
-      return sum + days;
-    }, 0) / tasks.length;
+    const avgDaysOverdue =
+      tasks.reduce((sum, t) => {
+        const days = Math.floor(
+          (now.getTime() - new Date(t.dueDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return sum + days;
+      }, 0) / tasks.length;
 
     const delayedTypes = byType.filter((t) => t.avgDaysOverdue > avgDaysOverdue * 1.5);
 
@@ -311,9 +318,7 @@ export class OverdueAnalysisService {
       caseTaskCounts.set(task.caseId, count + 1);
     }
 
-    const complexCases = Array.from(caseTaskCounts.entries()).filter(
-      ([, count]) => count > 5
-    );
+    const complexCases = Array.from(caseTaskCounts.entries()).filter(([, count]) => count > 5);
 
     if (complexCases.length > 0) {
       patterns.push({

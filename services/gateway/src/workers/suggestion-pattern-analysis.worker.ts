@@ -197,7 +197,9 @@ async function runPatternAnalysis(config: PatternAnalysisConfig): Promise<void> 
 
     const duration = Date.now() - startTime;
     logger.info(`[${WORKER_NAME}] Analysis complete in ${duration}ms`);
-    logger.info(`[${WORKER_NAME}] Results: ${newPatterns} new, ${updatedPatterns} updated, ${deactivatedPatterns} deactivated`);
+    logger.info(
+      `[${WORKER_NAME}] Results: ${newPatterns} new, ${updatedPatterns} updated, ${deactivatedPatterns} deactivated`
+    );
   } catch (error) {
     await logError(error as Error);
     throw error;
@@ -252,7 +254,7 @@ async function analyzeUserPatterns(
   });
 
   // Map to expected format
-  const taskHistory = rawTaskHistory.map(t => ({
+  const taskHistory = rawTaskHistory.map((t) => ({
     type: t.type,
     completedAt: t.completedAt,
     caseId: t.caseId,
@@ -274,8 +276,9 @@ async function analyzeUserPatterns(
   // Update or create patterns
   for (const pattern of detectedPatterns) {
     const existing = existingPatterns.find(
-      (p) => p.patternType === pattern.patternType &&
-             JSON.stringify(p.triggerContext) === JSON.stringify(pattern.triggerContext)
+      (p) =>
+        p.patternType === pattern.patternType &&
+        JSON.stringify(p.triggerContext) === JSON.stringify(pattern.triggerContext)
     );
 
     if (existing) {
@@ -313,8 +316,9 @@ async function analyzeUserPatterns(
   // Deactivate patterns that weren't detected
   for (const existing of existingPatterns) {
     const stillDetected = detectedPatterns.find(
-      (p) => p.patternType === existing.patternType &&
-             JSON.stringify(p.triggerContext) === JSON.stringify(existing.triggerContext)
+      (p) =>
+        p.patternType === existing.patternType &&
+        JSON.stringify(p.triggerContext) === JSON.stringify(existing.triggerContext)
     );
 
     if (!stillDetected && existing.isActive) {
@@ -475,9 +479,7 @@ function detectPostTaskPatterns(
           patternType: 'PostTaskAction',
           description: `After completing ${taskType} tasks, user often accepts ${category} suggestions`,
           triggerContext: { taskType, event: 'task_completed' },
-          actionSequence: [
-            { action: 'accept_suggestion', context: { suggestionType, category } },
-          ],
+          actionSequence: [{ action: 'accept_suggestion', context: { suggestionType, category } }],
           occurrenceCount: mostCommon[1],
           confidence: mostCommon[1] / tasks.length,
           lastOccurrence,
@@ -554,9 +556,7 @@ function detectTimeBasedPatterns(
         patternType: 'TimeRoutine',
         description: `User typically engages with ${mostCommon[0]} suggestions around ${hour}:00`,
         triggerContext: { hour, timeWindow: [hour - 1, hour + 1] },
-        actionSequence: [
-          { action: 'show_suggestion', context: { suggestionType: mostCommon[0] } },
-        ],
+        actionSequence: [{ action: 'show_suggestion', context: { suggestionType: mostCommon[0] } }],
         occurrenceCount: mostCommon[1],
         confidence: mostCommon[1] / suggestions.length,
         lastOccurrence,
@@ -629,7 +629,9 @@ function detectCaseTypePatterns(
       .map(([type]) => type);
 
     if (commonTasks.length >= 2) {
-      const lastOccurrence = sequences.sort((a, b) => b.lastDate.getTime() - a.lastDate.getTime())[0].lastDate;
+      const lastOccurrence = sequences.sort(
+        (a, b) => b.lastDate.getTime() - a.lastDate.getTime()
+      )[0].lastDate;
 
       patterns.push({
         patternType: 'CaseTypeWorkflow',
@@ -709,9 +711,7 @@ function detectAcceptancePatterns(
         patternType: 'HighAcceptance',
         description: `User frequently accepts ${type} suggestions (${Math.round(acceptanceRate * 100)}% rate)`,
         triggerContext: { suggestionType: type },
-        actionSequence: [
-          { action: 'prioritize_suggestion', context: { suggestionType: type } },
-        ],
+        actionSequence: [{ action: 'prioritize_suggestion', context: { suggestionType: type } }],
         occurrenceCount: stats.accepted,
         confidence: acceptanceRate,
         lastOccurrence: stats.lastDate,

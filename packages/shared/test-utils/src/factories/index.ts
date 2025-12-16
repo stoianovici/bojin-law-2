@@ -71,7 +71,12 @@ export {
 } from './dashboard.factory';
 
 // Dashboard Types
-export type { KPIMetric, AISuggestion, KPIMetricOverrides, AISuggestionOverrides } from './dashboard.factory';
+export type {
+  KPIMetric,
+  AISuggestion,
+  KPIMetricOverrides,
+  AISuggestionOverrides,
+} from './dashboard.factory';
 
 // Workspace Factories
 export {

@@ -30,14 +30,14 @@ prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 
 ```typescript
 // FROM:
-documents.map((d) => d.id)
+documents.map((d) => d.id);
 //             ^ Parameter 'd' implicitly has an 'any' type
 
 // TO:
-documents.map((d: Document) => d.id)
+documents.map((d: Document) => d.id);
 // Or let TypeScript infer from typed array:
 const documents: Document[] = await getDocuments();
-documents.map((d) => d.id) // Now inferred
+documents.map((d) => d.id); // Now inferred
 ```
 
 ### Pattern 3: Reduce Callbacks
@@ -66,18 +66,18 @@ npx tsc --noEmit 2>&1 | grep "TS7006" | cut -d'(' -f1 | sort -u
 
 Known files from initial scan:
 
-| File | Approximate Count |
-|------|-------------------|
-| `apps/legacy-import/src/app/api/analyze-documents/route.ts` | 6 |
-| `apps/legacy-import/src/app/api/bulk-import-documents/route.ts` | 1 |
-| `apps/legacy-import/src/app/api/export-onedrive/route.ts` | 1 |
-| `apps/legacy-import/src/app/api/merge-categories/route.ts` | 2 |
-| `apps/legacy-import/src/app/api/partner-dashboard/route.ts` | 2 |
-| `apps/legacy-import/src/app/api/reassign-batches/route.ts` | 5 |
-| `apps/legacy-import/src/app/api/session-progress/route.ts` | 6 |
-| `apps/legacy-import/src/app/api/sync-categories/route.ts` | 1 |
-| `apps/legacy-import/src/app/api/get-batch/route.ts` | 1 |
-| `apps/legacy-import/src/__tests__/integration/multi-user.integration.test.ts` | 3 |
+| File                                                                          | Approximate Count |
+| ----------------------------------------------------------------------------- | ----------------- |
+| `apps/legacy-import/src/app/api/analyze-documents/route.ts`                   | 6                 |
+| `apps/legacy-import/src/app/api/bulk-import-documents/route.ts`               | 1                 |
+| `apps/legacy-import/src/app/api/export-onedrive/route.ts`                     | 1                 |
+| `apps/legacy-import/src/app/api/merge-categories/route.ts`                    | 2                 |
+| `apps/legacy-import/src/app/api/partner-dashboard/route.ts`                   | 2                 |
+| `apps/legacy-import/src/app/api/reassign-batches/route.ts`                    | 5                 |
+| `apps/legacy-import/src/app/api/session-progress/route.ts`                    | 6                 |
+| `apps/legacy-import/src/app/api/sync-categories/route.ts`                     | 1                 |
+| `apps/legacy-import/src/app/api/get-batch/route.ts`                           | 1                 |
+| `apps/legacy-import/src/__tests__/integration/multi-user.integration.test.ts` | 3                 |
 
 ---
 

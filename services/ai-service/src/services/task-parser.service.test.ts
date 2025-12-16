@@ -44,7 +44,7 @@ const createMockResponse = (overrides: Record<string, unknown> = {}) => ({
   ...mockAIResponse,
   parsedTask: {
     ...mockAIResponse.parsedTask,
-    ...(overrides.parsedTask as Record<string, unknown> || {}),
+    ...((overrides.parsedTask as Record<string, unknown>) || {}),
   },
   ...(overrides.detectedLanguage ? { detectedLanguage: overrides.detectedLanguage } : {}),
 });

@@ -7,9 +7,11 @@
 
 import { prisma, ExtractionStatus } from '@legal-platform/database';
 import { getConfidenceLevel } from '@legal-platform/database';
+import { AIOperationType } from '@legal-platform/types';
 import { createCalendarSuggestionService } from '../../services/calendar-suggestion.service';
 import { createExtractionConversionService } from '../../services/extraction-conversion.service';
 import { getCommunicationIntelligenceLoaders } from '../dataloaders/communication-intelligence.dataloaders';
+import { aiService } from '../../services/ai.service';
 
 // ============================================================================
 // Types
@@ -404,6 +406,188 @@ export const communicationIntelligenceMutationResolvers = {
     // In production, this would trigger re-analysis
     console.log(`[Resolver] Thread analysis triggered for ${conversationId}`);
     return summary;
+  },
+
+  // Generate Case Conversation Summary (OPS-026)
+  generateCaseConversationSummary: async (
+    _: unknown,
+    { caseId }: { caseId: string },
+    context: Context
+  ) => {
+    const userId = context.user?.id;
+    const firmId = context.user?.firmId;
+
+    if (!firmId) {
+      throw new Error('Authentication required');
+    }
+
+    // Fetch case info with client
+    const caseData = await prisma.case.findUnique({
+      where: { id: caseId },
+      include: {
+        client: { select: { name: true } },
+      },
+    });
+
+    if (!caseData) {
+      throw new Error('Case not found');
+    }
+
+    // Get client name
+    const clientName = caseData.client?.name || 'Unknown';
+
+    // Fetch all emails for the case (emails have direct caseId field)
+    const emails = await prisma.email.findMany({
+      where: { caseId },
+      select: {
+        id: true,
+        subject: true,
+        bodyPreview: true,
+        bodyContent: true,
+        from: true,
+        toRecipients: true,
+        receivedDateTime: true,
+        conversationId: true,
+      },
+      orderBy: { receivedDateTime: 'asc' },
+    });
+
+    if (emails.length === 0) {
+      return {
+        caseId,
+        executiveSummary: 'Nu există comunicări pentru acest dosar.',
+        chronology: [],
+        keyDevelopments: [],
+        currentStatus: 'Nu există comunicări.',
+        openIssues: [],
+        nextSteps: [],
+        lastEmailDate: null,
+        emailCount: 0,
+        generatedAt: new Date().toISOString(),
+      };
+    }
+
+    // Get firm email domains to determine which emails are from firm
+    const firmUsers = await prisma.user.findMany({
+      where: { firmId },
+      select: { email: true },
+    });
+    const firmEmailDomains = new Set(
+      firmUsers.map((u) => u.email.split('@')[1]?.toLowerCase()).filter(Boolean)
+    );
+
+    // Format emails for AI
+    const emailsFormatted = emails.map((email) => {
+      const fromData = email.from as { name?: string; address: string } | null;
+      const fromAddress = fromData?.address || '';
+      const fromName = fromData?.name || fromAddress;
+      const fromDomain = fromAddress.split('@')[1]?.toLowerCase() || '';
+      const isFromFirm = firmEmailDomains.has(fromDomain);
+
+      return {
+        id: email.id,
+        subject: email.subject || '(fără subiect)',
+        from: isFromFirm ? '[FIRMĂ]' : '[EXTERN]',
+        fromName: fromName || 'Unknown',
+        date: email.receivedDateTime?.toISOString().split('T')[0] || '',
+        content: (email.bodyContent || email.bodyPreview || '').substring(0, 1000),
+      };
+    });
+
+    // Build prompt for AI
+    const systemPrompt = `Ești un asistent juridic AI. Acest rezumat este pentru AVOCATUL care reprezintă clientul - fii CONCIS și la obiect.
+
+IMPORTANT: Răspunde EXCLUSIV în limba ROMÂNĂ.
+
+Reguli:
+- Fii SCURT și DIRECT - avocatul cunoaște deja contextul general
+- Extrage doar faptele și dezvoltările esențiale
+- Ignoră formulele de politețe, confirmările de primire, detaliile administrative
+- Evidențiază: termene, angajamente, riscuri, decizii importante
+
+Returnează JSON:
+{
+  "executiveSummary": "1-2 paragrafe scurte - esența comunicărilor",
+  "chronology": [{"date": "YYYY-MM-DD", "summary": "eveniment concis", "significance": "high|medium|low", "parties": ["Parte"], "emailId": "id"}],
+  "keyDevelopments": ["Dezvoltare cheie - max 10 cuvinte"],
+  "currentStatus": "O propoziție",
+  "openIssues": ["Problemă nerezolvată - concis"],
+  "nextSteps": ["Acțiune necesară - concis"]
+}`;
+
+    const prompt = `Analizează comunicările pentru dosarul: "${caseData.title}"
+Număr dosar: ${caseData.caseNumber}
+Client: ${clientName}
+Tip dosar: ${caseData.type || 'General'}
+
+Total emailuri: ${emailsFormatted.length}
+
+${emailsFormatted
+  .slice(0, 50)
+  .map(
+    (e, i) => `--- Email ${i + 1} (ID: ${e.id}) ---
+Data: ${e.date}
+De la: ${e.from} ${e.fromName}
+Subiect: ${e.subject}
+${e.content}
+---`
+  )
+  .join('\n\n')}
+
+Generează un rezumat cuprinzător în format JSON. RĂSPUNDE ÎN ROMÂNĂ.`;
+
+    try {
+      // Call AI service (no caching - always generate fresh)
+      const response = await aiService.generate({
+        prompt,
+        systemPrompt,
+        operationType: AIOperationType.ThreadAnalysis,
+        firmId,
+        userId,
+        maxTokens: 4000,
+        temperature: 0.3,
+        useCache: false,
+      });
+
+      // Parse response
+      let parsed;
+      try {
+        let jsonContent = response.content;
+        const jsonMatch = response.content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          jsonContent = jsonMatch[1];
+        }
+        parsed = JSON.parse(jsonContent);
+      } catch {
+        console.error('Failed to parse AI response:', response.content);
+        parsed = {
+          executiveSummary: response.content.substring(0, 500),
+          chronology: [],
+          keyDevelopments: [],
+          currentStatus: 'See summary',
+          openIssues: [],
+          nextSteps: [],
+        };
+      }
+
+      const lastEmail = emails[emails.length - 1];
+
+      return {
+        caseId,
+        executiveSummary: parsed.executiveSummary || 'No summary generated.',
+        chronology: Array.isArray(parsed.chronology) ? parsed.chronology : [],
+        keyDevelopments: Array.isArray(parsed.keyDevelopments) ? parsed.keyDevelopments : [],
+        currentStatus: parsed.currentStatus || 'Unknown',
+        openIssues: Array.isArray(parsed.openIssues) ? parsed.openIssues : [],
+        nextSteps: Array.isArray(parsed.nextSteps) ? parsed.nextSteps : [],
+        lastEmailDate: lastEmail?.receivedDateTime?.toISOString() || null,
+        emailCount: emails.length,
+        generatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('Case conversation summary generation failed:', error);
+      throw new Error('Failed to generate summary. Please try again.');
+    }
   },
 
   // Create Calendar Event from Suggestion (AC: 3)

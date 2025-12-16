@@ -97,7 +97,11 @@ export function CommentsSidebar({
 
   const getInitials = (name: string) => {
     const parts = name.split(' ');
-    return parts.map((part) => part[0]).join('').toUpperCase().slice(0, 2);
+    return parts
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const activeComments = comments.filter((c) => !c.resolved);
@@ -221,12 +225,8 @@ export function CommentsSidebar({
                 d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
               />
             </svg>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">
-              Niciun comentariu încă
-            </h3>
-            <p className="text-xs text-gray-500">
-              Adaugă primul comentariu pentru acest document
-            </p>
+            <h3 className="text-sm font-medium text-gray-900 mb-1">Niciun comentariu încă</h3>
+            <p className="text-xs text-gray-500">Adaugă primul comentariu pentru acest document</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
@@ -250,9 +250,7 @@ export function CommentsSidebar({
                           <span className="text-sm font-semibold text-gray-900">
                             {comment.author.name}
                           </span>
-                          <span className="text-xs text-gray-500">
-                            {comment.timestamp}
-                          </span>
+                          <span className="text-xs text-gray-500">{comment.timestamp}</span>
                         </div>
 
                         {comment.lineNumber && (
@@ -319,9 +317,7 @@ export function CommentsSidebar({
                             <span className="text-sm font-semibold text-gray-900">
                               {comment.author.name}
                             </span>
-                            <span className="text-xs text-gray-500">
-                              {comment.timestamp}
-                            </span>
+                            <span className="text-xs text-gray-500">{comment.timestamp}</span>
                           </div>
                           <p className="text-sm text-gray-700">{comment.text}</p>
                         </div>

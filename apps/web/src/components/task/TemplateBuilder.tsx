@@ -31,12 +31,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GripVertical, Trash2, Plus, Link2, Eye } from 'lucide-react';
-import type {
-  TaskType,
-  CaseType,
-  TaskTemplate,
-  OffsetType,
-} from '@legal-platform/types';
+import type { TaskType, CaseType, TaskTemplate, OffsetType } from '@legal-platform/types';
 
 interface TemplateBuilderProps {
   template?: TaskTemplate;
@@ -109,31 +104,20 @@ function SortableStep({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const availableDependencies = allSteps.filter(
-    (s, idx) => idx < stepIndex && s.id !== step.id
-  );
+  const availableDependencies = allSteps.filter((s, idx) => idx < stepIndex && s.id !== step.id);
 
   return (
     <div ref={setNodeRef} style={style} className="mb-4">
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <button
-              className="cursor-grab active:cursor-grabbing"
-              {...attributes}
-              {...listeners}
-            >
+            <button className="cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
               <GripVertical className="h-5 w-5 text-gray-400" />
             </button>
             <CardTitle className="text-base">
               Step {stepIndex + 1}: {step.title || 'Untitled Step'}
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(step.id)}
-              className="ml-auto"
-            >
+            <Button variant="ghost" size="sm" onClick={() => onDelete(step.id)} className="ml-auto">
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
           </div>
@@ -185,7 +169,9 @@ function SortableStep({
               <Input
                 type="number"
                 value={step.offsetDays}
-                onChange={(e: React.MouseEvent) => onUpdate(step.id, { offsetDays: parseInt(e.target.value) || 0 })}
+                onChange={(e: React.MouseEvent) =>
+                  onUpdate(step.id, { offsetDays: parseInt(e.target.value) || 0 })
+                }
                 min="0"
               />
             </div>
@@ -194,7 +180,9 @@ function SortableStep({
               <label className="block text-sm font-medium mb-1">Offset From</label>
               <Select
                 value={step.offsetFrom}
-                onValueChange={(val: string) => onUpdate(step.id, { offsetFrom: val as OffsetType })}
+                onValueChange={(val: string) =>
+                  onUpdate(step.id, { offsetFrom: val as OffsetType })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -286,7 +274,7 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
   const [caseType, setCaseType] = React.useState<CaseType | undefined>(template?.caseType);
   const [isDefault, setIsDefault] = React.useState(template?.isDefault || false);
   const [steps, setSteps] = React.useState<TemplateStepData[]>(
-    template?.steps.map((s: typeof steps[number]) => ({
+    template?.steps.map((s: (typeof steps)[number]) => ({
       id: s.id,
       stepOrder: s.stepOrder,
       taskType: s.taskType,
@@ -297,7 +285,7 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
       offsetFrom: s.offsetFrom,
       isParallel: s.isParallel,
       isCriticalPath: s.isCriticalPath,
-      dependencies: s.dependencies.map((d: typeof s.dependencies[number]) => d.sourceStepId),
+      dependencies: s.dependencies.map((d: (typeof s.dependencies)[number]) => d.sourceStepId),
     })) || []
   );
   const [isSaving, setIsSaving] = React.useState(false);
@@ -353,9 +341,7 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
   const removeDependency = (targetId: string, sourceId: string) => {
     setSteps((prev) =>
       prev.map((s) =>
-        s.id === targetId
-          ? { ...s, dependencies: s.dependencies.filter((d) => d !== sourceId) }
-          : s
+        s.id === targetId ? { ...s, dependencies: s.dependencies.filter((d) => d !== sourceId) } : s
       )
     );
   };
@@ -457,10 +443,13 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
                   {step.estimatedHours}h ({Math.ceil((step.estimatedHours || 0) / 8)}d)
                   {step.dependencies.length > 0 && (
                     <span className="ml-2">
-                      Depends on: {step.dependencies.map((depId) => {
-                        const depIdx = steps.findIndex((s) => s.id === depId);
-                        return `Step ${depIdx + 1}`;
-                      }).join(', ')}
+                      Depends on:{' '}
+                      {step.dependencies
+                        .map((depId) => {
+                          const depIdx = steps.findIndex((s) => s.id === depId);
+                          return `Step ${depIdx + 1}`;
+                        })
+                        .join(', ')}
                     </span>
                   )}
                 </div>
@@ -498,7 +487,9 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
             <label className="block text-sm font-medium mb-1">Description</label>
             <Textarea
               value={description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setDescription(e.target.value)
+              }
               placeholder="Describe when to use this template"
               rows={2}
             />
@@ -507,7 +498,10 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Case Type</label>
-              <Select value={caseType} onValueChange={(val: string) => setCaseType(val as CaseType)}>
+              <Select
+                value={caseType}
+                onValueChange={(val: string) => setCaseType(val as CaseType)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Optional - any case type" />
                 </SelectTrigger>
@@ -556,7 +550,11 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
 
           {errors.steps && <p className="text-sm text-red-500 mb-4">{errors.steps}</p>}
 
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
             <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
               {steps.map((step, idx) => (
                 <SortableStep
@@ -588,9 +586,7 @@ export function TemplateBuilder({ template, onSave, onCancel }: TemplateBuilderP
           {steps.length > 0 ? (
             generatePreview()
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              Add steps to see timeline preview
-            </div>
+            <div className="text-center py-12 text-gray-500">Add steps to see timeline preview</div>
           )}
         </TabsContent>
       </Tabs>

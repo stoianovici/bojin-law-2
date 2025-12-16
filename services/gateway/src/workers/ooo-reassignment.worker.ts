@@ -41,9 +41,7 @@ const processedAvailabilities = new Set<string>();
 // Worker Lifecycle
 // ============================================================================
 
-export function startOOOReassignmentWorker(
-  config: Partial<OOOWorkerConfig> = {}
-): void {
+export function startOOOReassignmentWorker(config: Partial<OOOWorkerConfig> = {}): void {
   if (isRunning) {
     console.log('[OOO Worker] Already running');
     return;
@@ -165,10 +163,7 @@ async function processOOOPeriods(config: OOOWorkerConfig): Promise<void> {
       // Mark as processed
       processedAvailabilities.add(availability.id);
     } catch (error) {
-      console.error(
-        `[OOO Worker] Error processing OOO for user ${availability.userId}:`,
-        error
-      );
+      console.error(`[OOO Worker] Error processing OOO for user ${availability.userId}:`, error);
     }
   }
 

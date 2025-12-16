@@ -46,7 +46,7 @@ const createTestApp = (): Express => {
     // In real app, fetch from database
     const cases = [
       { id: '1', title: 'Case 1', status: 'Active' },
-      { id: '2', title: 'Case 2', status: 'Closed' }
+      { id: '2', title: 'Case 2', status: 'Closed' },
     ];
     res.json({ data: cases });
   });
@@ -74,7 +74,7 @@ const createTestApp = (): Express => {
       title,
       clientId,
       status: 'Active',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     res.status(201).json({ data: newCase });
@@ -86,7 +86,7 @@ const createTestApp = (): Express => {
 
     // In real app, update in database
     res.json({
-      data: { id, title, status, updatedAt: new Date().toISOString() }
+      data: { id, title, status, updatedAt: new Date().toISOString() },
     });
   });
 
@@ -152,21 +152,17 @@ describe('Cases API Integration Tests', () => {
 
   describe('GET /api/cases/:id', () => {
     it('should return specific case by ID', async () => {
-      const response = await request(app)
-        .get('/api/cases/123')
-        .expect(200);
+      const response = await request(app).get('/api/cases/123').expect(200);
 
       expect(response.body.data).toMatchObject({
         id: '123',
         title: 'Test Case',
-        status: 'Active'
+        status: 'Active',
       });
     });
 
     it('should return 404 for non-existent case', async () => {
-      const response = await request(app)
-        .get('/api/cases/999')
-        .expect(404);
+      const response = await request(app).get('/api/cases/999').expect(404);
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toContain('not found');
@@ -181,7 +177,7 @@ describe('Cases API Integration Tests', () => {
     it('should create new case with valid data', async () => {
       const newCase = {
         title: 'New Legal Case',
-        clientId: 'client-456'
+        clientId: 'client-456',
       };
 
       const response = await request(app)
@@ -193,7 +189,7 @@ describe('Cases API Integration Tests', () => {
       expect(response.body.data).toMatchObject({
         title: 'New Legal Case',
         clientId: 'client-456',
-        status: 'Active'
+        status: 'Active',
       });
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data).toHaveProperty('createdAt');
@@ -201,23 +197,17 @@ describe('Cases API Integration Tests', () => {
 
     it('should return 400 for missing required fields', async () => {
       const invalidCase = {
-        title: 'Missing Client ID'
+        title: 'Missing Client ID',
         // clientId missing
       };
 
-      const response = await request(app)
-        .post('/api/cases')
-        .send(invalidCase)
-        .expect(400);
+      const response = await request(app).post('/api/cases').send(invalidCase).expect(400);
 
       expect(response.body.error).toContain('Missing required fields');
     });
 
     it('should validate request body format', async () => {
-      const response = await request(app)
-        .post('/api/cases')
-        .send({ invalid: 'data' })
-        .expect(400);
+      const response = await request(app).post('/api/cases').send({ invalid: 'data' }).expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -231,18 +221,15 @@ describe('Cases API Integration Tests', () => {
     it('should update existing case', async () => {
       const updates = {
         title: 'Updated Title',
-        status: 'Closed'
+        status: 'Closed',
       };
 
-      const response = await request(app)
-        .put('/api/cases/123')
-        .send(updates)
-        .expect(200);
+      const response = await request(app).put('/api/cases/123').send(updates).expect(200);
 
       expect(response.body.data).toMatchObject({
         id: '123',
         title: 'Updated Title',
-        status: 'Closed'
+        status: 'Closed',
       });
       expect(response.body.data).toHaveProperty('updatedAt');
     });
@@ -254,9 +241,7 @@ describe('Cases API Integration Tests', () => {
 
   describe('DELETE /api/cases/:id', () => {
     it('should delete case and return 204', async () => {
-      await request(app)
-        .delete('/api/cases/123')
-        .expect(204);
+      await request(app).delete('/api/cases/123').expect(204);
     });
   });
 });
@@ -329,7 +314,7 @@ const resolvers = {
         email: 'john@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        role: 'Partner'
+        role: 'Partner',
       };
     },
 
@@ -340,7 +325,7 @@ const resolvers = {
       return {
         id,
         title: 'Test Case',
-        status: 'Active'
+        status: 'Active',
       };
     },
 
@@ -348,13 +333,11 @@ const resolvers = {
       // In real resolver, filter by status
       const allCases = [
         { id: '1', title: 'Case 1', status: 'Active' },
-        { id: '2', title: 'Case 2', status: 'Closed' }
+        { id: '2', title: 'Case 2', status: 'Closed' },
       ];
 
-      return status
-        ? allCases.filter(c => c.status === status)
-        : allCases;
-    }
+      return status ? allCases.filter((c) => c.status === status) : allCases;
+    },
   },
 
   Mutation: {
@@ -367,7 +350,7 @@ const resolvers = {
       return {
         id: '123',
         title,
-        status: 'Active'
+        status: 'Active',
       };
     },
 
@@ -379,28 +362,32 @@ const resolvers = {
       return {
         id,
         title: 'Updated Case',
-        status
+        status,
       };
-    }
+    },
   },
 
   User: {
     cases: async (parent: any, _args: any, _context: any) => {
       // In real resolver, use DataLoader to avoid N+1 queries
-      return [
-        { id: '1', title: 'User Case 1', status: 'Active' }
-      ];
-    }
+      return [{ id: '1', title: 'User Case 1', status: 'Active' }];
+    },
   },
 
   Case: {
     assignedUsers: async (parent: any, _args: any, _context: any) => {
       // In real resolver, use DataLoader
       return [
-        { id: '1', email: 'user@example.com', firstName: 'Test', lastName: 'User', role: 'Associate' }
+        {
+          id: '1',
+          email: 'user@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          role: 'Associate',
+        },
       ];
-    }
-  }
+    },
+  },
 };
 
 describe('GraphQL Resolver Integration Tests', () => {
@@ -440,7 +427,7 @@ describe('GraphQL Resolver Integration Tests', () => {
       const result = await graphql({
         schema,
         source: query,
-        variableValues: { id: '123' }
+        variableValues: { id: '123' },
       });
 
       expect(result.errors).toBeUndefined();
@@ -449,7 +436,7 @@ describe('GraphQL Resolver Integration Tests', () => {
         email: 'john@example.com',
         firstName: 'John',
         lastName: 'Doe',
-        role: 'Partner'
+        role: 'Partner',
       });
     });
 
@@ -471,7 +458,7 @@ describe('GraphQL Resolver Integration Tests', () => {
       const result = await graphql({
         schema,
         source: query,
-        variableValues: { id: '123' }
+        variableValues: { id: '123' },
       });
 
       expect(result.errors).toBeUndefined();
@@ -494,7 +481,7 @@ describe('GraphQL Resolver Integration Tests', () => {
 
       const result = await graphql({
         schema,
-        source: query
+        source: query,
       });
 
       expect(result.errors).toBeUndefined();
@@ -514,7 +501,7 @@ describe('GraphQL Resolver Integration Tests', () => {
       const result = await graphql({
         schema,
         source: query,
-        variableValues: { status: 'Active' }
+        variableValues: { status: 'Active' },
       });
 
       expect(result.errors).toBeUndefined();
@@ -539,7 +526,7 @@ describe('GraphQL Resolver Integration Tests', () => {
 
       const result = await graphql({
         schema,
-        source: query
+        source: query,
       });
 
       expect(result.errors).toBeUndefined();
@@ -569,15 +556,15 @@ describe('GraphQL Resolver Integration Tests', () => {
         source: mutation,
         variableValues: {
           title: 'New Case',
-          clientId: 'client-456'
-        }
+          clientId: 'client-456',
+        },
       });
 
       expect(result.errors).toBeUndefined();
       expect(result.data?.createCase).toMatchObject({
         id: '123',
         title: 'New Case',
-        status: 'Active'
+        status: 'Active',
       });
     });
   });
@@ -598,8 +585,8 @@ describe('GraphQL Resolver Integration Tests', () => {
         source: mutation,
         variableValues: {
           id: '123',
-          status: 'Closed'
-        }
+          status: 'Closed',
+        },
       });
 
       expect(result.errors).toBeUndefined();
@@ -625,7 +612,7 @@ describe('GraphQL Resolver Integration Tests', () => {
       const result = await graphql({
         schema,
         source: query,
-        variableValues: { id: '999' }
+        variableValues: { id: '999' },
       });
 
       expect(result.errors).toBeDefined();
@@ -759,8 +746,8 @@ const CaseList: React.FC = () => {
 
   React.useEffect(() => {
     fetch('/api/cases')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setCases(data.data);
         setLoading(false);
       });
@@ -770,7 +757,7 @@ const CaseList: React.FC = () => {
 
   return (
     <ul>
-      {cases.map(c => (
+      {cases.map((c) => (
         <li key={c.id}>{c.title}</li>
       ))}
     </ul>
@@ -790,12 +777,12 @@ describe('CaseList Component Integration', () => {
   it('should fetch and display cases', async () => {
     const mockCases = [
       { id: '1', title: 'Case Alpha' },
-      { id: '2', title: 'Case Beta' }
+      { id: '2', title: 'Case Beta' },
     ];
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ data: mockCases })
+      json: async () => ({ data: mockCases }),
     });
 
     render(<CaseList />);

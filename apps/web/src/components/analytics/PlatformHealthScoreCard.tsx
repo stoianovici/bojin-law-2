@@ -112,14 +112,7 @@ export function PlatformHealthScoreCard({ score, loading = false }: PlatformHeal
             style={{ transform: `rotate(${rotation}deg)` }}
           >
             {/* Background circle */}
-            <circle
-              cx="60"
-              cy="60"
-              r={radius}
-              fill="none"
-              stroke="#E5E7EB"
-              strokeWidth="10"
-            />
+            <circle cx="60" cy="60" r={radius} fill="none" stroke="#E5E7EB" strokeWidth="10" />
             {/* Progress circle */}
             <circle
               cx="60"

@@ -9,12 +9,7 @@ module.exports = {
     '^@legal-platform/database$': '<rootDir>/__mocks__/@legal-platform/database.ts',
     '^@legal-platform/types$': '<rootDir>/__mocks__/@legal-platform/types.ts',
   },
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/**/*.test.ts',
-    '!src/**/*.spec.ts',
-  ],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/**/*.test.ts', '!src/**/*.spec.ts'],
   coverageThreshold: {
     global: {
       branches: 80,

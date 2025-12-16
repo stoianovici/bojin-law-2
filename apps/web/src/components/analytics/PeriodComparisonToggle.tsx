@@ -28,9 +28,7 @@ export interface PeriodComparisonToggleProps {
  * <PeriodComparisonToggle />
  * ```
  */
-export function PeriodComparisonToggle({
-  className = '',
-}: PeriodComparisonToggleProps) {
+export function PeriodComparisonToggle({ className = '' }: PeriodComparisonToggleProps) {
   const { comparisonEnabled, toggleComparison } = useAnalyticsFiltersStore();
 
   return (

@@ -150,9 +150,7 @@ describe('BulkCommunicationService', () => {
     });
 
     it('should increment template usage when template ID provided', async () => {
-      const { communicationTemplateService } = jest.requireMock(
-        './communication-template.service'
-      );
+      const { communicationTemplateService } = jest.requireMock('./communication-template.service');
       prisma.bulkCommunication.create.mockResolvedValue({
         ...mockBulkComm,
         templateId: 'template-1',
@@ -170,9 +168,7 @@ describe('BulkCommunicationService', () => {
         mockUserContext
       );
 
-      expect(communicationTemplateService.incrementUsageCount).toHaveBeenCalledWith(
-        'template-1'
-      );
+      expect(communicationTemplateService.incrementUsageCount).toHaveBeenCalledWith('template-1');
     });
   });
 
@@ -184,9 +180,9 @@ describe('BulkCommunicationService', () => {
     it('should throw error when bulk communication not found', async () => {
       prisma.bulkCommunication.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.resolveRecipients('nonexistent', mockUserContext)
-      ).rejects.toThrow('Bulk communication not found');
+      await expect(service.resolveRecipients('nonexistent', mockUserContext)).rejects.toThrow(
+        'Bulk communication not found'
+      );
     });
 
     it('should resolve CaseClients recipients', async () => {
@@ -325,9 +321,7 @@ describe('BulkCommunicationService', () => {
         ...mockBulkComm,
         recipientType: 'CustomList',
         recipientFilter: {
-          customRecipients: [
-            { id: 'r1', name: 'User 1', email: 'user1@example.com' },
-          ],
+          customRecipients: [{ id: 'r1', name: 'User 1', email: 'user1@example.com' }],
         },
       });
       prisma.bulkCommunication.update.mockResolvedValue({});
@@ -355,9 +349,9 @@ describe('BulkCommunicationService', () => {
     it('should throw error when bulk communication not found', async () => {
       prisma.bulkCommunication.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.sendBulkCommunication('nonexistent', mockUserContext)
-      ).rejects.toThrow('Bulk communication not found');
+      await expect(service.sendBulkCommunication('nonexistent', mockUserContext)).rejects.toThrow(
+        'Bulk communication not found'
+      );
     });
 
     it('should throw error when not in draft status', async () => {
@@ -366,9 +360,9 @@ describe('BulkCommunicationService', () => {
         status: 'InProgress',
       });
 
-      await expect(
-        service.sendBulkCommunication('bulk-1', mockUserContext)
-      ).rejects.toThrow('Bulk communication is not in draft status');
+      await expect(service.sendBulkCommunication('bulk-1', mockUserContext)).rejects.toThrow(
+        'Bulk communication is not in draft status'
+      );
     });
 
     it('should throw error when no recipients resolved', async () => {
@@ -378,9 +372,9 @@ describe('BulkCommunicationService', () => {
         recipients: [],
       });
 
-      await expect(
-        service.sendBulkCommunication('bulk-1', mockUserContext)
-      ).rejects.toThrow('No recipients resolved');
+      await expect(service.sendBulkCommunication('bulk-1', mockUserContext)).rejects.toThrow(
+        'No recipients resolved'
+      );
     });
 
     it('should update status to InProgress and start sending', async () => {
@@ -487,9 +481,9 @@ describe('BulkCommunicationService', () => {
         status: 'Completed',
       });
 
-      await expect(
-        service.cancelBulkCommunication('bulk-1', mockUserContext)
-      ).rejects.toThrow('Cannot cancel a completed communication');
+      await expect(service.cancelBulkCommunication('bulk-1', mockUserContext)).rejects.toThrow(
+        'Cannot cancel a completed communication'
+      );
     });
   });
 

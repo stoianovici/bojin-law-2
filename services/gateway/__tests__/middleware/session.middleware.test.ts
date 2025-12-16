@@ -6,7 +6,11 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { validateSession, optionalSession, requireRole } from '../../src/middleware/session.middleware';
+import {
+  validateSession,
+  optionalSession,
+  requireRole,
+} from '../../src/middleware/session.middleware';
 import { UserSessionData } from '../../src/config/session.config';
 
 describe('Session Middleware', () => {

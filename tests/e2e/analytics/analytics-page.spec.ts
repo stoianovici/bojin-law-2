@@ -15,7 +15,9 @@ test.describe('Analytics Page (Story 1.6)', () => {
 
   test('Partner can access Analytics page', async ({ page }) => {
     // Verify we're on Partner role
-    await expect(page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')).toContainText('Partner');
+    await expect(
+      page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')
+    ).toContainText('Partner');
 
     // Navigate to Analytics via sidebar
     const sidebar = page.locator('aside[aria-label="Main navigation"], nav');
@@ -64,7 +66,7 @@ test.describe('Analytics Page (Story 1.6)', () => {
 
     // Verify metrics display numerical values
     const metrics = widget.locator('[data-testid="kpi-metric"]');
-    if (await metrics.count() > 0) {
+    if ((await metrics.count()) > 0) {
       await expect(metrics.first()).toBeVisible();
     }
   });
@@ -123,7 +125,9 @@ test.describe('Analytics Page (Story 1.6)', () => {
     await page.click('text=Associate');
 
     // Verify Associate role is active
-    await expect(page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')).toContainText('Associate');
+    await expect(
+      page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')
+    ).toContainText('Associate');
 
     // Verify Analytics link is NOT visible in sidebar
     const sidebar = page.locator('aside[aria-label="Main navigation"], nav');
@@ -151,7 +155,9 @@ test.describe('Analytics Page (Story 1.6)', () => {
     await page.click('text=Paralegal');
 
     // Verify Paralegal role is active
-    await expect(page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')).toContainText('Paralegal');
+    await expect(
+      page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')
+    ).toContainText('Paralegal');
 
     // Verify Analytics link is NOT visible in sidebar
     const sidebar = page.locator('aside[aria-label="Main navigation"], nav');

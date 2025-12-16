@@ -1,13 +1,7 @@
 import type { UserRole } from './entities';
 import type { ChartType } from './dashboard';
 
-export type ReportCategory =
-  | 'cases'
-  | 'time'
-  | 'financial'
-  | 'team'
-  | 'clients'
-  | 'documents';
+export type ReportCategory = 'cases' | 'time' | 'financial' | 'team' | 'clients' | 'documents';
 
 export interface ReportMetadata {
   id: string;
@@ -26,11 +20,7 @@ export interface DateRange {
   preset: DateRangePreset | null;
 }
 
-export type DateRangePreset =
-  | 'thisWeek'
-  | 'thisMonth'
-  | 'thisQuarter'
-  | 'thisYear';
+export type DateRangePreset = 'thisWeek' | 'thisMonth' | 'thisQuarter' | 'thisYear';
 
 export interface ReportData {
   reportId: string;
@@ -71,12 +61,7 @@ export interface CustomReport {
   createdBy: string;
 }
 
-export type ReportDataSource =
-  | 'cases'
-  | 'timeEntries'
-  | 'invoices'
-  | 'clients'
-  | 'documents';
+export type ReportDataSource = 'cases' | 'timeEntries' | 'invoices' | 'clients' | 'documents';
 
 export interface ReportFilter {
   field: string;

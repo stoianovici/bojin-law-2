@@ -1,9 +1,11 @@
 # Pull Request
 
 ## Description
+
 <!-- Provide a brief description of the changes in this PR -->
 
 ## Type of Change
+
 <!-- Check the relevant option(s) -->
 
 - [ ] Feature (new functionality)
@@ -15,11 +17,14 @@
 - [ ] Tests (adding or updating tests)
 
 ## Related Story/Issue
+
 <!-- Link to the story or issue this PR addresses -->
+
 - Story: <!-- e.g., Story 1.2 -->
 - Issue: <!-- e.g., #123 -->
 
 ## Testing Performed
+
 <!-- Describe the testing you've done -->
 
 - [ ] Unit tests added/updated
@@ -29,6 +34,7 @@
 - [ ] All tests passing locally
 
 ### Test Results
+
 <!-- Paste relevant test output or describe manual testing steps -->
 
 ```
@@ -36,6 +42,7 @@
 ```
 
 ## Checklist
+
 <!-- Ensure all items are checked before requesting review -->
 
 - [ ] Code follows the project's coding standards
@@ -50,7 +57,9 @@
 - [ ] Breaking changes documented (if any)
 
 ## Screenshots
+
 <!-- If applicable, add screenshots to help explain your changes -->
 
 ## Additional Notes
+
 <!-- Any additional information reviewers should know -->

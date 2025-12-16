@@ -6,4 +6,7 @@
  * Re-exports the hook from FinancialAccessContext.
  */
 
-export { useFinancialAccess, type FinancialAccessContextType } from '../contexts/FinancialAccessContext';
+export {
+  useFinancialAccess,
+  type FinancialAccessContextType,
+} from '../contexts/FinancialAccessContext';

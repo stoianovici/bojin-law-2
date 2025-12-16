@@ -81,7 +81,10 @@ function exportToCSV(data: DocumentIntelligenceDashboard) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `document-intelligence-${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute(
+    'download',
+    `document-intelligence-${new Date().toISOString().split('T')[0]}.csv`
+  );
   link.click();
 }
 
@@ -184,7 +187,8 @@ export default function DocumentIntelligencePage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <h2 className="text-red-800 font-semibold">Acces Interzis</h2>
           <p className="text-red-600 text-sm">
-            Aceasta pagina este disponibila doar pentru Parteneri, Business Owners si Administratori.
+            Aceasta pagina este disponibila doar pentru Parteneri, Business Owners si
+            Administratori.
           </p>
         </div>
       </div>
@@ -220,7 +224,9 @@ export default function DocumentIntelligencePage() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
             title="Reimprospatare date"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading || isManualRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${isLoading || isManualRefreshing ? 'animate-spin' : ''}`}
+            />
           </button>
 
           <button
@@ -247,31 +253,46 @@ export default function DocumentIntelligencePage() {
           <>
             <div className="bg-white rounded-lg shadow p-6">
               <p className="text-sm text-gray-500">Documente Totale</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardData.velocity.totalDocuments}</p>
-              <p className={`text-sm mt-1 ${dashboardData.velocity.trendPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {dashboardData.velocity.trendPercentage >= 0 ? '+' : ''}{dashboardData.velocity.trendPercentage.toFixed(1)}% vs perioada anterioara
+              <p className="text-2xl font-bold text-gray-900">
+                {dashboardData.velocity.totalDocuments}
+              </p>
+              <p
+                className={`text-sm mt-1 ${dashboardData.velocity.trendPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {dashboardData.velocity.trendPercentage >= 0 ? '+' : ''}
+                {dashboardData.velocity.trendPercentage.toFixed(1)}% vs perioada anterioara
               </p>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
               <p className="text-sm text-gray-500">Rata Utilizare AI</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardData.aiUtilization.overallUtilizationRate.toFixed(1)}%</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {dashboardData.aiUtilization.overallUtilizationRate.toFixed(1)}%
+              </p>
               <p className="text-sm text-gray-500 mt-1">
-                {dashboardData.aiUtilization.totalAIAssistedDocuments} din {dashboardData.aiUtilization.totalAIAssistedDocuments + dashboardData.aiUtilization.totalManualDocuments} documente
+                {dashboardData.aiUtilization.totalAIAssistedDocuments} din{' '}
+                {dashboardData.aiUtilization.totalAIAssistedDocuments +
+                  dashboardData.aiUtilization.totalManualDocuments}{' '}
+                documente
               </p>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
               <p className="text-sm text-gray-500">Timp Economisit</p>
-              <p className="text-2xl font-bold text-gray-900">{Math.round(dashboardData.timeSavings.totalMinutesSaved / 60)}h</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {Math.round(dashboardData.timeSavings.totalMinutesSaved / 60)}h
+              </p>
               <p className="text-sm text-green-600 mt-1">
-                ~{dashboardData.timeSavings.estimatedCostSavings.toLocaleString('ro-RO')} RON economii
+                ~{dashboardData.timeSavings.estimatedCostSavings.toLocaleString('ro-RO')} RON
+                economii
               </p>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
               <p className="text-sm text-gray-500">Scor Calitate</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardData.qualityTrends.overallQualityScore.toFixed(0)}/100</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {dashboardData.qualityTrends.overallQualityScore.toFixed(0)}/100
+              </p>
               <p className="text-sm text-gray-500 mt-1">
                 {dashboardData.qualityTrends.averageRevisionCount.toFixed(1)} revizii medii
               </p>

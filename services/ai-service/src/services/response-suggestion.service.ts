@@ -104,9 +104,10 @@ export class ResponseSuggestionService {
     language: 'ro' | 'en',
     context: DocumentContext
   ): Promise<ResponseSuggestion> {
-    const languagePrompt = language === 'ro'
-      ? 'Generează un text profesional de acceptare în limba română pentru această modificare contractuală.'
-      : 'Generate professional acceptance language for this contract change.';
+    const languagePrompt =
+      language === 'ro'
+        ? 'Generează un text profesional de acceptare în limba română pentru această modificare contractuală.'
+        : 'Generate professional acceptance language for this contract change.';
 
     const prompt = `${languagePrompt}
 
@@ -148,9 +149,10 @@ Include any reasonable conditions if appropriate.`;
         changeId: change.id,
         suggestionType: ResponseType.ACCEPT,
         suggestedText: response.content.trim(),
-        reasoning: language === 'ro'
-          ? 'Modificarea prezintă risc scăzut și este în concordanță cu interesele clientului.'
-          : 'The change presents low risk and aligns with client interests.',
+        reasoning:
+          language === 'ro'
+            ? 'Modificarea prezintă risc scăzut și este în concordanță cu interesele clientului.'
+            : 'The change presents low risk and aligns with client interests.',
         language,
         createdAt: new Date(),
       };
@@ -169,9 +171,10 @@ Include any reasonable conditions if appropriate.`;
     language: 'ro' | 'en',
     context: DocumentContext
   ): Promise<ResponseSuggestion> {
-    const languagePrompt = language === 'ro'
-      ? 'Generează un text profesional de respingere în limba română pentru această modificare contractuală.'
-      : 'Generate professional rejection language for this contract change.';
+    const languagePrompt =
+      language === 'ro'
+        ? 'Generează un text profesional de respingere în limba română pentru această modificare contractuală.'
+        : 'Generate professional rejection language for this contract change.';
 
     const prompt = `${languagePrompt}
 
@@ -233,13 +236,19 @@ Keep it concise (2-3 sentences).`;
     language: 'ro' | 'en',
     context: DocumentContext
   ): Promise<ResponseSuggestion> {
-    const roleContext = partyRole === PartyRole.CLIENT
-      ? (language === 'ro' ? 'reprezentând clientul' : 'representing the client')
-      : (language === 'ro' ? 'reprezentând partea adversă' : 'representing the opposing party');
+    const roleContext =
+      partyRole === PartyRole.CLIENT
+        ? language === 'ro'
+          ? 'reprezentând clientul'
+          : 'representing the client'
+        : language === 'ro'
+          ? 'reprezentând partea adversă'
+          : 'representing the opposing party';
 
-    const languagePrompt = language === 'ro'
-      ? `Generează o contra-propunere profesională în limba română, ${roleContext}.`
-      : `Generate a professional counter-proposal, ${roleContext}.`;
+    const languagePrompt =
+      language === 'ro'
+        ? `Generează o contra-propunere profesională în limba română, ${roleContext}.`
+        : `Generate a professional counter-proposal, ${roleContext}.`;
 
     const prompt = `${languagePrompt}
 
@@ -284,9 +293,10 @@ Provide ONLY the suggested contract language, no explanations.`;
         changeId: change.id,
         suggestionType: ResponseType.COUNTER_PROPOSAL,
         suggestedText: response.content.trim(),
-        reasoning: language === 'ro'
-          ? 'Această contra-propunere încearcă să găsească un echilibru între interesele părților.'
-          : 'This counter-proposal attempts to balance the interests of both parties.',
+        reasoning:
+          language === 'ro'
+            ? 'Această contra-propunere încearcă să găsească un echilibru între interesele părților.'
+            : 'This counter-proposal attempts to balance the interests of both parties.',
         language,
         createdAt: new Date(),
       };
@@ -314,9 +324,10 @@ Provide ONLY the suggested contract language, no explanations.`;
       changeId: change.id,
       suggestionType: ResponseType.CLARIFICATION,
       suggestedText: templates[language],
-      reasoning: language === 'ro'
-        ? 'Solicitarea de clarificare permite înțelegerea completă a intenției modificării înainte de a răspunde.'
-        : 'Requesting clarification allows for full understanding of the change intent before responding.',
+      reasoning:
+        language === 'ro'
+          ? 'Solicitarea de clarificare permite înțelegerea completă a intenției modificării înainte de a răspunde.'
+          : 'Requesting clarification allows for full understanding of the change intent before responding.',
       language,
       createdAt: new Date(),
     };
@@ -325,10 +336,7 @@ Provide ONLY the suggested contract language, no explanations.`;
   /**
    * Template acceptance for fallback
    */
-  private getTemplateAcceptance(
-    change: LegalChange,
-    language: 'ro' | 'en'
-  ): ResponseSuggestion {
+  private getTemplateAcceptance(change: LegalChange, language: 'ro' | 'en'): ResponseSuggestion {
     const templates = {
       ro: 'Acceptăm modificarea propusă la această secțiune.',
       en: 'We accept the proposed modification to this section.',
@@ -377,7 +385,7 @@ Provide ONLY the suggested contract language, no explanations.`;
   ): ResponseSuggestion {
     const templates = {
       ro: 'Propunem o formulare alternativă care să abordeze preocupările ambelor părți. Vă rugăm să luați în considerare următoarea variantă: [Inserați textul alternativ aici]',
-      en: 'We propose alternative language that addresses both parties\' concerns. Please consider the following revision: [Insert alternative text here]',
+      en: "We propose alternative language that addresses both parties' concerns. Please consider the following revision: [Insert alternative text here]",
     };
 
     return {

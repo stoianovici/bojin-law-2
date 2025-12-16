@@ -38,21 +38,21 @@ export interface LargeDocumentResults {
 // Stress test thresholds
 const THRESHOLDS = {
   upload: {
-    10: 5000,     // 10 pages: < 5s
-    50: 15000,    // 50 pages: < 15s
-    100: 30000,   // 100 pages: < 30s
-    200: 60000,   // 200 pages: < 60s
+    10: 5000, // 10 pages: < 5s
+    50: 15000, // 50 pages: < 15s
+    100: 30000, // 100 pages: < 30s
+    200: 60000, // 200 pages: < 60s
   },
   semanticDiff: {
-    10: 10000,    // 10 pages: < 10s
-    50: 30000,    // 50 pages: < 30s
-    100: 60000,   // 100 pages: < 60s
-    200: 120000,  // 200 pages: < 120s
+    10: 10000, // 10 pages: < 10s
+    50: 30000, // 50 pages: < 30s
+    100: 60000, // 100 pages: < 60s
+    200: 120000, // 200 pages: < 120s
   },
   generation: {
-    10: 15000,    // 10 pages: < 15s
-    50: 45000,    // 50 pages: < 45s
-    100: 90000,   // 100 pages: < 90s
+    10: 15000, // 10 pages: < 15s
+    50: 45000, // 50 pages: < 45s
+    100: 90000, // 100 pages: < 90s
   },
   memoryMB: 512, // Max 512MB per operation
 };
@@ -227,10 +227,10 @@ async function testGracefulDegradation(): Promise<LargeDocumentTestResult> {
       pageCount: 500,
       durationMs: endTime - startTime,
       threshold: 5000, // Should respond quickly with rejection
-      passed: shouldReject && (endTime - startTime) < 5000,
+      passed: shouldReject && endTime - startTime < 5000,
       memoryUsedMB: endMemory - startMemory,
       memoryThresholdMB: THRESHOLDS.memoryMB,
-      memoryPassed: (endMemory - startMemory) < THRESHOLDS.memoryMB,
+      memoryPassed: endMemory - startMemory < THRESHOLDS.memoryMB,
       details: {
         gracefullyRejected: shouldReject,
         warningReturned: true,

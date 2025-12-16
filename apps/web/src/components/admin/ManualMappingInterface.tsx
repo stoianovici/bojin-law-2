@@ -34,8 +34,16 @@ interface MappingFormData {
 
 const AVAILABLE_SKILLS = [
   { id: 'document-drafting', name: 'Document Drafting', description: 'Draft legal documents' },
-  { id: 'contract-analysis', name: 'Contract Analysis', description: 'Analyze contracts and agreements' },
-  { id: 'legal-research', name: 'Legal Research', description: 'Research legal precedents and opinions' },
+  {
+    id: 'contract-analysis',
+    name: 'Contract Analysis',
+    description: 'Analyze contracts and agreements',
+  },
+  {
+    id: 'legal-research',
+    name: 'Legal Research',
+    description: 'Research legal precedents and opinions',
+  },
   { id: 'compliance-check', name: 'Compliance Check', description: 'Check regulatory compliance' },
   { id: 'due-diligence', name: 'Due Diligence', description: 'Perform due diligence reviews' },
 ];
@@ -237,16 +245,22 @@ export function ManualMappingInterface() {
                 d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
               />
             </svg>
-            <p className="mt-4 text-gray-600">Select a document type from the list to begin mapping</p>
+            <p className="mt-4 text-gray-600">
+              Select a document type from the list to begin mapping
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Selected Document Type Info */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <div className="text-sm font-medium text-gray-600 mb-1">Selected Document Type</div>
-              <div className="font-semibold text-gray-900">{selectedType.discoveredTypeOriginal}</div>
+              <div className="font-semibold text-gray-900">
+                {selectedType.discoveredTypeOriginal}
+              </div>
               {selectedType.discoveredTypeEnglish && (
-                <div className="text-sm text-gray-600 mt-1">{selectedType.discoveredTypeEnglish}</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {selectedType.discoveredTypeEnglish}
+                </div>
               )}
               <div className="mt-2 flex gap-4 text-xs text-gray-600">
                 <span>{selectedType.totalOccurrences} occurrences</span>
@@ -256,9 +270,7 @@ export function ManualMappingInterface() {
 
             {/* Target Skill Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Target Skill *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Skill *</label>
               <div className="space-y-2">
                 {AVAILABLE_SKILLS.map((skill) => (
                   <label
@@ -345,9 +357,7 @@ export function ManualMappingInterface() {
                 disabled={submitting}
                 className={clsx(
                   'flex-1 px-4 py-2 rounded-lg text-white font-medium transition-colors',
-                  submitting
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
+                  submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
                 )}
               >
                 {submitting ? 'Mapping...' : 'Map Document Type'}

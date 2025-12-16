@@ -13,11 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   AlertTriangle,
   AlertCircle,
@@ -88,9 +84,17 @@ export function ChangeSummaryPanel({
   // Chart data
   const chartData = [
     { name: 'Critical', value: changeBreakdown.critical, color: SIGNIFICANCE_COLORS.critical },
-    { name: 'Substantive', value: changeBreakdown.substantive, color: SIGNIFICANCE_COLORS.substantive },
+    {
+      name: 'Substantive',
+      value: changeBreakdown.substantive,
+      color: SIGNIFICANCE_COLORS.substantive,
+    },
     { name: 'Minor', value: changeBreakdown.minorWording, color: SIGNIFICANCE_COLORS.minorWording },
-    { name: 'Formatting', value: changeBreakdown.formatting, color: SIGNIFICANCE_COLORS.formatting },
+    {
+      name: 'Formatting',
+      value: changeBreakdown.formatting,
+      color: SIGNIFICANCE_COLORS.formatting,
+    },
   ].filter((d) => d.value > 0);
 
   const toggleSection = (section: string) => {
@@ -197,9 +201,7 @@ export function ChangeSummaryPanel({
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="space-y-2 mt-2 pl-6">
-            {sectionChanges.map(renderChangeCard)}
-          </div>
+          <div className="space-y-2 mt-2 pl-6">{sectionChanges.map(renderChangeCard)}</div>
         </CollapsibleContent>
       </Collapsible>
     );
@@ -250,9 +252,7 @@ export function ChangeSummaryPanel({
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip
-                        formatter={(value: number) => [`${value} changes`, 'Count']}
-                      />
+                      <Tooltip formatter={(value: number) => [`${value} changes`, 'Count']} />
                       <Legend
                         verticalAlign="bottom"
                         height={36}

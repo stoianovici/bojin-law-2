@@ -37,12 +37,8 @@ export function Header() {
             />
           </svg>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">
-              Import Documente Vechi
-            </h1>
-            <p className="text-sm text-gray-500">
-              Pregătirea datelor pentru antrenament AI
-            </p>
+            <h1 className="text-lg font-semibold text-gray-900">Import Documente Vechi</h1>
+            <p className="text-sm text-gray-500">Pregătirea datelor pentru antrenament AI</p>
           </div>
         </div>
 
@@ -63,9 +59,7 @@ export function Header() {
                   <p className="font-medium text-gray-900">
                     {user.firstName} {user.lastName}
                   </p>
-                  <p className="text-gray-500 text-xs">
-                    {user.role}
-                  </p>
+                  <p className="text-gray-500 text-xs">{user.role}</p>
                 </div>
               </div>
 

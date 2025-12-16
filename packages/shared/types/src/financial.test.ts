@@ -26,9 +26,7 @@ describe('Financial Types', () => {
 
     it('should define time tracking financial fields', () => {
       expect(FinancialField.TIME_ENTRY_RATE).toBe('TimeEntry.rate');
-      expect(FinancialField.TIME_ENTRY_BILLABLE_AMOUNT).toBe(
-        'TimeEntry.billableAmount'
-      );
+      expect(FinancialField.TIME_ENTRY_BILLABLE_AMOUNT).toBe('TimeEntry.billableAmount');
     });
 
     it('should define firm settings financial fields', () => {
@@ -61,9 +59,7 @@ describe('Financial Types', () => {
     it('should define all categories', () => {
       expect(FinancialFieldCategory.CASE_MANAGEMENT).toBe('Case Management');
       expect(FinancialFieldCategory.TIME_TRACKING).toBe('Time Tracking');
-      expect(FinancialFieldCategory.BILLING_INVOICING).toBe(
-        'Billing & Invoicing'
-      );
+      expect(FinancialFieldCategory.BILLING_INVOICING).toBe('Billing & Invoicing');
       expect(FinancialFieldCategory.PAYMENTS).toBe('Payments');
       expect(FinancialFieldCategory.KPI_REPORTS).toBe('KPIs & Reports');
       expect(FinancialFieldCategory.SETTINGS).toBe('Settings');
@@ -97,9 +93,9 @@ describe('Financial Types', () => {
     });
 
     it('should correctly categorize settings fields', () => {
-      expect(
-        FINANCIAL_FIELD_CATEGORIES[FinancialField.FIRM_DEFAULT_RATES]
-      ).toBe(FinancialFieldCategory.SETTINGS);
+      expect(FINANCIAL_FIELD_CATEGORIES[FinancialField.FIRM_DEFAULT_RATES]).toBe(
+        FinancialFieldCategory.SETTINGS
+      );
     });
   });
 
@@ -126,9 +122,7 @@ describe('Financial Types', () => {
         expect(Object.values(FinancialField)).toContain(metadata.field);
 
         // Verify category is a valid FinancialFieldCategory enum value
-        expect(Object.values(FinancialFieldCategory)).toContain(
-          metadata.category
-        );
+        expect(Object.values(FinancialFieldCategory)).toContain(metadata.category);
       });
     });
 
@@ -179,12 +173,8 @@ describe('Financial Types', () => {
     });
 
     it('should include current and future implementations', () => {
-      const currentFields = FINANCIAL_FIELDS_METADATA.filter(
-        (m) => m.implementedInStory === '2.8'
-      );
-      const futureFields = FINANCIAL_FIELDS_METADATA.filter(
-        (m) => m.implementedInStory !== '2.8'
-      );
+      const currentFields = FINANCIAL_FIELDS_METADATA.filter((m) => m.implementedInStory === '2.8');
+      const futureFields = FINANCIAL_FIELDS_METADATA.filter((m) => m.implementedInStory !== '2.8');
 
       // Should have at least one current field
       expect(currentFields.length).toBeGreaterThan(0);

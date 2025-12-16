@@ -106,6 +106,13 @@ model Firm {
   responseTimePatterns         ResponseTimePattern[]
   draftEditHistory             DraftEditHistory[]
 
+  // Relations (OPS-027: Multi-Case Classification)
+  globalEmailSources GlobalEmailSource[]
+
+  // Relations (OPS-031: Classification Review)
+  classificationLogs     EmailClassificationLog[]
+  pendingClassifications PendingClassification[]
+
   @@map("firms")
 }
 
@@ -210,6 +217,10 @@ model User {
   documentStructurePreferences DocumentStructurePreference[]
   responseTimePatterns         ResponseTimePattern[]
   draftEditHistory             DraftEditHistory[]
+
+  // Relations (OPS-031: Classification Review)
+  classificationLogs      EmailClassificationLog[]
+  resolvedClassifications PendingClassification[]
 
   @@map("users")
 }
@@ -334,6 +345,15 @@ enum CaseActorRole {
   Expert
 }
 
+// Global email source categories (OPS-027: Multi-Case Classification)
+enum GlobalEmailSourceCategory {
+  Court // Courts and tribunals
+  Notary // Notary offices
+  Bailiff // Bailiff offices (executori judecătorești)
+  Authority // Government authorities
+  Other // Other institutional sources
+}
+
 // Client entity - firm's client relationships
 model Client {
   id          String   @id @default(uuid())
@@ -352,6 +372,30 @@ model Client {
   @@unique([firmId, name])
   @@index([firmId])
   @@map("clients")
+}
+
+// Global email source - firm-level shared addresses (courts, authorities) (OPS-027)
+model GlobalEmailSource {
+  id     String @id @default(uuid())
+  firmId String @map("firm_id")
+
+  category GlobalEmailSourceCategory // court, notary, authority, etc.
+  name     String                    @db.VarChar(200) // "Tribunalul București"
+  domains  String[]                  @default([]) // ["just.ro", "tribunalul-bucuresti.ro"]
+  emails   String[]                  @default([]) // Specific email addresses
+
+  // How to classify emails from this source
+  classificationHint String? @map("classification_hint") @db.Text // "Match by reference number in subject"
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@index([category])
+  @@map("global_email_sources")
 }
 
 // Billing type enum (Story 2.8.1, 2.11.2)
@@ -400,6 +444,12 @@ model Case {
   searchText       String?                     @map("search_text") @db.Text // Concatenated searchable text for full-text search
   contentEmbedding Unsupported("vector(768)")? @map("content_embedding") // multilingual-e5-base embedding for semantic search
 
+  // Email classification fields (OPS-027: Multi-Case Classification)
+  keywords            String[] @default([]) // User-defined terms for matching emails to this case
+  referenceNumbers    String[] @default([]) @map("reference_numbers") // Court file numbers, contract refs (e.g., "1234/5/2024")
+  subjectPatterns     String[] @default([]) @map("subject_patterns") // Email subject patterns (glob-style)
+  classificationNotes String?  @map("classification_notes") @db.Text // Free text guidance for AI classifier
+
   // Relations
   firm           Firm                  @relation(fields: [firmId], references: [id], onDelete: Restrict)
   client         Client                @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -435,6 +485,10 @@ model Case {
   communicationEntries CommunicationEntry[]
   bulkCommunications   BulkCommunication[]
   communicationExports CommunicationExport[]
+
+  // Relations (OPS-031: Classification Review)
+  classificationLogsFrom EmailClassificationLog[] @relation("ClassificationFromCase")
+  classificationLogsTo   EmailClassificationLog[] @relation("ClassificationToCase")
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -498,6 +552,9 @@ model CaseActor {
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
   createdBy    String?       @map("created_by")
+
+  // Email classification (OPS-027: Multi-Case Classification)
+  emailDomains String[] @default([]) @map("email_domains") // Additional email domains for this actor
 
   // Relations
   case    Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
@@ -964,25 +1021,25 @@ enum StructureType {
 
 // Legacy import session - one per PST file upload
 model LegacyImportSession {
-  id               String              @id @default(uuid())
-  firmId           String              @map("firm_id")
-  pstFileName      String              @map("pst_file_name") @db.VarChar(500)
-  pstFileSize      BigInt              @map("pst_file_size") // Size in bytes
-  pstStoragePath   String?             @map("pst_storage_path") @db.Text // Cloudflare R2 path
-  uploadedBy       String              @map("uploaded_by") // User ID (Partner)
-  status           ImportSessionStatus @default(Uploading)
-  totalDocuments   Int                 @default(0) @map("total_documents")
-  categorizedCount Int                 @default(0) @map("categorized_count")
-  skippedCount     Int                 @default(0) @map("skipped_count")
-  analyzedCount    Int                 @default(0) @map("analyzed_count") // AI analysis count
-  extractionErrors Json?               @map("extraction_errors") // Error log from PST extraction
-  extractionProgress Json?             @map("extraction_progress") // Track resumable extraction: {totalInPst, extractedCount, isComplete}
-  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz
-  exportedAt       DateTime?           @map("exported_at") @db.Timestamptz
-  cleanupScheduledAt DateTime?         @map("cleanup_scheduled_at") @db.Timestamptz // When R2 cleanup is scheduled (7 days after export)
-  cleanedUpAt      DateTime?           @map("cleaned_up_at") @db.Timestamptz // When R2 files were actually deleted
-  lastSnapshotAt   DateTime?           @map("last_snapshot_at") @db.Timestamptz // When last categorization snapshot was taken
+  id                 String              @id @default(uuid())
+  firmId             String              @map("firm_id")
+  pstFileName        String              @map("pst_file_name") @db.VarChar(500)
+  pstFileSize        BigInt              @map("pst_file_size") // Size in bytes
+  pstStoragePath     String?             @map("pst_storage_path") @db.Text // Cloudflare R2 path
+  uploadedBy         String              @map("uploaded_by") // User ID (Partner)
+  status             ImportSessionStatus @default(Uploading)
+  totalDocuments     Int                 @default(0) @map("total_documents")
+  categorizedCount   Int                 @default(0) @map("categorized_count")
+  skippedCount       Int                 @default(0) @map("skipped_count")
+  analyzedCount      Int                 @default(0) @map("analyzed_count") // AI analysis count
+  extractionErrors   Json?               @map("extraction_errors") // Error log from PST extraction
+  extractionProgress Json?               @map("extraction_progress") // Track resumable extraction: {totalInPst, extractedCount, isComplete}
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+  exportedAt         DateTime?           @map("exported_at") @db.Timestamptz
+  cleanupScheduledAt DateTime?           @map("cleanup_scheduled_at") @db.Timestamptz // When R2 cleanup is scheduled (7 days after export)
+  cleanedUpAt        DateTime?           @map("cleaned_up_at") @db.Timestamptz // When R2 files were actually deleted
+  lastSnapshotAt     DateTime?           @map("last_snapshot_at") @db.Timestamptz // When last categorization snapshot was taken
 
   // Relations
   batches        DocumentBatch[]
@@ -2448,31 +2505,31 @@ model AutomationROIMetrics {
 
 // Email model - synchronized emails from Microsoft Graph API
 model Email {
-  id                String   @id @default(uuid())
-  graphMessageId    String   @unique @map("graph_message_id") // Microsoft Graph message ID
-  conversationId    String   @map("conversation_id") // Graph conversation ID for threading
-  internetMessageId String?  @map("internet_message_id") // SMTP Message-ID header
-  subject           String   @db.VarChar(1000)
-  bodyPreview       String   @map("body_preview") @db.VarChar(500)
-  bodyContent       String   @map("body_content") @db.Text
-  bodyContentType   String   @map("body_content_type") @db.VarChar(10) // text or html
+  id                String    @id @default(uuid())
+  graphMessageId    String    @unique @map("graph_message_id") // Microsoft Graph message ID
+  conversationId    String    @map("conversation_id") // Graph conversation ID for threading
+  internetMessageId String?   @map("internet_message_id") // SMTP Message-ID header
+  subject           String    @db.VarChar(1000)
+  bodyPreview       String    @map("body_preview") @db.VarChar(500)
+  bodyContent       String    @map("body_content") @db.Text
+  bodyContentType   String    @map("body_content_type") @db.VarChar(10) // text or html
   from              Json // { name?: string, address: string }
-  toRecipients      Json     @map("to_recipients") // Array of { name?, address }
-  ccRecipients      Json     @map("cc_recipients")
-  bccRecipients     Json     @map("bcc_recipients")
-  receivedDateTime  DateTime @map("received_date_time") @db.Timestamptz
-  sentDateTime      DateTime @map("sent_date_time") @db.Timestamptz
-  hasAttachments    Boolean  @map("has_attachments")
-  importance        String   @db.VarChar(10) // low, normal, high
-  isRead            Boolean  @map("is_read")
-  isIgnored         Boolean  @default(false) @map("is_ignored") // Marked as not case-related
+  toRecipients      Json      @map("to_recipients") // Array of { name?, address }
+  ccRecipients      Json      @map("cc_recipients")
+  bccRecipients     Json      @map("bcc_recipients")
+  receivedDateTime  DateTime  @map("received_date_time") @db.Timestamptz
+  sentDateTime      DateTime  @map("sent_date_time") @db.Timestamptz
+  hasAttachments    Boolean   @map("has_attachments")
+  importance        String    @db.VarChar(10) // low, normal, high
+  isRead            Boolean   @map("is_read")
+  isIgnored         Boolean   @default(false) @map("is_ignored") // Marked as not case-related
   ignoredAt         DateTime? @map("ignored_at") @db.Timestamptz // When the email was ignored
-  userId            String   @map("user_id") // User who owns this email
-  caseId            String?  @map("case_id") // Assigned case (nullable until categorized)
-  firmId            String   @map("firm_id")
-  syncedAt          DateTime @default(now()) @map("synced_at") @db.Timestamptz
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  userId            String    @map("user_id") // User who owns this email
+  caseId            String?   @map("case_id") // Assigned case (nullable until categorized)
+  firmId            String    @map("firm_id")
+  syncedAt          DateTime  @default(now()) @map("synced_at") @db.Timestamptz
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
   user        User              @relation(fields: [userId], references: [id])
@@ -2489,6 +2546,10 @@ model Email {
 
   // Relations (Story 5.3: Email Drafting)
   drafts EmailDraft[]
+
+  // Relations (OPS-031: Classification Review)
+  classificationLogs    EmailClassificationLog[]
+  pendingClassification PendingClassification?
 
   @@index([userId])
   @@index([caseId])
@@ -3422,4 +3483,105 @@ model DraftEditHistory {
   @@index([firmId])
   @@index([isStyleAnalyzed])
   @@map("draft_edit_history")
+}
+
+// ============================================================================
+// OPS-031: Classification Review & Correction
+// ============================================================================
+
+// Classification action types for audit logging
+enum ClassificationAction {
+  Assigned // Initial assignment (import) - AI or manual
+  Moved // Moved between cases
+  Ignored // Marked as not case-related
+  Unassigned // Removed from case without reassigning
+}
+
+// Classification match type - how the email was matched to a case
+enum ClassificationMatchType {
+  Actor // Matched by sender/recipient in CaseActor
+  ReferenceNumber // Matched court file or contract reference
+  Keyword // Matched case keywords
+  Semantic // AI semantic similarity match
+  GlobalSource // Matched global email source (court, authority)
+  Manual // User manually assigned
+}
+
+// Classification reason - why an email needs review
+enum ClassificationReason {
+  MultiCaseConflict // Multiple cases match with similar confidence
+  LowConfidence // Single match but below threshold
+  NoMatchingCase // No case matched criteria
+  CourtNoReference // Court email without reference number match
+  UnknownContact // Sender not in any CaseActor
+}
+
+// Email classification audit log - tracks all classification decisions (OPS-031)
+model EmailClassificationLog {
+  id      String @id @default(uuid())
+  emailId String @map("email_id")
+  firmId  String @map("firm_id")
+
+  action ClassificationAction // ASSIGNED, MOVED, IGNORED, UNASSIGNED
+
+  // Case transition (null for initial assignment or ignore)
+  fromCaseId String? @map("from_case_id")
+  toCaseId   String? @map("to_case_id")
+
+  // Classification context
+  wasAutomatic Boolean                  @default(false) @map("was_automatic") // AI assigned vs human
+  confidence   Float? // If AI assigned, the confidence score
+  matchType    ClassificationMatchType? @map("match_type") // How the email was matched
+
+  // Human correction context
+  correctionReason String? @map("correction_reason") @db.Text // Why user moved/corrected
+
+  // Audit fields
+  performedBy String   @map("performed_by")
+  performedAt DateTime @default(now()) @map("performed_at") @db.Timestamptz
+
+  // Relations
+  email    Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  firm     Firm  @relation(fields: [firmId], references: [id])
+  fromCase Case? @relation("ClassificationFromCase", fields: [fromCaseId], references: [id])
+  toCase   Case? @relation("ClassificationToCase", fields: [toCaseId], references: [id])
+  user     User  @relation(fields: [performedBy], references: [id])
+
+  @@index([emailId])
+  @@index([fromCaseId])
+  @@index([toCaseId])
+  @@index([firmId])
+  @@index([performedAt])
+  @@index([action])
+  @@map("email_classification_logs")
+}
+
+// Pending classification queue - emails awaiting manual review (OPS-031)
+model PendingClassification {
+  id      String @id @default(uuid())
+  emailId String @unique @map("email_id") // One pending entry per email
+  firmId  String @map("firm_id")
+
+  reason             ClassificationReason
+  suggestedCases     Json                 @default("[]") @map("suggested_cases") // Array of { caseId, confidence, matchType }
+  detectedReferences String[]             @default([]) @map("detected_references") // Reference numbers found in email
+
+  // Status
+  isResolved Boolean   @default(false) @map("is_resolved")
+  resolvedAt DateTime? @map("resolved_at") @db.Timestamptz
+  resolvedBy String?   @map("resolved_by")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  email    Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  firm     Firm  @relation(fields: [firmId], references: [id])
+  resolver User? @relation(fields: [resolvedBy], references: [id])
+
+  @@index([firmId])
+  @@index([isResolved])
+  @@index([reason])
+  @@index([createdAt])
+  @@map("pending_classifications")
 }

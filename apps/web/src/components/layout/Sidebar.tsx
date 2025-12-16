@@ -144,6 +144,14 @@ const navigationItems: NavigationItem[] = [
     section: 'settings',
     roles: ['Partner'], // OPS-014: Partner-only feature
   },
+  {
+    id: 'firm-settings',
+    label: 'Setări Firmă',
+    icon: 'settings',
+    href: '/settings/firm',
+    section: 'settings',
+    roles: ['Partner', 'BusinessOwner'], // OPS-028: Firm-level settings
+  },
 ];
 
 export interface SidebarProps {

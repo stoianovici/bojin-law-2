@@ -10,7 +10,7 @@ import type { DocumentTypeRegistryEntry } from '@legal-platform/types';
 // Decision thresholds (from story requirements)
 const DECISION_THRESHOLDS = {
   // Auto-map to existing skills when confidence >80%
-  AUTO_MAP_CONFIDENCE: 0.80,
+  AUTO_MAP_CONFIDENCE: 0.8,
 
   // Queue for review when 20-49 occurrences
   QUEUE_REVIEW_MIN: 20,
@@ -20,17 +20,17 @@ const DECISION_THRESHOLDS = {
   TEMPLATE_CREATION_MIN: 50,
 
   // Minimum scores for auto-actions
-  MIN_FREQUENCY_SCORE: 0.50,
-  MIN_BUSINESS_VALUE: 0.50,
+  MIN_FREQUENCY_SCORE: 0.5,
+  MIN_BUSINESS_VALUE: 0.5,
 };
 
 // Confidence scoring weights
 const CONFIDENCE_WEIGHTS = {
-  categoryMatch: 0.30,      // How well category matches skill
+  categoryMatch: 0.3, // How well category matches skill
   patternConsistency: 0.25, // How consistent the document patterns are
-  occurrenceReliability: 0.20, // Higher occurrences = higher confidence
-  structureClarity: 0.15,   // How well-structured documents are
-  businessValue: 0.10,      // Higher business value = higher confidence
+  occurrenceReliability: 0.2, // Higher occurrences = higher confidence
+  structureClarity: 0.15, // How well-structured documents are
+  businessValue: 0.1, // Higher business value = higher confidence
 };
 
 export interface DecisionResult {
@@ -86,9 +86,7 @@ export class DecisionEngineService {
    * Calculate mapping confidence score
    * Returns confidence (0-1) that the current mapping is correct
    */
-  async calculateMappingConfidence(
-    entry: DocumentTypeRegistryEntry
-  ): Promise<number> {
+  async calculateMappingConfidence(entry: DocumentTypeRegistryEntry): Promise<number> {
     const factors = await this.getMappingConfidenceFactors(entry);
 
     const confidence =
@@ -117,9 +115,7 @@ export class DecisionEngineService {
     const patternConsistency = await this.calculatePatternConsistency(entry.id);
 
     // Occurrence Reliability: More occurrences = higher confidence
-    const occurrenceReliability = this.calculateOccurrenceReliability(
-      entry.totalOccurrences
-    );
+    const occurrenceReliability = this.calculateOccurrenceReliability(entry.totalOccurrences);
 
     // Structure Clarity: How well-structured are these documents?
     const structureClarity = this.calculateStructureClarity(entry);
@@ -195,7 +191,9 @@ export class DecisionEngineService {
     if (instances.length === 0) return 0.5;
 
     // Calculate variance in confidence scores
-    const scores = instances.map((i: { confidence_score: number | null }) => i.confidence_score || 0.5);
+    const scores = instances.map(
+      (i: { confidence_score: number | null }) => i.confidence_score || 0.5
+    );
     const avg = scores.reduce((sum: number, s: number) => sum + s, 0) / scores.length;
     const variance =
       scores.reduce((sum: number, s: number) => sum + Math.pow(s - avg, 2), 0) / scores.length;
@@ -238,10 +236,7 @@ export class DecisionEngineService {
   /**
    * Determine action based on entry metrics and confidence
    */
-  private determineAction(
-    entry: DocumentTypeRegistryEntry,
-    confidence: number
-  ): DecisionResult {
+  private determineAction(entry: DocumentTypeRegistryEntry, confidence: number): DecisionResult {
     const occurrences = entry.totalOccurrences;
     const frequencyScore = entry.frequencyScore || 0;
     const businessValue = entry.businessValueScore || 0;

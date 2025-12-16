@@ -331,9 +331,9 @@ describe('InternalNotesService', () => {
     it('should throw error when note not found', async () => {
       prisma.communicationEntry.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.deleteInternalNote('nonexistent', mockUserContext)
-      ).rejects.toThrow('Note not found');
+      await expect(service.deleteInternalNote('nonexistent', mockUserContext)).rejects.toThrow(
+        'Note not found'
+      );
     });
 
     it('should throw error when non-author non-partner tries to delete', async () => {
@@ -342,9 +342,9 @@ describe('InternalNotesService', () => {
         senderId: 'other-user',
       });
 
-      await expect(
-        service.deleteInternalNote('note-1', mockUserContext)
-      ).rejects.toThrow('Only the author or partners can delete this note');
+      await expect(service.deleteInternalNote('note-1', mockUserContext)).rejects.toThrow(
+        'Only the author or partners can delete this note'
+      );
     });
   });
 
@@ -529,9 +529,9 @@ describe('InternalNotesService', () => {
         attachments: [{ id: 'att-1' }],
       });
 
-      await expect(
-        service.removeAttachment('note-1', 'att-1', mockUserContext)
-      ).rejects.toThrow('Only the author can remove attachments');
+      await expect(service.removeAttachment('note-1', 'att-1', mockUserContext)).rejects.toThrow(
+        'Only the author can remove attachments'
+      );
     });
 
     it('should update hasAttachments flag when last attachment removed', async () => {

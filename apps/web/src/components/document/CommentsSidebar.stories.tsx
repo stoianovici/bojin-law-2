@@ -64,11 +64,7 @@ export const AddingComment: Story = {
     const [isOpen, setIsOpen] = React.useState(true);
     return (
       <div className="h-[700px]">
-        <CommentsSidebar
-          {...args}
-          isOpen={isOpen}
-          onToggle={() => setIsOpen(!isOpen)}
-        />
+        <CommentsSidebar {...args} isOpen={isOpen} onToggle={() => setIsOpen(!isOpen)} />
       </div>
     );
   },
@@ -329,7 +325,8 @@ export const RomanianDiacritics: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Verify Romanian diacritics render correctly in author names and comment text: Ștefan, Țîrlea, Stănescu, Ionuț, Mărginean, confidențialitate, îndeplinirea, îmbunătățește',
+        story:
+          'Verify Romanian diacritics render correctly in author names and comment text: Ștefan, Țîrlea, Stănescu, Ionuț, Mărginean, confidențialitate, îndeplinirea, îmbunătățește',
       },
     },
   },

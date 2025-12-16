@@ -31,24 +31,14 @@ describe('QuickTaskCreator', () => {
     });
 
     it('should pre-fill title from prefillTitle prop', () => {
-      render(
-        <QuickTaskCreator
-          {...defaultProps}
-          prefillTitle="Revizuire contract"
-        />
-      );
+      render(<QuickTaskCreator {...defaultProps} prefillTitle="Revizuire contract" />);
 
       const titleInput = screen.getByLabelText(/Titlu/i) as HTMLInputElement;
       expect(titleInput.value).toBe('Revizuire contract');
     });
 
     it('should pre-fill description from prefillDescription prop', () => {
-      render(
-        <QuickTaskCreator
-          {...defaultProps}
-          prefillDescription="Extras din comunicare"
-        />
-      );
+      render(<QuickTaskCreator {...defaultProps} prefillDescription="Extras din comunicare" />);
 
       const descInput = screen.getByLabelText(/Descriere/i) as HTMLTextAreaElement;
       expect(descInput.value).toBe('Extras din comunicare');
@@ -56,60 +46,35 @@ describe('QuickTaskCreator', () => {
 
     it('should pre-fill due date from prefillDueDate prop', () => {
       const dueDate = new Date('2025-03-15');
-      render(
-        <QuickTaskCreator
-          {...defaultProps}
-          prefillDueDate={dueDate}
-        />
-      );
+      render(<QuickTaskCreator {...defaultProps} prefillDueDate={dueDate} />);
 
       const dateInput = screen.getByLabelText(/Scadență/i) as HTMLInputElement;
       expect(dateInput.value).toBe('2025-03-15');
     });
 
     it('should pre-fill priority from prefillPriority prop', () => {
-      render(
-        <QuickTaskCreator
-          {...defaultProps}
-          prefillPriority="High"
-        />
-      );
+      render(<QuickTaskCreator {...defaultProps} prefillPriority="High" />);
 
       const prioritySelect = screen.getByLabelText(/Prioritate/i) as HTMLSelectElement;
       expect(prioritySelect.value).toBe('High');
     });
 
     it('should map deadline to CourtDate task type', () => {
-      render(
-        <QuickTaskCreator
-          {...defaultProps}
-          extractedItemType="deadline"
-        />
-      );
+      render(<QuickTaskCreator {...defaultProps} extractedItemType="deadline" />);
 
       const typeSelect = screen.getByLabelText(/Tip Task/i) as HTMLSelectElement;
       expect(typeSelect.value).toBe('CourtDate');
     });
 
     it('should map commitment to Meeting task type', () => {
-      render(
-        <QuickTaskCreator
-          {...defaultProps}
-          extractedItemType="commitment"
-        />
-      );
+      render(<QuickTaskCreator {...defaultProps} extractedItemType="commitment" />);
 
       const typeSelect = screen.getByLabelText(/Tip Task/i) as HTMLSelectElement;
       expect(typeSelect.value).toBe('Meeting');
     });
 
     it('should map actionItem to Research task type', () => {
-      render(
-        <QuickTaskCreator
-          {...defaultProps}
-          extractedItemType="actionItem"
-        />
-      );
+      render(<QuickTaskCreator {...defaultProps} extractedItemType="actionItem" />);
 
       const typeSelect = screen.getByLabelText(/Tip Task/i) as HTMLSelectElement;
       expect(typeSelect.value).toBe('Research');
@@ -131,12 +96,7 @@ describe('QuickTaskCreator', () => {
     });
 
     it('should show error when due date is empty', async () => {
-      render(
-        <QuickTaskCreator
-          {...defaultProps}
-          prefillTitle="Test Task"
-        />
-      );
+      render(<QuickTaskCreator {...defaultProps} prefillTitle="Test Task" />);
 
       const saveButton = screen.getByText(/Salvează Task/i);
       fireEvent.click(saveButton);

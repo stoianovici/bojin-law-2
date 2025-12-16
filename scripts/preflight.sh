@@ -132,7 +132,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Navigate to project root
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/.."
 PROJECT_ROOT=$(pwd)
 
 log "Starting preflight checks in $PROJECT_ROOT"

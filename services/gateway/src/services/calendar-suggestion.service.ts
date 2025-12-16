@@ -93,7 +93,9 @@ export class CalendarSuggestionService {
   /**
    * Generate calendar suggestion from extracted commitment
    */
-  async suggestFromCommitment(commitment: ExtractedItem & { party: string }): Promise<CalendarSuggestion> {
+  async suggestFromCommitment(
+    commitment: ExtractedItem & { party: string }
+  ): Promise<CalendarSuggestion> {
     const priority = this.determinePriority(commitment);
 
     return {
@@ -127,14 +129,16 @@ export class CalendarSuggestionService {
     });
 
     for (const deadline of deadlines) {
-      suggestions.push(await this.suggestFromDeadline({
-        id: deadline.id,
-        description: deadline.description,
-        dueDate: deadline.dueDate,
-        confidence: deadline.confidence,
-        caseId: deadline.caseId,
-        emailId: deadline.emailId,
-      }));
+      suggestions.push(
+        await this.suggestFromDeadline({
+          id: deadline.id,
+          description: deadline.description,
+          dueDate: deadline.dueDate,
+          confidence: deadline.confidence,
+          caseId: deadline.caseId,
+          emailId: deadline.emailId,
+        })
+      );
     }
 
     // Get pending commitments with due dates
@@ -149,15 +153,17 @@ export class CalendarSuggestionService {
 
     for (const commitment of commitments) {
       if (commitment.dueDate) {
-        suggestions.push(await this.suggestFromCommitment({
-          id: commitment.id,
-          description: commitment.commitmentText,
-          dueDate: commitment.dueDate,
-          confidence: commitment.confidence,
-          caseId: commitment.caseId,
-          emailId: commitment.emailId,
-          party: commitment.party,
-        }));
+        suggestions.push(
+          await this.suggestFromCommitment({
+            id: commitment.id,
+            description: commitment.commitmentText,
+            dueDate: commitment.dueDate,
+            confidence: commitment.confidence,
+            caseId: commitment.caseId,
+            emailId: commitment.emailId,
+            party: commitment.party,
+          })
+        );
       }
     }
 
@@ -195,7 +201,8 @@ export class CalendarSuggestionService {
           timeZone: 'Europe/Bucharest',
         },
         end: {
-          dateTime: request.suggestion.endDateTime?.toISOString() ||
+          dateTime:
+            request.suggestion.endDateTime?.toISOString() ||
             new Date(request.suggestion.startDateTime.getTime() + 3600000).toISOString(),
           timeZone: 'Europe/Bucharest',
         },
@@ -254,9 +261,7 @@ export class CalendarSuggestionService {
   // ============================================================================
 
   private determinePriority(item: ExtractedItem): 'Low' | 'Medium' | 'High' | 'Urgent' {
-    const daysUntilDue = Math.ceil(
-      (item.dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    );
+    const daysUntilDue = Math.ceil((item.dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
     if (daysUntilDue <= 1) return 'Urgent';
     if (daysUntilDue <= 3) return 'High';

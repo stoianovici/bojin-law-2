@@ -1,11 +1,17 @@
-import { ABTestFramework, ExperimentConfig, ExperimentMetrics, ExperimentVariant, Logger } from '../../src/experiments/ABTestFramework';
+import {
+  ABTestFramework,
+  ExperimentConfig,
+  ExperimentMetrics,
+  ExperimentVariant,
+  Logger,
+} from '../../src/experiments/ABTestFramework';
 
 // Mock logger
 const mockLogger: Logger = {
   info: jest.fn(),
   debug: jest.fn(),
   error: jest.fn(),
-  warn: jest.fn()
+  warn: jest.fn(),
 };
 
 describe('ABTestFramework', () => {
@@ -22,7 +28,7 @@ describe('ABTestFramework', () => {
       significanceLevel: 0.05,
       minimumSampleSize: 30,
       startDate: new Date('2024-01-01'),
-      active: true
+      active: true,
     };
   });
 
@@ -46,7 +52,7 @@ describe('ABTestFramework', () => {
         'Experiment created',
         expect.objectContaining({
           experimentId: baseConfig.id,
-          name: baseConfig.name
+          name: baseConfig.name,
         })
       );
     });
@@ -71,7 +77,7 @@ describe('ABTestFramework', () => {
     it('should create approximately 50/50 split across many users', () => {
       const assignments: { [key in ExperimentVariant]: number } = {
         control: 0,
-        treatment: 0
+        treatment: 0,
       };
 
       // Assign 1000 users
@@ -129,7 +135,7 @@ describe('ABTestFramework', () => {
         costPerRequest: 0.015,
         executionTimeMs: 1200,
         tokenUsage: 5000,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       framework.recordMetrics(baseConfig.id, 'control', metrics);
@@ -143,7 +149,7 @@ describe('ABTestFramework', () => {
         costPerRequest: 0.008,
         executionTimeMs: 1000,
         tokenUsage: 3000,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       framework.recordMetrics(baseConfig.id, 'treatment', metrics);
@@ -157,14 +163,14 @@ describe('ABTestFramework', () => {
         costPerRequest: 0.015,
         executionTimeMs: 1200,
         tokenUsage: 5000,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       const metrics2: ExperimentMetrics = {
         costPerRequest: 0.014,
         executionTimeMs: 1100,
         tokenUsage: 4800,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       framework.recordMetrics(baseConfig.id, 'control', metrics1);
@@ -180,7 +186,7 @@ describe('ABTestFramework', () => {
         executionTimeMs: 1200,
         tokenUsage: 5000,
         responseQuality: 0.95,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       expect(() => framework.recordMetrics(baseConfig.id, 'control', metrics)).not.toThrow();
@@ -191,7 +197,7 @@ describe('ABTestFramework', () => {
         costPerRequest: 0.015,
         executionTimeMs: 1200,
         tokenUsage: 5000,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       expect(() => framework.recordMetrics('non-existent', 'control', metrics)).toThrow(
@@ -218,7 +224,7 @@ describe('ABTestFramework', () => {
           costPerRequest: 0.015,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -228,7 +234,7 @@ describe('ABTestFramework', () => {
           costPerRequest: 0.008,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -250,39 +256,37 @@ describe('ABTestFramework', () => {
           costPerRequest: 0.015,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
         framework.recordMetrics(baseConfig.id, 'treatment', {
           costPerRequest: 0.008,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
-      expect(() => framework.analyzeExperiment(baseConfig.id)).toThrow(
-        /Insufficient sample size/
-      );
+      expect(() => framework.analyzeExperiment(baseConfig.id)).toThrow(/Insufficient sample size/);
     });
 
     it('should detect significant difference when treatment is clearly better', () => {
       // Control: expensive and slow
       for (let i = 0; i < 50; i++) {
         framework.recordMetrics(baseConfig.id, 'control', {
-          costPerRequest: 0.015 + (Math.random() * 0.001), // ~$0.015
-          executionTimeMs: 1200 + (Math.random() * 100),
-          tokenUsage: 5000 + (Math.random() * 200),
-          timestamp: new Date()
+          costPerRequest: 0.015 + Math.random() * 0.001, // ~$0.015
+          executionTimeMs: 1200 + Math.random() * 100,
+          tokenUsage: 5000 + Math.random() * 200,
+          timestamp: new Date(),
         });
       }
 
       // Treatment: much cheaper and faster
       for (let i = 0; i < 50; i++) {
         framework.recordMetrics(baseConfig.id, 'treatment', {
-          costPerRequest: 0.006 + (Math.random() * 0.001), // ~$0.006 (60% cheaper)
-          executionTimeMs: 800 + (Math.random() * 100),
-          tokenUsage: 2000 + (Math.random() * 200),
-          timestamp: new Date()
+          costPerRequest: 0.006 + Math.random() * 0.001, // ~$0.006 (60% cheaper)
+          executionTimeMs: 800 + Math.random() * 100,
+          tokenUsage: 2000 + Math.random() * 200,
+          timestamp: new Date(),
         });
       }
 
@@ -297,19 +301,19 @@ describe('ABTestFramework', () => {
     it('should not detect significance when variants are similar', () => {
       // Both variants have similar metrics
       for (let i = 0; i < 50; i++) {
-        const baseCost = 0.010 + (Math.random() * 0.002);
+        const baseCost = 0.01 + Math.random() * 0.002;
         framework.recordMetrics(baseConfig.id, 'control', {
           costPerRequest: baseCost,
-          executionTimeMs: 1000 + (Math.random() * 200),
-          tokenUsage: 4000 + (Math.random() * 500),
-          timestamp: new Date()
+          executionTimeMs: 1000 + Math.random() * 200,
+          tokenUsage: 4000 + Math.random() * 500,
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
           costPerRequest: baseCost + (Math.random() * 0.001 - 0.0005), // Very similar
-          executionTimeMs: 1000 + (Math.random() * 200),
-          tokenUsage: 4000 + (Math.random() * 500),
-          timestamp: new Date()
+          executionTimeMs: 1000 + Math.random() * 200,
+          tokenUsage: 4000 + Math.random() * 500,
+          timestamp: new Date(),
         });
       }
 
@@ -323,20 +327,20 @@ describe('ABTestFramework', () => {
       // Control: $0.020 per request
       for (let i = 0; i < 50; i++) {
         framework.recordMetrics(baseConfig.id, 'control', {
-          costPerRequest: 0.020,
+          costPerRequest: 0.02,
           executionTimeMs: 1000,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
       // Treatment: $0.010 per request (50% cheaper)
       for (let i = 0; i < 50; i++) {
         framework.recordMetrics(baseConfig.id, 'treatment', {
-          costPerRequest: 0.010,
+          costPerRequest: 0.01,
           executionTimeMs: 1000,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -352,22 +356,22 @@ describe('ABTestFramework', () => {
           executionTimeMs: 1200,
           tokenUsage: 5000,
           responseQuality: 0.85,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
           costPerRequest: 0.008,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          responseQuality: 0.90,
-          timestamp: new Date()
+          responseQuality: 0.9,
+          timestamp: new Date(),
         });
       }
 
       const analysis = framework.analyzeExperiment(baseConfig.id);
 
       expect(analysis.control.metrics.avgQuality).toBeCloseTo(0.85, 2);
-      expect(analysis.treatment.metrics.avgQuality).toBeCloseTo(0.90, 2);
+      expect(analysis.treatment.metrics.avgQuality).toBeCloseTo(0.9, 2);
       expect(analysis.relativeDifference.quality).toBeDefined();
     });
   });
@@ -402,9 +406,9 @@ describe('ABTestFramework', () => {
       const activeExperiments = framework.getActiveExperiments();
 
       expect(activeExperiments).toHaveLength(2);
-      expect(activeExperiments.map(e => e.id)).toContain('exp1');
-      expect(activeExperiments.map(e => e.id)).toContain('exp3');
-      expect(activeExperiments.map(e => e.id)).not.toContain('exp2');
+      expect(activeExperiments.map((e) => e.id)).toContain('exp1');
+      expect(activeExperiments.map((e) => e.id)).toContain('exp3');
+      expect(activeExperiments.map((e) => e.id)).not.toContain('exp2');
     });
   });
 
@@ -423,7 +427,7 @@ describe('ABTestFramework', () => {
         costPerRequest: 0.015,
         executionTimeMs: 1200,
         tokenUsage: 5000,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       const exportData = framework.exportExperimentData(baseConfig.id);
@@ -450,14 +454,12 @@ describe('ABTestFramework', () => {
           costPerRequest: 0.015,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
       // Should throw because treatment has no metrics
-      expect(() => framework.analyzeExperiment(baseConfig.id)).toThrow(
-        /Insufficient sample size/
-      );
+      expect(() => framework.analyzeExperiment(baseConfig.id)).toThrow(/Insufficient sample size/);
     });
 
     it('should handle very large datasets', () => {
@@ -466,17 +468,17 @@ describe('ABTestFramework', () => {
       // Record 1000 metrics for each variant
       for (let i = 0; i < 1000; i++) {
         framework.recordMetrics(baseConfig.id, 'control', {
-          costPerRequest: 0.015 + (Math.random() * 0.001),
+          costPerRequest: 0.015 + Math.random() * 0.001,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
-          costPerRequest: 0.008 + (Math.random() * 0.001),
+          costPerRequest: 0.008 + Math.random() * 0.001,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
@@ -494,14 +496,14 @@ describe('ABTestFramework', () => {
           costPerRequest: 0,
           executionTimeMs: 1200,
           tokenUsage: 5000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         framework.recordMetrics(baseConfig.id, 'treatment', {
           costPerRequest: 0,
           executionTimeMs: 1000,
           tokenUsage: 3000,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 

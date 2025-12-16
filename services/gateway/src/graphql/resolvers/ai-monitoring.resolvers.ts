@@ -190,10 +190,7 @@ export const aiMonitoringResolvers = {
       });
 
       // Group by date
-      const dailyMap = new Map<
-        string,
-        { tokens: number; costCents: number; requests: number }
-      >();
+      const dailyMap = new Map<string, { tokens: number; costCents: number; requests: number }>();
 
       for (const record of records) {
         const date = record.createdAt.toISOString().split('T')[0];

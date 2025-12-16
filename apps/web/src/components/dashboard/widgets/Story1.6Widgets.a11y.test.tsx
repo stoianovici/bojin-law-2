@@ -310,7 +310,7 @@ describe('Story 1.6 Widgets - Accessibility (WCAG AA)', () => {
         viewMode: 'daily',
       };
 
-      const { container} = render(<EmployeeWorkloadWidget widget={dailyWidget} />);
+      const { container } = render(<EmployeeWorkloadWidget widget={dailyWidget} />);
       const results = await axe(container);
       expect(results).toHaveNoViolations();
     });

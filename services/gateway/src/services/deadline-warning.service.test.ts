@@ -157,7 +157,7 @@ describe('DeadlineWarningService', () => {
       const warnings = await service.getUpcomingDeadlineWarnings('user-123', 'firm-456');
 
       // Should include both task deadlines and extracted deadlines
-      const extractedWarning = warnings.find(w => !w.taskId);
+      const extractedWarning = warnings.find((w) => !w.taskId);
       expect(extractedWarning).toBeDefined();
       expect(extractedWarning?.title).toBe('Termen depunere apel');
     });
@@ -169,9 +169,11 @@ describe('DeadlineWarningService', () => {
       expect(warnings[0].severity).toBe('critical');
 
       // Within same severity, earlier dates should come first
-      const criticalWarnings = warnings.filter(w => w.severity === 'critical');
+      const criticalWarnings = warnings.filter((w) => w.severity === 'critical');
       if (criticalWarnings.length > 1) {
-        expect(criticalWarnings[0].daysUntilDue).toBeLessThanOrEqual(criticalWarnings[1].daysUntilDue);
+        expect(criticalWarnings[0].daysUntilDue).toBeLessThanOrEqual(
+          criticalWarnings[1].daysUntilDue
+        );
       }
     });
 
@@ -301,7 +303,7 @@ describe('DeadlineWarningService', () => {
     it('should include suggested actions for task warnings', async () => {
       const warnings = await service.getUpcomingDeadlineWarnings('user-123', 'firm-456');
 
-      const taskWarning = warnings.find(w => w.taskId);
+      const taskWarning = warnings.find((w) => w.taskId);
       expect(taskWarning?.suggestedActions).toBeDefined();
       expect(taskWarning?.suggestedActions.length).toBeGreaterThan(0);
     });
@@ -313,7 +315,7 @@ describe('DeadlineWarningService', () => {
 
       const extractedWarning = warnings[0];
       const createAction = extractedWarning.suggestedActions.find(
-        a => a.actionType === 'create_task'
+        (a) => a.actionType === 'create_task'
       );
       expect(createAction).toBeDefined();
       expect(createAction?.payload).toHaveProperty('extractedDeadlineId');
@@ -326,7 +328,7 @@ describe('DeadlineWarningService', () => {
 
       const extractedWarning = warnings[0];
       const navigateAction = extractedWarning.suggestedActions.find(
-        a => a.actionType === 'navigate'
+        (a) => a.actionType === 'navigate'
       );
       expect(navigateAction).toBeDefined();
       expect(navigateAction?.payload).toHaveProperty('emailId');
@@ -343,7 +345,7 @@ describe('DeadlineWarningService', () => {
       const warnings = await service.getUpcomingDeadlineWarnings('user-123', 'firm-456');
 
       const hasReminderAction = warnings[0].suggestedActions.some(
-        a => a.action === 'send_reminder' || a.actionType === 'send_email'
+        (a) => a.action === 'send_reminder' || a.actionType === 'send_email'
       );
       expect(hasReminderAction).toBe(true);
     });
@@ -355,13 +357,13 @@ describe('DeadlineWarningService', () => {
 
   describe('getCaseDeadlineWarnings', () => {
     it('should return warnings for all tasks in a case', async () => {
-      const caseTasks = mockTasks.filter(t => t.caseId === 'case-1');
+      const caseTasks = mockTasks.filter((t) => t.caseId === 'case-1');
       (prisma.task.findMany as jest.Mock).mockResolvedValue(caseTasks);
 
       const warnings = await service.getCaseDeadlineWarnings('case-1', 'firm-456');
 
       expect(warnings.length).toBe(2);
-      warnings.forEach(w => {
+      warnings.forEach((w) => {
         expect(w.caseId).toBe('case-1');
       });
     });

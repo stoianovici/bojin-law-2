@@ -40,6 +40,7 @@ This directory contains comprehensive integration tests for the Case CRUD Operat
 ### Mock Service Worker (MSW)
 
 GraphQL API mocking is configured using **MSW v1.3.x** (CommonJS compatible) with handlers in:
+
 - `src/test-utils/mocks/graphql-handlers.ts` - Mock GraphQL queries and mutations
 - `src/test-utils/mocks/server.ts` - MSW server setup
 
@@ -50,11 +51,13 @@ GraphQL API mocking is configured using **MSW v1.3.x** (CommonJS compatible) wit
 Integration tests run in Jest's CommonJS mode with the following setup:
 
 **Transform Setup:**
+
 - `@swc/jest` for TypeScript and JavaScript transformation to CommonJS
 - Next.js Jest configuration (`next/jest`) for framework integration
 - Custom Jest config for workspace package aliasing
 
 **Polyfills (in jest.setup.js):**
+
 - `whatwg-fetch` - Fetch API polyfill
 - `TextEncoder/TextDecoder` - Text encoding
 - `ReadableStream/WritableStream/TransformStream` - Stream APIs
@@ -93,10 +96,12 @@ pnpm test
 ## Known Issues & Future Work
 
 ### Infrastructure
+
 - [x] ~~MSW/Jest compatibility issue~~ - RESOLVED (downgraded to MSW v1.3.x)
 - [ ] Consider MSW v2 migration when Jest ESM support stabilizes
 
 ### Test Implementation
+
 - [ ] Fix integration test failures (mock data/assertions need adjustment)
 - [ ] Improve integration test pass rate (current: varies, target: ≥80%)
 - [ ] Add more comprehensive integration test scenarios

@@ -55,10 +55,9 @@ export class TrainingPipelineService {
 
     try {
       // Phase 1: Discovery
-      const discovered = await documentDiscoveryService.discoverDocuments(
-        accessToken,
-        { categoryFolders: categories }
-      );
+      const discovered = await documentDiscoveryService.discoverDocuments(accessToken, {
+        categoryFolders: categories,
+      });
 
       await prisma.trainingPipelineRun.update({
         where: { id: run.id },
@@ -240,9 +239,7 @@ export class TrainingPipelineService {
       );
 
       // Extract file type
-      const fileExtension = doc.fileName.substring(
-        doc.fileName.lastIndexOf('.') + 1
-      ).toLowerCase();
+      const fileExtension = doc.fileName.substring(doc.fileName.lastIndexOf('.') + 1).toLowerCase();
 
       // Extract text
       const extracted = await textExtractionService.extractText(

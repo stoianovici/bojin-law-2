@@ -68,7 +68,7 @@ export class GrokClient {
     if (this.requestCount >= this.rateLimit) {
       const waitMs = windowMs - (now - this.requestWindowStart);
       if (waitMs > 0) {
-        await new Promise(resolve => setTimeout(resolve, waitMs));
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
         this.requestCount = 0;
         this.requestWindowStart = Date.now();
       }

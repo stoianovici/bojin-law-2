@@ -61,9 +61,7 @@ function VersionHistoryItem({ version }: VersionHistoryItemProps) {
         v{version.versionNumber}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900">
-          {version.changesSummary}
-        </p>
+        <p className="text-sm font-medium text-gray-900">{version.changesSummary}</p>
         <p className="text-xs text-gray-600 mt-1">
           {format(version.createdAt, "dd MMM yyyy 'la' HH:mm", { locale: ro })}
         </p>
@@ -129,13 +127,16 @@ export function DocumentPreview({
                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              <span>
-                Modificat: {format(document.updatedAt, 'dd MMMM yyyy', { locale: ro })}
-              </span>
+              <span>Modificat: {format(document.updatedAt, 'dd MMMM yyyy', { locale: ro })}</span>
             </div>
             {document.aiGenerated && (
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -187,12 +188,7 @@ export function DocumentPreview({
               onClick={() => onOpen?.(document)}
               className="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -206,12 +202,7 @@ export function DocumentPreview({
               onClick={() => onDownload?.(document)}
               className="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

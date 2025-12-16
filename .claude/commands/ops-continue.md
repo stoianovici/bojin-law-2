@@ -2,6 +2,8 @@
 
 You are resuming work on an operations issue. This is a cross-session workflow - restore context and continue methodically.
 
+**IMPORTANT**: This command enforces the Local Verification Gate. See `ops-protocol.md` for details.
+
 ## 1. Restore Context
 
 Read these files in parallel:
@@ -9,6 +11,7 @@ Read these files in parallel:
 - `docs/ops/operations-log.md` - Source of truth for all issues
 - `docs/ops/root-cause-patterns.md` - Common root causes and quick checks
 - `docs/project-conventions.md` - Code patterns and implementation standards
+- `.claude/commands/ops-protocol.md` - Verification gate protocol
 - `.ai/ops-*-handoff.md` - Find the most recent handoff file(s)
 
 ## 2. Identify Target Issue
@@ -37,11 +40,17 @@ Show the user:
 **Sessions**: {count} (this is session {count + 1})
 **Last Active**: {date}
 
+### Local Verification Status
+{from issue - show current verification state}
+
 ### Previous Session Summary
 {last entry from Session Log}
 
 ### Last Known State
 {from handoff file if exists}
+
+### Environment Strategy
+{from issue's Environment Strategy section, or determine based on type}
 
 ### Suggested Next Steps
 {from handoff file or infer from status}
@@ -63,18 +72,14 @@ Update the ops log:
 
 ## 5. Begin Investigation/Work
 
-**Important**: Before writing any code, review `docs/project-conventions.md` to ensure your implementation follows established patterns (component structure, hook patterns, service patterns, Romanian UI text, etc.).
+**Important**: Before writing any code, review `docs/project-conventions.md` to ensure your implementation follows established patterns.
 
 Based on current status, proceed with appropriate workflow:
 
 **If Status = New or Triaging**:
 
-- Run **Quick Sanity Checks** from `root-cause-patterns.md`:
-  1. Does the data exist in DB?
-  2. Does GraphQL return it?
-  3. Does the frontend fetch it?
-  4. Does the component render it (not hardcoded)?
-- Check if symptom matches known patterns in the pattern library
+- Run **Quick Sanity Checks** from `root-cause-patterns.md`
+- Check if symptom matches known patterns
 - If multiple hypotheses, suggest running `/ops-investigate`
 - Update status to "Investigating"
 
@@ -94,38 +99,100 @@ Based on current status, proceed with appropriate workflow:
 **If Status = Fixing**:
 
 - Review what's been done
-- **Check for local dev environment** in the issue's "Local Dev Environment" section
-- **ALWAYS test fixes locally first** before deploying:
-  1. For quick iteration: `pnpm dev` (hot reload, development mode)
-  2. For production-like testing: `pnpm preview` (builds and runs production Docker)
-  3. Test the fix with curl, browser, or logs
-  4. Iterate quickly on fixes (seconds) instead of waiting for deploys (minutes)
-- Only deploy after local verification passes
 - Continue implementation
 - Run tests
-- Ask: "Ready to verify the fix?"
+- **When implementation is complete, IMMEDIATELY show the Verification Gate prompt** (see Section 6)
 
 **If Status = Verifying**:
 
-- Run verification steps
-- Check for regressions
-- Ask: "Ready to close this issue?"
+- Check Local Verification Status in issue
+- If not all verified, show Verification Gate prompt
+- If all verified, ask: "Ready to close this issue?"
 
-## 6. During Work
+## 6. MANDATORY: Local Verification Gate
+
+**Trigger this prompt when ANY of these occur:**
+
+- User says "done", "finished", "complete", "ready to deploy"
+- You've finished implementing a fix or feature
+- Status is about to change to "Verifying"
+- User asks about deployment
+
+**Show this EXACT prompt:**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔒 LOCAL VERIFICATION GATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before proceeding, you must verify locally:
+
+Step 1: Test with production data
+  $ source .env.prod && pnpm dev
+  → Open http://localhost:3000
+  → Test the specific fix/feature
+  → Confirm it works with real data
+
+Step 2: Run preflight checks
+  $ pnpm preflight:full
+  → Must pass with no errors
+
+Step 3: Test in production Docker
+  $ pnpm preview
+  → Open http://localhost:3000
+  → Test the specific fix/feature again
+  → This is identical to production
+
+Have you completed all three steps?
+- Yes, all verified ✓
+- Not yet, I need to run the tests
+- Skip (NOT RECOMMENDED - may break production)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Based on response:**
+
+- **"Yes, all verified"**: Update issue's Local Verification Status to all ✅, proceed
+- **"Not yet"**: Wait for user to complete testing, ask for results
+- **"Skip"**: Show warning (see below), log skip in issue
+
+**If user skips:**
+
+```
+⚠️ WARNING: Skipping local verification
+
+You are proceeding without verifying locally. This means:
+- The fix/feature MAY break in production
+- You'll need to debug in production (slow, risky)
+- Other accumulated changes may also be affected
+
+Are you absolutely sure? (yes/no)
+```
+
+Log in issue: `- [{timestamp}] ⚠️ LOCAL VERIFICATION SKIPPED by user request`
+
+## 7. During Work
 
 As you work:
 
 1. **Log everything** - Add entries to Session Log with timestamps
 2. **Track files** - Update "Files Involved" as you touch new files
 3. **Use TodoWrite** - Track current session tasks
-4. **Update status** - Change status as you progress through stages
+4. **Update status** - Change status as you progress
+5. **ALWAYS prompt for verification** - When work is complete
 
-## 7. Session End Protocol
+## 8. Session End Protocol
 
 When user says they're done, or before any `/clear`:
 
+**FIRST: Show Local Verification Gate if any code was written this session**
+
+Then:
+
 1. Update Session Log with summary of work done
-2. Write handoff file `.ai/ops-{issue-id}-handoff.md`:
+2. Update Local Verification Status in issue
+3. Write handoff file `.ai/ops-{issue-id}-handoff.md`:
 
    ```markdown
    # Handoff: [OPS-XXX] {title}
@@ -142,6 +209,16 @@ When user says they're done, or before any `/clear`:
 
    {where things stand}
 
+   ## Local Verification Status
+
+   | Step           | Status   | Notes   |
+   | -------------- | -------- | ------- |
+   | Prod data test | ✅/⬜/❌ | {notes} |
+   | Preflight      | ✅/⬜/❌ | {notes} |
+   | Docker test    | ✅/⬜/❌ | {notes} |
+
+   **Verified**: {Yes/No}
+
    ## Blockers/Questions
 
    {any blockers}
@@ -155,15 +232,13 @@ When user says they're done, or before any `/clear`:
    {files that need attention}
    ```
 
-3. Update ops log with session summary
-4. Remind user: "Context saved. Use `/ops-continue OPS-XXX` to resume."
+4. Update ops log with session summary
+5. Remind user: "Context saved. Use `/ops-continue OPS-XXX` to resume."
 
 ## Important Rules
 
-- **Always restore context first** - Read ops log and handoff before doing anything
-- **Always save context at end** - Never let work be lost
-- **Be methodical** - Follow the investigation stages, don't jump ahead
-- **Document everything** - Future sessions depend on good notes
-- **Use parallel tools** - Load multiple files simultaneously
-- **Test locally before deploying** - Use `pnpm dev` for quick iteration, `pnpm preview` for production-like testing
-- **Pushing does NOT deploy** - Use `pnpm deploy:production` to deploy after testing locally
+- **ALWAYS show Verification Gate when work is complete** - No exceptions
+- **ALWAYS restore context first** - Read ops log and handoff before doing anything
+- **ALWAYS save context at end** - Never let work be lost
+- **Track verification status** - Update issue with verification results
+- **If it passes local verification, it WILL work in production** - This is the guarantee

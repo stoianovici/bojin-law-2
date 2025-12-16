@@ -6,7 +6,13 @@
 import { create } from 'zustand';
 import type { DocumentOverview, DocumentType, FileType } from '@legal-platform/types';
 
-export type SortField = 'uploadedDate' | 'title' | 'type' | 'fileSizeBytes' | 'caseName' | 'lastModifiedDate';
+export type SortField =
+  | 'uploadedDate'
+  | 'title'
+  | 'type'
+  | 'fileSizeBytes'
+  | 'caseName'
+  | 'lastModifiedDate';
 export type SortOrder = 'asc' | 'desc';
 
 export interface DocumentFilters {
@@ -64,7 +70,10 @@ const STORAGE_KEY = 'legal-platform-document-filters';
 /**
  * Filter documents based on current filters
  */
-function filterDocuments(documents: DocumentOverview[], filters: DocumentFilters): DocumentOverview[] {
+function filterDocuments(
+  documents: DocumentOverview[],
+  filters: DocumentFilters
+): DocumentOverview[] {
   return documents.filter((doc) => {
     // Search query filter
     if (filters.searchQuery) {
@@ -123,7 +132,8 @@ function sortDocuments(
         comparison = new Date(a.uploadedDate).getTime() - new Date(b.uploadedDate).getTime();
         break;
       case 'lastModifiedDate':
-        comparison = new Date(a.lastModifiedDate).getTime() - new Date(b.lastModifiedDate).getTime();
+        comparison =
+          new Date(a.lastModifiedDate).getTime() - new Date(b.lastModifiedDate).getTime();
         break;
       case 'title':
         comparison = a.title.localeCompare(b.title);
@@ -182,7 +192,8 @@ export const useDocumentsStore = create<DocumentsState>((set, get) => ({
     const currentSortOrder = get().sortOrder;
 
     // If clicking the same field, toggle order
-    const newSortOrder = order || (field === currentSortBy && currentSortOrder === 'asc' ? 'desc' : 'asc');
+    const newSortOrder =
+      order || (field === currentSortBy && currentSortOrder === 'asc' ? 'desc' : 'asc');
 
     set({ sortBy: field, sortOrder: newSortOrder });
     get().applyFiltersAndSort();

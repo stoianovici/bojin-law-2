@@ -15,10 +15,7 @@ export async function POST(request: NextRequest) {
     const { documents, typeId } = body;
 
     if (!documents || !Array.isArray(documents)) {
-      return NextResponse.json(
-        { error: 'Documents array is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Documents array is required' }, { status: 400 });
     }
 
     const service = new PatternExtractionService();

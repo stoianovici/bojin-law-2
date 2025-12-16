@@ -10,12 +10,7 @@ import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import { TaskTemplateService } from '../../services/task-template.service';
 import { TemplateApplicationService } from '../../services/template-application.service';
-import {
-  CaseType,
-  TaskTypeEnum,
-  OffsetType,
-  DependencyType,
-} from '@prisma/client';
+import { CaseType, TaskTypeEnum, OffsetType, DependencyType } from '@prisma/client';
 
 interface Context {
   user: {
@@ -105,11 +100,7 @@ export const taskTemplateResolvers = {
     /**
      * Get default template for a case type
      */
-    defaultTemplate: async (
-      _: any,
-      args: { caseType?: CaseType },
-      context: Context
-    ) => {
+    defaultTemplate: async (_: any, args: { caseType?: CaseType }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -170,11 +161,7 @@ export const taskTemplateResolvers = {
     /**
      * Delete a task template
      */
-    deleteTaskTemplate: async (
-      _: any,
-      args: { id: string },
-      context: Context
-    ) => {
+    deleteTaskTemplate: async (_: any, args: { id: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -247,11 +234,7 @@ export const taskTemplateResolvers = {
     /**
      * Remove a step from a template
      */
-    removeTemplateStep: async (
-      _: any,
-      args: { stepId: string },
-      context: Context
-    ) => {
+    removeTemplateStep: async (_: any, args: { stepId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -327,11 +310,7 @@ export const taskTemplateResolvers = {
     /**
      * Remove a step dependency
      */
-    removeStepDependency: async (
-      _: any,
-      args: { dependencyId: string },
-      context: Context
-    ) => {
+    removeStepDependency: async (_: any, args: { dependencyId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -347,11 +326,7 @@ export const taskTemplateResolvers = {
     /**
      * Apply a template to a case
      */
-    applyTemplate: async (
-      _: any,
-      args: { input: ApplyTemplateInput },
-      context: Context
-    ) => {
+    applyTemplate: async (_: any, args: { input: ApplyTemplateInput }, context: Context) => {
       const { user } = context;
 
       if (!user) {

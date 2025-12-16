@@ -22,15 +22,15 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 
 1.1 **"Confidential Information"** means all information, whether written, oral, electronic, visual, or in any other form, disclosed by one Party (the "Disclosing Party") to the other Party (the "Receiving Party") in connection with the Purpose, including but not limited to:
 
-   (a) Business information: financial data, business plans, strategies, forecasts, customer lists, supplier information, pricing, marketing plans;
+(a) Business information: financial data, business plans, strategies, forecasts, customer lists, supplier information, pricing, marketing plans;
 
-   (b) Technical information: inventions, designs, drawings, specifications, software, source code, algorithms, formulas, processes, techniques, know-how;
+(b) Technical information: inventions, designs, drawings, specifications, software, source code, algorithms, formulas, processes, techniques, know-how;
 
-   (c) Proprietary information: trade secrets, patents, copyrights, trademarks, and other intellectual property;
+(c) Proprietary information: trade secrets, patents, copyrights, trademarks, and other intellectual property;
 
-   (d) Personal information: employee data, contact information, personnel records;
+(d) Personal information: employee data, contact information, personnel records;
 
-   (e) Any other information designated as "Confidential," "Proprietary," or with a similar marking.
+(e) Any other information designated as "Confidential," "Proprietary," or with a similar marking.
 
 1.2 Confidential Information may be disclosed in written, oral, electronic, visual or other form. Information disclosed orally shall be confirmed in writing within thirty (30) days and designated as Confidential Information.
 
@@ -38,35 +38,35 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
 
 Confidential Information does not include information that:
 
-   (a) Is or becomes publicly available through no breach of this Agreement by the Receiving Party;
+(a) Is or becomes publicly available through no breach of this Agreement by the Receiving Party;
 
-   (b) Was rightfully in the Receiving Party's possession prior to disclosure by the Disclosing Party, as evidenced by the Receiving Party's written records;
+(b) Was rightfully in the Receiving Party's possession prior to disclosure by the Disclosing Party, as evidenced by the Receiving Party's written records;
 
-   (c) Is rightfully received by the Receiving Party from a third party without breach of any confidentiality obligation;
+(c) Is rightfully received by the Receiving Party from a third party without breach of any confidentiality obligation;
 
-   (d) Is independently developed by the Receiving Party without use of or reference to the Disclosing Party's Confidential Information, as evidenced by written records;
+(d) Is independently developed by the Receiving Party without use of or reference to the Disclosing Party's Confidential Information, as evidenced by written records;
 
-   (e) Is required to be disclosed by law, regulation, or court order, provided that the Receiving Party provides prompt written notice to the Disclosing Party to allow the Disclosing Party to seek a protective order.
+(e) Is required to be disclosed by law, regulation, or court order, provided that the Receiving Party provides prompt written notice to the Disclosing Party to allow the Disclosing Party to seek a protective order.
 
 ## 3. OBLIGATIONS OF RECEIVING PARTY
 
 3.1 **Non-Disclosure.** The Receiving Party agrees to:
 
-   (a) Hold the Confidential Information in strict confidence;
+(a) Hold the Confidential Information in strict confidence;
 
-   (b) Not disclose the Confidential Information to any third party without the prior written consent of the Disclosing Party;
+(b) Not disclose the Confidential Information to any third party without the prior written consent of the Disclosing Party;
 
-   (c) Use the Confidential Information solely for the Purpose;
+(c) Use the Confidential Information solely for the Purpose;
 
-   (d) Protect the Confidential Information using the same degree of care it uses to protect its own confidential information, but in no event less than reasonable care.
+(d) Protect the Confidential Information using the same degree of care it uses to protect its own confidential information, but in no event less than reasonable care.
 
 3.2 **Limited Disclosure.** The Receiving Party may disclose Confidential Information only to its employees, officers, directors, agents, and professional advisors (collectively, "Representatives") who:
 
-   (a) Have a legitimate need to know such information for the Purpose;
+(a) Have a legitimate need to know such information for the Purpose;
 
-   (b) Have been informed of the confidential nature of such information; and
+(b) Have been informed of the confidential nature of such information; and
 
-   (c) Are bound by confidentiality obligations no less restrictive than those contained herein.
+(c) Are bound by confidentiality obligations no less restrictive than those contained herein.
 
 3.3 **Responsibility.** The Receiving Party shall be responsible for any breach of this Agreement by its Representatives.
 
@@ -82,9 +82,9 @@ Confidential Information does not include information that:
 
 Upon termination of this Agreement or upon request by the Disclosing Party, the Receiving Party shall, at the Disclosing Party's option:
 
-   (a) Promptly return all Confidential Information and all copies thereof to the Disclosing Party; or
+(a) Promptly return all Confidential Information and all copies thereof to the Disclosing Party; or
 
-   (b) Destroy all Confidential Information and certify such destruction in writing to the Disclosing Party.
+(b) Destroy all Confidential Information and certify such destruction in writing to the Disclosing Party.
 
 Notwithstanding the above, the Receiving Party may retain one (1) copy of the Confidential Information for archival purposes only, subject to continued compliance with this Agreement.
 
@@ -151,6 +151,7 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 ---
 
 **TEMPLATE VARIABLES:**
+
 - `{{EFFECTIVE_DATE}}`: Agreement start date
 - `{{PARTY_A_NAME}}`, `{{PARTY_B_NAME}}`: Legal entity names
 - `{{PARTY_A_TYPE}}`, `{{PARTY_B_TYPE}}`: Entity type (corporation, LLC, etc.)
@@ -164,6 +165,7 @@ Date: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 - `{{PARTY_A_SIGNATORY_TITLE}}`, `{{PARTY_B_SIGNATORY_TITLE}}`: Signer titles
 
 **OPTIONAL CLAUSES:**
+
 - Add IP ownership clause if discussing inventions
 - Add non-solicitation clause if discussing employees
 - Add export control clause if dealing with regulated technology

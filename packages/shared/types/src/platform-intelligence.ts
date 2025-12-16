@@ -232,13 +232,7 @@ export interface PlatformIntelligenceDashboard {
 
 export type ExportFormat = 'pdf' | 'excel' | 'csv';
 
-export type ExportSection =
-  | 'efficiency'
-  | 'communication'
-  | 'quality'
-  | 'tasks'
-  | 'ai'
-  | 'roi';
+export type ExportSection = 'efficiency' | 'communication' | 'quality' | 'tasks' | 'ai' | 'roi';
 
 export interface ExportOptions {
   format: ExportFormat;

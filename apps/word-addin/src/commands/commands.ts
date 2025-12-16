@@ -143,12 +143,16 @@ function showExplanationDialog(originalText: string, result: any) {
       <div class="original">"${escapeHtml(originalText.substring(0, 200))}${originalText.length > 200 ? '...' : ''}"</div>
       <div class="explanation">${escapeHtml(result.explanation)}</div>
       ${result.legalBasis ? `<div class="legal-basis"><strong>Legal Basis:</strong> ${escapeHtml(result.legalBasis)}</div>` : ''}
-      ${result.sourceReferences?.length ? `
+      ${
+        result.sourceReferences?.length
+          ? `
         <div class="references">
           <strong>References:</strong><br>
           ${result.sourceReferences.map((r: string) => `<span class="tag">${escapeHtml(r)}</span>`).join('')}
         </div>
-      ` : ''}
+      `
+          : ''
+      }
       <br>
       <button onclick="Office.context.ui.messageParent('close')">Close</button>
     </body>

@@ -82,12 +82,7 @@ describe('OverdueAnalysisService', () => {
     });
 
     it('should return low for low priority tasks not blocking anything', () => {
-      const impact = service.calculateEstimatedImpact(
-        false,
-        0,
-        TaskPriority.Low,
-        2
-      );
+      const impact = service.calculateEstimatedImpact(false, 0, TaskPriority.Low, 2);
 
       expect(impact).toBe('low');
     });
@@ -157,9 +152,7 @@ describe('OverdueAnalysisService', () => {
         },
       ];
 
-      mockPrisma.task.findMany
-        .mockResolvedValueOnce(tasks)
-        .mockResolvedValueOnce(tasks);
+      mockPrisma.task.findMany.mockResolvedValueOnce(tasks).mockResolvedValueOnce(tasks);
 
       const result = await service.getOverdueAnalytics(TEST_FIRM_ID, defaultFilters);
 
@@ -211,9 +204,7 @@ describe('OverdueAnalysisService', () => {
         },
       ];
 
-      mockPrisma.task.findMany
-        .mockResolvedValueOnce(tasks)
-        .mockResolvedValueOnce(tasks);
+      mockPrisma.task.findMany.mockResolvedValueOnce(tasks).mockResolvedValueOnce(tasks);
 
       const result = await service.getOverdueAnalytics(TEST_FIRM_ID, defaultFilters);
 

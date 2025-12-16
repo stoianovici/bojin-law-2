@@ -12,7 +12,10 @@ import * as path from 'path';
 
 // Import individual stress test modules
 import { runLargeDocumentStressTests, LargeDocumentResults } from './large-documents';
-import { runConcurrentOperationsStressTests, ConcurrentOperationsResults } from './concurrent-operations';
+import {
+  runConcurrentOperationsStressTests,
+  ConcurrentOperationsResults,
+} from './concurrent-operations';
 
 interface StressTestReport {
   timestamp: string;
@@ -46,8 +49,7 @@ async function main(): Promise<void> {
   const totalDurationMs = performance.now() - startTime;
 
   // Calculate summary
-  const totalTests =
-    largeDocResults.tests.length + concurrentResults.tests.length;
+  const totalTests = largeDocResults.tests.length + concurrentResults.tests.length;
   const passed =
     largeDocResults.tests.filter((t) => t.passed).length +
     concurrentResults.tests.filter((t) => t.passed).length;

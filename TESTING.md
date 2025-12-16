@@ -25,6 +25,7 @@
 ## Overview
 
 This platform maintains a comprehensive test suite to ensure:
+
 - **Code Quality**: All code is thoroughly tested before merge
 - **Regression Prevention**: Changes don't break existing functionality
 - **Confidence**: Deploy with confidence knowing tests pass
@@ -33,6 +34,7 @@ This platform maintains a comprehensive test suite to ensure:
 - **Performance**: Page load times stay within budgets
 
 **Key Metrics:**
+
 - **80% minimum coverage** requirement (statements, branches, functions, lines)
 - **3 browsers tested** for E2E (Chromium, Firefox, WebKit)
 - **Zero accessibility violations** policy
@@ -92,12 +94,14 @@ We follow the **Testing Pyramid** strategy for optimal test suite performance:
 **Purpose**: Test individual components, functions, and modules in isolation.
 
 **Tools**:
+
 - Jest 29+ (test runner and assertions)
 - React Testing Library 14+ (component testing)
 - @testing-library/jest-dom (DOM matchers)
 - @testing-library/user-event (user interactions)
 
 **Location**: Co-located with source files
+
 ```
 packages/ui/src/atoms/Button.tsx
 packages/ui/src/atoms/Button.test.tsx
@@ -106,6 +110,7 @@ packages/ui/src/atoms/Button.test.tsx
 **Template**: `packages/shared/test-utils/templates/unit-test.template.tsx`
 
 **Example:**
+
 ```typescript
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Button } from './Button';
@@ -132,6 +137,7 @@ describe('Button', () => {
 ```
 
 **When to Use**:
+
 - Testing React components in isolation
 - Testing utility functions and helpers
 - Testing custom hooks
@@ -139,6 +145,7 @@ describe('Button', () => {
 - Testing state management
 
 **Best Practices**:
+
 - Use accessible queries (`getByRole`, `getByLabelText`)
 - Test user-visible behavior, not implementation
 - Mock external dependencies (API calls, context)
@@ -150,12 +157,14 @@ describe('Button', () => {
 **Purpose**: Test how multiple components, services, or systems work together.
 
 **Tools**:
+
 - Jest 29+ (test runner)
 - Supertest 6.3+ (HTTP assertions)
 - Real test database (PostgreSQL on port 5433)
 - Test data factories
 
 **Location**: Co-located or in dedicated test directories
+
 ```
 services/document-service/src/api/routes.test.ts
 services/document-service/src/repositories/document.integration.test.ts
@@ -164,6 +173,7 @@ services/document-service/src/repositories/document.integration.test.ts
 **Template**: `packages/shared/test-utils/templates/integration-test.template.tsx`
 
 **Example:**
+
 ```typescript
 import request from 'supertest';
 import { app } from '../app';
@@ -180,7 +190,7 @@ describe('POST /api/cases', () => {
       .send({
         title: 'New Legal Case',
         clientId: 'client-123',
-        type: 'CIV'
+        type: 'CIV',
       })
       .expect(201)
       .expect('Content-Type', /json/);
@@ -188,7 +198,7 @@ describe('POST /api/cases', () => {
     expect(response.body.data).toMatchObject({
       title: 'New Legal Case',
       clientId: 'client-123',
-      status: 'Active'
+      status: 'Active',
     });
     expect(response.body.data).toHaveProperty('id');
     expect(response.body.data).toHaveProperty('createdAt');
@@ -206,6 +216,7 @@ describe('POST /api/cases', () => {
 ```
 
 **When to Use**:
+
 - Testing API endpoints with database
 - Testing GraphQL resolvers
 - Testing service interactions
@@ -213,6 +224,7 @@ describe('POST /api/cases', () => {
 - Testing authentication flows
 
 **Best Practices**:
+
 - Use real test database (not mocks)
 - Clean database before each test
 - Use factories for test data
@@ -225,11 +237,13 @@ describe('POST /api/cases', () => {
 **Purpose**: Test complete user workflows across the entire application stack.
 
 **Tools**:
+
 - Playwright 1.41+ (browser automation)
 - Page Object Model pattern
 - Test fixtures and data seeding
 
 **Location**: Centralized in `tests/e2e/`
+
 ```
 tests/e2e/auth/login.spec.ts
 tests/e2e/cases/create-case.spec.ts
@@ -239,6 +253,7 @@ tests/e2e/documents/upload-document.spec.ts
 **Template**: `tests/e2e/templates/e2e-test.template.spec.ts`
 
 **Example:**
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -278,6 +293,7 @@ test.describe('Authentication', () => {
 ```
 
 **When to Use**:
+
 - Testing critical user journeys
 - Testing multi-page workflows
 - Testing AI features
@@ -285,6 +301,7 @@ test.describe('Authentication', () => {
 - Smoke testing deployments
 
 **Best Practices**:
+
 - Use Page Object Model
 - Use accessible locators
 - Run tests in parallel
@@ -297,11 +314,13 @@ test.describe('Authentication', () => {
 **Purpose**: Ensure WCAG 2.0/2.1/2.2 Level AA compliance.
 
 **Tools**:
+
 - axe-core (automated a11y testing)
 - @axe-core/playwright (Playwright integration)
 - jest-axe (Jest integration)
 
 **Location**: Co-located and in dedicated directory
+
 ```
 packages/ui/src/atoms/Button.a11y.test.tsx
 tests/e2e/accessibility/dashboard.spec.ts
@@ -310,6 +329,7 @@ tests/e2e/accessibility/dashboard.spec.ts
 **Template**: `tests/e2e/templates/a11y-test.template.spec.ts`
 
 **Example:**
+
 ```typescript
 import { test } from '@playwright/test';
 import { testA11y } from '@legal-platform/test-utils/a11y';
@@ -334,6 +354,7 @@ test.describe('Dashboard Accessibility', () => {
 ```
 
 **When to Use**:
+
 - Every page and component
 - Forms and interactive elements
 - Modals and dialogs
@@ -341,6 +362,7 @@ test.describe('Dashboard Accessibility', () => {
 - After UI changes
 
 **Best Practices**:
+
 - Test every page for violations
 - Test keyboard navigation
 - Verify focus management
@@ -353,11 +375,13 @@ test.describe('Dashboard Accessibility', () => {
 **Purpose**: Ensure fast page loads and good Core Web Vitals.
 
 **Tools**:
+
 - Lighthouse CI (automated performance testing)
 - Playwright (custom performance metrics)
 - Performance API (browser metrics)
 
 **Location**: `tests/performance/`
+
 ```
 tests/performance/dashboard.spec.ts
 tests/performance/case-detail.spec.ts
@@ -366,6 +390,7 @@ tests/performance/case-detail.spec.ts
 **Template**: `tests/performance/template.spec.ts`
 
 **Example:**
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -397,12 +422,14 @@ test.describe('Dashboard Performance', () => {
 ```
 
 **When to Use**:
+
 - Critical pages (dashboard, case detail)
 - After performance optimizations
 - On main branch (not every PR)
 - Before releases
 
 **Best Practices**:
+
 - Set performance budgets
 - Monitor Core Web Vitals
 - Test on throttled networks
@@ -608,7 +635,7 @@ const user = createUser();
 const partner = createUser({
   role: 'Partner',
   firstName: 'Maria',
-  lastName: 'Ionescu'
+  lastName: 'Ionescu',
 });
 
 // Create related entities
@@ -617,12 +644,14 @@ const document = createDocument({ caseId: caseData.id });
 ```
 
 **Available Factories:**
+
 - `createUser()` - Users with all role variations (Partner, Associate, Paralegal)
 - `createCase()` - Cases with all status types (Active, OnHold, Closed, Archived)
 - `createDocument()` - Documents with all types (Contract, Motion, Letter, etc.)
 - `createTask()` - Tasks with all 6 task types
 
 **Benefits:**
+
 - Consistent test data across test suite
 - Easy to create valid entities
 - Support for Romanian names and localization
@@ -643,7 +672,7 @@ beforeEach(async () => {
   // Seed with base data
   await seedDatabase({
     users: [createUser({ id: '1', role: 'Partner' })],
-    cases: [createCase({ id: '1', assignedUserId: '1' })]
+    cases: [createCase({ id: '1', assignedUserId: '1' })],
   });
 });
 ```
@@ -662,8 +691,8 @@ const token = mockAzureAdToken({ userId: '123', role: 'Partner' });
 jest.mock('./api', () => ({
   fetchCases: jest.fn().mockResolvedValue([
     { id: '1', title: 'Case 1' },
-    { id: '2', title: 'Case 2' }
-  ])
+    { id: '2', title: 'Case 2' },
+  ]),
 }));
 ```
 
@@ -672,11 +701,13 @@ jest.mock('./api', () => ({
 ### Unit Tests
 
 **VS Code Debugging:**
+
 1. Set breakpoint in test file
 2. Use "Jest: Debug" configuration
 3. Run test in debug mode
 
 **Console Logging:**
+
 ```typescript
 import { screen, debug } from '@testing-library/react';
 
@@ -693,6 +724,7 @@ test('example', () => {
 ```
 
 **Watch Mode:**
+
 ```bash
 pnpm test:watch
 
@@ -704,6 +736,7 @@ pnpm test:watch
 ### E2E Tests
 
 **Playwright UI Mode (Recommended):**
+
 ```bash
 pnpm test:e2e:ui
 
@@ -715,6 +748,7 @@ pnpm test:e2e:ui
 ```
 
 **Debug Mode:**
+
 ```bash
 pnpm test:e2e:debug
 
@@ -723,6 +757,7 @@ pnpm test:e2e:debug
 ```
 
 **Headed Mode:**
+
 ```bash
 pnpm test:e2e:headed
 
@@ -731,6 +766,7 @@ pnpm test:e2e:headed
 ```
 
 **Pause Execution:**
+
 ```typescript
 test('example', async ({ page }) => {
   await page.goto('/dashboard');
@@ -746,11 +782,13 @@ test('example', async ({ page }) => {
 **Screenshots and Videos:**
 
 Failed tests automatically capture:
+
 - Screenshot at failure point
 - Video of entire test run
 - Playwright trace for time-travel debugging
 
 Find them in `test-results/`:
+
 ```
 test-results/
 ├── auth-login-chromium/
@@ -760,6 +798,7 @@ test-results/
 ```
 
 **View HTML Report:**
+
 ```bash
 pnpm test:e2e:report
 
@@ -774,6 +813,7 @@ pnpm test:e2e:report
 ### Common Issues
 
 **Test Database Connection Errors:**
+
 ```bash
 # Ensure test database is running
 docker-compose up -d postgres-test
@@ -786,6 +826,7 @@ docker-compose restart postgres-test
 ```
 
 **Port Already in Use:**
+
 ```bash
 # Kill process on port 3000
 lsof -ti:3000 | xargs kill
@@ -795,6 +836,7 @@ PORT=3001 pnpm test:e2e
 ```
 
 **Flaky Tests:**
+
 ```typescript
 // ❌ Don't use arbitrary waits
 await page.waitForTimeout(1000);
@@ -812,6 +854,7 @@ await page.click('button'); // Waits for button to be clickable
 ### Requirements
 
 All code must meet **80% minimum coverage** for:
+
 - **Statements**: 80%
 - **Branches**: 80%
 - **Functions**: 80%
@@ -830,6 +873,7 @@ open coverage/lcov-report/index.html
 ### Coverage Reports
 
 Coverage reports show:
+
 - Overall coverage percentages
 - Per-file coverage breakdown
 - Uncovered lines highlighted
@@ -848,14 +892,15 @@ module.exports = {
     '/.storybook/',
     '\\.test\\.',
     '\\.spec\\.',
-    '/test-utils/templates/' // Templates are examples
-  ]
+    '/test-utils/templates/', // Templates are examples
+  ],
 };
 ```
 
 ### CI Coverage Enforcement
 
 Coverage is enforced in CI:
+
 - PR fails if coverage drops below 80%
 - Coverage reports posted as PR comment
 - Coverage trends tracked over time
@@ -865,11 +910,13 @@ Coverage is enforced in CI:
 ### GitHub Actions Workflow
 
 All tests run on:
+
 - Every pull request
 - Push to main branch
 - Nightly builds
 
 **Jobs:**
+
 1. **Unit Tests** - Run on Node.js 20
 2. **E2E Tests** - Run on 3 browsers
 3. **Accessibility Tests** - Check WCAG compliance
@@ -878,6 +925,7 @@ All tests run on:
 ### Status Checks
 
 Required checks before merge:
+
 - ✓ Unit tests pass
 - ✓ Integration tests pass
 - ✓ E2E tests pass (all browsers)
@@ -888,6 +936,7 @@ Required checks before merge:
 ### Test Results
 
 Test results posted as PR comments:
+
 - Coverage summary
 - Changed files coverage
 - Failed tests

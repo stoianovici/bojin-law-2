@@ -114,10 +114,11 @@ export class DiscoveryStatusService {
       sortBy === 'priority'
         ? 'priority_score DESC NULLS LAST'
         : sortBy === 'occurrences'
-        ? 'total_occurrences DESC'
-        : 'last_discovered_at DESC';
+          ? 'total_occurrences DESC'
+          : 'last_discovered_at DESC';
 
-    const result = await this.db.query<DocumentTypeStats>(`
+    const result = await this.db.query<DocumentTypeStats>(
+      `
       SELECT
         id,
         discovered_type_original as "discoveredTypeOriginal",
@@ -135,7 +136,9 @@ export class DiscoveryStatusService {
       FROM document_type_registry
       ORDER BY ${orderByClause}
       LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+    `,
+      [limit, offset]
+    );
 
     return result.rows;
   }
@@ -171,11 +174,14 @@ export class DiscoveryStatusService {
    * Get sample documents for a document type
    */
   async getSampleDocuments(typeId: string): Promise<string[]> {
-    const result = await this.db.query<{ sample_document_ids: string[] }>(`
+    const result = await this.db.query<{ sample_document_ids: string[] }>(
+      `
       SELECT sample_document_ids
       FROM document_type_registry
       WHERE id = $1
-    `, [typeId]);
+    `,
+      [typeId]
+    );
 
     return result.rows[0]?.sample_document_ids || [];
   }
@@ -184,7 +190,8 @@ export class DiscoveryStatusService {
    * Manually map a document type to a skill
    */
   async mapTypeToSkill(request: MappingRequest): Promise<void> {
-    await this.db.query(`
+    await this.db.query(
+      `
       UPDATE document_type_registry
       SET
         mapped_skill_id = $1,
@@ -195,13 +202,15 @@ export class DiscoveryStatusService {
         decision_basis = $4,
         updated_at = NOW()
       WHERE id = $5
-    `, [
-      request.targetSkill,
-      request.confidence,
-      request.reviewedBy,
-      request.decisionBasis,
-      request.typeId,
-    ]);
+    `,
+      [
+        request.targetSkill,
+        request.confidence,
+        request.reviewedBy,
+        request.decisionBasis,
+        request.typeId,
+      ]
+    );
   }
 
   /**
@@ -209,7 +218,8 @@ export class DiscoveryStatusService {
    */
   async triggerTemplateGeneration(request: TemplateGenerationRequest): Promise<void> {
     // Mark as template creation in progress
-    await this.db.query(`
+    await this.db.query(
+      `
       UPDATE document_type_registry
       SET
         template_created = true,
@@ -220,7 +230,9 @@ export class DiscoveryStatusService {
         ),
         updated_at = NOW()
       WHERE id = $3
-    `, [request.language, request.includeEnglish, request.typeId]);
+    `,
+      [request.language, request.includeEnglish, request.typeId]
+    );
   }
 
   /**
@@ -234,13 +246,16 @@ export class DiscoveryStatusService {
     const result = await this.db.query<{
       totalHoursSaved: number;
       totalDocuments: number;
-    }>(`
+    }>(
+      `
       SELECT
         SUM(estimated_time_savings_hours) as "totalHoursSaved",
         SUM(total_occurrences) as "totalDocuments"
       FROM document_type_registry
       WHERE id = ANY($1)
-    `, [typeIds]);
+    `,
+      [typeIds]
+    );
 
     const stats = result.rows[0];
     const hoursSaved = Number(stats.totalHoursSaved) || 0;
@@ -256,11 +271,13 @@ export class DiscoveryStatusService {
   /**
    * Get discovery trends over time
    */
-  async getDiscoveryTrends(days: number = 30): Promise<{
-    date: string;
-    typesDiscovered: number;
-    documentsProcessed: number;
-  }[]> {
+  async getDiscoveryTrends(days: number = 30): Promise<
+    {
+      date: string;
+      typesDiscovered: number;
+      documentsProcessed: number;
+    }[]
+  > {
     const result = await this.db.query<{
       date: string;
       typesDiscovered: number;

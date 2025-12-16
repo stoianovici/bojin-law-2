@@ -85,12 +85,7 @@ describe('TaskDetailModal', () => {
 
     it('should render modal with edit title', () => {
       render(
-        <TaskDetailModal
-          isOpen={true}
-          onClose={mockOnClose}
-          onSave={mockOnSave}
-          task={mockTask}
-        />
+        <TaskDetailModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} task={mockTask} />
       );
 
       expect(screen.getByText('Editare Sarcină')).toBeInTheDocument();
@@ -98,12 +93,7 @@ describe('TaskDetailModal', () => {
 
     it('should populate form fields with task data', () => {
       render(
-        <TaskDetailModal
-          isOpen={true}
-          onClose={mockOnClose}
-          onSave={mockOnSave}
-          task={mockTask}
-        />
+        <TaskDetailModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} task={mockTask} />
       );
 
       const titleInput = screen.getByRole('textbox', { name: /Titlu/i }) as HTMLInputElement;
@@ -117,12 +107,7 @@ describe('TaskDetailModal', () => {
 
     it('should render save button with Romanian text', () => {
       render(
-        <TaskDetailModal
-          isOpen={true}
-          onClose={mockOnClose}
-          onSave={mockOnSave}
-          task={mockTask}
-        />
+        <TaskDetailModal isOpen={true} onClose={mockOnClose} onSave={mockOnSave} task={mockTask} />
       );
 
       expect(screen.getByRole('button', { name: /Salvează Modificările/i })).toBeInTheDocument();

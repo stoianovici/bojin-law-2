@@ -284,10 +284,7 @@ export function OverviewTab({
           {/* Revenue KPI Widget - Full Width (Partners only, Fixed cases only) */}
           <div className="lg:col-span-2">
             <Card title="Revenue Metrics">
-              <CaseRevenueKPIWidget
-                caseId={caseData.id}
-                billingType={caseData.billingType}
-              />
+              <CaseRevenueKPIWidget caseId={caseData.id} billingType={caseData.billingType} />
             </Card>
           </div>
         </div>

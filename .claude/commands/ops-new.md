@@ -1,13 +1,19 @@
 # Create New Operations Issue
 
-You are starting a new operations issue tracking workflow. Follow these steps precisely:
+You are starting a new operations issue tracking workflow. Follow these steps precisely.
+
+**IMPORTANT**: All issues track Local Verification Status. See `ops-protocol.md` for details.
 
 ## 1. Read Current State
 
-First, read the operations log to get the current issue count:
+First, read these files in parallel:
 
-- Read `docs/ops/operations-log.md`
-- Determine the next issue ID (OPS-XXX) by finding the highest existing ID and incrementing
+- `docs/ops/operations-log.md` - Get the current issue count
+- `docs/ops/root-cause-patterns.md` - Reference for initial triage
+- `docs/project-conventions.md` - Code patterns and implementation standards
+- `.claude/commands/ops-protocol.md` - Verification gate protocol
+
+Determine the next issue ID (OPS-XXX) by finding the highest existing ID and incrementing.
 
 ## 2. Gather Issue Information
 
@@ -29,13 +35,43 @@ Perform quick triage:
 2. Use the Explore agent (Task tool with subagent_type=Explore) to search the codebase for related code
 3. Check for similar past issues in the ops log
 4. Identify potentially relevant files
-5. **Discover local dev environment** - Check for local development setup:
-   - Look for `.env` files in relevant services/apps
-   - Check `package.json` for `dev` scripts (e.g., `npm run dev`)
-   - Note any docker-compose files for local dependencies
-   - Document findings in the issue for faster iteration during fixes
+5. **Discover local dev environment** - Check for local development setup
 
-## 4. Create Issue Entry
+## 4. Determine Environment Strategy
+
+Based on issue type, recommend the appropriate environment:
+
+**For Bugs (especially "works locally, fails in prod"):**
+
+```
+Recommended: Connect to production database for real data debugging
+
+To enable:
+  source .env.prod && pnpm dev
+
+This gives you:
+- Real production data (same as users see)
+- Same database state
+- Fast iteration with hot reload
+
+Caveats:
+- Auth uses SKIP_AUTH_VALIDATION=true (can't fully replicate Azure AD locally)
+- Be careful with mutations - this is real data!
+```
+
+**For Features:**
+
+```
+Recommended: Use local database for development
+
+To enable:
+  pnpm dev (default)
+
+Switch to prod data for integration testing:
+  source .env.prod && pnpm dev
+```
+
+## 5. Create Issue Entry
 
 Add a new issue to the "Active Issues" section of `docs/ops/operations-log.md`:
 
@@ -67,13 +103,32 @@ TBD
 
 TBD
 
-#### Local Dev Environment
+#### Environment Strategy
 
-{document how to run locally, e.g., "cd services/gateway && npm run dev"}
+| Mode                   | Command                        | Use When                     |
+| ---------------------- | ------------------------------ | ---------------------------- |
+| Local dev (default)    | `pnpm dev`                     | Feature development          |
+| Production data        | `source .env.prod && pnpm dev` | Bug investigation, real data |
+| Production-like Docker | `pnpm preview`                 | Pre-deploy verification      |
+| Full parity check      | `pnpm preflight:full`          | Before any deployment        |
+
+**Recommended for this issue**: {local/prod-data/docker based on type}
+
+#### Local Verification Status
+
+| Step           | Status     | Date | Notes |
+| -------------- | ---------- | ---- | ----- |
+| Prod data test | ⬜ Pending |      |       |
+| Preflight      | ⬜ Pending |      |       |
+| Docker test    | ⬜ Pending |      |       |
+
+**Verified**: No
+
+> ⚠️ Issue cannot be closed until all three steps are ✅
 
 #### Conventions to Follow
 
-{note any specific conventions from docs/project-conventions.md relevant to this issue, e.g., "Romanian UI text", "Service singleton pattern", "Use clsx for classes"}
+{note any specific conventions from docs/project-conventions.md relevant to this issue}
 
 #### Session Log
 
@@ -86,27 +141,84 @@ TBD
 ---
 ```
 
-## 5. Update Quick Reference
+## 6. Update Quick Reference
 
 Add a row to the Quick Reference table at the top of the ops log.
 
-## 6. Create Handoff Notes
+## 7. Create Handoff Notes
 
 Write initial context to `.ai/ops-{issue-id}-handoff.md` with:
 
-- Issue summary
-- Initial findings from triage
-- Suggested next steps
-- Files to investigate
+```markdown
+# Handoff: [OPS-XXX] {title}
 
-## 7. Report to User
+**Session**: 1
+**Date**: {timestamp}
+**Status**: New
+
+## Issue Summary
+
+{description}
+
+## Initial Triage Findings
+
+{findings}
+
+## Environment Strategy
+
+**Recommended**: {local/prod-data}
+
+- For debugging: `source .env.prod && pnpm dev`
+- For testing: `pnpm preview`
+
+## Local Verification Status
+
+| Step           | Status     | Notes |
+| -------------- | ---------- | ----- |
+| Prod data test | ⬜ Pending |       |
+| Preflight      | ⬜ Pending |       |
+| Docker test    | ⬜ Pending |       |
+
+**Verified**: No
+
+## Next Steps
+
+1. {specific action}
+2. {specific action}
+
+## Files to Investigate
+
+- {file paths}
+```
+
+## 8. Report to User
 
 Summarize:
 
-- Issue ID created
-- Initial triage findings
-- Recommended next steps
-- Command to continue: `/ops-continue {issue-id}`
+```
+## Issue Created: [OPS-XXX] {title}
+
+**Type**: {type}
+**Priority**: {priority}
+**Status**: New
+
+### Initial Triage
+{findings}
+
+### Environment Recommendation
+{prod data vs local recommendation}
+
+### Local Verification Required
+Before this issue can be closed, you must verify:
+1. ⬜ Test with production data (`source .env.prod && pnpm dev`)
+2. ⬜ Run preflight checks (`pnpm preflight:full`)
+3. ⬜ Test in production Docker (`pnpm preview`)
+
+### Next Steps
+{recommendations}
+
+To continue: `/ops-continue OPS-XXX`
+```
 
 ## Important Rules
 
@@ -114,3 +226,5 @@ Summarize:
 - Load files in parallel where possible
 - Be methodical - document everything in the ops log
 - The ops log is the source of truth across sessions
+- **Always include Local Verification Status** - Required for closing
+- **Always recommend environment strategy** based on issue type

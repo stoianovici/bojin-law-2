@@ -127,6 +127,18 @@ type Case {
   """Approval information for cases requiring Partner approval (Story 2.8.2)"""
   approval: CaseApproval
 
+  """Keywords for email classification (OPS-028)"""
+  keywords: [String!]!
+
+  """Reference numbers for email classification - court file numbers, contract refs (OPS-028)"""
+  referenceNumbers: [String!]!
+
+  """Email subject patterns for classification - glob-style (OPS-028)"""
+  subjectPatterns: [String!]!
+
+  """Free text guidance for AI email classifier (OPS-028)"""
+  classificationNotes: String
+
   """List of team members assigned to this case"""
   teamMembers: [CaseTeam!]!
 

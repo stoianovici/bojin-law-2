@@ -20,7 +20,9 @@ jest.mock('recharts', () => ({
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
   Tooltip: () => <div data-testid="tooltip" />,
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
   Cell: () => <div data-testid="cell" />,
 }));
 
@@ -476,7 +478,9 @@ describe('FirmTasksOverviewWidget', () => {
     });
 
     it('announces expansion state to screen readers', () => {
-      const { container } = render(<FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />);
+      const { container } = render(
+        <FirmTasksOverviewWidget widget={widgetWithManyPriorityTasks} />
+      );
 
       const liveRegion = container.querySelector('[role="status"][aria-live="polite"]');
       expect(liveRegion).toBeInTheDocument();

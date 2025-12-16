@@ -106,9 +106,7 @@ describe('FallbackHandler - Circuit Breaker', () => {
 
     // Execute 3 times to reach threshold
     for (let i = 0; i < 3; i++) {
-      await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-        'fallback'
-      );
+      await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
     }
 
     // Check circuit state
@@ -124,9 +122,7 @@ describe('FallbackHandler - Circuit Breaker', () => {
 
     // Open the circuit
     for (let i = 0; i < 3; i++) {
-      await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-        'fallback'
-      );
+      await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
     }
 
     // Next execution should use fallback immediately
@@ -153,9 +149,7 @@ describe('FallbackHandler - Circuit Breaker', () => {
 
     // Open the circuit
     for (let i = 0; i < 3; i++) {
-      await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-        'fallback'
-      );
+      await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
     }
 
     // Wait for reset timeout
@@ -184,9 +178,7 @@ describe('FallbackHandler - Circuit Breaker', () => {
 
     // Open the circuit
     for (let i = 0; i < 3; i++) {
-      await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-        'fallback'
-      );
+      await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
     }
 
     // Wait for reset timeout
@@ -232,9 +224,7 @@ describe('FallbackHandler - Circuit Breaker', () => {
 
     // Open circuit for skill-1
     for (let i = 0; i < 3; i++) {
-      await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-        'fallback'
-      );
+      await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
     }
 
     // skill-2 remains healthy
@@ -603,9 +593,7 @@ describe('FallbackHandler - Event Logging', () => {
       throw new Error('Test error');
     };
 
-    await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-      'fallback'
-    );
+    await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
 
     const events = handler.getFallbackEvents();
     expect(events.length).toBeGreaterThan(0);
@@ -651,9 +639,7 @@ describe('FallbackHandler - Event Logging', () => {
       throw testError;
     };
 
-    await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-      'fallback'
-    );
+    await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
 
     const events = handler.getFallbackEvents();
     const errorEvent = events.find((e) => e.error?.message === 'Test error message');
@@ -670,9 +656,7 @@ describe('FallbackHandler - Event Logging', () => {
 
     // Generate 1500 events
     for (let i = 0; i < 1500; i++) {
-      await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-        'fallback'
-      );
+      await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
     }
 
     const events = handler.getFallbackEvents();
@@ -685,9 +669,7 @@ describe('FallbackHandler - Event Logging', () => {
       throw new Error('Test error');
     };
 
-    await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-      'fallback'
-    );
+    await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
 
     handler.clearFallbackEvents();
 
@@ -721,9 +703,7 @@ describe('FallbackHandler - Statistics', () => {
     };
 
     // Generate some events
-    await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-      'fallback'
-    );
+    await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
 
     const stats = handler.getFallbackStats();
 
@@ -739,9 +719,7 @@ describe('FallbackHandler - Statistics', () => {
 
     // Open circuit for skill-1
     for (let i = 0; i < 2; i++) {
-      await handler.executeWithFallback(['skill-1'], request, failingFn, async () =>
-        'fallback'
-      );
+      await handler.executeWithFallback(['skill-1'], request, failingFn, async () => 'fallback');
     }
 
     // Keep skill-2 healthy

@@ -83,7 +83,7 @@ describe('useDashboardStore', () => {
     it('should have new Partner operational layout with correct widgets', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const widgetIds = result.current.partnerLayout.map(w => w.i);
+      const widgetIds = result.current.partnerLayout.map((w) => w.i);
       expect(widgetIds).toContain('supervised-cases');
       expect(widgetIds).toContain('my-tasks');
       expect(widgetIds).toContain('firm-cases-overview');
@@ -95,7 +95,7 @@ describe('useDashboardStore', () => {
     it('should not have KPI widgets in Partner layout (moved to Analytics)', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const widgetIds = result.current.partnerLayout.map(w => w.i);
+      const widgetIds = result.current.partnerLayout.map((w) => w.i);
       expect(widgetIds).not.toContain('firm-kpis');
       expect(widgetIds).not.toContain('billable-hours-chart');
       expect(widgetIds).not.toContain('case-distribution');
@@ -105,7 +105,7 @@ describe('useDashboardStore', () => {
     it('should have Analytics layout with KPI widgets', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const widgetIds = result.current.analyticsLayout.map(w => w.i);
+      const widgetIds = result.current.analyticsLayout.map((w) => w.i);
       expect(widgetIds).toContain('firm-kpis');
       expect(widgetIds).toContain('billable-hours-chart');
       expect(widgetIds).toContain('case-distribution');
@@ -171,12 +171,8 @@ describe('useDashboardStore', () => {
     it('should handle multiple layout updates for same role', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const layout1: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 0, y: 0, w: 6, h: 3 },
-      ];
-      const layout2: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const layout1: WidgetPosition[] = [{ i: 'firm-kpis', x: 0, y: 0, w: 6, h: 3 }];
+      const layout2: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateLayout('Partner', layout1);
@@ -257,7 +253,7 @@ describe('useDashboardStore', () => {
         result.current.toggleWidgetCollapse('firm-kpis'); // Toggle on again
       });
 
-      expect(result.current.collapsedWidgets.filter(id => id === 'firm-kpis')).toHaveLength(1);
+      expect(result.current.collapsedWidgets.filter((id) => id === 'firm-kpis')).toHaveLength(1);
     });
   });
 
@@ -265,9 +261,7 @@ describe('useDashboardStore', () => {
     it('should reset Partner layout to default', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const customLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const customLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateLayout('Partner', customLayout);
@@ -283,9 +277,7 @@ describe('useDashboardStore', () => {
     it('should reset Associate layout to default', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const customLayout: WidgetPosition[] = [
-        { i: 'active-cases', x: 0, y: 0, w: 12, h: 4 },
-      ];
+      const customLayout: WidgetPosition[] = [{ i: 'active-cases', x: 0, y: 0, w: 12, h: 4 }];
 
       act(() => {
         result.current.updateLayout('Associate', customLayout);
@@ -301,9 +293,7 @@ describe('useDashboardStore', () => {
     it('should reset Paralegal layout to default', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const customLayout: WidgetPosition[] = [
-        { i: 'assigned-tasks', x: 0, y: 0, w: 12, h: 5 },
-      ];
+      const customLayout: WidgetPosition[] = [{ i: 'assigned-tasks', x: 0, y: 0, w: 12, h: 5 }];
 
       act(() => {
         result.current.updateLayout('Paralegal', customLayout);
@@ -319,9 +309,7 @@ describe('useDashboardStore', () => {
     it('should not affect other role layouts when resetting', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const customPartnerLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const customPartnerLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
       const customAssociateLayout: WidgetPosition[] = [
         { i: 'active-cases', x: 0, y: 0, w: 12, h: 4 },
       ];
@@ -368,9 +356,7 @@ describe('useDashboardStore', () => {
     it('should return updated layout after updateLayout is called', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const customLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const customLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateLayout('Partner', customLayout);
@@ -386,51 +372,39 @@ describe('useDashboardStore', () => {
     it('should persist Partner layout to localStorage', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const newLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const newLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateLayout('Partner', newLayout);
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('dashboard-layouts') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.state.partnerLayout).toEqual(newLayout);
     });
 
     it('should persist Associate layout to localStorage', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const newLayout: WidgetPosition[] = [
-        { i: 'active-cases', x: 0, y: 0, w: 12, h: 4 },
-      ];
+      const newLayout: WidgetPosition[] = [{ i: 'active-cases', x: 0, y: 0, w: 12, h: 4 }];
 
       act(() => {
         result.current.updateLayout('Associate', newLayout);
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('dashboard-layouts') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.state.associateLayout).toEqual(newLayout);
     });
 
     it('should persist Paralegal layout to localStorage', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const newLayout: WidgetPosition[] = [
-        { i: 'assigned-tasks', x: 0, y: 0, w: 12, h: 5 },
-      ];
+      const newLayout: WidgetPosition[] = [{ i: 'assigned-tasks', x: 0, y: 0, w: 12, h: 5 }];
 
       act(() => {
         result.current.updateLayout('Paralegal', newLayout);
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('dashboard-layouts') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.state.paralegalLayout).toEqual(newLayout);
     });
 
@@ -442,9 +416,7 @@ describe('useDashboardStore', () => {
         result.current.toggleWidgetCollapse('billable-hours-chart');
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('dashboard-layouts') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.state.collapsedWidgets).toContain('firm-kpis');
       expect(stored.state.collapsedWidgets).toContain('billable-hours-chart');
     });
@@ -452,15 +424,9 @@ describe('useDashboardStore', () => {
     it('should persist all state fields', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const partnerLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 0, y: 0, w: 6, h: 3 },
-      ];
-      const associateLayout: WidgetPosition[] = [
-        { i: 'active-cases', x: 0, y: 0, w: 12, h: 4 },
-      ];
-      const paralegalLayout: WidgetPosition[] = [
-        { i: 'assigned-tasks', x: 0, y: 0, w: 12, h: 5 },
-      ];
+      const partnerLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 0, y: 0, w: 6, h: 3 }];
+      const associateLayout: WidgetPosition[] = [{ i: 'active-cases', x: 0, y: 0, w: 12, h: 4 }];
+      const paralegalLayout: WidgetPosition[] = [{ i: 'assigned-tasks', x: 0, y: 0, w: 12, h: 5 }];
 
       act(() => {
         result.current.updateLayout('Partner', partnerLayout);
@@ -469,9 +435,7 @@ describe('useDashboardStore', () => {
         result.current.toggleWidgetCollapse('firm-kpis');
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('dashboard-layouts') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.state.partnerLayout).toEqual(partnerLayout);
       expect(stored.state.associateLayout).toEqual(associateLayout);
       expect(stored.state.paralegalLayout).toEqual(paralegalLayout);
@@ -486,9 +450,7 @@ describe('useDashboardStore', () => {
       const initialAssociateLayout = result.current.associateLayout;
       const initialParalegalLayout = result.current.paralegalLayout;
 
-      const newPartnerLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const newPartnerLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateLayout('Partner', newPartnerLayout);
@@ -520,9 +482,7 @@ describe('useDashboardStore', () => {
       const initialCollapsedWidgets = result.current.collapsedWidgets;
 
       act(() => {
-        result.current.updateLayout('Partner', [
-          { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-        ]);
+        result.current.updateLayout('Partner', [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }]);
       });
 
       expect(result.current.collapsedWidgets).toEqual(initialCollapsedWidgets);
@@ -548,9 +508,7 @@ describe('useDashboardStore', () => {
     it('should not affect role layouts when updating Analytics layout', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const newAnalyticsLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const newAnalyticsLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateAnalyticsLayout(newAnalyticsLayout);
@@ -564,9 +522,7 @@ describe('useDashboardStore', () => {
     it('should reset Analytics layout to default', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const customAnalyticsLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const customAnalyticsLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateAnalyticsLayout(customAnalyticsLayout);
@@ -582,12 +538,8 @@ describe('useDashboardStore', () => {
     it('should handle multiple Analytics layout updates', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const layout1: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 0, y: 0, w: 6, h: 3 },
-      ];
-      const layout2: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const layout1: WidgetPosition[] = [{ i: 'firm-kpis', x: 0, y: 0, w: 6, h: 3 }];
+      const layout2: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateAnalyticsLayout(layout1);
@@ -631,7 +583,7 @@ describe('useDashboardStore', () => {
       expect(result.current.partnerLayout).toEqual(defaultPartnerLayout);
 
       // Verify it has operational widgets, not KPI widgets
-      const widgetIds = result.current.partnerLayout.map(w => w.i);
+      const widgetIds = result.current.partnerLayout.map((w) => w.i);
       expect(widgetIds).toContain('supervised-cases');
       expect(widgetIds).not.toContain('firm-kpis');
     });
@@ -654,9 +606,7 @@ describe('useDashboardStore', () => {
 
       // Change Partner layout
       act(() => {
-        result.current.updateLayout('Partner', [
-          { i: 'supervised-cases', x: 6, y: 0, w: 6, h: 5 },
-        ]);
+        result.current.updateLayout('Partner', [{ i: 'supervised-cases', x: 6, y: 0, w: 6, h: 5 }]);
       });
 
       // Associate and Paralegal should be preserved
@@ -670,7 +620,7 @@ describe('useDashboardStore', () => {
       expect(result.current.analyticsLayout).toEqual(defaultAnalyticsLayout);
       expect(result.current.analyticsLayout).toHaveLength(4);
 
-      const widgetIds = result.current.analyticsLayout.map(w => w.i);
+      const widgetIds = result.current.analyticsLayout.map((w) => w.i);
       expect(widgetIds).toContain('firm-kpis');
       expect(widgetIds).toContain('billable-hours-chart');
       expect(widgetIds).toContain('case-distribution');
@@ -690,9 +640,7 @@ describe('useDashboardStore', () => {
 
       // Change Partner layout
       act(() => {
-        result.current.updateLayout('Partner', [
-          { i: 'supervised-cases', x: 6, y: 0, w: 6, h: 5 },
-        ]);
+        result.current.updateLayout('Partner', [{ i: 'supervised-cases', x: 6, y: 0, w: 6, h: 5 }]);
       });
 
       // Collapsed widgets should be preserved
@@ -752,29 +700,21 @@ describe('useDashboardStore', () => {
     it('should persist Analytics layout to localStorage', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const newAnalyticsLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 },
-      ];
+      const newAnalyticsLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 6, y: 0, w: 6, h: 3 }];
 
       act(() => {
         result.current.updateAnalyticsLayout(newAnalyticsLayout);
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('dashboard-layouts') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.state.analyticsLayout).toEqual(newAnalyticsLayout);
     });
 
     it('should persist all state fields including Analytics', () => {
       const { result } = renderHook(() => useDashboardStore());
 
-      const partnerLayout: WidgetPosition[] = [
-        { i: 'supervised-cases', x: 0, y: 0, w: 6, h: 5 },
-      ];
-      const analyticsLayout: WidgetPosition[] = [
-        { i: 'firm-kpis', x: 0, y: 0, w: 12, h: 3 },
-      ];
+      const partnerLayout: WidgetPosition[] = [{ i: 'supervised-cases', x: 0, y: 0, w: 6, h: 5 }];
+      const analyticsLayout: WidgetPosition[] = [{ i: 'firm-kpis', x: 0, y: 0, w: 12, h: 3 }];
 
       act(() => {
         result.current.updateLayout('Partner', partnerLayout);
@@ -782,9 +722,7 @@ describe('useDashboardStore', () => {
         result.current.toggleWidgetCollapse('supervised-cases');
       });
 
-      const stored = JSON.parse(
-        localStorage.getItem('dashboard-layouts') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.state.partnerLayout).toEqual(partnerLayout);
       expect(stored.state.analyticsLayout).toEqual(analyticsLayout);
       expect(stored.state.collapsedWidgets).toContain('supervised-cases');
@@ -805,9 +743,7 @@ describe('useDashboardStore', () => {
       expect(result.current.analyticsLayout).toEqual(customAnalyticsLayout);
 
       // Verify it was persisted
-      const stored = JSON.parse(
-        localStorage.getItem('dashboard-layouts') || '{}'
-      );
+      const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.state.analyticsLayout).toEqual(customAnalyticsLayout);
     });
   });

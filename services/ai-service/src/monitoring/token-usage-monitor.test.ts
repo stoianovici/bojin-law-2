@@ -212,7 +212,13 @@ describe('TokenUsageMonitor', () => {
 
     it('should calculate correct cache hit rate', async () => {
       mockPrisma.aITokenUsage.aggregate.mockResolvedValue({
-        _sum: { totalTokens: 10000, inputTokens: 4000, outputTokens: 6000, costCents: 300, latencyMs: 50000 },
+        _sum: {
+          totalTokens: 10000,
+          inputTokens: 4000,
+          outputTokens: 6000,
+          costCents: 300,
+          latencyMs: 50000,
+        },
         _count: 100,
         _avg: { latencyMs: 500 },
       });
@@ -225,7 +231,13 @@ describe('TokenUsageMonitor', () => {
 
     it('should handle zero operations', async () => {
       mockPrisma.aITokenUsage.aggregate.mockResolvedValue({
-        _sum: { totalTokens: null, inputTokens: null, outputTokens: null, costCents: null, latencyMs: null },
+        _sum: {
+          totalTokens: null,
+          inputTokens: null,
+          outputTokens: null,
+          costCents: null,
+          latencyMs: null,
+        },
         _count: 0,
         _avg: { latencyMs: null },
       });
@@ -250,23 +262,35 @@ describe('TokenUsageMonitor', () => {
       const usage = await monitor.getUsageByModel('firm-001', new Date(), new Date());
 
       expect(usage).toHaveLength(3);
-      expect(usage.find(u => u.model === 'claude-haiku')?.tokens).toBe(50000);
-      expect(usage.find(u => u.model === 'claude-sonnet')?.operationCount).toBe(50);
+      expect(usage.find((u) => u.model === 'claude-haiku')?.tokens).toBe(50000);
+      expect(usage.find((u) => u.model === 'claude-sonnet')?.operationCount).toBe(50);
     });
   });
 
   describe('getUsageByOperation', () => {
     it('should group usage by operation type', async () => {
       mockPrisma.aITokenUsage.groupBy.mockResolvedValue([
-        { operationType: 'document_generation', _sum: { totalTokens: 40000, costCents: 1200 }, _count: 100 },
-        { operationType: 'semantic_diff', _sum: { totalTokens: 20000, costCents: 600 }, _count: 50 },
-        { operationType: 'clause_suggestion', _sum: { totalTokens: 10000, costCents: 150 }, _count: 200 },
+        {
+          operationType: 'document_generation',
+          _sum: { totalTokens: 40000, costCents: 1200 },
+          _count: 100,
+        },
+        {
+          operationType: 'semantic_diff',
+          _sum: { totalTokens: 20000, costCents: 600 },
+          _count: 50,
+        },
+        {
+          operationType: 'clause_suggestion',
+          _sum: { totalTokens: 10000, costCents: 150 },
+          _count: 200,
+        },
       ]);
 
       const usage = await monitor.getUsageByOperation('firm-001', new Date(), new Date());
 
       expect(usage).toHaveLength(3);
-      expect(usage.find(u => u.operationType === 'document_generation')?.tokens).toBe(40000);
+      expect(usage.find((u) => u.operationType === 'document_generation')?.tokens).toBe(40000);
     });
   });
 

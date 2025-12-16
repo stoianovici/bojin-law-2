@@ -166,7 +166,8 @@ describe('Session Configuration', () => {
     });
 
     it('should accept SESSION_SECRET longer than 32 characters', () => {
-      process.env.SESSION_SECRET = 'this-is-a-very-long-session-secret-with-more-than-32-characters';
+      process.env.SESSION_SECRET =
+        'this-is-a-very-long-session-secret-with-more-than-32-characters';
       jest.resetModules();
 
       expect(() => {

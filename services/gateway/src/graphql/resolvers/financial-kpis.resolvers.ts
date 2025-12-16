@@ -48,11 +48,7 @@ export const financialKPIsResolvers = {
      *
      * AC: 8 - Apply data scope filter from context
      */
-    financialKPIs: async (
-      _parent: unknown,
-      args: FinancialKPIsArgs,
-      context: Context
-    ) => {
+    financialKPIs: async (_parent: unknown, args: FinancialKPIsArgs, context: Context) => {
       // Authentication check (directive also checks this, but be explicit)
       if (!context.user) {
         throw new GraphQLError('Authentication required', {
@@ -101,11 +97,7 @@ export const financialKPIsResolvers = {
      * Get revenue KPI for a specific case.
      * Returns comparison between actual and projected revenue.
      */
-    caseRevenueKPI: async (
-      _parent: unknown,
-      args: CaseRevenueKPIArgs,
-      context: Context
-    ) => {
+    caseRevenueKPI: async (_parent: unknown, args: CaseRevenueKPIArgs, context: Context) => {
       // Authentication check
       if (!context.user) {
         throw new GraphQLError('Authentication required', {
@@ -124,11 +116,7 @@ export const financialKPIsResolvers = {
      * Get firm-wide revenue KPIs aggregation.
      * Shows overall performance metrics and top/underperforming cases.
      */
-    firmRevenueKPIs: async (
-      _parent: unknown,
-      args: FirmRevenueKPIsArgs,
-      context: Context
-    ) => {
+    firmRevenueKPIs: async (_parent: unknown, args: FirmRevenueKPIsArgs, context: Context) => {
       // Authentication check
       if (!context.user) {
         throw new GraphQLError('Authentication required', {

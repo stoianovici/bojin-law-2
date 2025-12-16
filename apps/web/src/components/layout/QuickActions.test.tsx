@@ -99,7 +99,7 @@ describe('QuickActions', () => {
       expect(buttons.length).toBeGreaterThan(0);
 
       // Each button should have an icon (emoji)
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         expect(button.textContent).toMatch(/[📝✅📊👥📋⏱️✓🔍📤📅💭➕]/);
       });
     });
@@ -133,7 +133,7 @@ describe('QuickActions', () => {
 
       // All action labels should be visible
       const buttons = screen.getAllByRole('button');
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         expect(button.textContent).toBeTruthy();
       });
     });
@@ -153,7 +153,7 @@ describe('QuickActions', () => {
       render(<QuickActions />);
 
       const buttons = screen.getAllByRole('button');
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         expect(button).toHaveAccessibleName();
       });
     });
@@ -177,7 +177,7 @@ describe('QuickActions', () => {
       render(<QuickActions />);
 
       const buttons = screen.getAllByRole('button');
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         // Buttons should have focus styles
         expect(button.className).toContain('focus');
       });

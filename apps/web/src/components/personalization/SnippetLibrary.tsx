@@ -7,13 +7,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -116,12 +110,7 @@ const PlusIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M12 4v16m8-8H4"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
   </svg>
 );
 
@@ -135,20 +124,12 @@ const CheckIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 13l4 4L19 7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
 // Category labels and icons
-const CATEGORY_CONFIG: Record<
-  SnippetCategory,
-  { label: string; color: string }
-> = {
+const CATEGORY_CONFIG: Record<SnippetCategory, { label: string; color: string }> = {
   Greeting: { label: 'Salutări', color: 'bg-green-100 text-green-800' },
   Closing: { label: 'Încheieri', color: 'bg-blue-100 text-blue-800' },
   LegalPhrase: { label: 'Expresii Juridice', color: 'bg-purple-100 text-purple-800' },
@@ -221,25 +202,17 @@ function SnippetItem({
           <h4 className="font-medium text-sm truncate" title={snippet.title}>
             {snippet.title}
           </h4>
-          <code className="text-xs text-muted-foreground">
-            /{snippet.shortcut}
-          </code>
+          <code className="text-xs text-muted-foreground">/{snippet.shortcut}</code>
         </div>
-        <Badge className={`text-xs shrink-0 ${categoryConfig.color}`}>
-          {categoryConfig.label}
-        </Badge>
+        <Badge className={`text-xs shrink-0 ${categoryConfig.color}`}>{categoryConfig.label}</Badge>
       </div>
 
       {/* Content preview */}
-      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-        {snippet.content}
-      </p>
+      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{snippet.content}</p>
 
       {/* Footer */}
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          Folosit de {snippet.usageCount} ori
-        </span>
+        <span className="text-xs text-muted-foreground">Folosit de {snippet.usageCount} ori</span>
         {snippet.isAutoDetected && (
           <Badge variant="outline" className="text-xs">
             Auto-detectat
@@ -319,12 +292,7 @@ function EmptyState({
   return (
     <div className="text-center py-12">
       <div className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4">
-        <svg
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          className="h-full w-full"
-        >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-full w-full">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -334,9 +302,7 @@ function EmptyState({
         </svg>
       </div>
       <h4 className="text-sm font-medium text-foreground mb-1">
-        {category
-          ? `Niciun snippet în ${CATEGORY_CONFIG[category].label}`
-          : 'Niciun snippet găsit'}
+        {category ? `Niciun snippet în ${CATEGORY_CONFIG[category].label}` : 'Niciun snippet găsit'}
       </h4>
       <p className="text-sm text-muted-foreground mb-4">
         {category
@@ -364,26 +330,14 @@ export function SnippetLibrary({
   showCreateButton = true,
 }: SnippetLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<
-    SnippetCategory | 'all'
-  >('all');
-  const [selectedSnippetId, setSelectedSnippetId] = useState<string | null>(
-    null
-  );
-  const [deleteDialogSnippet, setDeleteDialogSnippet] =
-    useState<PersonalSnippet | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<SnippetCategory | 'all'>('all');
+  const [selectedSnippetId, setSelectedSnippetId] = useState<string | null>(null);
+  const [deleteDialogSnippet, setDeleteDialogSnippet] = useState<PersonalSnippet | null>(null);
 
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const {
-    snippets,
-    snippetsByCategory,
-    loading,
-    error,
-    deleteSnippet,
-    deleting,
-    recordUsage,
-  } = usePersonalSnippets();
+  const { snippets, snippetsByCategory, loading, error, deleteSnippet, deleting, recordUsage } =
+    usePersonalSnippets();
 
   // Filter snippets based on search and category
   const filteredSnippets = useMemo(() => {
@@ -486,9 +440,7 @@ export function SnippetLibrary({
           <CardTitle>Biblioteca de Snippet-uri</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Eroare la încărcarea snippet-urilor.
-          </p>
+          <p className="text-sm text-destructive">Eroare la încărcarea snippet-urilor.</p>
         </CardContent>
       </Card>
     );
@@ -501,9 +453,7 @@ export function SnippetLibrary({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Biblioteca de Snippet-uri</CardTitle>
-              <CardDescription>
-                {snippets.length} snippet-uri salvate
-              </CardDescription>
+              <CardDescription>{snippets.length} snippet-uri salvate</CardDescription>
             </div>
             {showCreateButton && onCreateNew && (
               <Button onClick={onCreateNew}>
@@ -530,9 +480,7 @@ export function SnippetLibrary({
           {/* Category Tabs */}
           <Tabs
             value={selectedCategory}
-            onValueChange={(v) =>
-              setSelectedCategory(v as SnippetCategory | 'all')
-            }
+            onValueChange={(v) => setSelectedCategory(v as SnippetCategory | 'all')}
             className="mb-4"
           >
             <TabsList className="flex-wrap h-auto">
@@ -542,18 +490,16 @@ export function SnippetLibrary({
                   {categoryCounts.all}
                 </Badge>
               </TabsTrigger>
-              {(Object.keys(CATEGORY_CONFIG) as SnippetCategory[]).map(
-                (cat) => (
-                  <TabsTrigger key={cat} value={cat} className="gap-1">
-                    {CATEGORY_CONFIG[cat].label}
-                    {categoryCounts[cat] > 0 && (
-                      <Badge variant="secondary" className="ml-1 h-5 px-1.5">
-                        {categoryCounts[cat]}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                )
-              )}
+              {(Object.keys(CATEGORY_CONFIG) as SnippetCategory[]).map((cat) => (
+                <TabsTrigger key={cat} value={cat} className="gap-1">
+                  {CATEGORY_CONFIG[cat].label}
+                  {categoryCounts[cat] > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                      {categoryCounts[cat]}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             {/* Grid content for each tab */}
@@ -561,10 +507,7 @@ export function SnippetLibrary({
               {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div
-                      key={i}
-                      className="p-4 rounded-lg border bg-card animate-pulse"
-                    >
+                    <div key={i} className="p-4 rounded-lg border bg-card animate-pulse">
                       <div className="h-4 bg-muted rounded w-3/4 mb-2" />
                       <div className="h-3 bg-muted rounded w-1/2 mb-3" />
                       <div className="h-12 bg-muted rounded mb-3" />
@@ -574,9 +517,7 @@ export function SnippetLibrary({
                 </div>
               ) : filteredSnippets.length === 0 ? (
                 <EmptyState
-                  category={
-                    selectedCategory !== 'all' ? selectedCategory : undefined
-                  }
+                  category={selectedCategory !== 'all' ? selectedCategory : undefined}
                   onCreateNew={onCreateNew}
                 />
               ) : (
@@ -615,8 +556,7 @@ export function SnippetLibrary({
             <DialogTitle>Șterge Snippet</DialogTitle>
             <DialogDescription>
               Ești sigur că vrei să ștergi snippet-ul &quot;
-              {deleteDialogSnippet?.title}&quot;? Această acțiune nu poate fi
-              anulată.
+              {deleteDialogSnippet?.title}&quot;? Această acțiune nu poate fi anulată.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -627,11 +567,7 @@ export function SnippetLibrary({
             >
               Anulează
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting ? 'Se șterge...' : 'Șterge'}
             </Button>
           </DialogFooter>

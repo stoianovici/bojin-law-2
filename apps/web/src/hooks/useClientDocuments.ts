@@ -10,11 +10,7 @@ import { useQuery } from '@apollo/client/react';
 
 // GraphQL query for fetching client documents grouped by case
 const GET_CLIENT_DOCUMENTS_GROUPED = gql`
-  query GetClientDocumentsGrouped(
-    $clientId: UUID!
-    $excludeCaseId: UUID
-    $search: String
-  ) {
+  query GetClientDocumentsGrouped($clientId: UUID!, $excludeCaseId: UUID, $search: String) {
     clientDocumentsGroupedByCase(
       clientId: $clientId
       excludeCaseId: $excludeCaseId
@@ -191,9 +187,9 @@ export function useClientDocumentsGrouped(
   excludeCaseId?: string,
   search?: string
 ): UseClientDocumentsGroupedResult {
-  const { data, loading, error, refetch } = useQuery<
-    { clientDocumentsGroupedByCase: DocumentsByCase[] }
-  >(GET_CLIENT_DOCUMENTS_GROUPED, {
+  const { data, loading, error, refetch } = useQuery<{
+    clientDocumentsGroupedByCase: DocumentsByCase[];
+  }>(GET_CLIENT_DOCUMENTS_GROUPED, {
     variables: { clientId, excludeCaseId, search },
     fetchPolicy: 'cache-and-network',
     skip: !clientId,
@@ -212,16 +208,15 @@ export function useClientDocumentsGrouped(
  * @param params - Query parameters
  * @returns Documents, loading state, error, and refetch function
  */
-export function useClientDocuments(
-  params: UseClientDocumentsVariables
-): UseClientDocumentsResult {
-  const { data, loading, error, refetch } = useQuery<
-    { clientDocuments: ClientDocument[] }
-  >(GET_CLIENT_DOCUMENTS, {
-    variables: params,
-    fetchPolicy: 'cache-and-network',
-    skip: !params.clientId,
-  });
+export function useClientDocuments(params: UseClientDocumentsVariables): UseClientDocumentsResult {
+  const { data, loading, error, refetch } = useQuery<{ clientDocuments: ClientDocument[] }>(
+    GET_CLIENT_DOCUMENTS,
+    {
+      variables: params,
+      fetchPolicy: 'cache-and-network',
+      skip: !params.clientId,
+    }
+  );
 
   return {
     documents: data?.clientDocuments || [],

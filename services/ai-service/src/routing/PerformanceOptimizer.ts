@@ -195,8 +195,14 @@ export class PerformanceOptimizer {
     }
   ) {
     this.metadataCache = new LRUCache(config.metadataCacheSize, config.metadataCacheTTL);
-    this.patternMatchCache = new LRUCache(config.patternMatchCacheSize, config.patternMatchCacheTTL);
-    this.effectivenessCache = new LRUCache(config.effectivenessCacheSize, config.effectivenessCacheTTL);
+    this.patternMatchCache = new LRUCache(
+      config.patternMatchCacheSize,
+      config.patternMatchCacheTTL
+    );
+    this.effectivenessCache = new LRUCache(
+      config.effectivenessCacheSize,
+      config.effectivenessCacheTTL
+    );
     this.requestCache = new LRUCache(config.requestCacheSize, config.requestCacheTTL);
   }
 
@@ -265,10 +271,7 @@ export class PerformanceOptimizer {
   /**
    * Execute with deduplication - prevent duplicate requests
    */
-  async deduplicate<T>(
-    key: string,
-    operation: () => Promise<T>
-  ): Promise<T> {
+  async deduplicate<T>(key: string, operation: () => Promise<T>): Promise<T> {
     // Check if request is already in flight
     const inflight = this.inflightRequests.get(key);
     if (inflight) {
@@ -410,14 +413,14 @@ export class PerformanceOptimizer {
       };
     }
 
-    const durations = this.performanceMetrics.map(m => m.duration).sort((a, b) => a - b);
+    const durations = this.performanceMetrics.map((m) => m.duration).sort((a, b) => a - b);
     const averageDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
 
     const p50Index = Math.floor(durations.length * 0.5);
     const p95Index = Math.floor(durations.length * 0.95);
     const p99Index = Math.floor(durations.length * 0.99);
 
-    const cachedCount = this.performanceMetrics.filter(m => m.cached).length;
+    const cachedCount = this.performanceMetrics.filter((m) => m.cached).length;
     const cacheHitRate = cachedCount / this.performanceMetrics.length;
 
     const slowestOperations = [...this.performanceMetrics]
@@ -438,7 +441,7 @@ export class PerformanceOptimizer {
    * Get metrics by operation name
    */
   getMetricsByOperation(operationName: string): PerformanceMetrics[] {
-    return this.performanceMetrics.filter(m => m.operationName === operationName);
+    return this.performanceMetrics.filter((m) => m.operationName === operationName);
   }
 
   // ============================================================================
@@ -505,8 +508,13 @@ export class PerformanceOptimizer {
   } {
     const stats = this.getAllCacheStats();
 
-    const totalHits = stats.metadata.hits + stats.patternMatch.hits + stats.effectiveness.hits + stats.request.hits;
-    const totalMisses = stats.metadata.misses + stats.patternMatch.misses + stats.effectiveness.misses + stats.request.misses;
+    const totalHits =
+      stats.metadata.hits + stats.patternMatch.hits + stats.effectiveness.hits + stats.request.hits;
+    const totalMisses =
+      stats.metadata.misses +
+      stats.patternMatch.misses +
+      stats.effectiveness.misses +
+      stats.request.misses;
     const totalRequests = totalHits + totalMisses;
     const overallHitRate = totalRequests > 0 ? totalHits / totalRequests : 0;
 
@@ -530,7 +538,11 @@ export class PerformanceOptimizer {
     }
 
     return {
-      totalCacheSize: stats.metadata.size + stats.patternMatch.size + stats.effectiveness.size + stats.request.size,
+      totalCacheSize:
+        stats.metadata.size +
+        stats.patternMatch.size +
+        stats.effectiveness.size +
+        stats.request.size,
       totalHits,
       totalMisses,
       overallHitRate,

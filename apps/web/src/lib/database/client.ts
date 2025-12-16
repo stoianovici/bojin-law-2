@@ -41,10 +41,7 @@ export function getPool(): Pool {
 /**
  * Execute a query
  */
-export async function query<T = any>(
-  text: string,
-  params?: any[]
-): Promise<QueryResult<T>> {
+export async function query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
   const pool = getPool();
   const result = await pool.query(text, params);
   return result as QueryResult<T>;

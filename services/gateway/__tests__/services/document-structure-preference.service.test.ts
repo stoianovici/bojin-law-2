@@ -63,7 +63,9 @@ describe('DocumentStructurePreferenceService', () => {
   describe('createPreference', () => {
     it('should create a new preference successfully', async () => {
       (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(null);
-      (mockPrisma.documentStructurePreference.create as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.create as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
 
       const input = {
         documentType: 'contract',
@@ -89,7 +91,9 @@ describe('DocumentStructurePreferenceService', () => {
     });
 
     it('should throw error for duplicate document type', async () => {
-      (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
 
       const input = {
         documentType: 'contract',
@@ -150,13 +154,19 @@ describe('DocumentStructurePreferenceService', () => {
 
   describe('updatePreference', () => {
     it('should update preference successfully', async () => {
-      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
       (mockPrisma.documentStructurePreference.update as jest.Mock).mockResolvedValue({
         ...mockPreference,
         footerContent: 'Updated footer',
       });
 
-      const result = await service.updatePreference('pref-1', { footerContent: 'Updated footer' }, userId);
+      const result = await service.updatePreference(
+        'pref-1',
+        { footerContent: 'Updated footer' },
+        userId
+      );
 
       expect(result.footerContent).toBe('Updated footer');
       expect(mockPrisma.documentStructurePreference.update).toHaveBeenCalledWith({
@@ -174,7 +184,9 @@ describe('DocumentStructurePreferenceService', () => {
     });
 
     it('should validate sections when updating', async () => {
-      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
 
       await expect(
         service.updatePreference('pref-1', { preferredSections: [] }, userId)
@@ -182,7 +194,9 @@ describe('DocumentStructurePreferenceService', () => {
     });
 
     it('should allow null values for optional fields', async () => {
-      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
       (mockPrisma.documentStructurePreference.update as jest.Mock).mockResolvedValue({
         ...mockPreference,
         footerContent: null,
@@ -207,8 +221,12 @@ describe('DocumentStructurePreferenceService', () => {
 
   describe('deletePreference', () => {
     it('should delete preference successfully', async () => {
-      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(mockPreference);
-      (mockPrisma.documentStructurePreference.delete as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
+      (mockPrisma.documentStructurePreference.delete as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
 
       const result = await service.deletePreference('pref-1', userId);
 
@@ -229,7 +247,9 @@ describe('DocumentStructurePreferenceService', () => {
 
   describe('getPreferenceById', () => {
     it('should return preference by ID', async () => {
-      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
 
       const result = await service.getPreferenceById('pref-1', userId);
 
@@ -248,7 +268,9 @@ describe('DocumentStructurePreferenceService', () => {
 
   describe('getPreferenceByType', () => {
     it('should return preference by document type', async () => {
-      (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
 
       const result = await service.getPreferenceByType('contract', userId);
 
@@ -267,7 +289,9 @@ describe('DocumentStructurePreferenceService', () => {
 
   describe('getUserPreferences', () => {
     it('should return all user preferences', async () => {
-      (mockPrisma.documentStructurePreference.findMany as jest.Mock).mockResolvedValue([mockPreference]);
+      (mockPrisma.documentStructurePreference.findMany as jest.Mock).mockResolvedValue([
+        mockPreference,
+      ]);
 
       const result = await service.getUserPreferences(userId);
 
@@ -295,7 +319,9 @@ describe('DocumentStructurePreferenceService', () => {
 
   describe('recordUsage', () => {
     it('should increment usage count', async () => {
-      (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
       (mockPrisma.documentStructurePreference.update as jest.Mock).mockResolvedValue({
         ...mockPreference,
         usageCount: 11,
@@ -326,7 +352,9 @@ describe('DocumentStructurePreferenceService', () => {
   describe('learnFromDocument', () => {
     it('should create new preference when none exists', async () => {
       (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(null);
-      (mockPrisma.documentStructurePreference.create as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.create as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
 
       const sections = [{ name: 'Introduction', order: 1, required: true }];
       const headerStyle = mockHeaderStyle;
@@ -337,7 +365,9 @@ describe('DocumentStructurePreferenceService', () => {
     });
 
     it('should merge sections when preference exists', async () => {
-      (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findUnique as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
       (mockPrisma.documentStructurePreference.update as jest.Mock).mockResolvedValue({
         ...mockPreference,
         preferredSections: [
@@ -368,7 +398,9 @@ describe('DocumentStructurePreferenceService', () => {
 
   describe('reorderSections', () => {
     it('should reorder sections', async () => {
-      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(mockPreference);
+      (mockPrisma.documentStructurePreference.findFirst as jest.Mock).mockResolvedValue(
+        mockPreference
+      );
       (mockPrisma.documentStructurePreference.update as jest.Mock).mockResolvedValue({
         ...mockPreference,
         preferredSections: [

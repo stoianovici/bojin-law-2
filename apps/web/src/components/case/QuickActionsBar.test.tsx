@@ -58,9 +58,7 @@ describe('QuickActionsBar - Global', () => {
 
   it('should render the input field with context-aware placeholder', () => {
     render(<QuickActionsBar />);
-    expect(
-      screen.getByPlaceholderText(/ce vrei să faci/i)
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/ce vrei să faci/i)).toBeInTheDocument();
   });
 
   it('should render context-aware suggestion buttons', () => {

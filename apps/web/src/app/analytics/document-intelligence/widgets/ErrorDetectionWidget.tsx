@@ -58,7 +58,9 @@ export function ErrorDetectionWidget({ data }: ErrorDetectionWidgetProps) {
           <p className="text-xs text-gray-500">detectate</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold text-green-600">{data.concernsResolvedBeforeFiling}</p>
+          <p className="text-lg font-semibold text-green-600">
+            {data.concernsResolvedBeforeFiling}
+          </p>
           <p className="text-xs text-gray-500">rezolvate</p>
         </div>
         <div className="text-center">
@@ -79,10 +81,7 @@ export function ErrorDetectionWidget({ data }: ErrorDetectionWidgetProps) {
               className="flex-1 p-2 rounded-lg text-center"
               style={{ backgroundColor: `${SEVERITY_COLORS[sev.severity]}15` }}
             >
-              <p
-                className="text-lg font-semibold"
-                style={{ color: SEVERITY_COLORS[sev.severity] }}
-              >
+              <p className="text-lg font-semibold" style={{ color: SEVERITY_COLORS[sev.severity] }}>
                 {sev.count}
               </p>
               <p className="text-xs text-gray-600">{sev.severity}</p>
@@ -97,11 +96,7 @@ export function ErrorDetectionWidget({ data }: ErrorDetectionWidgetProps) {
         <ResponsiveContainer width="100%" height={150}>
           <LineChart data={data.trendData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={(value) => value.slice(5)}
-              fontSize={11}
-            />
+            <XAxis dataKey="date" tickFormatter={(value) => value.slice(5)} fontSize={11} />
             <YAxis fontSize={11} />
             <Tooltip labelFormatter={(label) => `Data: ${label}`} />
             <Legend />

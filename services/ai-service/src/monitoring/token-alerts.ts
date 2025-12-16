@@ -17,17 +17,17 @@ import { TokenUsageMonitor } from './token-usage-monitor';
 // Alert threshold configuration
 export const ALERT_THRESHOLDS = {
   firmDailyBudget: {
-    warning: 0.5,    // 50% of daily budget
-    critical: 0.75,  // 75% of daily budget
-    exceeded: 0.9,   // 90% of daily budget
-    blocked: 1.0,    // 100% - block new requests
+    warning: 0.5, // 50% of daily budget
+    critical: 0.75, // 75% of daily budget
+    exceeded: 0.9, // 90% of daily budget
+    blocked: 1.0, // 100% - block new requests
   },
   userHourlyRate: {
-    warning: 1000,   // tokens/hour unusual
-    spike: 5000,     // tokens/hour spike
+    warning: 1000, // tokens/hour unusual
+    spike: 5000, // tokens/hour spike
   },
   costAnomaly: {
-    threshold: 2.0,  // 200% of 7-day average
+    threshold: 2.0, // 200% of 7-day average
   },
 };
 
@@ -90,12 +90,20 @@ const RATE_LIMITS: Record<AlertType, { maxPerHour: number; cooldownMinutes: numb
 
 // Email service interface (to be injected)
 interface EmailService {
-  send(to: string, subject: string, body: string, options?: { priority?: 'high' | 'normal' }): Promise<void>;
+  send(
+    to: string,
+    subject: string,
+    body: string,
+    options?: { priority?: 'high' | 'normal' }
+  ): Promise<void>;
 }
 
 // Notification service interface (to be injected)
 interface NotificationService {
-  sendInApp(userId: string, notification: { title: string; body: string; type: string; metadata: Record<string, unknown> }): Promise<void>;
+  sendInApp(
+    userId: string,
+    notification: { title: string; body: string; type: string; metadata: Record<string, unknown> }
+  ): Promise<void>;
 }
 
 // Redis client interface (to be injected)
@@ -239,7 +247,12 @@ export class TokenAlertService {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const weeklyUsage = await this.tokenMonitor.getAggregatedUsage(firmId, 'weekly', sevenDaysAgo, oneDayAgo);
+    const weeklyUsage = await this.tokenMonitor.getAggregatedUsage(
+      firmId,
+      'weekly',
+      sevenDaysAgo,
+      oneDayAgo
+    );
     const dailyUsage = await this.tokenMonitor.getAggregatedUsage(firmId, 'daily', oneDayAgo, now);
 
     const dailyAverage = weeklyUsage.totalCostCents / 7;
@@ -331,7 +344,7 @@ export class TokenAlertService {
 
     // Update rate limit tracking
     const now = new Date();
-    const existing = lastSentStr ? JSON.parse(lastSentStr) as AlertRateLimit : null;
+    const existing = lastSentStr ? (JSON.parse(lastSentStr) as AlertRateLimit) : null;
     const hourStart = new Date(now.getTime() - 60 * 60 * 1000);
 
     const newRateLimit: AlertRateLimit = {
@@ -339,7 +352,8 @@ export class TokenAlertService {
       firmId,
       lastSentAt: now,
       count: existing && new Date(existing.windowStart) > hourStart ? existing.count + 1 : 1,
-      windowStart: existing && new Date(existing.windowStart) > hourStart ? existing.windowStart : now,
+      windowStart:
+        existing && new Date(existing.windowStart) > hourStart ? existing.windowStart : now,
     };
 
     await this.redis.set(key, JSON.stringify(newRateLimit), { EX: 3600 });
@@ -350,7 +364,10 @@ export class TokenAlertService {
   /**
    * Get recipients for an alert based on severity
    */
-  private async getAlertRecipients(firmId: string, severity: AlertSeverity): Promise<AlertRecipient[]> {
+  private async getAlertRecipients(
+    firmId: string,
+    severity: AlertSeverity
+  ): Promise<AlertRecipient[]> {
     // In production, fetch from database based on firm settings
     // For now, return mock recipients based on severity
 
@@ -417,7 +434,8 @@ export class TokenAlertService {
 
     try {
       await this.emailService.send(recipient.email, subject, body, {
-        priority: alert.severity === 'emergency' || alert.severity === 'critical' ? 'high' : 'normal',
+        priority:
+          alert.severity === 'emergency' || alert.severity === 'critical' ? 'high' : 'normal',
       });
       alert.sentVia.push('email');
     } catch (error) {
@@ -450,7 +468,12 @@ export class TokenAlertService {
    * Get email subject for alert
    */
   private getEmailSubject(alert: Alert): string {
-    const prefix = alert.severity === 'emergency' ? '[URGENT] ' : alert.severity === 'critical' ? '[CRITICAL] ' : '';
+    const prefix =
+      alert.severity === 'emergency'
+        ? '[URGENT] '
+        : alert.severity === 'critical'
+          ? '[CRITICAL] '
+          : '';
     return `${prefix}AI Usage Alert: ${this.getAlertTitle(alert)}`;
   }
 

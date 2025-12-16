@@ -44,21 +44,13 @@ export const taskCollaborationResolvers = {
     },
 
     // Task History (AC: 5)
-    taskHistory: async (
-      _: any,
-      args: { taskId: string; options?: any },
-      context: Context
-    ) => {
+    taskHistory: async (_: any, args: { taskId: string; options?: any }, context: Context) => {
       getAuthContext(context);
       return taskHistoryService.getHistory(args.taskId, args.options);
     },
 
     // Case Activity Feed (AC: 2)
-    caseActivityFeed: async (
-      _: any,
-      args: { caseId: string; options?: any },
-      context: Context
-    ) => {
+    caseActivityFeed: async (_: any, args: { caseId: string; options?: any }, context: Context) => {
       const { firmId } = getAuthContext(context);
       return caseActivityService.getActivityFeed(args.caseId, firmId, args.options);
     },
@@ -83,20 +75,12 @@ export const taskCollaborationResolvers = {
       return taskAttachmentService.getAttachment(args.attachmentId);
     },
 
-    attachmentVersionHistory: async (
-      _: any,
-      args: { attachmentId: string },
-      context: Context
-    ) => {
+    attachmentVersionHistory: async (_: any, args: { attachmentId: string }, context: Context) => {
       getAuthContext(context);
       return taskAttachmentService.getVersionHistory(args.attachmentId);
     },
 
-    attachmentDownloadUrl: async (
-      _: any,
-      args: { attachmentId: string },
-      context: Context
-    ) => {
+    attachmentDownloadUrl: async (_: any, args: { attachmentId: string }, context: Context) => {
       const { firmId } = getAuthContext(context);
       return taskAttachmentService.getDownloadUrl(args.attachmentId, firmId);
     },
@@ -157,11 +141,7 @@ export const taskCollaborationResolvers = {
 
     // Task Attachments (AC: 3)
     // Note: Upload is handled via REST endpoint due to file upload limitations in GraphQL
-    deleteTaskAttachment: async (
-      _: any,
-      args: { attachmentId: string },
-      context: Context
-    ) => {
+    deleteTaskAttachment: async (_: any, args: { attachmentId: string }, context: Context) => {
       const { userId, firmId } = getAuthContext(context);
       await taskAttachmentService.deleteAttachment(args.attachmentId, userId, firmId);
       return true;

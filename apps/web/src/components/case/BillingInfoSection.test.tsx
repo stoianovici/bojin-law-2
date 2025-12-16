@@ -58,9 +58,7 @@ const mockHourlyWithCustomRates = {
 // Wrapper component to provide necessary context
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>
-    <FinancialAccessProvider>
-      {children}
-    </FinancialAccessProvider>
+    <FinancialAccessProvider>{children}</FinancialAccessProvider>
   </AuthProvider>
 );
 
@@ -214,10 +212,7 @@ describe('BillingInfoSection', () => {
     it('handles zero amount', () => {
       render(
         <Wrapper>
-          <BillingInfoSection
-            {...mockFixedBilling}
-            fixedAmount={0}
-          />
+          <BillingInfoSection {...mockFixedBilling} fixedAmount={0} />
         </Wrapper>
       );
 

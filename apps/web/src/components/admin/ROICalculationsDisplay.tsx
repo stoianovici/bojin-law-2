@@ -191,7 +191,9 @@ export function ROICalculationsDisplay() {
       {/* Additional Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600 mb-2">Average Time Saved per Document</div>
+          <div className="text-sm font-medium text-gray-600 mb-2">
+            Average Time Saved per Document
+          </div>
           <div className="text-3xl font-bold text-gray-900">
             {metrics.averageTimePerDocument.toFixed(1)} hours
           </div>
@@ -210,9 +212,7 @@ export function ROICalculationsDisplay() {
                 ).toFixed(1)}x`
               : 'N/A'}
           </div>
-          <div className="mt-2 text-sm text-gray-600">
-            Return on investment multiplier
-          </div>
+          <div className="mt-2 text-sm text-gray-600">Return on investment multiplier</div>
         </div>
       </div>
 
@@ -245,7 +245,9 @@ export function ROICalculationsDisplay() {
                 <th className="px-4 py-3 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedTypes.size === documentTypes.length && documentTypes.length > 0}
+                    checked={
+                      selectedTypes.size === documentTypes.length && documentTypes.length > 0
+                    }
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedTypes(new Set(documentTypes.map((t) => t.id)));
@@ -359,7 +361,10 @@ export function ROICalculationsDisplay() {
             const isPositive = netValue >= 0;
 
             return (
-              <div key={months} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div
+                key={months}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+              >
                 <div className="flex-1">
                   <div className="font-medium text-gray-900">
                     After {months} month{months > 1 ? 's' : ''}

@@ -127,19 +127,13 @@ describe('SemanticSearchService', () => {
         new Error('API Error')
       );
 
-      await expect(
-        service.search({ query: 'test' })
-      ).rejects.toThrow('API Error');
+      await expect(service.search({ query: 'test' })).rejects.toThrow('API Error');
     });
 
     it('should handle database errors gracefully', async () => {
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(
-        new Error('Database connection failed')
-      );
+      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
 
-      await expect(
-        service.search({ query: 'test' })
-      ).rejects.toThrow('Database connection failed');
+      await expect(service.search({ query: 'test' })).rejects.toThrow('Database connection failed');
     });
   });
 
@@ -197,10 +191,7 @@ describe('SemanticSearchService', () => {
       expect(result).toHaveLength(2);
       expect(prisma.templateLibrary.findMany).toHaveBeenCalledWith({
         where: { category: 'Contract' },
-        orderBy: [
-          { qualityScore: 'desc' },
-          { usageCount: 'desc' },
-        ],
+        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
         take: 5,
       });
     });
@@ -212,10 +203,7 @@ describe('SemanticSearchService', () => {
 
       expect(prisma.templateLibrary.findMany).toHaveBeenCalledWith({
         where: { category: 'Contract' },
-        orderBy: [
-          { qualityScore: 'desc' },
-          { usageCount: 'desc' },
-        ],
+        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
         take: 3,
       });
     });
@@ -250,7 +238,7 @@ describe('SemanticSearchService', () => {
           category: 'Agreement',
           original_filename: 'agreement.pdf',
           text_content: 'Service agreement document',
-          rank: 0.90,
+          rank: 0.9,
           headline: 'Service <b>agreement</b> document',
         },
       ];
@@ -272,13 +260,9 @@ describe('SemanticSearchService', () => {
     });
 
     it('should handle database errors', async () => {
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(
-        new Error('Database error')
-      );
+      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Database error'));
 
-      await expect(
-        service.fullTextSearch('test')
-      ).rejects.toThrow('Database error');
+      await expect(service.fullTextSearch('test')).rejects.toThrow('Database error');
     });
   });
 
@@ -316,7 +300,7 @@ describe('SemanticSearchService', () => {
 
       (prisma.$queryRaw as jest.Mock)
         .mockResolvedValueOnce(semanticResults) // semantic search
-        .mockResolvedValueOnce(textResults);    // full-text search
+        .mockResolvedValueOnce(textResults); // full-text search
 
       const result = await service.hybridSearch('test query');
 
@@ -352,7 +336,7 @@ describe('SemanticSearchService', () => {
       // Mock both semantic and full-text search queries
       (prisma.$queryRaw as jest.Mock)
         .mockResolvedValueOnce(semanticResults) // semantic search
-        .mockResolvedValueOnce(textResults);    // full-text search
+        .mockResolvedValueOnce(textResults); // full-text search
 
       const result = await service.hybridSearch('test');
 
@@ -395,13 +379,9 @@ describe('SemanticSearchService', () => {
     });
 
     it('should handle errors in either search', async () => {
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(
-        new Error('Search failed')
-      );
+      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Search failed'));
 
-      await expect(
-        service.hybridSearch('test')
-      ).rejects.toThrow('Search failed');
+      await expect(service.hybridSearch('test')).rejects.toThrow('Search failed');
     });
   });
 });

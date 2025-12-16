@@ -64,10 +64,17 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
             </>
           ) : (
             <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 16v-4"/>
-                <path d="M12 8h.01"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
               </svg>
               Explain Selection
             </>
@@ -79,16 +86,22 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
       {result && (
         <div className="explanation-panel" style={{ marginTop: 16 }}>
           <div className="explanation-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }}>
-              <path d="M12 3v18"/>
-              <path d="M8 8l4-4 4 4"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }}
+            >
+              <path d="M12 3v18" />
+              <path d="M8 8l4-4 4 4" />
             </svg>
             Plain Language Explanation
           </div>
 
-          <div className="explanation-content">
-            {result.explanation}
-          </div>
+          <div className="explanation-content">{result.explanation}</div>
 
           {result.legalBasis && (
             <div className="legal-basis">
@@ -102,7 +115,9 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
               <div className="source-references-label">References</div>
               <div>
                 {result.sourceReferences.map((ref, index) => (
-                  <span key={index} className="source-tag">{ref}</span>
+                  <span key={index} className="source-tag">
+                    {ref}
+                  </span>
                 ))}
               </div>
             </div>
@@ -117,11 +132,18 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
       {/* Empty State */}
       {!loading && !result && (
         <div className="empty-state" style={{ marginTop: 24 }}>
-          <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          <svg
+            className="empty-state-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
           <p className="empty-state-text">
-            Select legal text in your document and click "Explain Selection" to get a plain-language explanation.
+            Select legal text in your document and click "Explain Selection" to get a plain-language
+            explanation.
           </p>
         </div>
       )}

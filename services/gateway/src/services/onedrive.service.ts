@@ -129,11 +129,7 @@ export class OneDriveService {
           const sanitizedCaseNumber = this.sanitizeFolderName(caseNumber);
 
           // Create or get Cases root folder
-          const casesFolder = await this.createOrGetFolder(
-            client,
-            'root',
-            'Cases'
-          );
+          const casesFolder = await this.createOrGetFolder(client, 'root', 'Cases');
 
           // Create or get case-specific folder
           const caseFolder = await this.createOrGetFolder(
@@ -143,11 +139,7 @@ export class OneDriveService {
           );
 
           // Create or get Documents subfolder
-          const documentsFolder = await this.createOrGetFolder(
-            client,
-            caseFolder.id!,
-            'Documents'
-          );
+          const documentsFolder = await this.createOrGetFolder(client, caseFolder.id!, 'Documents');
 
           logger.info('OneDrive folder structure created/verified', {
             caseId,
@@ -195,7 +187,9 @@ export class OneDriveService {
   ): Promise<OneDriveFileMetadata> {
     // Validate file size
     if (file.length > ONEDRIVE_CONFIG.MAX_FILE_SIZE) {
-      throw new Error(`File size exceeds maximum allowed size of ${ONEDRIVE_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`);
+      throw new Error(
+        `File size exceeds maximum allowed size of ${ONEDRIVE_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`
+      );
     }
 
     // Validate file type
@@ -287,9 +281,7 @@ export class OneDriveService {
           const client = createGraphClient(accessToken);
 
           // First, try to get direct download URL from item metadata
-          const item = await client
-            .api(graphEndpoints.driveItem(oneDriveId))
-            .get();
+          const item = await client.api(graphEndpoints.driveItem(oneDriveId)).get();
 
           // Check if direct download URL is available (expires in ~1 hour)
           const directUrl = item['@microsoft.graph.downloadUrl'];
@@ -301,13 +293,11 @@ export class OneDriveService {
           }
 
           // If no direct URL, create a sharing link
-          const link = await client
-            .api(`/me/drive/items/${oneDriveId}/createLink`)
-            .post({
-              type: 'view',
-              scope: 'anonymous',
-              expirationDateTime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-            });
+          const link = await client.api(`/me/drive/items/${oneDriveId}/createLink`).post({
+            type: 'view',
+            scope: 'anonymous',
+            expirationDateTime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          });
 
           logger.info('Download link created for document', {
             oneDriveId,
@@ -351,9 +341,7 @@ export class OneDriveService {
           const client = createGraphClient(accessToken);
 
           // Get latest file metadata from OneDrive
-          const oneDriveItem = await client
-            .api(graphEndpoints.driveItem(oneDriveId))
-            .get();
+          const oneDriveItem = await client.api(graphEndpoints.driveItem(oneDriveId)).get();
 
           // Get local document record
           const document = await prisma.document.findUnique({
@@ -435,18 +423,13 @@ export class OneDriveService {
    * @param oneDriveId - OneDrive item ID
    * @returns OneDrive file metadata
    */
-  async getFileMetadata(
-    accessToken: string,
-    oneDriveId: string
-  ): Promise<OneDriveFileMetadata> {
+  async getFileMetadata(accessToken: string, oneDriveId: string): Promise<OneDriveFileMetadata> {
     return retryWithBackoff(
       async () => {
         try {
           const client = createGraphClient(accessToken);
 
-          const item = await client
-            .api(graphEndpoints.driveItem(oneDriveId))
-            .get();
+          const item = await client.api(graphEndpoints.driveItem(oneDriveId)).get();
 
           return {
             id: item.id,
@@ -482,9 +465,7 @@ export class OneDriveService {
         try {
           const client = createGraphClient(accessToken);
 
-          await client
-            .api(graphEndpoints.driveItem(oneDriveId))
-            .delete();
+          await client.api(graphEndpoints.driveItem(oneDriveId)).delete();
 
           logger.info('File deleted from OneDrive', { oneDriveId });
         } catch (error: any) {
@@ -525,9 +506,7 @@ export class OneDriveService {
         try {
           const client = createGraphClient(accessToken);
 
-          const thumbnails = await client
-            .api(`/me/drive/items/${oneDriveId}/thumbnails`)
-            .get();
+          const thumbnails = await client.api(`/me/drive/items/${oneDriveId}/thumbnails`).get();
 
           if (thumbnails.value && thumbnails.value.length > 0) {
             const thumbnail = thumbnails.value[0];
@@ -565,13 +544,11 @@ export class OneDriveService {
       // Try to create folder - will return existing if already exists
       const parentPath = parentId === 'root' ? '/me/drive/root' : `/me/drive/items/${parentId}`;
 
-      const folder = await client
-        .api(`${parentPath}/children`)
-        .post({
-          name: folderName,
-          folder: {},
-          '@microsoft.graph.conflictBehavior': 'fail',
-        });
+      const folder = await client.api(`${parentPath}/children`).post({
+        name: folderName,
+        folder: {},
+        '@microsoft.graph.conflictBehavior': 'fail',
+      });
 
       return folder;
     } catch (error: any) {

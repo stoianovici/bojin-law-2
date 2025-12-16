@@ -31,13 +31,13 @@ This runbook provides step-by-step procedures for rolling back skills deployment
 
 The system automatically triggers rollbacks when these conditions are met:
 
-| Trigger | Threshold | Action | Notification |
-|---------|-----------|--------|--------------|
-| Health check failures | 3 consecutive | Automatic rollback | PagerDuty SEV1 |
-| Error rate spike | >10% for 5 minutes | Automatic rollback | PagerDuty SEV1 |
-| Response time | p95 >10s for 5 minutes | Automatic rollback | Slack warning |
-| Memory usage | >95% | Automatic rollback | PagerDuty SEV2 |
-| Database connection | Failures for 2 minutes | Automatic rollback | PagerDuty SEV1 |
+| Trigger               | Threshold              | Action             | Notification   |
+| --------------------- | ---------------------- | ------------------ | -------------- |
+| Health check failures | 3 consecutive          | Automatic rollback | PagerDuty SEV1 |
+| Error rate spike      | >10% for 5 minutes     | Automatic rollback | PagerDuty SEV1 |
+| Response time         | p95 >10s for 5 minutes | Automatic rollback | Slack warning  |
+| Memory usage          | >95%                   | Automatic rollback | PagerDuty SEV2 |
+| Database connection   | Failures for 2 minutes | Automatic rollback | PagerDuty SEV1 |
 
 ### Automatic Rollback Implementation
 
@@ -91,17 +91,17 @@ class HealthChecker {
 
 ### Decision Matrix: When to Roll Back
 
-| Scenario | Severity | Rollback Required? | Timeline |
-|----------|----------|-------------------|----------|
-| Error rate 2-5% | LOW | Monitor | N/A |
-| Error rate 5-10% | MEDIUM | Yes, within 15min | 15 minutes |
-| Error rate >10% | CRITICAL | Yes, immediately | 2 minutes |
-| Response time degradation <20% | LOW | Monitor | N/A |
-| Response time degradation >20% | MEDIUM | Yes | 10 minutes |
-| Cost spike <50% | LOW | Monitor | N/A |
-| Cost spike >50% | MEDIUM | Yes | 30 minutes |
-| Security vulnerability | CRITICAL | Yes, immediately | 5 minutes |
-| Data corruption | CRITICAL | Yes, immediately | 2 minutes |
+| Scenario                       | Severity | Rollback Required? | Timeline   |
+| ------------------------------ | -------- | ------------------ | ---------- |
+| Error rate 2-5%                | LOW      | Monitor            | N/A        |
+| Error rate 5-10%               | MEDIUM   | Yes, within 15min  | 15 minutes |
+| Error rate >10%                | CRITICAL | Yes, immediately   | 2 minutes  |
+| Response time degradation <20% | LOW      | Monitor            | N/A        |
+| Response time degradation >20% | MEDIUM   | Yes                | 10 minutes |
+| Cost spike <50%                | LOW      | Monitor            | N/A        |
+| Cost spike >50%                | MEDIUM   | Yes                | 30 minutes |
+| Security vulnerability         | CRITICAL | Yes, immediately   | 5 minutes  |
+| Data corruption                | CRITICAL | Yes, immediately   | 2 minutes  |
 
 ---
 
@@ -135,12 +135,14 @@ console.log(`Current rollout: ${currentPercentage}%`);  // Should be 0
 **Timeline**: ~2 minutes
 
 **Impact**:
+
 - ✅ Instant disable of skills for all users
 - ✅ No code deployment required
 - ✅ Fallback to standard routing automatically
-- ⚠️  No API restart needed
+- ⚠️ No API restart needed
 
 **Verification**:
+
 ```bash
 # Check health endpoint
 curl https://legal-platform-ai-service.onrender.com/health | jq '.skills_metrics'
@@ -176,11 +178,13 @@ open https://dashboard.render.com
 **Timeline**: ~5 minutes
 
 **Impact**:
+
 - ✅ Complete disable of skills functionality
-- ⚠️  Requires service restart
-- ⚠️  Brief downtime during restart (~30 seconds)
+- ⚠️ Requires service restart
+- ⚠️ Brief downtime during restart (~30 seconds)
 
 **Verification**:
+
 ```bash
 # Check environment variable
 render env list legal-platform-ai-service | grep ANTHROPIC_SKILLS_ENABLED
@@ -226,11 +230,13 @@ render logs legal-platform-ai-service --tail
 **Timeline**: ~10-15 minutes
 
 **Impact**:
+
 - ✅ Complete code rollback
-- ⚠️  Service restart required
-- ⚠️  All recent changes reverted
+- ⚠️ Service restart required
+- ⚠️ All recent changes reverted
 
 **Verification**:
+
 ```bash
 # Verify deployment
 curl https://legal-platform-ai-service.onrender.com/health
@@ -268,11 +274,13 @@ open https://dashboard.render.com
 **Timeline**: ~5 minutes
 
 **Impact**:
+
 - ✅ Fast rollback via UI
 - ✅ No git operations needed
-- ⚠️  Service restart required
+- ⚠️ Service restart required
 
 **Verification**:
+
 ```bash
 # Check current deployment
 render services get legal-platform-ai-service
@@ -294,7 +302,7 @@ render services get legal-platform-ai-service
 const rolloutManager = new RolloutManager();
 
 // Reduce rollout percentage
-await rolloutManager.setRolloutPercentage(5);  // From 25% to 5%
+await rolloutManager.setRolloutPercentage(5); // From 25% to 5%
 console.log('✅ Rolled back to 5% of users');
 
 // Monitor for 1 hour, then decide next action
@@ -410,27 +418,33 @@ Create incident report:
 **Severity**: SEV2
 
 ## Summary
+
 Skills deployment rolled back due to elevated error rate.
 
 ## Timeline
+
 - 14:15: Error rate increased to 8%
 - 14:20: Manual rollback initiated
 - 14:25: Rollback completed
 - 14:30: Systems stable, error rate <2%
 
 ## Root Cause
+
 [To be determined during post-mortem]
 
 ## Impact
+
 - 300 users experienced elevated errors
 - No data loss
 - Average response time increased 2x during incident
 
 ## Resolution
+
 - Rolled back skills to 0% via feature flag
 - Errors returned to normal within 5 minutes
 
 ## Follow-up Actions
+
 1. [ ] Conduct post-mortem within 48 hours
 2. [ ] Identify root cause
 3. [ ] Implement fix
@@ -485,12 +499,14 @@ For questions, contact: [ON-CALL ENGINEER]
 ### 4. Root Cause Analysis (Within 48 hours)
 
 Schedule post-mortem meeting with:
+
 - Platform engineers
 - DevOps team
 - Product owner
 - QA team
 
 Agenda:
+
 1. Timeline review
 2. Root cause identification
 3. Fix proposal
@@ -503,6 +519,7 @@ Agenda:
 # Re-deployment Plan
 
 ## Prerequisites
+
 - [ ] Root cause identified
 - [ ] Fix implemented
 - [ ] Additional monitoring added
@@ -511,18 +528,21 @@ Agenda:
 - [ ] Team trained on new procedures
 
 ## Deployment Strategy
+
 - Start with 1% rollout (lower than previous 5%)
 - Extended monitoring period (1 week instead of 72 hours)
 - More aggressive rollback thresholds
 - Increased alert sensitivity
 
 ## Success Criteria
+
 - Error rate <1% (stricter than 2%)
 - Response time <4s p95 (stricter than 5s)
 - Cost savings >40% (stricter than 35%)
 - No incidents for 1 week
 
 ## Rollback Plan
+
 - Immediate rollback if ANY criteria violated
 - No gradual degradation tolerance
 ```
@@ -591,9 +611,9 @@ Is there a production issue?
 
 ## Change Log
 
-| Date | Version | Changes | Author |
-|------|---------|---------|--------|
-| 2025-11-19 | 1.0 | Initial runbook creation | James (Dev Agent) |
+| Date       | Version | Changes                  | Author            |
+| ---------- | ------- | ------------------------ | ----------------- |
+| 2025-11-19 | 1.0     | Initial runbook creation | James (Dev Agent) |
 
 ---
 

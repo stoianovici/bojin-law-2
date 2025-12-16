@@ -200,9 +200,9 @@ describe('TaskCommentService', () => {
     it('should throw error if task not found', async () => {
       prisma.task.findFirst.mockResolvedValue(null);
 
-      await expect(
-        taskCommentService.getComments('task-123', 'firm-123')
-      ).rejects.toThrow('Task not found or access denied');
+      await expect(taskCommentService.getComments('task-123', 'firm-123')).rejects.toThrow(
+        'Task not found or access denied'
+      );
     });
   });
 

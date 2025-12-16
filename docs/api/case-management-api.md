@@ -31,12 +31,14 @@ The Case Management API provides comprehensive GraphQL operations for:
 ### Enums
 
 #### CaseStatus
+
 - `ACTIVE` - Case is currently being worked on
 - `ON_HOLD` - Case is temporarily paused
 - `CLOSED` - Case has been concluded
 - `ARCHIVED` - Case is closed and archived for long-term storage
 
 #### CaseType
+
 - `LITIGATION` - Court litigation cases
 - `CONTRACT` - Contract review and drafting
 - `ADVISORY` - Legal advisory and consulting
@@ -44,6 +46,7 @@ The Case Management API provides comprehensive GraphQL operations for:
 - `OTHER` - Other types of legal matters
 
 #### CaseActorRole (Romanian legal context)
+
 - `CLIENT` - The client in this specific case
 - `OPPOSING_PARTY` - The opposing party (partea adversă)
 - `OPPOSING_COUNSEL` - Opposing counsel/lawyer (avocatul părții adverse)
@@ -53,6 +56,7 @@ The Case Management API provides comprehensive GraphQL operations for:
 ### Types
 
 #### Client
+
 ```graphql
 type Client {
   id: UUID!
@@ -66,6 +70,7 @@ type Client {
 ```
 
 #### Case
+
 ```graphql
 type Case {
   id: UUID!
@@ -88,6 +93,7 @@ type Case {
 ```
 
 #### CaseTeam
+
 ```graphql
 type CaseTeam {
   id: UUID!
@@ -101,6 +107,7 @@ type CaseTeam {
 ```
 
 #### CaseActor
+
 ```graphql
 type CaseActor {
   id: UUID!
@@ -137,6 +144,7 @@ query {
 ```
 
 **Example**:
+
 ```graphql
 query GetActiveCases {
   cases(status: ACTIVE) {
@@ -170,6 +178,7 @@ query {
 ```
 
 **Example**:
+
 ```graphql
 query GetCase {
   case(id: "550e8400-e29b-41d4-a716-446655440000") {
@@ -217,6 +226,7 @@ query {
 ```
 
 **Example**:
+
 ```graphql
 query SearchCases {
   searchCases(query: "contract dispute", limit: 10) {
@@ -244,6 +254,7 @@ query {
 ```
 
 **Example**:
+
 ```graphql
 query GetCaseActors {
   caseActors(caseId: "550e8400-e29b-41d4-a716-446655440000") {
@@ -274,12 +285,10 @@ query {
 ```
 
 **Example**:
+
 ```graphql
 query GetWitnesses {
-  caseActorsByRole(
-    caseId: "550e8400-e29b-41d4-a716-446655440000",
-    role: WITNESS
-  ) {
+  caseActorsByRole(caseId: "550e8400-e29b-41d4-a716-446655440000", role: WITNESS) {
     id
     name
     email
@@ -315,19 +324,19 @@ input CreateCaseInput {
 ```
 
 **Example**:
+
 ```graphql
 mutation CreateNewCase {
-  createCase(input: {
-    title: "Contract Dispute - ABC Corp vs XYZ Ltd"
-    clientId: "550e8400-e29b-41d4-a716-446655440000"
-    type: LITIGATION
-    description: "Contract dispute regarding delivery terms and payment schedule"
-    value: 150000.50
-    metadata: {
-      courtName: "Bucharest Tribunal"
-      urgency: "high"
+  createCase(
+    input: {
+      title: "Contract Dispute - ABC Corp vs XYZ Ltd"
+      clientId: "550e8400-e29b-41d4-a716-446655440000"
+      type: LITIGATION
+      description: "Contract dispute regarding delivery terms and payment schedule"
+      value: 150000.50
+      metadata: { courtName: "Bucharest Tribunal", urgency: "high" }
     }
-  }) {
+  ) {
     id
     caseNumber
     title
@@ -364,14 +373,12 @@ input UpdateCaseInput {
 ```
 
 **Example**:
+
 ```graphql
 mutation UpdateCaseStatus {
   updateCase(
     id: "550e8400-e29b-41d4-a716-446655440000"
-    input: {
-      status: CLOSED
-      closedDate: "2025-02-15T10:00:00Z"
-    }
+    input: { status: CLOSED, closedDate: "2025-02-15T10:00:00Z" }
   ) {
     id
     status
@@ -397,6 +404,7 @@ mutation {
 ```
 
 **Example**:
+
 ```graphql
 mutation ArchiveCase {
   archiveCase(id: "550e8400-e29b-41d4-a716-446655440000") {
@@ -428,13 +436,16 @@ input AssignTeamInput {
 ```
 
 **Example**:
+
 ```graphql
 mutation AssignTeamMember {
-  assignTeam(input: {
-    caseId: "550e8400-e29b-41d4-a716-446655440000"
-    userId: "660e8400-e29b-41d4-a716-446655440001"
-    role: "Support"
-  }) {
+  assignTeam(
+    input: {
+      caseId: "550e8400-e29b-41d4-a716-446655440000"
+      userId: "660e8400-e29b-41d4-a716-446655440001"
+      role: "Support"
+    }
+  ) {
     id
     user {
       firstName
@@ -489,16 +500,19 @@ input AddCaseActorInput {
 ```
 
 **Example**:
+
 ```graphql
 mutation AddWitness {
-  addCaseActor(input: {
-    caseId: "550e8400-e29b-41d4-a716-446655440000"
-    role: WITNESS
-    name: "Elena Radu"
-    email: "elena.radu@email.ro"
-    phone: "+40-733-222-111"
-    notes: "Key witness - former employee"
-  }) {
+  addCaseActor(
+    input: {
+      caseId: "550e8400-e29b-41d4-a716-446655440000"
+      role: WITNESS
+      name: "Elena Radu"
+      email: "elena.radu@email.ro"
+      phone: "+40-733-222-111"
+      notes: "Key witness - former employee"
+    }
+  ) {
     id
     role
     name
@@ -552,12 +566,14 @@ mutation {
 ### Role-Based Access Control (RBAC)
 
 #### Partner Role
+
 - Can access ALL cases in their firm (no restrictions)
 - Can create, update, archive any case
 - Can assign/remove any user to/from case teams
 - Can manage case actors
 
 #### Associate Role
+
 - Can only access cases they are assigned to via CaseTeam
 - Can update cases they are assigned to
 - Cannot archive cases (Partner only)
@@ -565,6 +581,7 @@ mutation {
 - Can manage case actors on assigned cases
 
 #### Paralegal Role
+
 - Can only access cases they are assigned to via CaseTeam
 - Can update cases they are assigned to
 - Cannot archive cases (Partner only)
@@ -584,13 +601,15 @@ mutation {
 ```graphql
 # 1. Create a new case
 mutation CreateCase {
-  createCase(input: {
-    title: "Employment Dispute - Wrongful Termination"
-    clientId: "550e8400-e29b-41d4-a716-446655440000"
-    type: LITIGATION
-    description: "Employee claims wrongful termination and seeks damages"
-    value: 85000.00
-  }) {
+  createCase(
+    input: {
+      title: "Employment Dispute - Wrongful Termination"
+      clientId: "550e8400-e29b-41d4-a716-446655440000"
+      type: LITIGATION
+      description: "Employee claims wrongful termination and seeks damages"
+      value: 85000.00
+    }
+  ) {
     id
     caseNumber
   }
@@ -598,11 +617,7 @@ mutation CreateCase {
 
 # 2. Assign team members
 mutation AssignAssociate {
-  assignTeam(input: {
-    caseId: "new-case-id"
-    userId: "associate-user-id"
-    role: "Support"
-  }) {
+  assignTeam(input: { caseId: "new-case-id", userId: "associate-user-id", role: "Support" }) {
     id
     role
   }
@@ -610,27 +625,31 @@ mutation AssignAssociate {
 
 # 3. Add case actors
 mutation AddOpposingParty {
-  addCaseActor(input: {
-    caseId: "new-case-id"
-    role: OPPOSING_PARTY
-    name: "Former Employee Name"
-    email: "former@email.ro"
-    phone: "+40-722-111-222"
-  }) {
+  addCaseActor(
+    input: {
+      caseId: "new-case-id"
+      role: OPPOSING_PARTY
+      name: "Former Employee Name"
+      email: "former@email.ro"
+      phone: "+40-722-111-222"
+    }
+  ) {
     id
     name
   }
 }
 
 mutation AddOpposingCounsel {
-  addCaseActor(input: {
-    caseId: "new-case-id"
-    role: OPPOSING_COUNSEL
-    name: "Opposing Law Firm"
-    organization: "Law Firm SRL"
-    email: "legal@lawfirm.ro"
-    phone: "+40-21-555-7777"
-  }) {
+  addCaseActor(
+    input: {
+      caseId: "new-case-id"
+      role: OPPOSING_COUNSEL
+      name: "Opposing Law Firm"
+      organization: "Law Firm SRL"
+      email: "legal@lawfirm.ro"
+      phone: "+40-21-555-7777"
+    }
+  ) {
     id
     name
   }
@@ -638,23 +657,22 @@ mutation AddOpposingCounsel {
 
 # 4. Add witnesses
 mutation AddWitness {
-  addCaseActor(input: {
-    caseId: "new-case-id"
-    role: WITNESS
-    name: "Coworker Name"
-    email: "witness@email.ro"
-    notes: "Witnessed termination discussion"
-  }) {
+  addCaseActor(
+    input: {
+      caseId: "new-case-id"
+      role: WITNESS
+      name: "Coworker Name"
+      email: "witness@email.ro"
+      notes: "Witnessed termination discussion"
+    }
+  ) {
     id
   }
 }
 
 # 5. Update case status as it progresses
 mutation UpdateStatus {
-  updateCase(
-    id: "new-case-id"
-    input: { status: CLOSED }
-  ) {
+  updateCase(id: "new-case-id", input: { status: CLOSED }) {
     id
     status
   }
@@ -674,22 +692,26 @@ mutation Archive {
 ### Common Errors
 
 #### BAD_USER_INPUT
+
 - Invalid input validation (title length, description length, etc.)
 - Invalid status transitions (e.g., cannot reopen archived case)
 - Search query too short (minimum 3 characters)
 
 #### NOT_FOUND
+
 - Case not found
 - Client not found
 - User not found
 - Case actor not found
 
 #### FORBIDDEN
+
 - User not authorized to access case
 - User not authorized to perform operation (e.g., non-Partner trying to archive)
 - User not on case team
 
 #### UNAUTHENTICATED
+
 - No authentication token provided
 - Invalid or expired authentication token
 
@@ -711,6 +733,7 @@ mutation Archive {
 ## Audit Logging
 
 All case modifications are automatically logged to the `CaseAuditLog` table with:
+
 - Action type (CREATED, UPDATED, ARCHIVED, TEAM_ASSIGNED, etc.)
 - User ID (who made the change)
 - Timestamp
@@ -721,6 +744,7 @@ Audit logs are never deleted and provide a complete history of case modification
 ## Full-Text Search
 
 The search functionality uses PostgreSQL's `pg_trgm` extension for fuzzy text matching:
+
 - Searches across case title, description, and client name
 - Results ordered by relevance (similarity score)
 - Minimum similarity threshold: 0.3 (30% match)
@@ -732,6 +756,7 @@ The search functionality uses PostgreSQL's `pg_trgm` extension for fuzzy text ma
 ---
 
 **For more information**, see:
+
 - [Architecture Documentation](../architecture/api-specification.md)
 - [Data Models](../architecture/data-models.md)
 - [Testing Strategy](../architecture/testing-strategy.md)

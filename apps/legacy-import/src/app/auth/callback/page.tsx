@@ -35,9 +35,7 @@ export default function AuthCallbackPage() {
         <h2 className="text-xl font-semibold text-gray-900 mb-2">
           Se finalizează autentificarea...
         </h2>
-        <p className="text-gray-600">
-          Te rugăm să aștepți în timp ce verificăm credențialele.
-        </p>
+        <p className="text-gray-600">Te rugăm să aștepți în timp ce verificăm credențialele.</p>
         {error && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-700">{error}</p>

@@ -182,7 +182,7 @@ describe('DocumentCompletenessService', () => {
         'Contract'
       );
 
-      const requiredItems = result.missingItems.filter(i => i.severity === 'required');
+      const requiredItems = result.missingItems.filter((i) => i.severity === 'required');
       expect(requiredItems.length).toBeGreaterThan(0);
     });
 
@@ -194,7 +194,7 @@ describe('DocumentCompletenessService', () => {
         'Contract'
       );
 
-      const recommendedItems = result.missingItems.filter(i => i.severity === 'recommended');
+      const recommendedItems = result.missingItems.filter((i) => i.severity === 'recommended');
       expect(recommendedItems.length).toBeGreaterThan(0);
     });
 
@@ -220,7 +220,7 @@ describe('DocumentCompletenessService', () => {
         'Contract'
       );
 
-      const itemWithSection = result.missingItems.find(i => i.section);
+      const itemWithSection = result.missingItems.find((i) => i.section);
       expect(itemWithSection).toBeDefined();
       expect(itemWithSection?.section).toBeTruthy();
     });
@@ -348,12 +348,7 @@ describe('DocumentCompletenessService', () => {
     it('should truncate very long documents', async () => {
       const longContent = 'A'.repeat(20000); // Exceeds MAX_CONTENT_LENGTH
 
-      await service.checkDocumentCompleteness(
-        'doc-123',
-        'firm-456',
-        longContent,
-        'Contract'
-      );
+      await service.checkDocumentCompleteness('doc-123', 'firm-456', longContent, 'Contract');
 
       // Verify the prompt sent to AI is truncated
       expect(providerManager.execute).toHaveBeenCalledWith(
@@ -399,12 +394,7 @@ describe('DocumentCompletenessService', () => {
         Subsemnatul, Ion Popescu...
       `;
 
-      await service.checkDocumentCompleteness(
-        'doc-123',
-        'firm-456',
-        motionContent,
-        'Motion'
-      );
+      await service.checkDocumentCompleteness('doc-123', 'firm-456', motionContent, 'Motion');
 
       expect(providerManager.execute).toHaveBeenCalled();
     });

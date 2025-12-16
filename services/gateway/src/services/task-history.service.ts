@@ -52,9 +52,10 @@ export class TaskHistoryService {
     details?: HistoryDetails
   ): Promise<TaskHistoryEntry> {
     // Convert string to enum if necessary
-    const actionEnum = typeof action === 'string'
-      ? TaskHistoryAction[action as keyof typeof TaskHistoryAction]
-      : action;
+    const actionEnum =
+      typeof action === 'string'
+        ? TaskHistoryAction[action as keyof typeof TaskHistoryAction]
+        : action;
 
     const history = await prisma.taskHistory.create({
       data: {
@@ -79,10 +80,7 @@ export class TaskHistoryService {
    * @param taskId - ID of the task
    * @param options - Filter options
    */
-  async getHistory(
-    taskId: string,
-    options?: HistoryOptions
-  ): Promise<TaskHistoryEntry[]> {
+  async getHistory(taskId: string, options?: HistoryOptions): Promise<TaskHistoryEntry[]> {
     const where: any = { taskId };
 
     // Filter by action types

@@ -5,7 +5,14 @@
  * Provides Azure AD authentication via MSAL with user/firm provisioning
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from 'react';
 import type { AccountInfo } from '@azure/msal-browser';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import { initializeMsal, loginRequest, getMsalInstance } from '@/lib/msal-config';
@@ -60,31 +67,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Provision user in database after Azure AD login
    * Creates user and firm if they don't exist
    */
-  const provisionUser = useCallback(async (account: AccountInfo, accessToken: string): Promise<AuthUser | null> => {
-    try {
-      const response = await fetch('/api/auth/provision', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          accessToken,
-          idTokenClaims: account.idTokenClaims,
-        }),
-      });
+  const provisionUser = useCallback(
+    async (account: AccountInfo, accessToken: string): Promise<AuthUser | null> => {
+      try {
+        const response = await fetch('/api/auth/provision', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken,
+            idTokenClaims: account.idTokenClaims,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to provision user');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to provision user');
+        }
+
+        const data = await response.json();
+        return data.user;
+      } catch (error) {
+        console.error('User provisioning error:', error);
+        throw error;
       }
-
-      const data = await response.json();
-      return data.user;
-    } catch (error) {
-      console.error('User provisioning error:', error);
-      throw error;
-    }
-  }, []);
+    },
+    []
+  );
 
   /**
    * Initialize MSAL and check for existing session

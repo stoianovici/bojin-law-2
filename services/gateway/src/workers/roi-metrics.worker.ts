@@ -157,7 +157,9 @@ async function calculateFirmROI(
   });
 
   if (existing) {
-    console.log(`[${WORKER_NAME}] ROI already calculated for firm ${firmId} for ${monthStart.toISOString().slice(0, 7)}`);
+    console.log(
+      `[${WORKER_NAME}] ROI already calculated for firm ${firmId} for ${monthStart.toISOString().slice(0, 7)}`
+    );
     return;
   }
 
@@ -225,7 +227,11 @@ async function calculateFirmROI(
   const dependencyTimeSaved = autoDependencyTriggers * SAVINGS.autoDependencyMinutes;
 
   const estimatedTimeSavedMin =
-    templateTimeSaved + nlpTimeSaved + reminderTimeSaved + reassignmentTimeSaved + dependencyTimeSaved;
+    templateTimeSaved +
+    nlpTimeSaved +
+    reminderTimeSaved +
+    reassignmentTimeSaved +
+    dependencyTimeSaved;
 
   // Get hourly rate
   let avgHourlyRate = DEFAULT_HOURLY_RATE;

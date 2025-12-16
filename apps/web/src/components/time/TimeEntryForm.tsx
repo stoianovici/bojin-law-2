@@ -217,9 +217,7 @@ export function TimeEntryForm({
           className={errors.hours ? 'border-red-500' : ''}
           disabled={isSubmitting || isLoading}
         />
-        <p className="text-xs text-gray-500 mt-1">
-          Enter decimal (1.5) or time format (1:30)
-        </p>
+        <p className="text-xs text-gray-500 mt-1">Enter decimal (1.5) or time format (1:30)</p>
         {errors.hours && <p className="text-sm text-red-500 mt-1">{errors.hours}</p>}
       </div>
 
@@ -237,9 +235,7 @@ export function TimeEntryForm({
           className={errors.description ? 'border-red-500' : ''}
           disabled={isSubmitting || isLoading}
         />
-        {errors.description && (
-          <p className="text-sm text-red-500 mt-1">{errors.description}</p>
-        )}
+        {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
       </div>
 
       {/* Narrative Field (Expandable) */}
@@ -255,9 +251,7 @@ export function TimeEntryForm({
           rows={4}
           disabled={isSubmitting || isLoading}
         />
-        <p className="text-xs text-gray-500 mt-1">
-          Add detailed context for billing purposes
-        </p>
+        <p className="text-xs text-gray-500 mt-1">Add detailed context for billing purposes</p>
       </div>
 
       {/* Billable Toggle */}

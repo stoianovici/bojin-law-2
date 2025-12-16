@@ -85,11 +85,7 @@ export function PatternDetectionPanel({
   }
 
   if (!data) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        Nu există date despre tipare
-      </div>
-    );
+    return <div className="text-center py-8 text-gray-500">Nu există date despre tipare</div>;
   }
 
   const filteredPatterns = data.patterns.filter((pattern) => {
@@ -104,17 +100,13 @@ export function PatternDetectionPanel({
       <div className="bg-violet-50 border border-violet-200 rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-violet-800">
-              Detecție tipare AI
-            </h3>
+            <h3 className="text-lg font-semibold text-violet-800">Detecție tipare AI</h3>
             <p className="text-sm text-violet-600">
               Secvențe de sarcini frecvente detectate în fluxul de lucru
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-violet-600">
-              {data.totalPatternsFound}
-            </div>
+            <div className="text-3xl font-bold text-violet-600">{data.totalPatternsFound}</div>
             <div className="text-sm text-violet-500">
               tipare găsite ({data.highConfidenceCount} cu încredere ridicată)
             </div>
@@ -178,9 +170,7 @@ export function PatternDetectionPanel({
                         </span>
                       )}
                     </div>
-                    <h4 className="font-medium text-gray-900">
-                      {pattern.suggestedTemplateName}
-                    </h4>
+                    <h4 className="font-medium text-gray-900">{pattern.suggestedTemplateName}</h4>
                     <div className="mt-2 text-sm text-gray-600">
                       {formatTaskTypes(pattern.taskTypes)}
                     </div>
@@ -209,18 +199,14 @@ export function PatternDetectionPanel({
                   <div className="grid md:grid-cols-2 gap-6">
                     {/* Task Sequence */}
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">
-                        Secvență sarcini
-                      </h5>
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Secvență sarcini</h5>
                       <div className="space-y-2">
                         {pattern.taskTypes.map((type, index) => (
                           <div key={index} className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-medium">
                               {index + 1}
                             </div>
-                            <span className="text-sm">
-                              {TASK_TYPE_LABELS[type] || type}
-                            </span>
+                            <span className="text-sm">{TASK_TYPE_LABELS[type] || type}</span>
                             {index < pattern.taskTypes.length - 1 && (
                               <span className="text-gray-400 text-xs ml-auto">
                                 ~{pattern.avgSequenceGapDays?.toFixed(1) || '?'} zile interval
@@ -243,22 +229,20 @@ export function PatternDetectionPanel({
                             className="flex items-center justify-between text-sm"
                           >
                             <span>{assignee.userName}</span>
-                            <span className="text-gray-500">
-                              de {assignee.frequency} ori
-                            </span>
+                            <span className="text-gray-500">de {assignee.frequency} ori</span>
                           </div>
                         ))}
                         {pattern.commonAssignees.length === 0 && (
-                          <span className="text-sm text-gray-500">Nicio informație despre responsabili</span>
+                          <span className="text-sm text-gray-500">
+                            Nicio informație despre responsabili
+                          </span>
                         )}
                       </div>
                     </div>
 
                     {/* Sample Cases */}
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">
-                        Exemple de dosare
-                      </h5>
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Exemple de dosare</h5>
                       <div className="space-y-1">
                         {pattern.sampleCases.slice(0, 3).map((sample) => (
                           <div key={sample.caseId} className="text-sm text-gray-600">
@@ -273,9 +257,7 @@ export function PatternDetectionPanel({
 
                     {/* Case Types */}
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">
-                        Tipuri de dosare
-                      </h5>
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Tipuri de dosare</h5>
                       <div className="flex flex-wrap gap-2">
                         {pattern.caseTypes.map((caseType) => (
                           <span

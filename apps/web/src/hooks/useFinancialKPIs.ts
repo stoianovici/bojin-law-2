@@ -179,9 +179,7 @@ export interface UseFinancialKPIsOptions {
  * }
  * ```
  */
-export function useFinancialKPIs(
-  options: UseFinancialKPIsOptions = {}
-): UseFinancialKPIsReturn {
+export function useFinancialKPIs(options: UseFinancialKPIsOptions = {}): UseFinancialKPIsReturn {
   const { dateRange, skip = false, pollInterval } = options;
 
   // Format dates for GraphQL

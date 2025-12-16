@@ -24,6 +24,7 @@ import {
   stopOOOReassignmentWorker,
 } from './workers/ooo-reassignment.worker';
 import { startDailyDigestWorker, stopDailyDigestWorker } from './workers/daily-digest.worker';
+import { redis } from '@legal-platform/database';
 
 // Create Express app
 const app: Express = express();
@@ -99,6 +100,17 @@ app.post('/admin/run-migration-is-ignored', async (req: Request, res: Response) 
 
 // Initialize Apollo Server and GraphQL endpoint
 async function startServer() {
+  // Ensure Redis is connected before starting (fixes lazyConnect + enableOfflineQueue=false issue)
+  try {
+    await redis.connect();
+    console.log('✅ Redis connected');
+  } catch (err: any) {
+    // Redis may already be connected or connecting
+    if (!err.message?.includes('already')) {
+      console.warn('⚠️ Redis connection warning:', err.message);
+    }
+  }
+
   // Create Apollo Server
   const apolloServer = await createApolloServer(httpServer);
   const graphqlMiddleware = createGraphQLMiddleware(apolloServer);

@@ -7,41 +7,41 @@
 
 export interface PerformanceBudget {
   skills: {
-    execution: number;        // AC#4: <5s execution time
-    routing: number;          // From Story 2.13: <100ms routing overhead
-    cacheHit: number;         // <10ms cache lookup
-    totalRequest: number;     // Sum of above
+    execution: number; // AC#4: <5s execution time
+    routing: number; // From Story 2.13: <100ms routing overhead
+    cacheHit: number; // <10ms cache lookup
+    totalRequest: number; // Sum of above
   };
 
   error_thresholds: {
-    errorRate: number;        // AC#6: <2% error rate
-    timeoutRate: number;      // <1% timeout rate
-    fallbackRate: number;     // <5% fallback to non-skills
+    errorRate: number; // AC#6: <2% error rate
+    timeoutRate: number; // <1% timeout rate
+    fallbackRate: number; // <5% fallback to non-skills
   };
 
   cost_targets: {
-    savingsPercent: number;   // AC#5: >35% cost savings
+    savingsPercent: number; // AC#5: >35% cost savings
     maxCostPerRequest: number; // <$0.02 per request
   };
 }
 
 export const PERFORMANCE_BUDGET: PerformanceBudget = {
   skills: {
-    execution: 5000,          // 5 seconds
-    routing: 100,             // 100 milliseconds
-    cacheHit: 10,             // 10 milliseconds
-    totalRequest: 5100,       // 5.1 seconds total
+    execution: 5000, // 5 seconds
+    routing: 100, // 100 milliseconds
+    cacheHit: 10, // 10 milliseconds
+    totalRequest: 5100, // 5.1 seconds total
   },
 
   error_thresholds: {
-    errorRate: 0.02,          // 2%
-    timeoutRate: 0.01,        // 1%
-    fallbackRate: 0.05,       // 5%
+    errorRate: 0.02, // 2%
+    timeoutRate: 0.01, // 1%
+    fallbackRate: 0.05, // 5%
   },
 
   cost_targets: {
-    savingsPercent: 35,       // 35% minimum savings
-    maxCostPerRequest: 0.02,  // $0.02 per request
+    savingsPercent: 35, // 35% minimum savings
+    maxCostPerRequest: 0.02, // $0.02 per request
   },
 };
 

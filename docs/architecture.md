@@ -9,15 +9,16 @@ This unified approach combines what would traditionally be separate backend and 
 ### Starter Template or Existing Project
 
 Based on reviewing the PRD, I see:
+
 - **Repository Structure:** Monorepo specified (PRD line 127)
 - **Service Architecture:** Microservices within Monorepo (PRD lines 133-138)
 - No specific starter template is mentioned - this appears to be a greenfield project
 
 ### Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|---------|
-| Nov 2024 | 1.0 | Initial architecture document created from PRD and UI spec | Winston (Architect) |
+| Date     | Version | Description                                                | Author              |
+| -------- | ------- | ---------------------------------------------------------- | ------------------- |
+| Nov 2024 | 1.0     | Initial architecture document created from PRD and UI spec | Winston (Architect) |
 
 ## High Level Architecture
 
@@ -36,6 +37,7 @@ Romanian Legal Practice Management Platform employs a **microservices-within-mon
 **Structure:** Monorepo (as specified in PRD)
 **Monorepo Tool:** Turborepo (optimal for Next.js projects, excellent caching, parallel execution)
 **Package Organization:**
+
 - `/apps` - Deployable applications (web frontend, API backend, admin portal)
 - `/packages` - Shared code (UI components, TypeScript types, utilities, AI prompts)
 - `/services` - Microservices (document-service, task-service, ai-service, integration-service, notification-service)
@@ -124,36 +126,38 @@ graph TB
 
 ### Technology Stack Table
 
-| Category | Technology | Version | Purpose | Rationale |
-|----------|-----------|---------|---------|-----------|
-| Frontend Language | TypeScript | 5.3+ | Type-safe frontend development | Prevents runtime errors, improves IDE support, essential for large-scale application |
-| Frontend Framework | Next.js | 14.2+ | React framework with SSR/SSG | Optimal performance, SEO benefits, excellent Azure deployment support, built-in API routes |
-| UI Component Library | Radix UI + Tailwind CSS | Radix 1.1+, Tailwind 3.4+ | Accessible components + utility-first styling | WCAG AA compliance out-of-box, rapid development, smaller bundle than MUI |
-| State Management | Zustand + React Query | Zustand 4.5+, React Query 5.0+ | Client state + Server state | Simpler than Redux, excellent TypeScript support, optimal cache management |
-| Backend Language | TypeScript | 5.3+ | Type-safe backend development | Code sharing with frontend, prevents runtime errors, excellent ecosystem |
-| Backend Framework | Node.js + Express | Node 20 LTS, Express 4.19+ | Runtime and web framework | Consistency with frontend, extensive middleware ecosystem, GraphQL integration |
-| API Style | GraphQL | Apollo Server 4.9+ | Flexible data fetching | Complex nested data requirements, real-time subscriptions, reduces over-fetching |
-| Database | PostgreSQL + pgvector | PostgreSQL 16, pgvector 0.5+ | Relational data + vector search | ACID compliance for legal data, semantic search capability, single database solution |
-| Cache | Redis | 7.2+ | Session management + caching | Fast session storage, API response caching, real-time data synchronization |
-| File Storage | Azure Blob Storage | Latest SDK | Document storage | Native Azure integration, cost-effective, supports large files, geo-redundancy |
-| Authentication | Azure AD + JWT | MSAL 3.0+ | Enterprise SSO + token auth | Native Microsoft 365 integration, enterprise-grade security, role-based access |
-| Frontend Testing | Jest + React Testing Library | Jest 29+, RTL 14+ | Unit and integration testing | Excellent React ecosystem support, fast execution, good coverage reporting |
-| Backend Testing | Jest + Supertest | Jest 29+, Supertest 6.3+ | API and unit testing | Consistent with frontend, excellent async support, GraphQL testing capability |
-| E2E Testing | Playwright | 1.41+ | End-to-end testing | Cross-browser support, excellent debugging, faster than Cypress, Azure DevOps integration |
-| Build Tool | Vite | 5.0+ | Frontend bundling | Faster than Webpack, excellent HMR, optimized production builds |
-| Bundler | Rollup (via Vite) | Included with Vite | Module bundling | Tree-shaking, code-splitting, optimal bundle size |
-| IaC Tool | Terraform | 1.7+ | Infrastructure as Code | Azure provider support, state management, modular infrastructure |
-| CI/CD | GitHub Actions + Azure DevOps | Latest | Automation pipeline | GitHub integration for code, Azure DevOps for deployment, comprehensive automation |
-| Monitoring | Application Insights | Latest SDK | APM and logging | Native Azure integration, excellent performance tracking, AI-powered insights |
-| Logging | Winston + App Insights | Winston 3.11+ | Structured logging | Flexible log levels, multiple transports, Azure integration |
-| CSS Framework | Tailwind CSS | 3.4+ | Utility-first CSS | Rapid development, consistent spacing, excellent tree-shaking, dark mode support |
+| Category             | Technology                    | Version                        | Purpose                                       | Rationale                                                                                  |
+| -------------------- | ----------------------------- | ------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Frontend Language    | TypeScript                    | 5.3+                           | Type-safe frontend development                | Prevents runtime errors, improves IDE support, essential for large-scale application       |
+| Frontend Framework   | Next.js                       | 14.2+                          | React framework with SSR/SSG                  | Optimal performance, SEO benefits, excellent Azure deployment support, built-in API routes |
+| UI Component Library | Radix UI + Tailwind CSS       | Radix 1.1+, Tailwind 3.4+      | Accessible components + utility-first styling | WCAG AA compliance out-of-box, rapid development, smaller bundle than MUI                  |
+| State Management     | Zustand + React Query         | Zustand 4.5+, React Query 5.0+ | Client state + Server state                   | Simpler than Redux, excellent TypeScript support, optimal cache management                 |
+| Backend Language     | TypeScript                    | 5.3+                           | Type-safe backend development                 | Code sharing with frontend, prevents runtime errors, excellent ecosystem                   |
+| Backend Framework    | Node.js + Express             | Node 20 LTS, Express 4.19+     | Runtime and web framework                     | Consistency with frontend, extensive middleware ecosystem, GraphQL integration             |
+| API Style            | GraphQL                       | Apollo Server 4.9+             | Flexible data fetching                        | Complex nested data requirements, real-time subscriptions, reduces over-fetching           |
+| Database             | PostgreSQL + pgvector         | PostgreSQL 16, pgvector 0.5+   | Relational data + vector search               | ACID compliance for legal data, semantic search capability, single database solution       |
+| Cache                | Redis                         | 7.2+                           | Session management + caching                  | Fast session storage, API response caching, real-time data synchronization                 |
+| File Storage         | Azure Blob Storage            | Latest SDK                     | Document storage                              | Native Azure integration, cost-effective, supports large files, geo-redundancy             |
+| Authentication       | Azure AD + JWT                | MSAL 3.0+                      | Enterprise SSO + token auth                   | Native Microsoft 365 integration, enterprise-grade security, role-based access             |
+| Frontend Testing     | Jest + React Testing Library  | Jest 29+, RTL 14+              | Unit and integration testing                  | Excellent React ecosystem support, fast execution, good coverage reporting                 |
+| Backend Testing      | Jest + Supertest              | Jest 29+, Supertest 6.3+       | API and unit testing                          | Consistent with frontend, excellent async support, GraphQL testing capability              |
+| E2E Testing          | Playwright                    | 1.41+                          | End-to-end testing                            | Cross-browser support, excellent debugging, faster than Cypress, Azure DevOps integration  |
+| Build Tool           | Vite                          | 5.0+                           | Frontend bundling                             | Faster than Webpack, excellent HMR, optimized production builds                            |
+| Bundler              | Rollup (via Vite)             | Included with Vite             | Module bundling                               | Tree-shaking, code-splitting, optimal bundle size                                          |
+| IaC Tool             | Terraform                     | 1.7+                           | Infrastructure as Code                        | Azure provider support, state management, modular infrastructure                           |
+| CI/CD                | GitHub Actions + Azure DevOps | Latest                         | Automation pipeline                           | GitHub integration for code, Azure DevOps for deployment, comprehensive automation         |
+| Monitoring           | Application Insights          | Latest SDK                     | APM and logging                               | Native Azure integration, excellent performance tracking, AI-powered insights              |
+| Logging              | Winston + App Insights        | Winston 3.11+                  | Structured logging                            | Flexible log levels, multiple transports, Azure integration                                |
+| CSS Framework        | Tailwind CSS                  | 3.4+                           | Utility-first CSS                             | Rapid development, consistent spacing, excellent tree-shaking, dark mode support           |
 
 ## Data Models
 
 ### User
+
 **Purpose:** Represents legal professionals using the system with role-based access control
 
 **Key Attributes:**
+
 - id: UUID - Unique identifier from Azure AD
 - email: string - Primary email address
 - firstName: string - User's first name
@@ -166,6 +170,7 @@ graph TB
 - lastActive: DateTime - Last activity timestamp
 
 #### TypeScript Interface
+
 ```typescript
 export interface User {
   id: string;
@@ -190,6 +195,7 @@ export interface UserPreferences {
 ```
 
 #### Relationships
+
 - Has many Cases (through CaseTeam)
 - Has many Tasks (as assignee)
 - Has many TimeEntries
@@ -197,9 +203,11 @@ export interface UserPreferences {
 - Belongs to one Firm
 
 ### Case
+
 **Purpose:** Core legal matter entity containing all related information and documents
 
 **Key Attributes:**
+
 - id: UUID - Unique case identifier
 - caseNumber: string - Human-readable case number
 - title: string - Case title/name
@@ -213,6 +221,7 @@ export interface UserPreferences {
 - metadata: JSONB - Flexible additional data
 
 #### TypeScript Interface
+
 ```typescript
 export interface Case {
   id: string;
@@ -235,6 +244,7 @@ export interface Case {
 ```
 
 #### Relationships
+
 - Belongs to one Client
 - Has many Users (through CaseTeam)
 - Has many Documents
@@ -243,9 +253,11 @@ export interface Case {
 - Has many TimeEntries
 
 ### Document
+
 **Purpose:** Legal documents with AI-powered versioning and semantic change tracking
 
 **Key Attributes:**
+
 - id: UUID - Unique document identifier
 - caseId: UUID - Associated case
 - title: string - Document title
@@ -260,6 +272,7 @@ export interface Case {
 - documentEmbedding: vector - Semantic search embedding
 
 #### TypeScript Interface
+
 ```typescript
 export interface Document {
   id: string;
@@ -295,6 +308,7 @@ export interface DocumentVersion {
 ```
 
 #### Relationships
+
 - Belongs to one Case
 - Has many DocumentVersions
 - Belongs to one User (author)
@@ -483,6 +497,7 @@ type Subscription {
 ## External APIs
 
 ### Microsoft Graph API
+
 - **Purpose:** Core integration for Microsoft 365 services including Outlook email, Calendar, OneDrive file storage, and Azure AD authentication
 - **Documentation:** https://docs.microsoft.com/en-us/graph/
 - **Base URL(s):** https://graph.microsoft.com/v1.0
@@ -490,6 +505,7 @@ type Subscription {
 - **Rate Limits:** 10,000 requests per 10 minutes per app
 
 **Key Endpoints Used:**
+
 - `GET /me` - Get current user profile
 - `GET /users/{id}` - Retrieve user information
 - `GET/POST /me/messages` - Read and send emails
@@ -497,6 +513,7 @@ type Subscription {
 - `GET/PUT /drives/{drive-id}/items/{item-id}` - OneDrive file operations
 
 ### Anthropic Claude API
+
 - **Purpose:** Primary LLM provider for document generation, natural language processing
 - **Documentation:** https://docs.anthropic.com/claude/reference/
 - **Base URL(s):** https://api.anthropic.com/v1
@@ -504,6 +521,7 @@ type Subscription {
 - **Rate Limits:** Varies by tier - Enterprise tier provides 10,000 requests/minute
 
 ### OpenAI API
+
 - **Purpose:** Fallback LLM provider, specialized embeddings for semantic search
 - **Documentation:** https://platform.openai.com/docs/api-reference
 - **Base URL(s):** https://api.openai.com/v1
@@ -627,17 +645,20 @@ legal-platform/
 ### Security Requirements
 
 **Frontend Security:**
+
 - CSP Headers: Strict content security policy with specific allowlists
 - XSS Prevention: React's built-in escaping + DOMPurify for user content
 - Secure Storage: httpOnly cookies for tokens, sessionStorage for non-sensitive data
 
 **Backend Security:**
+
 - Input Validation: Zod schemas for all API inputs
 - Rate Limiting: 100 req/min general, 10 req/min for AI operations
 - CORS Policy: Strict origin whitelist for production
 - SQL Injection Prevention: Parameterized queries via Prisma
 
 **Authentication Security:**
+
 - Token Storage: Access tokens in memory, refresh in httpOnly cookies
 - Session Management: 30-minute access token, 7-day refresh token
 - Password Policy: Azure AD enforced - min 12 chars, complexity required
@@ -646,11 +667,13 @@ legal-platform/
 ### Performance Optimization
 
 **Frontend Performance:**
+
 - Bundle Size Target: < 200KB initial JS (gzipped)
 - Loading Strategy: Route-based code splitting, lazy loading
 - Core Web Vitals: LCP < 2.5s, FID < 100ms, CLS < 0.1
 
 **Backend Performance:**
+
 - Response Time Target: p50 < 200ms, p95 < 1s, p99 < 2s
 - Database Optimization: Connection pooling, DataLoader for N+1 prevention
 - Caching Strategy: Redis for sessions, CDN for static assets
@@ -658,11 +681,13 @@ legal-platform/
 ## Testing Strategy
 
 ### Testing Pyramid
+
 - E2E Tests (10%) - Playwright for critical user journeys
 - Integration Tests (20%) - API and component integration
 - Unit Tests (70%) - Jest for business logic
 
 ### Test Organization
+
 - Frontend: Unit tests for components, hooks, stores
 - Backend: Unit tests for services, integration for APIs
 - E2E: Critical user workflows and AI features
@@ -670,6 +695,7 @@ legal-platform/
 ## Coding Standards
 
 ### Critical Fullstack Rules
+
 - **Type Sharing:** Always define types in packages/shared/types
 - **API Calls:** Never make direct HTTP calls - use service layers
 - **Environment Variables:** Access only through config objects
@@ -680,15 +706,17 @@ legal-platform/
 - **Authentication:** Never trust client-provided user IDs
 
 ### Naming Conventions
-| Element | Frontend | Backend | Example |
-|---------|----------|---------|---------|
-| Components | PascalCase | - | `UserProfile.tsx` |
-| API Routes | - | kebab-case | `/api/user-profile` |
-| Database Tables | - | snake_case | `user_profiles` |
+
+| Element         | Frontend   | Backend    | Example             |
+| --------------- | ---------- | ---------- | ------------------- |
+| Components      | PascalCase | -          | `UserProfile.tsx`   |
+| API Routes      | -          | kebab-case | `/api/user-profile` |
+| Database Tables | -          | snake_case | `user_profiles`     |
 
 ## Error Handling Strategy
 
 ### Error Response Format
+
 ```typescript
 interface ApiError {
   error: {
@@ -704,6 +732,7 @@ interface ApiError {
 ```
 
 ### Error Categories
+
 - Validation Errors (400)
 - Authentication Errors (401)
 - Authorization Errors (403)
@@ -715,25 +744,30 @@ interface ApiError {
 ## Monitoring and Observability
 
 ### Monitoring Stack
+
 - **Frontend Monitoring:** Application Insights JavaScript SDK
 - **Backend Monitoring:** Application Insights for APM
 - **Error Tracking:** Sentry for detailed error tracking
 - **Performance Monitoring:** Azure Monitor for infrastructure
 
 ### Key Metrics
+
 **Frontend Metrics:**
+
 - Core Web Vitals
 - JavaScript errors per session
 - API response times
 - User interactions per session
 
 **Backend Metrics:**
+
 - Request rate by endpoint
 - Error rate by service
 - Response time percentiles
 - Database query performance
 
 **Business Metrics:**
+
 - Daily/Monthly Active Users
 - Documents created per user
 - AI feature utilization rate

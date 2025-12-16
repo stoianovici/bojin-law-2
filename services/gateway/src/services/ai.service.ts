@@ -5,7 +5,13 @@
  * Provides interface to AI Service with retry logic and error handling
  */
 
-import { AIOperationType, TaskComplexity, ClaudeModel, AIGenerateResponse, AIUsageStats } from '@legal-platform/types';
+import {
+  AIOperationType,
+  TaskComplexity,
+  ClaudeModel,
+  AIGenerateResponse,
+  AIUsageStats,
+} from '@legal-platform/types';
 
 // Configuration
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
@@ -65,7 +71,7 @@ class AIServiceError extends Error {
  * Sleep helper for retry delays
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -80,7 +86,7 @@ async function makeRequest<T>(
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${AI_SERVICE_API_KEY}`,
+    Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
     ...options.headers,
   };
 
@@ -133,7 +139,10 @@ async function makeRequest<T>(
       // Network errors - retry
       if (attempt < retries) {
         const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
-        console.warn(`AI Service network error (attempt ${attempt}), retrying in ${delay}ms:`, error);
+        console.warn(
+          `AI Service network error (attempt ${attempt}), retrying in ${delay}ms:`,
+          error
+        );
         await sleep(delay);
         continue;
       }
@@ -177,9 +186,13 @@ export const aiService = {
    * Get health status
    */
   async health(): Promise<HealthCheckResponse> {
-    return makeRequest<HealthCheckResponse>('/api/ai/health', {
-      method: 'GET',
-    }, 1); // No retries for health check
+    return makeRequest<HealthCheckResponse>(
+      '/api/ai/health',
+      {
+        method: 'GET',
+      },
+      1
+    ); // No retries for health check
   },
 
   /**
@@ -200,7 +213,10 @@ export const aiService = {
   /**
    * Invalidate cache entries
    */
-  async invalidateCache(firmId: string, operationType?: AIOperationType): Promise<{ invalidated: number }> {
+  async invalidateCache(
+    firmId: string,
+    operationType?: AIOperationType
+  ): Promise<{ invalidated: number }> {
     return makeRequest<{ invalidated: number }>('/api/ai/cache/invalidate', {
       method: 'POST',
       body: JSON.stringify({ firmId, operationType }),

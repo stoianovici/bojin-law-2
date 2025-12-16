@@ -17,13 +17,7 @@ import chalk from 'chalk';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
-import {
-  login,
-  getAccessToken,
-  clearTokenCache,
-  getLoggedInUser,
-  isLoggedIn,
-} from './auth.js';
+import { login, getAccessToken, clearTokenCache, getLoggedInUser, isLoggedIn } from './auth.js';
 
 // Lazy imports - only loaded when needed (to avoid Prisma import issues for login command)
 const loadEmbeddingService = () => import('./embedding-service.js');
@@ -89,10 +83,19 @@ program
     const startTime = Date.now();
 
     // Lazy load modules
-    const { initializeModel, generateDocumentEmbeddings, EMBEDDING_DIMENSIONS } = await loadEmbeddingService();
-    const { createGraphClient, discoverAllDocuments, downloadDocument } = await loadOneDriveClient();
+    const { initializeModel, generateDocumentEmbeddings, EMBEDDING_DIMENSIONS } =
+      await loadEmbeddingService();
+    const { createGraphClient, discoverAllDocuments, downloadDocument } =
+      await loadOneDriveClient();
     const { extractText } = await loadTextExtractor();
-    const { initializeDatabase, getProcessedDocumentIds, storeTrainingDocument, createPipelineRun, updatePipelineRun, closeDatabase } = await loadDatabase();
+    const {
+      initializeDatabase,
+      getProcessedDocumentIds,
+      storeTrainingDocument,
+      createPipelineRun,
+      updatePipelineRun,
+      closeDatabase,
+    } = await loadDatabase();
 
     console.log(chalk.blue.bold('\n📚 Training Pipeline - Local Embedding Generator\n'));
     console.log(chalk.gray(`Model: multilingual-e5-base (${EMBEDDING_DIMENSIONS} dimensions)`));
@@ -113,7 +116,10 @@ program
     }
 
     // Check Azure client ID
-    const hasClientId = process.env.AZURE_TRAINING_CLIENT_ID || process.env.AZURE_AD_CLIENT_ID || process.env.AZURE_CLIENT_ID;
+    const hasClientId =
+      process.env.AZURE_TRAINING_CLIENT_ID ||
+      process.env.AZURE_AD_CLIENT_ID ||
+      process.env.AZURE_CLIENT_ID;
     if (!hasClientId) {
       console.error(chalk.red('Error: AZURE_TRAINING_CLIENT_ID environment variable required'));
       console.log(chalk.gray('\nAdd to your .env file:'));
@@ -328,7 +334,10 @@ program
     }
 
     // Check Azure client ID
-    const clientId = process.env.AZURE_TRAINING_CLIENT_ID || process.env.AZURE_AD_CLIENT_ID || process.env.AZURE_CLIENT_ID;
+    const clientId =
+      process.env.AZURE_TRAINING_CLIENT_ID ||
+      process.env.AZURE_AD_CLIENT_ID ||
+      process.env.AZURE_CLIENT_ID;
     if (clientId) {
       console.log(chalk.green(`✅ AZURE_TRAINING_CLIENT_ID: configured`));
     } else {

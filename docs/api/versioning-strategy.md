@@ -25,6 +25,7 @@ This document defines the versioning strategy for the Legal Platform GraphQL API
 The Legal Platform API uses **schema evolution** rather than URL versioning. This approach is recommended by GraphQL best practices and provides several advantages:
 
 **✅ Advantages:**
+
 - Single endpoint for all clients
 - Gradual migration path for clients
 - No need to maintain multiple API versions
@@ -32,6 +33,7 @@ The Legal Platform API uses **schema evolution** rather than URL versioning. Thi
 - Clear deprecation warnings in schema
 
 **❌ URL Versioning (Not Used):**
+
 - `/v1/graphql`, `/v2/graphql` - NOT USED
 - Requires maintaining multiple codebases
 - Forces hard cutoffs for clients
@@ -71,7 +73,7 @@ type Case {
   id: UUID!
   title: String!
   status: CaseStatus!
-  priority: Priority  # NEW: Optional field
+  priority: Priority # NEW: Optional field
 }
 ```
 
@@ -95,7 +97,7 @@ type Task {
 ```graphql
 type Query {
   cases: [Case!]!
-  tasks: [Task!]!  # NEW: Additional query
+  tasks: [Task!]! # NEW: Additional query
 }
 ```
 
@@ -116,7 +118,7 @@ enum CaseStatus {
   ACTIVE
   ON_HOLD
   CLOSED
-  ARCHIVED  # NEW: Added at the end
+  ARCHIVED # NEW: Added at the end
 }
 ```
 
@@ -132,29 +134,29 @@ enum CaseStatus {
 
 These changes maintain backward compatibility:
 
-| Change | Example | Impact |
-|--------|---------|--------|
-| Add new field | `Case.priority: Priority` | ✅ None |
-| Add new type | `type Task { ... }` | ✅ None |
-| Add new query | `tasks: [Task!]!` | ✅ None |
-| Add new mutation | `createTask(...)` | ✅ None |
-| Add new enum value | `CaseStatus.ARCHIVED` | ⚠️ Minor (clients should handle unknown values) |
-| Make required field optional | `closedDate: DateTime!` → `closedDate: DateTime` | ✅ None |
-| Add new input field (optional) | `metadata: JSON` | ✅ None |
+| Change                         | Example                                          | Impact                                          |
+| ------------------------------ | ------------------------------------------------ | ----------------------------------------------- |
+| Add new field                  | `Case.priority: Priority`                        | ✅ None                                         |
+| Add new type                   | `type Task { ... }`                              | ✅ None                                         |
+| Add new query                  | `tasks: [Task!]!`                                | ✅ None                                         |
+| Add new mutation               | `createTask(...)`                                | ✅ None                                         |
+| Add new enum value             | `CaseStatus.ARCHIVED`                            | ⚠️ Minor (clients should handle unknown values) |
+| Make required field optional   | `closedDate: DateTime!` → `closedDate: DateTime` | ✅ None                                         |
+| Add new input field (optional) | `metadata: JSON`                                 | ✅ None                                         |
 
 ### Breaking Changes (Require Deprecation Period)
 
 These changes break existing clients and require careful handling:
 
-| Change | Example | Impact |
-|--------|---------|--------|
-| Remove field | Remove `Case.legacyField` | ❌ Breaks queries using that field |
-| Rename field | `Case.clientId` → `Case.client_id` | ❌ Breaks existing queries |
-| Change field type | `value: Float` → `value: Int` | ❌ Type mismatch errors |
-| Make optional field required | `metadata: JSON` → `metadata: JSON!` | ❌ Breaks mutations |
-| Remove enum value | Remove `CaseStatus.LEGACY` | ❌ Breaks filters/mutations |
-| Change argument types | `(id: String!)` → `(id: UUID!)` | ❌ Type mismatch |
-| Remove query/mutation | Remove `legacySearch` | ❌ Breaks clients using it |
+| Change                       | Example                              | Impact                             |
+| ---------------------------- | ------------------------------------ | ---------------------------------- |
+| Remove field                 | Remove `Case.legacyField`            | ❌ Breaks queries using that field |
+| Rename field                 | `Case.clientId` → `Case.client_id`   | ❌ Breaks existing queries         |
+| Change field type            | `value: Float` → `value: Int`        | ❌ Type mismatch errors            |
+| Make optional field required | `metadata: JSON` → `metadata: JSON!` | ❌ Breaks mutations                |
+| Remove enum value            | Remove `CaseStatus.LEGACY`           | ❌ Breaks filters/mutations        |
+| Change argument types        | `(id: String!)` → `(id: UUID!)`      | ❌ Type mismatch                   |
+| Remove query/mutation        | Remove `legacySearch`                | ❌ Breaks clients using it         |
 
 ---
 
@@ -173,7 +175,8 @@ type Case {
   DEPRECATED: Use 'client' field instead.
   Will be removed in API v2.0 (2026-06-01)
   """
-  clientId: UUID @deprecated(reason: "Use 'client.id' instead. Will be removed in v2.0 (2026-06-01)")
+  clientId: UUID
+    @deprecated(reason: "Use 'client.id' instead. Will be removed in v2.0 (2026-06-01)")
 
   """
   Client associated with this case
@@ -224,17 +227,20 @@ type Case {
   """
   isActive: Boolean @deprecated(reason: "Use 'status' field. Removal: 2026-06-01")
 
-  """Current status of the case"""
+  """
+  Current status of the case
+  """
   status: CaseStatus!
 }
 ```
 
 #### Step 2: Provide Migration Guide
 
-```markdown
+````markdown
 ## Migrating from isActive to status
 
 **Old Query:**
+
 ```graphql
 query {
   case(id: "...") {
@@ -242,19 +248,23 @@ query {
   }
 }
 ```
+````
 
 **New Query:**
+
 ```graphql
 query {
   case(id: "...") {
-    status  # Returns ACTIVE, ON_HOLD, CLOSED, or ARCHIVED
+    status # Returns ACTIVE, ON_HOLD, CLOSED, or ARCHIVED
   }
 }
 ```
 
 **Mapping:**
+
 - `isActive: true` → `status: ACTIVE`
 - `isActive: false` → `status: CLOSED`
+
 ```
 
 ---
@@ -278,12 +288,14 @@ query {
 ### Version Numbering (SemVer)
 
 ```
+
 v MAJOR . MINOR . PATCH
-  │       │       │
-  │       │       └─ Bug fixes, security patches
-  │       └─────────── New features (backward compatible)
-  └─────────────────── Breaking changes
-```
+│ │ │
+│ │ └─ Bug fixes, security patches
+│ └─────────── New features (backward compatible)
+└─────────────────── Breaking changes
+
+````
 
 **Examples:**
 - `v1.0.0` → `v1.1.0`: Added new queries (safe)
@@ -327,13 +339,14 @@ v MAJOR . MINOR . PATCH
 
 ### No Action Required
 These are non-breaking changes. Existing code will continue to work.
-```
+````
 
 #### Breaking Changes
 
 **Medium:** Email, Slack, API docs, in-schema warnings
 
 **Template:**
+
 ```markdown
 ## BREAKING CHANGE NOTICE: Field Deprecation
 
@@ -343,12 +356,15 @@ These are non-breaking changes. Existing code will continue to work.
 **Removal Date:** 2026-06-01 (6 months)
 
 ### Action Required
+
 Update queries to use `Case.client.id` instead of `Case.clientId`.
 
 ### Migration Guide
+
 [Link to migration guide]
 
 ### Support
+
 Contact api-support@legal-platform.com for assistance.
 ```
 
@@ -359,6 +375,7 @@ Contact api-support@legal-platform.com for assistance.
 ### For API Maintainers
 
 ✅ **Do:**
+
 - Add new fields rather than modifying existing ones
 - Use `@deprecated` directive with clear migration paths
 - Maintain at least 6-month deprecation period
@@ -368,6 +385,7 @@ Contact api-support@legal-platform.com for assistance.
 - Communicate changes proactively
 
 ❌ **Don't:**
+
 - Remove fields without deprecation period
 - Change field types without new field
 - Rush breaking changes
@@ -377,6 +395,7 @@ Contact api-support@legal-platform.com for assistance.
 ### For API Consumers
 
 ✅ **Do:**
+
 - Handle unknown enum values gracefully
 - Subscribe to API change notifications
 - Test against new API versions before they're released
@@ -385,6 +404,7 @@ Contact api-support@legal-platform.com for assistance.
 - Report issues with new features early
 
 ❌ **Don't:**
+
 - Ignore deprecation warnings
 - Rely on undocumented fields
 - Skip schema validation
@@ -393,20 +413,22 @@ Contact api-support@legal-platform.com for assistance.
 ### Schema Design Principles
 
 1. **Additive Changes Preferred**
+
    ```graphql
    # Good: Add new optional field
    type Case {
      status: CaseStatus!
-     priority: Priority  # New optional field
+     priority: Priority # New optional field
    }
 
    # Bad: Change existing field type
    type Case {
-     status: String!  # Changed from CaseStatus enum
+     status: String! # Changed from CaseStatus enum
    }
    ```
 
 2. **Provide Migration Paths**
+
    ```graphql
    type Case {
      # Old (deprecated)
@@ -418,6 +440,7 @@ Contact api-support@legal-platform.com for assistance.
    ```
 
 3. **Use Semantic Field Names**
+
    ```graphql
    # Good: Clear intent
    createdAt: DateTime!
@@ -441,9 +464,9 @@ Contact api-support@legal-platform.com for assistance.
 
 ## Changelog
 
-| Date | Version | Changes |
-|------|---------|---------|
-| 2025-11-21 | 1.0.0 | Initial versioning strategy defined |
+| Date       | Version | Changes                             |
+| ---------- | ------- | ----------------------------------- |
+| 2025-11-21 | 1.0.0   | Initial versioning strategy defined |
 
 ---
 

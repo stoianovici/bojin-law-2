@@ -89,7 +89,14 @@ interface SectionHeaderProps {
   sectionId: string;
 }
 
-function SectionHeader({ title, count, icon, isExpanded, onToggle, sectionId }: SectionHeaderProps) {
+function SectionHeader({
+  title,
+  count,
+  icon,
+  isExpanded,
+  onToggle,
+  sectionId,
+}: SectionHeaderProps) {
   return (
     <button
       onClick={onToggle}
@@ -333,7 +340,13 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
   );
 
   // Loading state
-  if (loading && !deadlines.length && !commitments.length && !actionItems.length && !questions.length) {
+  if (
+    loading &&
+    !deadlines.length &&
+    !commitments.length &&
+    !actionItems.length &&
+    !questions.length
+  ) {
     return (
       <div className="p-4 flex items-center justify-center" role="status" aria-busy="true">
         <Loader2 className="h-6 w-6 animate-spin text-blue-500" aria-hidden="true" />
@@ -348,9 +361,7 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
     return (
       <div className="p-4">
         <h3 className="font-semibold text-gray-900 mb-2">Elemente extrase</h3>
-        <p className="text-sm text-gray-500 mb-3">
-          Nu s-au putut încărca elementele extrase.
-        </p>
+        <p className="text-sm text-gray-500 mb-3">Nu s-au putut încărca elementele extrase.</p>
         <button
           onClick={() => refetch()}
           className="text-sm text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"

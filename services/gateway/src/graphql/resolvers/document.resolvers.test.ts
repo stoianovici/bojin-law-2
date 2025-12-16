@@ -148,7 +148,9 @@ describe('Document Resolvers', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Restore $transaction mock after clearAllMocks
-    mockPrisma.$transaction.mockImplementation(async (fn: (tx: any) => Promise<any>) => fn(mockPrisma));
+    mockPrisma.$transaction.mockImplementation(async (fn: (tx: any) => Promise<any>) =>
+      fn(mockPrisma)
+    );
   });
 
   describe('Query.clientDocuments', () => {
@@ -171,11 +173,7 @@ describe('Document Resolvers', () => {
 
     it('throws error for unauthenticated user', async () => {
       await expect(
-        documentResolvers.Query.clientDocuments(
-          {},
-          { clientId: 'client-1' },
-          { user: undefined }
-        )
+        documentResolvers.Query.clientDocuments({}, { clientId: 'client-1' }, { user: undefined })
       ).rejects.toThrow(GraphQLError);
     });
 

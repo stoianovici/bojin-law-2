@@ -102,10 +102,7 @@ export const Modal = ({
 
           {/* Description */}
           {description && (
-            <Dialog.Description
-              id="modal-description"
-              className="mb-4 text-sm text-neutral-600"
-            >
+            <Dialog.Description id="modal-description" className="mb-4 text-sm text-neutral-600">
               {description}
             </Dialog.Description>
           )}

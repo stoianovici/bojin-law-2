@@ -20,7 +20,8 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
           AVOCAT_NUME: 'Av. Dr. Ion Popescu',
           BAROU: 'București',
           FIRMA_ADRESA: 'Bd. Unirii nr. 12, etaj 5, Sector 3, București, 030825',
-          OBIECT_NOTIFICARE: 'Recuperare creanță contractuală - Contract de prestări servicii nr. 234/2024',
+          OBIECT_NOTIFICARE:
+            'Recuperare creanță contractuală - Contract de prestări servicii nr. 234/2024',
           DATA_NOTIFICARE: '19 noiembrie 2025',
           DESCRIERE_FAPT:
             'La data de 15 martie 2024, între clientul nostru SC BETA SERVICES SRL și dumneavoastră s-a încheiat Contractul de prestări servicii nr. 234/2024, având ca obiect executarea lucrărilor de consultanță în IT. Conform clauzelor contractuale, plata avea termen la 30 de zile de la data facturării. Facturile nr. 145/2024 și nr. 167/2024, în valoare totală de 45.000 RON (inclusiv TVA), au rămas neachitate până în prezent, deși termenul de plată a expirat cu peste 180 de zile în urmă.',
@@ -70,7 +71,8 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
           TERMEN_ZILE: '7',
           ARTICOL_CIVIL_1: '1349',
           ARTICOL_CIVIL_2: '1357',
-          TEMEI_LEGAL_SUPLIMENTAR: '- Legea nr. 84/1998 privind mărcile și indicațiile geografice\n- Art. 1 din Protocolul 28/2006 OSIM',
+          TEMEI_LEGAL_SUPLIMENTAR:
+            '- Legea nr. 84/1998 privind mărcile și indicațiile geografice\n- Art. 1 din Protocolul 28/2006 OSIM',
           CONSECINTE_NECONFORMARE:
             'Vom iniția proceduri judiciare pentru încălcarea drepturilor de proprietate intelectuală, solicitând despăgubiri estimate la minimum 100.000 RON pentru prejudiciul de imagine și pierderea clientelei.',
           DATA_EMITERE: '19 noiembrie 2025',
@@ -107,12 +109,16 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
           PRET_TOTAL: '150.000',
           PRET_IN_LITERE: 'o sută cincizeci mii',
           MONEDA: 'EUR (echivalent RON la cursul BNR din ziua plății)',
-          CLAUZA_TVA: 'Vânzarea este scutită de TVA conform art. 292 alin. (1) lit. d) din Codul Fiscal.',
-          INCLUZIUNI_PRET: 'toate dotările fixe existente (bucătărie mobilată, aer condiționat, corpuri de iluminat)',
+          CLAUZA_TVA:
+            'Vânzarea este scutită de TVA conform art. 292 alin. (1) lit. d) din Codul Fiscal.',
+          INCLUZIUNI_PRET:
+            'toate dotările fixe existente (bucătărie mobilată, aer condiționat, corpuri de iluminat)',
           MODALITATE_PLATA:
             '- Avans: 30.000 EUR la semnarea antecontractului\n- Tranșa 2: 50.000 EUR la autentificarea contractului\n- Sold: 70.000 EUR prin credit bancar, la maximum 30 zile de la autentificare',
-          CLAUZA_AVANS: 'Avansul de 30.000 EUR a fost achitat la data de 1 noiembrie 2025, conform chitanței nr. 001/2025.',
-          CLAUZA_SOLD: 'Soldul de 70.000 EUR se va achita prin virament bancar în contul IBAN: RO49AAAA1B31007593840000.',
+          CLAUZA_AVANS:
+            'Avansul de 30.000 EUR a fost achitat la data de 1 noiembrie 2025, conform chitanței nr. 001/2025.',
+          CLAUZA_SOLD:
+            'Soldul de 70.000 EUR se va achita prin virament bancar în contul IBAN: RO49AAAA1B31007593840000.',
           PENALITATE_PROCENT: '0.5',
           DATA_TRANSFER: '30 noiembrie 2025, sub condiția plății integrale',
           DATA_PREDARE: '5 decembrie 2025',
@@ -209,7 +215,8 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
           AVOCAT_PARAT_NUME: 'Av. Dr. Elena Munteanu',
           BAROU_PARAT: 'București',
           AVOCAT_PARAT_ADRESA: 'Str. Avocaților nr. 8, Sector 1, București',
-          OBIECT_ACTIUNE: 'Rezilierea Contractului de execuție lucrări nr. 234/2024 și obligarea la plata daunelor-interese',
+          OBIECT_ACTIUNE:
+            'Rezilierea Contractului de execuție lucrări nr. 234/2024 și obligarea la plata daunelor-interese',
           DATA_CERERE: '15 octombrie 2025',
           REZUMAT_CERERE_RECLAMANT:
             'Reclamantul solicită: (i) rezilierea Contractului de execuție lucrări nr. 234/2024; (ii) obligarea pârâtului la plata sumei de 500.000 RON cu titlu de daune-interese; (iii) obligarea pârâtului la restituirea avansului de 200.000 RON; (iv) cheltuieli de judecată.',
@@ -219,17 +226,21 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
             'Contractul de execuție lucrări nr. 234/2024 a fost încheiat la data de 1 martie 2024 pentru executarea lucrărilor de construire a unui complex rezidențial. Pârâtul și-a îndeplinit în totalitate obligațiile contractuale, executând lucrările conform proiectului tehnic și predând toate etapele intermediate la termenele stabilite. Întârzierea pretinsă de reclamant de 45 de zile se datorează exclusiv modificărilor solicitate de beneficiar prin 12 acte adiționale succesive, care au extins semnificativ volumul de lucrări și au modificat planificarea inițială. Toate aceste modificări au fost solicitate în scris de către reclamant și acceptate de pârât prin încheierea de acte adiționale la contract.',
           ARGUMENT_1:
             'Pârâtul și-a executat integral obligațiile contractuale, lucrările fiind recepționate parțial în proporție de 85% fără rezerve. Procesele-verbale de recepție parțială nr. 1-8/2024 confirmă calitatea execuției și respectarea termenelor ajustate prin actele adiționale.',
-          TEMEI_LEGAL_1: 'Art. 1270 și art. 1530 Cod Civil - buna-credință în executarea contractelor',
+          TEMEI_LEGAL_1:
+            'Art. 1270 și art. 1530 Cod Civil - buna-credință în executarea contractelor',
           ARGUMENT_2:
             'Întârzierea invocată de reclamant este consecința directă și exclusivă a modificărilor solicitate de acesta prin cele 12 acte adiționale, care au majorat valoarea contractului cu 35% și au extins termenul de execuție conform art. 8 din contractul-cadru.',
-          TEMEI_LEGAL_2: 'Art. 1351 Cod Civil - forța majoră și cazul fortuit; Art. 1555 Cod Civil - fapta creditorului',
+          TEMEI_LEGAL_2:
+            'Art. 1351 Cod Civil - forța majoră și cazul fortuit; Art. 1555 Cod Civil - fapta creditorului',
           ARGUMENT_3:
             'Sumele solicitate cu titlu de daune-interese nu au nicio justificare, reclamantul nereușind să probeze existența unui prejudiciu real și cert. Mai mult, pârâtul a investit resurse suplimentare de 150.000 RON pentru adaptarea la modificările solicitate de beneficiar.',
-          TEMEI_LEGAL_3: 'Art. 1531 și 1532 Cod Civil - dovada prejudiciului; Art. 1385-1395 Cod Civil - răspunderea contractuală',
+          TEMEI_LEGAL_3:
+            'Art. 1531 și 1532 Cod Civil - dovada prejudiciului; Art. 1385-1395 Cod Civil - răspunderea contractuală',
           INSCRIS_1:
             'Contract de execuție lucrări nr. 234/2024 și toate cele 12 acte adiționale (A1-234/2024 până la A12-234/2024)',
           INSCRIS_2: 'Procese-verbale de recepție parțială nr. 1-8/2024',
-          INSCRIS_3: 'Corespondență email cu solicitările de modificări ale beneficiarului (martie-septembrie 2024)',
+          INSCRIS_3:
+            'Corespondență email cu solicitările de modificări ale beneficiarului (martie-septembrie 2024)',
           INSCRISURI_SUPLIMENTARE:
             '4. Rapoarte tehnice de avansare a lucrărilor (lunare)\n5. Facturile emise și achitate integral de beneficiar\n6. Autorizație de construire nr. 123/2024\n7. Poliță de asigurare pentru răspundere civilă profesională',
           CERERE_PRINCIPALA:
@@ -286,7 +297,11 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
 
   describe('Time savings estimation', () => {
     it('should estimate realistic time savings for each template', () => {
-      const templates = ['notificare-avocateasca', 'contract-vanzare-cumparare', 'intampinare'] as const;
+      const templates = [
+        'notificare-avocateasca',
+        'contract-vanzare-cumparare',
+        'intampinare',
+      ] as const;
 
       templates.forEach((slug) => {
         const estimate = romanianDocumentGenerator.estimateTimeSavings(slug);

@@ -384,10 +384,13 @@ export function useExtractedQuestions(filter?: ExtractedItemsFilter) {
  * Hook to fetch conversion suggestion for an extraction
  */
 export function useConversionSuggestion(extractionId: string, extractionType: ExtractionType) {
-  return useQuery<{ conversionSuggestion: ConversionSuggestion | null }>(GET_CONVERSION_SUGGESTION, {
-    variables: { extractionId, extractionType },
-    skip: !extractionId,
-  });
+  return useQuery<{ conversionSuggestion: ConversionSuggestion | null }>(
+    GET_CONVERSION_SUGGESTION,
+    {
+      variables: { extractionId, extractionType },
+      skip: !extractionId,
+    }
+  );
 }
 
 /**
@@ -421,7 +424,8 @@ export function usePendingExtractedItems(caseId: string) {
   const actionItems = useExtractedActionItems(filter);
   const questions = useExtractedQuestions(filter);
 
-  const loading = deadlines.loading || commitments.loading || actionItems.loading || questions.loading;
+  const loading =
+    deadlines.loading || commitments.loading || actionItems.loading || questions.loading;
   const error = deadlines.error || commitments.error || actionItems.error || questions.error;
 
   return {
@@ -502,12 +506,12 @@ export function useDismissExtraction() {
  * Hook to mark a question as answered
  */
 export function useMarkQuestionAnswered() {
-  return useMutation<{ markQuestionAnswered: ExtractedQuestion }, { input: { questionId: string } }>(
-    MARK_QUESTION_ANSWERED,
-    {
-      refetchQueries: ['GetExtractedQuestions', 'GetExtractedItemsCounts'],
-    }
-  );
+  return useMutation<
+    { markQuestionAnswered: ExtractedQuestion },
+    { input: { questionId: string } }
+  >(MARK_QUESTION_ANSWERED, {
+    refetchQueries: ['GetExtractedQuestions', 'GetExtractedItemsCounts'],
+  });
 }
 
 // ============================================================================

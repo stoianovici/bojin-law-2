@@ -98,7 +98,17 @@ export class EmailSearchService {
     limit: number = DEFAULT_PAGE_SIZE,
     offset: number = 0
   ): Promise<EmailSearchResponse> {
-    const { userId, caseId, search, hasAttachments, isUnread, dateFrom, dateTo, uncategorizedOnly, importance } = filters;
+    const {
+      userId,
+      caseId,
+      search,
+      hasAttachments,
+      isUnread,
+      dateFrom,
+      dateTo,
+      uncategorizedOnly,
+      importance,
+    } = filters;
 
     // Clamp limit
     const clampedLimit = Math.min(limit, MAX_PAGE_SIZE);
@@ -230,22 +240,24 @@ export class EmailSearchService {
 
     // Perform vector similarity search using raw SQL
     // Note: This assumes email_embeddings table exists with email_id and embedding columns
-    const results = await this.prisma.$queryRaw<Array<{
-      id: string;
-      graph_message_id: string;
-      conversation_id: string;
-      subject: string;
-      body_preview: string;
-      from_json: any;
-      to_recipients: any;
-      received_date_time: Date;
-      has_attachments: boolean;
-      is_read: boolean;
-      importance: string;
-      case_id: string | null;
-      case_title: string | null;
-      similarity: number;
-    }>>`
+    const results = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        graph_message_id: string;
+        conversation_id: string;
+        subject: string;
+        body_preview: string;
+        from_json: any;
+        to_recipients: any;
+        received_date_time: Date;
+        has_attachments: boolean;
+        is_read: boolean;
+        importance: string;
+        case_id: string | null;
+        case_title: string | null;
+        similarity: number;
+      }>
+    >`
       SELECT
         e.id,
         e.graph_message_id,
@@ -362,28 +374,21 @@ export class EmailSearchService {
     emailsWithAttachments: number;
     emailsByCase: Array<{ caseId: string; caseName: string; count: number }>;
   }> {
-    const [
-      totalEmails,
-      unreadEmails,
-      uncategorizedEmails,
-      emailsWithAttachments,
-      emailsByCase,
-    ] = await Promise.all([
-      this.prisma.email.count({ where: { userId } }),
-      this.prisma.email.count({ where: { userId, isRead: false } }),
-      this.prisma.email.count({ where: { userId, caseId: null } }),
-      this.prisma.email.count({ where: { userId, hasAttachments: true } }),
-      this.prisma.email.groupBy({
-        by: ['caseId'],
-        where: { userId, caseId: { not: null } },
-        _count: true,
-      }),
-    ]);
+    const [totalEmails, unreadEmails, uncategorizedEmails, emailsWithAttachments, emailsByCase] =
+      await Promise.all([
+        this.prisma.email.count({ where: { userId } }),
+        this.prisma.email.count({ where: { userId, isRead: false } }),
+        this.prisma.email.count({ where: { userId, caseId: null } }),
+        this.prisma.email.count({ where: { userId, hasAttachments: true } }),
+        this.prisma.email.groupBy({
+          by: ['caseId'],
+          where: { userId, caseId: { not: null } },
+          _count: true,
+        }),
+      ]);
 
     // Get case names
-    const caseIds = emailsByCase
-      .filter((e) => e.caseId !== null)
-      .map((e) => e.caseId as string);
+    const caseIds = emailsByCase.filter((e) => e.caseId !== null).map((e) => e.caseId as string);
 
     const cases = await this.prisma.case.findMany({
       where: { id: { in: caseIds } },
@@ -415,11 +420,7 @@ export class EmailSearchService {
    * @param limit - Maximum suggestions
    * @returns Search suggestions
    */
-  async getSuggestions(
-    prefix: string,
-    userId: string,
-    limit: number = 10
-  ): Promise<string[]> {
+  async getSuggestions(prefix: string, userId: string, limit: number = 10): Promise<string[]> {
     if (!prefix || prefix.length < 2) {
       return [];
     }

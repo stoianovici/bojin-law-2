@@ -78,7 +78,12 @@ export const somatiePlataSections: SomatiePlataSection[] = [
     id: 'creditor',
     labelRo: 'Creditorul',
     labelEn: 'Creditor',
-    variables: ['{{CREDITOR_NUME}}', '{{CREDITOR_CUI}}', '{{CREDITOR_SEDIU}}', '{{CREDITOR_REPREZENTANT}}'],
+    variables: [
+      '{{CREDITOR_NUME}}',
+      '{{CREDITOR_CUI}}',
+      '{{CREDITOR_SEDIU}}',
+      '{{CREDITOR_REPREZENTANT}}',
+    ],
     required: true,
   },
   {
@@ -92,21 +97,29 @@ export const somatiePlataSections: SomatiePlataSection[] = [
     id: 'introducere',
     labelRo: 'Introducere',
     labelEn: 'Introduction',
-    content: 'Prin prezenta, vă somăm în mod formal să achitați suma datorată conform datelor de mai jos:',
+    content:
+      'Prin prezenta, vă somăm în mod formal să achitați suma datorată conform datelor de mai jos:',
     required: true,
   },
   {
     id: 'debt_details',
     labelRo: 'Detalii Datorie',
     labelEn: 'Debt Details',
-    variables: ['{{SUMA_DATORATA}}', '{{MONEDA}}', '{{TEMEIUL_JURIDIC}}', '{{DATA_SCADENTA}}', '{{DESCRIERE_OBLIGATIE}}'],
+    variables: [
+      '{{SUMA_DATORATA}}',
+      '{{MONEDA}}',
+      '{{TEMEIUL_JURIDIC}}',
+      '{{DATA_SCADENTA}}',
+      '{{DESCRIERE_OBLIGATIE}}',
+    ],
     required: true,
   },
   {
     id: 'temeiul_legal',
     labelRo: 'Temeiul Legal',
     labelEn: 'Legal Basis',
-    content: 'Potrivit prevederilor Art. 1516 și Art. 1535 din Codul Civil, sunteți obligat să achitați suma menționată.',
+    content:
+      'Potrivit prevederilor Art. 1516 și Art. 1535 din Codul Civil, sunteți obligat să achitați suma menționată.',
     required: true,
   },
   {
@@ -134,14 +147,16 @@ export const somatiePlataSections: SomatiePlataSection[] = [
     id: 'consecinte',
     labelRo: 'Consecințe Nerespectare',
     labelEn: 'Consequences of Non-Compliance',
-    content: 'În cazul în care nu veți achita suma în termenul indicat, vom fi nevoiți să ne adresăm instanței judecătorești competente pentru recuperarea debitului, cu dobânzi, penalități și cheltuieli de judecată.',
+    content:
+      'În cazul în care nu veți achita suma în termenul indicat, vom fi nevoiți să ne adresăm instanței judecătorești competente pentru recuperarea debitului, cu dobânzi, penalități și cheltuieli de judecată.',
     required: true,
   },
   {
     id: 'rezervare_drepturi',
     labelRo: 'Rezervarea Drepturilor',
     labelEn: 'Reservation of Rights',
-    content: 'Ne rezervăm dreptul de a solicita daune-interese suplimentare și executarea silită a creanței.',
+    content:
+      'Ne rezervăm dreptul de a solicita daune-interese suplimentare și executarea silită a creanței.',
     required: false,
   },
   {
@@ -177,9 +192,7 @@ export const somatiePlataStandardClauses = {
 /**
  * Generate a Somatie de Plata document
  */
-export function generateSomatiePlata(
-  variables: SomatiePlataVariables
-): string {
+export function generateSomatiePlata(variables: SomatiePlataVariables): string {
   return `
 # SOMAȚIE DE PLATĂ
 
@@ -224,12 +237,16 @@ Vă solicităm să achitați suma în termen de **${variables.TERMEN_PLATA}** de
 - **Banca:** ${variables.BANCA}
 - **Beneficiar:** ${variables.CREDITOR_NUME}
 
-${variables.DOBANDA_INTARZIERE || variables.PENALITATI ? `
+${
+  variables.DOBANDA_INTARZIERE || variables.PENALITATI
+    ? `
 ## Dobândă și Penalități
 
 ${variables.DOBANDA_INTARZIERE ? `- **Dobândă de întârziere:** ${variables.DOBANDA_INTARZIERE}` : ''}
 ${variables.PENALITATI ? `- **Penalități contractuale:** ${variables.PENALITATI}` : ''}
-` : ''}
+`
+    : ''
+}
 
 ## Consecințe în Caz de Nerespectare
 
@@ -262,9 +279,10 @@ Ne rezervăm dreptul de a solicita daune-interese suplimentare pentru prejudicii
 /**
  * Validate Somatie de Plata variables
  */
-export function validateSomatiePlata(
-  variables: Partial<SomatiePlataVariables>
-): { valid: boolean; errors: string[] } {
+export function validateSomatiePlata(variables: Partial<SomatiePlataVariables>): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // Required creditor fields

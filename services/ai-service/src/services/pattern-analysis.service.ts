@@ -25,9 +25,7 @@ export class PatternAnalysisService {
    * @param input - Pattern identification input
    * @returns Identified patterns
    */
-  async identifyPatterns(
-    input: IdentifyPatternsInput
-  ): Promise<IdentifyPatternsOutput> {
+  async identifyPatterns(input: IdentifyPatternsInput): Promise<IdentifyPatternsOutput> {
     const startTime = Date.now();
     const minFrequency = input.minFrequency || 3;
     const minDocuments = input.minDocuments || 3;
@@ -62,10 +60,7 @@ export class PatternAnalysisService {
       );
 
       // Extract structural patterns
-      const structurePatterns = await this.identifyStructurePatterns(
-        documents,
-        input.category
-      );
+      const structurePatterns = await this.identifyStructurePatterns(documents, input.category);
 
       const allPatterns = [...phrasePatterns, ...structurePatterns];
 
@@ -109,10 +104,7 @@ export class PatternAnalysisService {
     minDocuments: number
   ): Promise<Omit<TrainingDocumentPattern, 'id' | 'createdAt' | 'updatedAt'>[]> {
     const ngramSizes = [3, 4, 5]; // 3-5 word phrases
-    const phraseFrequency = new Map<
-      string,
-      { count: number; documentIds: Set<string> }
-    >();
+    const phraseFrequency = new Map<string, { count: number; documentIds: Set<string> }>();
 
     // Extract n-grams from all documents
     for (const doc of documents) {
@@ -142,8 +134,7 @@ export class PatternAnalysisService {
     }
 
     // Filter patterns by frequency and document count
-    const patterns: Omit<TrainingDocumentPattern, 'id' | 'createdAt' | 'updatedAt'>[] =
-      [];
+    const patterns: Omit<TrainingDocumentPattern, 'id' | 'createdAt' | 'updatedAt'>[] = [];
 
     for (const [phrase, data] of phraseFrequency.entries()) {
       if (data.count >= minFrequency && data.documentIds.size >= minDocuments) {
@@ -153,10 +144,7 @@ export class PatternAnalysisService {
           patternText: phrase,
           frequency: data.count,
           documentIds: Array.from(data.documentIds),
-          confidenceScore: this.calculateConfidence(
-            data.documentIds.size,
-            documents.length
-          ),
+          confidenceScore: this.calculateConfidence(data.documentIds.size, documents.length),
           metadata: {
             wordCount: phrase.split(' ').length,
           },
@@ -181,10 +169,7 @@ export class PatternAnalysisService {
     category: string
   ): Promise<Omit<TrainingDocumentPattern, 'id' | 'createdAt' | 'updatedAt'>[]> {
     const headingPattern = /^([A-Z][A-Za-z\s]+)[:.]?\s*$/gm;
-    const headingFrequency = new Map<
-      string,
-      { count: number; documentIds: Set<string> }
-    >();
+    const headingFrequency = new Map<string, { count: number; documentIds: Set<string> }>();
 
     for (const doc of documents) {
       const lines = doc.textContent.split('\n');
@@ -214,8 +199,7 @@ export class PatternAnalysisService {
       }
     }
 
-    const patterns: Omit<TrainingDocumentPattern, 'id' | 'createdAt' | 'updatedAt'>[] =
-      [];
+    const patterns: Omit<TrainingDocumentPattern, 'id' | 'createdAt' | 'updatedAt'>[] = [];
 
     for (const [heading, data] of headingFrequency.entries()) {
       if (data.documentIds.size >= 3) {
@@ -225,10 +209,7 @@ export class PatternAnalysisService {
           patternText: heading,
           frequency: data.count,
           documentIds: Array.from(data.documentIds),
-          confidenceScore: this.calculateConfidence(
-            data.documentIds.size,
-            documents.length
-          ),
+          confidenceScore: this.calculateConfidence(data.documentIds.size, documents.length),
           metadata: {
             type: 'heading',
           },
@@ -260,10 +241,7 @@ export class PatternAnalysisService {
       });
     } catch (error) {
       // Ignore duplicate pattern errors
-      if (
-        error instanceof Error &&
-        !error.message.includes('Unique constraint')
-      ) {
+      if (error instanceof Error && !error.message.includes('Unique constraint')) {
         logger.error('Failed to store pattern', {
           patternText: pattern.patternText.substring(0, 50),
           error: error.message,
@@ -290,10 +268,7 @@ export class PatternAnalysisService {
    * @param totalDocuments - Total documents analyzed
    * @returns Confidence score (0-1)
    */
-  private calculateConfidence(
-    documentsWithPattern: number,
-    totalDocuments: number
-  ): number {
+  private calculateConfidence(documentsWithPattern: number, totalDocuments: number): number {
     return Math.min(documentsWithPattern / totalDocuments, 1.0);
   }
 

@@ -14,7 +14,11 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import { useClientDocumentsGrouped, type ClientDocument, type DocumentsByCase } from '../../hooks/useClientDocuments';
+import {
+  useClientDocumentsGrouped,
+  type ClientDocument,
+  type DocumentsByCase,
+} from '../../hooks/useClientDocuments';
 import { useLinkDocuments } from '../../hooks/useDocumentActions';
 
 export interface DocumentBrowserModalProps {
@@ -46,7 +50,11 @@ function FileIcon({ fileType }: { fileType: string }) {
   if (type.includes('pdf')) {
     return (
       <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+        <path
+          fillRule="evenodd"
+          d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+          clipRule="evenodd"
+        />
       </svg>
     );
   }
@@ -54,7 +62,11 @@ function FileIcon({ fileType }: { fileType: string }) {
   if (type.includes('doc') || type.includes('word')) {
     return (
       <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+        <path
+          fillRule="evenodd"
+          d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+          clipRule="evenodd"
+        />
       </svg>
     );
   }
@@ -62,14 +74,22 @@ function FileIcon({ fileType }: { fileType: string }) {
   if (type.includes('xls') || type.includes('excel')) {
     return (
       <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+        <path
+          fillRule="evenodd"
+          d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+          clipRule="evenodd"
+        />
       </svg>
     );
   }
 
   return (
     <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+      <path
+        fillRule="evenodd"
+        d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+        clipRule="evenodd"
+      />
     </svg>
   );
 }
@@ -114,12 +134,8 @@ function DocumentRow({
           </span>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600">
-        {formatFileSize(document.fileSize)}
-      </td>
-      <td className="px-4 py-3 text-sm text-gray-600">
-        {uploaderName}
-      </td>
+      <td className="px-4 py-3 text-sm text-gray-600">{formatFileSize(document.fileSize)}</td>
+      <td className="px-4 py-3 text-sm text-gray-600">{uploaderName}</td>
       <td className="px-4 py-3 text-sm text-gray-600">
         {format(new Date(document.uploadedAt), 'dd MMM yyyy')}
       </td>
@@ -152,8 +168,8 @@ function CaseGroup({
   isExpanded: boolean;
   onToggleExpand: () => void;
 }) {
-  const allSelected = group.documents.length > 0 &&
-    group.documents.every((d) => selectedIds.has(d.id));
+  const allSelected =
+    group.documents.length > 0 && group.documents.every((d) => selectedIds.has(d.id));
   const someSelected = group.documents.some((d) => selectedIds.has(d.id));
   const documentIds = group.documents.map((d) => d.id);
 
@@ -277,9 +293,7 @@ export function DocumentBrowserModal({
     return documentsByCase
       .map((group) => ({
         ...group,
-        documents: group.documents.filter((doc) =>
-          doc.fileName.toLowerCase().includes(query)
-        ),
+        documents: group.documents.filter((doc) => doc.fileName.toLowerCase().includes(query)),
       }))
       .filter((group) => group.documents.length > 0);
   }, [documentsByCase, searchQuery]);
@@ -381,9 +395,7 @@ export function DocumentBrowserModal({
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Import Documents
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900">Import Documents</h2>
               <p className="mt-1 text-sm text-gray-500">
                 Select documents to import into <span className="font-medium">{caseName}</span>
               </p>
@@ -393,7 +405,12 @@ export function DocumentBrowserModal({
               className="text-gray-400 hover:text-gray-500 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -407,7 +424,12 @@ export function DocumentBrowserModal({
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
               <input
                 type="text"
@@ -421,9 +443,7 @@ export function DocumentBrowserModal({
               <span>
                 {totalDocuments} {totalDocuments === 1 ? 'document' : 'documents'} available
               </span>
-              <span>
-                {selectedIds.size} selected
-              </span>
+              <span>{selectedIds.size} selected</span>
             </div>
           </div>
 
@@ -435,8 +455,18 @@ export function DocumentBrowserModal({
               </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-12 text-red-600">
-                <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg
+                  className="w-12 h-12 mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
                 <p className="font-medium">Failed to load documents</p>
                 <button
@@ -448,11 +478,23 @@ export function DocumentBrowserModal({
               </div>
             ) : filteredGroups.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg
+                  className="w-12 h-12 mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
                 <p className="font-medium">
-                  {searchQuery ? 'No documents match your search' : 'No documents available to import'}
+                  {searchQuery
+                    ? 'No documents match your search'
+                    : 'No documents available to import'}
                 </p>
                 {searchQuery && (
                   <button

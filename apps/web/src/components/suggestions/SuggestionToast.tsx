@@ -7,11 +7,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import type {
-  AISuggestion,
-  SuggestionType,
-  SuggestionPriority,
-} from '@legal-platform/types';
+import type { AISuggestion, SuggestionType, SuggestionPriority } from '@legal-platform/types';
 
 // Icons
 const SparklesIcon = ({ className }: { className?: string }) => (
@@ -43,12 +39,7 @@ const CloseIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M6 18L18 6M6 6l12 12"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
@@ -88,13 +79,16 @@ const positionClasses = {
   'bottom-left': 'bottom-4 left-4',
 };
 
-const urgencyStyles: Record<SuggestionPriority, {
-  bg: string;
-  border: string;
-  icon: string;
-  role: 'status' | 'alert';
-  ariaLive: 'polite' | 'assertive';
-}> = {
+const urgencyStyles: Record<
+  SuggestionPriority,
+  {
+    bg: string;
+    border: string;
+    icon: string;
+    role: 'status' | 'alert';
+    ariaLive: 'polite' | 'assertive';
+  }
+> = {
   Urgent: {
     bg: 'bg-red-50',
     border: 'border-red-300',
@@ -214,9 +208,7 @@ export function SuggestionToast({
 
         {/* Content */}
         <div className="mt-2">
-          <p className="font-medium text-foreground line-clamp-1">
-            {suggestion.title}
-          </p>
+          <p className="font-medium text-foreground line-clamp-1">{suggestion.title}</p>
           <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
             {suggestion.description}
           </p>
@@ -310,9 +302,7 @@ export function SuggestionToastContainer({
 }: SuggestionToastContainerProps) {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
-  const visibleSuggestions = suggestions
-    .filter((s) => !dismissedIds.has(s.id))
-    .slice(0, maxToasts);
+  const visibleSuggestions = suggestions.filter((s) => !dismissedIds.has(s.id)).slice(0, maxToasts);
 
   const handleClose = useCallback((id: string) => {
     setDismissedIds((prev) => new Set([...prev, id]));
@@ -432,12 +422,8 @@ function SuggestionToastSingle({
       </div>
 
       <div className="mt-2">
-        <p className="font-medium text-foreground line-clamp-1">
-          {suggestion.title}
-        </p>
-        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-          {suggestion.description}
-        </p>
+        <p className="font-medium text-foreground line-clamp-1">{suggestion.title}</p>
+        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{suggestion.description}</p>
       </div>
 
       <div className="mt-3 flex items-center gap-2">

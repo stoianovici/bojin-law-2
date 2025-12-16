@@ -94,15 +94,16 @@ export class DocumentCommentsService {
         await prisma.documentComment.upsert({
           where: {
             // Use compound unique if word comment ID exists
-            id: (
-              await prisma.documentComment.findFirst({
-                where: {
-                  documentId,
-                  wordCommentId: wordComment.wordCommentId,
-                },
-                select: { id: true },
-              })
-            )?.id || randomUUID(),
+            id:
+              (
+                await prisma.documentComment.findFirst({
+                  where: {
+                    documentId,
+                    wordCommentId: wordComment.wordCommentId,
+                  },
+                  select: { id: true },
+                })
+              )?.id || randomUUID(),
           },
           update: {
             content: wordComment.content,
@@ -169,10 +170,7 @@ export class DocumentCommentsService {
       const docxContent = await this.downloadDocx(accessToken, oneDriveId);
 
       // Inject comments into DOCX
-      const modifiedDocx = await this.injectCommentsIntoDocx(
-        docxContent,
-        platformComments
-      );
+      const modifiedDocx = await this.injectCommentsIntoDocx(docxContent, platformComments);
 
       // Upload modified DOCX back to OneDrive
       await this.uploadDocx(accessToken, oneDriveId, modifiedDocx);
@@ -373,10 +371,7 @@ export class DocumentCommentsService {
   /**
    * Download DOCX file from OneDrive
    */
-  private async downloadDocx(
-    accessToken: string,
-    oneDriveId: string
-  ): Promise<Buffer> {
+  private async downloadDocx(accessToken: string, oneDriveId: string): Promise<Buffer> {
     return retryWithBackoff(
       async () => {
         try {
@@ -495,10 +490,7 @@ export class DocumentCommentsService {
   /**
    * Inject comments into DOCX Open XML
    */
-  private async injectCommentsIntoDocx(
-    docxBuffer: Buffer,
-    comments: any[]
-  ): Promise<Buffer> {
+  private async injectCommentsIntoDocx(docxBuffer: Buffer, comments: any[]): Promise<Buffer> {
     try {
       const zip = await JSZip.loadAsync(docxBuffer);
 
@@ -536,8 +528,7 @@ export class DocumentCommentsService {
     const commentsObj = {
       'w:comments': {
         $: {
-          'xmlns:w':
-            'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+          'xmlns:w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
         },
         'w:comment': comments.map((comment, index) => ({
           $: {
@@ -607,9 +598,7 @@ export class DocumentCommentsService {
     let text = '';
 
     if (commentNode.p) {
-      const paragraphs = Array.isArray(commentNode.p)
-        ? commentNode.p
-        : [commentNode.p];
+      const paragraphs = Array.isArray(commentNode.p) ? commentNode.p : [commentNode.p];
 
       for (const p of paragraphs) {
         if (p.r) {

@@ -54,7 +54,9 @@ const generatedToday = new Set<string>();
 /**
  * Start the morning briefing worker
  */
-export function startMorningBriefingWorker(config: Partial<MorningBriefingWorkerConfig> = {}): void {
+export function startMorningBriefingWorker(
+  config: Partial<MorningBriefingWorkerConfig> = {}
+): void {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
 
   if (!finalConfig.enabled) {
@@ -233,7 +235,9 @@ async function processMorningBriefings(config: MorningBriefingWorkerConfig): Pro
 
     const duration = Date.now() - startTime;
     logger.info(`[${WORKER_NAME}] Processing complete in ${duration}ms`);
-    logger.info(`[${WORKER_NAME}] Results: ${successCount} generated, ${skipCount} skipped, ${errorCount} errors`);
+    logger.info(
+      `[${WORKER_NAME}] Results: ${successCount} generated, ${skipCount} skipped, ${errorCount} errors`
+    );
   } catch (error) {
     await logError(error as Error);
     throw error;
@@ -245,13 +249,15 @@ async function processMorningBriefings(config: MorningBriefingWorkerConfig): Pro
 /**
  * Get active users who should receive morning briefings
  */
-async function getActiveUsersForBriefings(): Promise<Array<{
-  id: string;
-  firmId: string;
-  email: string;
-  firstName: string;
-  preferences: Record<string, unknown> | null;
-}>> {
+async function getActiveUsersForBriefings(): Promise<
+  Array<{
+    id: string;
+    firmId: string;
+    email: string;
+    firstName: string;
+    preferences: Record<string, unknown> | null;
+  }>
+> {
   const users = await prisma.user.findMany({
     where: {
       status: 'Active',
@@ -268,13 +274,13 @@ async function getActiveUsersForBriefings(): Promise<Array<{
 
   // Filter out users who explicitly disabled AI suggestions
   return users
-    .filter(u => {
+    .filter((u) => {
       if (!u.preferences) return true; // Default to enabled
       const prefs = u.preferences as Record<string, unknown>;
       return prefs.aiSuggestionLevel !== 'minimal';
     })
-    .filter(u => u.firmId !== null)
-    .map(u => ({
+    .filter((u) => u.firmId !== null)
+    .map((u) => ({
       id: u.id,
       firmId: u.firmId as string,
       email: u.email,
@@ -346,7 +352,8 @@ async function sendBriefingNotification(userId: string, _firmId: string): Promis
       userId,
       type: 'MorningBriefingReady',
       title: 'Your Morning Briefing is Ready',
-      message: 'Your AI-powered morning briefing has been generated with prioritized tasks and key insights for today.',
+      message:
+        'Your AI-powered morning briefing has been generated with prioritized tasks and key insights for today.',
       link: '/dashboard?view=briefing',
     },
   });
@@ -435,7 +442,7 @@ export async function getWorkerHealth(): Promise<{
       }
 
       const today = new Date().toISOString().split('T')[0];
-      briefingsGeneratedToday = await redis.scard(`${REDIS_GENERATED_KEY}:${today}`) || 0;
+      briefingsGeneratedToday = (await redis.scard(`${REDIS_GENERATED_KEY}:${today}`)) || 0;
     } catch {
       // Ignore Redis errors
     }
@@ -459,7 +466,7 @@ export async function getWorkerHealth(): Promise<{
 // ============================================================================
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // Clean up old tracking data daily

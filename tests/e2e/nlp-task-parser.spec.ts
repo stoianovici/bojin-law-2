@@ -147,8 +147,22 @@ const mockParsedResponse = {
     caseId: { value: null, confidence: 0 },
   },
   entities: [
-    { type: 'taskType', value: 'Pregătește', normalizedValue: 'DocumentCreation', startIndex: 0, endIndex: 10, confidence: 0.9 },
-    { type: 'date', value: '15 decembrie', normalizedValue: '2024-12-15', startIndex: 42, endIndex: 54, confidence: 0.8 },
+    {
+      type: 'taskType',
+      value: 'Pregătește',
+      normalizedValue: 'DocumentCreation',
+      startIndex: 0,
+      endIndex: 10,
+      confidence: 0.9,
+    },
+    {
+      type: 'date',
+      value: '15 decembrie',
+      normalizedValue: '2024-12-15',
+      startIndex: 42,
+      endIndex: 54,
+      confidence: 0.8,
+    },
   ],
   overallConfidence: 0.8,
   clarificationsNeeded: [],
@@ -559,7 +573,9 @@ test.describe('NLP Task Parser', () => {
       await page.waitForTimeout(1000);
 
       // Click create button
-      const createButton = page.locator('button').filter({ hasText: /Creează sarcină|Create Task/i });
+      const createButton = page
+        .locator('button')
+        .filter({ hasText: /Creează sarcină|Create Task/i });
       if (await createButton.isVisible()) {
         await createButton.click();
 
@@ -683,7 +699,9 @@ test.describe('NLP Task Parser', () => {
       await page.waitForTimeout(1000);
 
       // Create button should be disabled
-      const createButton = page.locator('button').filter({ hasText: /Creează sarcină|Create Task/i });
+      const createButton = page
+        .locator('button')
+        .filter({ hasText: /Creează sarcină|Create Task/i });
       if (await createButton.isVisible()) {
         await expect(createButton).toBeDisabled();
       }
@@ -705,9 +723,12 @@ test.describe('NLP Task Parser', () => {
       await page.waitForLoadState('networkidle');
 
       // Click on an example chip
-      const exampleChip = page.locator('button').filter({
-        hasText: /pregătește|prepare/i,
-      }).first();
+      const exampleChip = page
+        .locator('button')
+        .filter({
+          hasText: /pregătește|prepare/i,
+        })
+        .first();
 
       if (await exampleChip.isVisible()) {
         await exampleChip.click();

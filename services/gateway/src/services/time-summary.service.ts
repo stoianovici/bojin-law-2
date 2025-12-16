@@ -205,10 +205,7 @@ export class TimeSummaryService {
    * @returns Trend indicator (UP, DOWN, STABLE)
    * @private
    */
-  private async calculateTrend(
-    userId: string,
-    currentWeekStart: Date
-  ): Promise<TrendIndicator> {
+  private async calculateTrend(userId: string, currentWeekStart: Date): Promise<TrendIndicator> {
     // Get current week total hours
     const currentWeekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
     const currentWeekEntries = await this.prisma.timeEntry.findMany({

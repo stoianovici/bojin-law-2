@@ -123,12 +123,7 @@ describe('SearchFiltersPanel', () => {
       const user = userEvent.setup();
       const onSearchModeChange = vi.fn();
 
-      render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          onSearchModeChange={onSearchModeChange}
-        />
-      );
+      render(<SearchFiltersPanel {...defaultProps} onSearchModeChange={onSearchModeChange} />);
 
       await user.click(screen.getByText('Keyword Search'));
 
@@ -166,12 +161,7 @@ describe('SearchFiltersPanel', () => {
 
     it('should call onFiltersChange when date changed', async () => {
       const onFiltersChange = vi.fn();
-      render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          onFiltersChange={onFiltersChange}
-        />
-      );
+      render(<SearchFiltersPanel {...defaultProps} onFiltersChange={onFiltersChange} />);
 
       const dateInputs = document.querySelectorAll('input[type="date"]');
       fireEvent.change(dateInputs[0], { target: { value: '2024-01-01' } });
@@ -190,11 +180,7 @@ describe('SearchFiltersPanel', () => {
       };
 
       render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          filters={filters}
-          onFiltersChange={onFiltersChange}
-        />
+        <SearchFiltersPanel {...defaultProps} filters={filters} onFiltersChange={onFiltersChange} />
       );
 
       await user.click(screen.getByText('Clear'));
@@ -236,12 +222,7 @@ describe('SearchFiltersPanel', () => {
       const user = userEvent.setup();
       const onFiltersChange = vi.fn();
 
-      render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          onFiltersChange={onFiltersChange}
-        />
-      );
+      render(<SearchFiltersPanel {...defaultProps} onFiltersChange={onFiltersChange} />);
 
       await user.click(screen.getByText('Litigation'));
 
@@ -260,11 +241,7 @@ describe('SearchFiltersPanel', () => {
       };
 
       render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          filters={filters}
-          onFiltersChange={onFiltersChange}
-        />
+        <SearchFiltersPanel {...defaultProps} filters={filters} onFiltersChange={onFiltersChange} />
       );
 
       await user.click(screen.getByText('Litigation'));
@@ -303,12 +280,7 @@ describe('SearchFiltersPanel', () => {
       const user = userEvent.setup();
       const onFiltersChange = vi.fn();
 
-      render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          onFiltersChange={onFiltersChange}
-        />
-      );
+      render(<SearchFiltersPanel {...defaultProps} onFiltersChange={onFiltersChange} />);
 
       await user.click(screen.getByText('Active'));
 
@@ -346,12 +318,7 @@ describe('SearchFiltersPanel', () => {
       const user = userEvent.setup();
       const onFiltersChange = vi.fn();
 
-      render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          onFiltersChange={onFiltersChange}
-        />
-      );
+      render(<SearchFiltersPanel {...defaultProps} onFiltersChange={onFiltersChange} />);
 
       await user.click(screen.getByText('PDF'));
 
@@ -388,11 +355,7 @@ describe('SearchFiltersPanel', () => {
       };
 
       render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          filters={filters}
-          onClearFilters={onClearFilters}
-        />
+        <SearchFiltersPanel {...defaultProps} filters={filters} onClearFilters={onClearFilters} />
       );
 
       await user.click(screen.getByText('Clear All Filters'));
@@ -428,11 +391,7 @@ describe('SearchFiltersPanel', () => {
       };
 
       render(
-        <SearchFiltersPanel
-          {...defaultProps}
-          filters={filters}
-          onFiltersChange={onFiltersChange}
-        />
+        <SearchFiltersPanel {...defaultProps} filters={filters} onFiltersChange={onFiltersChange} />
       );
 
       await user.click(screen.getByText('Contract'));

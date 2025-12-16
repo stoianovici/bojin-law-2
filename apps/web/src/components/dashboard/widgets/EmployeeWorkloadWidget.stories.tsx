@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { EmployeeWorkloadWidget } from './EmployeeWorkloadWidget';
-import { createEmployeeWorkloadWidget, generateEmployeeUtilization } from '@legal-platform/test-utils';
+import {
+  createEmployeeWorkloadWidget,
+  generateEmployeeUtilization,
+} from '@legal-platform/test-utils';
 
 /**
  * EmployeeWorkloadWidget displays employee utilization tracking with Daily/Weekly views.
@@ -94,7 +97,7 @@ export const ManyEmployees: Story = {
 export const AllOverUtilized: Story = {
   args: {
     widget: createEmployeeWorkloadWidget({
-      employeeUtilization: generateEmployeeUtilization(10).map(emp => ({
+      employeeUtilization: generateEmployeeUtilization(10).map((emp) => ({
         ...emp,
         dailyUtilization: Math.floor(110 + Math.random() * 50),
         weeklyUtilization: Math.floor(105 + Math.random() * 40),
@@ -110,7 +113,7 @@ export const AllOverUtilized: Story = {
 export const AllOptimallyUtilized: Story = {
   args: {
     widget: createEmployeeWorkloadWidget({
-      employeeUtilization: generateEmployeeUtilization(10).map(emp => ({
+      employeeUtilization: generateEmployeeUtilization(10).map((emp) => ({
         ...emp,
         dailyUtilization: Math.floor(60 + Math.random() * 35),
         weeklyUtilization: Math.floor(65 + Math.random() * 30),
@@ -126,7 +129,7 @@ export const AllOptimallyUtilized: Story = {
 export const AllUnderUtilized: Story = {
   args: {
     widget: createEmployeeWorkloadWidget({
-      employeeUtilization: generateEmployeeUtilization(10).map(emp => ({
+      employeeUtilization: generateEmployeeUtilization(10).map((emp) => ({
         ...emp,
         dailyUtilization: Math.floor(20 + Math.random() * 25),
         weeklyUtilization: Math.floor(25 + Math.random() * 20),
@@ -143,17 +146,17 @@ export const MixedUtilization: Story = {
   args: {
     widget: createEmployeeWorkloadWidget({
       employeeUtilization: [
-        ...generateEmployeeUtilization(3).map(emp => ({
+        ...generateEmployeeUtilization(3).map((emp) => ({
           ...emp,
           dailyUtilization: 150,
           status: 'over' as const,
         })),
-        ...generateEmployeeUtilization(4).map(emp => ({
+        ...generateEmployeeUtilization(4).map((emp) => ({
           ...emp,
           dailyUtilization: 75,
           status: 'optimal' as const,
         })),
-        ...generateEmployeeUtilization(3).map(emp => ({
+        ...generateEmployeeUtilization(3).map((emp) => ({
           ...emp,
           dailyUtilization: 35,
           status: 'under' as const,
@@ -169,7 +172,7 @@ export const MixedUtilization: Story = {
 export const ExtremeOverUtilization: Story = {
   args: {
     widget: createEmployeeWorkloadWidget({
-      employeeUtilization: generateEmployeeUtilization(8).map(emp => ({
+      employeeUtilization: generateEmployeeUtilization(8).map((emp) => ({
         ...emp,
         dailyUtilization: Math.floor(150 + Math.random() * 30),
         weeklyUtilization: Math.floor(140 + Math.random() * 20),
@@ -187,7 +190,7 @@ export const ExtremeOverUtilization: Story = {
 export const SevereUnderUtilization: Story = {
   args: {
     widget: createEmployeeWorkloadWidget({
-      employeeUtilization: generateEmployeeUtilization(8).map(emp => ({
+      employeeUtilization: generateEmployeeUtilization(8).map((emp) => ({
         ...emp,
         dailyUtilization: Math.floor(15 + Math.random() * 10),
         weeklyUtilization: Math.floor(20 + Math.random() * 8),
@@ -244,7 +247,7 @@ export const RomanianContent: Story = {
 export const HighTaskCount: Story = {
   args: {
     widget: createEmployeeWorkloadWidget({
-      employeeUtilization: generateEmployeeUtilization(8).map(emp => ({
+      employeeUtilization: generateEmployeeUtilization(8).map((emp) => ({
         ...emp,
         taskCount: Math.floor(12 + Math.random() * 3),
         tasks: Array.from({ length: 15 }, (_, i) => ({
@@ -266,7 +269,7 @@ export const HighTaskCount: Story = {
 export const LowTaskCount: Story = {
   args: {
     widget: createEmployeeWorkloadWidget({
-      employeeUtilization: generateEmployeeUtilization(8).map(emp => ({
+      employeeUtilization: generateEmployeeUtilization(8).map((emp) => ({
         ...emp,
         taskCount: Math.floor(2 + Math.random() * 2),
         tasks: Array.from({ length: 3 }, (_, i) => ({

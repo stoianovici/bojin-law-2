@@ -24,13 +24,13 @@ import logger from '../lib/logger';
 const CHANGE_TYPE_RISK_WEIGHTS: Record<LegalChangeType, number> = {
   [LegalChangeType.LIABILITY_CHANGE]: 0.95,
   [LegalChangeType.TERMINATION_CHANGE]: 0.85,
-  [LegalChangeType.FORCE_MAJEURE_CHANGE]: 0.80,
-  [LegalChangeType.AMOUNT_CHANGE]: 0.70,
+  [LegalChangeType.FORCE_MAJEURE_CHANGE]: 0.8,
+  [LegalChangeType.AMOUNT_CHANGE]: 0.7,
   [LegalChangeType.PAYMENT_TERMS_CHANGE]: 0.65,
-  [LegalChangeType.OBLIGATION_CHANGE]: 0.60,
+  [LegalChangeType.OBLIGATION_CHANGE]: 0.6,
   [LegalChangeType.SCOPE_CHANGE]: 0.55,
-  [LegalChangeType.TERM_MODIFICATION]: 0.50,
-  [LegalChangeType.DATE_CHANGE]: 0.40,
+  [LegalChangeType.TERM_MODIFICATION]: 0.5,
+  [LegalChangeType.DATE_CHANGE]: 0.4,
   [LegalChangeType.PARTY_CHANGE]: 0.35,
 };
 
@@ -159,9 +159,10 @@ export class RiskAssessmentService {
     explanation: string;
     factors: string[];
   }> {
-    const languagePrompt = context.language === 'ro'
-      ? 'Analizează riscul acestei modificări contractuale în limba română.'
-      : 'Analyze the risk of this contract change.';
+    const languagePrompt =
+      context.language === 'ro'
+        ? 'Analizează riscul acestei modificări contractuale în limba română.'
+        : 'Analyze the risk of this contract change.';
 
     const prompt = `${languagePrompt}
 
@@ -236,9 +237,10 @@ Respond in JSON format:
     if (changes.length === 0) {
       return {
         riskLevel: RiskLevel.LOW,
-        explanation: context.language === 'ro'
-          ? 'Nu au fost identificate modificări cu risc.'
-          : 'No risk-bearing changes identified.',
+        explanation:
+          context.language === 'ro'
+            ? 'Nu au fost identificate modificări cu risc.'
+            : 'No risk-bearing changes identified.',
         contributingFactors: [],
         highRiskChanges: [],
       };
@@ -246,7 +248,7 @@ Respond in JSON format:
 
     // Assess each change
     const assessments = await Promise.all(
-      changes.map(change => this.assessChangeRisk(change, context))
+      changes.map((change) => this.assessChangeRisk(change, context))
     );
 
     // Calculate weighted aggregate score
@@ -272,7 +274,7 @@ Respond in JSON format:
     const aggregateScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
 
     // Apply multiplier for multiple high-risk changes
-    const highRiskMultiplier = 1 + (highRiskChanges.length * 0.1);
+    const highRiskMultiplier = 1 + highRiskChanges.length * 0.1;
     const finalScore = Math.min(aggregateScore * highRiskMultiplier, 1.0);
 
     const riskLevel = this.scoreToRiskLevel(finalScore);

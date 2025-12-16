@@ -288,7 +288,7 @@ describe('DefaultRatesForm', () => {
 
   describe('Loading State', () => {
     it('shows loading spinner when saving', async () => {
-      const mockSlowUpdate = jest.fn(() => new Promise(resolve => setTimeout(resolve, 1000)));
+      const mockSlowUpdate = jest.fn(() => new Promise((resolve) => setTimeout(resolve, 1000)));
 
       jest.mock('@/hooks/useDefaultRates', () => ({
         useUpdateDefaultRates: () => ({

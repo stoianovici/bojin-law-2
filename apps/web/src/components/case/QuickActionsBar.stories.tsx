@@ -18,12 +18,10 @@ const meta: Meta<typeof QuickActionsBar> = {
     (Story) => (
       <div className="relative h-screen bg-gray-100">
         <div className="p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Detalii Dosar
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Detalii Dosar</h1>
           <p className="text-gray-600">
-            Click pe butonul &quot;Asistent AI&quot; din partea de jos pentru a deschide
-            bara de acțiuni rapide.
+            Click pe butonul &quot;Asistent AI&quot; din partea de jos pentru a deschide bara de
+            acțiuni rapide.
           </p>
         </div>
         <Story />

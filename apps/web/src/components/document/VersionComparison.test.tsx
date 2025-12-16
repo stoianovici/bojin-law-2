@@ -391,11 +391,7 @@ describe('VersionComparison', () => {
     });
 
     it('renders Romanian diacritics in navigation buttons', () => {
-      render(
-        <VersionComparison
-          semanticChanges={mockSemanticChanges}
-        />
-      );
+      render(<VersionComparison semanticChanges={mockSemanticChanges} />);
 
       expect(screen.getByLabelText('Diferența anterioară')).toBeInTheDocument();
       expect(screen.getByLabelText('Diferența următoare')).toBeInTheDocument();
@@ -408,11 +404,7 @@ describe('VersionComparison', () => {
     });
 
     it('renders Romanian diacritics in semantic changes', () => {
-      render(
-        <VersionComparison
-          semanticChanges={mockSemanticChanges}
-        />
-      );
+      render(<VersionComparison semanticChanges={mockSemanticChanges} />);
 
       expect(screen.getByText('Adăugat nou text')).toBeInTheDocument();
 
@@ -433,22 +425,14 @@ describe('VersionComparison', () => {
 
   describe('Accessibility', () => {
     it('has proper ARIA labels for navigation buttons', () => {
-      render(
-        <VersionComparison
-          semanticChanges={mockSemanticChanges}
-        />
-      );
+      render(<VersionComparison semanticChanges={mockSemanticChanges} />);
 
       expect(screen.getByLabelText('Diferența anterioară')).toBeInTheDocument();
       expect(screen.getByLabelText('Diferența următoare')).toBeInTheDocument();
     });
 
     it('has proper title attributes on navigation buttons', () => {
-      render(
-        <VersionComparison
-          semanticChanges={mockSemanticChanges}
-        />
-      );
+      render(<VersionComparison semanticChanges={mockSemanticChanges} />);
 
       const prevButton = screen.getByLabelText('Diferența anterioară');
       const nextButton = screen.getByLabelText('Diferența următoare');
@@ -458,11 +442,7 @@ describe('VersionComparison', () => {
     });
 
     it('properly disables navigation buttons when appropriate', () => {
-      render(
-        <VersionComparison
-          semanticChanges={mockSemanticChanges}
-        />
-      );
+      render(<VersionComparison semanticChanges={mockSemanticChanges} />);
 
       const prevButton = screen.getByLabelText('Diferența anterioară');
       const nextButton = screen.getByLabelText('Diferența următoare');

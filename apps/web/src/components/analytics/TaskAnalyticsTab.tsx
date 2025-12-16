@@ -152,7 +152,8 @@ function SummaryCard({
 
 // Overview tab content
 function OverviewTab() {
-  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } = useTaskAnalyticsStore();
+  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } =
+    useTaskAnalyticsStore();
 
   const filters = useMemo(
     () => ({
@@ -279,7 +280,8 @@ function OverviewTab() {
 
 // Tab content components that use the analytics hooks
 function CompletionTab() {
-  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } = useTaskAnalyticsStore();
+  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } =
+    useTaskAnalyticsStore();
 
   const filters = useMemo(
     () => ({
@@ -297,7 +299,8 @@ function CompletionTab() {
 }
 
 function OverdueTab() {
-  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } = useTaskAnalyticsStore();
+  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } =
+    useTaskAnalyticsStore();
 
   const filters = useMemo(
     () => ({
@@ -315,8 +318,14 @@ function OverdueTab() {
 }
 
 function VelocityTab() {
-  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds, velocityInterval, setVelocityInterval } =
-    useTaskAnalyticsStore();
+  const {
+    dateRange,
+    selectedTaskTypes,
+    selectedUserIds,
+    selectedCaseIds,
+    velocityInterval,
+    setVelocityInterval,
+  } = useTaskAnalyticsStore();
 
   const filters = useMemo(
     () => ({
@@ -368,7 +377,8 @@ function PatternsTab() {
 }
 
 function DelegationTab() {
-  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } = useTaskAnalyticsStore();
+  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } =
+    useTaskAnalyticsStore();
 
   const filters = useMemo(
     () => ({
@@ -386,7 +396,8 @@ function DelegationTab() {
 }
 
 function ROITab() {
-  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } = useTaskAnalyticsStore();
+  const { dateRange, selectedTaskTypes, selectedUserIds, selectedCaseIds } =
+    useTaskAnalyticsStore();
 
   const filters = useMemo(
     () => ({
@@ -429,15 +440,8 @@ function TabContent({ tab }: { tab: AnalyticsTab }) {
  * Task Analytics Tab Content
  */
 export function TaskAnalyticsTab() {
-  const {
-    activeTab,
-    setActiveTab,
-    preset,
-    setPreset,
-    dateRange,
-    isExporting,
-    setIsExporting,
-  } = useTaskAnalyticsStore();
+  const { activeTab, setActiveTab, preset, setPreset, dateRange, isExporting, setIsExporting } =
+    useTaskAnalyticsStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {

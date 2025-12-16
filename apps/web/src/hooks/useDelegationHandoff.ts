@@ -81,10 +81,9 @@ export function useDelegationHandoff(delegationId: string) {
  * Hook to generate AI handoff notes
  */
 export function useGenerateHandoff() {
-  return useMutation<
-    { generateHandoff: GenerateHandoffResponse },
-    { input: GenerateHandoffInput }
-  >(GENERATE_HANDOFF);
+  return useMutation<{ generateHandoff: GenerateHandoffResponse }, { input: GenerateHandoffInput }>(
+    GENERATE_HANDOFF
+  );
 }
 
 /**

@@ -54,10 +54,7 @@ export class ChangeSummaryService {
   /**
    * Generate template-based summary for minor changes
    */
-  private generateTemplateSummary(
-    change: SemanticChange,
-    language: 'ro' | 'en'
-  ): string {
+  private generateTemplateSummary(change: SemanticChange, language: 'ro' | 'en'): string {
     const templates = {
       ro: {
         added: 'Text adăugat în secțiunea {{section}}',
@@ -92,9 +89,10 @@ export class ChangeSummaryService {
     documentType: string,
     language: 'ro' | 'en'
   ): Promise<string> {
-    const languageInstructions = language === 'ro'
-      ? 'Răspunde în limba română, într-o propoziție clară și concisă.'
-      : 'Respond in English, in a clear and concise sentence.';
+    const languageInstructions =
+      language === 'ro'
+        ? 'Răspunde în limba română, într-o propoziție clară și concisă.'
+        : 'Respond in English, in a clear and concise sentence.';
 
     const prompt = `${languageInstructions}
 
@@ -125,9 +123,7 @@ Provide ONLY the summary, no explanations or preamble.`;
       return response.content.trim();
     } catch (error) {
       logger.error('AI summary generation failed', { error });
-      return language === 'ro'
-        ? 'Modificare detectată în document'
-        : 'Change detected in document';
+      return language === 'ro' ? 'Modificare detectată în document' : 'Change detected in document';
     }
   }
 
@@ -179,9 +175,11 @@ Provide ONLY the summary, no explanations or preamble.`;
     language: 'ro' | 'en',
     firmId: string
   ): Promise<ExecutiveSummary> {
-    const criticalChanges = changes.filter(c => c.significance === ChangeSignificance.CRITICAL);
-    const substantiveChanges = changes.filter(c => c.significance === ChangeSignificance.SUBSTANTIVE);
-    const minorChanges = changes.filter(c => c.significance === ChangeSignificance.MINOR_WORDING);
+    const criticalChanges = changes.filter((c) => c.significance === ChangeSignificance.CRITICAL);
+    const substantiveChanges = changes.filter(
+      (c) => c.significance === ChangeSignificance.SUBSTANTIVE
+    );
+    const minorChanges = changes.filter((c) => c.significance === ChangeSignificance.MINOR_WORDING);
 
     // If no critical or substantive changes, use template
     if (criticalChanges.length === 0 && substantiveChanges.length === 0) {
@@ -210,9 +208,10 @@ Provide ONLY the summary, no explanations or preamble.`;
 
     if (language === 'ro') {
       return {
-        overview: total === 0
-          ? 'Nu au fost detectate modificări semnificative între versiuni.'
-          : `Au fost detectate ${total} modificări minore de formulare. Nicio modificare substanțială nu a fost identificată.`,
+        overview:
+          total === 0
+            ? 'Nu au fost detectate modificări semnificative între versiuni.'
+            : `Au fost detectate ${total} modificări minore de formulare. Nicio modificare substanțială nu a fost identificată.`,
         keyChanges: [],
         totalChanges: total,
         criticalCount: 0,
@@ -222,9 +221,10 @@ Provide ONLY the summary, no explanations or preamble.`;
     }
 
     return {
-      overview: total === 0
-        ? 'No significant changes detected between versions.'
-        : `${total} minor wording changes detected. No substantive modifications identified.`,
+      overview:
+        total === 0
+          ? 'No significant changes detected between versions.'
+          : `${total} minor wording changes detected. No substantive modifications identified.`,
       keyChanges: [],
       totalChanges: total,
       criticalCount: 0,
@@ -244,17 +244,16 @@ Provide ONLY the summary, no explanations or preamble.`;
     language: 'ro' | 'en',
     firmId: string
   ): Promise<ExecutiveSummary> {
-    const languageInstructions = language === 'ro'
-      ? 'Răspunde în limba română.'
-      : 'Respond in English.';
+    const languageInstructions =
+      language === 'ro' ? 'Răspunde în limba română.' : 'Respond in English.';
 
     // Prepare change excerpts for AI
-    const criticalExcerpts = criticalChanges.slice(0, 3).map(c => ({
+    const criticalExcerpts = criticalChanges.slice(0, 3).map((c) => ({
       before: c.beforeText.substring(0, 200),
       after: c.afterText.substring(0, 200),
     }));
 
-    const substantiveExcerpts = substantiveChanges.slice(0, 3).map(c => ({
+    const substantiveExcerpts = substantiveChanges.slice(0, 3).map((c) => ({
       before: c.beforeText.substring(0, 200),
       after: c.afterText.substring(0, 200),
     }));
@@ -338,9 +337,7 @@ Respond in JSON format:
   /**
    * Group changes by category
    */
-  groupChangesByCategory(
-    changes: SemanticChange[]
-  ): Record<string, SemanticChange[]> {
+  groupChangesByCategory(changes: SemanticChange[]): Record<string, SemanticChange[]> {
     const grouped: Record<string, SemanticChange[]> = {};
 
     for (const change of changes) {
@@ -363,8 +360,12 @@ Respond in JSON format:
     changes: SemanticChange[],
     language: 'ro' | 'en'
   ): Promise<string> {
-    const criticalCount = changes.filter(c => c.significance === ChangeSignificance.CRITICAL).length;
-    const substantiveCount = changes.filter(c => c.significance === ChangeSignificance.SUBSTANTIVE).length;
+    const criticalCount = changes.filter(
+      (c) => c.significance === ChangeSignificance.CRITICAL
+    ).length;
+    const substantiveCount = changes.filter(
+      (c) => c.significance === ChangeSignificance.SUBSTANTIVE
+    ).length;
     const total = changes.length;
 
     if (language === 'ro') {

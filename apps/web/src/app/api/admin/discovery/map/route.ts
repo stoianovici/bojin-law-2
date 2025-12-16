@@ -16,17 +16,11 @@ export async function POST(request: NextRequest) {
 
     // Validate request
     if (!body.typeId) {
-      return NextResponse.json(
-        { error: 'Type ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Type ID is required' }, { status: 400 });
     }
 
     if (!body.targetSkill) {
-      return NextResponse.json(
-        { error: 'Target skill is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Target skill is required' }, { status: 400 });
     }
 
     if (typeof body.confidence !== 'number' || body.confidence < 0 || body.confidence > 1) {
@@ -37,10 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!body.reviewedBy) {
-      return NextResponse.json(
-        { error: 'Reviewed by is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Reviewed by is required' }, { status: 400 });
     }
 
     // Perform mapping

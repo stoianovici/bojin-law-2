@@ -127,9 +127,7 @@ export class CaseActivityService {
     // Filter by activity types
     if (options?.activityTypes && options.activityTypes.length > 0) {
       where.activityType = {
-        in: options.activityTypes.map(
-          (t) => CaseActivityType[t as keyof typeof CaseActivityType]
-        ),
+        in: options.activityTypes.map((t) => CaseActivityType[t as keyof typeof CaseActivityType]),
       };
     }
 

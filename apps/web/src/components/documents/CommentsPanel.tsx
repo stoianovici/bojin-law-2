@@ -231,14 +231,17 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
   interface SyncCommentsData {
     syncCommentsFromWord: number;
   }
-  const [syncFromWord, { loading: syncing }] = useMutation<SyncCommentsData>(SYNC_COMMENTS_FROM_WORD, {
-    variables: { documentId },
-    onCompleted: (data) => {
-      refetch();
-      toast.success(`Synced ${data.syncCommentsFromWord} comments from Word`);
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
+  const [syncFromWord, { loading: syncing }] = useMutation<SyncCommentsData>(
+    SYNC_COMMENTS_FROM_WORD,
+    {
+      variables: { documentId },
+      onCompleted: (data) => {
+        refetch();
+        toast.success(`Synced ${data.syncCommentsFromWord} comments from Word`);
+      },
+      onError: (err: Error) => toast.error(err.message),
+    }
+  );
 
   const comments: Comment[] = data?.documentComments || [];
 
@@ -307,12 +310,7 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
                 <Cloud className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => refetch()}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
@@ -344,7 +342,9 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
             <Textarea
               placeholder="Write a comment..."
               value={newComment}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setNewComment(e.target.value)
+              }
               className="min-h-[80px] mb-2"
               autoFocus
             />
@@ -364,9 +364,7 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
                 onClick={handleAddComment}
                 disabled={!newComment.trim() || addingComment}
               >
-                {addingComment ? (
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                ) : null}
+                {addingComment ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
                 Add Comment
               </Button>
             </div>
@@ -400,7 +398,8 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
                   <div className="flex items-start gap-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarFallback className="text-xs">
-                        {comment.author.firstName?.[0]}{comment.author.lastName?.[0]}
+                        {comment.author.firstName?.[0]}
+                        {comment.author.lastName?.[0]}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
@@ -413,7 +412,10 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
                             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                           </span>
                           {comment.resolved && (
-                            <Badge variant="outline" className="text-green-600 border-green-200 text-xs">
+                            <Badge
+                              variant="outline"
+                              className="text-green-600 border-green-200 text-xs"
+                            >
                               <Check className="h-2 w-2 mr-1" />
                               Resolved
                             </Badge>
@@ -428,14 +430,18 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
                           <DropdownMenuContent align="end">
                             {comment.resolved ? (
                               <DropdownMenuItem
-                                onClick={() => unresolveComment({ variables: { commentId: comment.id } })}
+                                onClick={() =>
+                                  unresolveComment({ variables: { commentId: comment.id } })
+                                }
                               >
                                 <RotateCcw className="h-4 w-4 mr-2" />
                                 Reopen
                               </DropdownMenuItem>
                             ) : (
                               <DropdownMenuItem
-                                onClick={() => resolveComment({ variables: { commentId: comment.id } })}
+                                onClick={() =>
+                                  resolveComment({ variables: { commentId: comment.id } })
+                                }
                               >
                                 <Check className="h-4 w-4 mr-2" />
                                 Resolve
@@ -443,7 +449,9 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
                             )}
                             <DropdownMenuItem
                               className="text-red-600"
-                              onClick={() => deleteComment({ variables: { commentId: comment.id } })}
+                              onClick={() =>
+                                deleteComment({ variables: { commentId: comment.id } })
+                              }
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
@@ -466,7 +474,8 @@ export function CommentsPanel({ documentId, className }: CommentsPanelProps) {
                       {comment.resolved && comment.resolvedBy && (
                         <p className="text-xs text-muted-foreground mt-2">
                           Resolved by {comment.resolvedBy.firstName} {comment.resolvedBy.lastName}
-                          {comment.resolvedAt && ` · ${formatDistanceToNow(new Date(comment.resolvedAt), { addSuffix: true })}`}
+                          {comment.resolvedAt &&
+                            ` · ${formatDistanceToNow(new Date(comment.resolvedAt), { addSuffix: true })}`}
                         </p>
                       )}
                     </div>

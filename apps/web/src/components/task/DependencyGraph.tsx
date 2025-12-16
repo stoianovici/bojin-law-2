@@ -10,11 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  CheckCircle2,
-  Lock,
-  AlertTriangle,
-} from 'lucide-react';
+import { CheckCircle2, Lock, AlertTriangle } from 'lucide-react';
 import type { Task, TaskDependency } from '@legal-platform/types';
 
 export interface DependencyGraphProps {
@@ -104,11 +100,9 @@ export function DependencyGraph({
     );
     const isCriticalPath = task.isCriticalPath;
 
-    if (isCompleted)
-      return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+    if (isCompleted) return <CheckCircle2 className="h-4 w-4 text-green-600" />;
     if (isBlocked) return <Lock className="h-4 w-4 text-gray-500" />;
-    if (isCriticalPath)
-      return <AlertTriangle className="h-4 w-4 text-red-600" />;
+    if (isCriticalPath) return <AlertTriangle className="h-4 w-4 text-red-600" />;
     return null;
   };
 
@@ -135,8 +129,7 @@ export function DependencyGraph({
       const x1 = LEFT_MARGIN + predCol * columnWidth + columnWidth;
       const x2 = LEFT_MARGIN + succCol * columnWidth;
 
-      const isHighlighted =
-        selectedTask === dep.predecessorId || selectedTask === dep.successorId;
+      const isHighlighted = selectedTask === dep.predecessorId || selectedTask === dep.successorId;
 
       arrows.push(
         <g key={dep.id}>
@@ -282,11 +275,7 @@ export function DependencyGraph({
                     {/* Timeline Grid */}
                     <div className="relative flex-1 flex">
                       {Array.from({ length: columns }).map((_, colIdx) => (
-                        <div
-                          key={colIdx}
-                          className="border-r"
-                          style={{ width: columnWidth }}
-                        ></div>
+                        <div key={colIdx} className="border-r" style={{ width: columnWidth }}></div>
                       ))}
 
                       {/* Task Bar */}
@@ -299,13 +288,9 @@ export function DependencyGraph({
                           width: Math.max(columnWidth - 8, 80),
                           zIndex: isSelected || isHovered ? 10 : 1,
                         }}
-                        onClick={() =>
-                          setSelectedTask(selectedTask === task.id ? null : task.id)
-                        }
+                        onClick={() => setSelectedTask(selectedTask === task.id ? null : task.id)}
                       >
-                        <span className="text-xs font-medium truncate flex-1">
-                          {task.title}
-                        </span>
+                        <span className="text-xs font-medium truncate flex-1">{task.title}</span>
                         {task.estimatedHours && (
                           <span className="text-xs ml-1">{task.estimatedHours}h</span>
                         )}

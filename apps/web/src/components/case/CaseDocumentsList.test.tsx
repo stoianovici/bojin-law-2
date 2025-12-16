@@ -153,7 +153,9 @@ describe('CaseDocumentsList', () => {
       render(<CaseDocumentsList {...defaultProps} />);
 
       expect(screen.getByText('No documents yet')).toBeInTheDocument();
-      expect(screen.getByText('Import documents from other cases or upload new ones')).toBeInTheDocument();
+      expect(
+        screen.getByText('Import documents from other cases or upload new ones')
+      ).toBeInTheDocument();
     });
 
     it('renders document list', () => {

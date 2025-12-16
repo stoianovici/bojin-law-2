@@ -143,11 +143,7 @@ describe('Workload Management Integration', () => {
   describe('Workload Meter (AC: 2)', () => {
     it('should calculate daily workload hours correctly', () => {
       // TEST-001: Verify workload calculation logic
-      const mockTasks = [
-        { estimatedHours: 2.5 },
-        { estimatedHours: 3.0 },
-        { estimatedHours: 1.5 },
-      ];
+      const mockTasks = [{ estimatedHours: 2.5 }, { estimatedHours: 3.0 }, { estimatedHours: 1.5 }];
 
       const totalHours = mockTasks.reduce((sum, t) => sum + t.estimatedHours, 0);
       expect(totalHours).toBe(7.0);

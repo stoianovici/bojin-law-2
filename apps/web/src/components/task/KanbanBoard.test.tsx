@@ -18,9 +18,7 @@ describe('KanbanBoard', () => {
   });
 
   it('renders kanban board without crashing', () => {
-    const { container } = render(
-      <KanbanBoard tasks={[]} onTaskClick={mockOnTaskClick} />
-    );
+    const { container } = render(<KanbanBoard tasks={[]} onTaskClick={mockOnTaskClick} />);
     expect(container).toBeInTheDocument();
   });
 
@@ -108,8 +106,9 @@ describe('KanbanBoard', () => {
 
     render(<KanbanBoard tasks={[mockTask]} onTaskClick={mockOnTaskClick} />);
 
-    const taskCard = screen.getByText(mockTask.title).closest('[role="button"]') ||
-                      screen.getByText(mockTask.title);
+    const taskCard =
+      screen.getByText(mockTask.title).closest('[role="button"]') ||
+      screen.getByText(mockTask.title);
     fireEvent.click(taskCard);
 
     await waitFor(() => {
@@ -131,11 +130,7 @@ describe('KanbanBoard', () => {
     mockTasks[1].status = 'InProgress';
 
     const { container } = render(
-      <KanbanBoard
-        tasks={mockTasks}
-        onTaskClick={mockOnTaskClick}
-        onTaskDrop={mockOnTaskDrop}
-      />
+      <KanbanBoard tasks={mockTasks} onTaskClick={mockOnTaskClick} onTaskDrop={mockOnTaskDrop} />
     );
 
     // DndContext should be present in the component tree
@@ -171,9 +166,7 @@ describe('KanbanBoard', () => {
       status: 'Pending',
     };
 
-    const { container } = render(
-      <KanbanBoard tasks={[mockTask]} onTaskClick={mockOnTaskClick} />
-    );
+    const { container } = render(<KanbanBoard tasks={[mockTask]} onTaskClick={mockOnTaskClick} />);
 
     // Task type badge should be rendered with background color
     // Research = Blue (#3B82F6)
@@ -207,9 +200,7 @@ describe('KanbanBoard', () => {
   });
 
   it('handles empty tasks array gracefully', () => {
-    const { container } = render(
-      <KanbanBoard tasks={[]} onTaskClick={mockOnTaskClick} />
-    );
+    const { container } = render(<KanbanBoard tasks={[]} onTaskClick={mockOnTaskClick} />);
 
     // Should render columns even with no tasks
     expect(screen.getByText('De Făcut')).toBeInTheDocument();
@@ -224,18 +215,14 @@ describe('KanbanBoard', () => {
       { ...createMockTasks(1)[0], priority: 'Urgent', status: 'InProgress' },
     ];
 
-    const { container } = render(
-      <KanbanBoard tasks={mockTasks} onTaskClick={mockOnTaskClick} />
-    );
+    const { container } = render(<KanbanBoard tasks={mockTasks} onTaskClick={mockOnTaskClick} />);
 
     // All tasks should be rendered
     expect(container.querySelectorAll('[role="button"]').length).toBeGreaterThanOrEqual(4);
   });
 
   it('supports horizontal scrolling on mobile for column overflow', () => {
-    const { container } = render(
-      <KanbanBoard tasks={[]} onTaskClick={mockOnTaskClick} />
-    );
+    const { container } = render(<KanbanBoard tasks={[]} onTaskClick={mockOnTaskClick} />);
 
     // Container should have overflow-x styles
     // This is verified by the component's className or style

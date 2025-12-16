@@ -188,7 +188,7 @@ export class LegalChangeClassifierService {
       }
     }
 
-    const confidence = maxMatches > 0 ? Math.min(0.6 + (maxMatches * 0.1), 0.95) : 0.3;
+    const confidence = maxMatches > 0 ? Math.min(0.6 + maxMatches * 0.1, 0.95) : 0.3;
     return { matchedTypes, confidence };
   }
 
@@ -206,9 +206,10 @@ export class LegalChangeClassifierService {
     impactDescription: string;
     relatedClauses: string[];
   }> {
-    const languagePrompt = context.language === 'ro'
-      ? 'Analizează această modificare într-un contract românesc.'
-      : 'Analyze this change in a contract.';
+    const languagePrompt =
+      context.language === 'ro'
+        ? 'Analizează această modificare într-un contract românesc.'
+        : 'Analyze this change in a contract.';
 
     const prompt = `${languagePrompt}
 
@@ -288,32 +289,31 @@ Respond in JSON format:
    */
   private mapClassification(classification: string): LegalChangeType {
     const upperClassification = classification?.toUpperCase();
-    return (LegalChangeType[upperClassification as keyof typeof LegalChangeType] ||
-      LegalChangeType.TERM_MODIFICATION);
+    return (
+      LegalChangeType[upperClassification as keyof typeof LegalChangeType] ||
+      LegalChangeType.TERM_MODIFICATION
+    );
   }
 
   /**
    * Extract party names from text
    */
-  private extractParties(
-    beforeText: string,
-    afterText: string,
-    language: 'ro' | 'en'
-  ): string[] {
+  private extractParties(beforeText: string, afterText: string, language: 'ro' | 'en'): string[] {
     const parties: Set<string> = new Set();
     const combinedText = `${beforeText} ${afterText}`;
 
-    const patterns = language === 'ro'
-      ? [
-          /(?:Societatea|S\.C\.|SC)\s+([A-Z][A-Za-z\s]+)\s*(?:S\.R\.L\.|SRL|S\.A\.|SA)/gi,
-          /(?:Dl\.|Dna\.|D-l|D-na)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/g,
-          /(?:Beneficiar|Prestator|Furnizor|Client|Contractant):\s*([^\n,]+)/gi,
-        ]
-      : [
-          /(?:Company|Corporation|Inc\.|LLC)\s+([A-Z][A-Za-z\s]+)/gi,
-          /(?:Mr\.|Ms\.|Mrs\.)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/g,
-          /(?:Party|Client|Vendor|Contractor):\s*([^\n,]+)/gi,
-        ];
+    const patterns =
+      language === 'ro'
+        ? [
+            /(?:Societatea|S\.C\.|SC)\s+([A-Z][A-Za-z\s]+)\s*(?:S\.R\.L\.|SRL|S\.A\.|SA)/gi,
+            /(?:Dl\.|Dna\.|D-l|D-na)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/g,
+            /(?:Beneficiar|Prestator|Furnizor|Client|Contractant):\s*([^\n,]+)/gi,
+          ]
+        : [
+            /(?:Company|Corporation|Inc\.|LLC)\s+([A-Z][A-Za-z\s]+)/gi,
+            /(?:Mr\.|Ms\.|Mrs\.)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/g,
+            /(?:Party|Client|Vendor|Contractor):\s*([^\n,]+)/gi,
+          ];
 
     for (const pattern of patterns) {
       const matches = combinedText.matchAll(pattern);

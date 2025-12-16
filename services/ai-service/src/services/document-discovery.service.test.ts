@@ -60,8 +60,18 @@ describe('DocumentDiscoveryService', () => {
         .mockResolvedValueOnce({ value: [] }) // No metadata file
         .mockResolvedValueOnce({
           value: [
-            { id: 'file-1', name: 'contract.pdf', size: 1024, parentReference: { path: '/AI-Training/Contract' } },
-            { id: 'file-2', name: 'agreement.docx', size: 2048, parentReference: { path: '/AI-Training/Contract' } },
+            {
+              id: 'file-1',
+              name: 'contract.pdf',
+              size: 1024,
+              parentReference: { path: '/AI-Training/Contract' },
+            },
+            {
+              id: 'file-2',
+              name: 'agreement.docx',
+              size: 2048,
+              parentReference: { path: '/AI-Training/Contract' },
+            },
           ],
         });
 
@@ -84,9 +94,7 @@ describe('DocumentDiscoveryService', () => {
         .mockResolvedValueOnce({ value: [{ id: 'contract-folder' }] })
         .mockResolvedValueOnce({ value: [] })
         .mockResolvedValueOnce({
-          value: [
-            { id: 'file-1', name: 'contract.pdf', size: 1024 },
-          ],
+          value: [{ id: 'file-1', name: 'contract.pdf', size: 1024 }],
         });
 
       // Mock existing document
@@ -151,13 +159,15 @@ describe('DocumentDiscoveryService', () => {
         .mockResolvedValueOnce({ value: [{ id: 'ai-training-folder' }] })
         .mockResolvedValueOnce({ value: [{ id: 'contract-folder' }] })
         .mockResolvedValueOnce({ value: [{ id: 'metadata-file' }] }) // Metadata file exists
-        .mockResolvedValueOnce(JSON.stringify({
-          description: 'Contract documents',
-          tags: ['legal', 'contract'],
-          files: {
-            'doc.pdf': { author: 'John' },
-          },
-        }))
+        .mockResolvedValueOnce(
+          JSON.stringify({
+            description: 'Contract documents',
+            tags: ['legal', 'contract'],
+            files: {
+              'doc.pdf': { author: 'John' },
+            },
+          })
+        )
         .mockResolvedValueOnce({
           value: [{ id: 'file-1', name: 'doc.pdf', size: 1024 }],
         });
@@ -227,9 +237,7 @@ describe('DocumentDiscoveryService', () => {
     it('should throw error on download failure', async () => {
       mockGraphClient.getStream.mockRejectedValue(new Error('Download failed'));
 
-      await expect(
-        service.downloadFile('token', 'file-id')
-      ).rejects.toThrow('Download failed');
+      await expect(service.downloadFile('token', 'file-id')).rejects.toThrow('Download failed');
     });
   });
 });

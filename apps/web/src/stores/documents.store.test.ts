@@ -192,9 +192,7 @@ describe('Documents Store', () => {
       });
 
       expect(result.current.filteredDocuments).toHaveLength(2);
-      expect(result.current.filteredDocuments.every((d) => d.uploadedById === 'atty-1')).toBe(
-        true
-      );
+      expect(result.current.filteredDocuments.every((d) => d.uploadedById === 'atty-1')).toBe(true);
     });
 
     it('should filter by date range', () => {

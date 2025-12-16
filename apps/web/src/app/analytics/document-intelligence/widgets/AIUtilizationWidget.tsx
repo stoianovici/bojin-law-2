@@ -42,7 +42,9 @@ export function AIUtilizationWidget({ data }: AIUtilizationWidgetProps) {
           <p className="text-sm text-gray-500">Rata de adoptie si tendinte</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-blue-600">{data.overallUtilizationRate.toFixed(1)}%</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {data.overallUtilizationRate.toFixed(1)}%
+          </p>
           <p className="text-sm text-gray-500">rata utilizare</p>
         </div>
       </div>
@@ -54,16 +56,8 @@ export function AIUtilizationWidget({ data }: AIUtilizationWidgetProps) {
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={data.adoptionTrend}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                tickFormatter={(value) => value.slice(5)}
-                fontSize={12}
-              />
-              <YAxis
-                tickFormatter={(value) => `${value}%`}
-                fontSize={12}
-                domain={[0, 100]}
-              />
+              <XAxis dataKey="date" tickFormatter={(value) => value.slice(5)} fontSize={12} />
+              <YAxis tickFormatter={(value) => `${value}%`} fontSize={12} domain={[0, 100]} />
               <Tooltip
                 formatter={(value: number) => [`${value.toFixed(1)}%`, 'Rata utilizare']}
                 labelFormatter={(label) => `Data: ${label}`}

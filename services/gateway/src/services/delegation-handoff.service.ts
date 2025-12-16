@@ -97,9 +97,7 @@ export class DelegationHandoffService {
     const contextParts: string[] = [];
 
     // Case context
-    contextParts.push(
-      `Case: ${caseData.caseNumber} - ${caseData.title} (${caseData.type})`
-    );
+    contextParts.push(`Case: ${caseData.caseNumber} - ${caseData.title} (${caseData.type})`);
     contextParts.push(`Client: ${caseData.client.name}`);
 
     // Task context
@@ -110,12 +108,8 @@ export class DelegationHandoffService {
 
     // Subtasks status
     if (sourceTask.subtasks.length > 0) {
-      const completedCount = sourceTask.subtasks.filter(
-        (s) => s.status === 'Completed'
-      ).length;
-      contextParts.push(
-        `Subtasks: ${completedCount}/${sourceTask.subtasks.length} completed`
-      );
+      const completedCount = sourceTask.subtasks.filter((s) => s.status === 'Completed').length;
+      contextParts.push(`Subtasks: ${completedCount}/${sourceTask.subtasks.length} completed`);
     }
 
     // Build handoff notes

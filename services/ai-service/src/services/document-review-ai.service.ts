@@ -6,10 +6,7 @@
  * Uses Claude Sonnet for comprehensive legal document analysis
  */
 
-import {
-  ClaudeModel,
-  AIOperationType,
-} from '@legal-platform/types';
+import { ClaudeModel, AIOperationType } from '@legal-platform/types';
 import type {
   ConcernType,
   ConcernSeverity,
@@ -25,7 +22,8 @@ import logger from '../lib/logger';
 const CONCERN_TYPE_DESCRIPTIONS: Record<ConcernType, string> = {
   LEGAL_INCONSISTENCY: 'Contradictions or inconsistencies in legal terms, clauses, or obligations',
   AMBIGUOUS_LANGUAGE: 'Vague or unclear language that could lead to multiple interpretations',
-  MISSING_CLAUSE: 'Standard clauses missing for this document type (e.g., force majeure, jurisdiction)',
+  MISSING_CLAUSE:
+    'Standard clauses missing for this document type (e.g., force majeure, jurisdiction)',
   OUTDATED_REFERENCE: 'References to outdated laws, regulations, or standards',
   COMPLIANCE_ISSUE: 'Potential violations of legal requirements or regulatory standards',
   STYLE_VIOLATION: 'Inconsistent formatting, terminology, or style with firm guidelines',
@@ -54,11 +52,7 @@ export class DocumentReviewAIService {
     const startTime = Date.now();
 
     try {
-      const concerns = await this.detectConcernsWithAI(
-        documentContent,
-        documentType,
-        context
-      );
+      const concerns = await this.detectConcernsWithAI(documentContent, documentType, context);
 
       const processingTimeMs = Date.now() - startTime;
 
@@ -83,9 +77,10 @@ export class DocumentReviewAIService {
     documentType: string,
     context: DocumentContext
   ): Promise<AIAnalysisConcern[]> {
-    const languageInstruction = context.language === 'ro'
-      ? 'Analizează documentul în limba română și răspunde în română.'
-      : 'Analyze the document in English and respond in English.';
+    const languageInstruction =
+      context.language === 'ro'
+        ? 'Analizează documentul în limba română și răspunde în română.'
+        : 'Analyze the document in English and respond in English.';
 
     const concernTypesJson = JSON.stringify(CONCERN_TYPE_DESCRIPTIONS, null, 2);
     const severitiesJson = JSON.stringify(SEVERITY_DESCRIPTIONS, null, 2);
@@ -171,10 +166,7 @@ If no significant concerns are found, return: { "concerns": [] }`;
   /**
    * Parse AI response and calculate anchor positions
    */
-  private parseAIResponse(
-    content: string,
-    documentContent: string
-  ): AIAnalysisConcern[] {
+  private parseAIResponse(content: string, documentContent: string): AIAnalysisConcern[] {
     try {
       // Extract JSON from response (handle potential markdown wrapping)
       let jsonContent = content;
@@ -262,10 +254,7 @@ If no significant concerns are found, return: { "concerns": [] }`;
   /**
    * Extract section path from document position
    */
-  private extractSectionPath(
-    documentContent: string,
-    position: number
-  ): string | undefined {
+  private extractSectionPath(documentContent: string, position: number): string | undefined {
     if (position === 0) {
       return undefined;
     }
@@ -330,7 +319,11 @@ If no significant concerns are found, return: { "concerns": [] }`;
     }
 
     // Check for missing standard clauses based on document type
-    const missingClauses = this.checkMissingClauses(documentContent, documentType, context.language);
+    const missingClauses = this.checkMissingClauses(
+      documentContent,
+      documentType,
+      context.language
+    );
     concerns.push(...missingClauses);
 
     // Check for outdated references
@@ -338,7 +331,7 @@ If no significant concerns are found, return: { "concerns": [] }`;
     concerns.push(...outdatedRefs);
 
     return {
-      concerns: concerns.filter(c => c.confidence >= this.concernConfidenceThreshold),
+      concerns: concerns.filter((c) => c.confidence >= this.concernConfidenceThreshold),
       processingTimeMs: Date.now() - startTime,
       tokensUsed: 0,
       modelUsed: 'rule-based',
@@ -357,17 +350,20 @@ If no significant concerns are found, return: { "concerns": [] }`;
     const contentLower = documentContent.toLowerCase();
 
     // Standard clauses to check for contracts
-    const contractClauses = language === 'ro' ? {
-      'forță majoră': 'Force majeure clause is standard for contracts',
-      'jurisdicție': 'Jurisdiction clause specifies governing law',
-      'confidențialitate': 'Confidentiality clause protects sensitive information',
-      'reziliere': 'Termination clause defines contract end conditions',
-    } : {
-      'force majeure': 'Force majeure clause is standard for contracts',
-      'jurisdiction': 'Jurisdiction clause specifies governing law',
-      'confidentiality': 'Confidentiality clause protects sensitive information',
-      'termination': 'Termination clause defines contract end conditions',
-    };
+    const contractClauses =
+      language === 'ro'
+        ? {
+            'forță majoră': 'Force majeure clause is standard for contracts',
+            jurisdicție: 'Jurisdiction clause specifies governing law',
+            confidențialitate: 'Confidentiality clause protects sensitive information',
+            reziliere: 'Termination clause defines contract end conditions',
+          }
+        : {
+            'force majeure': 'Force majeure clause is standard for contracts',
+            jurisdiction: 'Jurisdiction clause specifies governing law',
+            confidentiality: 'Confidentiality clause protects sensitive information',
+            termination: 'Termination clause defines contract end conditions',
+          };
 
     if (documentType.toLowerCase().includes('contract')) {
       for (const [clause, description] of Object.entries(contractClauses)) {
@@ -396,9 +392,18 @@ If no significant concerns are found, return: { "concerns": [] }`;
 
     // Check for outdated Romanian law references
     const outdatedLaws = [
-      { pattern: /Legea\s+nr\.\s*31\/1990/gi, description: 'Law 31/1990 has been amended - verify current version' },
-      { pattern: /Cod(?:ul)?\s+Civil\s+(?:din\s+)?1864/gi, description: 'Old Civil Code reference - New Civil Code applies since 2011' },
-      { pattern: /O\.U\.G\.\s*nr\.\s*34\/2006/gi, description: 'OUG 34/2006 has been replaced - verify current public procurement law' },
+      {
+        pattern: /Legea\s+nr\.\s*31\/1990/gi,
+        description: 'Law 31/1990 has been amended - verify current version',
+      },
+      {
+        pattern: /Cod(?:ul)?\s+Civil\s+(?:din\s+)?1864/gi,
+        description: 'Old Civil Code reference - New Civil Code applies since 2011',
+      },
+      {
+        pattern: /O\.U\.G\.\s*nr\.\s*34\/2006/gi,
+        description: 'OUG 34/2006 has been replaced - verify current public procurement law',
+      },
     ];
 
     for (const law of outdatedLaws) {
@@ -424,11 +429,7 @@ If no significant concerns are found, return: { "concerns": [] }`;
   /**
    * Get context around a match
    */
-  private getContextAroundMatch(
-    content: string,
-    index: number,
-    contextLength: number
-  ): string {
+  private getContextAroundMatch(content: string, index: number, contextLength: number): string {
     const start = Math.max(0, index - contextLength);
     const end = Math.min(content.length, index + contextLength);
     return content.substring(start, end);
@@ -437,12 +438,14 @@ If no significant concerns are found, return: { "concerns": [] }`;
   /**
    * Classify document into sections for targeted analysis
    */
-  async parseDocumentSections(documentContent: string): Promise<Array<{
-    title: string;
-    content: string;
-    startIndex: number;
-    endIndex: number;
-  }>> {
+  async parseDocumentSections(documentContent: string): Promise<
+    Array<{
+      title: string;
+      content: string;
+      startIndex: number;
+      endIndex: number;
+    }>
+  > {
     const sections: Array<{
       title: string;
       content: string;
@@ -451,7 +454,8 @@ If no significant concerns are found, return: { "concerns": [] }`;
     }> = [];
 
     // Split by common section patterns
-    const sectionPattern = /(?:^|\n)((?:Art(?:icol)?|Section|Capitol|Clauza|Anexa|ARTICOLUL|CAPITOLUL)[\s.]*\d*[.:]?\s*[^\n]*)/gi;
+    const sectionPattern =
+      /(?:^|\n)((?:Art(?:icol)?|Section|Capitol|Clauza|Anexa|ARTICOLUL|CAPITOLUL)[\s.]*\d*[.:]?\s*[^\n]*)/gi;
 
     let lastIndex = 0;
     let lastTitle = 'Introduction';

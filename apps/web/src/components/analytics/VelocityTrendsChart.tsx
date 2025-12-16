@@ -75,11 +75,7 @@ export function VelocityTrendsChart({
   }
 
   if (!data) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        Nu există date despre viteză
-      </div>
-    );
+    return <div className="text-center py-8 text-gray-500">Nu există date despre viteză</div>;
   }
 
   const trendConfig = TREND_CONFIG[data.firmVelocity.trend] || TREND_CONFIG.stable;
@@ -137,7 +133,11 @@ export function VelocityTrendsChart({
           <div className="text-right">
             <div className="text-sm text-gray-500">Tendință</div>
             <div className={`text-lg font-medium capitalize ${trendConfig.color}`}>
-              {data.firmVelocity.trend === 'improving' ? 'În creștere' : data.firmVelocity.trend === 'declining' ? 'În scădere' : 'Stabil'}
+              {data.firmVelocity.trend === 'improving'
+                ? 'În creștere'
+                : data.firmVelocity.trend === 'declining'
+                  ? 'În scădere'
+                  : 'Stabil'}
             </div>
           </div>
         </div>
@@ -194,10 +194,7 @@ export function VelocityTrendsChart({
           {data.byUser.map((user, index) => {
             const userTrend = TREND_CONFIG[user.trendDirection] || TREND_CONFIG.stable;
             return (
-              <div
-                key={user.userId}
-                className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-              >
+              <div key={user.userId} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center gap-3 mb-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
@@ -238,7 +235,9 @@ export function VelocityTrendsChart({
           })}
         </div>
         {data.byUser.length === 0 && (
-          <div className="text-center py-4 text-gray-500">Nu există date despre viteza utilizatorilor</div>
+          <div className="text-center py-4 text-gray-500">
+            Nu există date despre viteza utilizatorilor
+          </div>
         )}
       </div>
     </div>

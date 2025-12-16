@@ -185,7 +185,10 @@ function ActorFormModal({
 
             {/* Organization */}
             <div>
-              <label htmlFor="organization" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="organization"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Organization
               </label>
               <input
@@ -280,7 +283,13 @@ function ActorFormModal({
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading || !formData.name?.trim()}
               >
-                {loading ? (actor ? 'Updating...' : 'Adding...') : actor ? 'Update Actor' : 'Add Actor'}
+                {loading
+                  ? actor
+                    ? 'Updating...'
+                    : 'Adding...'
+                  : actor
+                    ? 'Update Actor'
+                    : 'Add Actor'}
               </button>
             </div>
           </form>
@@ -487,7 +496,10 @@ export function ActorsManagement({ caseId, actors }: ActorsManagementProps) {
                           <div>
                             <dt className="text-gray-500">Phone</dt>
                             <dd className="text-gray-900">
-                              <a href={`tel:${actor.phone}`} className="text-blue-600 hover:underline">
+                              <a
+                                href={`tel:${actor.phone}`}
+                                className="text-blue-600 hover:underline"
+                              >
                                 {actor.phone}
                               </a>
                             </dd>

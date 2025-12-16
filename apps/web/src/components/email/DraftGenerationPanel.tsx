@@ -62,12 +62,8 @@ export function DraftGenerationPanel({
     return (
       <div className="flex flex-col items-center justify-center p-8" aria-busy="true">
         <Spinner size="lg" />
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">
-          Generating AI drafts...
-        </p>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          This may take a few seconds
-        </p>
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">Generating AI drafts...</p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">This may take a few seconds</p>
       </div>
     );
   }
@@ -82,9 +78,7 @@ export function DraftGenerationPanel({
               <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
                 Draft generation failed
               </h3>
-              <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-                {error.message}
-              </p>
+              <p className="mt-1 text-sm text-red-700 dark:text-red-300">{error.message}</p>
               <div className="mt-4">
                 <button
                   onClick={handleGenerate}
@@ -108,9 +102,7 @@ export function DraftGenerationPanel({
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b border-gray-200 p-4 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          AI Draft Options
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Draft Options</h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Select the tone that best fits your response
         </p>
@@ -136,9 +128,7 @@ export function DraftGenerationPanel({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Subject
               </label>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                {selectedDraft.subject}
-              </p>
+              <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedDraft.subject}</p>
             </div>
 
             {/* Body Preview */}
@@ -155,9 +145,7 @@ export function DraftGenerationPanel({
 
             {/* Confidence */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Confidence:
-              </span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Confidence:</span>
               <ConfidenceIndicator confidence={selectedDraft.confidence} />
             </div>
           </div>
@@ -197,11 +185,13 @@ function ConfidenceIndicator({ confidence }: { confidence: number }) {
     percentage >= 80
       ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
       : percentage >= 60
-      ? 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30'
-      : 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
+        ? 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30'
+        : 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${color}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${color}`}
+    >
       {percentage}%
     </span>
   );

@@ -52,11 +52,7 @@ describe('BaseWidget', () => {
 
   it('shows empty state when isEmpty is true', () => {
     render(
-      <BaseWidget
-        title="Test Widget"
-        isEmpty={true}
-        emptyMessage="No data available"
-      >
+      <BaseWidget title="Test Widget" isEmpty={true} emptyMessage="No data available">
         <div>Content</div>
       </BaseWidget>
     );
@@ -81,10 +77,7 @@ describe('BaseWidget', () => {
 
   it('renders header actions when provided', () => {
     render(
-      <BaseWidget
-        title="Test Widget"
-        actions={<button data-testid="action-btn">Action</button>}
-      >
+      <BaseWidget title="Test Widget" actions={<button data-testid="action-btn">Action</button>}>
         <div>Content</div>
       </BaseWidget>
     );

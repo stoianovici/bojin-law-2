@@ -57,11 +57,7 @@ export class DocumentDiscoveryService {
       const client = this.createGraphClient(accessToken);
 
       // Get AI-Training root folder
-      const trainingFolderId = await this.getOrCreateFolder(
-        client,
-        'root',
-        'AI-Training'
-      );
+      const trainingFolderId = await this.getOrCreateFolder(client, 'root', 'AI-Training');
 
       // Process each category folder
       for (const categoryName of input.categoryFolders) {
@@ -73,10 +69,7 @@ export class DocumentDiscoveryService {
           );
 
           // Read category metadata if available
-          const categoryMetadata = await this.readMetadataFile(
-            client,
-            categoryFolderId
-          );
+          const categoryMetadata = await this.readMetadataFile(client, categoryFolderId);
 
           // Get all files in category folder
           const files = await this.listFilesInFolder(client, categoryFolderId);
@@ -139,9 +132,7 @@ export class DocumentDiscoveryService {
     try {
       // Try to get existing folder
       const basePath =
-        parentId === 'root'
-          ? '/me/drive/root/children'
-          : `/me/drive/items/${parentId}/children`;
+        parentId === 'root' ? '/me/drive/root/children' : `/me/drive/items/${parentId}/children`;
 
       const response = await client
         .api(basePath)
@@ -153,13 +144,11 @@ export class DocumentDiscoveryService {
       }
 
       // Create folder if doesn't exist
-      const newFolder = await client
-        .api(basePath)
-        .post({
-          name: folderName,
-          folder: {},
-          '@microsoft.graph.conflictBehavior': 'rename',
-        });
+      const newFolder = await client.api(basePath).post({
+        name: folderName,
+        folder: {},
+        '@microsoft.graph.conflictBehavior': 'rename',
+      });
 
       return newFolder.id;
     } catch (error) {
@@ -178,10 +167,7 @@ export class DocumentDiscoveryService {
    * @param folderId - Folder ID
    * @returns List of files
    */
-  private async listFilesInFolder(
-    client: Client,
-    folderId: string
-  ): Promise<DriveItem[]> {
+  private async listFilesInFolder(client: Client, folderId: string): Promise<DriveItem[]> {
     try {
       const files: DriveItem[] = [];
       let nextLink: string | undefined;
@@ -283,9 +269,7 @@ export class DocumentDiscoveryService {
 
       if (response.value && response.value.length > 0) {
         const metadataFileId = response.value[0].id;
-        const content = await client
-          .api(`/me/drive/items/${metadataFileId}/content`)
-          .get();
+        const content = await client.api(`/me/drive/items/${metadataFileId}/content`).get();
 
         return JSON.parse(content);
       }
@@ -309,9 +293,7 @@ export class DocumentDiscoveryService {
   async downloadFile(accessToken: string, fileId: string): Promise<Buffer> {
     try {
       const client = this.createGraphClient(accessToken);
-      const content = await client
-        .api(`/me/drive/items/${fileId}/content`)
-        .getStream();
+      const content = await client.api(`/me/drive/items/${fileId}/content`).getStream();
 
       // Convert stream to buffer
       const chunks: Buffer[] = [];

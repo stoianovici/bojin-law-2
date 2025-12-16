@@ -61,20 +61,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, onSave }) => {
       ) : (
         <form onSubmit={handleSubmit}>
           <label htmlFor="name">Name</label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
 
           <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
 
           <button type="submit">Save</button>
           <button type="button" onClick={() => setIsEditing(false)}>
@@ -158,7 +148,7 @@ describe('UserProfile Component', () => {
     expect(mockOnSave).toHaveBeenCalledTimes(1);
     expect(mockOnSave).toHaveBeenCalledWith({
       name: 'Jane Smith',
-      email: 'jane@example.com'
+      email: 'jane@example.com',
     });
   });
 
@@ -262,7 +252,7 @@ class CaseNumberGenerator {
     return {
       year: parseInt(match[1], 10),
       number: match[2],
-      type: match[3]
+      type: match[3],
     };
   }
 
@@ -327,7 +317,7 @@ describe('CaseNumberGenerator', () => {
       expect(result).toEqual({
         year: 2024,
         number: '00042',
-        type: 'CIV'
+        type: 'CIV',
       });
     });
 
@@ -407,14 +397,14 @@ describe('fetchCase (Async)', () => {
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => mockCase
+      json: async () => mockCase,
     });
 
     const result = await fetchCase('123');
 
     expect(result).toEqual({
       data: mockCase,
-      loading: false
+      loading: false,
     });
     expect(global.fetch).toHaveBeenCalledWith('/api/cases/123');
   });
@@ -426,7 +416,7 @@ describe('fetchCase (Async)', () => {
 
     expect(result).toEqual({
       loading: false,
-      error: 'Failed to fetch case'
+      error: 'Failed to fetch case',
     });
   });
 });
@@ -444,8 +434,8 @@ import { renderHook, act } from '@testing-library/react';
 const useCounter = (initialValue = 0) => {
   const [count, setCount] = React.useState(initialValue);
 
-  const increment = () => setCount(prev => prev + 1);
-  const decrement = () => setCount(prev => prev - 1);
+  const increment = () => setCount((prev) => prev + 1);
+  const decrement = () => setCount((prev) => prev - 1);
   const reset = () => setCount(initialValue);
 
   return { count, increment, decrement, reset };

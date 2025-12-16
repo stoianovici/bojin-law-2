@@ -218,9 +218,7 @@ test.describe('Story 1.6 - Partner Dashboard Widgets Accessibility', () => {
     await testA11y(page);
   });
 
-  test('Partner dashboard with all widgets has no accessibility violations', async ({
-    page,
-  }) => {
+  test('Partner dashboard with all widgets has no accessibility violations', async ({ page }) => {
     // Get comprehensive violation report
     const violations = await getA11yViolations(page);
 

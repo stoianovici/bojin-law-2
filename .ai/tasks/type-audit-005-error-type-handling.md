@@ -17,12 +17,12 @@ error TS18046: 'error' is of type 'unknown'.
 
 ## Files to Fix
 
-| File | Lines |
-|------|-------|
-| `apps/legacy-import/src/app/api/categorize-doc/route.ts` | 170, 171 |
-| `apps/legacy-import/src/app/api/cleanup/route.ts` | 81, 82 |
+| File                                                       | Lines    |
+| ---------------------------------------------------------- | -------- |
+| `apps/legacy-import/src/app/api/categorize-doc/route.ts`   | 170, 171 |
+| `apps/legacy-import/src/app/api/cleanup/route.ts`          | 81, 82   |
 | `apps/legacy-import/src/app/api/merge-categories/route.ts` | 154, 155 |
-| `apps/legacy-import/src/app/api/upload-pst/route.ts` | 199, 200 |
+| `apps/legacy-import/src/app/api/upload-pst/route.ts`       | 199, 200 |
 
 ---
 

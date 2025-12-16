@@ -122,7 +122,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Shows extracted items with all three sections: Termene (Deadlines), Angajamente (Commitments), and Acțiuni (Actions). Deadlines section is expanded by default.',
+        story:
+          'Shows extracted items with all three sections: Termene (Deadlines), Angajamente (Commitments), and Acțiuni (Actions). Deadlines section is expanded by default.',
       },
     },
   },
@@ -135,7 +136,8 @@ export const WithCreateTaskButtons: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Each extracted item displays a "Creează Task" button that allows users to quickly create tasks from email content.',
+        story:
+          'Each extracted item displays a "Creează Task" button that allows users to quickly create tasks from email content.',
       },
     },
   },
@@ -148,7 +150,8 @@ export const HoverStateDismissButtons: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'When hovering over an item, a dismiss button (X icon) appears in the top-right corner. This allows users to dismiss irrelevant items.',
+        story:
+          'When hovering over an item, a dismiss button (X icon) appears in the top-right corner. This allows users to dismiss irrelevant items.',
       },
     },
   },
@@ -184,7 +187,8 @@ export const EmptyState: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'When no items are extracted from the email, shows empty state messages for each section.',
+        story:
+          'When no items are extracted from the email, shows empty state messages for each section.',
       },
     },
   },
@@ -210,7 +214,8 @@ export const NoThreadSelected: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'When no thread is selected, shows a message prompting the user to select a conversation.',
+        story:
+          'When no thread is selected, shows a message prompting the user to select a conversation.',
       },
     },
   },
@@ -338,7 +343,8 @@ export const RomanianLanguage: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates Romanian language support: "Elemente extrase", "Termene", "Angajamente", "Acțiuni", "Creează Task", "Respinge".',
+        story:
+          'Demonstrates Romanian language support: "Elemente extrase", "Termene", "Angajamente", "Acțiuni", "Creează Task", "Respinge".',
       },
     },
   },
@@ -351,7 +357,8 @@ export const AllSectionsExpanded: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click on section headers to expand/collapse. Shows all extracted items across all three categories.',
+        story:
+          'Click on section headers to expand/collapse. Shows all extracted items across all three categories.',
       },
     },
   },
@@ -408,7 +415,8 @@ export const MixedConfidenceLevels: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Shows items with different AI confidence levels (High, Medium, Low). In production, confidence levels would affect visual presentation.',
+        story:
+          'Shows items with different AI confidence levels (High, Medium, Low). In production, confidence levels would affect visual presentation.',
       },
     },
   },

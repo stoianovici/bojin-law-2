@@ -55,7 +55,9 @@
     "check-parity": "scripts/check-parity.sh",
     "preflight:full": "pnpm check-parity && pnpm preflight",
     "smoke-test": "scripts/render/smoke-test.sh",
-    "smoke-test:staging": "scripts/render/smoke-test.sh --staging"
+    "smoke-test:staging": "scripts/render/smoke-test.sh --staging",
+    "setup": "scripts/setup-local-dev.sh",
+    "setup:local": "scripts/setup-local-dev.sh"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

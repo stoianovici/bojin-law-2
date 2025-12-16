@@ -16,7 +16,12 @@ describe('TaskKanbanBoard', () => {
 
   const mockTasks = [
     createTask({ id: 'task-1', title: 'Task To Do', status: 'Pending', priority: 'High' }),
-    createTask({ id: 'task-2', title: 'Task In Progress', status: 'InProgress', priority: 'Medium' }),
+    createTask({
+      id: 'task-2',
+      title: 'Task In Progress',
+      status: 'InProgress',
+      priority: 'Medium',
+    }),
     createTask({ id: 'task-3', title: 'Task In Review', status: 'Cancelled', priority: 'Low' }),
     createTask({ id: 'task-4', title: 'Task Completed', status: 'Completed', priority: 'High' }),
     createTask({ id: 'task-5', title: 'Another To Do', status: 'Pending', priority: 'Medium' }),
@@ -71,13 +76,11 @@ describe('TaskKanbanBoard', () => {
   it('should display drag-and-drop visual indicator note', () => {
     render(<TaskKanbanBoard tasks={mockTasks} users={mockUsers} />);
 
-    expect(
-      screen.getByText(/glisare.*versiunile viitoare/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/glisare.*versiunile viitoare/i)).toBeInTheDocument();
   });
 
   it('should render empty column when no tasks have that status', () => {
-    const tasksWithoutReview = mockTasks.filter(t => t.status !== 'Cancelled');
+    const tasksWithoutReview = mockTasks.filter((t) => t.status !== 'Cancelled');
     render(<TaskKanbanBoard tasks={tasksWithoutReview} users={mockUsers} />);
 
     const reviewColumn = screen.getByText('În Revizuire').closest('div');
@@ -122,12 +125,9 @@ describe('TaskKanbanBoard', () => {
   it('should render multiple tasks in same column', () => {
     render(<TaskKanbanBoard tasks={mockTasks} users={mockUsers} />);
 
-    const toDoTasks = [
-      screen.getByText('Task To Do'),
-      screen.getByText('Another To Do'),
-    ];
+    const toDoTasks = [screen.getByText('Task To Do'), screen.getByText('Another To Do')];
 
-    toDoTasks.forEach(task => {
+    toDoTasks.forEach((task) => {
       expect(task).toBeInTheDocument();
     });
   });

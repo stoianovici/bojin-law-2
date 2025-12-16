@@ -27,7 +27,9 @@ test.describe('Proactive AI Suggestions System', () => {
       await page.goto('/dashboard');
 
       // Wait for morning briefing component
-      await expect(page.locator('[data-testid="morning-briefing"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('[data-testid="morning-briefing"]')).toBeVisible({
+        timeout: 10000,
+      });
     });
 
     test('should show AI-generated summary', async ({ page }) => {
@@ -52,7 +54,10 @@ test.describe('Proactive AI Suggestions System', () => {
       if (taskCards > 0) {
         // Verify task card has priority indicator
         await expect(
-          page.locator('[data-testid="prioritized-task-card"]').first().locator('[data-testid="priority-badge"]')
+          page
+            .locator('[data-testid="prioritized-task-card"]')
+            .first()
+            .locator('[data-testid="priority-badge"]')
         ).toBeVisible();
       }
     });
@@ -109,7 +114,9 @@ test.describe('Proactive AI Suggestions System', () => {
       await page.goto('/dashboard');
 
       // Wait for suggestion widget
-      await expect(page.locator('[data-testid="suggestion-widget"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('[data-testid="suggestion-widget"]')).toBeVisible({
+        timeout: 10000,
+      });
     });
 
     test('should show suggestion count badge', async ({ page }) => {
@@ -166,7 +173,10 @@ test.describe('Proactive AI Suggestions System', () => {
       if (cards > 0) {
         // Verify card has type icon
         await expect(
-          page.locator('[data-testid="suggestion-card"]').first().locator('[data-testid="suggestion-type-icon"]')
+          page
+            .locator('[data-testid="suggestion-card"]')
+            .first()
+            .locator('[data-testid="suggestion-type-icon"]')
         ).toBeVisible();
       }
     });
@@ -188,7 +198,11 @@ test.describe('Proactive AI Suggestions System', () => {
       const cards = await page.locator('[data-testid="suggestion-card"]').count();
       if (cards > 0) {
         // Click accept button
-        await page.locator('[data-testid="suggestion-card"]').first().locator('[data-testid="accept-button"]').click();
+        await page
+          .locator('[data-testid="suggestion-card"]')
+          .first()
+          .locator('[data-testid="accept-button"]')
+          .click();
 
         // Verify suggestion removed or marked as accepted
         await expect(page.locator('[data-testid="suggestion-accepted-toast"]')).toBeVisible();
@@ -206,7 +220,11 @@ test.describe('Proactive AI Suggestions System', () => {
       const cards = await page.locator('[data-testid="suggestion-card"]').count();
       if (cards > 0) {
         // Click dismiss button
-        await page.locator('[data-testid="suggestion-card"]').first().locator('[data-testid="dismiss-button"]').click();
+        await page
+          .locator('[data-testid="suggestion-card"]')
+          .first()
+          .locator('[data-testid="dismiss-button"]')
+          .click();
 
         // Verify feedback dialog appears
         await expect(page.locator('[data-testid="feedback-dialog"]')).toBeVisible();
@@ -224,7 +242,11 @@ test.describe('Proactive AI Suggestions System', () => {
       const cards = await page.locator('[data-testid="suggestion-card"]').count();
       if (cards > 0) {
         // Click dismiss button
-        await page.locator('[data-testid="suggestion-card"]').first().locator('[data-testid="dismiss-button"]').click();
+        await page
+          .locator('[data-testid="suggestion-card"]')
+          .first()
+          .locator('[data-testid="dismiss-button"]')
+          .click();
 
         // Select a reason
         await page.locator('[data-testid="reason-not-relevant"]').click();
@@ -400,7 +422,10 @@ test.describe('Proactive AI Suggestions System', () => {
 
             // Verify item checked
             await expect(
-              list.locator('[data-testid="missing-item"]').first().locator('[data-testid="item-checkbox"]')
+              list
+                .locator('[data-testid="missing-item"]')
+                .first()
+                .locator('[data-testid="item-checkbox"]')
             ).toBeChecked();
           }
         }
@@ -419,10 +444,15 @@ test.describe('Proactive AI Suggestions System', () => {
       await page.waitForSelector('[data-testid="morning-briefing"]', { timeout: 10000 });
 
       // Check for region role
-      await expect(page.locator('[data-testid="morning-briefing"]')).toHaveAttribute('role', 'region');
+      await expect(page.locator('[data-testid="morning-briefing"]')).toHaveAttribute(
+        'role',
+        'region'
+      );
 
       // Check for aria-label
-      const ariaLabel = await page.locator('[data-testid="morning-briefing"]').getAttribute('aria-label');
+      const ariaLabel = await page
+        .locator('[data-testid="morning-briefing"]')
+        .getAttribute('aria-label');
       expect(ariaLabel).toBeTruthy();
     });
 
@@ -431,7 +461,10 @@ test.describe('Proactive AI Suggestions System', () => {
 
       await page.waitForSelector('[data-testid="suggestion-widget"]', { timeout: 10000 });
 
-      await expect(page.locator('[data-testid="suggestion-widget"]')).toHaveAttribute('role', 'complementary');
+      await expect(page.locator('[data-testid="suggestion-widget"]')).toHaveAttribute(
+        'role',
+        'complementary'
+      );
     });
 
     test('deadline warnings should announce critical items', async ({ page }) => {

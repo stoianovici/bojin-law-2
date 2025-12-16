@@ -331,9 +331,7 @@ describe('Search API Integration Tests', () => {
         { id: '2', query: 'older', createdAt: new Date('2024-11-01') },
       ];
 
-      const sorted = mockSearches.sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-      );
+      const sorted = mockSearches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
       expect(sorted[0].query).toBe('latest');
     });

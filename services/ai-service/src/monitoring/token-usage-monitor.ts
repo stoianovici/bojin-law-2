@@ -87,19 +87,19 @@ export class TokenUsageMonitor {
   // Anomaly detection thresholds
   private readonly ANOMALY_THRESHOLDS = {
     hourlySpike: 2.0, // 200% of average
-    dailySpike: 1.5,  // 150% of average
+    dailySpike: 1.5, // 150% of average
     singleRequest: {
-      tokensWarning: 10000,    // Single request warning
-      tokensCritical: 50000,   // Single request critical
+      tokensWarning: 10000, // Single request warning
+      tokensCritical: 50000, // Single request critical
     },
   };
 
   // Cache TTLs
   private readonly CACHE_TTL = {
-    realTimeUsage: 60,        // 1 minute
-    dailyAggregate: 300,      // 5 minutes
-    weeklyAggregate: 900,     // 15 minutes
-    monthlyAggregate: 3600,   // 1 hour
+    realTimeUsage: 60, // 1 minute
+    dailyAggregate: 300, // 5 minutes
+    weeklyAggregate: 900, // 15 minutes
+    monthlyAggregate: 3600, // 1 hour
   };
 
   constructor(prisma: PrismaClient, redis: RedisClient) {
@@ -302,11 +302,7 @@ export class TokenUsageMonitor {
   /**
    * Get usage breakdown by model
    */
-  async getUsageByModel(
-    firmId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<UsageByModel[]> {
+  async getUsageByModel(firmId: string, startDate: Date, endDate: Date): Promise<UsageByModel[]> {
     const results = await this.prisma.aITokenUsage.groupBy({
       by: ['modelUsed'],
       where: {
@@ -446,7 +442,7 @@ export class TokenUsageMonitor {
     if (hourlyAverage > 0) {
       const now = new Date();
       const currentHourKey = this.getHourKey(usage.firmId, now);
-      const currentHourUsage = parseInt(await this.redis.get(`${currentHourKey}:tokens`) || '0');
+      const currentHourUsage = parseInt((await this.redis.get(`${currentHourKey}:tokens`)) || '0');
 
       if (currentHourUsage > hourlyAverage * this.ANOMALY_THRESHOLDS.hourlySpike) {
         return {
@@ -499,7 +495,7 @@ export class TokenUsageMonitor {
     // Default budgets as fallback
     return {
       firmId,
-      dailyBudgetCents: 10000,   // $100/day
+      dailyBudgetCents: 10000, // $100/day
       monthlyBudgetCents: 200000, // $2000/month
       currentDailyUsageCents: 0,
       currentMonthlyUsageCents: 0,

@@ -24,10 +24,10 @@ const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 
 // Quality thresholds for color coding
 const QUALITY_THRESHOLDS = {
-  excellent: 15,  // < 15% edit = green
-  good: 25,       // < 25% edit = yellow
+  excellent: 15, // < 15% edit = green
+  good: 25, // < 25% edit = yellow
   acceptable: 30, // < 30% edit = orange
-  poor: 30,       // >= 30% = red
+  poor: 30, // >= 30% = red
 };
 
 // Date range options
@@ -47,11 +47,13 @@ export default function DocumentQualityPage() {
   const [selectedDocType, setSelectedDocType] = useState<DocumentType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<QualityMetricsSummary | null>(null);
-  const [trendData, setTrendData] = useState<Array<{
-    date: string;
-    averageEditPercentage: number;
-    documentCount: number;
-  }>>([]);
+  const [trendData, setTrendData] = useState<
+    Array<{
+      date: string;
+      averageEditPercentage: number;
+      documentCount: number;
+    }>
+  >([]);
 
   // Load metrics on mount and when filters change
   useEffect(() => {
@@ -146,8 +148,8 @@ export default function DocumentQualityPage() {
               i < fullStars
                 ? 'text-yellow-400'
                 : i === fullStars && hasHalfStar
-                ? 'text-yellow-400'
-                : 'text-gray-300'
+                  ? 'text-yellow-400'
+                  : 'text-gray-300'
             )}
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -165,9 +167,7 @@ export default function DocumentQualityPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Calitate Documente AI
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Calitate Documente AI</h1>
           <p className="mt-1 text-sm text-gray-500">
             Monitorizare calitate documente generate cu AI
           </p>
@@ -247,9 +247,7 @@ export default function DocumentQualityPage() {
               {/* Average Edit Percentage */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-gray-500">
-                    Editare Medie
-                  </h3>
+                  <h3 className="text-sm font-medium text-gray-500">Editare Medie</h3>
                   <span
                     className={clsx(
                       'px-2 py-1 text-xs font-medium rounded',
@@ -269,9 +267,7 @@ export default function DocumentQualityPage() {
                 >
                   {metrics.averageEditPercentage.toFixed(1)}%
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Obiectiv: &lt; 30%
-                </p>
+                <p className="text-xs text-gray-500 mt-1">Obiectiv: &lt; 30%</p>
                 {/* Progress bar */}
                 <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
@@ -288,42 +284,26 @@ export default function DocumentQualityPage() {
 
               {/* Total Documents */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">
-                  Documente Generate
-                </h3>
-                <p className="text-3xl font-bold text-gray-900">
-                  {metrics.totalDocuments}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  în perioada selectată
-                </p>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Documente Generate</h3>
+                <p className="text-3xl font-bold text-gray-900">{metrics.totalDocuments}</p>
+                <p className="text-xs text-gray-500 mt-1">în perioada selectată</p>
               </div>
 
               {/* Average Time to Finalize */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">
-                  Timp Mediu Finalizare
-                </h3>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Timp Mediu Finalizare</h3>
                 <p className="text-3xl font-bold text-gray-900">
                   {metrics.averageTimeToFinalize}
-                  <span className="text-lg font-normal text-gray-500 ml-1">
-                    min
-                  </span>
+                  <span className="text-lg font-normal text-gray-500 ml-1">min</span>
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  de la generare la aprobare
-                </p>
+                <p className="text-xs text-gray-500 mt-1">de la generare la aprobare</p>
               </div>
 
               {/* User Rating */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">
-                  Rating Utilizatori
-                </h3>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Rating Utilizatori</h3>
                 {renderStarRating(metrics.averageUserRating)}
-                <p className="text-xs text-gray-500 mt-2">
-                  bazat pe feedback utilizatori
-                </p>
+                <p className="text-xs text-gray-500 mt-2">bazat pe feedback utilizatori</p>
               </div>
             </div>
 
@@ -331,9 +311,7 @@ export default function DocumentQualityPage() {
             <div className="grid grid-cols-2 gap-6 mb-8">
               {/* Edit Percentage by Document Type */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Editare per Tip Document
-                </h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Editare per Tip Document</h3>
                 <div className="space-y-4">
                   {metrics.byDocumentType.map((item) => (
                     <div key={item.documentType}>
@@ -342,9 +320,7 @@ export default function DocumentQualityPage() {
                           {DOCUMENT_TYPE_LABELS[item.documentType] || item.documentType}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">
-                            {item.documentCount} doc.
-                          </span>
+                          <span className="text-sm text-gray-500">{item.documentCount} doc.</span>
                           <span
                             className={clsx(
                               'text-sm font-medium',
@@ -373,15 +349,10 @@ export default function DocumentQualityPage() {
 
               {/* Trend Chart Placeholder */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Trend Calitate
-                </h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Trend Calitate</h3>
                 <div className="h-48 flex items-end gap-1">
                   {trendData.slice(-14).map((day, index) => {
-                    const height = Math.max(
-                      10,
-                      Math.min(100, day.averageEditPercentage * 2)
-                    );
+                    const height = Math.max(10, Math.min(100, day.averageEditPercentage * 2));
                     return (
                       <div
                         key={day.date}
@@ -444,16 +415,11 @@ export default function DocumentQualityPage() {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-medium text-blue-900">
-                    Obiectiv Calitate Documente
-                  </h4>
+                  <h4 className="font-medium text-blue-900">Obiectiv Calitate Documente</h4>
                   <p className="text-sm text-blue-700 mt-1">
                     Documentele generate cu AI trebuie să necesite mai puțin de{' '}
-                    <strong>30% editare manuală</strong> în medie. Procentul
-                    actual de editare este{' '}
-                    <strong
-                      className={getQualityColor(metrics.averageEditPercentage)}
-                    >
+                    <strong>30% editare manuală</strong> în medie. Procentul actual de editare este{' '}
+                    <strong className={getQualityColor(metrics.averageEditPercentage)}>
                       {metrics.averageEditPercentage.toFixed(1)}%
                     </strong>
                     {metrics.averageEditPercentage < 30

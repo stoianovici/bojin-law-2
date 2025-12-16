@@ -73,7 +73,7 @@ describe('Document Editor Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });
@@ -184,9 +184,7 @@ describe('Document Editor Accessibility', () => {
     ];
 
     it('should not have any accessibility violations when open', async () => {
-      const { container } = render(
-        <CommentsSidebar isOpen={true} comments={mockComments} />
-      );
+      const { container } = render(<CommentsSidebar isOpen={true} comments={mockComments} />);
 
       const results = await axe(container);
       expect(results).toHaveNoViolations();
@@ -200,14 +198,12 @@ describe('Document Editor Accessibility', () => {
     });
 
     it('should have proper ARIA labels for interactive elements', async () => {
-      const { container } = render(
-        <CommentsSidebar isOpen={true} comments={mockComments} />
-      );
+      const { container } = render(<CommentsSidebar isOpen={true} comments={mockComments} />);
 
       const results = await axe(container, {
         rules: {
           'button-name': { enabled: true },
-          'label': { enabled: true },
+          label: { enabled: true },
         },
       });
 
@@ -219,7 +215,7 @@ describe('Document Editor Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'label': { enabled: true },
+          label: { enabled: true },
           'form-field-multiple-labels': { enabled: true },
         },
       });
@@ -241,7 +237,7 @@ describe('Document Editor Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'label': { enabled: true },
+          label: { enabled: true },
           'form-field-multiple-labels': { enabled: true },
         },
       });
@@ -334,7 +330,7 @@ describe('Document Editor Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });
@@ -347,7 +343,7 @@ describe('Document Editor Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });
@@ -360,7 +356,7 @@ describe('Document Editor Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });

@@ -185,15 +185,15 @@ const r2Client = new S3Client({
 
 ### Document Storage Decision Matrix
 
-| Scenario                              | Primary Storage | Fallback Storage | Rationale                                        |
-| ------------------------------------- | --------------- | ---------------- | ------------------------------------------------ |
-| User uploads document via web app     | OneDrive        | R2 (backup)      | Microsoft 365 integration, collaboration         |
-| AI generates document from template   | OneDrive        | R2 (backup)      | User can edit in Office apps                     |
-| Large files >100MB                    | R2              | OneDrive         | OneDrive throttles, R2 has no egress fees        |
-| Public documents (filed pleadings)    | R2 Public       | OneDrive         | Global CDN, no auth required, fast delivery      |
-| Document thumbnails/previews          | Local Cache     | R2               | Fast access, auto-generated                      |
-| Archived cases (>2 years old)         | R2              | OneDrive         | Cost-effective long-term storage                 |
-| Users without Microsoft 365 access    | R2              | N/A              | Alternative for non-M365 users                   |
+| Scenario                            | Primary Storage | Fallback Storage | Rationale                                   |
+| ----------------------------------- | --------------- | ---------------- | ------------------------------------------- |
+| User uploads document via web app   | OneDrive        | R2 (backup)      | Microsoft 365 integration, collaboration    |
+| AI generates document from template | OneDrive        | R2 (backup)      | User can edit in Office apps                |
+| Large files >100MB                  | R2              | OneDrive         | OneDrive throttles, R2 has no egress fees   |
+| Public documents (filed pleadings)  | R2 Public       | OneDrive         | Global CDN, no auth required, fast delivery |
+| Document thumbnails/previews        | Local Cache     | R2               | Fast access, auto-generated                 |
+| Archived cases (>2 years old)       | R2              | OneDrive         | Cost-effective long-term storage            |
+| Users without Microsoft 365 access  | R2              | N/A              | Alternative for non-M365 users              |
 
 ### Storage Selection Logic
 
@@ -260,10 +260,10 @@ STORAGE_BACKUP_ENABLED=true # Backup to R2 when using OneDrive
 
 ### Rate Limits and Performance
 
-| Provider  | Upload Rate Limit | Download Rate Limit | Latency (p95) | Bandwidth Cost |
-| --------- | ----------------- | ------------------- | ------------- | -------------- |
-| OneDrive  | 10K req/10min     | 10K req/10min       | 200-500ms     | Included       |
-| R2        | Unlimited\*       | Unlimited\*         | 50-150ms      | $0/GB          |
+| Provider | Upload Rate Limit | Download Rate Limit | Latency (p95) | Bandwidth Cost |
+| -------- | ----------------- | ------------------- | ------------- | -------------- |
+| OneDrive | 10K req/10min     | 10K req/10min       | 200-500ms     | Included       |
+| R2       | Unlimited\*       | Unlimited\*         | 50-150ms      | $0/GB          |
 
 \*Subject to Cloudflare account limits
 

@@ -64,13 +64,7 @@ const TTFT_THRESHOLDS = {
 };
 
 // Document types to benchmark
-const DOCUMENT_TYPES = [
-  'memo',
-  'contract',
-  'brief',
-  'letter',
-  'agreement',
-];
+const DOCUMENT_TYPES = ['memo', 'contract', 'brief', 'letter', 'agreement'];
 
 /**
  * Calculate statistics from array of numbers
@@ -285,7 +279,9 @@ async function runBenchmarks(): Promise<void> {
 
   // Overall result
   const allPassed = summaries.every((s) => s.passed);
-  console.log(`\n  Overall: ${allPassed ? '✅ All benchmarks passed' : '❌ Some benchmarks failed'}`);
+  console.log(
+    `\n  Overall: ${allPassed ? '✅ All benchmarks passed' : '❌ Some benchmarks failed'}`
+  );
   console.log(`  Report saved: ${reportPath}`);
 
   if (!allPassed) {

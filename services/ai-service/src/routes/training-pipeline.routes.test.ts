@@ -69,35 +69,29 @@ describe('Training Pipeline Routes', () => {
     });
 
     it('should return 400 if categories missing', async () => {
-      const response = await request(app)
-        .post('/api/ai/training-pipeline/trigger')
-        .send({
-          accessToken: 'test-token',
-        });
+      const response = await request(app).post('/api/ai/training-pipeline/trigger').send({
+        accessToken: 'test-token',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('categories array is required');
     });
 
     it('should return 400 if categories is not an array', async () => {
-      const response = await request(app)
-        .post('/api/ai/training-pipeline/trigger')
-        .send({
-          categories: 'Contract',
-          accessToken: 'test-token',
-        });
+      const response = await request(app).post('/api/ai/training-pipeline/trigger').send({
+        categories: 'Contract',
+        accessToken: 'test-token',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('categories array is required');
     });
 
     it('should return 400 if categories is empty', async () => {
-      const response = await request(app)
-        .post('/api/ai/training-pipeline/trigger')
-        .send({
-          categories: [],
-          accessToken: 'test-token',
-        });
+      const response = await request(app).post('/api/ai/training-pipeline/trigger').send({
+        categories: [],
+        accessToken: 'test-token',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('categories array is required');
@@ -142,8 +136,7 @@ describe('Training Pipeline Routes', () => {
 
       (trainingPipelineService.getPipelineRunStatus as jest.Mock).mockResolvedValue(mockRun);
 
-      const response = await request(app)
-        .get('/api/ai/training-pipeline/runs/run-123');
+      const response = await request(app).get('/api/ai/training-pipeline/runs/run-123');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual(mockRun);
@@ -152,8 +145,7 @@ describe('Training Pipeline Routes', () => {
     it('should return 404 if run not found', async () => {
       (trainingPipelineService.getPipelineRunStatus as jest.Mock).mockResolvedValue(null);
 
-      const response = await request(app)
-        .get('/api/ai/training-pipeline/runs/non-existent');
+      const response = await request(app).get('/api/ai/training-pipeline/runs/non-existent');
 
       expect(response.status).toBe(404);
       expect(response.body.error).toBe('Pipeline run not found');
@@ -164,8 +156,7 @@ describe('Training Pipeline Routes', () => {
         new Error('Database error')
       );
 
-      const response = await request(app)
-        .get('/api/ai/training-pipeline/runs/run-123');
+      const response = await request(app).get('/api/ai/training-pipeline/runs/run-123');
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Failed to get pipeline run status');
@@ -181,8 +172,7 @@ describe('Training Pipeline Routes', () => {
 
       (trainingPipelineService.getRecentRuns as jest.Mock).mockResolvedValue(mockRuns);
 
-      const response = await request(app)
-        .get('/api/ai/training-pipeline/runs');
+      const response = await request(app).get('/api/ai/training-pipeline/runs');
 
       expect(response.status).toBe(200);
       expect(response.body.runs).toEqual(mockRuns);
@@ -192,8 +182,7 @@ describe('Training Pipeline Routes', () => {
     it('should respect limit query parameter', async () => {
       (trainingPipelineService.getRecentRuns as jest.Mock).mockResolvedValue([]);
 
-      await request(app)
-        .get('/api/ai/training-pipeline/runs?limit=5');
+      await request(app).get('/api/ai/training-pipeline/runs?limit=5');
 
       expect(trainingPipelineService.getRecentRuns).toHaveBeenCalledWith(5);
     });
@@ -201,8 +190,7 @@ describe('Training Pipeline Routes', () => {
     it('should use default limit of 10', async () => {
       (trainingPipelineService.getRecentRuns as jest.Mock).mockResolvedValue([]);
 
-      await request(app)
-        .get('/api/ai/training-pipeline/runs');
+      await request(app).get('/api/ai/training-pipeline/runs');
 
       expect(trainingPipelineService.getRecentRuns).toHaveBeenCalledWith(10);
     });
@@ -211,9 +199,7 @@ describe('Training Pipeline Routes', () => {
   describe('POST /api/ai/training-pipeline/knowledge-base/search', () => {
     it('should perform semantic search', async () => {
       const mockResults = {
-        results: [
-          { documentId: 'doc-1', chunkText: 'text', similarity: 0.9 },
-        ],
+        results: [{ documentId: 'doc-1', chunkText: 'text', similarity: 0.9 }],
         totalResults: 1,
       };
 
@@ -247,11 +233,9 @@ describe('Training Pipeline Routes', () => {
         totalResults: 0,
       });
 
-      await request(app)
-        .post('/api/ai/training-pipeline/knowledge-base/search')
-        .send({
-          query: 'test',
-        });
+      await request(app).post('/api/ai/training-pipeline/knowledge-base/search').send({
+        query: 'test',
+      });
 
       expect(semanticSearchService.search).toHaveBeenCalledWith({
         query: 'test',
@@ -261,9 +245,7 @@ describe('Training Pipeline Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (semanticSearchService.search as jest.Mock).mockRejectedValue(
-        new Error('Search error')
-      );
+      (semanticSearchService.search as jest.Mock).mockRejectedValue(new Error('Search error'));
 
       const response = await request(app)
         .post('/api/ai/training-pipeline/knowledge-base/search')
@@ -278,14 +260,13 @@ describe('Training Pipeline Routes', () => {
 
   describe('GET /api/ai/training-pipeline/knowledge-base/patterns/:category', () => {
     it('should return patterns for category', async () => {
-      const mockPatterns = [
-        { id: '1', patternText: 'hereby agrees', frequency: 10 },
-      ];
+      const mockPatterns = [{ id: '1', patternText: 'hereby agrees', frequency: 10 }];
 
       (semanticSearchService.getCategoryPatterns as jest.Mock).mockResolvedValue(mockPatterns);
 
-      const response = await request(app)
-        .get('/api/ai/training-pipeline/knowledge-base/patterns/Contract');
+      const response = await request(app).get(
+        '/api/ai/training-pipeline/knowledge-base/patterns/Contract'
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.category).toBe('Contract');
@@ -295,8 +276,7 @@ describe('Training Pipeline Routes', () => {
     it('should respect limit query parameter', async () => {
       (semanticSearchService.getCategoryPatterns as jest.Mock).mockResolvedValue([]);
 
-      await request(app)
-        .get('/api/ai/training-pipeline/knowledge-base/patterns/Contract?limit=5');
+      await request(app).get('/api/ai/training-pipeline/knowledge-base/patterns/Contract?limit=5');
 
       expect(semanticSearchService.getCategoryPatterns).toHaveBeenCalledWith('Contract', 5);
     });
@@ -304,14 +284,13 @@ describe('Training Pipeline Routes', () => {
 
   describe('GET /api/ai/training-pipeline/knowledge-base/templates/:category', () => {
     it('should return templates for category', async () => {
-      const mockTemplates = [
-        { id: '1', name: 'Standard Contract', qualityScore: 0.95 },
-      ];
+      const mockTemplates = [{ id: '1', name: 'Standard Contract', qualityScore: 0.95 }];
 
       (semanticSearchService.getCategoryTemplates as jest.Mock).mockResolvedValue(mockTemplates);
 
-      const response = await request(app)
-        .get('/api/ai/training-pipeline/knowledge-base/templates/Contract');
+      const response = await request(app).get(
+        '/api/ai/training-pipeline/knowledge-base/templates/Contract'
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.category).toBe('Contract');
@@ -321,8 +300,7 @@ describe('Training Pipeline Routes', () => {
     it('should respect limit query parameter', async () => {
       (semanticSearchService.getCategoryTemplates as jest.Mock).mockResolvedValue([]);
 
-      await request(app)
-        .get('/api/ai/training-pipeline/knowledge-base/templates/Contract?limit=3');
+      await request(app).get('/api/ai/training-pipeline/knowledge-base/templates/Contract?limit=3');
 
       expect(semanticSearchService.getCategoryTemplates).toHaveBeenCalledWith('Contract', 3);
     });

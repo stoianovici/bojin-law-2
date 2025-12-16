@@ -40,9 +40,7 @@ export function EmailWidget() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <EmailIcon className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Email
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email</h3>
         </div>
         <Link
           href="/emails"
@@ -55,11 +53,7 @@ export function EmailWidget() {
       {/* Stats */}
       {stats && (
         <div className="mt-4 grid grid-cols-2 gap-4">
-          <StatCard
-            label="Total"
-            value={stats.totalEmails}
-            icon={<InboxIcon />}
-          />
+          <StatCard label="Total" value={stats.totalEmails} icon={<InboxIcon />} />
           <StatCard
             label="Unread"
             value={stats.unreadEmails}
@@ -156,9 +150,7 @@ function StatCard({
       <div className="flex items-center gap-2">
         <div className={highlight ? '' : 'text-gray-400'}>{icon}</div>
         <div>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-            {value}
-          </p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
         </div>
       </div>

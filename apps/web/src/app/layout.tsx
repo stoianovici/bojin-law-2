@@ -13,11 +13,7 @@ export const metadata: Metadata = {
   description: 'AI-powered legal case management platform',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ro" suppressHydrationWarning>
       <body suppressHydrationWarning>

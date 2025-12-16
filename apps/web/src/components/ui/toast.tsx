@@ -35,10 +35,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               notification.type === 'success'
                 ? 'border-green-200'
                 : notification.type === 'error'
-                ? 'border-red-200'
-                : notification.type === 'warning'
-                ? 'border-yellow-200'
-                : 'border-blue-200'
+                  ? 'border-red-200'
+                  : notification.type === 'warning'
+                    ? 'border-yellow-200'
+                    : 'border-blue-200'
             }
           `}
           duration={notification.duration}

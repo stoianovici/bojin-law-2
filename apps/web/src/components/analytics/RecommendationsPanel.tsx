@@ -444,8 +444,12 @@ export function RecommendationsPanel({
               const isAddressed = addressedRecommendations.includes(originalIndex);
               return (
                 <tr key={originalIndex} className="border-b">
-                  <td className="py-2 px-3">{PRIORITY_CONFIG[rec.priority]?.label ?? rec.priority ?? 'N/A'}</td>
-                  <td className="py-2 px-3">{CATEGORY_CONFIG[rec.category]?.label ?? rec.category ?? 'N/A'}</td>
+                  <td className="py-2 px-3">
+                    {PRIORITY_CONFIG[rec.priority]?.label ?? rec.priority ?? 'N/A'}
+                  </td>
+                  <td className="py-2 px-3">
+                    {CATEGORY_CONFIG[rec.category]?.label ?? rec.category ?? 'N/A'}
+                  </td>
                   <td className="py-2 px-3">{rec.message}</td>
                   <td className="py-2 px-3">{rec.actionableSteps?.length ?? 0}</td>
                   <td className="py-2 px-3">{isAddressed ? 'Rezolvat' : 'Deschis'}</td>

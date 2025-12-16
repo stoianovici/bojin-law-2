@@ -143,10 +143,7 @@ describe('CommunicationExportService', () => {
       prisma.case.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.createExport(
-          { caseId: 'nonexistent', format: 'JSON' as any },
-          mockUserContext
-        )
+        service.createExport({ caseId: 'nonexistent', format: 'JSON' as any }, mockUserContext)
       ).rejects.toThrow('Case not found');
     });
 
@@ -155,10 +152,7 @@ describe('CommunicationExportService', () => {
       prisma.communicationEntry.count.mockResolvedValue(0);
 
       await expect(
-        service.createExport(
-          { caseId: mockCaseId, format: 'JSON' as any },
-          mockUserContext
-        )
+        service.createExport({ caseId: mockCaseId, format: 'JSON' as any }, mockUserContext)
       ).rejects.toThrow('No communication entries match the filter criteria');
     });
 
@@ -170,10 +164,7 @@ describe('CommunicationExportService', () => {
       prisma.communicationEntry.findMany.mockResolvedValue([]);
       prisma.communicationExport.update.mockResolvedValue(mockExport);
 
-      await service.createExport(
-        { caseId: mockCaseId, format: 'JSON' as any },
-        mockUserContext
-      );
+      await service.createExport({ caseId: mockCaseId, format: 'JSON' as any }, mockUserContext);
 
       const createCall = prisma.communicationExport.create.mock.calls[0][0];
       const expiresAt = createCall.data.expiresAt;
@@ -288,9 +279,9 @@ describe('CommunicationExportService', () => {
         status: 'Processing',
       });
 
-      await expect(
-        service.getDownloadUrl('export-1', mockUserContext)
-      ).rejects.toThrow('Export is not ready for download');
+      await expect(service.getDownloadUrl('export-1', mockUserContext)).rejects.toThrow(
+        'Export is not ready for download'
+      );
     });
 
     it('should throw error when export has expired', async () => {
@@ -299,9 +290,9 @@ describe('CommunicationExportService', () => {
         expiresAt: new Date(Date.now() - 86400000), // 24 hours ago
       });
 
-      await expect(
-        service.getDownloadUrl('export-1', mockUserContext)
-      ).rejects.toThrow('Export has expired');
+      await expect(service.getDownloadUrl('export-1', mockUserContext)).rejects.toThrow(
+        'Export has expired'
+      );
     });
   });
 
@@ -376,9 +367,9 @@ describe('CommunicationExportService', () => {
     it('should throw error when export not found', async () => {
       prisma.communicationExport.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.deleteExport('nonexistent', mockUserContext)
-      ).rejects.toThrow('Export not found');
+      await expect(service.deleteExport('nonexistent', mockUserContext)).rejects.toThrow(
+        'Export not found'
+      );
     });
   });
 

@@ -1,4 +1,5 @@
 # Cerere de Chemare în Judecată (Lawsuit Petition)
+
 ## Romanian Legal Document Template
 
 **Template ID:** 15
@@ -26,6 +27,7 @@
 ## Purpose
 
 A Cerere de Chemare în Judecată is the formal petition to initiate a civil lawsuit in Romanian courts. It serves to:
+
 - Establish the court's jurisdiction
 - Formally state the plaintiff's claims
 - Present the factual and legal grounds
@@ -37,10 +39,12 @@ A Cerere de Chemare în Judecată is the formal petition to initiate a civil law
 ## Required Variables
 
 ### Court Information
+
 - `{{INSTANTA_NUME}}` - Court name (e.g., "Judecătoria Sectorului 1 București")
 - `{{INSTANTA_SEDIU}}` - Court address
 
 ### Plaintiff Information
+
 - `{{RECLAMANT_NUME}}` - Plaintiff name/business name
 - `{{RECLAMANT_CNP_CUI}}` - Personal/fiscal identification
 - `{{RECLAMANT_DOMICILIU}}` - Address/domicile
@@ -48,11 +52,13 @@ A Cerere de Chemare în Judecată is the formal petition to initiate a civil law
 - `{{RECLAMANT_AVOCAT_BAROUL}}` - Bar association
 
 ### Defendant Information
+
 - `{{PARAT_NUME}}` - Defendant name/business name
 - `{{PARAT_CNP_CUI}}` - Personal/fiscal identification
 - `{{PARAT_DOMICILIU}}` - Address/domicile
 
 ### Case Details
+
 - `{{OBIECTUL_CERERII}}` - Object of the claim
 - `{{VALOAREA_CERERII}}` - Claim value (for court fees)
 - `{{MONEDA}}` - Currency
@@ -60,20 +66,24 @@ A Cerere de Chemare în Judecată is the formal petition to initiate a civil law
 - `{{COMPETENTA_TERRITORIALA}}` - Territorial jurisdiction
 
 ### Facts and Legal Grounds
+
 - `{{EXPUNEREA_FAPTELOR}}` - Statement of facts
 - `{{TEMEIUL_DREPT}}` - Legal grounds (Code articles)
 - `{{TEMEIUL_FAPT}}` - Factual grounds
 
 ### Claims and Evidence
+
 - `{{PRETENTII}}` - Array of specific claims/demands
 - `{{DOVEZI}}` - Array of evidence descriptions
 - `{{CHELTUIELI_JUDECATA}}` - Legal costs amount
 
 ### Optional
+
 - `{{DATA_INCIDENT}}` - Date of incident (if applicable)
 - `{{CERERI_ACCESORII}}` - Additional requests
 
 ### Footer
+
 - `{{DATA_DEPUNERE}}` - Filing date
 - `{{LOCALITATE}}` - City/location
 
@@ -93,19 +103,24 @@ A Cerere de Chemare în Judecată is the formal petition to initiate a civil law
 ## Date de Identificare
 
 ### Reclamant
+
 **{{RECLAMANT_NUME}}**
+
 - CNP/CUI: {{RECLAMANT_CNP_CUI}}
 - Domiciliu/Sediu: {{RECLAMANT_DOMICILIU}}
 - Reprezentant: {{RECLAMANT_AVOCAT}}, Baroul {{RECLAMANT_AVOCAT_BAROUL}}
 
 ### Pârât
+
 **{{PARAT_NUME}}**
+
 - CNP/CUI: {{PARAT_CNP_CUI}}
 - Domiciliu/Sediu: {{PARAT_DOMICILIU}}
 
 ---
 
 ## Obiectul Cererii
+
 **{{OBIECTUL_CERERII}}**
 
 **Valoarea cererii:** {{VALOAREA_CERERII}} {{MONEDA}}
@@ -130,9 +145,11 @@ Prezenta cerere este de competența **{{INSTANTA_NUME}}** având în vedere:
 ## Temeiul de Drept și de Fapt
 
 ### Temeiul de Drept
+
 {{TEMEIUL_DREPT}}
 
 ### Temeiul de Fapt
+
 {{TEMEIUL_FAPT}}
 
 ---
@@ -203,6 +220,7 @@ A Romanian lawsuit petition MUST contain:
 ## Required Annexes (Art. 195 CPC)
 
 Must attach copies of:
+
 1. Plaintiff's ID document
 2. Supporting evidence documents
 3. Proof of court fee payment
@@ -214,17 +232,20 @@ Must attach copies of:
 ## Usage Notes
 
 ### When to Use
+
 - After failed negotiations or mediation
 - After sending somație de plată (for debt claims)
 - When seeking court remedies
 - To enforce contractual rights
 
 ### Court Selection
+
 - **Judecătorie** (First Instance Court): Claims up to 200,000 RON
 - **Tribunal** (County Court): Claims over 200,000 RON
 - Territorial jurisdiction: Usually defendant's domicile
 
 ### Legal Costs to Include
+
 - Court filing fee (taxă de timbru)
 - Judicial stamp (timbru judiciar)
 - Attorney's fee (onorariu avocat)
@@ -236,16 +257,19 @@ Must attach copies of:
 ## Common Types of Claims
 
 ### Breach of Contract
+
 - Payment of contractual obligations
 - Specific performance
 - Termination and damages
 
 ### Tort Claims
+
 - Personal injury damages
 - Property damage
 - Professional negligence
 
 ### Property Disputes
+
 - Ownership recognition
 - Eviction
 - Boundary disputes
@@ -266,6 +290,7 @@ Must attach copies of:
 ## Workflow Integration
 
 After generating this document:
+
 1. Review with client for accuracy
 2. Gather all required annexes
 3. Calculate and pay court fees

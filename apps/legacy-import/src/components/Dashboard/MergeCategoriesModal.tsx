@@ -1,14 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  X,
-  Merge,
-  AlertTriangle,
-  CheckCircle,
-  Loader2,
-  Folder,
-} from 'lucide-react';
+import { X, Merge, AlertTriangle, CheckCircle, Loader2, Folder } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -87,9 +80,7 @@ export function MergeCategoriesModal({
     setSelectedIds(new Set(groupIds));
     // Set the one with most documents as primary
     const groupCategories = categories.filter((c) => groupIds.includes(c.id));
-    const primary = groupCategories.reduce((a, b) =>
-      a.documentCount > b.documentCount ? a : b
-    );
+    const primary = groupCategories.reduce((a, b) => (a.documentCount > b.documentCount ? a : b));
     setPrimaryCategoryId(primary.id);
   };
 
@@ -107,9 +98,7 @@ export function MergeCategoriesModal({
       setMerging(true);
       setError(null);
 
-      const sourceIds = Array.from(selectedIds).filter(
-        (id) => id !== primaryCategoryId
-      );
+      const sourceIds = Array.from(selectedIds).filter((id) => id !== primaryCategoryId);
 
       const res = await fetch('/api/merge-categories', {
         method: 'POST',
@@ -148,10 +137,7 @@ export function MergeCategoriesModal({
   if (!isOpen) return null;
 
   const selectedCategories = categories.filter((c) => selectedIds.has(c.id));
-  const totalDocs = selectedCategories.reduce(
-    (sum, c) => sum + c.documentCount,
-    0
-  );
+  const totalDocs = selectedCategories.reduce((sum, c) => sum + c.documentCount, 0);
   const primaryCategory = categories.find((c) => c.id === primaryCategoryId);
 
   return (
@@ -161,9 +147,7 @@ export function MergeCategoriesModal({
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Merge className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              Unește categorii
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Unește categorii</h2>
           </div>
           <button
             onClick={onClose}
@@ -194,14 +178,10 @@ export function MergeCategoriesModal({
           {/* Suggested Duplicates */}
           {suggestedDuplicates.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Duplicate sugerate
-              </h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Duplicate sugerate</h3>
               <div className="flex flex-wrap gap-2">
                 {suggestedDuplicates.map((group, idx) => {
-                  const groupCats = categories.filter((c) =>
-                    group.includes(c.id)
-                  );
+                  const groupCats = categories.filter((c) => group.includes(c.id));
                   if (groupCats.length < 2) return null;
 
                   return (
@@ -252,9 +232,7 @@ export function MergeCategoriesModal({
                       className="h-4 w-4 text-blue-600 rounded"
                     />
                     <Folder
-                      className={`h-4 w-4 ${
-                        isSelected ? 'text-blue-600' : 'text-gray-400'
-                      }`}
+                      className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}
                     />
                     <span
                       className={`flex-1 font-medium ${
@@ -263,9 +241,7 @@ export function MergeCategoriesModal({
                     >
                       {category.name}
                     </span>
-                    <span className="text-sm text-gray-500">
-                      {category.documentCount} doc.
-                    </span>
+                    <span className="text-sm text-gray-500">{category.documentCount} doc.</span>
                     {isSelected && (
                       <button
                         onClick={(e) => {
@@ -292,20 +268,15 @@ export function MergeCategoriesModal({
         <div className="border-t border-gray-200 p-4">
           {selectedIds.size >= 2 && primaryCategory && (
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 mb-1">
-                Previzualizare unificare
-              </h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-1">Previzualizare unificare</h4>
               <p className="text-sm text-gray-600">
-                Se unifică{' '}
-                <span className="font-medium">{selectedIds.size} categorii</span>{' '}
-                în{' '}
+                Se unifică <span className="font-medium">{selectedIds.size} categorii</span> în{' '}
                 <span className="font-medium text-blue-600">
                   &quot;{primaryCategory.name}&quot;
                 </span>
               </p>
               <p className="text-sm text-gray-500 mt-1">
-                {totalDocs} documente vor fi atribuite la{' '}
-                &quot;{primaryCategory.name}&quot;
+                {totalDocs} documente vor fi atribuite la &quot;{primaryCategory.name}&quot;
               </p>
             </div>
           )}

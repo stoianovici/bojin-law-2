@@ -234,7 +234,9 @@ test.describe('Email Integration', () => {
 
       if (results > 0) {
         // Results should contain search term
-        await expect(page.locator('[data-testid="search-result-item"]').first()).toContainText(/invoice/i);
+        await expect(page.locator('[data-testid="search-result-item"]').first()).toContainText(
+          /invoice/i
+        );
       } else {
         await expect(page.locator('text=/No emails match/')).toBeVisible();
       }

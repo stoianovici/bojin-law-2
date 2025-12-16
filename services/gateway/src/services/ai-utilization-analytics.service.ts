@@ -62,7 +62,10 @@ interface UserUsageData {
   totalTokens: number;
   totalCostCents: number;
   requestCount: number;
-  byOperation: Map<string, { tokens: number; costCents: number; requests: number; latencyMs: number[] }>;
+  byOperation: Map<
+    string,
+    { tokens: number; costCents: number; requests: number; latencyMs: number[] }
+  >;
 }
 
 /**
@@ -183,7 +186,9 @@ export class AIUtilizationAnalyticsService {
       where: { id: { in: userIds } },
       select: { id: true, firstName: true, lastName: true },
     });
-    const userNameMap = new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim() || 'Unknown']));
+    const userNameMap = new Map(
+      users.map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim() || 'Unknown'])
+    );
 
     // Build user utilization list
     const byUser: AIUtilizationByUser[] = [];
@@ -214,7 +219,8 @@ export class AIUtilizationAnalyticsService {
       totalRequests: firmTotals.requestCount,
       totalTokens: firmTotals.totalTokens,
       totalCostCents: firmTotals.totalCostCents,
-      avgRequestsPerUser: totalUsers > 0 ? Math.round((firmTotals.requestCount / totalUsers) * 100) / 100 : 0,
+      avgRequestsPerUser:
+        totalUsers > 0 ? Math.round((firmTotals.requestCount / totalUsers) * 100) / 100 : 0,
     };
 
     const result: AIUtilizationSummary = {
@@ -222,7 +228,9 @@ export class AIUtilizationAnalyticsService {
       byUser: byUser.sort((a, b) => b.totalRequests - a.totalRequests),
       byFeature: firmByFeature,
       topUsers: sortedByAdoption.slice(0, 5),
-      underutilizedUsers: sortedByAdoption.filter((u) => u.adoptionScore < ADOPTION_SCORE_THRESHOLD),
+      underutilizedUsers: sortedByAdoption.filter(
+        (u) => u.adoptionScore < ADOPTION_SCORE_THRESHOLD
+      ),
     };
 
     // Cache result
@@ -289,7 +297,10 @@ export class AIUtilizationAnalyticsService {
       },
     });
 
-    const byOperation = new Map<string, { tokens: number; costCents: number; requests: number; latencyMs: number[] }>();
+    const byOperation = new Map<
+      string,
+      { tokens: number; costCents: number; requests: number; latencyMs: number[] }
+    >();
     let totalTokens = 0;
     let totalCostCents = 0;
 
@@ -330,9 +341,15 @@ export class AIUtilizationAnalyticsService {
    * Aggregate operation data into feature usage
    */
   private aggregateByFeature(
-    byOperation: Map<string, { tokens: number; costCents: number; requests: number; latencyMs: number[] }>
+    byOperation: Map<
+      string,
+      { tokens: number; costCents: number; requests: number; latencyMs: number[] }
+    >
   ): FeatureUsage[] {
-    const featureMap = new Map<AIFeatureType, { tokens: number; requests: number; latencyMs: number[] }>();
+    const featureMap = new Map<
+      AIFeatureType,
+      { tokens: number; requests: number; latencyMs: number[] }
+    >();
 
     for (const [operation, data] of byOperation.entries()) {
       const feature = FEATURE_MAP[operation] ?? 'document_generation'; // Default feature
@@ -369,12 +386,20 @@ export class AIUtilizationAnalyticsService {
    * Get aggregate feature usage across all users
    */
   private getAggregateFeatureUsage(byUser: AIUtilizationByUser[]): FeatureUsage[] {
-    const featureMap = new Map<AIFeatureType, { tokens: number; requests: number; latencySum: number; latencyCount: number }>();
+    const featureMap = new Map<
+      AIFeatureType,
+      { tokens: number; requests: number; latencySum: number; latencyCount: number }
+    >();
 
     for (const user of byUser) {
       for (const feature of user.byFeature) {
         if (!featureMap.has(feature.feature)) {
-          featureMap.set(feature.feature, { tokens: 0, requests: 0, latencySum: 0, latencyCount: 0 });
+          featureMap.set(feature.feature, {
+            tokens: 0,
+            requests: 0,
+            latencySum: 0,
+            latencyCount: 0,
+          });
         }
         const data = featureMap.get(feature.feature)!;
         data.tokens += feature.tokenCount;

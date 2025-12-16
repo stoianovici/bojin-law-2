@@ -46,14 +46,7 @@ test.describe('Case Workspace', () => {
 
   test.describe('Tab Navigation', () => {
     test('should switch between all tabs', async ({ page }) => {
-      const tabs = [
-        'Overview',
-        'Documents',
-        'Tasks',
-        'Communications',
-        'Time Entries',
-        'Notes',
-      ];
+      const tabs = ['Overview', 'Documents', 'Tasks', 'Communications', 'Time Entries', 'Notes'];
 
       for (const tab of tabs) {
         await page.click(`text=${tab}`);
@@ -124,9 +117,9 @@ test.describe('Case Workspace', () => {
   test.describe('Quick Actions Bar', () => {
     test('should display quick actions bar', async ({ page }) => {
       // Look for the quick actions input or button
-      const quickActions = page.locator('input[placeholder*="do"]').or(
-        page.locator('button[aria-label*="Quick"]')
-      );
+      const quickActions = page
+        .locator('input[placeholder*="do"]')
+        .or(page.locator('button[aria-label*="Quick"]'));
 
       const count = await quickActions.count();
       if (count > 0) {

@@ -53,17 +53,17 @@ GraphQL errors follow a standard format with extensions for additional context.
 
 ### Error Response Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `message` | `string` | Human-readable error description |
-| `locations` | `array` | Query locations where error occurred |
-| `path` | `array` | Path to the field that caused the error |
-| `extensions.code` | `string` | Machine-readable error code |
-| `extensions.timestamp` | `string` | ISO 8601 timestamp of error |
-| `extensions.requestId` | `string` | Unique request identifier for tracking |
-| `extensions.retryable` | `boolean` | Whether the request can be retried |
-| `extensions.retryAfter` | `number` | Seconds to wait before retry (for rate limits) |
-| `extensions.details` | `object` | Additional error context (validation errors, etc.) |
+| Field                   | Type      | Description                                        |
+| ----------------------- | --------- | -------------------------------------------------- |
+| `message`               | `string`  | Human-readable error description                   |
+| `locations`             | `array`   | Query locations where error occurred               |
+| `path`                  | `array`   | Path to the field that caused the error            |
+| `extensions.code`       | `string`  | Machine-readable error code                        |
+| `extensions.timestamp`  | `string`  | ISO 8601 timestamp of error                        |
+| `extensions.requestId`  | `string`  | Unique request identifier for tracking             |
+| `extensions.retryable`  | `boolean` | Whether the request can be retried                 |
+| `extensions.retryAfter` | `number`  | Seconds to wait before retry (for rate limits)     |
+| `extensions.details`    | `object`  | Additional error context (validation errors, etc.) |
 
 ---
 
@@ -76,6 +76,7 @@ GraphQL errors follow a standard format with extensions for additional context.
 Occurs when input data fails validation rules.
 
 **Example Response:**
+
 ```json
 {
   "errors": [
@@ -100,6 +101,7 @@ Occurs when input data fails validation rules.
 ```
 
 **Common Causes:**
+
 - Missing required fields
 - Invalid field formats (e.g., invalid email)
 - Value out of allowed range
@@ -113,6 +115,7 @@ Occurs when input data fails validation rules.
 Occurs when the request lacks valid authentication credentials.
 
 **Example Response:**
+
 ```json
 {
   "errors": [
@@ -131,6 +134,7 @@ Occurs when the request lacks valid authentication credentials.
 ```
 
 **Common Causes:**
+
 - Missing session cookie or authorization header
 - Expired JWT token
 - Invalid or revoked token
@@ -143,6 +147,7 @@ Occurs when the request lacks valid authentication credentials.
 Occurs when the authenticated user lacks permission for the requested operation.
 
 **Example Response:**
+
 ```json
 {
   "errors": [
@@ -166,6 +171,7 @@ Occurs when the authenticated user lacks permission for the requested operation.
 ```
 
 **Common Causes:**
+
 - User role lacks required permissions
 - User not assigned to case (for case-specific operations)
 - Firm isolation violation (accessing another firm's data)
@@ -178,6 +184,7 @@ Occurs when the authenticated user lacks permission for the requested operation.
 Occurs when the requested resource does not exist.
 
 **Example Response:**
+
 ```json
 {
   "errors": [
@@ -202,6 +209,7 @@ Occurs when the requested resource does not exist.
 ```
 
 **Common Causes:**
+
 - Resource ID does not exist
 - Resource deleted or archived
 - User lacks access to resource (firm isolation)
@@ -213,6 +221,7 @@ Occurs when the requested resource does not exist.
 Occurs when the client exceeds rate limits.
 
 **Example Response:**
+
 ```json
 {
   "errors": [
@@ -237,6 +246,7 @@ Occurs when the client exceeds rate limits.
 ```
 
 **Common Causes:**
+
 - Too many requests in time window
 - Expensive query execution limits
 
@@ -247,6 +257,7 @@ Occurs when the client exceeds rate limits.
 Occurs due to unexpected server-side failures.
 
 **Example Response:**
+
 ```json
 {
   "errors": [
@@ -265,6 +276,7 @@ Occurs due to unexpected server-side failures.
 ```
 
 **Common Causes:**
+
 - Unhandled exceptions
 - Database connection failures
 - Third-party service failures
@@ -277,6 +289,7 @@ Occurs due to unexpected server-side failures.
 Occurs when the service is temporarily unavailable.
 
 **Example Response:**
+
 ```json
 {
   "errors": [
@@ -296,6 +309,7 @@ Occurs when the service is temporarily unavailable.
 ```
 
 **Common Causes:**
+
 - Planned maintenance
 - Database unavailable
 - Redis unavailable
@@ -307,17 +321,17 @@ Occurs when the service is temporarily unavailable.
 
 ### Complete Error Code Reference
 
-| Code | HTTP Status | Description | Retryable |
-|------|-------------|-------------|-----------|
-| `VALIDATION_ERROR` | 400 | Input validation failed | ❌ No |
-| `UNAUTHENTICATED` | 401 | Missing or invalid authentication | ❌ No |
-| `FORBIDDEN` | 403 | Insufficient permissions | ❌ No |
-| `NOT_FOUND` | 404 | Resource not found | ❌ No |
-| `CONFLICT` | 409 | Resource already exists | ❌ No |
-| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests | ✅ Yes |
-| `INTERNAL_SERVER_ERROR` | 500 | Unexpected server error | ✅ Yes |
-| `SERVICE_UNAVAILABLE` | 503 | Service temporarily down | ✅ Yes |
-| `GATEWAY_TIMEOUT` | 504 | Upstream service timeout | ✅ Yes |
+| Code                    | HTTP Status | Description                       | Retryable |
+| ----------------------- | ----------- | --------------------------------- | --------- |
+| `VALIDATION_ERROR`      | 400         | Input validation failed           | ❌ No     |
+| `UNAUTHENTICATED`       | 401         | Missing or invalid authentication | ❌ No     |
+| `FORBIDDEN`             | 403         | Insufficient permissions          | ❌ No     |
+| `NOT_FOUND`             | 404         | Resource not found                | ❌ No     |
+| `CONFLICT`              | 409         | Resource already exists           | ❌ No     |
+| `RATE_LIMIT_EXCEEDED`   | 429         | Too many requests                 | ✅ Yes    |
+| `INTERNAL_SERVER_ERROR` | 500         | Unexpected server error           | ✅ Yes    |
+| `SERVICE_UNAVAILABLE`   | 503         | Service temporarily down          | ✅ Yes    |
+| `GATEWAY_TIMEOUT`       | 504         | Upstream service timeout          | ✅ Yes    |
 
 ---
 
@@ -326,6 +340,7 @@ Occurs when the service is temporarily unavailable.
 ### Scenario 1: Creating a Case with Invalid Data
 
 **Query:**
+
 ```graphql
 mutation CreateCase($input: CreateCaseInput!) {
   createCase(input: $input) {
@@ -336,18 +351,20 @@ mutation CreateCase($input: CreateCaseInput!) {
 ```
 
 **Variables:**
+
 ```json
 {
   "input": {
-    "title": "AB",  // Too short (< 3 chars)
+    "title": "AB", // Too short (< 3 chars)
     "clientId": "invalid-uuid",
     "type": "LITIGATION",
-    "description": "Short"  // Too short (< 10 chars)
+    "description": "Short" // Too short (< 10 chars)
   }
 }
 ```
 
 **Error Response:**
+
 ```json
 {
   "errors": [
@@ -369,6 +386,7 @@ mutation CreateCase($input: CreateCaseInput!) {
 ### Scenario 2: Accessing Case Without Permission
 
 **Query:**
+
 ```graphql
 query GetCase($id: UUID!) {
   case(id: $id) {
@@ -379,6 +397,7 @@ query GetCase($id: UUID!) {
 ```
 
 **Error Response:**
+
 ```json
 {
   "errors": [
@@ -401,6 +420,7 @@ query GetCase($id: UUID!) {
 ### Scenario 3: Archiving Case as Paralegal
 
 **Mutation:**
+
 ```graphql
 mutation ArchiveCase($id: UUID!) {
   archiveCase(id: $id) {
@@ -411,6 +431,7 @@ mutation ArchiveCase($id: UUID!) {
 ```
 
 **Error Response:**
+
 ```json
 {
   "errors": [
@@ -444,7 +465,7 @@ function CreateCaseForm() {
   const handleSubmit = async (formData) => {
     try {
       const { data } = await createCase({
-        variables: { input: formData }
+        variables: { input: formData },
       });
       console.log('Case created:', data.createCase);
     } catch (error) {
@@ -494,7 +515,7 @@ function CreateCaseForm() {
           // Show generic error with retry option
           showError('Something went wrong. Please try again later.', {
             retry: true,
-            requestId: err.extensions.requestId
+            requestId: err.extensions.requestId,
           });
           break;
 
@@ -594,9 +615,7 @@ async function retryWithBackoff<T>(
       lastError = error;
 
       // Check if error is retryable
-      const isRetryable = error.graphQLErrors?.some(
-        (err) => err.extensions?.retryable === true
-      );
+      const isRetryable = error.graphQLErrors?.some((err) => err.extensions?.retryable === true);
 
       if (!isRetryable || attempt === maxRetries - 1) {
         throw error;
@@ -652,6 +671,7 @@ function handleRateLimitError(error) {
    - Provide actionable feedback
 
 2. **Check error codes for programmatic handling**
+
    ```typescript
    if (error.extensions?.code === 'VALIDATION_ERROR') {
      // Handle validation errors

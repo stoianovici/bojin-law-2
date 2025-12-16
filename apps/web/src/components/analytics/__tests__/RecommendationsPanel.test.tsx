@@ -22,11 +22,7 @@ const mockRecommendations: PlatformRecommendation[] = [
     category: 'efficiency',
     priority: 'high',
     message: 'Task completion rate is below target. Consider reviewing workload distribution.',
-    actionableSteps: [
-      'Review team capacity',
-      'Identify bottlenecks',
-      'Reassign tasks as needed',
-    ],
+    actionableSteps: ['Review team capacity', 'Identify bottlenecks', 'Reassign tasks as needed'],
   },
   {
     category: 'communication',
@@ -58,7 +54,9 @@ describe('RecommendationsPanel', () => {
       render(<RecommendationsPanel recommendations={mockRecommendations} />);
 
       // Each recommendation appears in both the list and accessibility table
-      expect(screen.getAllByText(/Task completion rate is below target/).length).toBeGreaterThanOrEqual(1);
+      expect(
+        screen.getAllByText(/Task completion rate is below target/).length
+      ).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText(/Response time improvement/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText(/Document quality is good/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText(/3 users have low AI adoption/).length).toBeGreaterThanOrEqual(1);

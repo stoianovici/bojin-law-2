@@ -56,7 +56,10 @@ export const DragModeActive: Story = {
     layout: mockLayout,
     onLayoutChange: (layout: typeof mockLayout) => console.log('Layout changed:', layout),
     children: mockLayout.map((item) => (
-      <div key={item.i} className="bg-white border-2 border-dashed border-blue-400 rounded-lg p-4 shadow-lg cursor-move">
+      <div
+        key={item.i}
+        className="bg-white border-2 border-dashed border-blue-400 rounded-lg p-4 shadow-lg cursor-move"
+      >
         <h3 className="font-semibold mb-2">Widget {item.i}</h3>
         <p className="text-sm text-blue-600">Trageți pentru a repoziția</p>
       </div>

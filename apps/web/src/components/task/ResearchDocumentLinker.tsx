@@ -53,7 +53,11 @@ export interface ResearchDocumentLinkerProps {
     fileType: string;
     caseId: string;
   }>;
-  onLinkDocument: (documentId: string, linkType: TaskDocumentLinkType, notes?: string) => Promise<void>;
+  onLinkDocument: (
+    documentId: string,
+    linkType: TaskDocumentLinkType,
+    notes?: string
+  ) => Promise<void>;
   onUnlinkDocument: (documentId: string) => Promise<void>;
 }
 
@@ -75,9 +79,8 @@ export function ResearchDocumentLinker({
     if (!searchQuery) return availableDocuments;
 
     const query = searchQuery.toLowerCase();
-    return availableDocuments.filter((doc) =>
-      doc.title.toLowerCase().includes(query) ||
-      doc.fileType.toLowerCase().includes(query)
+    return availableDocuments.filter(
+      (doc) => doc.title.toLowerCase().includes(query) || doc.fileType.toLowerCase().includes(query)
     );
   }, [availableDocuments, searchQuery]);
 
@@ -129,9 +132,7 @@ export function ResearchDocumentLinker({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">
-          Linked Documents ({linkedDocuments.length})
-        </h3>
+        <h3 className="text-sm font-medium">Linked Documents ({linkedDocuments.length})</h3>
         <Button type="button" size="sm" onClick={() => setIsModalOpen(true)}>
           <LinkIcon className="w-4 h-4 mr-2" />
           Link Document
@@ -165,9 +166,7 @@ export function ResearchDocumentLinker({
                   <p className="font-medium text-sm truncate">{link.document.title}</p>
                   {getLinkTypeBadge(link.linkType)}
                 </div>
-                {link.notes && (
-                  <p className="text-xs text-gray-600 ml-6 mb-1">{link.notes}</p>
-                )}
+                {link.notes && <p className="text-xs text-gray-600 ml-6 mb-1">{link.notes}</p>}
                 <p className="text-xs text-gray-500 ml-6">
                   Linked by {link.linkedBy.firstName} {link.linkedBy.lastName} on{' '}
                   {formatDate(link.linkedAt)}
@@ -193,9 +192,7 @@ export function ResearchDocumentLinker({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Link Document to Task</DialogTitle>
-            <DialogDescription>
-              Select a document to link to this research task
-            </DialogDescription>
+            <DialogDescription>Select a document to link to this research task</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -205,7 +202,9 @@ export function ResearchDocumentLinker({
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   value={searchQuery}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSearchQuery(e.target.value)
+                  }
                   placeholder="Search by title or file type..."
                   className="pl-9"
                 />
@@ -223,7 +222,9 @@ export function ResearchDocumentLinker({
                 <SelectContent>
                   {availableUnlinkedDocuments.length === 0 ? (
                     <div className="p-2 text-sm text-gray-500 text-center">
-                      {searchQuery ? 'No matching documents found' : 'No documents available to link'}
+                      {searchQuery
+                        ? 'No matching documents found'
+                        : 'No documents available to link'}
                     </div>
                   ) : (
                     availableUnlinkedDocuments.map((doc) => (
@@ -290,11 +291,7 @@ export function ResearchDocumentLinker({
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsModalOpen(false)}
-              disabled={isLinking}
-            >
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} disabled={isLinking}>
               Cancel
             </Button>
             <Button onClick={handleLinkDocument} disabled={!selectedDocumentId || isLinking}>

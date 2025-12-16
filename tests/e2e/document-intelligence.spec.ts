@@ -241,7 +241,9 @@ test.describe('Document Intelligence Dashboard', () => {
 
     test('should display header with controls', async ({ page }) => {
       // Title
-      await expect(page.getByRole('heading', { name: /Document Intelligence Dashboard/i })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: /Document Intelligence Dashboard/i })
+      ).toBeVisible();
 
       // Date range picker
       await expect(page.getByRole('button', { name: /calendar/i })).toBeVisible();

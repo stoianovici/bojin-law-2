@@ -20,9 +20,11 @@
 ## FACTS
 
 ### Key Facts
+
 {{MATERIAL_FACTS}}
 
 ### Background
+
 {{CONTEXTUAL_FACTS}}
 
 ## ISSUES
@@ -48,14 +50,17 @@
 {{MAJORITY_REASONING}}
 
 **Key Points:**
+
 - {{REASONING_POINT_1}}
 - {{REASONING_POINT_2}}
 - {{REASONING_POINT_3}}
 
 ### Concurring Opinion (if applicable)
+
 {{CONCURRING_OPINION}}
 
 ### Dissenting Opinion (if applicable)
+
 {{DISSENTING_OPINION}}
 
 ## DISPOSITION
@@ -67,6 +72,7 @@
 **Precedential Value:** {{PRECEDENT_LEVEL}}
 
 **Key Takeaways:**
+
 1. {{TAKEAWAY_1}}
 2. {{TAKEAWAY_2}}
 3. {{TAKEAWAY_3}}

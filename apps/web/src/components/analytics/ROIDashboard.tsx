@@ -99,21 +99,16 @@ function BillableHoursCard({
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm opacity-80 mb-1">Ore facturabile recuperate</div>
-          <div className="text-4xl font-bold">
-            {formatHours(billableHours)}
-          </div>
+          <div className="text-4xl font-bold">{formatHours(billableHours)}</div>
           <div className="mt-2 text-sm opacity-70">
-            {formatHours(totalTimeSavedHours)} economisit × {(utilizationRate * 100).toFixed(0)}% utilizare
+            {formatHours(totalTimeSavedHours)} economisit × {(utilizationRate * 100).toFixed(0)}%
+            utilizare
           </div>
         </div>
         <div className="text-right">
           <div className="text-sm opacity-80 mb-1">Venit recuperat</div>
-          <div className="text-3xl font-bold">
-            {formatCurrency(recoveredRevenue)}
-          </div>
-          <div className="text-sm opacity-70 mt-1">
-            @ {formatCurrency(hourlyRate)}/oră
-          </div>
+          <div className="text-3xl font-bold">{formatCurrency(recoveredRevenue)}</div>
+          <div className="text-sm opacity-70 mt-1">@ {formatCurrency(hourlyRate)}/oră</div>
         </div>
       </div>
     </div>
@@ -131,7 +126,8 @@ function SubscriptionComparison({
   subscriptionCost,
   projectedAnnualSavings,
 }: SubscriptionComparisonProps) {
-  const monthlyROI = subscriptionCost > 0 ? ((monthlySavings - subscriptionCost) / subscriptionCost) * 100 : 0;
+  const monthlyROI =
+    subscriptionCost > 0 ? ((monthlySavings - subscriptionCost) / subscriptionCost) * 100 : 0;
   const annualSubscriptionCost = subscriptionCost * 12;
   const netAnnualBenefit = projectedAnnualSavings - annualSubscriptionCost;
   const isPositiveROI = monthlyROI > 0;
@@ -148,20 +144,21 @@ function SubscriptionComparison({
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="text-center p-3 bg-emerald-50 rounded-lg">
           <div className="text-xs text-gray-500 mb-1">Economii lunare</div>
-          <div className="text-xl font-bold text-emerald-600">
-            {formatCurrency(monthlySavings)}
-          </div>
+          <div className="text-xl font-bold text-emerald-600">{formatCurrency(monthlySavings)}</div>
         </div>
         <div className="text-center p-3 bg-red-50 rounded-lg">
           <div className="text-xs text-gray-500 mb-1">Cost abonament</div>
-          <div className="text-xl font-bold text-red-600">
-            {formatCurrency(subscriptionCost)}
-          </div>
+          <div className="text-xl font-bold text-red-600">{formatCurrency(subscriptionCost)}</div>
         </div>
-        <div className={`text-center p-3 rounded-lg ${isPositiveROI ? 'bg-blue-50' : 'bg-amber-50'}`}>
+        <div
+          className={`text-center p-3 rounded-lg ${isPositiveROI ? 'bg-blue-50' : 'bg-amber-50'}`}
+        >
           <div className="text-xs text-gray-500 mb-1">ROI lunar</div>
-          <div className={`text-xl font-bold ${isPositiveROI ? 'text-blue-600' : 'text-amber-600'}`}>
-            {monthlyROI > 0 ? '+' : ''}{monthlyROI.toFixed(0)}%
+          <div
+            className={`text-xl font-bold ${isPositiveROI ? 'text-blue-600' : 'text-amber-600'}`}
+          >
+            {monthlyROI > 0 ? '+' : ''}
+            {monthlyROI.toFixed(0)}%
           </div>
         </div>
       </div>
@@ -186,8 +183,11 @@ function SubscriptionComparison({
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">Beneficiu net anual estimat:</span>
-          <span className={`text-lg font-bold ${netAnnualBenefit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-            {netAnnualBenefit >= 0 ? '+' : ''}{formatCurrency(netAnnualBenefit)}
+          <span
+            className={`text-lg font-bold ${netAnnualBenefit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+          >
+            {netAnnualBenefit >= 0 ? '+' : ''}
+            {formatCurrency(netAnnualBenefit)}
           </span>
         </div>
       </div>
@@ -207,12 +207,25 @@ function YearlyProjectionChart({
   subscriptionCost,
 }: YearlyProjectionChartProps) {
   // Generate monthly projection data
-  const monthNames = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthNames = [
+    'Ian',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mai',
+    'Iun',
+    'Iul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   const currentMonth = new Date().getMonth();
 
   const projectionData = monthNames.map((month, index) => {
     const isPast = index <= currentMonth;
-    const monthlyGrowth = 1 + (index * 0.02); // 2% growth assumption per month
+    const monthlyGrowth = 1 + index * 0.02; // 2% growth assumption per month
     const projected = currentMonthSavings * monthlyGrowth;
     // Use deterministic variation based on month index for past months
     const variationFactor = 0.9 + (index % 3) * 0.1; // 0.9, 1.0, or 1.1
@@ -249,7 +262,9 @@ function YearlyProjectionChart({
                 name === 'savings' ? 'Economii' : 'Cost abonament',
               ]}
             />
-            <Legend formatter={(value) => (value === 'savings' ? 'Economii lunare' : 'Cost abonament')} />
+            <Legend
+              formatter={(value) => (value === 'savings' ? 'Economii lunare' : 'Cost abonament')}
+            />
             <Area
               type="monotone"
               dataKey="savings"
@@ -263,7 +278,12 @@ function YearlyProjectionChart({
                 y={subscriptionCost}
                 stroke="#EF4444"
                 strokeDasharray="5 5"
-                label={{ value: 'Cost abonament', position: 'right', fontSize: 11, fill: '#EF4444' }}
+                label={{
+                  value: 'Cost abonament',
+                  position: 'right',
+                  fontSize: 11,
+                  fill: '#EF4444',
+                }}
               />
             )}
           </AreaChart>
@@ -299,11 +319,7 @@ export function ROIDashboard({
   }
 
   if (!data) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        Nu există date ROI disponibile
-      </div>
-    );
+    return <div className="text-center py-8 text-gray-500">Nu există date ROI disponibile</div>;
   }
 
   const { currentPeriod } = data;
@@ -333,13 +349,16 @@ export function ROIDashboard({
       <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm opacity-80 mb-1">Valoare totală economisită în această perioadă</div>
+            <div className="text-sm opacity-80 mb-1">
+              Valoare totală economisită în această perioadă
+            </div>
             <div className="text-4xl font-bold">
               {formatCurrency(currentPeriod.totalValueSaved)}
             </div>
             <div className="mt-2 flex items-center gap-2">
               <span className={`text-sm ${growthIsPositive ? 'text-emerald-200' : 'text-red-200'}`}>
-                {growthIsPositive ? '↑' : '↓'} {Math.abs(currentPeriod.savingsGrowthPercent ?? 0).toFixed(1)}%
+                {growthIsPositive ? '↑' : '↓'}{' '}
+                {Math.abs(currentPeriod.savingsGrowthPercent ?? 0).toFixed(1)}%
               </span>
               <span className="text-sm opacity-70">vs. perioada anterioară</span>
             </div>
@@ -362,8 +381,18 @@ export function ROIDashboard({
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                className="w-4 h-4 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
             </div>
             <span className="text-sm text-gray-500">Șabloane</span>
@@ -386,35 +415,53 @@ export function ROIDashboard({
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
-              <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              <svg
+                className="w-4 h-4 text-violet-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
               </svg>
             </div>
             <span className="text-sm text-gray-500">Parsare NLP</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {currentPeriod.nlpTasksCreated}
-          </div>
+          <div className="text-2xl font-bold text-gray-900">{currentPeriod.nlpTasksCreated}</div>
           <div className="text-sm text-gray-500">
             {formatHours(currentPeriod.estimatedNLPTimeSavedHours)} economisit
           </div>
-          <div className="mt-2 text-xs text-violet-600">
-            Creare sarcini în limbaj natural
-          </div>
+          <div className="mt-2 text-xs text-violet-600">Creare sarcini în limbaj natural</div>
         </div>
 
         {/* Automation */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-              <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <svg
+                className="w-4 h-4 text-amber-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
               </svg>
             </div>
             <span className="text-sm text-gray-500">Automatizare</span>
           </div>
           <div className="text-2xl font-bold text-gray-900">
-            {currentPeriod.autoRemindersSet + currentPeriod.autoDependencyTriggers + currentPeriod.autoReassignments}
+            {currentPeriod.autoRemindersSet +
+              currentPeriod.autoDependencyTriggers +
+              currentPeriod.autoReassignments}
           </div>
           <div className="text-sm text-gray-500">
             {formatHours(currentPeriod.estimatedAutomationTimeSavedHours)} economisit
@@ -430,8 +477,18 @@ export function ROIDashboard({
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <svg
+                className="w-4 h-4 text-emerald-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
               </svg>
             </div>
             <span className="text-sm text-gray-500">Proiecție anuală</span>
@@ -440,9 +497,7 @@ export function ROIDashboard({
             {formatCurrency(data.projectedAnnualSavings)}
           </div>
           <div className="text-sm text-gray-500">economii estimate</div>
-          <div className="mt-2 text-xs text-gray-400">
-            Pe baza tendințelor curente
-          </div>
+          <div className="mt-2 text-xs text-gray-400">Pe baza tendințelor curente</div>
         </div>
       </div>
 
@@ -509,7 +564,9 @@ export function ROIDashboard({
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ name, payload }) => `${name}: ${(payload?.percentage ?? 0).toFixed(0)}%`}
+                  label={({ name, payload }) =>
+                    `${name}: ${(payload?.percentage ?? 0).toFixed(0)}%`
+                  }
                   labelLine={{ stroke: '#94A3B8' }}
                 >
                   {categoryData.map((entry, index) => (
@@ -569,7 +626,9 @@ export function ROIDashboard({
         <>
           {/* Billable Hours Recovered Card */}
           <BillableHoursCard
-            totalTimeSavedHours={platformROI?.billableHoursRecovered || currentPeriod.totalTimeSavedHours}
+            totalTimeSavedHours={
+              platformROI?.billableHoursRecovered || currentPeriod.totalTimeSavedHours
+            }
             utilizationRate={utilizationRate}
             hourlyRate={currentPeriod.avgHourlyRate}
           />
@@ -579,7 +638,9 @@ export function ROIDashboard({
             {/* Yearly Projection */}
             <YearlyProjectionChart
               currentMonthSavings={currentPeriod.totalValueSaved}
-              projectedAnnualSavings={platformROI?.projectedAnnualSavings || data.projectedAnnualSavings}
+              projectedAnnualSavings={
+                platformROI?.projectedAnnualSavings || data.projectedAnnualSavings
+              }
               subscriptionCost={subscriptionCost}
             />
 
@@ -588,7 +649,9 @@ export function ROIDashboard({
               <SubscriptionComparison
                 monthlySavings={currentPeriod.totalValueSaved}
                 subscriptionCost={subscriptionCost}
-                projectedAnnualSavings={platformROI?.projectedAnnualSavings || data.projectedAnnualSavings}
+                projectedAnnualSavings={
+                  platformROI?.projectedAnnualSavings || data.projectedAnnualSavings
+                }
               />
             )}
           </div>
@@ -608,7 +671,8 @@ export function ROIDashboard({
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium">{category.category}</span>
                         <span className="text-sm text-gray-500">
-                          {formatHours(category.hoursSaved)} • {formatCurrency(category.valueInCurrency)}
+                          {formatHours(category.hoursSaved)} •{' '}
+                          {formatCurrency(category.valueInCurrency)}
                         </span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">

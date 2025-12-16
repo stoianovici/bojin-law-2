@@ -56,9 +56,7 @@ describe('Database Client', () => {
 
   describe('Connection Pooling', () => {
     it('should handle concurrent connections within pool size', async () => {
-      const promises = Array.from({ length: 5 }, () =>
-        prisma.$queryRaw`SELECT 1 AS test`
-      );
+      const promises = Array.from({ length: 5 }, () => prisma.$queryRaw`SELECT 1 AS test`);
 
       const results = await Promise.all(promises);
 
@@ -95,9 +93,7 @@ describe('Database Client', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid queries gracefully', async () => {
-      await expect(
-        prisma.$queryRaw`SELECT * FROM nonexistent_table`
-      ).rejects.toThrow();
+      await expect(prisma.$queryRaw`SELECT * FROM nonexistent_table`).rejects.toThrow();
     });
 
     it('should return unhealthy status on connection failure', async () => {

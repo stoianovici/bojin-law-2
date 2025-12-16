@@ -32,6 +32,7 @@
 ## Stories Requiring Validation
 
 ### **Story 2.8: Case CRUD Operations UI**
+
 - **Location:** `docs/stories/2.8.story.md`
 - **Integration Test Files:**
   - `apps/web/src/app/cases/page.integration.test.tsx`
@@ -41,6 +42,7 @@
 - **Test Count:** ~13-15 tests
 
 ### **Story 2.8.3: Role-Based Financial Visibility**
+
 - **Location:** `docs/stories/2.8.3.story.md`
 - **Integration Test Files:**
   - `apps/web/src/app/cases/[caseId]/financial-visibility.integration.test.tsx`
@@ -53,11 +55,13 @@
 ### Phase 1: Run Integration Tests (30 min)
 
 1. **Navigate to web app:**
+
    ```bash
    cd apps/web
    ```
 
 2. **Run ALL integration tests:**
+
    ```bash
    pnpm test integration.test
    ```
@@ -69,6 +73,7 @@
    - Specific test names that failed (if any)
 
 4. **Run Story 2.8 tests specifically:**
+
    ```bash
    pnpm test page.integration.test
    pnpm test search-and-filters.integration.test
@@ -76,6 +81,7 @@
    ```
 
 5. **Run Story 2.8.3 tests:**
+
    ```bash
    pnpm test financial-visibility.integration.test
    ```
@@ -92,12 +98,14 @@
 **IMPORTANT:** Distinguish between two types of failures:
 
 #### Type A: Infrastructure Failures (CRITICAL - Reopen if found)
+
 - MSW not loading
 - Module import errors
 - "Cannot find module" errors
 - Test files not executing at all
 
 #### Type B: Test Implementation Failures (EXPECTED - Normal debugging)
+
 - Assertions failing (expected value vs actual)
 - Mock data mismatches
 - Timing issues (waitFor timeouts)
@@ -114,6 +122,7 @@ For **Story 2.8** (`docs/stories/2.8.story.md`):
 
 1. Find the QA Results or Testing section
 2. Add integration test validation results:
+
    ```markdown
    ### Integration Test Validation (2025-11-22)
 
@@ -122,15 +131,18 @@ For **Story 2.8** (`docs/stories/2.8.story.md`):
    **Pass Rate:** Z%
 
    **Passing Tests:**
+
    - ✅ Case creation flow
    - ✅ Case detail page operations
    - [list all passing]
 
    **Failing Tests (Test Implementation Issues):**
+
    - ❌ Test name - Reason: assertion mismatch
    - [list with brief reason]
 
    **Next Steps:**
+
    - Infrastructure debt cleared ✅
    - Test implementation fixes tracked in [ticket reference]
    ```
@@ -169,12 +181,14 @@ Add to the end of "Implementation Summary":
 ### Integration Test Execution Results
 
 **Story 2.8:**
+
 - Tests run: X
 - Tests passed: Y
 - Pass rate: Z%
 - Status: ✅ Technical debt cleared
 
 **Story 2.8.3:**
+
 - Tests run: X
 - Tests passed: Y
 - Pass rate: Z%
@@ -198,6 +212,7 @@ Add to the end of "Implementation Summary":
 **Only if there are Type B failures (test implementation issues):**
 
 Create tickets for fixing individual failing tests:
+
 - Title: "Fix integration test: [test name]"
 - Description: Test failure details
 - Priority: Low-Medium (not blocking)
@@ -208,6 +223,7 @@ Create tickets for fixing individual failing tests:
 ## Success Criteria
 
 ✅ **Must Have:**
+
 - [ ] All integration tests executed (no infrastructure errors)
 - [ ] Results documented in story files
 - [ ] QA gates updated
@@ -215,6 +231,7 @@ Create tickets for fixing individual failing tests:
 - [ ] Stories 2.8 and 2.8.3 unblocked
 
 ✅ **Nice to Have:**
+
 - [ ] 80%+ integration test pass rate
 - [ ] All Type B failures documented with tickets
 - [ ] Team notified of validation completion
@@ -224,16 +241,19 @@ Create tickets for fixing individual failing tests:
 ## Expected Outcomes
 
 **Likely Scenario (80% of cases):**
+
 - Infrastructure: ✅ Works perfectly
 - Pass rate: 60-80% (some test implementation issues)
 - Action: Document failures, create follow-up tickets, unblock stories
 
 **Best Case (20% chance):**
+
 - Infrastructure: ✅ Works perfectly
 - Pass rate: 95-100% (all tests pass)
 - Action: Mark stories "Done", celebrate! 🎉
 
 **Worst Case (<5% chance):**
+
 - Infrastructure: ❌ Still has issues
 - Pass rate: <20% (critical failures)
 - Action: Reopen INFRA-001, escalate to James

@@ -75,35 +75,54 @@ export function TaskPane() {
     return (
       <div className="taskpane">
         <div className="taskpane-header">
-          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
+          <svg
+            className="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
           </svg>
           <h1>Legal AI Assistant</h1>
         </div>
 
         <div className="empty-state">
-          <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 8v4"/>
-            <path d="M12 16h.01"/>
+          <svg
+            className="empty-state-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4" />
+            <path d="M12 16h.01" />
           </svg>
-          <p className="empty-state-text">Sign in to access AI-powered legal document assistance.</p>
+          <p className="empty-state-text">
+            Sign in to access AI-powered legal document assistance.
+          </p>
         </div>
 
         <button className="btn btn-primary" onClick={login} style={{ width: '100%' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
-            <polyline points="10 17 15 12 10 7"/>
-            <line x1="15" y1="12" x2="3" y2="12"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
           </svg>
           Sign in with Microsoft
         </button>
 
-        <div className="taskpane-footer">
-          Bojin Law Legal Platform
-        </div>
+        <div className="taskpane-footer">Bojin Law Legal Platform</div>
       </div>
     );
   }
@@ -112,9 +131,9 @@ export function TaskPane() {
     <div className="taskpane">
       <div className="taskpane-header">
         <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-          <path d="M2 17l10 5 10-5"/>
-          <path d="M2 12l10 5 10-5"/>
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          <path d="M2 17l10 5 10-5" />
+          <path d="M2 12l10 5 10-5" />
         </svg>
         <h1>Legal AI Assistant</h1>
       </div>
@@ -124,9 +143,7 @@ export function TaskPane() {
         <div className="selection-context">
           <div className="selection-label">Selected Text</div>
           <div className="selection-text">
-            {selectedText.length > 200
-              ? selectedText.substring(0, 200) + '...'
-              : selectedText}
+            {selectedText.length > 200 ? selectedText.substring(0, 200) + '...' : selectedText}
           </div>
         </div>
       )}
@@ -174,23 +191,11 @@ export function TaskPane() {
           onError={setError}
         />
       )}
-      {activeTab === 'explain' && (
-        <ExplainTab
-          selectedText={selectedText}
-          onError={setError}
-        />
-      )}
-      {activeTab === 'improve' && (
-        <ImproveTab
-          selectedText={selectedText}
-          onError={setError}
-        />
-      )}
+      {activeTab === 'explain' && <ExplainTab selectedText={selectedText} onError={setError} />}
+      {activeTab === 'improve' && <ImproveTab selectedText={selectedText} onError={setError} />}
 
       {/* Footer */}
-      <div className="taskpane-footer">
-        Signed in as {user?.email || 'User'} · Bojin Law
-      </div>
+      <div className="taskpane-footer">Signed in as {user?.email || 'User'} · Bojin Law</div>
     </div>
   );
 }

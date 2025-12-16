@@ -55,13 +55,13 @@ jest.mock('ioredis', () => {
       }),
 
       del: jest.fn(async (...keys: string[]) => {
-        keys.forEach(key => data.delete(key));
+        keys.forEach((key) => data.delete(key));
         return keys.length;
       }),
 
       exists: jest.fn(async (key: string) => {
         const entry = data.get(key);
-        return (entry && (!entry.expiry || Date.now() <= entry.expiry)) ? 1 : 0;
+        return entry && (!entry.expiry || Date.now() <= entry.expiry) ? 1 : 0;
       }),
 
       keys: jest.fn(async (pattern: string) => {
@@ -542,11 +542,16 @@ describe('SkillCache', () => {
       const skillIds = ['contract-analysis'];
 
       // Pre-cache one entry
-      await cache.set(request, skillIds, { analysis: 'Existing' }, {
-        model: 'claude-3-5-haiku-20241022',
-        tokensEstimate: 1000,
-        cost: 0.01,
-      });
+      await cache.set(
+        request,
+        skillIds,
+        { analysis: 'Existing' },
+        {
+          model: 'claude-3-5-haiku-20241022',
+          tokensEstimate: 1000,
+          cost: 0.01,
+        }
+      );
 
       const commonRequests = [
         { request, skillIds },

@@ -24,15 +24,11 @@ jest.mock('./tabs/TasksTab', () => ({
 }));
 
 jest.mock('./tabs/CommunicationsTab', () => ({
-  CommunicationsTab: () => (
-    <div data-testid="communications-tab">Communications Content</div>
-  ),
+  CommunicationsTab: () => <div data-testid="communications-tab">Communications Content</div>,
 }));
 
 jest.mock('./tabs/TimeEntriesTab', () => ({
-  TimeEntriesTab: () => (
-    <div data-testid="time-entries-tab">Time Entries Content</div>
-  ),
+  TimeEntriesTab: () => <div data-testid="time-entries-tab">Time Entries Content</div>,
 }));
 
 jest.mock('./tabs/NotesTab', () => ({
@@ -119,14 +115,7 @@ describe('Case Workspace Integration', () => {
       ];
       const tabValues: Array<
         'overview' | 'documents' | 'tasks' | 'communications' | 'time-entries' | 'notes'
-      > = [
-        'overview',
-        'documents',
-        'tasks',
-        'communications',
-        'time-entries',
-        'notes',
-      ];
+      > = ['overview', 'documents', 'tasks', 'communications', 'time-entries', 'notes'];
 
       for (let index = 0; index < tabNames.length; index++) {
         const tab = screen.getByRole('tab', { name: tabNames[index] });

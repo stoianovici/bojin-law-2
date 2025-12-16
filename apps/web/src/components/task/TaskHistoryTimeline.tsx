@@ -64,11 +64,7 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
   }
 
   if (error) {
-    return (
-      <div className="text-red-600 text-sm">
-        Eroare la încărcarea istoricului
-      </div>
-    );
+    return <div className="text-red-600 text-sm">Eroare la încărcarea istoricului</div>;
   }
 
   return (
@@ -89,9 +85,7 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
       </div>
 
       {history.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center py-4">
-          Niciun istoric de afișat
-        </p>
+        <p className="text-gray-500 text-sm text-center py-4">Niciun istoric de afișat</p>
       ) : (
         <div className="relative">
           {/* Timeline line */}
@@ -106,10 +100,7 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
           {/* Load more button */}
           {history.length >= limit && (
             <div className="mt-4 text-center">
-              <button
-                onClick={loadMore}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
+              <button onClick={loadMore} className="text-sm text-blue-600 hover:text-blue-800">
                 Încarcă mai multe
               </button>
             </div>
@@ -162,9 +153,7 @@ function HistoryEntryItem({ entry }: HistoryEntryItemProps) {
 
         {/* Metadata */}
         {entry.metadata && Object.keys(entry.metadata).length > 0 && (
-          <div className="mt-1 text-xs text-gray-400">
-            {JSON.stringify(entry.metadata)}
-          </div>
+          <div className="mt-1 text-xs text-gray-400">{JSON.stringify(entry.metadata)}</div>
         )}
 
         {/* Timestamp */}

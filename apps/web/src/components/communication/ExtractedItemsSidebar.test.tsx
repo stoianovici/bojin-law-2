@@ -105,7 +105,9 @@ describe('ExtractedItemsSidebar', () => {
       mockGetSelectedThread.mockReturnValue(null);
       render(<ExtractedItemsSidebar />);
 
-      expect(screen.getByText(/Selectați o conversație pentru a vedea elementele extrase/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Selectați o conversație pentru a vedea elementele extrase/i)
+      ).toBeInTheDocument();
     });
 
     it('should render all three sections with correct labels', () => {

@@ -52,11 +52,7 @@ export const performanceMetricsResolvers = {
     /**
      * Get real-time performance snapshot
      */
-    performanceSnapshot: async (
-      _parent: unknown,
-      args: { firmId?: string },
-      context: Context
-    ) => {
+    performanceSnapshot: async (_parent: unknown, args: { firmId?: string }, context: Context) => {
       requirePartnerOrAdmin(context);
       const service = getService(context);
 

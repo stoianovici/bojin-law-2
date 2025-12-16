@@ -99,8 +99,7 @@ describe('Word Integration - Integration Tests', () => {
         userId: 'other-user',
       } as any);
 
-      await expect(simulateLockAcquisition(testDocument.id, testUser.id))
-        .rejects.toThrow('locked');
+      await expect(simulateLockAcquisition(testDocument.id, testUser.id)).rejects.toThrow('locked');
     });
 
     it('should release a lock correctly', async () => {

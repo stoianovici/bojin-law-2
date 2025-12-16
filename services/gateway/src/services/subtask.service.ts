@@ -123,12 +123,7 @@ export class SubtaskService {
     );
 
     // Also record creation in subtask's own history
-    await taskHistoryService.recordTaskCreated(
-      subtask.id,
-      userId,
-      subtask.title,
-      subtask.type
-    );
+    await taskHistoryService.recordTaskCreated(subtask.id, userId, subtask.title, subtask.type);
 
     // Post to case activity feed
     await caseActivityService.recordTaskCreated(
@@ -220,11 +215,7 @@ export class SubtaskService {
    * @param userId - ID of the user completing
    * @param firmId - Firm ID for access control
    */
-  async completeSubtask(
-    subtaskId: string,
-    userId: string,
-    firmId: string
-  ): Promise<Task> {
+  async completeSubtask(subtaskId: string, userId: string, firmId: string): Promise<Task> {
     // Get subtask with parent
     const subtask = await prisma.task.findFirst({
       where: {
@@ -264,12 +255,7 @@ export class SubtaskService {
     });
 
     // Record in subtask history
-    await taskHistoryService.recordStatusChange(
-      subtaskId,
-      userId,
-      subtask.status,
-      'Completed'
-    );
+    await taskHistoryService.recordStatusChange(subtaskId, userId, subtask.status, 'Completed');
 
     // Record in parent task history
     await taskHistoryService.recordSubtaskCompleted(
@@ -280,12 +266,7 @@ export class SubtaskService {
     );
 
     // Post to case activity feed
-    await caseActivityService.recordTaskCompleted(
-      subtask.caseId,
-      userId,
-      subtaskId,
-      subtask.title
-    );
+    await caseActivityService.recordTaskCompleted(subtask.caseId, userId, subtaskId, subtask.title);
 
     return this.mapToTask(updatedSubtask);
   }

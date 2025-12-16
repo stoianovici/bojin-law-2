@@ -66,10 +66,12 @@ export class ContextAggregatorService {
         client: this.mapClientContext(caseData.client),
         teamMembers,
         relatedDocuments,
-        firmContext: caseData.firm ? {
-          id: caseData.firm.id,
-          name: caseData.firm.name,
-        } : undefined,
+        firmContext: caseData.firm
+          ? {
+              id: caseData.firm.id,
+              name: caseData.firm.name,
+            }
+          : undefined,
       };
 
       // Cache the result
@@ -199,7 +201,7 @@ export class ContextAggregatorService {
       openedDate: caseData.openedDate,
       closedDate: caseData.closedDate || undefined,
       value: caseData.value ? Number(caseData.value) : undefined,
-      metadata: caseData.metadata as Record<string, unknown> || undefined,
+      metadata: (caseData.metadata as Record<string, unknown>) || undefined,
     };
   }
 
@@ -215,7 +217,7 @@ export class ContextAggregatorService {
     return {
       id: client.id,
       name: client.name,
-      contactInfo: client.contactInfo as Record<string, unknown> || {},
+      contactInfo: (client.contactInfo as Record<string, unknown>) || {},
       address: client.address || undefined,
     };
   }
@@ -305,7 +307,7 @@ export class ContextAggregatorService {
 
     // Team
     if (context.teamMembers.length > 0) {
-      const teamList = context.teamMembers.map(m => `${m.name} (${m.role})`).join(', ');
+      const teamList = context.teamMembers.map((m) => `${m.name} (${m.role})`).join(', ');
       parts.push(`Team: ${teamList}`);
     }
 

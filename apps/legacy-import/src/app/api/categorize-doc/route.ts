@@ -18,10 +18,7 @@ export async function POST(request: NextRequest) {
     const { documentId, categoryId, skip } = body;
 
     if (!documentId) {
-      return NextResponse.json(
-        { error: 'Missing documentId' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing documentId' }, { status: 400 });
     }
 
     if (!categoryId && !skip) {
@@ -47,10 +44,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: 'Document not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
     const previousCategoryId = document.categoryId;
@@ -102,7 +96,10 @@ export async function POST(request: NextRequest) {
 
       // Update batch counts
       if (document.batchId) {
-        const batchUpdate: { categorizedCount?: { increment?: number; decrement?: number }; skippedCount?: { increment?: number; decrement?: number } } = {};
+        const batchUpdate: {
+          categorizedCount?: { increment?: number; decrement?: number };
+          skippedCount?: { increment?: number; decrement?: number };
+        } = {};
 
         if (skip) {
           if (!wasSkipped) {
@@ -129,7 +126,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Update session counts
-      const sessionUpdate: { categorizedCount?: { increment?: number; decrement?: number }; skippedCount?: { increment?: number; decrement?: number } } = {};
+      const sessionUpdate: {
+        categorizedCount?: { increment?: number; decrement?: number };
+        skippedCount?: { increment?: number; decrement?: number };
+      } = {};
 
       if (skip) {
         if (!wasSkipped) {
@@ -168,15 +168,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof AuthError) {
       const { message, statusCode } = error;
-      return NextResponse.json(
-        { error: message },
-        { status: statusCode }
-      );
+      return NextResponse.json({ error: message }, { status: statusCode });
     }
     console.error('Failed to categorize document:', error);
-    return NextResponse.json(
-      { error: 'Failed to categorize document' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to categorize document' }, { status: 500 });
   }
 }

@@ -457,11 +457,7 @@ describe('Task Collaboration Integration Tests', () => {
       mockPrisma.taskHistory.create.mockResolvedValue({} as any);
       mockPrisma.caseActivityEntry.create.mockResolvedValue({} as any);
 
-      const result = await subtaskService.completeSubtask(
-        'subtask-123',
-        testUser.id,
-        testFirm.id
-      );
+      const result = await subtaskService.completeSubtask('subtask-123', testUser.id, testFirm.id);
 
       expect(result.status).toBe('Completed');
     });
@@ -524,11 +520,10 @@ describe('Task Collaboration Integration Tests', () => {
 
       mockPrisma.caseSubscription.update.mockResolvedValue(updatedSubscription as any);
 
-      const result = await caseSubscriptionService.updateSubscription(
-        testCase.id,
-        testUser.id,
-        { digestEnabled: false, notifyOnDocument: false }
-      );
+      const result = await caseSubscriptionService.updateSubscription(testCase.id, testUser.id, {
+        digestEnabled: false,
+        notifyOnDocument: false,
+      });
 
       expect(result.digestEnabled).toBe(false);
       expect(result.notifyOnDocument).toBe(false);

@@ -127,7 +127,8 @@ export const RomanianDiacritics: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Verify Romanian diacritics render correctly: Aldină, Cursiv, Subliniat, Tăiat, Aliniere stânga/dreapta, Inserează, Titlu, Bloc semnătură',
+        story:
+          'Verify Romanian diacritics render correctly: Aldină, Cursiv, Subliniat, Tăiat, Aliniere stânga/dreapta, Inserează, Titlu, Bloc semnătură',
       },
     },
   },

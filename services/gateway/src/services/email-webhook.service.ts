@@ -102,17 +102,12 @@ export class EmailWebhookService {
    * @param accessToken - User's OAuth access token
    * @returns Subscription result with ID and expiry
    */
-  async createSubscription(
-    userId: string,
-    accessToken: string
-  ): Promise<SubscriptionResult> {
+  async createSubscription(userId: string, accessToken: string): Promise<SubscriptionResult> {
     try {
       const client = this.graphService.getAuthenticatedClient(accessToken);
 
       // Calculate expiration (max 4230 minutes for mail)
-      const expirationDateTime = new Date(
-        Date.now() + SUBSCRIPTION_LIFETIME_MINUTES * 60 * 1000
-      );
+      const expirationDateTime = new Date(Date.now() + SUBSCRIPTION_LIFETIME_MINUTES * 60 * 1000);
 
       const subscription: Partial<Subscription> = {
         changeType: 'created,updated,deleted',
@@ -165,10 +160,7 @@ export class EmailWebhookService {
    * @param accessToken - User's OAuth access token
    * @returns Subscription result with new expiry
    */
-  async renewSubscription(
-    userId: string,
-    accessToken: string
-  ): Promise<SubscriptionResult> {
+  async renewSubscription(userId: string, accessToken: string): Promise<SubscriptionResult> {
     try {
       const syncState = await this.prisma.emailSyncState.findUnique({
         where: { userId },
@@ -182,9 +174,7 @@ export class EmailWebhookService {
       const client = this.graphService.getAuthenticatedClient(accessToken);
 
       // Calculate new expiration
-      const expirationDateTime = new Date(
-        Date.now() + SUBSCRIPTION_LIFETIME_MINUTES * 60 * 1000
-      );
+      const expirationDateTime = new Date(Date.now() + SUBSCRIPTION_LIFETIME_MINUTES * 60 * 1000);
 
       const result = await retryWithBackoff(
         async () => {
@@ -252,10 +242,7 @@ export class EmailWebhookService {
    * @param userId - Internal user ID
    * @param accessToken - User's OAuth access token
    */
-  async deleteSubscription(
-    userId: string,
-    accessToken: string
-  ): Promise<boolean> {
+  async deleteSubscription(userId: string, accessToken: string): Promise<boolean> {
     try {
       const syncState = await this.prisma.emailSyncState.findUnique({
         where: { userId },
@@ -267,9 +254,7 @@ export class EmailWebhookService {
 
       const client = this.graphService.getAuthenticatedClient(accessToken);
 
-      await client
-        .api(graphEndpoints.subscriptionById(syncState.subscriptionId))
-        .delete();
+      await client.api(graphEndpoints.subscriptionById(syncState.subscriptionId)).delete();
 
       // Clear subscription state
       await this.updateSubscriptionState(userId, {
@@ -317,10 +302,7 @@ export class EmailWebhookService {
    * @param clientStateHeader - Client state for validation
    * @returns Processing success
    */
-  async processNotification(
-    payload: WebhookPayload,
-    clientStateHeader: string
-  ): Promise<boolean> {
+  async processNotification(payload: WebhookPayload, clientStateHeader: string): Promise<boolean> {
     // Validate client state
     if (clientStateHeader !== this.clientState) {
       console.warn('Invalid client state in webhook notification');
@@ -419,9 +401,7 @@ export class EmailWebhookService {
   /**
    * Handle a single webhook notification
    */
-  private async handleSingleNotification(
-    notification: WebhookNotification
-  ): Promise<void> {
+  private async handleSingleNotification(notification: WebhookNotification): Promise<void> {
     // Find user by subscription ID
     const syncState = await this.prisma.emailSyncState.findFirst({
       where: { subscriptionId: notification.subscriptionId },
@@ -474,10 +454,13 @@ export class EmailWebhookService {
    */
   private async queueIncrementalSync(userId: string): Promise<void> {
     // Add to sync queue in Redis
-    await this.redis.rpush('email:sync:pending', JSON.stringify({
-      userId,
-      timestamp: Date.now(),
-    }));
+    await this.redis.rpush(
+      'email:sync:pending',
+      JSON.stringify({
+        userId,
+        timestamp: Date.now(),
+      })
+    );
   }
 
   /**
@@ -523,15 +506,8 @@ export class EmailWebhookService {
   /**
    * Schedule a renewal retry after rate limit
    */
-  private async scheduleRenewalRetry(
-    userId: string,
-    delayMs: number
-  ): Promise<void> {
-    await this.redis.zadd(
-      'email:subscription:renewal:scheduled',
-      Date.now() + delayMs,
-      userId
-    );
+  private async scheduleRenewalRetry(userId: string, delayMs: number): Promise<void> {
+    await this.redis.zadd('email:subscription:renewal:scheduled', Date.now() + delayMs, userId);
   }
 
   /**
@@ -562,10 +538,7 @@ export class EmailWebhookService {
 
 let emailWebhookServiceInstance: EmailWebhookService | null = null;
 
-export function getEmailWebhookService(
-  prisma: PrismaClient,
-  redis: Redis
-): EmailWebhookService {
+export function getEmailWebhookService(prisma: PrismaClient, redis: Redis): EmailWebhookService {
   if (!emailWebhookServiceInstance) {
     emailWebhookServiceInstance = new EmailWebhookService(prisma, redis);
   }

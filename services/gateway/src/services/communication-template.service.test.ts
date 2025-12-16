@@ -77,13 +77,15 @@ describe('CommunicationTemplateService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     templateParser.extractVariables.mockReturnValue(['clientName', 'caseNumber']);
-    templateParser.replaceVariables.mockImplementation((template: string, values: Record<string, string>) => {
-      let result = template;
-      for (const [key, value] of Object.entries(values)) {
-        result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+    templateParser.replaceVariables.mockImplementation(
+      (template: string, values: Record<string, string>) => {
+        let result = template;
+        for (const [key, value] of Object.entries(values)) {
+          result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+        }
+        return result;
       }
-      return result;
-    });
+    );
     service = new CommunicationTemplateService();
   });
 
@@ -233,9 +235,9 @@ describe('CommunicationTemplateService', () => {
     it('should throw error when template not found', async () => {
       prisma.communicationTemplate.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.deleteTemplate('nonexistent', mockUserContext)
-      ).rejects.toThrow('Template not found');
+      await expect(service.deleteTemplate('nonexistent', mockUserContext)).rejects.toThrow(
+        'Template not found'
+      );
     });
   });
 
@@ -267,10 +269,7 @@ describe('CommunicationTemplateService', () => {
       await service.getTemplate('template-1', mockUserContext);
 
       const findFirstCall = prisma.communicationTemplate.findFirst.mock.calls[0][0];
-      expect(findFirstCall.where.OR).toEqual([
-        { firmId: mockFirmId },
-        { isGlobal: true },
-      ]);
+      expect(findFirstCall.where.OR).toEqual([{ firmId: mockFirmId }, { isGlobal: true }]);
     });
   });
 
@@ -353,11 +352,7 @@ describe('CommunicationTemplateService', () => {
       prisma.communicationTemplate.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.renderTemplate(
-          'nonexistent',
-          { clientName: 'John' },
-          mockUserContext
-        )
+        service.renderTemplate('nonexistent', { clientName: 'John' }, mockUserContext)
       ).rejects.toThrow('Template not found');
     });
 

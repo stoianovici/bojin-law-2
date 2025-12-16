@@ -134,7 +134,9 @@ test.describe('Task Management (Story 1.7)', () => {
     });
 
     test('opens task detail modal on task click', async ({ page }) => {
-      const taskCard = page.locator('[class*="bg-white"][class*="border"][class*="cursor-pointer"]').first();
+      const taskCard = page
+        .locator('[class*="bg-white"][class*="border"][class*="cursor-pointer"]')
+        .first();
 
       if (await taskCard.isVisible({ timeout: 5000 }).catch(() => false)) {
         await taskCard.click();
@@ -354,7 +356,9 @@ test.describe('Task Management (Story 1.7)', () => {
       await page.setViewportSize({ width: 1920, height: 1080 });
 
       // Verify layout
-      await expect(page.locator('.calendar-view-container, .kanban-board-container, .list-view-container')).toBeVisible();
+      await expect(
+        page.locator('.calendar-view-container, .kanban-board-container, .list-view-container')
+      ).toBeVisible();
     });
 
     test('displays properly on tablet viewport', async ({ page }) => {

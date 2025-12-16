@@ -52,7 +52,7 @@ module.exports = {
         'cumulative-layout-shift': ['error', { maxNumericValue: 0.1 }], // < 0.1
         'total-blocking-time': ['error', { maxNumericValue: 200 }], // < 200ms
         'speed-index': ['error', { maxNumericValue: 3500 }], // < 3.5s
-        'interactive': ['error', { maxNumericValue: 3500 }], // < 3.5s (TTI)
+        interactive: ['error', { maxNumericValue: 3500 }], // < 3.5s (TTI)
 
         // Resource budgets
         'resource-summary:document:size': ['warn', { maxNumericValue: 50000 }], // 50KB

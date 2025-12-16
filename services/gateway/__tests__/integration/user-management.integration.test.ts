@@ -7,7 +7,8 @@
  */
 
 // Set environment variables before imports
-process.env.SESSION_SECRET = 'test-session-secret-at-least-32-characters-long-for-integration-tests';
+process.env.SESSION_SECRET =
+  'test-session-secret-at-least-32-characters-long-for-integration-tests';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long';
 process.env.AZURE_AD_CLIENT_ID = 'test-client-id';
@@ -345,10 +346,7 @@ describe('User Management Integration Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.user.status).toBe(UserStatus.Inactive);
-      expect(mockUserManagementService.deactivateUser).toHaveBeenCalledWith(
-        userId,
-        'partner-123'
-      );
+      expect(mockUserManagementService.deactivateUser).toHaveBeenCalledWith(userId, 'partner-123');
     });
 
     it('should return 400 for invalid user ID format', async () => {

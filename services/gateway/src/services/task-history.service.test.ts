@@ -60,11 +60,7 @@ describe('TaskHistoryService', () => {
     it('should create a history entry successfully', async () => {
       prisma.taskHistory.create.mockResolvedValue(mockHistoryEntry);
 
-      const result = await taskHistoryService.recordHistory(
-        'task-123',
-        'user-123',
-        'Created'
-      );
+      const result = await taskHistoryService.recordHistory('task-123', 'user-123', 'Created');
 
       expect(result.id).toBe('history-123');
       expect(result.taskId).toBe('task-123');
@@ -116,12 +112,9 @@ describe('TaskHistoryService', () => {
       };
       prisma.taskHistory.create.mockResolvedValue(historyWithMetadata);
 
-      const result = await taskHistoryService.recordHistory(
-        'task-123',
-        'user-123',
-        'Created',
-        { metadata: { key: 'value' } }
-      );
+      const result = await taskHistoryService.recordHistory('task-123', 'user-123', 'Created', {
+        metadata: { key: 'value' },
+      });
 
       expect(result.metadata).toEqual({ key: 'value' });
     });
@@ -233,12 +226,7 @@ describe('TaskHistoryService', () => {
           metadata: { title: 'Test Task', type: 'General' },
         });
 
-        await taskHistoryService.recordTaskCreated(
-          'task-123',
-          'user-123',
-          'Test Task',
-          'General'
-        );
+        await taskHistoryService.recordTaskCreated('task-123', 'user-123', 'Test Task', 'General');
 
         expect(prisma.taskHistory.create).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -316,12 +304,7 @@ describe('TaskHistoryService', () => {
           action: TaskHistoryAction.AssigneeChanged,
         });
 
-        await taskHistoryService.recordAssigneeChange(
-          'task-123',
-          'user-123',
-          null,
-          'new-user'
-        );
+        await taskHistoryService.recordAssigneeChange('task-123', 'user-123', null, 'new-user');
 
         expect(prisma.taskHistory.create).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -340,12 +323,7 @@ describe('TaskHistoryService', () => {
           action: TaskHistoryAction.PriorityChanged,
         });
 
-        await taskHistoryService.recordPriorityChange(
-          'task-123',
-          'user-123',
-          'Low',
-          'High'
-        );
+        await taskHistoryService.recordPriorityChange('task-123', 'user-123', 'Low', 'High');
 
         expect(prisma.taskHistory.create).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -472,7 +450,10 @@ describe('TaskHistoryService', () => {
           expect.objectContaining({
             data: expect.objectContaining({
               action: TaskHistoryAction.DependencyAdded,
-              metadata: { predecessorTaskId: 'predecessor-123', predecessorTitle: 'Predecessor Task' },
+              metadata: {
+                predecessorTaskId: 'predecessor-123',
+                predecessorTitle: 'Predecessor Task',
+              },
             }),
           })
         );
@@ -497,7 +478,10 @@ describe('TaskHistoryService', () => {
           expect.objectContaining({
             data: expect.objectContaining({
               action: TaskHistoryAction.DependencyRemoved,
-              metadata: { predecessorTaskId: 'predecessor-123', predecessorTitle: 'Predecessor Task' },
+              metadata: {
+                predecessorTaskId: 'predecessor-123',
+                predecessorTitle: 'Predecessor Task',
+              },
             }),
           })
         );

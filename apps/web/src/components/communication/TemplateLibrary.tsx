@@ -91,9 +91,7 @@ export function TemplateLibrary({
   if (error) {
     return (
       <div className={`rounded-lg border border-red-200 bg-red-50 p-4 ${className}`}>
-        <p className="text-sm text-red-600">
-          Failed to load templates: {error.message}
-        </p>
+        <p className="text-sm text-red-600">Failed to load templates: {error.message}</p>
         <button
           onClick={() => refetch()}
           className="mt-2 text-sm text-red-700 underline hover:no-underline"
@@ -161,10 +159,7 @@ export function TemplateLibrary({
         {loading && templates.length === 0 ? (
           // Loading skeleton
           Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="animate-pulse rounded-lg border border-gray-200 p-4"
-            >
+            <div key={i} className="animate-pulse rounded-lg border border-gray-200 p-4">
               <div className="h-5 w-2/3 rounded bg-gray-200" />
               <div className="mt-2 h-4 w-full rounded bg-gray-200" />
               <div className="mt-4 h-16 w-full rounded bg-gray-200" />
@@ -198,9 +193,7 @@ export function TemplateLibrary({
               onMouseEnter={() => setHoveredTemplateId(template.id)}
               onMouseLeave={() => setHoveredTemplateId(null)}
               onClick={() => handleTemplateClick(template)}
-              onMenuToggle={() =>
-                setMenuOpenId(menuOpenId === template.id ? null : template.id)
-              }
+              onMenuToggle={() => setMenuOpenId(menuOpenId === template.id ? null : template.id)}
               onMenuAction={(action) => handleMenuAction(action, template)}
               getCategoryLabel={getCategoryLabel}
               getCategoryColor={getCategoryColor}
@@ -334,9 +327,7 @@ function TemplateCard({
       {/* Preview */}
       <div className="mt-3 rounded border border-gray-100 bg-gray-50 p-2">
         <p className="line-clamp-3 text-xs text-gray-600">
-          {template.subject && (
-            <span className="font-medium">Subject: {template.subject}</span>
-          )}
+          {template.subject && <span className="font-medium">Subject: {template.subject}</span>}
           {template.subject && <br />}
           {template.body.substring(0, 100)}...
         </p>

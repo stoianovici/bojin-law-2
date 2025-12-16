@@ -20,14 +20,15 @@ function createMockContext(
   firmId: string = 'firm-456'
 ): Context {
   return {
-    user: authenticated && role
-      ? {
-          id: userId,
-          firmId,
-          role,
-          email: 'test@example.com',
-        }
-      : undefined,
+    user:
+      authenticated && role
+        ? {
+            id: userId,
+            firmId,
+            role,
+            email: 'test@example.com',
+          }
+        : undefined,
   } as Context;
 }
 

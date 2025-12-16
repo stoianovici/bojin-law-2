@@ -183,9 +183,10 @@ const setupFinancialKPIsHandler = (scope: 'own' | 'firm' = 'own') => {
   server.use(
     graphql.query('GetFinancialKPIs', ({ variables }) => {
       // Adjust data based on scope
-      const data = scope === 'firm'
-        ? { ...mockFinancialKPIs, caseCount: 25, totalRevenue: 450000 }
-        : mockFinancialKPIs;
+      const data =
+        scope === 'firm'
+          ? { ...mockFinancialKPIs, caseCount: 25, totalRevenue: 450000 }
+          : mockFinancialKPIs;
 
       return HttpResponse.json({
         data: {

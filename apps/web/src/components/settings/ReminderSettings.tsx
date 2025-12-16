@@ -33,11 +33,7 @@ const OVERDUE_INTERVALS = [
   { value: 24, label: 'Daily' },
 ];
 
-export function ReminderSettings({
-  config,
-  onSave,
-  onTestReminder,
-}: ReminderSettingsProps) {
+export function ReminderSettings({ config, onSave, onTestReminder }: ReminderSettingsProps) {
   const [localConfig, setLocalConfig] = React.useState<ReminderConfig>(config);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isTesting, setIsTesting] = React.useState(false);
@@ -173,12 +169,7 @@ export function ReminderSettings({
               Reminder emails will be sent to your registered email address.
             </p>
             {onTestReminder && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTestReminder}
-                disabled={isTesting}
-              >
+              <Button variant="outline" size="sm" onClick={handleTestReminder} disabled={isTesting}>
                 {isTesting ? 'Sending...' : 'Send Test Email'}
               </Button>
             )}
@@ -193,9 +184,7 @@ export function ReminderSettings({
             <Calendar className="h-5 w-5" />
             Reminder Schedule
           </CardTitle>
-          <CardDescription>
-            Choose when to receive reminders before task due dates
-          </CardDescription>
+          <CardDescription>Choose when to receive reminders before task due dates</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -224,9 +213,7 @@ export function ReminderSettings({
               })}
             </div>
             {localConfig.reminderIntervals.length === 0 && (
-              <p className="text-xs text-orange-600 mt-2">
-                Select at least one reminder interval
-              </p>
+              <p className="text-xs text-orange-600 mt-2">Select at least one reminder interval</p>
             )}
           </div>
 
@@ -237,8 +224,7 @@ export function ReminderSettings({
             </label>
             <div className="grid grid-cols-2 gap-2">
               {OVERDUE_INTERVALS.map((interval) => {
-                const isSelected =
-                  localConfig.overdueReminderIntervalHours === interval.value;
+                const isSelected = localConfig.overdueReminderIntervalHours === interval.value;
                 return (
                   <button
                     key={interval.value}
@@ -304,8 +290,9 @@ export function ReminderSettings({
                 <div className="ml-6">
                   Reminders will be sent:{' '}
                   {localConfig.reminderIntervals.length > 0
-                    ? localConfig.reminderIntervals.map((d) => `${d} day${d !== 1 ? 's' : ''}`).join(', ') +
-                      ' before due date'
+                    ? localConfig.reminderIntervals
+                        .map((d) => `${d} day${d !== 1 ? 's' : ''}`)
+                        .join(', ') + ' before due date'
                     : 'Never (no intervals selected)'}
                 </div>
                 <div className="ml-6">

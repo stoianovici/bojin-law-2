@@ -370,7 +370,8 @@ describe('Communication Intelligence Integration', () => {
           conversationId: 'conv-question-1',
           subject: 'Clarification Needed',
           bodyPreview: 'Can you confirm the terms?',
-          bodyContent: 'Can you confirm the terms of the agreement? Also, when is the next meeting scheduled?',
+          bodyContent:
+            'Can you confirm the terms of the agreement? Also, when is the next meeting scheduled?',
           bodyContentType: 'text',
           from: { name: 'Client', address: 'client@company.com' },
           toRecipients: [{ address: 'user@lawfirm.com' }],

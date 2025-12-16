@@ -248,9 +248,7 @@ describe('Task Analytics GraphQL API Integration Tests', () => {
       expect(result.criticalTasks).toBeDefined();
 
       // Check critical task is identified
-      const criticalTask = result.criticalTasks.find(
-        (t: any) => t.taskId === 'task-overdue-1'
-      );
+      const criticalTask = result.criticalTasks.find((t: any) => t.taskId === 'task-overdue-1');
       expect(criticalTask?.estimatedImpact).toBe('critical');
     });
 
@@ -417,11 +415,7 @@ describe('Task Analytics GraphQL API Integration Tests', () => {
       ]);
       mockPrisma.case.findMany.mockResolvedValueOnce([]);
 
-      const result = await taskAnalyticsResolvers.Query.taskPatterns(
-        null,
-        {},
-        mockContext
-      );
+      const result = await taskAnalyticsResolvers.Query.taskPatterns(null, {}, mockContext);
 
       expect(result.patterns).toHaveLength(1);
       expect(result.patterns[0].confidence).toBe(0.85);
@@ -445,7 +439,12 @@ describe('Task Analytics GraphQL API Integration Tests', () => {
             dueDate: new Date('2025-11-10'),
             completedAt: new Date('2025-11-09'), // On time
           },
-          delegate: { id: 'user-associate', firstName: 'Jane', lastName: 'Associate', role: 'Associate' },
+          delegate: {
+            id: 'user-associate',
+            firstName: 'Jane',
+            lastName: 'Associate',
+            role: 'Associate',
+          },
           delegator: { id: 'user-partner', firstName: 'John', lastName: 'Partner' },
         },
         // Failed delegation (late)
@@ -460,7 +459,12 @@ describe('Task Analytics GraphQL API Integration Tests', () => {
             dueDate: new Date('2025-11-15'),
             completedAt: new Date('2025-11-20'), // Late
           },
-          delegate: { id: 'user-paralegal', firstName: 'Bob', lastName: 'Paralegal', role: 'Paralegal' },
+          delegate: {
+            id: 'user-paralegal',
+            firstName: 'Bob',
+            lastName: 'Paralegal',
+            role: 'Paralegal',
+          },
           delegator: { id: 'user-partner', firstName: 'John', lastName: 'Partner' },
         },
         // Another failed for paralegal
@@ -475,7 +479,12 @@ describe('Task Analytics GraphQL API Integration Tests', () => {
             dueDate: new Date('2025-11-18'),
             completedAt: new Date('2025-11-25'), // Late
           },
-          delegate: { id: 'user-paralegal', firstName: 'Bob', lastName: 'Paralegal', role: 'Paralegal' },
+          delegate: {
+            id: 'user-paralegal',
+            firstName: 'Bob',
+            lastName: 'Paralegal',
+            role: 'Paralegal',
+          },
           delegator: { id: 'user-partner', firstName: 'John', lastName: 'Partner' },
         },
       ];
@@ -517,7 +526,12 @@ describe('Task Analytics GraphQL API Integration Tests', () => {
             dueDate: new Date('2025-11-10'),
             completedAt: new Date('2025-11-09'),
           },
-          delegate: { id: 'user-associate', firstName: 'Jane', lastName: 'Associate', role: 'Associate' },
+          delegate: {
+            id: 'user-associate',
+            firstName: 'Jane',
+            lastName: 'Associate',
+            role: 'Associate',
+          },
           delegator: { id: 'user-partner', firstName: 'John', lastName: 'Partner' },
         })),
       ];

@@ -45,7 +45,7 @@ render(<Button>Click me</Button>);
 import { renderWithProviders } from '@legal-platform/test-utils';
 renderWithProviders(<Dashboard />, {
   initialRoute: '/dashboard',
-  themeMode: 'dark'
+  themeMode: 'dark',
 });
 ```
 
@@ -74,13 +74,13 @@ import {
   createPartner,
   createActiveCase,
   createContract,
-  createResearchTask
+  createResearchTask,
 } from '@legal-platform/test-utils';
 
 const partner = createPartner({
   email: 'partner@test.com',
   firstName: 'Ion',
-  lastName: 'Popescu'
+  lastName: 'Popescu',
 });
 
 const activeCase = createActiveCase();
@@ -88,6 +88,7 @@ const contract = createContract({ caseId: activeCase.id });
 ```
 
 All factories support:
+
 - Default realistic data generation
 - Override capabilities for specific scenarios
 - Romanian names and addresses with diacritics (ă, â, î, ș, ț)
@@ -101,7 +102,7 @@ import { renderWithProviders, screen } from '@legal-platform/test-utils';
 test('renders with providers', () => {
   renderWithProviders(<MyComponent />, {
     themeMode: 'dark',
-    locale: 'ro-RO'
+    locale: 'ro-RO',
   });
 
   expect(screen.getByRole('button')).toBeInTheDocument();
@@ -111,11 +112,7 @@ test('renders with providers', () => {
 ### Helper Utilities
 
 ```tsx
-import {
-  waitForLoadingToFinish,
-  fillForm,
-  expectToastMessage
-} from '@legal-platform/test-utils';
+import { waitForLoadingToFinish, fillForm, expectToastMessage } from '@legal-platform/test-utils';
 
 test('submits form successfully', async () => {
   render(<ContactForm />);
@@ -123,7 +120,7 @@ test('submits form successfully', async () => {
   fillForm({
     'First Name': 'Ion',
     'Last Name': 'Popescu',
-    'Email': 'ion@test.com'
+    Email: 'ion@test.com',
   });
 
   await userEvent.click(screen.getByRole('button', { name: /submit/i }));

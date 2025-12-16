@@ -13,6 +13,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** all developers can start work with a consistent environment.
 
 **Acceptance Criteria:**
+
 1. GitHub repository created with proper .gitignore for Node.js/TypeScript
 2. Monorepo initialized using Turborepo with folder structure:
    - /apps (web, api, admin)
@@ -30,6 +31,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can immediately start building UI components.
 
 **Acceptance Criteria:**
+
 1. Design tokens defined for colors, typography (with Romanian diacritic support), spacing, and shadows in CSS variables
 2. Base components created: buttons (primary, secondary, ghost), form inputs, cards, modals, tooltips
 3. Tailwind CSS configuration customized with design tokens and Radix UI integrated
@@ -49,6 +51,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** we can ensure code quality from the start.
 
 **Acceptance Criteria:**
+
 1. Jest/Vitest configured for unit testing with coverage reporting
 2. React Testing Library setup for component testing
 3. Testing utilities and custom renders created
@@ -67,6 +70,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can access all platform features and validate role-specific views.
 
 **Acceptance Criteria:**
+
 1. Sidebar navigation implemented with sections: Dashboard, Cases, Documents, Tasks, Communications, Time Tracking, Reports
 2. Top bar includes search/command palette trigger (Cmd+K), notifications icon, user menu
 3. Role switcher allows instant switching between Partner, Associate, Paralegal views
@@ -81,6 +85,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can quickly understand my priorities and firm status.
 
 **Acceptance Criteria:**
+
 1. Partner dashboard shows: firm KPIs, billable hours chart, case distribution, pending approvals
 2. Associate dashboard displays: my active cases, today's tasks, deadlines this week, recent documents
 3. Paralegal dashboard presents: assigned tasks, document requests, deadline calendar
@@ -95,6 +100,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can efficiently manage all aspects of a legal matter.
 
 **Acceptance Criteria:**
+
 1. Case header shows: case name, client, status, assigned team, next deadline
 2. Tab navigation for: Overview, Documents, Tasks, Communications, Time Entries, Notes
 3. Documents tab demonstrates folder tree, document list with version badges, preview pane
@@ -109,6 +115,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can efficiently draft legal documents with intelligent support.
 
 **Acceptance Criteria:**
+
 1. Split-screen layout: document editor (left), AI assistant panel (right)
 2. Editor toolbar includes formatting options, insert menu, version history button
 3. AI panel shows: suggested completions, similar documents, relevant templates
@@ -123,6 +130,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can work in my preferred style.
 
 **Acceptance Criteria:**
+
 1. Calendar view shows week with tasks as time blocks, color-coded by type
 2. Kanban board displays tasks in columns: To Do, In Progress, Review, Complete
 3. List view presents tasks in table format with sortable columns
@@ -137,6 +145,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can track conversations and respond efficiently.
 
 **Acceptance Criteria:**
+
 1. Thread list shows email subjects with case tags, sender, preview, date
 2. Message view displays full thread with collapse/expand for individual messages
 3. AI draft response panel shows suggested reply based on context
@@ -151,6 +160,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can validate the UX before development.
 
 **Acceptance Criteria:**
+
 1. Prototype allows navigation between all major screens
 2. Three complete workflows demonstrated: create document, assign task, respond to email
 3. Role switching shows different data and permissions for same screens
@@ -165,6 +175,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can become productive quickly.
 
 **Acceptance Criteria:**
+
 1. ONBOARDING.md created with system requirements, setup guide, common commands
 2. Video walkthrough recorded showing setup process
 3. Postman/Insomnia collection for API testing
@@ -183,6 +194,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** deployments are consistent and repeatable.
 
 **Acceptance Criteria:**
+
 1. Monorepo structure created with apps/ and packages/ folders per architecture
 2. TypeScript, ESLint, Prettier configured with shared rules across all packages
 3. GitHub Actions workflow runs tests and builds on every PR
@@ -201,6 +213,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** the application can run reliably in production.
 
 **Acceptance Criteria:**
+
 1. Azure Kubernetes Service (AKS) cluster provisioned in EU West region
 2. PostgreSQL database with pgvector extension deployed on Azure
 3. Redis cache configured for session management
@@ -215,6 +228,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** we can manage schema changes and test data effectively.
 
 **Acceptance Criteria:**
+
 1. Prisma migrations configured with history tracking and rollback capabilities
 2. Seed data script creates test law firm, sample cases, documents, tasks
 3. Data anonymization script for production data in dev
@@ -229,6 +243,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can access the platform with single sign-on.
 
 **Acceptance Criteria:**
+
 1. Azure AD app registration configured with proper permissions
 2. OAuth 2.0 flow implemented for user authentication
 3. JWT tokens issued and validated for API requests
@@ -243,6 +258,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** we can access Outlook, OneDrive, and Calendar data.
 
 **Acceptance Criteria:**
+
 1. Microsoft Graph client configured with app-level permissions
 2. Token management implements refresh token flow automatically
 3. Rate limiting middleware prevents exceeding API quotas
@@ -257,6 +273,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** the frontend can perform all case operations.
 
 **Acceptance Criteria:**
+
 1. Prisma schema defines: Case, Client, CaseTeam, CaseStatus, CaseType entities
 2. GraphQL schema includes queries: getCases, getCase, searchCases
 3. GraphQL mutations: createCase, updateCase, archiveCase, assignTeam
@@ -271,6 +288,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can integrate with the backend effectively.
 
 **Acceptance Criteria:**
+
 1. GraphQL schema documentation auto-generated
 2. GraphQL playground available in development
 3. API documentation includes authentication, query/mutation examples, error formats
@@ -285,6 +303,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can organize my legal work effectively.
 
 **Acceptance Criteria:**
+
 1. Case list page displays all cases with filtering by status, client, assigned user
 2. Create case form includes: client selection, case type, description, team assignment
 3. Case detail page shows all case information with inline editing
@@ -299,6 +318,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can access files from Microsoft 365 apps.
 
 **Acceptance Criteria:**
+
 1. OneDrive folder structure created: /Cases/{CaseID}/Documents/
 2. File upload stores in both Azure Blob Storage and OneDrive
 3. Document metadata tracked in PostgreSQL with OneDrive file ID
@@ -313,6 +333,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can quickly find relevant information.
 
 **Acceptance Criteria:**
+
 1. Elasticsearch index created for cases and document metadata
 2. OpenAI embeddings generated for all text content
 3. Semantic search finds related content even with different wording
@@ -331,6 +352,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** we can ensure reliability and performance.
 
 **Acceptance Criteria:**
+
 1. Load testing for concurrent document operations
 2. Performance benchmarks for generation, search, and version comparison
 3. Stress testing with large documents (100+ pages)
@@ -348,6 +370,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** I can use all features effectively.
 
 **Acceptance Criteria:**
+
 1. User guide sections for all task types and workflows
 2. Video tutorials for common workflows
 3. In-app help tooltips and guided tours
@@ -364,6 +387,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** we can maintain high availability.
 
 **Acceptance Criteria:**
+
 1. Application Insights dashboards for health, performance, errors, activity
 2. Alerts configured for downtime, degradation, errors, budget, security
 3. Log aggregation and search capabilities
@@ -378,6 +402,7 @@ Replace the Epic sections (starting from line 497) with the following updated co
 **so that** we meet all regulatory requirements.
 
 **Acceptance Criteria:**
+
 1. Security audit covering OWASP Top 10 and authentication
 2. GDPR compliance documentation complete
 3. Romanian Law 190/2018 compliance verified

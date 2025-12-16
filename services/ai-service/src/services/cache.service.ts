@@ -119,19 +119,21 @@ export class CacheService {
     const embeddingString = `[${embedding.join(',')}]`;
 
     // Query for similar prompts using cosine distance
-    const results = await prisma.$queryRaw<Array<{
-      id: string;
-      prompt_hash: string;
-      prompt: string;
-      response: string;
-      model_used: string;
-      operation_type: string;
-      firm_id: string;
-      hit_count: number;
-      created_at: Date;
-      expires_at: Date;
-      similarity: number;
-    }>>`
+    const results = await prisma.$queryRaw<
+      Array<{
+        id: string;
+        prompt_hash: string;
+        prompt: string;
+        response: string;
+        model_used: string;
+        operation_type: string;
+        firm_id: string;
+        hit_count: number;
+        created_at: Date;
+        expires_at: Date;
+        similarity: number;
+      }>
+    >`
       SELECT
         id,
         prompt_hash,

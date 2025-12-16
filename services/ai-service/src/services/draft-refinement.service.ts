@@ -341,10 +341,7 @@ export class DraftRefinementService {
       return COMMON_REFINEMENTS.shorter.en;
     }
 
-    if (
-      lowerInstruction.includes('formal') ||
-      lowerInstruction.includes('professional')
-    ) {
+    if (lowerInstruction.includes('formal') || lowerInstruction.includes('professional')) {
       return COMMON_REFINEMENTS.more_formal.en;
     }
 

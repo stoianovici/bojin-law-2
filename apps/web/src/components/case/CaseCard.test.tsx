@@ -319,7 +319,7 @@ describe('CaseCard', () => {
       fireEvent.mouseEnter(card!);
 
       // Wait a bit to ensure nothing appears
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(screen.queryByText(/documents/)).not.toBeInTheDocument();
       expect(screen.queryByText(/tasks/)).not.toBeInTheDocument();
@@ -423,16 +423,13 @@ describe('CaseCard', () => {
   });
 
   describe('All Case Types', () => {
-    it.each([
-      'Civil',
-      'Criminal',
-      'Corporate',
-      'Family',
-      'RealEstate',
-    ])('should display %s case type', (caseType) => {
-      const typeCase = { ...baseMockCase, caseType: caseType as any };
-      render(<CaseCard case={typeCase} />);
-      expect(screen.getByText(caseType)).toBeInTheDocument();
-    });
+    it.each(['Civil', 'Criminal', 'Corporate', 'Family', 'RealEstate'])(
+      'should display %s case type',
+      (caseType) => {
+        const typeCase = { ...baseMockCase, caseType: caseType as any };
+        render(<CaseCard case={typeCase} />);
+        expect(screen.getByText(caseType)).toBeInTheDocument();
+      }
+    );
   });
 });

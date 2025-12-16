@@ -119,17 +119,11 @@ export function QualityTrendsWidget({ data }: QualityTrendsWidgetProps) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickFormatter={(value) => value.slice(5)}
-              fontSize={11}
-            />
+            <XAxis dataKey="date" tickFormatter={(value) => value.slice(5)} fontSize={11} />
             <YAxis fontSize={11} domain={[0, 100]} />
             <Tooltip
               formatter={(value: number, name: string) => [
-                name === 'qualityScore'
-                  ? `${value.toFixed(0)}/100`
-                  : `${value.toFixed(1)}%`,
+                name === 'qualityScore' ? `${value.toFixed(0)}/100` : `${value.toFixed(1)}%`,
                 name === 'qualityScore' ? 'Scor' : 'Edit %',
               ]}
               labelFormatter={(label) => `Data: ${label}`}

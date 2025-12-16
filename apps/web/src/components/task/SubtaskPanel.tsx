@@ -89,11 +89,7 @@ export function SubtaskPanel({ parentTaskId, caseId, canEdit = true }: SubtaskPa
   }
 
   if (error) {
-    return (
-      <div className="text-red-600 text-sm">
-        Eroare la încărcarea sub-sarcinilor
-      </div>
-    );
+    return <div className="text-red-600 text-sm">Eroare la încărcarea sub-sarcinilor</div>;
   }
 
   return (
@@ -147,7 +143,9 @@ export function SubtaskPanel({ parentTaskId, caseId, canEdit = true }: SubtaskPa
 
               <textarea
                 value={newSubtask.description}
-                onChange={(e) => setNewSubtask((prev) => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setNewSubtask((prev) => ({ ...prev, description: e.target.value }))
+                }
                 placeholder="Descriere (opțional)"
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -174,9 +172,7 @@ export function SubtaskPanel({ parentTaskId, caseId, canEdit = true }: SubtaskPa
                 <input
                   type="date"
                   value={newSubtask.dueDate || ''}
-                  onChange={(e) =>
-                    setNewSubtask((prev) => ({ ...prev, dueDate: e.target.value }))
-                  }
+                  onChange={(e) => setNewSubtask((prev) => ({ ...prev, dueDate: e.target.value }))}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -256,12 +252,7 @@ function SubtaskItem({ subtask, canEdit, onToggle }: SubtaskItemProps) {
       >
         {isCompleted && (
           <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-              d="M5 13l4 4L19 7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         )}
       </button>
@@ -274,9 +265,7 @@ function SubtaskItem({ subtask, canEdit, onToggle }: SubtaskItemProps) {
           >
             {subtask.title}
           </span>
-          <span
-            className={`text-xs px-1.5 py-0.5 rounded ${priorityColors[subtask.priority]}`}
-          >
+          <span className={`text-xs px-1.5 py-0.5 rounded ${priorityColors[subtask.priority]}`}>
             {PRIORITY_OPTIONS.find((p) => p.value === subtask.priority)?.label}
           </span>
         </div>
@@ -294,9 +283,7 @@ function SubtaskItem({ subtask, canEdit, onToggle }: SubtaskItemProps) {
             </span>
           )}
           {subtask.dueDate && (
-            <span>
-              {format(new Date(subtask.dueDate), 'dd MMM', { locale: ro })}
-            </span>
+            <span>{format(new Date(subtask.dueDate), 'dd MMM', { locale: ro })}</span>
           )}
         </div>
       </div>

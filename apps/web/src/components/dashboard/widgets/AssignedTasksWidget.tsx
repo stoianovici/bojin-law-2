@@ -114,9 +114,7 @@ function KanbanColumn({
   const headerColor =
     headerColors[column.title as keyof typeof headerColors] || headerColors['To Do'];
 
-  const displayedTasks = isExpanded
-    ? column.tasks
-    : column.tasks.slice(0, initialDisplayCount);
+  const displayedTasks = isExpanded ? column.tasks : column.tasks.slice(0, initialDisplayCount);
   const hasMoreTasks = column.tasks.length > initialDisplayCount;
 
   return (
@@ -155,14 +153,24 @@ function KanbanColumn({
                   <span className="flex items-center justify-center gap-0.5">
                     <span>Mai Puține</span>
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
                     </svg>
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-0.5">
                     <span>+{column.tasks.length - initialDisplayCount} mai multe</span>
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </span>
                 )}
@@ -244,7 +252,12 @@ export function AssignedTasksWidget({
     handleDragEnd();
   };
 
-  const toggleColumnExpansion = (columnId: string, columnTitle: string, totalTasks: number, initialCount: number) => {
+  const toggleColumnExpansion = (
+    columnId: string,
+    columnTitle: string,
+    totalTasks: number,
+    initialCount: number
+  ) => {
     const newState = !expandedColumns[columnId];
     setExpandedColumns((prev) => ({
       ...prev,
@@ -253,9 +266,13 @@ export function AssignedTasksWidget({
 
     // Announce state change for screen readers
     if (newState) {
-      setAnnounceMessage(`${columnTitle}: Afișare extinsă. Se afișează toate cele ${totalTasks} taskuri.`);
+      setAnnounceMessage(
+        `${columnTitle}: Afișare extinsă. Se afișează toate cele ${totalTasks} taskuri.`
+      );
     } else {
-      setAnnounceMessage(`${columnTitle}: Afișare redusă. Se afișează primele ${initialCount} taskuri.`);
+      setAnnounceMessage(
+        `${columnTitle}: Afișare redusă. Se afișează primele ${initialCount} taskuri.`
+      );
     }
 
     // Clear announcement after 1 second
@@ -319,8 +336,12 @@ export function AssignedTasksWidget({
               onDragOver={(e) => handleDragOver(e, column.id)}
               isDragOver={dragOverColumn === column.id}
               isExpanded={expandedColumns[column.id] || false}
-              onToggleExpansion={() => toggleColumnExpansion(column.id, column.title, column.tasks.length, 3)}
-              buttonRef={(el) => { expandButtonRefs.current[column.id] = el; }}
+              onToggleExpansion={() =>
+                toggleColumnExpansion(column.id, column.title, column.tasks.length, 3)
+              }
+              buttonRef={(el) => {
+                expandButtonRefs.current[column.id] = el;
+              }}
             />
           </div>
         ))}

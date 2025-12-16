@@ -85,9 +85,9 @@ export function getFinancialDataScopeForRole(role: UserRole): FinancialDataScope
 
 // Default Rates (Story 2.8.1)
 export interface DefaultRates {
-  partnerRate: number;    // USD per hour (in cents for precision)
-  associateRate: number;  // USD per hour (in cents)
-  paralegalRate: number;  // USD per hour (in cents)
+  partnerRate: number; // USD per hour (in cents for precision)
+  associateRate: number; // USD per hour (in cents)
+  paralegalRate: number; // USD per hour (in cents)
 }
 
 // Custom Rates (Story 2.8.1)
@@ -221,10 +221,10 @@ export type CaseAuditAction =
   | 'ARCHIVED'
   | 'TEAM_ASSIGNED'
   | 'TEAM_REMOVED'
-  | 'CASE_SUBMITTED_FOR_APPROVAL'  // Story 2.8.2
-  | 'CASE_APPROVED'                // Story 2.8.2
-  | 'CASE_REJECTED'                // Story 2.8.2
-  | 'CASE_RESUBMITTED';            // Story 2.8.2
+  | 'CASE_SUBMITTED_FOR_APPROVAL' // Story 2.8.2
+  | 'CASE_APPROVED' // Story 2.8.2
+  | 'CASE_REJECTED' // Story 2.8.2
+  | 'CASE_RESUBMITTED'; // Story 2.8.2
 
 // Case Audit Log (tracks all case modifications)
 export interface CaseAuditLog {

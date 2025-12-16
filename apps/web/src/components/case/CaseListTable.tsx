@@ -215,9 +215,7 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                   </span>
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-500">
-                  <div className="truncate">
-                    {getTypeLabel(caseItem.type)}
-                  </div>
+                  <div className="truncate">{getTypeLabel(caseItem.type)}</div>
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex -space-x-2">

@@ -96,7 +96,7 @@ describe('LRUCache', () => {
       expect(cache.get('key1')).toBe('value1');
 
       // Wait for TTL to expire
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       expect(cache.get('key1')).toBeNull();
     });
@@ -107,7 +107,7 @@ describe('LRUCache', () => {
       cache.set('key1', 'value1');
       expect(cache.has('key1')).toBe(true);
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       expect(cache.has('key1')).toBe(false);
     });
@@ -241,7 +241,7 @@ describe('PerformanceOptimizer', () => {
       let callCount = 0;
       const operation = async () => {
         callCount++;
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         return 'result';
       };
 
@@ -279,9 +279,9 @@ describe('PerformanceOptimizer', () => {
         throw new Error('Operation failed');
       };
 
-      await expect(
-        optimizer.deduplicate('request-1', operation)
-      ).rejects.toThrow('Operation failed');
+      await expect(optimizer.deduplicate('request-1', operation)).rejects.toThrow(
+        'Operation failed'
+      );
 
       // Subsequent request should retry (not use cached error)
       let secondCallMade = false;
@@ -314,7 +314,7 @@ describe('PerformanceOptimizer', () => {
   describe('Performance Measurement', () => {
     it('should measure operation duration', async () => {
       const operation = async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         return 'result';
       };
 
@@ -351,8 +351,8 @@ describe('PerformanceOptimizer', () => {
 
     it('should track performance statistics', async () => {
       // Create operations with different durations
-      const fastOp = async () => await new Promise(resolve => setTimeout(resolve, 10));
-      const slowOp = async () => await new Promise(resolve => setTimeout(resolve, 100));
+      const fastOp = async () => await new Promise((resolve) => setTimeout(resolve, 10));
+      const slowOp = async () => await new Promise((resolve) => setTimeout(resolve, 100));
 
       await optimizer.measureAsync('fast', fastOp);
       await optimizer.measureAsync('slow', slowOp);

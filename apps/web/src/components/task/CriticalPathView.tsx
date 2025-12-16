@@ -162,7 +162,7 @@ export function CriticalPathView({
           ) : (
             <ScrollArea className="max-h-[400px] pr-4">
               <div className="space-y-3">
-                {criticalTasks.map((task: typeof criticalPath[number], idx: number) => {
+                {criticalTasks.map((task: (typeof criticalPath)[number], idx: number) => {
                   const isSelected = selectedTask?.id === task.id;
                   const isCompleted = task.status === 'Completed';
 
@@ -255,16 +255,14 @@ export function CriticalPathView({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {bottlenecks.slice(0, 5).map((bottleneck: typeof bottlenecks[number]) => {
+              {bottlenecks.slice(0, 5).map((bottleneck: (typeof bottlenecks)[number]) => {
                 const isExpanded = expandedBottleneck === bottleneck.taskId;
 
                 return (
                   <Card
                     key={bottleneck.taskId}
                     className="border-orange-200 bg-orange-50 cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() =>
-                      setExpandedBottleneck(isExpanded ? null : bottleneck.taskId)
-                    }
+                    onClick={() => setExpandedBottleneck(isExpanded ? null : bottleneck.taskId)}
                   >
                     <CardContent className="pt-4">
                       <div className="flex items-center justify-between">
@@ -287,15 +285,15 @@ export function CriticalPathView({
                             bottleneck.slackDays < 2
                               ? 'border-red-500 text-red-700'
                               : bottleneck.slackDays < 5
-                              ? 'border-orange-500 text-orange-700'
-                              : 'border-green-500 text-green-700'
+                                ? 'border-orange-500 text-orange-700'
+                                : 'border-green-500 text-green-700'
                           }`}
                         >
                           {bottleneck.slackDays < 2
                             ? 'High Risk'
                             : bottleneck.slackDays < 5
-                            ? 'Medium Risk'
-                            : 'Low Risk'}
+                              ? 'Medium Risk'
+                              : 'Low Risk'}
                         </Badge>
                       </div>
 

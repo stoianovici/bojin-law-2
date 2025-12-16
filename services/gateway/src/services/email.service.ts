@@ -196,9 +196,14 @@ async function sendEmailWithRetry(
 }
 
 function generateReminderEmailHTML(payload: EmailReminderPayload): string {
-  const urgencyColor = payload.daysUntilDue === 0 ? '#ef4444' : payload.daysUntilDue === 1 ? '#f59e0b' : '#3b82f6';
+  const urgencyColor =
+    payload.daysUntilDue === 0 ? '#ef4444' : payload.daysUntilDue === 1 ? '#f59e0b' : '#3b82f6';
   const urgencyText =
-    payload.daysUntilDue === 0 ? 'DUE TODAY' : payload.daysUntilDue === 1 ? 'DUE TOMORROW' : `DUE IN ${payload.daysUntilDue} DAYS`;
+    payload.daysUntilDue === 0
+      ? 'DUE TODAY'
+      : payload.daysUntilDue === 1
+        ? 'DUE TOMORROW'
+        : `DUE IN ${payload.daysUntilDue} DAYS`;
 
   return `
     <html>
@@ -451,7 +456,9 @@ function generateCaseSectionHTML(caseSummary: DigestCaseSummary): string {
         <span style="color: #9ca3af; font-size: 13px; margin-left: 10px;">#${caseSummary.caseNumber}</span>
       </div>
       <div style="padding: 15px 20px;">
-        ${caseSummary.taskUpdates.length > 0 ? `
+        ${
+          caseSummary.taskUpdates.length > 0
+            ? `
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="color: #6b7280; font-size: 12px; text-transform: uppercase;">
@@ -464,13 +471,19 @@ function generateCaseSectionHTML(caseSummary: DigestCaseSummary): string {
               ${taskItems}
             </tbody>
           </table>
-        ` : ''}
-        ${caseSummary.newComments > 0 || caseSummary.newAttachments > 0 ? `
+        `
+            : ''
+        }
+        ${
+          caseSummary.newComments > 0 || caseSummary.newAttachments > 0
+            ? `
           <div style="margin-top: 15px; display: flex; gap: 20px; color: #6b7280; font-size: 13px;">
             ${caseSummary.newComments > 0 ? `<span>💬 ${caseSummary.newComments} new comment(s)</span>` : ''}
             ${caseSummary.newAttachments > 0 ? `<span>📎 ${caseSummary.newAttachments} new attachment(s)</span>` : ''}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `;

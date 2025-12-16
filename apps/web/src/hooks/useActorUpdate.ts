@@ -49,38 +49,35 @@ export interface UpdateCaseActorInput {
 export function useActorUpdate() {
   const { addNotification } = useNotificationStore();
 
-  const [updateCaseActorMutation, { loading, error }] = useMutation(
-    UPDATE_CASE_ACTOR_MUTATION,
-    {
-      onCompleted: () => {
-        addNotification({
-          type: 'success',
-          title: 'Success',
-          message: 'Case actor updated successfully',
-        });
-      },
-      onError: (error) => {
-        // Map GraphQL error codes to user-friendly messages
-        let message = 'Failed to update case actor';
+  const [updateCaseActorMutation, { loading, error }] = useMutation(UPDATE_CASE_ACTOR_MUTATION, {
+    onCompleted: () => {
+      addNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'Case actor updated successfully',
+      });
+    },
+    onError: (error) => {
+      // Map GraphQL error codes to user-friendly messages
+      let message = 'Failed to update case actor';
 
-        if (error.message.includes('FORBIDDEN')) {
-          message = "You don't have permission to update case actors";
-        } else if (error.message.includes('NOT_FOUND')) {
-          message = 'Case actor not found';
-        } else if (error.message.includes('BAD_USER_INPUT')) {
-          message = 'Invalid input. Please check the actor details.';
-        }
+      if (error.message.includes('FORBIDDEN')) {
+        message = "You don't have permission to update case actors";
+      } else if (error.message.includes('NOT_FOUND')) {
+        message = 'Case actor not found';
+      } else if (error.message.includes('BAD_USER_INPUT')) {
+        message = 'Invalid input. Please check the actor details.';
+      }
 
-        addNotification({
-          type: 'error',
-          title: 'Error',
-          message,
-        });
-      },
-      // Refetch case query to update actors list
-      refetchQueries: ['GetCase'],
-    }
-  );
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message,
+      });
+    },
+    // Refetch case query to update actors list
+    refetchQueries: ['GetCase'],
+  });
 
   const updateActor = async (id: string, input: UpdateCaseActorInput) => {
     try {

@@ -81,10 +81,7 @@ export const msalConfig: Configuration = {
         }
       },
       piiLoggingEnabled: false,
-      logLevel:
-        process.env.NODE_ENV === 'production'
-          ? LogLevel.Warning
-          : LogLevel.Info,
+      logLevel: process.env.NODE_ENV === 'production' ? LogLevel.Warning : LogLevel.Info,
     },
   },
 };
@@ -107,10 +104,7 @@ export const authScopes = {
 
 // Default scopes for authorization request
 // Includes OpenID Connect scopes + User.Read for profile access
-export const defaultScopes = [
-  ...authScopes.openid,
-  ...authScopes.graph.userRead,
-];
+export const defaultScopes = [...authScopes.openid, ...authScopes.graph.userRead];
 
 // Token configuration
 export const tokenConfig = {
@@ -129,8 +123,7 @@ export const validateAuthConfig = (): {
   const errors: string[] = [];
 
   // Check client ID format (GUID)
-  const guidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   if (!guidRegex.test(azureAdConfig.clientId)) {
     errors.push('AZURE_AD_CLIENT_ID must be a valid GUID');
@@ -151,9 +144,7 @@ export const validateAuthConfig = (): {
 
     // In production, redirect URI must be HTTPS
     if (process.env.NODE_ENV === 'production' && url.protocol !== 'https:') {
-      errors.push(
-        'AZURE_AD_REDIRECT_URI must use HTTPS in production environment'
-      );
+      errors.push('AZURE_AD_REDIRECT_URI must use HTTPS in production environment');
     }
 
     // Check if redirect URI ends with /auth/callback
@@ -176,18 +167,14 @@ export const validateAuthConfig = (): {
 // In test, validation is called explicitly by tests
 // Skip validation if running under Jest or if explicitly disabled
 const isJest = typeof jest !== 'undefined' || process.env.JEST_WORKER_ID !== undefined;
-const shouldRunValidation = !isJest && process.env.NODE_ENV !== 'test' && !process.env.SKIP_AUTH_VALIDATION;
+const shouldRunValidation =
+  !isJest && process.env.NODE_ENV !== 'test' && !process.env.SKIP_AUTH_VALIDATION;
 
 if (shouldRunValidation) {
   const validation = validateAuthConfig();
   if (!validation.valid) {
-    console.error(
-      '❌ Azure AD configuration validation failed:',
-      validation.errors
-    );
-    throw new Error(
-      `Invalid Azure AD configuration: ${validation.errors.join(', ')}`
-    );
+    console.error('❌ Azure AD configuration validation failed:', validation.errors);
+    throw new Error(`Invalid Azure AD configuration: ${validation.errors.join(', ')}`);
   } else {
     console.log('✅ Azure AD configuration validated successfully');
   }

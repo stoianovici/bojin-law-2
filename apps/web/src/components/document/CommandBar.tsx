@@ -20,11 +20,7 @@ const SUGGESTED_COMMANDS = [
   'Traduce în engleză',
 ];
 
-export function CommandBar({
-  onCommandSubmit,
-  isLoading = false,
-  resultMessage,
-}: CommandBarProps) {
+export function CommandBar({ onCommandSubmit, isLoading = false, resultMessage }: CommandBarProps) {
   const [command, setCommand] = React.useState('');
   const [isFocused, setIsFocused] = React.useState(false);
   const [showResult, setShowResult] = React.useState(false);

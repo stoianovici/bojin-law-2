@@ -32,7 +32,8 @@ export const Default: Story = {
  */
 export const ShortContent: Story = {
   args: {
-    content: 'CONTRACT DE PRESTĂRI SERVICII\n\nAcest document demonstrează editorul cu conținut scurt.\n\nPărțile contractante convin asupra următoarelor clauze...',
+    content:
+      'CONTRACT DE PRESTĂRI SERVICII\n\nAcest document demonstrează editorul cu conținut scurt.\n\nPărțile contractante convin asupra următoarelor clauze...',
     onContentChange: action('content-changed'),
   },
 };

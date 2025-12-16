@@ -28,7 +28,11 @@ import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { SuggestionAnalytics as SuggestionAnalyticsType, SuggestionType, SuggestionCategory } from '@legal-platform/types';
+import type {
+  SuggestionAnalytics as SuggestionAnalyticsType,
+  SuggestionType,
+  SuggestionCategory,
+} from '@legal-platform/types';
 
 // ====================
 // GraphQL Query
@@ -130,10 +134,7 @@ interface CategoryStat {
  * SuggestionAnalytics displays analytics for AI suggestion performance.
  * Partner-only view with charts and metrics.
  */
-export function SuggestionAnalytics({
-  dateRange,
-  className = '',
-}: SuggestionAnalyticsProps) {
+export function SuggestionAnalytics({ dateRange, className = '' }: SuggestionAnalyticsProps) {
   const { data, loading, error } = useQuery<{
     suggestionAnalytics: SuggestionAnalyticsType;
   }>(GET_SUGGESTION_ANALYTICS, {
@@ -178,7 +179,7 @@ export function SuggestionAnalytics({
 
   // Calculate estimated time saved (rough estimate: 5 min per accepted suggestion)
   const timeSavedMinutes = (analytics?.acceptedCount ?? 0) * 5;
-  const timeSavedHours = Math.round(timeSavedMinutes / 60 * 10) / 10;
+  const timeSavedHours = Math.round((timeSavedMinutes / 60) * 10) / 10;
 
   if (loading) {
     return (
@@ -213,9 +214,7 @@ export function SuggestionAnalytics({
     return (
       <Card className={className}>
         <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">
-            Nu am putut încărca analiza sugestiilor.
-          </p>
+          <p className="text-muted-foreground">Nu am putut încărca analiza sugestiilor.</p>
         </CardContent>
       </Card>
     );
@@ -225,9 +224,7 @@ export function SuggestionAnalytics({
     return (
       <Card className={className}>
         <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">
-            Nu există date de analiză disponibile.
-          </p>
+          <p className="text-muted-foreground">Nu există date de analiză disponibile.</p>
         </CardContent>
       </Card>
     );
@@ -256,9 +253,7 @@ export function SuggestionAnalytics({
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">Timp Economisit</p>
-            <p className="text-3xl font-bold mt-1 text-blue-600">
-              ~{timeSavedHours}h
-            </p>
+            <p className="text-3xl font-bold mt-1 text-blue-600">~{timeSavedHours}h</p>
             <p className="text-xs text-muted-foreground mt-1">
               Estimat din {analytics.acceptedCount} sugestii acceptate
             </p>
@@ -290,14 +285,8 @@ export function SuggestionAnalytics({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" domain={[0, 100]} unit="%" />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
-                <Tooltip
-                  formatter={(value: number) => [`${value}%`, 'Rată acceptare']}
-                />
-                <Bar
-                  dataKey="acceptanceRate"
-                  name="Rată acceptare"
-                  radius={[0, 4, 4, 0]}
-                >
+                <Tooltip formatter={(value: number) => [`${value}%`, 'Rată acceptare']} />
+                <Bar dataKey="acceptanceRate" name="Rată acceptare" radius={[0, 4, 4, 0]}>
                   {typeChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
@@ -323,9 +312,7 @@ export function SuggestionAnalytics({
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -388,14 +375,10 @@ export function SuggestionAnalytics({
                   className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl font-bold text-muted-foreground">
-                      #{index + 1}
-                    </span>
+                    <span className="text-2xl font-bold text-muted-foreground">#{index + 1}</span>
                     <div>
                       <p className="font-medium">{type.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {type.count} sugestii
-                      </p>
+                      <p className="text-sm text-muted-foreground">{type.count} sugestii</p>
                     </div>
                   </div>
                   <Badge
@@ -403,8 +386,8 @@ export function SuggestionAnalytics({
                       type.acceptanceRate >= 70
                         ? 'bg-green-100 text-green-800'
                         : type.acceptanceRate >= 50
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
                     }
                   >
                     {type.acceptanceRate}% acceptare
@@ -424,30 +407,20 @@ export function SuggestionAnalytics({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
               <p className="text-sm text-green-600 font-medium">Acceptate</p>
-              <p className="text-2xl font-bold text-green-700 mt-1">
-                {analytics.acceptedCount}
-              </p>
-              <p className="text-xs text-green-600 mt-1">
-                sugestii implementate
-              </p>
+              <p className="text-2xl font-bold text-green-700 mt-1">{analytics.acceptedCount}</p>
+              <p className="text-xs text-green-600 mt-1">sugestii implementate</p>
             </div>
             <div className="p-4 bg-red-50 rounded-lg border border-red-200">
               <p className="text-sm text-red-600 font-medium">Respinse</p>
-              <p className="text-2xl font-bold text-red-700 mt-1">
-                {analytics.dismissedCount}
-              </p>
-              <p className="text-xs text-red-600 mt-1">
-                sugestii refuzate
-              </p>
+              <p className="text-2xl font-bold text-red-700 mt-1">{analytics.dismissedCount}</p>
+              <p className="text-xs text-red-600 mt-1">sugestii refuzate</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-sm text-gray-600 font-medium">Fără acțiune</p>
               <p className="text-2xl font-bold text-gray-700 mt-1">
                 {analytics.totalSuggestions - analytics.acceptedCount - analytics.dismissedCount}
               </p>
-              <p className="text-xs text-gray-600 mt-1">
-                expirate sau ignorate
-              </p>
+              <p className="text-xs text-gray-600 mt-1">expirate sau ignorate</p>
             </div>
           </div>
         </CardContent>

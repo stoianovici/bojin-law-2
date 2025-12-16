@@ -99,11 +99,7 @@ export class EstimateComparisonService {
    * @returns Array of tasks with estimated and actual hours
    * @private
    */
-  private async fetchCompletedTasksWithHours(
-    userId: string,
-    periodStart: Date,
-    periodEnd: Date
-  ) {
+  private async fetchCompletedTasksWithHours(userId: string, periodStart: Date, periodEnd: Date) {
     const completedTasks = await this.prisma.task.findMany({
       where: {
         assignedTo: userId,
@@ -131,10 +127,7 @@ export class EstimateComparisonService {
     // Calculate actual hours for each task
     return completedTasks
       .map((task) => {
-        const actualHours = task.timeEntries.reduce(
-          (sum, entry) => sum + Number(entry.hours),
-          0
-        );
+        const actualHours = task.timeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
         return {
           id: task.id,
           type: task.type,
@@ -153,10 +146,7 @@ export class EstimateComparisonService {
    * @param taskType - Task type to analyze
    * @returns Accuracy comparison for the task type
    */
-  async getTaskTypeAccuracy(
-    userId: string,
-    taskType: TaskTypeEnum
-  ): Promise<TaskTypeComparison> {
+  async getTaskTypeAccuracy(userId: string, taskType: TaskTypeEnum): Promise<TaskTypeComparison> {
     // Get all completed tasks of this type (last 6 months)
     const sixMonthsAgo = subMonths(new Date(), 6);
 
@@ -186,10 +176,7 @@ export class EstimateComparisonService {
     // Calculate actual hours
     const tasksWithActualHours = tasks
       .map((task) => {
-        const actualHours = task.timeEntries.reduce(
-          (sum, entry) => sum + Number(entry.hours),
-          0
-        );
+        const actualHours = task.timeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
         return {
           estimatedHours: Number(task.estimatedHours),
           actualHours,
@@ -216,8 +203,7 @@ export class EstimateComparisonService {
       tasksWithActualHours.length;
 
     const avgActual =
-      tasksWithActualHours.reduce((sum, t) => sum + t.actualHours, 0) /
-      tasksWithActualHours.length;
+      tasksWithActualHours.reduce((sum, t) => sum + t.actualHours, 0) / tasksWithActualHours.length;
 
     // Calculate metrics
     const accuracy = (avgActual / avgEstimated) * 100;
@@ -260,8 +246,7 @@ export class EstimateComparisonService {
       const avgEstimated =
         typeTasks.reduce((sum, t) => sum + t.estimatedHours, 0) / typeTasks.length;
 
-      const avgActual =
-        typeTasks.reduce((sum, t) => sum + t.actualHours, 0) / typeTasks.length;
+      const avgActual = typeTasks.reduce((sum, t) => sum + t.actualHours, 0) / typeTasks.length;
 
       const accuracy = (avgActual / avgEstimated) * 100;
       const variance = avgActual - avgEstimated;
@@ -316,11 +301,7 @@ export class EstimateComparisonService {
     // Get current period tasks and calculate accuracy
     const currentStart = new Date(currentPeriod.start);
     const currentEnd = new Date(currentPeriod.end);
-    const currentTasks = await this.fetchCompletedTasksWithHours(
-      userId,
-      currentStart,
-      currentEnd
-    );
+    const currentTasks = await this.fetchCompletedTasksWithHours(userId, currentStart, currentEnd);
     const currentAccuracy = this.calculateOverallAccuracy(currentTasks);
 
     // Calculate previous period (same duration, just shifted back)

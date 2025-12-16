@@ -9,6 +9,7 @@
 **so that** all developers can start work with a consistent environment.
 
 **Acceptance Criteria:**
+
 1. GitHub repository created with proper .gitignore for Node.js/TypeScript
 2. Monorepo initialized using Turborepo with folder structure:
    - /apps (web, api, admin)
@@ -28,6 +29,7 @@
 **so that** I can immediately start building UI components.
 
 **Acceptance Criteria:**
+
 1. Design tokens defined for colors, typography (with Romanian diacritic support), spacing, and shadows in CSS variables
 2. Base components created: buttons (primary, secondary, ghost), form inputs, cards, modals, tooltips
 3. Tailwind CSS configuration customized with design tokens and Radix UI integrated
@@ -49,6 +51,7 @@
 **so that** we can ensure code quality from the start.
 
 **Acceptance Criteria:**
+
 1. Jest/Vitest configured for unit testing with coverage reporting
 2. React Testing Library setup for component testing
 3. Testing utilities and custom renders created
@@ -69,6 +72,7 @@
 **so that** I can access all platform features and validate role-specific views.
 
 **Acceptance Criteria:**
+
 1. Sidebar navigation implemented with sections: Dashboard, Cases, Documents, Tasks, Communications, Time Tracking, Reports
 2. Top bar includes search/command palette trigger (Cmd+K), notifications icon, user menu
 3. Role switcher allows instant switching between Partner, Associate, Paralegal views
@@ -83,6 +87,7 @@
 **so that** I can quickly understand my priorities and firm status.
 
 **Acceptance Criteria:**
+
 1. Partner dashboard shows: firm KPIs, billable hours chart, case distribution, pending approvals
 2. Associate dashboard displays: my active cases, today's tasks, deadlines this week, recent documents
 3. Paralegal dashboard presents: assigned tasks, document requests, deadline calendar
@@ -97,6 +102,7 @@
 **so that** I can efficiently manage all aspects of a legal matter.
 
 **Acceptance Criteria:**
+
 1. Case header shows: case name, client, status, assigned team, next deadline
 2. Tab navigation for: Overview, Documents, Tasks, Communications, Time Entries, Notes
 3. Documents tab demonstrates folder tree, document list with version badges, preview pane
@@ -111,6 +117,7 @@
 **so that** I can effectively manage day-to-day operations before reviewing strategic KPIs.
 
 **Acceptance Criteria:**
+
 1. Partner dashboard shows supervised cases widget first (cases where partner is lead/supervisor)
 2. My Tasks widget displays tasks from supervised cases with priority and deadline visibility
 3. Firm Cases Overview widget displays at-risk cases, high-value cases, and AI-detected patterns
@@ -131,6 +138,7 @@
 **so that** I can efficiently draft legal documents with intelligent support.
 
 **Acceptance Criteria:**
+
 1. Split-screen layout: document editor (left), AI assistant panel (right)
 2. Editor toolbar includes formatting options, insert menu, version history button
 3. AI panel shows: suggested completions, similar documents, relevant templates
@@ -145,6 +153,7 @@
 **so that** I can work in my preferred style.
 
 **Acceptance Criteria:**
+
 1. Calendar view shows week with tasks as time blocks, color-coded by type
 2. Kanban board displays tasks in columns: To Do, In Progress, Review, Complete
 3. List view presents tasks in table format with sortable columns
@@ -159,6 +168,7 @@
 **so that** I can track conversations and respond efficiently.
 
 **Acceptance Criteria:**
+
 1. Thread list shows email subjects with case tags, sender, preview, date
 2. Message view displays full thread with collapse/expand for individual messages
 3. AI draft response panel shows suggested reply based on context
@@ -173,6 +183,7 @@
 **so that** I can efficiently triage my inbox and ensure follow-up actions are tracked in the system.
 
 **Acceptance Criteria:**
+
 1. Each message in MessageView has a "Reply" button that opens the compose modal with AI-suggested response
 2. All extracted items (Deadlines/Termene, Commitments/Angajamente, Action Items/Acțiuni) can be converted to tasks via quick-create button
 3. Task creation from extracted items opens inline editing form with pre-populated fields
@@ -192,6 +203,7 @@
 **so that** I can become productive quickly.
 
 **Acceptance Criteria:**
+
 1. ONBOARDING.md created with system requirements, setup guide, common commands
 2. Video walkthrough recorded showing setup process
 3. Postman/Insomnia collection for API testing

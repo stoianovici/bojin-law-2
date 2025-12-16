@@ -348,11 +348,7 @@ const EXPORT_PLATFORM_INTELLIGENCE_MUTATION = gql`
     $format: ExportFormat!
     $sections: ExportSectionsInput
   ) {
-    exportPlatformIntelligence(
-      dateRange: $dateRange
-      format: $format
-      sections: $sections
-    ) {
+    exportPlatformIntelligence(dateRange: $dateRange, format: $format, sections: $sections) {
       url
       expiresAt
       format

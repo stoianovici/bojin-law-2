@@ -8,14 +8,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  Clock,
-  UserX,
-  AlertTriangle,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, UserX, AlertTriangle } from 'lucide-react';
 import type {
   TeamCalendarView as TeamCalendarViewType,
   TeamMemberCalendar,
@@ -108,7 +101,10 @@ export function TeamCalendarView({
     onDateChange(start, end);
   };
 
-  const getEntryForDate = (member: TeamMemberCalendar, date: Date): TeamCalendarEntry | undefined => {
+  const getEntryForDate = (
+    member: TeamMemberCalendar,
+    date: Date
+  ): TeamCalendarEntry | undefined => {
     return member.entries.find(
       (e: Date) => new Date(e.date).toDateString() === date.toDateString()
     );
@@ -180,7 +176,7 @@ export function TeamCalendarView({
             </tr>
           </thead>
           <tbody>
-            {data.members.map((member: typeof teamMembers[number]) => (
+            {data.members.map((member: (typeof teamMembers)[number]) => (
               <tr key={member.userId} className="border-b hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <button
@@ -205,9 +201,7 @@ export function TeamCalendarView({
                     <td
                       key={date.toISOString()}
                       className={`px-2 py-2 text-center ${
-                        date.toDateString() === new Date().toDateString()
-                          ? 'bg-blue-50'
-                          : ''
+                        date.toDateString() === new Date().toDateString() ? 'bg-blue-50' : ''
                       }`}
                     >
                       {entry ? (
@@ -228,9 +222,7 @@ export function TeamCalendarView({
                           entry.availability.availabilityType === 'ReducedHours' ||
                           entry.availability.availabilityType === 'Training' ? (
                             <div
-                              className={`text-sm ${getUtilizationColor(
-                                entry.utilizationPercent
-                              )}`}
+                              className={`text-sm ${getUtilizationColor(entry.utilizationPercent)}`}
                             >
                               {entry.tasks.length > 0 ? (
                                 <>
@@ -258,12 +250,8 @@ export function TeamCalendarView({
                   );
                 })}
                 <td className="px-4 py-3 text-right">
-                  <div className="text-sm font-medium">
-                    {member.weeklyTotal.toFixed(1)}h
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    / {member.weeklyCapacity.toFixed(0)}h
-                  </div>
+                  <div className="text-sm font-medium">{member.weeklyTotal.toFixed(1)}h</div>
+                  <div className="text-xs text-gray-500">/ {member.weeklyCapacity.toFixed(0)}h</div>
                 </td>
               </tr>
             ))}

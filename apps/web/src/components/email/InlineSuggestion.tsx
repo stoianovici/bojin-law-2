@@ -52,9 +52,7 @@ export function InlineSuggestion({ suggestion, onAccept, onDismiss }: InlineSugg
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           {/* Type indicator */}
-          <span className={`text-xs font-medium uppercase ${config.color}`}>
-            {config.label}
-          </span>
+          <span className={`text-xs font-medium uppercase ${config.color}`}>{config.label}</span>
 
           {/* Suggestion text */}
           <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{suggestion.suggestion}</p>
@@ -83,7 +81,9 @@ export function InlineSuggestion({ suggestion, onAccept, onDismiss }: InlineSugg
             <CloseIcon className="h-4 w-4" />
           </button>
           <span className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Press <kbd className="rounded bg-gray-200 px-1 py-0.5 font-mono dark:bg-gray-700">Tab</kbd> to accept
+            Press{' '}
+            <kbd className="rounded bg-gray-200 px-1 py-0.5 font-mono dark:bg-gray-700">Tab</kbd> to
+            accept
           </span>
         </div>
       </div>
@@ -110,11 +110,7 @@ export function InlineSuggestion({ suggestion, onAccept, onDismiss }: InlineSugg
 function ConfidenceBar({ confidence }: { confidence: number }) {
   const percentage = Math.round(confidence * 100);
   const color =
-    percentage >= 80
-      ? 'bg-green-500'
-      : percentage >= 60
-        ? 'bg-yellow-500'
-        : 'bg-gray-400';
+    percentage >= 80 ? 'bg-green-500' : percentage >= 60 ? 'bg-yellow-500' : 'bg-gray-400';
 
   return (
     <div className="h-1 w-16 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
@@ -153,11 +149,7 @@ export function InlineSuggestionOverlay({
   position = 'bottom',
 }: InlineSuggestionOverlayProps) {
   return (
-    <div
-      className={`absolute left-4 right-4 z-10 ${
-        position === 'bottom' ? 'bottom-4' : 'top-4'
-      }`}
-    >
+    <div className={`absolute left-4 right-4 z-10 ${position === 'bottom' ? 'bottom-4' : 'top-4'}`}>
       <InlineSuggestion suggestion={suggestion} onAccept={onAccept} onDismiss={onDismiss} />
     </div>
   );

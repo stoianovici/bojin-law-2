@@ -53,13 +53,8 @@ export function QuickActionsBar({
   // Get caseId from context if we're on a case page
   const caseId = context.section === 'case' ? context.entityId : undefined;
 
-  const {
-    executeCommand,
-    executeQuickAction,
-    loading,
-    result,
-    clearResult,
-  } = useNaturalLanguageCommand(caseId, context.section);
+  const { executeCommand, executeQuickAction, loading, result, clearResult } =
+    useNaturalLanguageCommand(caseId, context.section);
 
   // Focus input when expanded
   useEffect(() => {
@@ -166,8 +161,8 @@ export function QuickActionsBar({
   const contextLabel = context.entityName
     ? `${context.entityName}`
     : context.section === 'case'
-    ? 'Dosar'
-    : null;
+      ? 'Dosar'
+      : null;
 
   // Collapsed State - Small floating pill
   if (!quickActionsVisible) {
@@ -187,12 +182,7 @@ export function QuickActionsBar({
         )}
         aria-label="Deschide Asistent AI"
       >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -231,7 +221,12 @@ export function QuickActionsBar({
           <div className="px-4 py-2 bg-purple-50 border-b border-purple-100">
             <div className="flex items-center gap-2 text-xs text-purple-700">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <span className="font-medium">Context: {contextLabel}</span>
             </div>
@@ -249,18 +244,48 @@ export function QuickActionsBar({
             )}
           >
             {feedbackMessage.type === 'success' && (
-              <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-4 h-4 text-green-600 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             )}
             {feedbackMessage.type === 'error' && (
-              <svg className="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4 text-red-600 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             )}
             {feedbackMessage.type === 'info' && (
-              <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-4 h-4 text-blue-600 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             )}
             <span className="text-sm">{feedbackMessage.text}</span>
@@ -351,12 +376,7 @@ export function QuickActionsBar({
               )}
               aria-label="Trimite"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -396,7 +416,11 @@ export function QuickActionsBar({
         {/* Footer hint */}
         <div className="px-4 py-2 bg-gray-50/50 border-t border-gray-100">
           <p className="text-xs text-gray-400 text-center">
-            Apasă <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-500 font-mono text-[10px]">Esc</kbd> pentru a închide
+            Apasă{' '}
+            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-500 font-mono text-[10px]">
+              Esc
+            </kbd>{' '}
+            pentru a închide
           </p>
         </div>
       </div>

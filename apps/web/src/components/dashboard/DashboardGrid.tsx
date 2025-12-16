@@ -57,7 +57,7 @@ export function DashboardGrid({
   isEditing = false,
 }: DashboardGridProps) {
   // Map layout positions by widget key for quick lookup
-  const layoutMap = new Map(layout.map(pos => [pos.i, pos]));
+  const layoutMap = new Map(layout.map((pos) => [pos.i, pos]));
 
   // Apply grid-column styles based on layout data
   const childrenWithStyles = React.Children.map(children, (child) => {

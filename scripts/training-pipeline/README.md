@@ -5,6 +5,7 @@ Local CLI tool for generating document embeddings from OneDrive-categorized docu
 ## Overview
 
 This tool runs **on your local machine** to:
+
 1. Sign in with your Microsoft account (interactive browser login)
 2. Download categorized documents from OneDrive `/AI-Training/` folders
 3. Extract text from PDFs and Word documents
@@ -65,6 +66,7 @@ pnpm run login
 ```
 
 This will:
+
 1. Open your browser to Microsoft login
 2. You sign in with your Microsoft account
 3. Token is cached locally at `~/.legal-platform/ms-token-cache.json`
@@ -77,6 +79,7 @@ pnpm run status
 ```
 
 Shows:
+
 - Login status
 - Environment configuration
 
@@ -198,13 +201,13 @@ Processing Contract...
 
 ## Performance
 
-| Metric | Value |
-|--------|-------|
-| Model size | ~1.1GB (downloaded once) |
-| Memory usage | ~1.5GB RAM |
-| Processing speed | ~100-150ms per document (CPU) |
-| Embedding dimensions | 768 |
-| Token refresh | Automatic (lasts ~90 days) |
+| Metric               | Value                         |
+| -------------------- | ----------------------------- |
+| Model size           | ~1.1GB (downloaded once)      |
+| Memory usage         | ~1.5GB RAM                    |
+| Processing speed     | ~100-150ms per document (CPU) |
+| Embedding dimensions | 768                           |
+| Token refresh        | Automatic (lasts ~90 days)    |
 
 On an M-series Mac, expect ~50-100ms per document.
 
@@ -229,6 +232,7 @@ Copy the URL shown in the terminal and paste it into your browser manually.
 ### "Model loading failed"
 
 The model is downloaded to `~/.cache/huggingface/`. Check:
+
 - You have ~2GB free disk space
 - Internet connection is working
 - Try deleting the cache and re-running

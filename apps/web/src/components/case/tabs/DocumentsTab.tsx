@@ -98,7 +98,7 @@ function DocumentsTabComponent({
       <div
         className={clsx(
           'fixed inset-0 z-50 bg-white md:hidden transition-transform',
-          selectedDocument ? 'translate-x-0' : 'translate-x-full',
+          selectedDocument ? 'translate-x-0' : 'translate-x-full'
         )}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -108,12 +108,7 @@ function DocumentsTabComponent({
             className="p-2 rounded-md text-gray-500 hover:bg-gray-100 transition-colors"
             aria-label="Închide previzualizarea"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

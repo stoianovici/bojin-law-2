@@ -9,11 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@/lib/prisma';
 import { uploadPSTFile } from '@/lib/r2-storage';
 import { requirePartner, AuthError } from '@/lib/auth';
-import {
-  checkUploadRateLimit,
-  recordUploadAttempt,
-  getRateLimitHeaders,
-} from '@/lib/rate-limiter';
+import { checkUploadRateLimit, recordUploadAttempt, getRateLimitHeaders } from '@/lib/rate-limiter';
 
 // Max file size for direct upload: 100MB (larger files should use TUS)
 const MAX_DIRECT_UPLOAD_SIZE = 100 * 1024 * 1024;
@@ -27,10 +23,7 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     const session = await prisma.legacyImportSession.findUnique({
@@ -50,10 +43,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -64,10 +54,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('GET upload-pst error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -111,18 +98,12 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
     // Validate file type
     if (!file.name.toLowerCase().endsWith('.pst')) {
-      return NextResponse.json(
-        { error: 'Only PST files are allowed' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Only PST files are allowed' }, { status: 400 });
     }
 
     // Check file size
@@ -196,16 +177,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof AuthError) {
       const { message, statusCode } = error;
-      return NextResponse.json(
-        { error: message },
-        { status: statusCode }
-      );
+      return NextResponse.json({ error: message }, { status: statusCode });
     }
     console.error('POST upload-pst error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -218,10 +193,7 @@ export async function DELETE(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
 
     // Check session exists
@@ -230,18 +202,12 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // Only allow deletion of non-exported sessions
     if (session.status === 'Exported') {
-      return NextResponse.json(
-        { error: 'Cannot delete exported sessions' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Cannot delete exported sessions' }, { status: 400 });
     }
 
     // Delete R2 files
@@ -259,9 +225,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     console.error('DELETE upload-pst error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

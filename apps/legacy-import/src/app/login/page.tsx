@@ -47,9 +47,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
               <FileText className="h-8 w-8 text-blue-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Import Documente Vechi
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Import Documente Vechi</h1>
             <p className="text-gray-600">
               Autentifică-te cu contul Microsoft pentru a accesa categorizarea documentelor
             </p>
@@ -93,14 +91,13 @@ export default function LoginPage() {
 
           {/* Features */}
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">
-              Ce poți face:
-            </h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">Ce poți face:</h2>
             <ul className="space-y-3 text-sm text-gray-600">
               <li className="flex items-start gap-3">
                 <Users className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <span>
-                  <strong>Parteneri:</strong> Încarcă fișiere PST, unifică categorii, exportă în OneDrive
+                  <strong>Parteneri:</strong> Încarcă fișiere PST, unifică categorii, exportă în
+                  OneDrive
                 </span>
               </li>
               <li className="flex items-start gap-3">
@@ -111,9 +108,7 @@ export default function LoginPage() {
               </li>
               <li className="flex items-start gap-3">
                 <Shield className="h-5 w-5 text-purple-500 flex-shrink-0 mt-0.5" />
-                <span>
-                  Gestionare securizată cu curățare automată după export
-                </span>
+                <span>Gestionare securizată cu curățare automată după export</span>
               </li>
             </ul>
           </div>

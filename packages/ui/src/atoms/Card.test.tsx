@@ -26,19 +26,31 @@ describe('Card', () => {
 
   describe('Variants', () => {
     it('renders default variant', () => {
-      render(<Card variant="default" data-testid="card-default">Default</Card>);
+      render(
+        <Card variant="default" data-testid="card-default">
+          Default
+        </Card>
+      );
       const card = screen.getByTestId('card-default');
       expect(card).toHaveClass('border border-neutral-200');
     });
 
     it('renders elevated variant', () => {
-      render(<Card variant="elevated" data-testid="card-elevated">Elevated</Card>);
+      render(
+        <Card variant="elevated" data-testid="card-elevated">
+          Elevated
+        </Card>
+      );
       const card = screen.getByTestId('card-elevated');
       expect(card).toHaveClass('shadow-lg');
     });
 
     it('renders outlined variant', () => {
-      render(<Card variant="outlined" data-testid="card-outlined">Outlined</Card>);
+      render(
+        <Card variant="outlined" data-testid="card-outlined">
+          Outlined
+        </Card>
+      );
       const card = screen.getByTestId('card-outlined');
       expect(card).toHaveClass('border-2 border-neutral-300');
     });
@@ -46,31 +58,20 @@ describe('Card', () => {
 
   describe('Composition', () => {
     it('renders with header only', () => {
-      render(
-        <Card header={<h3>Card Header</h3>}>
-          Body content
-        </Card>
-      );
+      render(<Card header={<h3>Card Header</h3>}>Body content</Card>);
       expect(screen.getByText('Card Header')).toBeInTheDocument();
       expect(screen.getByText('Body content')).toBeInTheDocument();
     });
 
     it('renders with footer only', () => {
-      render(
-        <Card footer={<button>Action</button>}>
-          Body content
-        </Card>
-      );
+      render(<Card footer={<button>Action</button>}>Body content</Card>);
       expect(screen.getByText('Action')).toBeInTheDocument();
       expect(screen.getByText('Body content')).toBeInTheDocument();
     });
 
     it('renders with header and footer', () => {
       render(
-        <Card
-          header={<h3>Title</h3>}
-          footer={<button>Save</button>}
-        >
+        <Card header={<h3>Title</h3>} footer={<button>Save</button>}>
           Body content
         </Card>
       );
@@ -85,11 +86,7 @@ describe('Card', () => {
     });
 
     it('renders header with Romanian diacritics', () => {
-      render(
-        <Card header={<h3>Configurație</h3>}>
-          Content
-        </Card>
-      );
+      render(<Card header={<h3>Configurație</h3>}>Content</Card>);
       expect(screen.getByText('Configurație')).toBeInTheDocument();
     });
   });
@@ -117,11 +114,7 @@ describe('Card', () => {
     });
 
     it('applies custom bodyClassName', () => {
-      const { container } = render(
-        <Card bodyClassName="custom-body">
-          Content
-        </Card>
-      );
+      const { container } = render(<Card bodyClassName="custom-body">Content</Card>);
       const body = container.querySelector('.custom-body');
       expect(body).toBeInTheDocument();
       expect(body).toHaveTextContent('Content');
@@ -141,21 +134,13 @@ describe('Card', () => {
 
   describe('Structure', () => {
     it('renders header with bottom border when present', () => {
-      const { container } = render(
-        <Card header={<h3>Header</h3>}>
-          Content
-        </Card>
-      );
+      const { container } = render(<Card header={<h3>Header</h3>}>Content</Card>);
       const header = container.querySelector('.border-b');
       expect(header).toBeInTheDocument();
     });
 
     it('renders footer with top border when present', () => {
-      const { container } = render(
-        <Card footer={<button>Footer</button>}>
-          Content
-        </Card>
-      );
+      const { container } = render(<Card footer={<button>Footer</button>}>Content</Card>);
       const footer = container.querySelector('.border-t');
       expect(footer).toBeInTheDocument();
     });

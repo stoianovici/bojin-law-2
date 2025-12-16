@@ -109,11 +109,7 @@ export class TemplateUsageTrackingService {
    * Measure time saved per template use
    * AC6: Measure time saved per template use
    */
-  async measureTimeSaved(
-    templateId: string,
-    startTime: Date,
-    endTime: Date
-  ): Promise<number> {
+  async measureTimeSaved(templateId: string, startTime: Date, endTime: Date): Promise<number> {
     // Get template metadata to estimate manual time
     const template = await this.getTemplateMetadata(templateId);
     if (!template) return 0;
@@ -192,12 +188,10 @@ export class TemplateUsageTrackingService {
 
     // ROI percentage: (net value / cost) * 100
     const actualROI = costToMaintain > 0 ? (actualNetValue / costToMaintain) * 100 : 0;
-    const estimatedROI =
-      costToMaintain > 0 ? (estimatedNetValue / costToMaintain) * 100 : 0;
+    const estimatedROI = costToMaintain > 0 ? (estimatedNetValue / costToMaintain) * 100 : 0;
 
     // Variance between actual and estimated
-    const variance =
-      estimatedROI !== 0 ? ((actualROI - estimatedROI) / estimatedROI) * 100 : 0;
+    const variance = estimatedROI !== 0 ? ((actualROI - estimatedROI) / estimatedROI) * 100 : 0;
 
     return {
       templateId,
@@ -261,9 +255,7 @@ export class TemplateUsageTrackingService {
     const templatesForReview: TemplateForReview[] = [];
 
     // Get all templates
-    const templates = await this.db.query<RomanianTemplate>(
-      'SELECT * FROM romanian_templates'
-    );
+    const templates = await this.db.query<RomanianTemplate>('SELECT * FROM romanian_templates');
 
     for (const template of templates.rows) {
       const stats = await this.getUsageStatistics(template.id, 90); // 90 days
@@ -279,9 +271,7 @@ export class TemplateUsageTrackingService {
             usageCount: stats.totalUses,
             successRate: stats.successRate,
             daysSinceLastUse: stats.lastUsed
-              ? Math.floor(
-                  (Date.now() - stats.lastUsed.getTime()) / (1000 * 60 * 60 * 24)
-                )
+              ? Math.floor((Date.now() - stats.lastUsed.getTime()) / (1000 * 60 * 60 * 24))
               : 999,
           },
         });
@@ -298,9 +288,7 @@ export class TemplateUsageTrackingService {
             usageCount: stats.totalUses,
             successRate: stats.successRate,
             daysSinceLastUse: stats.lastUsed
-              ? Math.floor(
-                  (Date.now() - stats.lastUsed.getTime()) / (1000 * 60 * 60 * 24)
-                )
+              ? Math.floor((Date.now() - stats.lastUsed.getTime()) / (1000 * 60 * 60 * 24))
               : 999,
           },
         });
@@ -360,10 +348,7 @@ export class TemplateUsageTrackingService {
    * Generate monthly effectiveness report
    * AC6: Generate monthly effectiveness reports
    */
-  async generateEffectivenessReport(
-    startDate: Date,
-    endDate: Date
-  ): Promise<EffectivenessReport> {
+  async generateEffectivenessReport(startDate: Date, endDate: Date): Promise<EffectivenessReport> {
     // Get all template usage for period
     const usageResult = await this.db.query<{
       template_id: string;
@@ -383,10 +368,7 @@ export class TemplateUsageTrackingService {
     );
 
     // Calculate aggregate statistics
-    const totalUsages = usageResult.rows.reduce(
-      (sum, row) => sum + parseInt(row.total_uses),
-      0
-    );
+    const totalUsages = usageResult.rows.reduce((sum, row) => sum + parseInt(row.total_uses), 0);
     const totalTimeSaved = usageResult.rows.reduce(
       (sum, row) => sum + parseFloat(row.total_time_saved || '0'),
       0
@@ -420,9 +402,7 @@ export class TemplateUsageTrackingService {
     }
 
     // Sort by usage and get top performers
-    const topPerformers = templateStats
-      .sort((a, b) => b.totalUses - a.totalUses)
-      .slice(0, 5);
+    const topPerformers = templateStats.sort((a, b) => b.totalUses - a.totalUses).slice(0, 5);
 
     // Calculate average success rate
     const averageSuccessRate =

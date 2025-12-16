@@ -6,7 +6,11 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate } from '@langchain/core/prompts';
+import {
+  ChatPromptTemplate,
+  SystemMessagePromptTemplate,
+  HumanMessagePromptTemplate,
+} from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import {
   DocumentGenerationInput,
@@ -114,10 +118,7 @@ export class DocumentGenerationService {
       // Aggregate context if requested
       let context: DocumentContext | null = null;
       if (input.includeContext !== false) {
-        context = await contextAggregatorService.aggregateCaseContext(
-          input.caseId,
-          input.firmId
-        );
+        context = await contextAggregatorService.aggregateCaseContext(input.caseId, input.firmId);
       }
 
       // Find relevant precedents
@@ -130,7 +131,9 @@ export class DocumentGenerationService {
       });
 
       // Build the prompt
-      const contextSummary = context ? this.formatContextSummary(context) : 'No case context provided.';
+      const contextSummary = context
+        ? this.formatContextSummary(context)
+        : 'No case context provided.';
       const precedentSummary = this.formatPrecedentSummary(precedents);
       const documentTypeInstructions = DOCUMENT_TYPE_PROMPTS[input.documentType];
 
@@ -173,11 +176,13 @@ export class DocumentGenerationService {
         title: suggestedTitle,
         content,
         suggestedTitle,
-        templateUsed: input.templateId ? {
-          id: input.templateId,
-          name: 'Template',
-          category: input.documentType,
-        } : undefined,
+        templateUsed: input.templateId
+          ? {
+              id: input.templateId,
+              name: 'Template',
+              category: input.documentType,
+            }
+          : undefined,
         precedentsReferenced: precedents,
         tokensUsed: metrics.inputTokens + metrics.outputTokens,
         generationTimeMs,
@@ -359,7 +364,14 @@ export class DocumentGenerationService {
       errors.push('Prompt must be less than 10,000 characters');
     }
 
-    const validTypes: DocumentType[] = ['Contract', 'Motion', 'Letter', 'Memo', 'Pleading', 'Other'];
+    const validTypes: DocumentType[] = [
+      'Contract',
+      'Motion',
+      'Letter',
+      'Memo',
+      'Pleading',
+      'Other',
+    ];
     if (!validTypes.includes(input.documentType)) {
       errors.push(`Document type must be one of: ${validTypes.join(', ')}`);
     }

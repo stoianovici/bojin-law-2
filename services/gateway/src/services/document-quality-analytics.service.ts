@@ -44,16 +44,7 @@ const ISSUE_KEYWORDS: Record<IssueCategory, string[]> = {
     'citare',
     'hotărâre',
   ],
-  formatting: [
-    'format',
-    'layout',
-    'spacing',
-    'font',
-    'margin',
-    'aliniere',
-    'formatare',
-    'indent',
-  ],
+  formatting: ['format', 'layout', 'spacing', 'font', 'margin', 'aliniere', 'formatare', 'indent'],
   content: [
     'incorrect',
     'wrong',
@@ -210,7 +201,9 @@ export class DocumentQualityAnalyticsService {
           gte: dateRange.startDate,
           lte: dateRange.endDate,
         },
-        status: { in: [ReviewStatus.APPROVED, ReviewStatus.REVISION_REQUESTED, ReviewStatus.REJECTED] },
+        status: {
+          in: [ReviewStatus.APPROVED, ReviewStatus.REVISION_REQUESTED, ReviewStatus.REJECTED],
+        },
       },
       select: {
         id: true,
@@ -456,11 +449,7 @@ export class DocumentQualityAnalyticsService {
   /**
    * Generate cache key
    */
-  private getCacheKey(
-    firmId: string,
-    dateRange: PlatformDateRange,
-    interval: string
-  ): string {
+  private getCacheKey(firmId: string, dateRange: PlatformDateRange, interval: string): string {
     const params = [
       firmId,
       dateRange.startDate.toISOString().split('T')[0],

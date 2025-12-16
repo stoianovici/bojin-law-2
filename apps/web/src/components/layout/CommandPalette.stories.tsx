@@ -118,8 +118,7 @@ export const SearchNavigation: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Type "dashboard", "cases", "documents", or "tasks" to filter navigation commands',
+        story: 'Type "dashboard", "cases", "documents", or "tasks" to filter navigation commands',
       },
     },
   },
@@ -135,8 +134,7 @@ export const SearchActions: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Type "create" or "new" to filter action commands (Create Case, Document, Task)',
+        story: 'Type "create" or "new" to filter action commands (Create Case, Document, Task)',
       },
     },
   },
@@ -152,8 +150,7 @@ export const EmptyState: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Type a query that matches no commands (e.g., "xyz") to see empty state',
+        story: 'Type a query that matches no commands (e.g., "xyz") to see empty state',
       },
     },
   },
@@ -203,8 +200,7 @@ export const ActionCommands: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Shows action commands: Create New Case, Create Document, Add Task',
+        story: 'Shows action commands: Create New Case, Create Document, Add Task',
       },
     },
   },
@@ -220,8 +216,7 @@ export const KeyboardNavigation: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Try keyboard navigation: ↑/↓ arrows to select, Enter to activate, Escape to close',
+        story: 'Try keyboard navigation: ↑/↓ arrows to select, Enter to activate, Escape to close',
       },
     },
   },
@@ -304,8 +299,7 @@ export const WithBackdrop: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Demonstrates backdrop blur effect over page content when command palette is open',
+        story: 'Demonstrates backdrop blur effect over page content when command palette is open',
       },
     },
   },

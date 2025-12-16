@@ -75,9 +75,11 @@ describe('Word Add-in Integration Tests', () => {
     jest.clearAllMocks();
 
     // Setup default mock implementations
-    mockWord.run.mockImplementation(async (callback: (context: typeof mockWord.context) => Promise<void>) => {
-      await callback(mockWord.context);
-    });
+    mockWord.run.mockImplementation(
+      async (callback: (context: typeof mockWord.context) => Promise<void>) => {
+        await callback(mockWord.context);
+      }
+    );
 
     mockWord.context.sync.mockResolvedValue(undefined);
     mockOfficeRuntime.auth.getAccessToken.mockResolvedValue('mock-sso-token');
@@ -102,14 +104,16 @@ describe('Word Add-in Integration Tests', () => {
           {
             id: 'sug-001',
             type: 'GOVERNING_LAW',
-            suggestedText: 'This agreement shall be governed by and construed in accordance with the laws of the State of Delaware.',
+            suggestedText:
+              'This agreement shall be governed by and construed in accordance with the laws of the State of Delaware.',
             explanation: 'Delaware law is commonly used for commercial agreements.',
             confidence: 0.92,
           },
           {
             id: 'sug-002',
             type: 'JURISDICTION',
-            suggestedText: 'Any disputes arising under this agreement shall be resolved in the courts of Delaware.',
+            suggestedText:
+              'Any disputes arising under this agreement shall be resolved in the courts of Delaware.',
             explanation: 'Adding jurisdiction clause complements governing law.',
             confidence: 0.85,
           },
@@ -148,10 +152,7 @@ describe('Word Add-in Integration Tests', () => {
 
       await applySuggestion(suggestion);
 
-      expect(mockRange.insertText).toHaveBeenCalledWith(
-        suggestion.suggestedText,
-        'Replace'
-      );
+      expect(mockRange.insertText).toHaveBeenCalledWith(suggestion.suggestedText, 'Replace');
       expect(mockWord.context.sync).toHaveBeenCalled();
     });
 
@@ -159,12 +160,11 @@ describe('Word Add-in Integration Tests', () => {
       const textToExplain = 'force majeure clause';
 
       mockApiClient.explainText.mockResolvedValue({
-        explanation: 'A force majeure clause excuses a party from performance when extraordinary events prevent fulfillment of contractual obligations.',
+        explanation:
+          'A force majeure clause excuses a party from performance when extraordinary events prevent fulfillment of contractual obligations.',
         legalContext: 'Commonly invoked during natural disasters, wars, or pandemics.',
         relatedTerms: ['act of God', 'impossibility', 'frustration of purpose'],
-        sources: [
-          { title: 'Black\'s Law Dictionary', reference: '11th ed.' },
-        ],
+        sources: [{ title: "Black's Law Dictionary", reference: '11th ed.' }],
       });
 
       const explanation = await getExplanationForText(textToExplain);
@@ -178,7 +178,8 @@ describe('Word Add-in Integration Tests', () => {
       const textToImprove = 'The client shall pay within reasonable time.';
 
       mockApiClient.improveText.mockResolvedValue({
-        improvedText: 'The Client shall remit payment within thirty (30) business days of invoice receipt.',
+        improvedText:
+          'The Client shall remit payment within thirty (30) business days of invoice receipt.',
         improvements: [
           { type: 'specificity', description: 'Added specific time frame' },
           { type: 'clarity', description: 'Clarified payment trigger' },
@@ -217,9 +218,7 @@ describe('Word Add-in Integration Tests', () => {
     });
 
     it('should handle SSO failure with fallback', async () => {
-      mockOfficeRuntime.auth.getAccessToken.mockRejectedValue(
-        new Error('SSO not available')
-      );
+      mockOfficeRuntime.auth.getAccessToken.mockRejectedValue(new Error('SSO not available'));
 
       const authResult = await performSSOAuth();
 
@@ -347,9 +346,7 @@ describe('Word Add-in Integration Tests', () => {
     it('should sync document changes to platform', async () => {
       const documentChanges = {
         documentId: 'doc-word-001',
-        changes: [
-          { position: 100, oldText: 'old', newText: 'new' },
-        ],
+        changes: [{ position: 100, oldText: 'old', newText: 'new' }],
         timestamp: new Date(),
       };
 
@@ -481,10 +478,10 @@ describe('Word Add-in Integration Tests', () => {
     });
 
     it('should notify user of persistent failures', async () => {
-      const notification = await notifyPersistentFailure(
-        'Unable to connect to server',
-        { canRetry: true, canWorkOffline: true }
-      );
+      const notification = await notifyPersistentFailure('Unable to connect to server', {
+        canRetry: true,
+        canWorkOffline: true,
+      });
 
       expect(notification.shown).toBe(true);
       expect(notification.actions).toContain('retry');
@@ -520,7 +517,12 @@ async function getImprovementSuggestions(text: string) {
   return mockApiClient.improveText(text);
 }
 
-async function performSSOAuth(): Promise<{ success: boolean; user?: { id: string; email: string; name: string; role: string }; fallbackRequired?: boolean; fallbackMethod?: string }> {
+async function performSSOAuth(): Promise<{
+  success: boolean;
+  user?: { id: string; email: string; name: string; role: string };
+  fallbackRequired?: boolean;
+  fallbackMethod?: string;
+}> {
   try {
     const ssoToken = await mockOfficeRuntime.auth.getAccessToken();
     return mockAuthService.signIn(ssoToken);
@@ -618,7 +620,9 @@ async function initializeOfficeContext() {
   await mockWord.run(async () => {});
 }
 
-async function safeOfficeOperation<T>(operation: () => Promise<T>): Promise<{ success: boolean; result?: T; error?: Error }> {
+async function safeOfficeOperation<T>(
+  operation: () => Promise<T>
+): Promise<{ success: boolean; result?: T; error?: Error }> {
   try {
     const result = await operation();
     return { success: true, result };
@@ -627,7 +631,9 @@ async function safeOfficeOperation<T>(operation: () => Promise<T>): Promise<{ su
   }
 }
 
-async function batchOfficeOperations(_operations: { type: string; target?: string; content?: string }[]) {
+async function batchOfficeOperations(
+  _operations: { type: string; target?: string; content?: string }[]
+) {
   await mockWord.run(async (context: typeof mockWord.context) => {
     // All operations run before single sync
     await context.sync();
@@ -657,7 +663,10 @@ function formatErrorForUser(error: Error): string {
   return message;
 }
 
-async function logErrorToPlatform(_error: Error, _context: { operation: string; documentId: string }) {
+async function logErrorToPlatform(
+  _error: Error,
+  _context: { operation: string; documentId: string }
+) {
   // In real implementation, would call API to log error
 }
 

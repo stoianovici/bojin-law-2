@@ -33,7 +33,9 @@ test.describe('Communication Hub', () => {
       await page.click('button:has-text("Communications")');
 
       // Verify timeline feed is present
-      await expect(page.locator('[role="feed"][aria-label="Communication timeline"]')).toBeVisible();
+      await expect(
+        page.locator('[role="feed"][aria-label="Communication timeline"]')
+      ).toBeVisible();
 
       // Wait for entries to load
       await page.waitForSelector('[role="article"]', { timeout: 5000 }).catch(() => {
@@ -142,7 +144,9 @@ test.describe('Communication Hub', () => {
       // Toggle privacy filter if available
       await page.click('button:has-text("Filters")');
 
-      const privacyCheckbox = page.locator('input[type="checkbox"]').filter({ hasText: /private/i });
+      const privacyCheckbox = page
+        .locator('input[type="checkbox"]')
+        .filter({ hasText: /private/i });
       if (await privacyCheckbox.isVisible().catch(() => false)) {
         await privacyCheckbox.click();
       }
@@ -155,7 +159,9 @@ test.describe('Communication Hub', () => {
       await page.click('button:has-text("Communications")');
 
       // Check for note composer
-      await expect(page.locator('[data-testid="internal-note-composer"], textarea[placeholder*="note"]')).toBeVisible();
+      await expect(
+        page.locator('[data-testid="internal-note-composer"], textarea[placeholder*="note"]')
+      ).toBeVisible();
     });
 
     test('should create internal note', async ({ page }) => {
@@ -180,7 +186,9 @@ test.describe('Communication Hub', () => {
       await page.click('button:has-text("Communications")');
 
       // Look for privacy selector in note composer
-      const privacySelector = page.locator('[data-testid="privacy-selector"], select[name*="privacy"]');
+      const privacySelector = page.locator(
+        '[data-testid="privacy-selector"], select[name*="privacy"]'
+      );
       if (await privacySelector.isVisible().catch(() => false)) {
         await privacySelector.selectOption('Confidential');
       }
@@ -193,12 +201,16 @@ test.describe('Communication Hub', () => {
       await page.click('button:has-text("Communications")');
 
       // Click template button if available
-      const templateButton = page.locator('button:has-text("Template"), button:has-text("Use Template")');
+      const templateButton = page.locator(
+        'button:has-text("Template"), button:has-text("Use Template")'
+      );
       if (await templateButton.isVisible().catch(() => false)) {
         await templateButton.click();
 
         // Verify template library is shown
-        await expect(page.locator('[data-testid="template-library"], [role="dialog"]:has-text("Template")')).toBeVisible();
+        await expect(
+          page.locator('[data-testid="template-library"], [role="dialog"]:has-text("Template")')
+        ).toBeVisible();
       }
     });
 
@@ -212,7 +224,9 @@ test.describe('Communication Hub', () => {
         await templateButton.click();
 
         // Filter by category
-        const categoryFilter = page.locator('select[name*="category"], [data-testid="category-filter"]');
+        const categoryFilter = page.locator(
+          'select[name*="category"], [data-testid="category-filter"]'
+        );
         if (await categoryFilter.isVisible().catch(() => false)) {
           await categoryFilter.selectOption('ClientUpdate');
         }
@@ -229,7 +243,9 @@ test.describe('Communication Hub', () => {
         await templateButton.click();
 
         // Search templates
-        const searchInput = page.locator('[data-testid="template-search"], input[placeholder*="Search template"]');
+        const searchInput = page.locator(
+          '[data-testid="template-search"], input[placeholder*="Search template"]'
+        );
         if (await searchInput.isVisible().catch(() => false)) {
           await searchInput.fill('case update');
         }
@@ -248,7 +264,9 @@ test.describe('Communication Hub', () => {
         await bulkButton.click();
 
         // Verify wizard is opened
-        await expect(page.locator('[data-testid="bulk-wizard"], [role="dialog"]:has-text("Bulk")')).toBeVisible();
+        await expect(
+          page.locator('[data-testid="bulk-wizard"], [role="dialog"]:has-text("Bulk")')
+        ).toBeVisible();
       }
     });
 
@@ -261,7 +279,9 @@ test.describe('Communication Hub', () => {
         await bulkButton.click();
 
         // Select recipient type
-        const recipientTypeSelector = page.locator('[data-testid="recipient-type"], select[name*="recipient"]');
+        const recipientTypeSelector = page.locator(
+          '[data-testid="recipient-type"], select[name*="recipient"]'
+        );
         if (await recipientTypeSelector.isVisible().catch(() => false)) {
           await recipientTypeSelector.selectOption('CaseClients');
         }
@@ -280,7 +300,9 @@ test.describe('Communication Hub', () => {
         await exportButton.click();
 
         // Verify export dialog is opened
-        await expect(page.locator('[data-testid="export-dialog"], [role="dialog"]:has-text("Export")')).toBeVisible();
+        await expect(
+          page.locator('[data-testid="export-dialog"], [role="dialog"]:has-text("Export")')
+        ).toBeVisible();
       }
     });
 
@@ -293,7 +315,9 @@ test.describe('Communication Hub', () => {
         await exportButton.click();
 
         // Select format
-        const formatSelector = page.locator('[data-testid="export-format"], select[name*="format"]');
+        const formatSelector = page.locator(
+          '[data-testid="export-format"], select[name*="format"]'
+        );
         if (await formatSelector.isVisible().catch(() => false)) {
           await formatSelector.selectOption('PDF');
         }
@@ -321,12 +345,16 @@ test.describe('Communication Hub', () => {
       await page.click('button:has-text("Communications")');
 
       // Click export history button if available
-      const historyButton = page.locator('button:has-text("History"), button:has-text("Previous Exports")');
+      const historyButton = page.locator(
+        'button:has-text("History"), button:has-text("Previous Exports")'
+      );
       if (await historyButton.isVisible().catch(() => false)) {
         await historyButton.click();
 
         // Verify history panel
-        await expect(page.locator('[data-testid="export-history"], [role="region"]:has-text("Export")')).toBeVisible();
+        await expect(
+          page.locator('[data-testid="export-history"], [role="region"]:has-text("Export")')
+        ).toBeVisible();
       }
     });
   });

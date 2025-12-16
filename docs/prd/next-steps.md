@@ -1,6 +1,7 @@
 # Next Steps
 
 ## Immediate Actions (Week 1)
+
 1. Execute Story 1.0 - Initialize repository
 2. Set up development environment (Story 1.1)
 3. Configure testing framework (Story 1.2)

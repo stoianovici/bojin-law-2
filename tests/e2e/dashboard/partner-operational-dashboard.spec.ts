@@ -15,7 +15,9 @@ test.describe('Partner Operational Dashboard (Story 1.6)', () => {
     await page.goto('http://localhost:3000');
 
     // Verify we're on Partner role
-    await expect(page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')).toContainText('Partner');
+    await expect(
+      page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')
+    ).toContainText('Partner');
   });
 
   test('Partner dashboard loads with new operational layout', async ({ page }) => {
@@ -24,7 +26,9 @@ test.describe('Partner Operational Dashboard (Story 1.6)', () => {
 
     // Verify new operational widgets are present (Story 1.6)
     // 1. Supervised Cases Widget
-    await expect(page.locator('[data-widget-id="supervised-cases"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-widget-id="supervised-cases"]')).toBeVisible({
+      timeout: 10000,
+    });
 
     // 2. My Tasks Widget
     await expect(page.locator('[data-widget-id="my-tasks"]')).toBeVisible();
@@ -123,7 +127,7 @@ test.describe('Partner Operational Dashboard (Story 1.6)', () => {
 
     // Verify utilization data is displayed
     const employees = widget.locator('[data-testid="employee-row"]');
-    if (await employees.count() > 0) {
+    if ((await employees.count()) > 0) {
       await expect(employees.first()).toBeVisible();
       await expect(employees.first()).toContainText(/%/); // Utilization percentage
     }
@@ -144,7 +148,9 @@ test.describe('Partner Operational Dashboard (Story 1.6)', () => {
       await expect(widget.locator('[data-testid="employee-detail"]').first()).toBeVisible();
 
       // Detail should show task breakdown
-      await expect(widget.locator('[data-testid="employee-detail"]').first()).toContainText(/Tasks|Sarcini/i);
+      await expect(widget.locator('[data-testid="employee-detail"]').first()).toContainText(
+        /Tasks|Sarcini/i
+      );
     }
   });
 
@@ -167,7 +173,9 @@ test.describe('Partner Operational Dashboard (Story 1.6)', () => {
     await expect(widget).toBeVisible();
 
     // Find collapse/expand button
-    const collapseButton = widget.locator('[aria-label*="Collapse"], [aria-label*="Expand"]').first();
+    const collapseButton = widget
+      .locator('[aria-label*="Collapse"], [aria-label*="Expand"]')
+      .first();
 
     if (await collapseButton.isVisible()) {
       // Click to collapse

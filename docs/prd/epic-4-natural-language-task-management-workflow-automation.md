@@ -9,6 +9,7 @@
 **so that** I can quickly capture work without filling out forms.
 
 **Acceptance Criteria:**
+
 1. Command palette accepts natural language like "Schedule client meeting next Tuesday at 2pm"
 2. AI extracts: task type, assignee, due date, related case, priority
 3. Ambiguous inputs trigger clarification dialog: "Which case is this for?"
@@ -23,6 +24,7 @@
 **so that** each type of work follows appropriate processes.
 
 **Acceptance Criteria:**
+
 1. Six task types implemented: Research, Document Creation, Document Retrieval, Court Dates, Meetings, Business Trips
 2. Each type has specific required fields and validation rules
 3. Court Date tasks auto-generate preparation subtasks based on deadline
@@ -37,6 +39,7 @@
 **so that** I maintain accurate control over billable hours.
 
 **Acceptance Criteria:**
+
 1. Estimated time field required on task creation (AI can suggest based on similar past tasks)
 2. Manual time logging via simple entry: hours and description
 3. Quick-log option from task context ("Log time against this task")
@@ -51,6 +54,7 @@
 **so that** I can identify coaching opportunities and workflow improvements.
 
 **Acceptance Criteria:**
+
 1. Background service tracks active window/document interactions (opt-in, privacy-disclosed)
 2. Activity data visible only to partners in management dashboards
 3. Metrics show: time-on-task patterns, document activity duration, task switching frequency
@@ -65,6 +69,7 @@
 **so that** workflow progresses without manual intervention.
 
 **Acceptance Criteria:**
+
 1. Task templates define common workflows with dependencies
 2. Completing prerequisite task automatically activates next task
 3. Deadline changes cascade to dependent tasks with conflict warnings
@@ -79,6 +84,7 @@
 **so that** I can assign work effectively.
 
 **Acceptance Criteria:**
+
 1. Team calendar shows all members' tasks and availability
 2. Workload meter displays hours allocated per person per day
 3. AI suggests optimal task assignments based on skills and capacity
@@ -93,6 +99,7 @@
 **so that** we can coordinate efficiently.
 
 **Acceptance Criteria:**
+
 1. Task comments thread with @mentions sending notifications
 2. Status updates automatically posted to case activity feed
 3. File attachments linked to tasks with version tracking
@@ -107,6 +114,7 @@
 **so that** we can improve our workflows.
 
 **Acceptance Criteria:**
+
 1. Average task completion time by type and user
 2. Overdue task analysis identifies bottleneck patterns
 3. Task velocity trends show productivity changes
@@ -121,6 +129,7 @@
 **so that** I can use all features effectively.
 
 **Acceptance Criteria:**
+
 1. User guide sections for all task types and workflows
 2. Video tutorials for common workflows
 3. In-app help tooltips and guided tours

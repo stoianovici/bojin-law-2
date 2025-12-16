@@ -91,9 +91,7 @@ describe('WorkloadService', () => {
     });
 
     it('should return zero capacity for OOO day', async () => {
-      mockPrisma.task.findMany.mockResolvedValue([
-        { id: 'task-1', estimatedHours: 4.0 },
-      ]);
+      mockPrisma.task.findMany.mockResolvedValue([{ id: 'task-1', estimatedHours: 4.0 }]);
 
       // User is out of office
       mockPrisma.userAvailability.findFirst.mockResolvedValue({
@@ -114,9 +112,7 @@ describe('WorkloadService', () => {
     });
 
     it('should use reduced hours from availability override', async () => {
-      mockPrisma.task.findMany.mockResolvedValue([
-        { id: 'task-1', estimatedHours: 3.0 },
-      ]);
+      mockPrisma.task.findMany.mockResolvedValue([{ id: 'task-1', estimatedHours: 3.0 }]);
 
       // User has reduced hours
       mockPrisma.userAvailability.findFirst.mockResolvedValue({
@@ -256,9 +252,7 @@ describe('WorkloadService', () => {
   describe('getAvailableCapacity', () => {
     it('should calculate available capacity correctly', async () => {
       // Mock daily workload
-      mockPrisma.task.findMany.mockResolvedValue([
-        { id: 'task-1', estimatedHours: 3.0 },
-      ]);
+      mockPrisma.task.findMany.mockResolvedValue([{ id: 'task-1', estimatedHours: 3.0 }]);
       mockPrisma.userAvailability.findFirst.mockResolvedValue(null);
       mockPrisma.userWorkloadSettings.findUnique.mockResolvedValue({
         dailyCapacityHours: 8,
@@ -272,9 +266,7 @@ describe('WorkloadService', () => {
     });
 
     it('should return 0 when overloaded', async () => {
-      mockPrisma.task.findMany.mockResolvedValue([
-        { id: 'task-1', estimatedHours: 10.0 },
-      ]);
+      mockPrisma.task.findMany.mockResolvedValue([{ id: 'task-1', estimatedHours: 10.0 }]);
       mockPrisma.userAvailability.findFirst.mockResolvedValue(null);
       mockPrisma.userWorkloadSettings.findUnique.mockResolvedValue({
         dailyCapacityHours: 8,
@@ -305,9 +297,7 @@ describe('WorkloadService', () => {
       });
 
       // Mock same data for each day
-      mockPrisma.task.findMany.mockResolvedValue([
-        { id: 'task-1', estimatedHours: 4.0 },
-      ]);
+      mockPrisma.task.findMany.mockResolvedValue([{ id: 'task-1', estimatedHours: 4.0 }]);
       mockPrisma.userAvailability.findFirst.mockResolvedValue(null);
       mockPrisma.userWorkloadSettings.findUnique.mockResolvedValue({
         dailyCapacityHours: 8,
@@ -344,10 +334,7 @@ describe('WorkloadService', () => {
       };
 
       // Mock team members
-      mockPrisma.user.findMany.mockResolvedValue([
-        { id: 'user-1' },
-        { id: 'user-2' },
-      ]);
+      mockPrisma.user.findMany.mockResolvedValue([{ id: 'user-1' }, { id: 'user-2' }]);
 
       // Mock user info for each
       mockPrisma.user.findUnique.mockImplementation(({ where }: any) => {
@@ -360,9 +347,7 @@ describe('WorkloadService', () => {
       });
 
       // Mock workload data
-      mockPrisma.task.findMany.mockResolvedValue([
-        { id: 'task-1', estimatedHours: 4.0 },
-      ]);
+      mockPrisma.task.findMany.mockResolvedValue([{ id: 'task-1', estimatedHours: 4.0 }]);
       mockPrisma.userAvailability.findFirst.mockResolvedValue(null);
       mockPrisma.userWorkloadSettings.findUnique.mockResolvedValue({
         dailyCapacityHours: 8,

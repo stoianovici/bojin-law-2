@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import {
   useThreadSummary,
+  useCaseThreadSummaries,
   useTriggerThreadAnalysis,
   type ThreadSummary,
   type KeyArgument,
@@ -69,10 +70,7 @@ function KeyArgumentCard({ argument, index, onEmailClick }: KeyArgumentCardProps
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div
-      role="listitem"
-      className="p-3 bg-gray-50 rounded-lg border border-gray-200"
-    >
+    <div role="listitem" className="p-3 bg-gray-50 rounded-lg border border-gray-200">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
           {/* Party tag */}
@@ -280,11 +278,7 @@ function ThreadSummaryContent({
             <Quote className="h-4 w-4 text-blue-500" aria-hidden="true" />
             Key Arguments ({summary.keyArguments.length})
           </h4>
-          <div
-            role="list"
-            aria-label="Key arguments from thread analysis"
-            className="space-y-3"
-          >
+          <div role="list" aria-label="Key arguments from thread analysis" className="space-y-3">
             {summary.keyArguments.map((arg, index) => (
               <KeyArgumentCard
                 key={index}
@@ -298,10 +292,7 @@ function ThreadSummaryContent({
       )}
 
       {/* Position Changes */}
-      <PositionChangeTimeline
-        changes={summary.positionChanges}
-        onEmailClick={onEmailClick}
-      />
+      <PositionChangeTimeline changes={summary.positionChanges} onEmailClick={onEmailClick} />
 
       {/* Case link */}
       {summary.case && (
@@ -323,10 +314,7 @@ function ThreadSummaryContent({
 // Main Thread Summary Panel Component
 // ============================================================================
 
-export function ThreadSummaryPanel({
-  conversationId,
-  onEmailClick,
-}: ThreadSummaryPanelProps) {
+export function ThreadSummaryPanel({ conversationId, onEmailClick }: ThreadSummaryPanelProps) {
   const { data, loading, error, refetch } = useThreadSummary(conversationId);
   const [triggerAnalysis, { loading: isReanalyzing }] = useTriggerThreadAnalysis();
 
@@ -422,10 +410,7 @@ export function ThreadSummaryPanel({
 // Case Thread Summaries Panel (Multiple Threads)
 // ============================================================================
 
-export function CaseThreadSummariesPanel({
-  caseId,
-  onEmailClick,
-}: CaseThreadSummariesPanelProps) {
+export function CaseThreadSummariesPanel({ caseId, onEmailClick }: CaseThreadSummariesPanelProps) {
   const { data, loading, error, refetch } = useCaseThreadSummaries(caseId);
   const [triggerAnalysis, { loading: isReanalyzing }] = useTriggerThreadAnalysis();
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
@@ -457,11 +442,7 @@ export function CaseThreadSummariesPanel({
   // Loading state
   if (loading && !data?.caseThreadSummaries) {
     return (
-      <div
-        className="p-6 flex items-center justify-center"
-        role="status"
-        aria-busy="true"
-      >
+      <div className="p-6 flex items-center justify-center" role="status" aria-busy="true">
         <Loader2 className="h-6 w-6 animate-spin text-blue-500" aria-hidden="true" />
         <span className="ml-2 text-sm text-gray-600">Loading thread analyses...</span>
       </div>
@@ -510,10 +491,7 @@ export function CaseThreadSummariesPanel({
 
       <div className="space-y-3">
         {summaries.map((summary) => (
-          <div
-            key={summary.id}
-            className="border border-gray-200 rounded-lg overflow-hidden"
-          >
+          <div key={summary.id} className="border border-gray-200 rounded-lg overflow-hidden">
             {/* Thread header (clickable to expand) */}
             <button
               onClick={() => toggleThread(summary.conversationId)}
@@ -528,9 +506,7 @@ export function CaseThreadSummariesPanel({
                     aria-hidden="true"
                   />
                   <div>
-                    <div className="font-medium text-sm">
-                      {summary.messageCount} messages
-                    </div>
+                    <div className="font-medium text-sm">{summary.messageCount} messages</div>
                     <div className="text-xs text-gray-500">
                       Updated {formatDistanceToNow(new Date(summary.lastAnalyzedAt))} ago
                     </div>
@@ -539,7 +515,8 @@ export function CaseThreadSummariesPanel({
                 <div className="flex items-center gap-2">
                   {summary.positionChanges.length > 0 && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                      {summary.positionChanges.length} position change{summary.positionChanges.length !== 1 ? 's' : ''}
+                      {summary.positionChanges.length} position change
+                      {summary.positionChanges.length !== 1 ? 's' : ''}
                     </span>
                   )}
                   {expandedThreads.has(summary.conversationId) ? (

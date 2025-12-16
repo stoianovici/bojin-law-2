@@ -21,15 +21,15 @@ CCPA applies if the business meets ONE of the following:
 
 ## COMPLIANCE STATUS SUMMARY
 
-| Category | Compliant | Partial | Non-Compliant | N/A |
-|----------|-----------|---------|---------------|-----|
-| Notice at Collection | ☐ | ☐ | ☐ | ☐ |
-| Privacy Policy | ☐ | ☐ | ☐ | ☐ |
-| Consumer Rights | ☐ | ☐ | ☐ | ☐ |
-| Do Not Sell/Share | ☐ | ☐ | ☐ | ☐ |
-| Service Provider Contracts | ☐ | ☐ | ☐ | ☐ |
-| Data Security | ☐ | ☐ | ☐ | ☐ |
-| Non-Discrimination | ☐ | ☐ | ☐ | ☐ |
+| Category                   | Compliant | Partial | Non-Compliant | N/A |
+| -------------------------- | --------- | ------- | ------------- | --- |
+| Notice at Collection       | ☐         | ☐       | ☐             | ☐   |
+| Privacy Policy             | ☐         | ☐       | ☐             | ☐   |
+| Consumer Rights            | ☐         | ☐       | ☐             | ☐   |
+| Do Not Sell/Share          | ☐         | ☐       | ☐             | ☐   |
+| Service Provider Contracts | ☐         | ☐       | ☐             | ☐   |
+| Data Security              | ☐         | ☐       | ☐             | ☐   |
+| Non-Discrimination         | ☐         | ☐       | ☐             | ☐   |
 
 **Overall Risk Level:** {{RISK_LEVEL}}
 
@@ -44,6 +44,7 @@ CCPA applies if the business meets ONE of the following:
 ☐ Notice updated within past 12 months
 
 **Collection Points Reviewed:**
+
 - ☐ Website forms
 - ☐ Mobile app
 - ☐ Point of sale
@@ -60,6 +61,7 @@ CCPA applies if the business meets ONE of the following:
 ## 2. PRIVACY POLICY (§ 1798.130(a)(5))
 
 ### 2.1 Required Disclosures
+
 ☐ Categories of personal information collected (last 12 months)
 ☐ Sources of personal information
 ☐ Business/commercial purposes for collection
@@ -72,6 +74,7 @@ CCPA applies if the business meets ONE of the following:
 ☐ Non-discrimination policy stated
 
 ### 2.2 CPRA Additional Requirements (Effective Jan 1, 2023)
+
 ☐ Retention periods disclosed (or criteria for determining)
 ☐ Sensitive personal information uses disclosed
 ☐ Right to limit sensitive PI use/disclosure disclosed
@@ -121,6 +124,7 @@ CCPA applies if the business meets ONE of the following:
 ☐ Opt-in required for consumers under 16
 
 **Sale/Sharing Determination:**
+
 - Selling PI? {{SELLING_DETERMINATION}}
 - Sharing PI for cross-context behavioral advertising? {{SHARING_DETERMINATION}}
 
@@ -133,6 +137,7 @@ CCPA applies if the business meets ONE of the following:
 ☐ Limitation mechanism implemented
 
 **Sensitive PI Categories Processed:**
+
 - ☐ Social Security number, driver's license, passport
 - ☐ Account login + password/security questions
 - ☐ Financial account information
@@ -164,12 +169,13 @@ CCPA applies if the business meets ONE of the following:
 
 ☐ All service providers identified
 ☐ Contracts contain required CCPA/CPRA provisions:
-  - Processing only for specified business purposes
-  - Certification of understanding restrictions
-  - Prohibition on selling/sharing/retaining personal information
-  - Notification of inability to comply
-  - Right to monitor (CPRA)
-  - Sub-service provider authorization (CPRA)
+
+- Processing only for specified business purposes
+- Certification of understanding restrictions
+- Prohibition on selling/sharing/retaining personal information
+- Notification of inability to comply
+- Right to monitor (CPRA)
+- Sub-service provider authorization (CPRA)
 
 **Service Provider Inventory:**
 | Provider | Service | Contract Status | Compliance |
@@ -203,13 +209,15 @@ CCPA applies if the business meets ONE of the following:
 
 ☐ Consumer request log maintained
 ☐ Metrics tracked:
-  - Number of requests received
-  - Number of requests complied with (in whole or part)
-  - Number of requests denied
-  - Median/mean response time
-☐ Records retained for 24 months
+
+- Number of requests received
+- Number of requests complied with (in whole or part)
+- Number of requests denied
+- Median/mean response time
+  ☐ Records retained for 24 months
 
 **Request Metrics (Last 12 Months):**
+
 - Access Requests: {{ACCESS_REQUESTS}}
 - Deletion Requests: {{DELETION_REQUESTS}}
 - Opt-Out Requests: {{OPT_OUT_REQUESTS}}
@@ -224,9 +232,10 @@ CCPA applies if the business meets ONE of the following:
 
 ☐ Authorized agent request process documented
 ☐ Verification of agent authority required:
-  - Power of attorney OR
-  - Written permission + verification of consumer
-☐ Process does not require agent registration
+
+- Power of attorney OR
+- Written permission + verification of consumer
+  ☐ Process does not require agent registration
 
 **Findings:** {{AUTHORIZED_AGENT_FINDINGS}}
 
@@ -261,22 +270,25 @@ CCPA applies if the business meets ONE of the following:
 ## GAP ANALYSIS & REMEDIATION
 
 ### Critical Gaps (Address Immediately)
+
 1. {{CRITICAL_GAP_1}}
 2. {{CRITICAL_GAP_2}}
 
 ### High Priority (30 days)
+
 1. {{HIGH_GAP_1}}
 2. {{HIGH_GAP_2}}
 
 ### Medium Priority (90 days)
+
 1. {{MEDIUM_GAP_1}}
 
 ---
 
 ## ACTION ITEMS
 
-| Action | Owner | Deadline | Status |
-|--------|-------|----------|--------|
+| Action       | Owner       | Deadline       | Status  |
+| ------------ | ----------- | -------------- | ------- |
 | {{ACTION_1}} | {{OWNER_1}} | {{DEADLINE_1}} | Pending |
 | {{ACTION_2}} | {{OWNER_2}} | {{DEADLINE_2}} | Pending |
 
@@ -286,5 +298,5 @@ CCPA applies if the business meets ONE of the following:
 
 **Date:** {{NEXT_REVIEW_DATE}}
 
-**Assessor:** _______________________
-**Date:** _______________________
+**Assessor:** **********\_\_\_**********
+**Date:** **********\_\_\_**********

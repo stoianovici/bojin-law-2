@@ -367,11 +367,7 @@ describe('Task GraphQL API Integration Tests', () => {
 
       mockPrisma.task.findUnique.mockResolvedValue(task as any);
 
-      const result = await taskResolvers.Query.task(
-        {},
-        { id: task.id },
-        mockContext
-      );
+      const result = await taskResolvers.Query.task({}, { id: task.id }, mockContext);
 
       expect(result).toEqual(task);
     });

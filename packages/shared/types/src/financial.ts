@@ -86,10 +86,7 @@ export enum FinancialFieldCategory {
 /**
  * Mapping of financial fields to their categories
  */
-export const FINANCIAL_FIELD_CATEGORIES: Record<
-  FinancialField,
-  FinancialFieldCategory
-> = {
+export const FINANCIAL_FIELD_CATEGORIES: Record<FinancialField, FinancialFieldCategory> = {
   [FinancialField.CASE_VALUE]: FinancialFieldCategory.CASE_MANAGEMENT,
   [FinancialField.CASE_BILLING_TYPE]: FinancialFieldCategory.CASE_MANAGEMENT,
   [FinancialField.CASE_FIXED_AMOUNT]: FinancialFieldCategory.CASE_MANAGEMENT,
@@ -102,8 +99,7 @@ export const FINANCIAL_FIELD_CATEGORIES: Record<
   [FinancialField.CASE_RETAINER_AUTO_RENEW]: FinancialFieldCategory.CASE_MANAGEMENT,
   [FinancialField.CASE_CURRENT_RETAINER_USAGE]: FinancialFieldCategory.CASE_MANAGEMENT,
   [FinancialField.TIME_ENTRY_RATE]: FinancialFieldCategory.TIME_TRACKING,
-  [FinancialField.TIME_ENTRY_BILLABLE_AMOUNT]:
-    FinancialFieldCategory.TIME_TRACKING,
+  [FinancialField.TIME_ENTRY_BILLABLE_AMOUNT]: FinancialFieldCategory.TIME_TRACKING,
   [FinancialField.FIRM_DEFAULT_RATES]: FinancialFieldCategory.SETTINGS,
   [FinancialField.INVOICE_ALL]: FinancialFieldCategory.BILLING_INVOICING,
   [FinancialField.PAYMENT_ALL]: FinancialFieldCategory.PAYMENTS,

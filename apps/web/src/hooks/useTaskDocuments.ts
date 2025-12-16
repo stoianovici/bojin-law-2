@@ -116,10 +116,10 @@ export function useLinkDocumentToTask() {
  * Hook to unlink a document from a task
  */
 export function useUnlinkDocumentFromTask() {
-  return useMutation<
-    { unlinkDocumentFromTask: boolean },
-    { taskId: string; documentId: string }
-  >(UNLINK_DOCUMENT_FROM_TASK, {
-    refetchQueries: ['GetTaskDocuments', 'GetTask'],
-  });
+  return useMutation<{ unlinkDocumentFromTask: boolean }, { taskId: string; documentId: string }>(
+    UNLINK_DOCUMENT_FROM_TASK,
+    {
+      refetchQueries: ['GetTaskDocuments', 'GetTask'],
+    }
+  );
 }

@@ -20,7 +20,13 @@ export interface DocumentTypeRegistry {
   total_occurrences: number;
   priority_score: number; // DECIMAL(3,2)
   confidence_score: number | null; // DECIMAL(3,2)
-  decision: 'pending' | 'auto_mapped' | 'review_queue' | 'template_trigger' | 'manual_override' | null;
+  decision:
+    | 'pending'
+    | 'auto_mapped'
+    | 'review_queue'
+    | 'template_trigger'
+    | 'manual_override'
+    | null;
   legal_category: string | null;
   complexity_estimate: 'low' | 'medium' | 'high' | null;
   average_page_length: number | null;
@@ -79,7 +85,12 @@ export interface RomanianTemplate {
 export interface DocumentPattern {
   id: string; // UUID
   type_id: string; // UUID foreign key
-  pattern_type: 'common_phrase' | 'clause_structure' | 'section_header' | 'legal_reference' | 'custom';
+  pattern_type:
+    | 'common_phrase'
+    | 'clause_structure'
+    | 'section_header'
+    | 'legal_reference'
+    | 'custom';
   pattern_text_ro: string;
   pattern_text_en: string | null;
   occurrence_count: number;

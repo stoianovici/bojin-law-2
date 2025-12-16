@@ -8,11 +8,7 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DeadlineActionMenu, DeadlineActionButtons } from './DeadlineActionMenu';
 import { useDeadlineWarnings, useCaseDeadlineWarnings } from '@/hooks/useDeadlineWarnings';
 import type { DeadlineInfo, SuggestedAction } from '@legal-platform/types';
@@ -66,12 +62,7 @@ const ChevronDownIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M19 9l-7 7-7-7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
 
@@ -85,12 +76,7 @@ const CloseIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M6 18L18 6M6 6l12 12"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
@@ -221,15 +207,11 @@ export function DeadlineWarningBanner({
                   <ClockIcon className={config.icon} />
                 )}
                 <span className={`font-medium ${config.text}`}>
-                  {overallSeverity === 'critical'
-                    ? 'Termene Critice'
-                    : 'Termene Apropiate'}
+                  {overallSeverity === 'critical' ? 'Termene Critice' : 'Termene Apropiate'}
                 </span>
                 <Badge className={config.badge}>{count}</Badge>
                 <ChevronDownIcon
-                  className={`transition-transform duration-200 ${
-                    isExpanded ? 'rotate-180' : ''
-                  }`}
+                  className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                 />
               </button>
             </CollapsibleTrigger>
@@ -268,9 +250,7 @@ export function DeadlineWarningBanner({
             <ClockIcon className={config.icon} />
           )}
           <span className={`font-medium ${config.text}`}>
-            {overallSeverity === 'critical'
-              ? 'Termene Critice'
-              : 'Termene Apropiate'}
+            {overallSeverity === 'critical' ? 'Termene Critice' : 'Termene Apropiate'}
           </span>
           <Badge className={config.badge}>{count}</Badge>
         </div>
@@ -330,9 +310,7 @@ function DeadlineWarningItem({
           <span className={deadline.daysUntilDue < 0 ? 'text-red-600 font-medium' : ''}>
             {getDueText(deadline.daysUntilDue)}
           </span>
-          {deadline.case && (
-            <span className="truncate">Dosar: {deadline.case.title}</span>
-          )}
+          {deadline.case && <span className="truncate">Dosar: {deadline.case.title}</span>}
           {deadline.blockedBy && deadline.blockedBy.length > 0 && (
             <span className="text-orange-600">
               Blocat de {deadline.blockedBy.length}{' '}
@@ -392,7 +370,9 @@ export function DeadlineWarningCompact({
           >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{deadline.title}</p>
-              <p className={`text-xs ${deadline.daysUntilDue < 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+              <p
+                className={`text-xs ${deadline.daysUntilDue < 0 ? 'text-red-600' : 'text-muted-foreground'}`}
+              >
                 {getDueText(deadline.daysUntilDue)}
               </p>
             </div>
@@ -406,9 +386,7 @@ export function DeadlineWarningCompact({
         );
       })}
       {count > maxVisible && (
-        <p className="text-xs text-muted-foreground text-center">
-          +{count - maxVisible} mai multe
-        </p>
+        <p className="text-xs text-muted-foreground text-center">+{count - maxVisible} mai multe</p>
       )}
     </div>
   );

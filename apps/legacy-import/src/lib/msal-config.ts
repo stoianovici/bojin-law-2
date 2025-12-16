@@ -14,12 +14,12 @@ export const msalConfig: Configuration = {
   auth: {
     clientId: process.env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID || '',
     authority: `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID || 'common'}`,
-    redirectUri: typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/callback`
-      : process.env.NEXT_PUBLIC_REDIRECT_URI || 'http://localhost:3001/auth/callback',
-    postLogoutRedirectUri: typeof window !== 'undefined'
-      ? window.location.origin
-      : 'http://localhost:3001',
+    redirectUri:
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : process.env.NEXT_PUBLIC_REDIRECT_URI || 'http://localhost:3001/auth/callback',
+    postLogoutRedirectUri:
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001',
     navigateToLoginRequestUrl: true,
   },
   cache: {

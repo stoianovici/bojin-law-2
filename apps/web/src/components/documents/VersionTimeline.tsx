@@ -174,14 +174,20 @@ export function VersionTimeline({ documentId, onCompare }: VersionTimelineProps)
         );
       case 'MEDIUM':
         return (
-          <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800">
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1 bg-yellow-100 text-yellow-800"
+          >
             <AlertCircle className="h-3 w-3" />
             Medium Risk
           </Badge>
         );
       case 'LOW':
         return (
-          <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800">
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1 bg-green-100 text-green-800"
+          >
             <CheckCircle className="h-3 w-3" />
             Low Risk
           </Badge>

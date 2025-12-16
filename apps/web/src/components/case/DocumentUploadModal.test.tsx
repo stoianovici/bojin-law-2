@@ -61,7 +61,9 @@ describe('DocumentUploadModal', () => {
 
       expect(screen.getByText('Click to upload')).toBeInTheDocument();
       expect(screen.getByText('or drag and drop')).toBeInTheDocument();
-      expect(screen.getByText(/PDF, Word, Excel, PowerPoint, Images up to 100MB/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/PDF, Word, Excel, PowerPoint, Images up to 100MB/)
+      ).toBeInTheDocument();
     });
 
     it('renders upload button as disabled initially', () => {
@@ -91,7 +93,11 @@ describe('DocumentUploadModal', () => {
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       const files = [
         createMockFile('doc1.pdf', 1024, 'application/pdf'),
-        createMockFile('doc2.docx', 2048, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        createMockFile(
+          'doc2.docx',
+          2048,
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ),
       ];
 
       await userEvent.upload(input, files);
@@ -111,9 +117,7 @@ describe('DocumentUploadModal', () => {
       expect(screen.getByText('document.pdf')).toBeInTheDocument();
 
       // Find and click remove button
-      const removeButtons = screen.getAllByRole('button').filter(
-        (btn) => btn.querySelector('svg')
-      );
+      const removeButtons = screen.getAllByRole('button').filter((btn) => btn.querySelector('svg'));
       const removeButton = removeButtons.find((btn) =>
         btn.closest('.flex')?.querySelector('p')?.textContent?.includes('document.pdf')
       );
@@ -171,8 +175,16 @@ describe('DocumentUploadModal', () => {
 
       const validFiles = [
         createMockFile('doc.pdf', 1024, 'application/pdf'),
-        createMockFile('doc.docx', 1024, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
-        createMockFile('doc.xlsx', 1024, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+        createMockFile(
+          'doc.docx',
+          1024,
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ),
+        createMockFile(
+          'doc.xlsx',
+          1024,
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ),
         createMockFile('image.png', 1024, 'image/png'),
         createMockFile('image.jpg', 1024, 'image/jpeg'),
       ];
@@ -235,9 +247,7 @@ describe('DocumentUploadModal', () => {
       mockUseDocumentUpload.mockReturnValue({
         uploadFiles: jest.fn(),
         uploading: true,
-        progress: [
-          { fileName: 'document.pdf', progress: 50, status: 'uploading' },
-        ],
+        progress: [{ fileName: 'document.pdf', progress: 50, status: 'uploading' }],
         error: undefined,
       });
 
@@ -252,9 +262,7 @@ describe('DocumentUploadModal', () => {
       mockUseDocumentUpload.mockReturnValue({
         uploadFiles: jest.fn(),
         uploading: true,
-        progress: [
-          { fileName: 'document.pdf', progress: 100, status: 'complete' },
-        ],
+        progress: [{ fileName: 'document.pdf', progress: 100, status: 'complete' }],
         error: undefined,
       });
 
@@ -289,12 +297,7 @@ describe('DocumentUploadModal', () => {
         error: undefined,
       });
 
-      render(
-        <DocumentUploadModal
-          {...defaultProps}
-          onUploadComplete={mockOnUploadComplete}
-        />
-      );
+      render(<DocumentUploadModal {...defaultProps} onUploadComplete={mockOnUploadComplete} />);
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = createMockFile('document.pdf', 1024, 'application/pdf');

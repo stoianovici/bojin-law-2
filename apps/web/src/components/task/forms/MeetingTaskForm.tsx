@@ -61,7 +61,9 @@ export function MeetingTaskForm({ value, onChange, errors }: MeetingTaskFormProp
         <Input
           id="location"
           value={value.location || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('location', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('location', e.target.value)
+          }
           placeholder="Physical location or 'Virtual'"
         />
       </div>
@@ -74,7 +76,9 @@ export function MeetingTaskForm({ value, onChange, errors }: MeetingTaskFormProp
           id="virtualMeetingUrl"
           type="url"
           value={value.virtualMeetingUrl || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('virtualMeetingUrl', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('virtualMeetingUrl', e.target.value)
+          }
           placeholder="https://meet.example.com/..."
         />
       </div>
@@ -86,7 +90,9 @@ export function MeetingTaskForm({ value, onChange, errors }: MeetingTaskFormProp
         <Textarea
           id="agenda"
           value={value.agenda || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('agenda', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('agenda', e.target.value)
+          }
           placeholder="Meeting agenda and topics to discuss"
           rows={4}
         />
@@ -99,7 +105,9 @@ export function MeetingTaskForm({ value, onChange, errors }: MeetingTaskFormProp
         <Input
           id="minutesDocumentId"
           value={value.minutesDocumentId || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('minutesDocumentId', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('minutesDocumentId', e.target.value)
+          }
           placeholder="ID of meeting minutes document (if applicable)"
         />
       </div>

@@ -43,9 +43,7 @@ export class RomanianDocumentGeneratorService {
   /**
    * Generate a Romanian legal document from template
    */
-  async generateDocument(
-    request: DocumentGenerationRequest
-  ): Promise<DocumentGenerationResponse> {
+  async generateDocument(request: DocumentGenerationRequest): Promise<DocumentGenerationResponse> {
     try {
       const { templateSlug, variables, format = 'markdown' } = request;
 
@@ -139,11 +137,7 @@ export class RomanianDocumentGeneratorService {
   /**
    * Search templates by criteria
    */
-  searchTemplates(criteria: {
-    category?: string;
-    complexity?: string;
-    language?: string;
-  }): Array<{
+  searchTemplates(criteria: { category?: string; complexity?: string; language?: string }): Array<{
     slug: RomanianTemplateSlug;
     metadata: ReturnType<typeof getTemplateMetadata>;
   }> {

@@ -19,10 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import type {
-  AssignmentSuggestionResponse,
-  AssignmentSuggestion,
-} from '@legal-platform/types';
+import type { AssignmentSuggestionResponse, AssignmentSuggestion } from '@legal-platform/types';
 
 interface AssignmentSuggestionPanelProps {
   suggestions: AssignmentSuggestionResponse | null;
@@ -137,10 +134,7 @@ function SuggestionCard({
             {suggestion.caveats && suggestion.caveats.length > 0 && (
               <div className="mt-2 space-y-1">
                 {suggestion.caveats.map((caveat: string, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-1.5 text-xs text-amber-700"
-                  >
+                  <div key={index} className="flex items-start gap-1.5 text-xs text-amber-700">
                     <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
                     <span>{caveat}</span>
                   </div>

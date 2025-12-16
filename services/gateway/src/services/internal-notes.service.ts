@@ -125,7 +125,11 @@ export class InternalNotesService {
       for (const att of input.attachments) {
         // Upload to R2 storage
         const storagePath = `communications/${userContext.firmId}/${note.id}/${att.fileName}`;
-        const uploadResult = await r2StorageService.uploadDocument(storagePath, att.buffer, att.mimeType);
+        const uploadResult = await r2StorageService.uploadDocument(
+          storagePath,
+          att.buffer,
+          att.mimeType
+        );
         const storageUrl = uploadResult.storagePath;
 
         // Create attachment record
@@ -248,10 +252,7 @@ export class InternalNotesService {
     }
 
     // Only author or partners can delete
-    if (
-      existingNote.senderId !== userContext.userId &&
-      userContext.role !== UserRole.Partner
-    ) {
+    if (existingNote.senderId !== userContext.userId && userContext.role !== UserRole.Partner) {
       throw new Error('Only the author or partners can delete this note');
     }
 

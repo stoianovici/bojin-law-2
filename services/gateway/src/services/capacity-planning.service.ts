@@ -132,11 +132,7 @@ export class CapacityPlanningService {
             daily.utilizationPercent > 150 ? 'Critical' : 'Warning';
 
           // Generate suggested action
-          const suggestedAction = this.generateSuggestedAction(
-            user,
-            overageHours,
-            impactedTasks
-          );
+          const suggestedAction = this.generateSuggestedAction(user, overageHours, impactedTasks);
 
           bottlenecks.push({
             date: new Date(currentDate),
@@ -173,9 +169,7 @@ export class CapacityPlanningService {
    * @param firmId - Firm ID
    * @returns Array of allocation suggestions
    */
-  async suggestResourceAllocation(
-    firmId: string
-  ): Promise<ResourceAllocationSuggestion[]> {
+  async suggestResourceAllocation(firmId: string): Promise<ResourceAllocationSuggestion[]> {
     // Get current day forecast
     const today = new Date();
     const nextWeek = new Date();
@@ -204,21 +198,14 @@ export class CapacityPlanningService {
       for (const user of users) {
         if (user.id === bottleneck.userId) continue;
 
-        const capacity = await this.workloadService.getAvailableCapacity(
-          user.id,
-          bottleneck.date
-        );
+        const capacity = await this.workloadService.getAvailableCapacity(user.id, bottleneck.date);
 
         if (capacity < 2) continue; // Need at least 2 hours available
 
         // Find a task to suggest moving
         for (const task of bottleneck.impactedTasks) {
           if (task.estimatedHours <= capacity) {
-            const impactScore = this.calculateImpactScore(
-              task,
-              bottleneck.overageHours,
-              capacity
-            );
+            const impactScore = this.calculateImpactScore(task, bottleneck.overageHours, capacity);
 
             suggestions.push({
               overloadedUserId: bottleneck.userId,

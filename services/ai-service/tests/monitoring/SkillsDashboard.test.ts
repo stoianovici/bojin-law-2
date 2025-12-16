@@ -109,8 +109,16 @@ describe('SkillsDashboard', () => {
         estimatedTokens: 1200,
       };
 
-      dashboard.recordRequest(decision1, { tokensUsed: 1000, tokensSaved: 700, effectiveness: 0.85 });
-      dashboard.recordRequest(decision2, { tokensUsed: 1200, tokensSaved: 800, effectiveness: 0.75 });
+      dashboard.recordRequest(decision1, {
+        tokensUsed: 1000,
+        tokensSaved: 700,
+        effectiveness: 0.85,
+      });
+      dashboard.recordRequest(decision2, {
+        tokensUsed: 1200,
+        tokensSaved: 800,
+        effectiveness: 0.75,
+      });
 
       const summary = dashboard.getDashboardSummary();
       expect(summary.activeSkillsCount).toBe(3); // skill-1, skill-2, skill-3
@@ -138,17 +146,41 @@ describe('SkillsDashboard', () => {
       };
 
       // Add 3 Haiku, 2 Sonnet
-      dashboard.recordRequest(haikuDecision, { tokensUsed: 1000, tokensSaved: 0, effectiveness: 0.5 });
-      dashboard.recordRequest(haikuDecision, { tokensUsed: 1000, tokensSaved: 0, effectiveness: 0.5 });
-      dashboard.recordRequest(haikuDecision, { tokensUsed: 1000, tokensSaved: 0, effectiveness: 0.5 });
-      dashboard.recordRequest(sonnetDecision, { tokensUsed: 1000, tokensSaved: 0, effectiveness: 0.5 });
-      dashboard.recordRequest(sonnetDecision, { tokensUsed: 1000, tokensSaved: 0, effectiveness: 0.5 });
+      dashboard.recordRequest(haikuDecision, {
+        tokensUsed: 1000,
+        tokensSaved: 0,
+        effectiveness: 0.5,
+      });
+      dashboard.recordRequest(haikuDecision, {
+        tokensUsed: 1000,
+        tokensSaved: 0,
+        effectiveness: 0.5,
+      });
+      dashboard.recordRequest(haikuDecision, {
+        tokensUsed: 1000,
+        tokensSaved: 0,
+        effectiveness: 0.5,
+      });
+      dashboard.recordRequest(sonnetDecision, {
+        tokensUsed: 1000,
+        tokensSaved: 0,
+        effectiveness: 0.5,
+      });
+      dashboard.recordRequest(sonnetDecision, {
+        tokensUsed: 1000,
+        tokensSaved: 0,
+        effectiveness: 0.5,
+      });
 
       const summary = dashboard.getDashboardSummary();
       expect(summary.modelDistribution).toHaveLength(2);
 
-      const haikuDist = summary.modelDistribution.find(d => d.model === 'claude-3-5-haiku-20241022');
-      const sonnetDist = summary.modelDistribution.find(d => d.model === 'claude-3-5-sonnet-20241022');
+      const haikuDist = summary.modelDistribution.find(
+        (d) => d.model === 'claude-3-5-haiku-20241022'
+      );
+      const sonnetDist = summary.modelDistribution.find(
+        (d) => d.model === 'claude-3-5-sonnet-20241022'
+      );
 
       expect(haikuDist?.count).toBe(3);
       expect(haikuDist?.percentage).toBeCloseTo(0.6);
@@ -162,7 +194,7 @@ describe('SkillsDashboard', () => {
       const trends = dashboard.getHistoricalTrends(60, 24);
 
       expect(trends).toHaveLength(24);
-      trends.forEach(trend => {
+      trends.forEach((trend) => {
         expect(trend.requestCount).toBe(0);
         expect(trend.tokenSavings).toBe(0);
         expect(trend.averageEffectiveness).toBe(0);
@@ -219,8 +251,8 @@ describe('SkillsDashboard', () => {
       const trends = dashboard.getHistoricalTrends(1, 2); // 1 min intervals
 
       // Check that token savings is calculated (may be 0 or positive depending on timing)
-      const hasTokenSavings = trends.some(trend => trend.tokenSavings > 0);
-      expect(hasTokenSavings || trends.every(trend => trend.requestCount === 0)).toBe(true);
+      const hasTokenSavings = trends.some((trend) => trend.tokenSavings > 0);
+      expect(hasTokenSavings || trends.every((trend) => trend.requestCount === 0)).toBe(true);
     });
   });
 

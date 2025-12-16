@@ -6,11 +6,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  CommunicationChannel,
-  ExportFormat,
-  ExportStatus,
-} from '@prisma/client';
+import { CommunicationChannel, ExportFormat, ExportStatus } from '@prisma/client';
 import { r2StorageService } from './r2-storage.service';
 // Note: R2 storage service wrapper for communication exports
 
@@ -114,10 +110,7 @@ export class CommunicationExportService {
   /**
    * Get export by ID
    */
-  async getExport(
-    exportId: string,
-    userContext: UserContext
-  ): Promise<CommunicationExport | null> {
+  async getExport(exportId: string, userContext: UserContext): Promise<CommunicationExport | null> {
     const exportRecord = await prisma.communicationExport.findFirst({
       where: { id: exportId, firmId: userContext.firmId },
     });
@@ -128,10 +121,7 @@ export class CommunicationExportService {
   /**
    * Get download URL for a completed export
    */
-  async getDownloadUrl(
-    exportId: string,
-    userContext: UserContext
-  ): Promise<string | null> {
+  async getDownloadUrl(exportId: string, userContext: UserContext): Promise<string | null> {
     const exportRecord = await prisma.communicationExport.findFirst({
       where: { id: exportId, firmId: userContext.firmId },
     });
@@ -303,7 +293,11 @@ export class CommunicationExportService {
 
       // Upload to R2
       const storagePath = `exports/${exportRecord.firmId}/${exportRecord.caseId}/${fileName}`;
-      const uploadResult = await r2StorageService.uploadDocument(storagePath, fileContent, mimeType);
+      const uploadResult = await r2StorageService.uploadDocument(
+        storagePath,
+        fileContent,
+        mimeType
+      );
       const fileUrl = uploadResult.storagePath;
 
       // Update export record

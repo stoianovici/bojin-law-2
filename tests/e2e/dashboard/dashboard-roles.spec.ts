@@ -13,7 +13,9 @@ test.describe('Dashboard Role Views', () => {
 
   test('Partner dashboard displays all expected widgets', async ({ page }) => {
     // Verify we're on Partner role (default)
-    await expect(page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')).toContainText('Partner');
+    await expect(
+      page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')
+    ).toContainText('Partner');
 
     // Verify page title
     await expect(page.locator('h1, [role="heading"]')).toContainText(/Dashboard.*Partner/i);
@@ -41,7 +43,10 @@ test.describe('Dashboard Role Views', () => {
     await expect(page.locator('text=AI Insights')).toBeVisible();
 
     // Take screenshot for visual regression
-    await page.screenshot({ path: 'test-results/screenshots/partner-dashboard.png', fullPage: true });
+    await page.screenshot({
+      path: 'test-results/screenshots/partner-dashboard.png',
+      fullPage: true,
+    });
   });
 
   test('Associate dashboard displays role-specific widgets', async ({ page }) => {
@@ -53,7 +58,9 @@ test.describe('Dashboard Role Views', () => {
     await page.waitForTimeout(500);
 
     // Verify role switched
-    await expect(page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')).toContainText('Associate');
+    await expect(
+      page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')
+    ).toContainText('Associate');
 
     // Verify page title updated
     await expect(page.locator('h1, [role="heading"]')).toContainText(/Dashboard.*Avocat/i);
@@ -80,7 +87,10 @@ test.describe('Dashboard Role Views', () => {
     await expect(page.locator('text=AI Insights')).toBeVisible();
 
     // Take screenshot
-    await page.screenshot({ path: 'test-results/screenshots/associate-dashboard.png', fullPage: true });
+    await page.screenshot({
+      path: 'test-results/screenshots/associate-dashboard.png',
+      fullPage: true,
+    });
   });
 
   test('Paralegal dashboard displays role-appropriate widgets', async ({ page }) => {
@@ -92,7 +102,9 @@ test.describe('Dashboard Role Views', () => {
     await page.waitForTimeout(500);
 
     // Verify role switched
-    await expect(page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')).toContainText('Paralegal');
+    await expect(
+      page.locator('[data-testid="role-switcher"], [aria-label="Select role"]')
+    ).toContainText('Paralegal');
 
     // Verify page title updated
     await expect(page.locator('h1, [role="heading"]')).toContainText(/Dashboard.*Paralegal/i);
@@ -115,7 +127,10 @@ test.describe('Dashboard Role Views', () => {
     await expect(page.locator('text=AI Insights')).toBeVisible();
 
     // Take screenshot
-    await page.screenshot({ path: 'test-results/screenshots/paralegal-dashboard.png', fullPage: true });
+    await page.screenshot({
+      path: 'test-results/screenshots/paralegal-dashboard.png',
+      fullPage: true,
+    });
   });
 
   test('Dashboard updates immediately when role is switched', async ({ page }) => {

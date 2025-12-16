@@ -84,7 +84,9 @@ describe('DeadlineWarningBanner', () => {
     it('should apply critical styling for urgent deadlines', () => {
       render(<DeadlineWarningBanner />);
 
-      const criticalItem = screen.getByText('Depunere cerere instanță').closest('[class*="warning"]');
+      const criticalItem = screen
+        .getByText('Depunere cerere instanță')
+        .closest('[class*="warning"]');
       expect(criticalItem).toHaveClass(/critical|red|urgent/i);
     });
 

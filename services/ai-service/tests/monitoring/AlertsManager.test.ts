@@ -9,7 +9,11 @@
  * - Daily summary reports
  */
 
-import { AlertsManager, ALERT_THRESHOLDS, SkillsHealthMetrics } from '../../src/monitoring/AlertsManager';
+import {
+  AlertsManager,
+  ALERT_THRESHOLDS,
+  SkillsHealthMetrics,
+} from '../../src/monitoring/AlertsManager';
 
 describe('AlertsManager', () => {
   let alertsManager: AlertsManager;
@@ -67,7 +71,9 @@ describe('AlertsManager', () => {
 
       expect(alerts.length).toBeGreaterThan(0);
       expect(alerts.some((a) => a.thresholdId === 'skills-service-down')).toBe(true);
-      expect(alerts.find((a) => a.thresholdId === 'skills-service-down')?.severity).toBe('critical');
+      expect(alerts.find((a) => a.thresholdId === 'skills-service-down')?.severity).toBe(
+        'critical'
+      );
     });
 
     it('should trigger critical alert when error rate exceeds 5%', async () => {
@@ -88,7 +94,9 @@ describe('AlertsManager', () => {
       const alerts = await alertsManager.evaluateMetrics(metrics);
 
       expect(alerts.some((a) => a.thresholdId === 'high-skill-error-rate')).toBe(true);
-      expect(alerts.find((a) => a.thresholdId === 'high-skill-error-rate')?.severity).toBe('critical');
+      expect(alerts.find((a) => a.thresholdId === 'high-skill-error-rate')?.severity).toBe(
+        'critical'
+      );
     });
 
     it('should trigger critical alert when p95 response time exceeds 10s', async () => {
@@ -129,7 +137,9 @@ describe('AlertsManager', () => {
       const alerts = await alertsManager.evaluateMetrics(metrics);
 
       expect(alerts.some((a) => a.thresholdId === 'elevated-skill-timeout-rate')).toBe(true);
-      expect(alerts.find((a) => a.thresholdId === 'elevated-skill-timeout-rate')?.severity).toBe('warning');
+      expect(alerts.find((a) => a.thresholdId === 'elevated-skill-timeout-rate')?.severity).toBe(
+        'warning'
+      );
     });
 
     it('should trigger warning alert when cache hit rate below 30%', async () => {

@@ -67,7 +67,7 @@ export function useTimeSimulation({
     if (!enabled) return;
 
     const interval = setInterval(() => {
-      setCurrentTime(prevTime => {
+      setCurrentTime((prevTime) => {
         const newTime = new Date(prevTime);
         // Advance time by speed multiplier (in demo mode, time moves faster)
         newTime.setSeconds(newTime.getSeconds() + speedMultiplier);
@@ -78,26 +78,30 @@ export function useTimeSimulation({
     return () => clearInterval(interval);
   }, [speedMultiplier, enabled]);
 
-  const formatRelativeTime = useMemo(() => (date: Date): string => {
-    const diffMs = currentTime.getTime() - date.getTime();
-    const diffMinutes = Math.floor(Math.abs(diffMs) / (1000 * 60));
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
+  const formatRelativeTime = useMemo(
+    () =>
+      (date: Date): string => {
+        const diffMs = currentTime.getTime() - date.getTime();
+        const diffMinutes = Math.floor(Math.abs(diffMs) / (1000 * 60));
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMs < 0) {
-      // Future date
-      if (diffMinutes < 1) return 'în curând';
-      if (diffMinutes < 60) return `peste ${diffMinutes} min`;
-      if (diffHours < 24) return `peste ${diffHours} ore`;
-      return `peste ${diffDays} zile`;
-    }
+        if (diffMs < 0) {
+          // Future date
+          if (diffMinutes < 1) return 'în curând';
+          if (diffMinutes < 60) return `peste ${diffMinutes} min`;
+          if (diffHours < 24) return `peste ${diffHours} ore`;
+          return `peste ${diffDays} zile`;
+        }
 
-    // Past date
-    if (diffMinutes < 1) return 'acum';
-    if (diffMinutes < 60) return `acum ${diffMinutes} min`;
-    if (diffHours < 24) return `acum ${diffHours} ore`;
-    return `acum ${diffDays} zile`;
-  }, [currentTime]);
+        // Past date
+        if (diffMinutes < 1) return 'acum';
+        if (diffMinutes < 60) return `acum ${diffMinutes} min`;
+        if (diffHours < 24) return `acum ${diffHours} ore`;
+        return `acum ${diffDays} zile`;
+      },
+    [currentTime]
+  );
 
   const formatAbsoluteTime = (date: Date): string => {
     return date.toLocaleString('ro-RO', {

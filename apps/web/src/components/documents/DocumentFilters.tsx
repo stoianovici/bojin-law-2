@@ -13,7 +13,14 @@ import type { DocumentType, FileType } from '@legal-platform/types';
 const MOCK_CASES: Array<{ id: string; name: string }> = [];
 const MOCK_ATTORNEYS: Array<{ id: string; name: string }> = [];
 
-const DOCUMENT_TYPES: DocumentType[] = ['Contract', 'Motion', 'Letter', 'Memo', 'Pleading', 'Other'];
+const DOCUMENT_TYPES: DocumentType[] = [
+  'Contract',
+  'Motion',
+  'Letter',
+  'Memo',
+  'Pleading',
+  'Other',
+];
 const FILE_TYPES: FileType[] = ['PDF', 'DOCX', 'XLSX', 'TXT', 'Other'];
 
 export function DocumentFilters() {

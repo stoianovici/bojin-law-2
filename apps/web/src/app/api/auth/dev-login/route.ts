@@ -12,10 +12,7 @@ const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:4000';
 export async function POST(_request: Request) {
   // Only allow in development
   if (process.env.NODE_ENV !== 'development') {
-    return NextResponse.json(
-      { error: 'Not available in production' },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
   }
 
   try {
@@ -48,9 +45,6 @@ export async function POST(_request: Request) {
     return nextResponse;
   } catch (error) {
     console.error('Dev login proxy error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create dev session' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create dev session' }, { status: 500 });
   }
 }

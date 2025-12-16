@@ -5,10 +5,7 @@
  * Tests for user behavior pattern detection and suggestion generation.
  */
 
-import {
-  PatternRecognitionService,
-  PATTERN_TYPES,
-} from '../pattern-recognition.service';
+import { PatternRecognitionService, PATTERN_TYPES } from '../pattern-recognition.service';
 import { providerManager } from '../provider-manager.service';
 import { prisma } from '@legal-platform/database';
 import { ClaudeModel } from '@legal-platform/types';
@@ -114,9 +111,7 @@ describe('PatternRecognitionService', () => {
           patternType: PATTERN_TYPES.MORNING_EMAIL_CHECK,
           description: 'User checks emails around 9 AM daily',
           triggerContext: { timeOfDay: '09:00' },
-          actionSequence: [
-            { action: 'open_email_client', delay: 0 },
-          ],
+          actionSequence: [{ action: 'open_email_client', delay: 0 }],
           occurrenceCount: 3,
           confidence: 0.75,
           suggestable: false,
@@ -234,7 +229,7 @@ describe('PatternRecognitionService', () => {
       const result = await service.analyzeUserPatterns('user-123', 90);
 
       // Patterns with less than 3 occurrences should be filtered out or marked as not suggestable
-      expect(result.patterns.every(p => p.occurrenceCount >= 3 || !p.suggestable)).toBe(true);
+      expect(result.patterns.every((p) => p.occurrenceCount >= 3 || !p.suggestable)).toBe(true);
     });
 
     it('should store new patterns in database', async () => {
@@ -343,7 +338,7 @@ describe('PatternRecognitionService', () => {
       const result = await service.analyzeUserPatterns('user-123', 90);
 
       const filingPattern = result.patterns.find(
-        p => p.patternType === PATTERN_TYPES.POST_FILING_CLIENT_UPDATE
+        (p) => p.patternType === PATTERN_TYPES.POST_FILING_CLIENT_UPDATE
       );
 
       expect(filingPattern).toBeDefined();
@@ -354,7 +349,7 @@ describe('PatternRecognitionService', () => {
       const result = await service.analyzeUserPatterns('user-123', 90);
 
       const emailPattern = result.patterns.find(
-        p => p.patternType === PATTERN_TYPES.MORNING_EMAIL_CHECK
+        (p) => p.patternType === PATTERN_TYPES.MORNING_EMAIL_CHECK
       );
 
       expect(emailPattern).toBeDefined();
@@ -366,10 +361,10 @@ describe('PatternRecognitionService', () => {
       // POST_FILING_CLIENT_UPDATE should be suggestable (actionable)
       // MORNING_EMAIL_CHECK should not be suggestable (just informational)
       const filingPattern = result.patterns.find(
-        p => p.patternType === PATTERN_TYPES.POST_FILING_CLIENT_UPDATE
+        (p) => p.patternType === PATTERN_TYPES.POST_FILING_CLIENT_UPDATE
       );
       const emailPattern = result.patterns.find(
-        p => p.patternType === PATTERN_TYPES.MORNING_EMAIL_CHECK
+        (p) => p.patternType === PATTERN_TYPES.MORNING_EMAIL_CHECK
       );
 
       expect(filingPattern?.suggestable).toBe(true);

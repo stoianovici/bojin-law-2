@@ -143,10 +143,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 min-w-[220px]">
       <div className="flex items-center gap-2 mb-2">
-        <div
-          className="w-3 h-3 rounded"
-          style={{ backgroundColor: data.color }}
-        />
+        <div className="w-3 h-3 rounded" style={{ backgroundColor: data.color }} />
         <span className="font-semibold text-gray-900">{data.label}</span>
       </div>
       <div className="space-y-2 text-sm">
@@ -230,13 +227,8 @@ function DataTable({ data, onCategoryClick }: DataTableProps) {
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: row.color }}
-                    />
-                    <span className="text-sm font-medium text-gray-900">
-                      {row.label}
-                    </span>
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: row.color }} />
+                    <span className="text-sm font-medium text-gray-900">{row.label}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right text-sm text-gray-900">
@@ -271,15 +263,11 @@ function DataTable({ data, onCategoryClick }: DataTableProps) {
         </tbody>
         <tfoot className="bg-gray-50">
           <tr>
-            <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-              Total
-            </td>
+            <td className="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
             <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
               {data.reduce((sum, d) => sum + d.count, 0).toLocaleString()}
             </td>
-            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-              100%
-            </td>
+            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">100%</td>
             <td colSpan={onCategoryClick ? 2 : 1}></td>
           </tr>
         </tfoot>
@@ -299,29 +287,18 @@ export function DocumentIssuesBreakdown({
   onCategoryClick,
   showTable = false,
 }: DocumentIssuesBreakdownProps) {
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>(
-    showTable ? 'table' : 'chart'
-  );
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>(showTable ? 'table' : 'chart');
 
   // Transform data for chart/table
   const chartData = useMemo((): CategoryData[] => {
-    const totalIssues = Object.values(issuesByCategory).reduce(
-      (sum, count) => sum + count,
-      0
-    );
+    const totalIssues = Object.values(issuesByCategory).reduce((sum, count) => sum + count, 0);
 
-    const categories: IssueCategory[] = [
-      'content',
-      'legal_reference',
-      'spelling',
-      'formatting',
-    ];
+    const categories: IssueCategory[] = ['content', 'legal_reference', 'spelling', 'formatting'];
 
     return categories
       .map((cat) => {
         const count = issuesByCategory[cat] || 0;
-        const percentage =
-          totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+        const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
         return {
           category: cat,
           label: CATEGORY_CONFIG[cat].label,
@@ -346,9 +323,7 @@ export function DocumentIssuesBreakdown({
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Detaliere probleme documente
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Detaliere probleme documente</h3>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">
             {totalIssues.toLocaleString()} probleme totale
@@ -389,17 +364,10 @@ export function DocumentIssuesBreakdown({
           return (
             <div key={sev} className="flex items-center gap-1.5">
               <span
-                className={`w-2 h-2 rounded-full ${badge.bg.replace(
-                  'bg-',
-                  'bg-'
-                )}`}
+                className={`w-2 h-2 rounded-full ${badge.bg.replace('bg-', 'bg-')}`}
                 style={{
                   backgroundColor:
-                    sev === 'high'
-                      ? '#FCA5A5'
-                      : sev === 'medium'
-                      ? '#FCD34D'
-                      : '#6EE7B7',
+                    sev === 'high' ? '#FCA5A5' : sev === 'medium' ? '#FCD34D' : '#6EE7B7',
                 }}
               />
               <span className="text-gray-600">{badge.label}</span>
@@ -414,22 +382,14 @@ export function DocumentIssuesBreakdown({
         </div>
       ) : viewMode === 'chart' ? (
         /* Chart View */
-        <div
-          className="h-64"
-          role="img"
-          aria-label="Grafic probleme documente pe categorie"
-        >
+        <div className="h-64" role="img" aria-label="Grafic probleme documente pe categorie">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
               layout="vertical"
               margin={{ left: 120, right: 40, top: 10, bottom: 10 }}
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                horizontal={true}
-                vertical={false}
-              />
+              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
               <XAxis
                 type="number"
                 tick={{ fontSize: 12, fill: '#6B7280' }}
@@ -480,18 +440,11 @@ export function DocumentIssuesBreakdown({
                   className="flex flex-col items-start p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors text-left"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <div
-                      className="w-2.5 h-2.5 rounded"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-sm font-medium text-gray-900 truncate">
-                      {item.label}
-                    </span>
+                    <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: item.color }} />
+                    <span className="text-sm font-medium text-gray-900 truncate">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-gray-900">
-                      {item.count}
-                    </span>
+                    <span className="text-lg font-bold text-gray-900">{item.count}</span>
                     <span
                       className={`text-xs px-1.5 py-0.5 rounded ${severityBadge.bg} ${severityBadge.text}`}
                     >

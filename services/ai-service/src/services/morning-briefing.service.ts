@@ -607,30 +607,28 @@ Respond ONLY with the JSON object, no additional text.
           }
         );
 
-      const keyDeadlines: DeadlineInfo[] = (parsed.keyDeadlines || [])
-        .slice(0, MAX_DEADLINES)
-        .map(
-          (d: {
-            id?: string;
-            title?: string;
-            dueDate?: string;
-            daysUntilDue?: number;
-            severity?: string;
-            suggestedActions?: Array<{
-              action: string;
-              description: string;
-              actionType: string;
-              payload: Record<string, unknown>;
-            }>;
-          }) => ({
-            id: d.id || '',
-            title: d.title || '',
-            dueDate: d.dueDate ? new Date(d.dueDate) : new Date(),
-            daysUntilDue: d.daysUntilDue || 0,
-            severity: (d.severity || 'info') as 'info' | 'warning' | 'critical',
-            suggestedActions: d.suggestedActions || [],
-          })
-        );
+      const keyDeadlines: DeadlineInfo[] = (parsed.keyDeadlines || []).slice(0, MAX_DEADLINES).map(
+        (d: {
+          id?: string;
+          title?: string;
+          dueDate?: string;
+          daysUntilDue?: number;
+          severity?: string;
+          suggestedActions?: Array<{
+            action: string;
+            description: string;
+            actionType: string;
+            payload: Record<string, unknown>;
+          }>;
+        }) => ({
+          id: d.id || '',
+          title: d.title || '',
+          dueDate: d.dueDate ? new Date(d.dueDate) : new Date(),
+          daysUntilDue: d.daysUntilDue || 0,
+          severity: (d.severity || 'info') as 'info' | 'warning' | 'critical',
+          suggestedActions: d.suggestedActions || [],
+        })
+      );
 
       const riskAlerts: RiskAlert[] = (parsed.riskAlerts || [])
         .slice(0, MAX_RISK_ALERTS)

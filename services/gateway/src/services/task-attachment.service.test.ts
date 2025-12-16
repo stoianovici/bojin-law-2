@@ -375,9 +375,9 @@ describe('TaskAttachmentService', () => {
     it('should throw error if task not found', async () => {
       prisma.task.findFirst.mockResolvedValue(null);
 
-      await expect(
-        taskAttachmentService.getAttachments('task-123', 'firm-123')
-      ).rejects.toThrow('Task not found or access denied');
+      await expect(taskAttachmentService.getAttachments('task-123', 'firm-123')).rejects.toThrow(
+        'Task not found or access denied'
+      );
     });
   });
 
@@ -410,8 +410,20 @@ describe('TaskAttachmentService', () => {
 
   describe('getVersionHistory', () => {
     it('should retrieve version history for an attachment', async () => {
-      const v1 = { ...mockAttachment, id: 'v1', version: 1, previousVersionId: null, uploader: mockUploader };
-      const v2 = { ...mockAttachment, id: 'v2', version: 2, previousVersionId: 'v1', uploader: mockUploader };
+      const v1 = {
+        ...mockAttachment,
+        id: 'v1',
+        version: 1,
+        previousVersionId: null,
+        uploader: mockUploader,
+      };
+      const v2 = {
+        ...mockAttachment,
+        id: 'v2',
+        version: 2,
+        previousVersionId: 'v1',
+        uploader: mockUploader,
+      };
 
       // First loop: trace back to root
       prisma.taskAttachment.findUnique
@@ -419,8 +431,7 @@ describe('TaskAttachmentService', () => {
         .mockResolvedValueOnce({ ...v1, previousVersion: null });
 
       // Second loop: find subsequent versions
-      prisma.taskAttachment.findFirst
-        .mockResolvedValueOnce(null); // No more versions after v2
+      prisma.taskAttachment.findFirst.mockResolvedValueOnce(null); // No more versions after v2
 
       const result = await taskAttachmentService.getVersionHistory('v2');
 
@@ -446,18 +457,15 @@ describe('TaskAttachmentService', () => {
       const result = await taskAttachmentService.getDownloadUrl('attachment-123', 'firm-123');
 
       expect(result).toBe('https://signed-url.example.com');
-      expect(r2StorageService.getSignedUrl).toHaveBeenCalledWith(
-        mockAttachment.storageUrl,
-        3600
-      );
+      expect(r2StorageService.getSignedUrl).toHaveBeenCalledWith(mockAttachment.storageUrl, 3600);
     });
 
     it('should throw error if attachment not found', async () => {
       prisma.taskAttachment.findFirst.mockResolvedValue(null);
 
-      await expect(
-        taskAttachmentService.getDownloadUrl('nonexistent', 'firm-123')
-      ).rejects.toThrow('Attachment not found');
+      await expect(taskAttachmentService.getDownloadUrl('nonexistent', 'firm-123')).rejects.toThrow(
+        'Attachment not found'
+      );
     });
 
     it('should throw error for access denied', async () => {

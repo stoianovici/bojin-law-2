@@ -12,7 +12,7 @@ async function checkData() {
     const firms = await prisma.firm.findMany({ select: { id: true, name: true } });
     const cases = await prisma.case.findMany({
       select: { id: true, title: true, firmId: true },
-      take: 3
+      take: 3,
     });
 
     console.log('Database Contents:');
@@ -22,10 +22,10 @@ async function checkData() {
     console.log('- Time Entries:', timeEntryCount);
     console.log('');
     console.log('Firm IDs:');
-    firms.forEach(f => console.log('  -', f.id, f.name));
+    firms.forEach((f) => console.log('  -', f.id, f.name));
     console.log('');
     console.log('Sample Cases:');
-    cases.forEach(c => console.log('  -', c.title, '(firm:', c.firmId + ')'));
+    cases.forEach((c) => console.log('  -', c.title, '(firm:', c.firmId + ')'));
 
     await prisma.$disconnect();
   } catch (error) {

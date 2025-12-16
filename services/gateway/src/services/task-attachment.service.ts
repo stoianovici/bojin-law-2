@@ -101,11 +101,7 @@ export class TaskAttachmentService {
 
     // Upload to R2 storage
     const storagePath = `${firmId}/tasks/${task.id}/attachments/${Date.now()}-${input.filename}`;
-    const storageUrl = await r2StorageService.uploadFile(
-      storagePath,
-      input.buffer,
-      input.mimeType
-    );
+    const storageUrl = await r2StorageService.uploadFile(storagePath, input.buffer, input.mimeType);
 
     // Create attachment record
     const attachment = await prisma.taskAttachment.create({
@@ -198,11 +194,7 @@ export class TaskAttachmentService {
 
     // Upload to R2 storage
     const storagePath = `${firmId}/tasks/${previousAttachment.taskId}/attachments/${Date.now()}-${input.filename}`;
-    const storageUrl = await r2StorageService.uploadFile(
-      storagePath,
-      input.buffer,
-      input.mimeType
-    );
+    const storageUrl = await r2StorageService.uploadFile(storagePath, input.buffer, input.mimeType);
 
     // Create new version
     const attachment = await prisma.taskAttachment.create({
@@ -242,11 +234,7 @@ export class TaskAttachmentService {
    * @param userId - ID of the user deleting
    * @param firmId - Firm ID for access control
    */
-  async deleteAttachment(
-    attachmentId: string,
-    userId: string,
-    firmId: string
-  ): Promise<void> {
+  async deleteAttachment(attachmentId: string, userId: string, firmId: string): Promise<void> {
     // Get attachment
     const attachment = await prisma.taskAttachment.findFirst({
       where: { id: attachmentId },

@@ -88,16 +88,11 @@ export default function DocumentsPage() {
               ) : (
                 <div className="divide-y divide-gray-200">
                   {paginatedDocuments.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="px-6 py-4 hover:bg-gray-50 transition-colors"
-                    >
+                    <div key={doc.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-base font-semibold text-gray-900">
-                              {doc.title}
-                            </h3>
+                            <h3 className="text-base font-semibold text-gray-900">{doc.title}</h3>
                             {doc.isSigned && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                                 ✓ Semnat
@@ -122,11 +117,7 @@ export default function DocumentsPage() {
 
                           <div className="flex items-center gap-4 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
-                              <svg
-                                className="w-4 h-4"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                 <path
                                   fillRule="evenodd"
                                   d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"

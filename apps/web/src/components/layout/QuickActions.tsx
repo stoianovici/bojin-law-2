@@ -22,7 +22,7 @@ import {
   Calendar,
   StickyNote,
   ClipboardList,
-  type LucideIcon
+  type LucideIcon,
 } from 'lucide-react';
 
 /**
@@ -31,7 +31,7 @@ import {
 const iconMap: Record<string, LucideIcon> = {
   'new-case': Scale,
   'approve-docs': CheckCircle,
-  'reports': TrendingUp,
+  reports: TrendingUp,
   'manage-team': Users,
   'new-doc': FileEdit,
   'log-time': Clock,
@@ -161,9 +161,7 @@ export function QuickActions({ mode = 'sidebar', className = '' }: QuickActionsP
   const { currentRole, isSidebarCollapsed } = useNavigationStore();
 
   // Filter actions by current role
-  const visibleActions = quickActions.filter((action) =>
-    action.roles.includes(currentRole)
-  );
+  const visibleActions = quickActions.filter((action) => action.roles.includes(currentRole));
 
   // Don't show in collapsed sidebar mode
   if (mode === 'sidebar' && isSidebarCollapsed) {

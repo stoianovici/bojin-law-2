@@ -124,10 +124,7 @@ function getAcceptanceColor(rate: number | undefined): string {
   return 'text-red-600';
 }
 
-function getUsageLevel(
-  count: number,
-  maxCount: number
-): { label: string; width: string } {
+function getUsageLevel(count: number, maxCount: number): { label: string; width: string } {
   const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
   if (percentage >= 60) return { label: 'Ridicat', width: '100%' };
   if (percentage >= 30) return { label: 'Moderat', width: '60%' };
@@ -169,9 +166,7 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
       disabled={!onClick}
       className={`w-full p-4 rounded-lg border transition-all text-left ${
         onClick ? 'hover:shadow-md hover:border-gray-300 cursor-pointer' : ''
-      } ${
-        isUsed ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60'
-      }`}
+      } ${isUsed ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60'}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -182,9 +177,7 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
             {config.icon}
           </span>
           <div>
-            <div className="font-medium text-gray-900 text-sm">
-              {config.label}
-            </div>
+            <div className="font-medium text-gray-900 text-sm">{config.label}</div>
             <div className="text-xs text-gray-500">{config.description}</div>
           </div>
         </div>
@@ -196,9 +189,7 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
         <div>
           <div className="flex justify-between text-xs text-gray-500 mb-1">
             <span>Cereri</span>
-            <span className="font-medium text-gray-900">
-              {formatNumber(feature.requestCount)}
-            </span>
+            <span className="font-medium text-gray-900">{formatNumber(feature.requestCount)}</span>
           </div>
           <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
             <div
@@ -232,11 +223,7 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
           {/* Acceptance Rate */}
           <div className="bg-gray-50 rounded p-1.5">
             <div className="text-xs text-gray-500">Acceptare</div>
-            <div
-              className={`text-sm font-semibold ${getAcceptanceColor(
-                feature.acceptanceRate
-              )}`}
-            >
+            <div className={`text-sm font-semibold ${getAcceptanceColor(feature.acceptanceRate)}`}>
               {feature.acceptanceRate !== undefined
                 ? `${feature.acceptanceRate.toFixed(0)}%`
                 : 'N/A'}
@@ -252,8 +239,8 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
                 ? usageLevel.label === 'Ridicat'
                   ? 'bg-emerald-100 text-emerald-700'
                   : usageLevel.label === 'Moderat'
-                  ? 'bg-amber-100 text-amber-700'
-                  : 'bg-gray-100 text-gray-600'
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-gray-100 text-gray-600'
                 : 'bg-gray-100 text-gray-400'
             }`}
           >
@@ -308,9 +295,7 @@ export function FeatureUsageBreakdown({
     const usedFeatures = allFeatures.filter((f) => f.requestCount > 0);
     const totalRequests = allFeatures.reduce((sum, f) => sum + f.requestCount, 0);
     const totalTokens = allFeatures.reduce((sum, f) => sum + f.tokenCount, 0);
-    const withAcceptance = allFeatures.filter(
-      (f) => f.acceptanceRate !== undefined
-    );
+    const withAcceptance = allFeatures.filter((f) => f.acceptanceRate !== undefined);
     const avgAcceptance =
       withAcceptance.length > 0
         ? withAcceptance.reduce((sum, f) => sum + (f.acceptanceRate || 0), 0) /
@@ -334,13 +319,11 @@ export function FeatureUsageBreakdown({
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Funcționalități AI
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Funcționalități AI</h3>
         <div className="flex items-center gap-4 text-sm">
           <span className="text-gray-500">
-            <span className="font-medium text-gray-900">{stats.usedCount}</span>
-            /{stats.totalCount} active
+            <span className="font-medium text-gray-900">{stats.usedCount}</span>/{stats.totalCount}{' '}
+            active
           </span>
           {stats.avgAcceptance !== null && (
             <span
@@ -363,15 +346,11 @@ export function FeatureUsageBreakdown({
           <div className="text-xs text-gray-500">Total cereri</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900">
-            {formatNumber(stats.totalTokens)}
-          </div>
+          <div className="text-2xl font-bold text-gray-900">{formatNumber(stats.totalTokens)}</div>
           <div className="text-xs text-gray-500">Total tokeni</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900">
-            {stats.usedCount}
-          </div>
+          <div className="text-2xl font-bold text-gray-900">{stats.usedCount}</div>
           <div className="text-xs text-gray-500">Funcții utilizate</div>
         </div>
       </div>
@@ -388,11 +367,7 @@ export function FeatureUsageBreakdown({
               feature={feature}
               config={config}
               maxRequests={maxRequests}
-              onClick={
-                onFeatureClick
-                  ? () => onFeatureClick(feature.feature)
-                  : undefined
-              }
+              onClick={onFeatureClick ? () => onFeatureClick(feature.feature) : undefined}
             />
           );
         })}
@@ -441,9 +416,7 @@ export function FeatureUsageBreakdown({
                 <td>{feature.tokenCount}</td>
                 <td>{formatLatency(feature.avgLatencyMs)}</td>
                 <td>
-                  {feature.acceptanceRate !== undefined
-                    ? `${feature.acceptanceRate}%`
-                    : 'N/A'}
+                  {feature.acceptanceRate !== undefined ? `${feature.acceptanceRate}%` : 'N/A'}
                 </td>
               </tr>
             ))}

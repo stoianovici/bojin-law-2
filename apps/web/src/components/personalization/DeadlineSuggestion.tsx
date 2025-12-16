@@ -4,10 +4,7 @@ import * as React from 'react';
 import { CalendarClock, Lightbulb, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SimpleTooltip } from '@/components/ui/tooltip';
-import {
-  useSuggestDeadline,
-  getConfidenceLabel,
-} from '@/hooks/useResponsePatterns';
+import { useSuggestDeadline, getConfidenceLabel } from '@/hooks/useResponsePatterns';
 
 export interface DeadlineSuggestionProps {
   taskType: string;
@@ -83,10 +80,10 @@ export function DeadlineSuggestion({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium text-blue-900">
-              Sugestie AI pentru termen
-            </span>
-            <SimpleTooltip content={`Bazat pe ${suggestion.basedOnSamples} sarcini similare anterioare`}>
+            <span className="text-sm font-medium text-blue-900">Sugestie AI pentru termen</span>
+            <SimpleTooltip
+              content={`Bazat pe ${suggestion.basedOnSamples} sarcini similare anterioare`}
+            >
               <span
                 className={`text-xs px-1.5 py-0.5 rounded-full cursor-help ${confidenceColor}`}
                 aria-label={`Încredere: ${confidenceLabel}`}
@@ -101,9 +98,7 @@ export function DeadlineSuggestion({
             <span className="text-sm text-blue-800 font-medium">{formattedDate}</span>
           </div>
 
-          <p className="text-xs text-blue-700 mb-3">
-            {suggestion.reasoning}
-          </p>
+          <p className="text-xs text-blue-700 mb-3">{suggestion.reasoning}</p>
 
           <div className="flex items-center gap-2">
             <Button

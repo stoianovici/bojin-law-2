@@ -52,11 +52,7 @@ describe('Auth Middleware', () => {
     it('should return 401 if Authorization header is missing', () => {
       mockRequest.headers = {};
 
-      authenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      authenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(401);
       expect(jsonMock).toHaveBeenCalledWith({
@@ -71,11 +67,7 @@ describe('Auth Middleware', () => {
         authorization: 'InvalidFormat',
       };
 
-      authenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      authenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(401);
       expect(jsonMock).toHaveBeenCalledWith({
@@ -90,11 +82,7 @@ describe('Auth Middleware', () => {
         authorization: 'Basic token123',
       };
 
-      authenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      authenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(401);
       expect(jsonMock).toHaveBeenCalledWith({
@@ -119,15 +107,9 @@ describe('Auth Middleware', () => {
       };
 
       // Mock JWT validation
-      (JWTService.prototype.validateAccessToken as jest.Mock).mockReturnValue(
-        mockPayload
-      );
+      (JWTService.prototype.validateAccessToken as jest.Mock).mockReturnValue(mockPayload);
 
-      authenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      authenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(mockRequest.user).toEqual(mockPayload);
       expect(nextFunction).toHaveBeenCalled();
@@ -140,17 +122,11 @@ describe('Auth Middleware', () => {
       };
 
       const expiredError = new Error('Token expired at 2024-01-01');
-      (JWTService.prototype.validateAccessToken as jest.Mock).mockImplementation(
-        () => {
-          throw expiredError;
-        }
-      );
+      (JWTService.prototype.validateAccessToken as jest.Mock).mockImplementation(() => {
+        throw expiredError;
+      });
 
-      authenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      authenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(401);
       expect(jsonMock).toHaveBeenCalledWith({
@@ -166,17 +142,11 @@ describe('Auth Middleware', () => {
       };
 
       const invalidError = new Error('Invalid signature');
-      (JWTService.prototype.validateAccessToken as jest.Mock).mockImplementation(
-        () => {
-          throw invalidError;
-        }
-      );
+      (JWTService.prototype.validateAccessToken as jest.Mock).mockImplementation(() => {
+        throw invalidError;
+      });
 
-      authenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      authenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(401);
       expect(jsonMock).toHaveBeenCalledWith({
@@ -191,11 +161,7 @@ describe('Auth Middleware', () => {
     it('should call next without user if no Authorization header', () => {
       mockRequest.headers = {};
 
-      optionalAuthenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      optionalAuthenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(mockRequest.user).toBeUndefined();
       expect(nextFunction).toHaveBeenCalled();
@@ -216,15 +182,9 @@ describe('Auth Middleware', () => {
         authorization: 'Bearer valid-token',
       };
 
-      (JWTService.prototype.validateAccessToken as jest.Mock).mockReturnValue(
-        mockPayload
-      );
+      (JWTService.prototype.validateAccessToken as jest.Mock).mockReturnValue(mockPayload);
 
-      optionalAuthenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      optionalAuthenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(mockRequest.user).toEqual(mockPayload);
       expect(nextFunction).toHaveBeenCalled();
@@ -236,17 +196,11 @@ describe('Auth Middleware', () => {
         authorization: 'Bearer invalid-token',
       };
 
-      (JWTService.prototype.validateAccessToken as jest.Mock).mockImplementation(
-        () => {
-          throw new Error('Invalid token');
-        }
-      );
+      (JWTService.prototype.validateAccessToken as jest.Mock).mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
 
-      optionalAuthenticateJWT(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      optionalAuthenticateJWT(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(mockRequest.user).toBeUndefined();
       expect(nextFunction).toHaveBeenCalled();
@@ -329,11 +283,7 @@ describe('Auth Middleware', () => {
     it('should return 401 if user is not authenticated', () => {
       mockRequest.user = undefined;
 
-      requireActiveUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      requireActiveUser(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(401);
       expect(jsonMock).toHaveBeenCalledWith({
@@ -353,11 +303,7 @@ describe('Auth Middleware', () => {
         azureAdId: 'azure-123',
       } as JWTAccessTokenPayload;
 
-      requireActiveUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      requireActiveUser(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(403);
       expect(jsonMock).toHaveBeenCalledWith({
@@ -379,17 +325,12 @@ describe('Auth Middleware', () => {
         azureAdId: 'azure-123',
       } as JWTAccessTokenPayload;
 
-      requireActiveUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      requireActiveUser(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(403);
       expect(jsonMock).toHaveBeenCalledWith({
         error: 'account_not_active',
-        message:
-          "Your account has been deactivated. Please contact your firm's partner.",
+        message: "Your account has been deactivated. Please contact your firm's partner.",
         status: 'Inactive',
       });
       expect(nextFunction).not.toHaveBeenCalled();
@@ -405,11 +346,7 @@ describe('Auth Middleware', () => {
         azureAdId: 'azure-123',
       } as JWTAccessTokenPayload;
 
-      requireActiveUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      requireActiveUser(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(nextFunction).toHaveBeenCalled();
       expect(statusMock).not.toHaveBeenCalled();
@@ -425,11 +362,7 @@ describe('Auth Middleware', () => {
         azureAdId: 'azure-123',
       } as any;
 
-      requireActiveUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        nextFunction
-      );
+      requireActiveUser(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(statusMock).toHaveBeenCalledWith(403);
       expect(jsonMock).toHaveBeenCalledWith({

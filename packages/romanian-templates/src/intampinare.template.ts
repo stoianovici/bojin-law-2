@@ -52,12 +52,7 @@ export const IntampinareTemplate: RomanianTemplateDefinition = {
         labelRo: 'Pârât',
         labelEn: 'Defendant',
         required: true,
-        variables: [
-          '{{PARAT_NUME}}',
-          '{{PARAT_CNP}}',
-          '{{PARAT_ADRESA}}',
-          '{{PARAT_AVOCAT}}',
-        ],
+        variables: ['{{PARAT_NUME}}', '{{PARAT_CNP}}', '{{PARAT_ADRESA}}', '{{PARAT_AVOCAT}}'],
         template:
           'Pârât: {{PARAT_NUME}}, domiciliat în {{PARAT_ADRESA}}, CNP {{PARAT_CNP}}\nPrin avocat: {{PARAT_AVOCAT}}',
       },
@@ -67,8 +62,7 @@ export const IntampinareTemplate: RomanianTemplateDefinition = {
         labelEn: 'Against',
         required: true,
         variables: ['{{RECLAMANT_NUME}}', '{{RECLAMANT_ADRESA}}'],
-        template:
-          'împotriva\n\nReclamant: {{RECLAMANT_NUME}}, domiciliat în {{RECLAMANT_ADRESA}}',
+        template: 'împotriva\n\nReclamant: {{RECLAMANT_NUME}}, domiciliat în {{RECLAMANT_ADRESA}}',
       },
       {
         id: 'obiect',
@@ -108,8 +102,7 @@ export const IntampinareTemplate: RomanianTemplateDefinition = {
         labelEn: 'I. PRELIMINARY OBJECTIONS',
         required: false,
         variables: ['{{EXCEPTII}}'],
-        placeholder:
-          'În principiu, invocăm următoarele excepții:\n\n{{EXCEPTII}}',
+        placeholder: 'În principiu, invocăm următoarele excepții:\n\n{{EXCEPTII}}',
       },
       {
         id: 'exceptii_standard',
@@ -141,8 +134,7 @@ export const IntampinareTemplate: RomanianTemplateDefinition = {
         labelEn: 'B. Legal Defense',
         required: true,
         variables: ['{{APARARE_JURIDICA}}'],
-        placeholder:
-          'Din punct de vedere juridic, susținem că:\n\n{{APARARE_JURIDICA}}',
+        placeholder: 'Din punct de vedere juridic, susținem că:\n\n{{APARARE_JURIDICA}}',
       },
       {
         id: 'critica_cerere',
@@ -224,8 +216,7 @@ export const IntampinareTemplate: RomanianTemplateDefinition = {
         labelEn: 'Signature',
         required: true,
         variables: ['{{PARAT_AVOCAT}}', '{{DATA_DEPUNERE}}'],
-        template:
-          'Avocat,\n{{PARAT_AVOCAT}}\n\nSemnătură: __________\nData: {{DATA_DEPUNERE}}',
+        template: 'Avocat,\n{{PARAT_AVOCAT}}\n\nSemnătură: __________\nData: {{DATA_DEPUNERE}}',
       },
     ],
   },
@@ -290,9 +281,9 @@ export const IntampinareTemplate: RomanianTemplateDefinition = {
     DATA_CITARE: 'Citation Date',
     DATA_TERMEN: 'Hearing Date',
     EXCEPTII: 'Preliminary Objections (detailed)',
-    EXPUNERE_FAPT_PARAT: 'Defendant\'s Statement of Facts',
+    EXPUNERE_FAPT_PARAT: "Defendant's Statement of Facts",
     APARARE_JURIDICA: 'Legal Defense Arguments',
-    CRITICA_CERERE: 'Criticism of Plaintiff\'s Claims',
+    CRITICA_CERERE: "Criticism of Plaintiff's Claims",
     PROBE_ADMINISTRARE: 'Evidence to be Administered',
     CERERI_ACCESORII: 'Ancillary Requests',
     LISTA_ANEXE: 'List of Attachments',
@@ -348,9 +339,10 @@ export function generateIntampinare(variables: Record<string, string>): string {
 /**
  * Validate that all required variables are provided
  */
-export function validateIntampinareVariables(
-  variables: Record<string, string>
-): { valid: boolean; missing: string[] } {
+export function validateIntampinareVariables(variables: Record<string, string>): {
+  valid: boolean;
+  missing: string[];
+} {
   const template = IntampinareTemplate;
   const missing: string[] = [];
 

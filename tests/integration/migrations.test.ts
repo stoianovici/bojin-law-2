@@ -67,11 +67,13 @@ describe('Database Migration Integration Tests', () => {
 
     test('should track migration history in _prisma_migrations table', async () => {
       // Query migration history
-      const migrations = await prisma.$queryRaw<Array<{
-        migration_name: string;
-        finished_at: Date;
-        applied_steps_count: number;
-      }>>`
+      const migrations = await prisma.$queryRaw<
+        Array<{
+          migration_name: string;
+          finished_at: Date;
+          applied_steps_count: number;
+        }>
+      >`
         SELECT migration_name, finished_at, applied_steps_count
         FROM _prisma_migrations
         ORDER BY finished_at DESC
@@ -273,10 +275,9 @@ describe('Database Migration Integration Tests', () => {
 
     test('backup script should create backup file', async () => {
       // Run backup script
-      const { stderr } = await execAsync(
-        './packages/database/scripts/backup-database.sh',
-        { env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL } }
-      );
+      const { stderr } = await execAsync('./packages/database/scripts/backup-database.sh', {
+        env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+      });
 
       expect(stderr).not.toContain('Error');
 

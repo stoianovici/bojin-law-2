@@ -167,9 +167,7 @@ export function DelegationManager({
 
           {!delegateAll && (
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Select Tasks to Delegate
-              </label>
+              <label className="block text-sm font-medium mb-2">Select Tasks to Delegate</label>
               {userTasks.length === 0 ? (
                 <p className="text-sm text-gray-500 py-4 text-center border rounded-lg">
                   No tasks available to delegate
@@ -190,9 +188,8 @@ export function DelegationManager({
                       <div className="ml-3 flex-1">
                         <p className="text-sm font-medium">{task.title}</p>
                         <p className="text-xs text-gray-500">
-                          {task.type} • Due:{' '}
-                          {new Date(task.dueDate).toLocaleDateString()} • Priority:{' '}
-                          {task.priority}
+                          {task.type} • Due: {new Date(task.dueDate).toLocaleDateString()} •
+                          Priority: {task.priority}
                         </p>
                       </div>
                     </label>

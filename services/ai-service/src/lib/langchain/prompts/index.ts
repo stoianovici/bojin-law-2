@@ -3,7 +3,11 @@
  * Story 3.1: AI Service Infrastructure
  */
 
-import { ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate } from '@langchain/core/prompts';
+import {
+  ChatPromptTemplate,
+  SystemMessagePromptTemplate,
+  HumanMessagePromptTemplate,
+} from '@langchain/core/prompts';
 
 // Legal document summary prompt
 export const documentSummaryPrompt = ChatPromptTemplate.fromMessages([
@@ -89,12 +93,8 @@ Return as JSON:`
 
 // General text generation prompt
 export const textGenerationPrompt = ChatPromptTemplate.fromMessages([
-  SystemMessagePromptTemplate.fromTemplate(
-    `{systemPrompt}`
-  ),
-  HumanMessagePromptTemplate.fromTemplate(
-    `{prompt}`
-  ),
+  SystemMessagePromptTemplate.fromTemplate(`{systemPrompt}`),
+  HumanMessagePromptTemplate.fromTemplate(`{prompt}`),
 ]);
 
 // Chat prompt for conversational interactions

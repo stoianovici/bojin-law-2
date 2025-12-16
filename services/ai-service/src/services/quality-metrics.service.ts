@@ -18,25 +18,24 @@ import {
 import logger from '../lib/logger';
 
 // Quality threshold - alert if exceeded
-const QUALITY_THRESHOLD_PERCENT = parseInt(
-  process.env.AI_QUALITY_THRESHOLD_PERCENT || '30',
-  10
-);
+const QUALITY_THRESHOLD_PERCENT = parseInt(process.env.AI_QUALITY_THRESHOLD_PERCENT || '30', 10);
 
 export class QualityMetricsService {
   /**
    * Record metrics for a document draft
    */
-  async recordDraftMetrics(input: QualityMetricsInput & {
-    firmId: string;
-    userId: string;
-    documentType: DocumentType;
-    generationTimeMs?: number;
-    tokensUsed?: number;
-    modelUsed?: string;
-    templateId?: string;
-    precedentIds?: string[];
-  }): Promise<DocumentDraftMetrics> {
+  async recordDraftMetrics(
+    input: QualityMetricsInput & {
+      firmId: string;
+      userId: string;
+      documentType: DocumentType;
+      generationTimeMs?: number;
+      tokensUsed?: number;
+      modelUsed?: string;
+      templateId?: string;
+      precedentIds?: string[];
+    }
+  ): Promise<DocumentDraftMetrics> {
     const startTime = Date.now();
 
     try {
@@ -44,9 +43,10 @@ export class QualityMetricsService {
       const metrics = this.calculateMetrics(input.initialContent, input.finalContent);
 
       // Calculate time to finalize
-      const timeToFinalizeMinutes = input.endTime && input.startTime
-        ? Math.round((input.endTime.getTime() - input.startTime.getTime()) / 60000)
-        : null;
+      const timeToFinalizeMinutes =
+        input.endTime && input.startTime
+          ? Math.round((input.endTime.getTime() - input.startTime.getTime()) / 60000)
+          : null;
 
       // Create metrics record
       const record = await prisma.documentDraftMetrics.create({
@@ -124,16 +124,12 @@ export class QualityMetricsService {
     const finalWordCount = this.countWords(finalContent);
 
     // Calculate character changes using simple diff
-    const { added, removed } = this.calculateCharacterChanges(
-      initialContent,
-      finalContent
-    );
+    const { added, removed } = this.calculateCharacterChanges(initialContent, finalContent);
 
     // Calculate edit percentage
     const totalChanges = added + removed;
-    const editPercentage = initialContent.length > 0
-      ? (totalChanges / initialContent.length) * 100
-      : 0;
+    const editPercentage =
+      initialContent.length > 0 ? (totalChanges / initialContent.length) * 100 : 0;
 
     return {
       initialWordCount,
@@ -148,7 +144,10 @@ export class QualityMetricsService {
    * Count words in text
    */
   private countWords(text: string): number {
-    return text.trim().split(/\s+/).filter((word) => word.length > 0).length;
+    return text
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
   }
 
   /**
@@ -215,21 +214,22 @@ export class QualityMetricsService {
       }
 
       // Calculate aggregates
-      const totalEditPercentage = metrics.reduce(
-        (sum, m) => sum + Number(m.editPercentage),
-        0
-      );
+      const totalEditPercentage = metrics.reduce((sum, m) => sum + Number(m.editPercentage), 0);
       const averageEditPercentage = totalEditPercentage / metrics.length;
 
       const metricsWithTime = metrics.filter((m) => m.timeToFinalizeMinutes !== null);
-      const averageTimeToFinalize = metricsWithTime.length > 0
-        ? metricsWithTime.reduce((sum, m) => sum + (m.timeToFinalizeMinutes || 0), 0) / metricsWithTime.length
-        : 0;
+      const averageTimeToFinalize =
+        metricsWithTime.length > 0
+          ? metricsWithTime.reduce((sum, m) => sum + (m.timeToFinalizeMinutes || 0), 0) /
+            metricsWithTime.length
+          : 0;
 
       const metricsWithRating = metrics.filter((m) => m.userRating !== null);
-      const averageUserRating = metricsWithRating.length > 0
-        ? metricsWithRating.reduce((sum, m) => sum + (m.userRating || 0), 0) / metricsWithRating.length
-        : 0;
+      const averageUserRating =
+        metricsWithRating.length > 0
+          ? metricsWithRating.reduce((sum, m) => sum + (m.userRating || 0), 0) /
+            metricsWithRating.length
+          : 0;
 
       // Group by document type
       const byDocumentType = this.groupByDocumentType(metrics);
@@ -299,7 +299,10 @@ export class QualityMetricsService {
   /**
    * Update metrics with user rating
    */
-  async addUserRating(documentId: string, rating: 1 | 2 | 3 | 4 | 5): Promise<DocumentDraftMetrics> {
+  async addUserRating(
+    documentId: string,
+    rating: 1 | 2 | 3 | 4 | 5
+  ): Promise<DocumentDraftMetrics> {
     try {
       const record = await prisma.documentDraftMetrics.update({
         where: { documentId },

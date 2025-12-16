@@ -144,9 +144,7 @@ export function AvailabilityEditor({
 
           {/* Type Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
             <div className="space-y-2">
               {AVAILABILITY_TYPES.map((type) => (
                 <label
@@ -182,16 +180,17 @@ export function AvailabilityEditor({
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="date"
                   value={formData.startDate}
                   onChange={(e) =>
-                    setFormData((prev: typeof weeklyCapacity) => ({ ...prev, startDate: e.target.value }))
+                    setFormData((prev: typeof weeklyCapacity) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
                   }
                   className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
@@ -199,16 +198,17 @@ export function AvailabilityEditor({
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Date
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="date"
                   value={formData.endDate}
                   onChange={(e) =>
-                    setFormData((prev: typeof weeklyCapacity) => ({ ...prev, endDate: e.target.value }))
+                    setFormData((prev: typeof weeklyCapacity) => ({
+                      ...prev,
+                      endDate: e.target.value,
+                    }))
                   }
                   className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
@@ -220,9 +220,7 @@ export function AvailabilityEditor({
           {/* Hours per Day (for ReducedHours) */}
           {isReducedHours && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Hours per Day
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hours per Day</label>
               <div className="relative">
                 <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input

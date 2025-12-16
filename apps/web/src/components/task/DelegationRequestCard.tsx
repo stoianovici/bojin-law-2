@@ -123,9 +123,7 @@ export function DelegationRequestCard({
               Delegation Request from {delegation.delegator.firstName}{' '}
               {delegation.delegator.lastName}
             </h4>
-            <p className="text-xs text-gray-500">
-              Requested {formatDate(delegation.createdAt)}
-            </p>
+            <p className="text-xs text-gray-500">Requested {formatDate(delegation.createdAt)}</p>
           </div>
         </div>
         {getStatusBadge()}
@@ -166,12 +164,7 @@ export function DelegationRequestCard({
         <div className="space-y-3">
           {!showDeclineForm ? (
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleAccept}
-                disabled={isProcessing}
-                className="flex-1"
-              >
+              <Button size="sm" onClick={handleAccept} disabled={isProcessing} className="flex-1">
                 <Check className="w-4 h-4 mr-1" />
                 Accept Delegation
               </Button>
@@ -193,7 +186,9 @@ export function DelegationRequestCard({
               </label>
               <Textarea
                 value={declineReason}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDeclineReason(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setDeclineReason(e.target.value)
+                }
                 placeholder="Please provide a reason for declining this delegation..."
                 rows={3}
               />

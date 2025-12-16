@@ -5,10 +5,7 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  WritingStyleCard,
-  WritingStyleCardCompact,
-} from '../WritingStyleCard';
+import { WritingStyleCard, WritingStyleCardCompact } from '../WritingStyleCard';
 import { useWritingStyle } from '@/hooks/useWritingStyle';
 
 // Mock the hook
@@ -163,9 +160,7 @@ describe('WritingStyleCard', () => {
       });
       render(<WritingStyleCard />);
       expect(screen.getByText('Nicio preferință învățată')).toBeInTheDocument();
-      expect(
-        screen.getByText(/Editează draft-uri generate de AI/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Editează draft-uri generate de AI/)).toBeInTheDocument();
     });
   });
 
@@ -176,9 +171,7 @@ describe('WritingStyleCard', () => {
         error: new Error('Failed to load'),
       });
       render(<WritingStyleCard />);
-      expect(
-        screen.getByText('Eroare la încărcarea profilului de scriere.')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Eroare la încărcarea profilului de scriere.')).toBeInTheDocument();
     });
   });
 
@@ -222,9 +215,7 @@ describe('WritingStyleCard', () => {
     it('opens reset confirmation dialog when reset is clicked', async () => {
       render(<WritingStyleCard />);
       await user.click(screen.getByText('Resetează'));
-      expect(
-        screen.getByText('Resetează Stilul de Scriere')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Resetează Stilul de Scriere')).toBeInTheDocument();
       expect(
         screen.getByText(/Ești sigur că vrei să resetezi profilul de scriere/)
       ).toBeInTheDocument();
@@ -234,9 +225,7 @@ describe('WritingStyleCard', () => {
       render(<WritingStyleCard />);
       await user.click(screen.getByText('Resetează'));
       await user.click(screen.getByText('Anulează'));
-      expect(
-        screen.queryByText('Resetează Stilul de Scriere')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Resetează Stilul de Scriere')).not.toBeInTheDocument();
     });
 
     it('calls resetWritingStyle when reset is confirmed', async () => {
@@ -263,8 +252,8 @@ describe('WritingStyleCard', () => {
       const progressBars = screen.getAllByRole('progressbar');
       expect(progressBars.length).toBeGreaterThan(0);
       // Check that at least one has a proper label
-      const formalityBar = progressBars.find(
-        (bar) => bar.getAttribute('aria-label')?.includes('formalitate')
+      const formalityBar = progressBars.find((bar) =>
+        bar.getAttribute('aria-label')?.includes('formalitate')
       );
       expect(formalityBar).toBeDefined();
     });
@@ -312,9 +301,7 @@ describe('WritingStyleCardCompact', () => {
       profile: null,
     });
     render(<WritingStyleCardCompact />);
-    expect(
-      screen.getByText('Stilul de scriere încă nu a fost învățat')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Stilul de scriere încă nu a fost învățat')).toBeInTheDocument();
   });
 
   it('has article role for accessibility', () => {

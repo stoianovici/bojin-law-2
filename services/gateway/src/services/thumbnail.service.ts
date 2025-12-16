@@ -155,12 +155,13 @@ export class ThumbnailService {
         // Local image processing with Sharp
         thumbnailUrl = await this.generateLocalThumbnail(options.fileBuffer, fileType);
         source = 'local';
-      } else if (ONEDRIVE_THUMBNAIL_TYPES.has(fileType) && options.oneDriveId && options.accessToken) {
+      } else if (
+        ONEDRIVE_THUMBNAIL_TYPES.has(fileType) &&
+        options.oneDriveId &&
+        options.accessToken
+      ) {
         // OneDrive thumbnail endpoint for PDFs and Office files
-        const result = await this.getOneDriveThumbnail(
-          options.accessToken,
-          options.oneDriveId
-        );
+        const result = await this.getOneDriveThumbnail(options.accessToken, options.oneDriveId);
         if (result) {
           thumbnailUrl = result.url;
           source = 'onedrive';
@@ -200,10 +201,7 @@ export class ThumbnailService {
    * @param fileType - MIME type
    * @returns Base64 data URI or null
    */
-  async generateLocalThumbnail(
-    fileBuffer: Buffer,
-    fileType: string
-  ): Promise<string | null> {
+  async generateLocalThumbnail(fileBuffer: Buffer, fileType: string): Promise<string | null> {
     const sharp = await this.getSharp();
     if (!sharp) {
       logger.warn('Sharp not available for local thumbnail generation');

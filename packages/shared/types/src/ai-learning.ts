@@ -372,12 +372,7 @@ export interface CompletionTimePrediction {
 /**
  * Edit type enum
  */
-export type EditType =
-  | 'Addition'
-  | 'Deletion'
-  | 'Replacement'
-  | 'Reorder'
-  | 'StyleChange';
+export type EditType = 'Addition' | 'Deletion' | 'Replacement' | 'Reorder' | 'StyleChange';
 
 /**
  * Edit location in draft

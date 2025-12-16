@@ -99,7 +99,11 @@ describe('Button', () => {
       const handleClick = jest.fn();
       const user = userEvent.setup();
 
-      render(<Button onClick={handleClick} disabled>Disabled</Button>);
+      render(
+        <Button onClick={handleClick} disabled>
+          Disabled
+        </Button>
+      );
 
       await user.click(screen.getByRole('button'));
 
@@ -110,7 +114,11 @@ describe('Button', () => {
       const handleClick = jest.fn();
       const user = userEvent.setup();
 
-      render(<Button onClick={handleClick} loading>Loading</Button>);
+      render(
+        <Button onClick={handleClick} loading>
+          Loading
+        </Button>
+      );
 
       await user.click(screen.getByRole('button'));
 

@@ -192,7 +192,11 @@ const PREVIEW_DEADLINE_CASCADE = gql`
 
 const APPLY_DEADLINE_CASCADE = gql`
   mutation ApplyDeadlineCascade($taskId: ID!, $newDueDate: Date!, $confirmConflicts: Boolean!) {
-    applyDeadlineCascade(taskId: $taskId, newDueDate: $newDueDate, confirmConflicts: $confirmConflicts) {
+    applyDeadlineCascade(
+      taskId: $taskId
+      newDueDate: $newDueDate
+      confirmConflicts: $confirmConflicts
+    ) {
       id
       title
       dueDate
@@ -225,11 +229,14 @@ const RECALCULATE_CRITICAL_PATH = gql`
 
 // Hook: Get task dependencies
 export function useTaskDependencies(taskId: string | null) {
-  const { data, loading, error, refetch } = useQuery<GetTaskDependenciesData>(GET_TASK_DEPENDENCIES, {
-    variables: { taskId },
-    skip: !taskId,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error, refetch } = useQuery<GetTaskDependenciesData>(
+    GET_TASK_DEPENDENCIES,
+    {
+      variables: { taskId },
+      skip: !taskId,
+      fetchPolicy: 'cache-and-network',
+    }
+  );
 
   return {
     dependencies: data?.taskDependencies || [],
@@ -289,9 +296,12 @@ export function useParallelTasks(caseId: string | null) {
 
 // Hook: Add dependency
 export function useAddDependency() {
-  const [mutate, { data, loading, error }] = useMutation<AddTaskDependencyData>(ADD_TASK_DEPENDENCY, {
-    refetchQueries: ['taskDependencies', 'tasks'],
-  });
+  const [mutate, { data, loading, error }] = useMutation<AddTaskDependencyData>(
+    ADD_TASK_DEPENDENCY,
+    {
+      refetchQueries: ['taskDependencies', 'tasks'],
+    }
+  );
 
   const addDependency = async (
     predecessorId: string,
@@ -310,9 +320,12 @@ export function useAddDependency() {
 
 // Hook: Remove dependency
 export function useRemoveDependency() {
-  const [mutate, { data, loading, error }] = useMutation<RemoveTaskDependencyData>(REMOVE_TASK_DEPENDENCY, {
-    refetchQueries: ['taskDependencies', 'tasks'],
-  });
+  const [mutate, { data, loading, error }] = useMutation<RemoveTaskDependencyData>(
+    REMOVE_TASK_DEPENDENCY,
+    {
+      refetchQueries: ['taskDependencies', 'tasks'],
+    }
+  );
 
   const removeDependency = async (dependencyId: string) => {
     const result = await mutate({ variables: { dependencyId } });
@@ -324,7 +337,8 @@ export function useRemoveDependency() {
 
 // Hook: Preview deadline cascade
 export function usePreviewCascade() {
-  const [mutate, { data, loading, error }] = useMutation<PreviewDeadlineCascadeData>(PREVIEW_DEADLINE_CASCADE);
+  const [mutate, { data, loading, error }] =
+    useMutation<PreviewDeadlineCascadeData>(PREVIEW_DEADLINE_CASCADE);
 
   const previewCascade = async (taskId: string, newDueDate: Date) => {
     const result = await mutate({ variables: { taskId, newDueDate } });
@@ -336,9 +350,12 @@ export function usePreviewCascade() {
 
 // Hook: Apply deadline cascade
 export function useApplyCascade() {
-  const [mutate, { data, loading, error }] = useMutation<ApplyDeadlineCascadeData>(APPLY_DEADLINE_CASCADE, {
-    refetchQueries: ['tasks', 'taskDependencies', 'criticalPath'],
-  });
+  const [mutate, { data, loading, error }] = useMutation<ApplyDeadlineCascadeData>(
+    APPLY_DEADLINE_CASCADE,
+    {
+      refetchQueries: ['tasks', 'taskDependencies', 'criticalPath'],
+    }
+  );
 
   const applyCascade = async (taskId: string, newDueDate: Date, confirmConflicts: boolean) => {
     const result = await mutate({ variables: { taskId, newDueDate, confirmConflicts } });
@@ -350,9 +367,12 @@ export function useApplyCascade() {
 
 // Hook: Recalculate critical path
 export function useRecalculateCriticalPath() {
-  const [mutate, { data, loading, error }] = useMutation<RecalculateCriticalPathData>(RECALCULATE_CRITICAL_PATH, {
-    refetchQueries: ['criticalPath', 'tasks'],
-  });
+  const [mutate, { data, loading, error }] = useMutation<RecalculateCriticalPathData>(
+    RECALCULATE_CRITICAL_PATH,
+    {
+      refetchQueries: ['criticalPath', 'tasks'],
+    }
+  );
 
   const recalculateCriticalPath = async (caseId: string) => {
     const result = await mutate({ variables: { caseId } });

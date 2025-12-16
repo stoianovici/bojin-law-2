@@ -73,11 +73,11 @@ export function BillableHoursChartWidget({
 
   // Chart colors for different practice areas
   const colors = {
-    Litigiu: '#3b82f6',      // blue-500
-    Contract: '#10b981',      // green-500
-    Consultanță: '#f59e0b',  // amber-500
-    Penal: '#ef4444',         // red-500
-    Altele: '#8b5cf6',        // purple-500
+    Litigiu: '#3b82f6', // blue-500
+    Contract: '#10b981', // green-500
+    Consultanță: '#f59e0b', // amber-500
+    Penal: '#ef4444', // red-500
+    Altele: '#8b5cf6', // purple-500
   };
 
   // Extract unique practice areas from data
@@ -102,10 +102,7 @@ export function BillableHoursChartWidget({
     >
       <div className="w-full h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={widget.data}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          >
+          <BarChart data={widget.data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey={widget.xAxisKey || 'month'}
@@ -123,10 +120,7 @@ export function BillableHoursChartWidget({
               }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend
-              wrapperStyle={{ fontSize: '12px' }}
-              iconType="square"
-            />
+            <Legend wrapperStyle={{ fontSize: '12px' }} iconType="square" />
             {practiceAreas.map((area) => (
               <Bar
                 key={area}
@@ -138,9 +132,7 @@ export function BillableHoursChartWidget({
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-2 text-xs text-gray-500 text-center">
-        Ultimele 6 luni - Date mockup
-      </div>
+      <div className="mt-2 text-xs text-gray-500 text-center">Ultimele 6 luni - Date mockup</div>
     </WidgetContainer>
   );
 }

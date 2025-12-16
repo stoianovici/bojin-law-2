@@ -168,7 +168,9 @@ class CommunicationHubPage {
   }
 
   async expandMessage(messageIndex = 0) {
-    const messages = await this.page.getByRole('button', { name: /Elena Popescu|Current User/i }).all();
+    const messages = await this.page
+      .getByRole('button', { name: /Elena Popescu|Current User/i })
+      .all();
     if (messages[messageIndex]) {
       await messages[messageIndex].click();
     }
@@ -185,8 +187,8 @@ class CommunicationHubPage {
       section === 'deadlines'
         ? this.deadlinesSection
         : section === 'commitments'
-        ? this.commitmentsSection
-        : this.actionsSection;
+          ? this.commitmentsSection
+          : this.actionsSection;
 
     await sectionButton.click();
     await this.page.waitForTimeout(300); // Wait for animation
@@ -437,7 +439,9 @@ test.describe('Communication Hub - Task Creation from Extracted Items', () => {
 
     // Verify pre-filled data
     await expect(communicationHub.taskTitleInput).toHaveValue(actionDescription);
-    await expect(communicationHub.taskDescriptionTextarea).toHaveValue(/Acțiune extrasă din email/i);
+    await expect(communicationHub.taskDescriptionTextarea).toHaveValue(
+      /Acțiune extrasă din email/i
+    );
     await expect(communicationHub.taskTypeSelect).toHaveValue('Research');
     await expect(communicationHub.taskPrioritySelect).toHaveValue('High');
 
@@ -606,7 +610,6 @@ test.describe('Communication Hub - Mark as Processed Workflow', () => {
     // 3. Switch to communication tab
     // 4. Verify thread appears with "Procesat" badge
     // 5. Verify created tasks are linked
-
     /*
     await communicationHub.markThreadAsProcessed();
 

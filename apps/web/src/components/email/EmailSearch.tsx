@@ -178,9 +178,7 @@ export function EmailSearch({ onSelectEmail, caseId }: EmailSearchProps) {
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        {!email.isRead && (
-                          <span className="h-2 w-2 rounded-full bg-blue-600" />
-                        )}
+                        {!email.isRead && <span className="h-2 w-2 rounded-full bg-blue-600" />}
                         <span className="font-medium text-gray-900 dark:text-white">
                           {email.from.name || email.from.address}
                         </span>

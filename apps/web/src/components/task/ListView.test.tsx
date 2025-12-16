@@ -184,7 +184,9 @@ describe('ListView', () => {
     });
 
     it('displays sort indicator icon on active column', () => {
-      const { container } = render(<ListView tasks={unsortedTasks} onTaskClick={mockOnTaskClick} />);
+      const { container } = render(
+        <ListView tasks={unsortedTasks} onTaskClick={mockOnTaskClick} />
+      );
 
       const titleHeader = screen.getByText('Titlu').closest('th');
       fireEvent.click(titleHeader!);

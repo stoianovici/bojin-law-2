@@ -149,7 +149,9 @@ export function DefaultRatesForm({ initialRates }: DefaultRatesFormProps) {
             min="0"
             {...register('partnerRate', { valueAsNumber: true })}
             className={`block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.partnerRate ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500' : ''
+              errors.partnerRate
+                ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : ''
             }`}
             placeholder="500.00"
             aria-invalid={errors.partnerRate ? 'true' : 'false'}
@@ -182,7 +184,9 @@ export function DefaultRatesForm({ initialRates }: DefaultRatesFormProps) {
             min="0"
             {...register('associateRate', { valueAsNumber: true })}
             className={`block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.associateRate ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500' : ''
+              errors.associateRate
+                ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : ''
             }`}
             placeholder="300.00"
             aria-invalid={errors.associateRate ? 'true' : 'false'}
@@ -215,7 +219,9 @@ export function DefaultRatesForm({ initialRates }: DefaultRatesFormProps) {
             min="0"
             {...register('paralegalRate', { valueAsNumber: true })}
             className={`block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.paralegalRate ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500' : ''
+              errors.paralegalRate
+                ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : ''
             }`}
             placeholder="150.00"
             aria-invalid={errors.paralegalRate ? 'true' : 'false'}

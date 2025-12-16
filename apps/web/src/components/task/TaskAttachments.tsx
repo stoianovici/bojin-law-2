@@ -62,19 +62,13 @@ export function TaskAttachments({ taskId, currentUserId, canEdit = true }: TaskA
   }
 
   if (error) {
-    return (
-      <div className="text-red-600 text-sm">
-        Eroare la încărcarea atașamentelor
-      </div>
-    );
+    return <div className="text-red-600 text-sm">Eroare la încărcarea atașamentelor</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">
-          Atașamente ({attachments.length})
-        </h3>
+        <h3 className="font-semibold text-gray-900">Atașamente ({attachments.length})</h3>
         {canEdit && (
           <button
             onClick={() => setShowUploadModal(true)}
@@ -190,10 +184,7 @@ function AttachmentItem({
             {attachment.fileName}
           </a>
           {attachment.version > 1 && (
-            <button
-              onClick={onViewVersions}
-              className="text-xs text-gray-500 hover:text-blue-600"
-            >
+            <button onClick={onViewVersions} className="text-xs text-gray-500 hover:text-blue-600">
               v{attachment.version}
             </button>
           )}

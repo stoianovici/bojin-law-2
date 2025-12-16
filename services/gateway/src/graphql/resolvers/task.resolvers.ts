@@ -101,11 +101,7 @@ export const taskResolvers = {
     /**
      * Get tasks for a specific case
      */
-    tasksByCase: async (
-      _: any,
-      args: { caseId: string; filters?: any },
-      context: Context
-    ) => {
+    tasksByCase: async (_: any, args: { caseId: string; filters?: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -114,11 +110,7 @@ export const taskResolvers = {
         });
       }
 
-      return await taskService.getTasksByCase(
-        args.caseId,
-        user.firmId,
-        args.filters
-      );
+      return await taskService.getTasksByCase(args.caseId, user.firmId, args.filters);
     },
 
     /**
@@ -133,11 +125,7 @@ export const taskResolvers = {
         });
       }
 
-      return await taskService.getTasksByAssignee(
-        user.id,
-        user.firmId,
-        args.filters
-      );
+      return await taskService.getTasksByAssignee(user.id, user.firmId, args.filters);
     },
 
     /**
@@ -200,11 +188,7 @@ export const taskResolvers = {
     /**
      * Update an existing task
      */
-    updateTask: async (
-      _: any,
-      args: { id: string; input: any },
-      context: Context
-    ) => {
+    updateTask: async (_: any, args: { id: string; input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -234,11 +218,7 @@ export const taskResolvers = {
     /**
      * Cancel a task with optional reason
      */
-    cancelTask: async (
-      _: any,
-      args: { id: string; reason?: string },
-      context: Context
-    ) => {
+    cancelTask: async (_: any, args: { id: string; reason?: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -270,11 +250,7 @@ export const taskResolvers = {
     /**
      * Add attendee to Meeting task
      */
-    addTaskAttendee: async (
-      _: any,
-      args: { taskId: string; input: any },
-      context: Context
-    ) => {
+    addTaskAttendee: async (_: any, args: { taskId: string; input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -283,11 +259,7 @@ export const taskResolvers = {
         });
       }
 
-      return await attendeeService.addAttendee(
-        args.taskId,
-        args.input,
-        user.firmId
-      );
+      return await attendeeService.addAttendee(args.taskId, args.input, user.firmId);
     },
 
     /**
@@ -306,11 +278,7 @@ export const taskResolvers = {
         });
       }
 
-      await attendeeService.removeAttendee(
-        args.taskId,
-        args.attendeeId,
-        user.firmId
-      );
+      await attendeeService.removeAttendee(args.taskId, args.attendeeId, user.firmId);
 
       return true;
     },
@@ -331,10 +299,7 @@ export const taskResolvers = {
         });
       }
 
-      return await attendeeService.updateAttendeeResponse(
-        args.attendeeId,
-        args.response
-      );
+      return await attendeeService.updateAttendeeResponse(args.attendeeId, args.response);
     },
 
     // Research Document Linking Mutations
@@ -342,11 +307,7 @@ export const taskResolvers = {
     /**
      * Link document to Research task
      */
-    linkDocumentToTask: async (
-      _: any,
-      args: { taskId: string; input: any },
-      context: Context
-    ) => {
+    linkDocumentToTask: async (_: any, args: { taskId: string; input: any }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -380,11 +341,7 @@ export const taskResolvers = {
         });
       }
 
-      await documentService.unlinkDocument(
-        args.taskId,
-        args.documentId,
-        user.firmId
-      );
+      await documentService.unlinkDocument(args.taskId, args.documentId, user.firmId);
 
       return true;
     },
@@ -407,21 +364,13 @@ export const taskResolvers = {
         });
       }
 
-      return await delegationService.createDelegation(
-        args.sourceTaskId,
-        args.input,
-        user.id
-      );
+      return await delegationService.createDelegation(args.sourceTaskId, args.input, user.id);
     },
 
     /**
      * Accept delegation request
      */
-    acceptDelegation: async (
-      _: any,
-      args: { delegationId: string },
-      context: Context
-    ) => {
+    acceptDelegation: async (_: any, args: { delegationId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -449,11 +398,7 @@ export const taskResolvers = {
         });
       }
 
-      return await delegationService.declineDelegation(
-        args.delegationId,
-        user.id,
-        args.reason
-      );
+      return await delegationService.declineDelegation(args.delegationId, user.id, args.reason);
     },
   },
 
@@ -544,9 +489,7 @@ export const taskResolvers = {
         return null;
       }
 
-      const titles = incompletePredecessors
-        .map((dep) => dep.predecessor.title)
-        .join(', ');
+      const titles = incompletePredecessors.map((dep) => dep.predecessor.title).join(', ');
       return `Blocked by incomplete task(s): ${titles}`;
     },
   },
@@ -632,9 +575,7 @@ function buildFilterWhere(filters?: any): Record<string, unknown> {
   if (filters.dueDateFrom || filters.dueDateTo) {
     where.dueDate = {};
     if (filters.dueDateFrom) {
-      (where.dueDate as Record<string, unknown>).gte = new Date(
-        filters.dueDateFrom
-      );
+      (where.dueDate as Record<string, unknown>).gte = new Date(filters.dueDateFrom);
     }
     if (filters.dueDateTo) {
       (where.dueDate as Record<string, unknown>).lte = new Date(filters.dueDateTo);

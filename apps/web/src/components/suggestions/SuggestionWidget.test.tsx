@@ -5,7 +5,11 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SuggestionWidget } from './SuggestionWidget';
-import { usePendingSuggestions, useAcceptSuggestion, useDismissSuggestion } from '@/hooks/useSuggestions';
+import {
+  usePendingSuggestions,
+  useAcceptSuggestion,
+  useDismissSuggestion,
+} from '@/hooks/useSuggestions';
 import type { AISuggestion } from '@legal-platform/types';
 
 // Mock the hooks
@@ -242,7 +246,9 @@ describe('SuggestionWidget', () => {
       fireEvent.click(trigger);
 
       await waitFor(() => {
-        const taskCard = screen.getByText('Finalizează revizuirea contractului').closest('[class*="card"]');
+        const taskCard = screen
+          .getByText('Finalizează revizuirea contractului')
+          .closest('[class*="card"]');
         expect(taskCard).toBeInTheDocument();
       });
     });

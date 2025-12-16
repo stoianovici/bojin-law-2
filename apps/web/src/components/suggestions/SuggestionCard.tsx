@@ -9,16 +9,8 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import type {
-  AISuggestion,
-  SuggestionType,
-  SuggestionPriority,
-} from '@legal-platform/types';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import type { AISuggestion, SuggestionType, SuggestionPriority } from '@legal-platform/types';
 
 // Icons
 const PatternIcon = ({ className }: { className?: string }) => (
@@ -145,12 +137,7 @@ const ChevronDownIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M19 9l-7 7-7-7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
 
@@ -184,7 +171,12 @@ export interface SuggestionCardProps {
 // Type-specific styling
 const typeStyles: Record<
   SuggestionType,
-  { bgColor: string; borderColor: string; iconColor: string; Icon: React.ComponentType<{ className?: string }> }
+  {
+    bgColor: string;
+    borderColor: string;
+    iconColor: string;
+    Icon: React.ComponentType<{ className?: string }>;
+  }
 > = {
   PatternMatch: {
     bgColor: 'bg-purple-50',
@@ -301,10 +293,7 @@ export function SuggestionCard({
         </div>
 
         {/* Title & Description */}
-        <h4
-          className="mt-3 font-medium text-foreground"
-          id={`suggestion-title-${suggestion.id}`}
-        >
+        <h4 className="mt-3 font-medium text-foreground" id={`suggestion-title-${suggestion.id}`}>
           {suggestion.title}
         </h4>
         <p
@@ -373,11 +362,7 @@ SuggestionCard.displayName = 'SuggestionCard';
 /**
  * Compact version of SuggestionCard for use in lists or widgets
  */
-export function SuggestionCardCompact({
-  suggestion,
-  onAccept,
-  onDismiss,
-}: SuggestionCardProps) {
+export function SuggestionCardCompact({ suggestion, onAccept, onDismiss }: SuggestionCardProps) {
   const style = typeStyles[suggestion.type] || typeStyles.TaskSuggestion;
   const Icon = style.Icon;
 
@@ -391,9 +376,7 @@ export function SuggestionCardCompact({
         <Icon className={`${style.iconColor} shrink-0`} />
         <div className="min-w-0">
           <p className="font-medium text-sm truncate">{suggestion.title}</p>
-          <p className="text-xs text-muted-foreground truncate">
-            {suggestion.description}
-          </p>
+          <p className="text-xs text-muted-foreground truncate">{suggestion.description}</p>
         </div>
       </div>
       <div className="flex items-center gap-1 ml-2 shrink-0">

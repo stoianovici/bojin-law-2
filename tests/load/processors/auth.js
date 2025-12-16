@@ -76,7 +76,8 @@ function generateDocumentContent(requestParams, context, ee, next) {
   const size = sizes[sizeIndex];
 
   let content = '';
-  const paragraph = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ';
+  const paragraph =
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ';
 
   switch (size) {
     case 'small':
@@ -216,15 +217,16 @@ function exportMetrics(context, ee, next) {
   const summary = {
     timestamp: new Date().toISOString(),
     totalRequests: metrics.totalRequests,
-    successRate: (metrics.successfulRequests / metrics.totalRequests * 100).toFixed(2),
-    errorRate: (metrics.failedRequests / metrics.totalRequests * 100).toFixed(2),
+    successRate: ((metrics.successfulRequests / metrics.totalRequests) * 100).toFixed(2),
+    errorRate: ((metrics.failedRequests / metrics.totalRequests) * 100).toFixed(2),
     byEndpoint: Object.entries(metrics.byEndpoint).map(([endpoint, data]) => ({
       endpoint,
       total: data.total,
-      successRate: (data.success / data.total * 100).toFixed(2),
-      avgLatency: data.latencies.length > 0
-        ? (data.latencies.reduce((a, b) => a + b, 0) / data.latencies.length).toFixed(2)
-        : 'N/A',
+      successRate: ((data.success / data.total) * 100).toFixed(2),
+      avgLatency:
+        data.latencies.length > 0
+          ? (data.latencies.reduce((a, b) => a + b, 0) / data.latencies.length).toFixed(2)
+          : 'N/A',
     })),
     uniqueUsers: Object.keys(metrics.byUser).length,
   };

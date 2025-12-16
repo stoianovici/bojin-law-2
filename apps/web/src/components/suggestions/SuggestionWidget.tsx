@@ -43,12 +43,7 @@ const ChevronUpIcon = ({ className }: { className?: string }) => (
     height="20"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 15l7-7 7 7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
   </svg>
 );
 
@@ -62,12 +57,7 @@ const ChevronDownIcon = ({ className }: { className?: string }) => (
     height="20"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M19 9l-7 7-7-7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
 
@@ -100,12 +90,7 @@ const CloseIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M6 18L18 6M6 6l12 12"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
@@ -175,11 +160,7 @@ export function SuggestionWidget({
   // Click outside to collapse
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isExpanded &&
-        widgetRef.current &&
-        !widgetRef.current.contains(event.target as Node)
-      ) {
+      if (isExpanded && widgetRef.current && !widgetRef.current.contains(event.target as Node)) {
         setIsExpanded(false);
       }
     };
@@ -219,19 +200,14 @@ export function SuggestionWidget({
         <button
           onClick={() => setIsExpanded(true)}
           className={`flex items-center gap-2 px-4 py-3 rounded-full shadow-lg transition-all duration-300 hover:scale-105 ${
-            hasUrgent
-              ? 'bg-red-600 text-white animate-pulse'
-              : 'bg-primary text-primary-foreground'
+            hasUrgent ? 'bg-red-600 text-white animate-pulse' : 'bg-primary text-primary-foreground'
           }`}
           aria-expanded={false}
           aria-label={`${totalCount} sugestii AI. Apasă pentru a deschide.`}
         >
           <SparklesIcon />
           {totalCount > 0 && (
-            <Badge
-              variant="secondary"
-              className={`${hasUrgent ? 'bg-white text-red-600' : ''}`}
-            >
+            <Badge variant="secondary" className={`${hasUrgent ? 'bg-white text-red-600' : ''}`}>
               {totalCount}
             </Badge>
           )}
@@ -254,9 +230,7 @@ export function SuggestionWidget({
           <div className="flex items-center gap-2">
             <SparklesIcon className="text-primary" />
             <CardTitle className="text-base">Sugestii AI</CardTitle>
-            {totalCount > 0 && (
-              <Badge variant="secondary">{totalCount}</Badge>
-            )}
+            {totalCount > 0 && <Badge variant="secondary">{totalCount}</Badge>}
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -286,11 +260,7 @@ export function SuggestionWidget({
           {error && (
             <div className="text-center py-4 text-sm text-muted-foreground">
               <p>Nu am putut încărca sugestiile.</p>
-              <Button
-                size="sm"
-                variant="link"
-                onClick={() => refreshSuggestions()}
-              >
+              <Button size="sm" variant="link" onClick={() => refreshSuggestions()}>
                 Încearcă din nou
               </Button>
             </div>
@@ -300,19 +270,14 @@ export function SuggestionWidget({
             <div className="text-center py-6 text-sm text-muted-foreground">
               <SparklesIcon className="mx-auto mb-2 text-muted-foreground/50" />
               <p>Nu există sugestii pentru moment.</p>
-              <p className="text-xs mt-1">
-                Sugestiile vor apărea pe baza contextului tău.
-              </p>
+              <p className="text-xs mt-1">Sugestiile vor apărea pe baza contextului tău.</p>
             </div>
           )}
 
           {loading && visibleSuggestions.length === 0 && (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-20 bg-muted animate-pulse rounded-lg"
-                />
+                <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
               ))}
             </div>
           )}
@@ -403,9 +368,7 @@ export function SuggestionWidgetInline({
         <div className="flex items-center gap-2">
           <SparklesIcon className="text-primary" />
           <CardTitle className="text-base">{title}</CardTitle>
-          {totalCount > 0 && (
-            <Badge variant="secondary">{totalCount}</Badge>
-          )}
+          {totalCount > 0 && <Badge variant="secondary">{totalCount}</Badge>}
         </div>
         <Button
           size="sm"
@@ -420,19 +383,12 @@ export function SuggestionWidgetInline({
       </CardHeader>
 
       <CardContent className="p-4 pt-0">
-        {error && (
-          <p className="text-sm text-muted-foreground">
-            Nu am putut încărca sugestiile.
-          </p>
-        )}
+        {error && <p className="text-sm text-muted-foreground">Nu am putut încărca sugestiile.</p>}
 
         {loading && visibleSuggestions.length === 0 && (
           <div className="space-y-2">
             {[1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-16 bg-muted animate-pulse rounded-lg"
-              />
+              <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
             ))}
           </div>
         )}

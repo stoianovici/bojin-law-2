@@ -35,12 +35,15 @@ describe('Dashboard Integration', () => {
       const mockLayout = [{ i: 'widget-1', x: 0, y: 0, w: 6, h: 4 }];
 
       // Store layout
-      localStorage.setItem('dashboard-layouts', JSON.stringify({
-        partnerLayout: mockLayout,
-        associateLayout: [],
-        paralegalLayout: [],
-        collapsedWidgets: [],
-      }));
+      localStorage.setItem(
+        'dashboard-layouts',
+        JSON.stringify({
+          partnerLayout: mockLayout,
+          associateLayout: [],
+          paralegalLayout: [],
+          collapsedWidgets: [],
+        })
+      );
 
       const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.partnerLayout).toEqual(mockLayout);
@@ -48,12 +51,15 @@ describe('Dashboard Integration', () => {
 
     it('should load saved layout on mount', () => {
       const mockLayout = [{ i: 'widget-1', x: 2, y: 2, w: 4, h: 3 }];
-      localStorage.setItem('dashboard-layouts', JSON.stringify({
-        partnerLayout: mockLayout,
-        associateLayout: [],
-        paralegalLayout: [],
-        collapsedWidgets: [],
-      }));
+      localStorage.setItem(
+        'dashboard-layouts',
+        JSON.stringify({
+          partnerLayout: mockLayout,
+          associateLayout: [],
+          paralegalLayout: [],
+          collapsedWidgets: [],
+        })
+      );
 
       const loaded = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(loaded.partnerLayout).toEqual(mockLayout);
@@ -64,12 +70,15 @@ describe('Dashboard Integration', () => {
     it('should persist collapsed widget state', () => {
       const collapsedWidgets = ['widget-1', 'widget-2'];
 
-      localStorage.setItem('dashboard-layouts', JSON.stringify({
-        partnerLayout: [],
-        associateLayout: [],
-        paralegalLayout: [],
-        collapsedWidgets,
-      }));
+      localStorage.setItem(
+        'dashboard-layouts',
+        JSON.stringify({
+          partnerLayout: [],
+          associateLayout: [],
+          paralegalLayout: [],
+          collapsedWidgets,
+        })
+      );
 
       const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.collapsedWidgets).toEqual(collapsedWidgets);
@@ -82,12 +91,15 @@ describe('Dashboard Integration', () => {
       const updatedLayout = [{ i: 'widget-1', x: 6, y: 0, w: 6, h: 4 }];
 
       // Simulate layout update
-      localStorage.setItem('dashboard-layouts', JSON.stringify({
-        partnerLayout: updatedLayout,
-        associateLayout: [],
-        paralegalLayout: [],
-        collapsedWidgets: [],
-      }));
+      localStorage.setItem(
+        'dashboard-layouts',
+        JSON.stringify({
+          partnerLayout: updatedLayout,
+          associateLayout: [],
+          paralegalLayout: [],
+          collapsedWidgets: [],
+        })
+      );
 
       const stored = JSON.parse(localStorage.getItem('dashboard-layouts') || '{}');
       expect(stored.partnerLayout[0].x).toBe(6);

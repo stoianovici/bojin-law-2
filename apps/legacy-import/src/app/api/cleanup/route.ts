@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
     const { sessionId } = await request.json();
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'sessionId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
     }
 
     // Verify session exists
@@ -25,10 +22,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // Check if already cleaned up
@@ -78,16 +72,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof AuthError) {
       const { message, statusCode } = error;
-      return NextResponse.json(
-        { error: message },
-        { status: statusCode }
-      );
+      return NextResponse.json({ error: message }, { status: statusCode });
     }
     console.error('Error during cleanup:', error);
-    return NextResponse.json(
-      { error: 'Cleanup failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Cleanup failed' }, { status: 500 });
   }
 }
 
@@ -96,10 +84,7 @@ export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId');
 
   if (!sessionId) {
-    return NextResponse.json(
-      { error: 'sessionId is required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
   }
 
   try {
@@ -115,10 +100,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // Get audit log for cleanup info
@@ -142,9 +124,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error checking cleanup status:', error);
-    return NextResponse.json(
-      { error: 'Failed to get cleanup status' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get cleanup status' }, { status: 500 });
   }
 }

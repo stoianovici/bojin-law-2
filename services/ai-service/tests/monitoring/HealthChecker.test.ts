@@ -9,7 +9,11 @@
  * - Health history tracking
  */
 
-import { HealthChecker, HealthCheckResult, ServiceHealth } from '../../src/monitoring/HealthChecker';
+import {
+  HealthChecker,
+  HealthCheckResult,
+  ServiceHealth,
+} from '../../src/monitoring/HealthChecker';
 
 describe('HealthChecker', () => {
   let healthChecker: HealthChecker;
@@ -88,10 +92,7 @@ describe('HealthChecker', () => {
     it('should mark overall status as degraded when service slow', async () => {
       // Simulate slow database (>1000ms)
       mockDatabase.query.mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve([{ health: 1 }]), 1100)
-          )
+        () => new Promise((resolve) => setTimeout(() => resolve([{ health: 1 }]), 1100))
       );
       mockRedis.ping.mockResolvedValue('PONG');
       mockClaudeAPI.healthCheck.mockResolvedValue(true);
@@ -134,10 +135,7 @@ describe('HealthChecker', () => {
 
     it('should mark database as degraded when slow', async () => {
       mockDatabase.query.mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve([{ health: 1 }]), 1100)
-          )
+        () => new Promise((resolve) => setTimeout(() => resolve([{ health: 1 }]), 1100))
       );
       mockRedis.ping.mockResolvedValue('PONG');
       mockClaudeAPI.healthCheck.mockResolvedValue(true);
@@ -174,10 +172,7 @@ describe('HealthChecker', () => {
     it('should mark Redis as degraded when slow (<100ms threshold)', async () => {
       mockDatabase.query.mockResolvedValue([{ health: 1 }]);
       mockRedis.ping.mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve('PONG'), 150)
-          )
+        () => new Promise((resolve) => setTimeout(() => resolve('PONG'), 150))
       );
       mockClaudeAPI.healthCheck.mockResolvedValue(true);
 

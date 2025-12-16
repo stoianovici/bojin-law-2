@@ -198,13 +198,15 @@ describe('PlatformIntelligenceService', () => {
 
   describe('calculatePlatformHealthScore', () => {
     // Helper to create mock params for calculatePlatformHealthScore
-    const createHealthScoreParams = (overrides: {
-      commImprovement?: number;
-      firstTimeRight?: number;
-      completionRate?: number;
-      adoptionScores?: number[];
-      billableHoursRecovered?: number;
-    } = {}) => {
+    const createHealthScoreParams = (
+      overrides: {
+        commImprovement?: number;
+        firstTimeRight?: number;
+        completionRate?: number;
+        adoptionScores?: number[];
+        billableHoursRecovered?: number;
+      } = {}
+    ) => {
       const communication = {
         baselineComparison: { improvementPercent: overrides.commImprovement ?? 30 },
       } as any;
@@ -293,13 +295,15 @@ describe('PlatformIntelligenceService', () => {
 
   describe('generateRecommendations', () => {
     // Helper to create mock data for generateRecommendations
-    const createMockParams = (overrides: {
-      commImprovement?: number;
-      firstTimeRight?: number;
-      completionRate?: number;
-      underutilizedUsers?: Array<{ userId: string; userName: string; adoptionScore: number }>;
-      overdueCount?: number;
-    } = {}) => {
+    const createMockParams = (
+      overrides: {
+        commImprovement?: number;
+        firstTimeRight?: number;
+        completionRate?: number;
+        underutilizedUsers?: Array<{ userId: string; userName: string; adoptionScore: number }>;
+        overdueCount?: number;
+      } = {}
+    ) => {
       const communication = {
         baselineComparison: { improvementPercent: overrides.commImprovement ?? 30 },
       } as any;

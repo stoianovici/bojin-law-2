@@ -22,9 +22,7 @@ import type { DatabaseClient, QueryResult } from '@legal-platform/types';
  * const service = new MyService(mockDb);
  * ```
  */
-export function createMockDatabaseClient(
-  overrides?: Partial<DatabaseClient>
-): DatabaseClient {
+export function createMockDatabaseClient(overrides?: Partial<DatabaseClient>): DatabaseClient {
   return {
     query: jest.fn(),
     transaction: jest.fn(),
@@ -47,10 +45,7 @@ export function createMockDatabaseClient(
  * (mockDb.query as jest.Mock).mockResolvedValue(result);
  * ```
  */
-export function createMockQueryResult<T = any>(
-  rows: T[],
-  rowCount?: number
-): QueryResult<T> {
+export function createMockQueryResult<T = any>(rows: T[], rowCount?: number): QueryResult<T> {
   return {
     rows,
     rowCount: rowCount ?? rows.length,
@@ -78,9 +73,7 @@ export function createMockQueryResult<T = any>(
  * // Second query returns { rows: [{ count: 10 }] }
  * ```
  */
-export function createMockDatabaseClientWithResponses(
-  responses: QueryResult[]
-): DatabaseClient {
+export function createMockDatabaseClientWithResponses(responses: QueryResult[]): DatabaseClient {
   const mockQuery = jest.fn();
 
   // Configure mock to return responses in sequence
@@ -257,7 +250,7 @@ export const mockData = {
     totalOccurrences: 50,
     priorityScore: 0.85,
     mappingStatus: 'mapped',
-    confidence: 0.90,
+    confidence: 0.9,
     lastDiscovered: new Date(),
     estimatedTimeSavings: 2.5,
     estimatedMonthlySavings: '€1042/month',

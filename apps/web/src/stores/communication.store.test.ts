@@ -4,98 +4,109 @@ import type { CommunicationThread } from '@legal-platform/types';
 
 // Mock the test utils
 jest.mock('@legal-platform/test-utils', () => ({
-  createMockCommunicationThreads: jest.fn(() => [
-    {
-      id: 'thread-1',
-      subject: 'Test Thread 1',
-      caseId: 'case-1',
-      caseName: 'Test Case 1',
-      caseType: 'Litigation',
-      participants: [],
-      messages: [
+  createMockCommunicationThreads: jest.fn(
+    () =>
+      [
         {
-          id: 'msg-1',
-          threadId: 'thread-1',
-          senderId: 'user-1',
-          senderName: 'Test User',
-          senderEmail: 'test@example.com',
-          recipientIds: [],
-          subject: 'Test Subject',
-          body: 'Test body',
-          sentDate: new Date('2025-01-15'),
-          attachments: [],
-          isFromUser: false,
-          isRead: true,
-        },
-        {
-          id: 'msg-2',
-          threadId: 'thread-1',
-          senderId: 'user-2',
-          senderName: 'Test User 2',
-          senderEmail: 'test2@example.com',
-          recipientIds: [],
-          subject: 'Test Subject 2',
-          body: 'Test body 2',
-          sentDate: new Date('2025-01-16'),
-          attachments: [],
-          isFromUser: true,
-          isRead: true,
-        },
-      ],
-      hasAttachments: false,
-      isUnread: false,
-      lastMessageDate: new Date('2025-01-16'),
-      extractedItems: {
-        deadlines: [
-          {
-            id: 'deadline-1',
-            description: 'Test deadline',
-            dueDate: new Date('2025-02-01'),
-            sourceMessageId: 'msg-1',
-            confidence: 'High',
+          id: 'thread-1',
+          subject: 'Test Thread 1',
+          caseId: 'case-1',
+          caseName: 'Test Case 1',
+          caseType: 'Litigation',
+          participants: [],
+          messages: [
+            {
+              id: 'msg-1',
+              threadId: 'thread-1',
+              senderId: 'user-1',
+              senderName: 'Test User',
+              senderEmail: 'test@example.com',
+              recipientIds: [],
+              subject: 'Test Subject',
+              body: 'Test body',
+              sentDate: new Date('2025-01-15'),
+              attachments: [],
+              isFromUser: false,
+              isRead: true,
+            },
+            {
+              id: 'msg-2',
+              threadId: 'thread-1',
+              senderId: 'user-2',
+              senderName: 'Test User 2',
+              senderEmail: 'test2@example.com',
+              recipientIds: [],
+              subject: 'Test Subject 2',
+              body: 'Test body 2',
+              sentDate: new Date('2025-01-16'),
+              attachments: [],
+              isFromUser: true,
+              isRead: true,
+            },
+          ],
+          hasAttachments: false,
+          isUnread: false,
+          lastMessageDate: new Date('2025-01-16'),
+          extractedItems: {
+            deadlines: [
+              {
+                id: 'deadline-1',
+                description: 'Test deadline',
+                dueDate: new Date('2025-02-01'),
+                sourceMessageId: 'msg-1',
+                confidence: 'High',
+              },
+            ],
+            commitments: [],
+            actionItems: [],
           },
-        ],
-        commitments: [],
-        actionItems: [],
-      },
-      createdAt: new Date('2025-01-15'),
-      updatedAt: new Date('2025-01-16'),
-    },
-    {
-      id: 'thread-2',
-      subject: 'Test Thread 2',
-      caseId: 'case-2',
-      caseName: 'Test Case 2',
-      caseType: 'Contract',
-      participants: [],
-      messages: [
-        {
-          id: 'msg-3',
-          threadId: 'thread-2',
-          senderId: 'user-3',
-          senderName: 'Test User 3',
-          senderEmail: 'test3@example.com',
-          recipientIds: [],
-          subject: 'Test Subject 3',
-          body: 'Test body 3',
-          sentDate: new Date('2025-01-17'),
-          attachments: [{ id: 'att-1', filename: 'test.pdf', fileSize: 1000, mimeType: 'application/pdf', downloadUrl: '/test.pdf' }],
-          isFromUser: false,
-          isRead: false,
+          createdAt: new Date('2025-01-15'),
+          updatedAt: new Date('2025-01-16'),
         },
-      ],
-      hasAttachments: true,
-      isUnread: true,
-      lastMessageDate: new Date('2025-01-17'),
-      extractedItems: {
-        deadlines: [],
-        commitments: [],
-        actionItems: [],
-      },
-      createdAt: new Date('2025-01-17'),
-      updatedAt: new Date('2025-01-17'),
-    },
-  ] as CommunicationThread[]),
+        {
+          id: 'thread-2',
+          subject: 'Test Thread 2',
+          caseId: 'case-2',
+          caseName: 'Test Case 2',
+          caseType: 'Contract',
+          participants: [],
+          messages: [
+            {
+              id: 'msg-3',
+              threadId: 'thread-2',
+              senderId: 'user-3',
+              senderName: 'Test User 3',
+              senderEmail: 'test3@example.com',
+              recipientIds: [],
+              subject: 'Test Subject 3',
+              body: 'Test body 3',
+              sentDate: new Date('2025-01-17'),
+              attachments: [
+                {
+                  id: 'att-1',
+                  filename: 'test.pdf',
+                  fileSize: 1000,
+                  mimeType: 'application/pdf',
+                  downloadUrl: '/test.pdf',
+                },
+              ],
+              isFromUser: false,
+              isRead: false,
+            },
+          ],
+          hasAttachments: true,
+          isUnread: true,
+          lastMessageDate: new Date('2025-01-17'),
+          extractedItems: {
+            deadlines: [],
+            commitments: [],
+            actionItems: [],
+          },
+          createdAt: new Date('2025-01-17'),
+          updatedAt: new Date('2025-01-17'),
+        },
+      ] as CommunicationThread[]
+  ),
 }));
 
 describe('Communication Store', () => {
@@ -104,7 +115,8 @@ describe('Communication Store', () => {
     localStorage.clear();
     // Reset store state
     useCommunicationStore.setState({
-      threads: (require('@legal-platform/test-utils').createMockCommunicationThreads() as CommunicationThread[]),
+      threads:
+        require('@legal-platform/test-utils').createMockCommunicationThreads() as CommunicationThread[],
       selectedThreadId: null,
       expandedMessageIds: new Set(),
       filters: {
@@ -407,8 +419,8 @@ describe('Communication Store', () => {
           );
         });
 
-        const thread = result.current.threads.find(t => t.id === 'thread-1');
-        const deadline = thread?.extractedItems.deadlines.find(d => d.id === 'deadline-1');
+        const thread = result.current.threads.find((t) => t.id === 'thread-1');
+        const deadline = thread?.extractedItems.deadlines.find((d) => d.id === 'deadline-1');
 
         expect(deadline?.convertedToTaskId).toBe('task-123');
       });
@@ -453,8 +465,8 @@ describe('Communication Store', () => {
           );
         });
 
-        const thread = result.current.threads.find(t => t.id === 'thread-1');
-        const deadline = thread?.extractedItems.deadlines.find(d => d.id === 'deadline-1');
+        const thread = result.current.threads.find((t) => t.id === 'thread-1');
+        const deadline = thread?.extractedItems.deadlines.find((d) => d.id === 'deadline-1');
 
         expect(deadline?.isDismissed).toBe(true);
         expect(deadline?.dismissedAt).toBeInstanceOf(Date);
@@ -494,7 +506,7 @@ describe('Communication Store', () => {
           result.current.markThreadAsProcessed('thread-1');
         });
 
-        const thread = result.current.threads.find(t => t.id === 'thread-1');
+        const thread = result.current.threads.find((t) => t.id === 'thread-1');
 
         expect(thread?.isProcessed).toBe(true);
         expect(thread?.processedAt).toBeInstanceOf(Date);
@@ -524,7 +536,7 @@ describe('Communication Store', () => {
         const filtered = result.current.getFilteredThreads();
 
         expect(filtered).toHaveLength(2);
-        expect(filtered.some(t => t.id === 'thread-1' && t.isProcessed)).toBe(true);
+        expect(filtered.some((t) => t.id === 'thread-1' && t.isProcessed)).toBe(true);
       });
     });
   });

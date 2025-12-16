@@ -38,11 +38,7 @@ export const proactiveSuggestionsResolvers = {
     /**
      * Get morning briefing for a specific date
      */
-    morningBriefing: async (
-      _parent: unknown,
-      args: { date?: string },
-      context: Context
-    ) => {
+    morningBriefing: async (_parent: unknown, args: { date?: string }, context: Context) => {
       const user = requireAuth(context);
 
       const targetDate = args.date ? new Date(args.date) : new Date();
@@ -92,7 +88,11 @@ export const proactiveSuggestionsResolvers = {
           currentScreen?: string;
           currentCaseId?: string;
           currentDocumentId?: string;
-          recentActions?: Array<{ type: string; timestamp?: Date; context?: Record<string, unknown> }>;
+          recentActions?: Array<{
+            type: string;
+            timestamp?: Date;
+            context?: Record<string, unknown>;
+          }>;
         };
       },
       context: Context
@@ -105,17 +105,10 @@ export const proactiveSuggestionsResolvers = {
           userId: user.id,
           firmId: user.firmId,
           status: 'Pending',
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } },
-          ],
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           ...(args.context.currentCaseId ? { caseId: args.context.currentCaseId } : {}),
         },
-        orderBy: [
-          { priority: 'desc' },
-          { confidence: 'desc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: [{ priority: 'desc' }, { confidence: 'desc' }, { createdAt: 'desc' }],
         take: 10,
         include: {
           case: {
@@ -128,7 +121,7 @@ export const proactiveSuggestionsResolvers = {
         },
       });
 
-      return suggestions.map(s => ({
+      return suggestions.map((s) => ({
         id: s.id,
         type: s.type,
         category: s.category,
@@ -163,15 +156,9 @@ export const proactiveSuggestionsResolvers = {
           userId: user.id,
           firmId: user.firmId,
           status: 'Pending',
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } },
-          ],
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
-        orderBy: [
-          { priority: 'desc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
         take: limit,
         skip: offset,
         include: {
@@ -222,10 +209,7 @@ export const proactiveSuggestionsResolvers = {
           },
           ...(args.input?.caseId ? { caseId: args.input.caseId } : {}),
         },
-        orderBy: [
-          { dueDate: 'asc' },
-          { priority: 'desc' },
-        ],
+        orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }],
         include: {
           case: {
             select: {
@@ -237,9 +221,11 @@ export const proactiveSuggestionsResolvers = {
         },
       });
 
-      return tasks.map(task => {
+      return tasks.map((task) => {
         const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
-        const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const daysUntilDue = Math.ceil(
+          (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
 
         let severity: 'Info' | 'Warning' | 'Critical' = 'Info';
         if (daysUntilDue < 3) severity = 'Critical';
@@ -270,11 +256,7 @@ export const proactiveSuggestionsResolvers = {
     /**
      * Get overdue deadlines
      */
-    overdueDeadlines: async (
-      _parent: unknown,
-      _args: unknown,
-      context: Context
-    ) => {
+    overdueDeadlines: async (_parent: unknown, _args: unknown, context: Context) => {
       const user = requireAuth(context);
 
       const today = new Date();
@@ -299,9 +281,11 @@ export const proactiveSuggestionsResolvers = {
         },
       });
 
-      return tasks.map(task => {
+      return tasks.map((task) => {
         const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
-        const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const daysUntilDue = Math.ceil(
+          (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
 
         return {
           id: task.id,
@@ -376,7 +360,8 @@ export const proactiveSuggestionsResolvers = {
         });
       }
 
-      const completenessScore = missingItems.length === 0 ? 1.0 : Math.max(0, 1 - (missingItems.length * 0.2));
+      const completenessScore =
+        missingItems.length === 0 ? 1.0 : Math.max(0, 1 - missingItems.length * 0.2);
 
       // Store the check
       try {
@@ -402,20 +387,17 @@ export const proactiveSuggestionsResolvers = {
         documentType,
         completenessScore,
         missingItems,
-        suggestions: missingItems.length > 0
-          ? ['Review and add missing required elements']
-          : ['Document appears complete'],
+        suggestions:
+          missingItems.length > 0
+            ? ['Review and add missing required elements']
+            : ['Document appears complete'],
       };
     },
 
     /**
      * Get user action patterns
      */
-    userPatterns: async (
-      _parent: unknown,
-      args: { limit?: number },
-      context: Context
-    ) => {
+    userPatterns: async (_parent: unknown, args: { limit?: number }, context: Context) => {
       const user = requireAuth(context);
 
       const patterns = await prisma.userActionPattern.findMany({
@@ -444,9 +426,7 @@ export const proactiveSuggestionsResolvers = {
       const startDate = args.dateRange?.start
         ? new Date(args.dateRange.start)
         : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const endDate = args.dateRange?.end
-        ? new Date(args.dateRange.end)
-        : new Date();
+      const endDate = args.dateRange?.end ? new Date(args.dateRange.end) : new Date();
 
       const suggestions = await prisma.aISuggestion.findMany({
         where: {
@@ -470,8 +450,8 @@ export const proactiveSuggestionsResolvers = {
         },
       });
 
-      const acceptedCount = suggestions.filter(s => s.status === 'Accepted').length;
-      const dismissedCount = suggestions.filter(s => s.status === 'Dismissed').length;
+      const acceptedCount = suggestions.filter((s) => s.status === 'Accepted').length;
+      const dismissedCount = suggestions.filter((s) => s.status === 'Dismissed').length;
 
       // Aggregate by type
       const byType: Record<string, { count: number; accepted: number }> = {};
@@ -487,9 +467,10 @@ export const proactiveSuggestionsResolvers = {
         if (s.status === 'Accepted') byCategory[s.category].accepted++;
       }
 
-      const avgResponseTime = feedback.length > 0
-        ? feedback.reduce((sum, f) => sum + (f.responseTimeMs || 0), 0) / feedback.length
-        : 0;
+      const avgResponseTime =
+        feedback.length > 0
+          ? feedback.reduce((sum, f) => sum + (f.responseTimeMs || 0), 0) / feedback.length
+          : 0;
 
       return {
         totalSuggestions: suggestions.length,
@@ -537,11 +518,7 @@ export const proactiveSuggestionsResolvers = {
     /**
      * Get deadline statistics
      */
-    deadlineStats: async (
-      _parent: unknown,
-      _args: unknown,
-      context: Context
-    ) => {
+    deadlineStats: async (_parent: unknown, _args: unknown, context: Context) => {
       const user = requireAuth(context);
 
       const today = new Date();
@@ -807,16 +784,10 @@ export const proactiveSuggestionsResolvers = {
           userId: user.id,
           firmId: user.firmId,
           status: 'Pending',
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } },
-          ],
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           ...(args.context.currentCaseId ? { caseId: args.context.currentCaseId } : {}),
         },
-        orderBy: [
-          { priority: 'desc' },
-          { confidence: 'desc' },
-        ],
+        orderBy: [{ priority: 'desc' }, { confidence: 'desc' }],
         take: 10,
         include: {
           case: {
@@ -835,11 +806,7 @@ export const proactiveSuggestionsResolvers = {
     /**
      * Generate a new morning briefing
      */
-    generateMorningBriefing: async (
-      _parent: unknown,
-      _args: unknown,
-      context: Context
-    ) => {
+    generateMorningBriefing: async (_parent: unknown, _args: unknown, context: Context) => {
       const user = requireAuth(context);
 
       // Create a basic briefing (in production, this would call the AI service)

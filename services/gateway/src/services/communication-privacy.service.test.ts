@@ -5,7 +5,10 @@
  * Tests for privacy level enforcement, access checks, and privacy updates
  */
 
-import { communicationPrivacyService, CommunicationPrivacyService } from './communication-privacy.service';
+import {
+  communicationPrivacyService,
+  CommunicationPrivacyService,
+} from './communication-privacy.service';
 
 // Mock Prisma client
 jest.mock('@legal-platform/database', () => ({
@@ -410,10 +413,11 @@ describe('CommunicationPrivacyService', () => {
 
       prisma.caseTeam.findMany.mockResolvedValue(mockCaseTeam);
 
-      const result = await communicationPrivacyService.getAvailableViewers(
-        'case-123',
-        { userId: mockUserId, role: 'Partner' as any, firmId: mockFirmId }
-      );
+      const result = await communicationPrivacyService.getAvailableViewers('case-123', {
+        userId: mockUserId,
+        role: 'Partner' as any,
+        firmId: mockFirmId,
+      });
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
@@ -443,10 +447,11 @@ describe('CommunicationPrivacyService', () => {
 
       prisma.caseTeam.findMany.mockResolvedValue(mockCaseTeam);
 
-      const result = await communicationPrivacyService.getAvailableViewers(
-        'case-123',
-        { userId: mockUserId, role: 'Partner' as any, firmId: mockFirmId }
-      );
+      const result = await communicationPrivacyService.getAvailableViewers('case-123', {
+        userId: mockUserId,
+        role: 'Partner' as any,
+        firmId: mockFirmId,
+      });
 
       expect(result[0].name).toBe('john@test.com');
     });

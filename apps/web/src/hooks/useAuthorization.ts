@@ -31,7 +31,7 @@ export function useRequireRole(requiredRole: UserRole) {
 
   return {
     authorized: user?.role === requiredRole,
-    isLoading
+    isLoading,
   };
 }
 

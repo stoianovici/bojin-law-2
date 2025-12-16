@@ -13,10 +13,7 @@
  */
 
 import jwt from 'jsonwebtoken';
-import {
-  JWTAccessTokenPayload,
-  JWTRefreshTokenPayload,
-} from '../types/auth.types';
+import { JWTAccessTokenPayload, JWTRefreshTokenPayload } from '../types/auth.types';
 
 /**
  * JWT configuration from environment variables
@@ -27,9 +24,7 @@ const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'bojin-law-api';
 
 // Validate JWT_SECRET
 if (!JWT_SECRET) {
-  throw new Error(
-    'JWT_SECRET environment variable is required for token generation'
-  );
+  throw new Error('JWT_SECRET environment variable is required for token generation');
 }
 
 if (JWT_SECRET.length < 32) {

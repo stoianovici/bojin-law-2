@@ -132,9 +132,7 @@ export function validateVariables(
   const templateVars = extractVariables(template);
   const providedVars = Object.keys(values);
 
-  const missing = requiredVars.filter(
-    (v) => templateVars.includes(v) && !providedVars.includes(v)
-  );
+  const missing = requiredVars.filter((v) => templateVars.includes(v) && !providedVars.includes(v));
 
   const unused = providedVars.filter((v) => !templateVars.includes(v));
 
@@ -151,10 +149,7 @@ export function validateVariables(
  * @param sampleValues - Sample values for preview
  * @returns Rendered preview
  */
-export function previewTemplate(
-  template: string,
-  sampleValues?: Record<string, string>
-): string {
+export function previewTemplate(template: string, sampleValues?: Record<string, string>): string {
   const variables = extractVariables(template);
 
   // Generate sample values for any missing variables

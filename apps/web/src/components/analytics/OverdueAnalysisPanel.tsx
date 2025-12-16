@@ -9,14 +9,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import type { OverdueAnalyticsResponse } from '@legal-platform/types';
 
 // ============================================================================
@@ -85,11 +78,7 @@ export function OverdueAnalysisPanel({ data, loading }: OverdueAnalysisPanelProp
   }
 
   if (!data) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        Nu există date despre întârzieri
-      </div>
-    );
+    return <div className="text-center py-8 text-gray-500">Nu există date despre întârzieri</div>;
   }
 
   const byTypeData = data.overdueByType.map((item, index) => ({
@@ -192,7 +181,9 @@ export function OverdueAnalysisPanel({ data, loading }: OverdueAnalysisPanelProp
                 </div>
               ))}
               {data.overdueByUser.length === 0 && (
-                <div className="text-center py-4 text-gray-500">Nicio sarcină întârziată pe utilizator</div>
+                <div className="text-center py-4 text-gray-500">
+                  Nicio sarcină întârziată pe utilizator
+                </div>
               )}
             </div>
           </div>
@@ -202,14 +193,9 @@ export function OverdueAnalysisPanel({ data, loading }: OverdueAnalysisPanelProp
       {selectedTab === 'patterns' && (
         <div className="space-y-4">
           {data.bottleneckPatterns.map((pattern, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-lg border border-amber-200 p-6"
-            >
+            <div key={index} className="bg-white rounded-lg border border-amber-200 p-6">
               <div className="flex items-start gap-4">
-                <div className="text-3xl">
-                  {PATTERN_ICONS[pattern.patternType] || '📊'}
-                </div>
+                <div className="text-3xl">{PATTERN_ICONS[pattern.patternType] || '📊'}</div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs uppercase font-semibold text-amber-600 bg-amber-100 px-2 py-1 rounded">
@@ -221,9 +207,7 @@ export function OverdueAnalysisPanel({ data, loading }: OverdueAnalysisPanelProp
                   </div>
                   <p className="text-gray-700 mb-3">{pattern.description}</p>
                   <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                    <span className="text-sm font-medium text-blue-800">
-                      Acțiune sugerată:
-                    </span>
+                    <span className="text-sm font-medium text-blue-800">Acțiune sugerată:</span>
                     <p className="text-sm text-blue-700 mt-1">{pattern.suggestedAction}</p>
                   </div>
                   {pattern.relatedUsers && pattern.relatedUsers.length > 0 && (
@@ -236,9 +220,7 @@ export function OverdueAnalysisPanel({ data, loading }: OverdueAnalysisPanelProp
             </div>
           ))}
           {data.bottleneckPatterns.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              Niciun blocaj detectat
-            </div>
+            <div className="text-center py-8 text-gray-500">Niciun blocaj detectat</div>
           )}
         </div>
       )}
@@ -248,10 +230,7 @@ export function OverdueAnalysisPanel({ data, loading }: OverdueAnalysisPanelProp
           {data.criticalTasks.map((task) => {
             const priority = PRIORITY_BADGES[task.estimatedImpact] || PRIORITY_BADGES.Medium;
             return (
-              <div
-                key={task.taskId}
-                className="bg-white rounded-lg border border-red-200 p-6"
-              >
+              <div key={task.taskId} className="bg-white rounded-lg border border-red-200 p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
@@ -298,9 +277,7 @@ export function OverdueAnalysisPanel({ data, loading }: OverdueAnalysisPanelProp
             );
           })}
           {data.criticalTasks.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              Nicio sarcină critică întârziată
-            </div>
+            <div className="text-center py-8 text-gray-500">Nicio sarcină critică întârziată</div>
           )}
         </div>
       )}

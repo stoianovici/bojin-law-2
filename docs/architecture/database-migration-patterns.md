@@ -25,21 +25,21 @@ This document defines migration patterns for safely evolving database schemas wi
 
 Use this matrix to determine the appropriate migration strategy based on change type.
 
-| Change Type | Backward Compatible? | Downtime Required? | Strategy | Risk Level |
-|-------------|---------------------|-------------------|----------|-----------|
-| **Add table** | ✅ Yes | ❌ No | Direct migration | 🟢 Low |
-| **Add column (nullable)** | ✅ Yes | ❌ No | Direct migration | 🟢 Low |
-| **Add column (with default)** | ✅ Yes | ⚠️ Maybe | Add nullable → backfill → make required | 🟡 Medium |
-| **Add column (required)** | ❌ No | ❌ No | Add nullable → backfill → make required | 🟡 Medium |
-| **Rename column** | ❌ No | ❌ No | Expand-contract pattern | 🟠 High |
-| **Remove column** | ❌ No | ❌ No | Deprecate → stop using → remove | 🟠 High |
-| **Change column type** | ❌ No | ❌ No | Add new → migrate → remove old | 🟠 High |
-| **Add index** | ✅ Yes | ❌ No | CREATE INDEX CONCURRENTLY | 🟢 Low |
-| **Add foreign key** | ⚠️ Maybe | ⚠️ Maybe | Add as NOT VALID → validate separately | 🟡 Medium |
-| **Remove table** | ❌ No | ❌ No | Deprecate → stop using → remove | 🔴 Critical |
-| **Large data backfill** | Depends | ❌ No | Batch processing with throttling | 🟡 Medium |
-| **Split table** | ❌ No | ❌ No | Dual-write → backfill → switch reads | 🔴 Critical |
-| **Merge tables** | ❌ No | ❌ No | Dual-write → backfill → switch reads | 🔴 Critical |
+| Change Type                   | Backward Compatible? | Downtime Required? | Strategy                                | Risk Level  |
+| ----------------------------- | -------------------- | ------------------ | --------------------------------------- | ----------- |
+| **Add table**                 | ✅ Yes               | ❌ No              | Direct migration                        | 🟢 Low      |
+| **Add column (nullable)**     | ✅ Yes               | ❌ No              | Direct migration                        | 🟢 Low      |
+| **Add column (with default)** | ✅ Yes               | ⚠️ Maybe           | Add nullable → backfill → make required | 🟡 Medium   |
+| **Add column (required)**     | ❌ No                | ❌ No              | Add nullable → backfill → make required | 🟡 Medium   |
+| **Rename column**             | ❌ No                | ❌ No              | Expand-contract pattern                 | 🟠 High     |
+| **Remove column**             | ❌ No                | ❌ No              | Deprecate → stop using → remove         | 🟠 High     |
+| **Change column type**        | ❌ No                | ❌ No              | Add new → migrate → remove old          | 🟠 High     |
+| **Add index**                 | ✅ Yes               | ❌ No              | CREATE INDEX CONCURRENTLY               | 🟢 Low      |
+| **Add foreign key**           | ⚠️ Maybe             | ⚠️ Maybe           | Add as NOT VALID → validate separately  | 🟡 Medium   |
+| **Remove table**              | ❌ No                | ❌ No              | Deprecate → stop using → remove         | 🔴 Critical |
+| **Large data backfill**       | Depends              | ❌ No              | Batch processing with throttling        | 🟡 Medium   |
+| **Split table**               | ❌ No                | ❌ No              | Dual-write → backfill → switch reads    | 🔴 Critical |
+| **Merge tables**              | ❌ No                | ❌ No              | Dual-write → backfill → switch reads    | 🔴 Critical |
 
 ### Risk Level Definitions
 
@@ -57,6 +57,7 @@ Use this matrix to determine the appropriate migration strategy based on change 
 **Principle:** Only add new structures, never modify or remove existing ones.
 
 **Use Cases:**
+
 - Adding new tables
 - Adding nullable columns
 - Adding new indexes (with CONCURRENTLY)
@@ -78,6 +79,7 @@ ON user_preferences(user_id);
 ```
 
 **Deployment:**
+
 1. Apply migration
 2. Deploy code that uses new table (optional, reads will return empty)
 3. Backfill data if needed
@@ -91,6 +93,7 @@ ON user_preferences(user_id);
 **Principle:** Add columns with sensible defaults that work with existing code.
 
 **Use Cases:**
+
 - Adding columns with default values
 - Adding columns with NULL allowed
 
@@ -106,6 +109,7 @@ ON users(email_verified);
 ```
 
 **Deployment:**
+
 1. Apply migration (existing code unaffected)
 2. Deploy code that sets `email_verified = true` for new users
 3. Backfill existing users later
@@ -131,6 +135,7 @@ CREATE INDEX CONCURRENTLY idx_cases_status ON cases(status);
 ```
 
 **Important Notes:**
+
 - `CONCURRENTLY` takes longer than regular index creation
 - Cannot be run inside a transaction
 - If it fails, may leave an invalid index (must be dropped manually)
@@ -154,6 +159,7 @@ SELECT * FROM pg_index WHERE NOT indisvalid;
 **Principle:** Add foreign key constraints without immediate validation.
 
 **Use Cases:**
+
 - Adding foreign keys to large existing tables
 - Adding CHECK constraints on existing data
 
@@ -172,6 +178,7 @@ VALIDATE CONSTRAINT fk_documents_case_id;
 ```
 
 **Benefits:**
+
 - Step 1 is fast (milliseconds)
 - Step 2 can run during low-traffic period
 - New rows immediately checked
@@ -222,9 +229,9 @@ model User {
 // Write to BOTH columns
 await prisma.user.create({
   data: {
-    name: fullName,      // Old column
-    full_name: fullName  // New column
-  }
+    name: fullName, // Old column
+    full_name: fullName, // New column
+  },
 });
 
 // Read from OLD column (for now)
@@ -291,9 +298,9 @@ END $$;
 // Write to BOTH columns (continue)
 await prisma.user.create({
   data: {
-    name: fullName,      // Old column
-    full_name: fullName  // New column
-  }
+    name: fullName, // Old column
+    full_name: fullName, // New column
+  },
 });
 
 // Read from NEW column now
@@ -358,8 +365,8 @@ model User {
 // Only write to new column
 await prisma.user.create({
   data: {
-    full_name: fullName  // Clean, single column
-  }
+    full_name: fullName, // Clean, single column
+  },
 });
 
 // Read from new column
@@ -370,13 +377,13 @@ const userName = user.full_name;
 
 ### Timeline Summary
 
-| Phase | Duration | Risk | Can Rollback? |
-|-------|----------|------|---------------|
-| Expand (add column) | 1 day | Low | ✅ Yes - don't use new column |
-| Backfill data | 1-7 days | Low | ✅ Yes - still using old column |
-| Switch reads | 2-7 days | Medium | ✅ Yes - both columns identical |
-| Make required | 1 day | Low | ⚠️ Harder - may break old code |
-| Contract (remove old) | Immediate | High | ❌ No - data deleted |
+| Phase                 | Duration  | Risk   | Can Rollback?                   |
+| --------------------- | --------- | ------ | ------------------------------- |
+| Expand (add column)   | 1 day     | Low    | ✅ Yes - don't use new column   |
+| Backfill data         | 1-7 days  | Low    | ✅ Yes - still using old column |
+| Switch reads          | 2-7 days  | Medium | ✅ Yes - both columns identical |
+| Make required         | 1 day     | Low    | ⚠️ Harder - may break old code  |
+| Contract (remove old) | Immediate | High   | ❌ No - data deleted            |
 
 **Total Timeline:** 1-3 weeks for safe, zero-downtime migration
 
@@ -504,6 +511,7 @@ ALTER TABLE users ALTER COLUMN age TYPE BIGINT;
 ```
 
 **Why Bad:**
+
 - May lock table
 - Can cause data loss (e.g., VARCHAR to INT)
 - Breaks existing code immediately
@@ -522,10 +530,12 @@ ALTER TABLE users DROP COLUMN legacy_field;
 ```
 
 **Why Bad:**
+
 - Breaks code still using the column
 - No rollback possible (data deleted)
 
 **Good Alternative:**
+
 1. Stop writing to column (deploy code change)
 2. Monitor for 7+ days
 3. Then drop column
@@ -542,6 +552,7 @@ UPDATE users SET email_verified = false WHERE email_verified IS NULL;
 ```
 
 **Why Bad:**
+
 - Locks table for extended period
 - Can cause replication lag
 - May timeout
@@ -560,6 +571,7 @@ CREATE INDEX idx_cases_created_at ON cases(created_at);
 ```
 
 **Why Bad:**
+
 - Locks table for reads/writes
 - Causes downtime on large tables
 
@@ -585,7 +597,7 @@ import { getFeatureFlag } from '@legal-platform/shared';
 async function getUserName(user: User): Promise<string> {
   const useFullName = await getFeatureFlag('use_full_name_column', {
     defaultValue: false,
-    rollout: 'gradual' // 0% → 10% → 50% → 100%
+    rollout: 'gradual', // 0% → 10% → 50% → 100%
   });
 
   if (useFullName && user.full_name) {
@@ -598,12 +610,12 @@ async function getUserName(user: User): Promise<string> {
 
 **Rollout Strategy:**
 
-| Day | Rollout | Monitor |
-|-----|---------|---------|
-| 1 | 0% (feature flag off) | Baseline metrics |
-| 2-3 | 10% (canary users) | Error rates, performance |
-| 4-5 | 50% (half of users) | Error rates, performance |
-| 6-7 | 100% (all users) | Error rates, performance |
+| Day | Rollout               | Monitor                  |
+| --- | --------------------- | ------------------------ |
+| 1   | 0% (feature flag off) | Baseline metrics         |
+| 2-3 | 10% (canary users)    | Error rates, performance |
+| 4-5 | 50% (half of users)   | Error rates, performance |
+| 6-7 | 100% (all users)      | Error rates, performance |
 
 **Rollback:**
 If issues detected, set feature flag to 0% immediately.
@@ -636,6 +648,6 @@ Before executing any migration, verify:
 
 **Document Version History:**
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-11-20 | Dev Agent | Initial creation with expand-contract example |
+| Version | Date       | Author    | Changes                                       |
+| ------- | ---------- | --------- | --------------------------------------------- |
+| 1.0     | 2025-11-20 | Dev Agent | Initial creation with expand-contract example |

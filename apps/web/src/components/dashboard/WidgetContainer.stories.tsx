@@ -74,7 +74,9 @@ export const HoverState: Story = {
     title: 'Documente Recente',
     children: (
       <div className="p-4">
-        <p className="text-neutral-600">Treceți cursorul pentru a vedea efectul de umbră ridicată.</p>
+        <p className="text-neutral-600">
+          Treceți cursorul pentru a vedea efectul de umbră ridicată.
+        </p>
       </div>
     ),
   },
@@ -114,7 +116,13 @@ export const AllVariants: Story = {
         </div>
       </WidgetContainer>
 
-      <WidgetContainer title="Cu Acțiuni" showActions onRefresh={() => {}} onConfigure={() => {}} onRemove={() => {}}>
+      <WidgetContainer
+        title="Cu Acțiuni"
+        showActions
+        onRefresh={() => {}}
+        onConfigure={() => {}}
+        onRemove={() => {}}
+      >
         <div className="p-4">
           <p className="text-sm text-neutral-600">Cu meniu acțiuni</p>
         </div>

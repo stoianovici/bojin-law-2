@@ -8,14 +8,14 @@ import { prisma } from '@/lib/prisma';
 import { createSessionCookie } from '@/lib/auth';
 
 interface IdTokenClaims {
-  oid?: string;         // Azure AD Object ID
-  sub?: string;         // Subject (unique identifier)
+  oid?: string; // Azure AD Object ID
+  sub?: string; // Subject (unique identifier)
   email?: string;
   preferred_username?: string;
   name?: string;
   given_name?: string;
   family_name?: string;
-  tid?: string;         // Tenant ID
+  tid?: string; // Tenant ID
 }
 
 interface ProvisionRequest {
@@ -68,7 +68,10 @@ export async function POST(request: NextRequest) {
       const domain = email.split('@')[1] || 'unknown.com';
       firm = await prisma.firm.create({
         data: {
-          name: domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1) + ' Law Firm',
+          name:
+            domain.split('.')[0].charAt(0).toUpperCase() +
+            domain.split('.')[0].slice(1) +
+            ' Law Firm',
         },
       });
     }
@@ -76,10 +79,7 @@ export async function POST(request: NextRequest) {
     // Find or create user
     let user = await prisma.user.findFirst({
       where: {
-        OR: [
-          { azureAdId },
-          { email },
-        ],
+        OR: [{ azureAdId }, { email }],
       },
     });
 
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'account_pending',
-          message: 'Your account is pending activation. Please contact your firm\'s partner.',
+          message: "Your account is pending activation. Please contact your firm's partner.",
         },
         { status: 403 }
       );

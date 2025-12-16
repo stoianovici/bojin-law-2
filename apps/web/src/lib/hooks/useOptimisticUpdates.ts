@@ -55,25 +55,28 @@ export function useOptimisticUpdate<T>({
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<any>(null);
 
-  const update = useCallback(async (newData: T, originalData: T) => {
-    setIsUpdating(true);
-    setError(null);
+  const update = useCallback(
+    async (newData: T, originalData: T) => {
+      setIsUpdating(true);
+      setError(null);
 
-    try {
-      // Perform the actual update
-      const result = await updateFn(newData);
+      try {
+        // Perform the actual update
+        const result = await updateFn(newData);
 
-      // Update successful
-      onSuccess?.(result);
-    } catch (err) {
-      // Update failed - revert optimistic changes
-      onRevert?.(originalData);
-      setError(err);
-      onError?.(err);
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [updateFn, onRevert, onSuccess, onError]);
+        // Update successful
+        onSuccess?.(result);
+      } catch (err) {
+        // Update failed - revert optimistic changes
+        onRevert?.(originalData);
+        setError(err);
+        onError?.(err);
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [updateFn, onRevert, onSuccess, onError]
+  );
 
   return {
     update,
@@ -87,7 +90,7 @@ export function useOptimisticTaskUpdate() {
   return useOptimisticUpdate({
     updateFn: async (taskData: any) => {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       console.log('Task updated:', taskData);
       return { success: true };
     },
@@ -104,7 +107,7 @@ export function useOptimisticDocumentUpdate() {
   return useOptimisticUpdate({
     updateFn: async (documentData: any) => {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       console.log('Document updated:', documentData);
       return { success: true };
     },

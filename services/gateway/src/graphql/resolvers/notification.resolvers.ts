@@ -24,11 +24,7 @@ export const notificationResolvers = {
      * Optional filtering by read status
      * Default limit: 50
      */
-    notifications: async (
-      _: any,
-      args: { read?: boolean; limit?: number },
-      context: Context
-    ) => {
+    notifications: async (_: any, args: { read?: boolean; limit?: number }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -63,11 +59,7 @@ export const notificationResolvers = {
     /**
      * Mark a notification as read
      */
-    markNotificationAsRead: async (
-      _: any,
-      args: { id: string },
-      context: Context
-    ) => {
+    markNotificationAsRead: async (_: any, args: { id: string }, context: Context) => {
       const { user } = context;
       const { id } = args;
 

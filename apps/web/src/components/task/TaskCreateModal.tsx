@@ -36,14 +36,7 @@ import type {
   MeetingTaskMetadata,
   BusinessTripTaskMetadata,
 } from '@legal-platform/types';
-import {
-  Search,
-  FileText,
-  Download,
-  Gavel,
-  Users,
-  Plane,
-} from 'lucide-react';
+import { Search, FileText, Download, Gavel, Users, Plane } from 'lucide-react';
 import { TimeEstimationDisplay } from '../time/TimeEstimationDisplay';
 import { useEstimateTaskTime } from '@/hooks/useTimeEstimation';
 import type { TimeEstimation } from '@/hooks/useTimeEstimation';
@@ -357,9 +350,7 @@ export function TaskCreateModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
-          <DialogDescription>
-            Select a task type and fill in the details below.
-          </DialogDescription>
+          <DialogDescription>Select a task type and fill in the details below.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -403,7 +394,9 @@ export function TaskCreateModal({
                 <Input
                   id="title"
                   value={formData.title || ''}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('title', e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleFieldChange('title', e.target.value)
+                  }
                   placeholder="Enter task title"
                   className={errors.title ? 'border-red-500' : ''}
                 />
@@ -417,7 +410,9 @@ export function TaskCreateModal({
                 <Textarea
                   id="description"
                   value={formData.description || ''}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('description', e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleFieldChange('description', e.target.value)
+                  }
                   placeholder="Enter task description"
                   rows={3}
                 />
@@ -431,7 +426,9 @@ export function TaskCreateModal({
                   <Input
                     id="assignedTo"
                     value={formData.assignedTo || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('assignedTo', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleFieldChange('assignedTo', e.target.value)
+                    }
                     placeholder="User ID"
                     className={errors.assignedTo ? 'border-red-500' : ''}
                   />
@@ -446,7 +443,9 @@ export function TaskCreateModal({
                   </label>
                   <Select
                     value={formData.priority || 'Medium'}
-                    onValueChange={(val: string) => handleFieldChange('priority', val as TaskPriority)}
+                    onValueChange={(val: string) =>
+                      handleFieldChange('priority', val as TaskPriority)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -471,7 +470,9 @@ export function TaskCreateModal({
                     id="dueDate"
                     type="date"
                     value={formData.dueDate || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('dueDate', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleFieldChange('dueDate', e.target.value)
+                    }
                     className={errors.dueDate ? 'border-red-500' : ''}
                   />
                   {errors.dueDate && <p className="text-sm text-red-500 mt-1">{errors.dueDate}</p>}
@@ -485,7 +486,9 @@ export function TaskCreateModal({
                     id="dueTime"
                     type="time"
                     value={formData.dueTime || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('dueTime', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleFieldChange('dueTime', e.target.value)
+                    }
                   />
                 </div>
               </div>

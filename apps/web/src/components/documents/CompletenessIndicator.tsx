@@ -7,11 +7,7 @@
 
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MissingItemsChecklist } from './MissingItemsChecklist';
 import type { CompletenessCheckResult, MissingItem } from '@legal-platform/types';
 
@@ -101,7 +97,7 @@ export function CompletenessIndicator({
 
   // Calculate SVG parameters
   const circumference = 2 * Math.PI * config.radius;
-  const strokeDashoffset = circumference - (completenessScore * circumference);
+  const strokeDashoffset = circumference - completenessScore * circumference;
 
   const hasIssues = missingItems.length > 0;
   const requiredCount = missingItems.filter((i) => i.severity === 'required').length;
@@ -163,9 +159,7 @@ export function CompletenessIndicator({
 
             {/* Text label */}
             <div className="text-left">
-              <p className={`font-medium ${scoreColor.text} ${config.text}`}>
-                {scoreColor.label}
-              </p>
+              <p className={`font-medium ${scoreColor.text} ${config.text}`}>{scoreColor.label}</p>
               {hasIssues && (
                 <p className="text-xs text-muted-foreground">
                   {requiredCount > 0
@@ -179,10 +173,7 @@ export function CompletenessIndicator({
 
             {/* Badge for issues count */}
             {hasIssues && (
-              <Badge
-                variant="secondary"
-                className={`${scoreColor.bg} ${scoreColor.text}`}
-              >
+              <Badge variant="secondary" className={`${scoreColor.bg} ${scoreColor.text}`}>
                 {missingItems.length}
               </Badge>
             )}
@@ -227,7 +218,7 @@ export function CompletenessIndicatorInline({
   const percentage = Math.round(completenessScore * 100);
 
   const circumference = 2 * Math.PI * config.radius;
-  const strokeDashoffset = circumference - (completenessScore * circumference);
+  const strokeDashoffset = circumference - completenessScore * circumference;
 
   return (
     <div
@@ -237,9 +228,7 @@ export function CompletenessIndicatorInline({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`${percentage}% complet`}
-      title={`${percentage}% complet${
-        missingCount > 0 ? `, ${missingCount} probleme` : ''
-      }`}
+      title={`${percentage}% complet${missingCount > 0 ? `, ${missingCount} probleme` : ''}`}
     >
       <div className={`relative ${config.ring}`}>
         <svg className="w-full h-full transform -rotate-90">
@@ -266,15 +255,13 @@ export function CompletenessIndicatorInline({
             }}
           />
         </svg>
-        <span className={`absolute inset-0 flex items-center justify-center font-medium ${config.text}`}>
+        <span
+          className={`absolute inset-0 flex items-center justify-center font-medium ${config.text}`}
+        >
           {percentage}
         </span>
       </div>
-      {showLabel && (
-        <span className={`${config.text} ${scoreColor.text}`}>
-          {scoreColor.label}
-        </span>
-      )}
+      {showLabel && <span className={`${config.text} ${scoreColor.text}`}>{scoreColor.label}</span>}
     </div>
   );
 }
@@ -284,11 +271,7 @@ CompletenessIndicatorInline.displayName = 'CompletenessIndicatorInline';
 /**
  * Status badge version for very compact displays
  */
-export function CompletenessStatusBadge({
-  completenessScore,
-}: {
-  completenessScore: number;
-}) {
+export function CompletenessStatusBadge({ completenessScore }: { completenessScore: number }) {
   const scoreColor = getScoreColor(completenessScore);
   const percentage = Math.round(completenessScore * 100);
 

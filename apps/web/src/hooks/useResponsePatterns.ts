@@ -362,9 +362,7 @@ export function getHoursColor(hours: number, max: number): string {
  */
 export function calculateProductivityScore(pattern: ResponseTimePattern): number {
   // Score based on consistency (lower std deviation = more consistent)
-  const consistencyScore = pattern.stdDeviation
-    ? Math.max(0, 100 - pattern.stdDeviation * 10)
-    : 50;
+  const consistencyScore = pattern.stdDeviation ? Math.max(0, 100 - pattern.stdDeviation * 10) : 50;
 
   // Score based on response time relative to baseline (24h = 50 points)
   const speedScore = Math.max(0, 100 - (pattern.averageResponseHours / 24) * 50);

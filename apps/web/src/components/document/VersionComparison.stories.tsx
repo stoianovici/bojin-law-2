@@ -238,7 +238,8 @@ Caracterele românești noi:
   parameters: {
     docs: {
       description: {
-        story: 'Verify Romanian diacritics render correctly in both version panels: părți, încredere, servicii, obligații',
+        story:
+          'Verify Romanian diacritics render correctly in both version panels: părți, încredere, servicii, obligații',
       },
     },
   },

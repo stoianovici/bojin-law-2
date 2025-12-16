@@ -29,10 +29,7 @@ import type {
   RecommendationPriority,
   AnalyticsFilters,
 } from '@legal-platform/types';
-import {
-  DEFAULT_HEALTH_SCORE_WEIGHTS,
-  DEFAULT_HEALTH_SCORE_TARGETS,
-} from '@legal-platform/types';
+import { DEFAULT_HEALTH_SCORE_WEIGHTS, DEFAULT_HEALTH_SCORE_TARGETS } from '@legal-platform/types';
 
 import {
   CommunicationResponseAnalyticsService,
@@ -136,21 +133,15 @@ export class PlatformIntelligenceService {
     }
 
     // Fetch all analytics in parallel
-    const [
-      communication,
-      documentQuality,
-      aiUtilization,
-      taskAnalytics,
-      roiData,
-      overdueData,
-    ] = await Promise.all([
-      this.commService.calculateResponseTimes(firmId, dateRange),
-      this.docService.getDocumentQualityAnalytics(firmId, dateRange),
-      this.aiService.getAIUtilizationByUser(firmId, dateRange),
-      this.getTaskCompletionSummary(firmId, dateRange),
-      this.getROISummary(firmId, dateRange),
-      this.overdueService.getOverdueAnalytics(firmId, this.toAnalyticsFilters(firmId, dateRange)),
-    ]);
+    const [communication, documentQuality, aiUtilization, taskAnalytics, roiData, overdueData] =
+      await Promise.all([
+        this.commService.calculateResponseTimes(firmId, dateRange),
+        this.docService.getDocumentQualityAnalytics(firmId, dateRange),
+        this.aiService.getAIUtilizationByUser(firmId, dateRange),
+        this.getTaskCompletionSummary(firmId, dateRange),
+        this.getROISummary(firmId, dateRange),
+        this.overdueService.getOverdueAnalytics(firmId, this.toAnalyticsFilters(firmId, dateRange)),
+      ]);
 
     // Calculate efficiency metrics (AC: 1)
     const efficiency = this.calculateEfficiencyMetrics(aiUtilization, roiData);
@@ -360,20 +351,19 @@ export class PlatformIntelligenceService {
   /**
    * Get ROI summary (AC: 6)
    */
-  private async getROISummary(
-    firmId: string,
-    dateRange: PlatformDateRange
-  ): Promise<ROISummary> {
+  private async getROISummary(firmId: string, dateRange: PlatformDateRange): Promise<ROISummary> {
     const filters = this.toAnalyticsFilters(firmId, dateRange);
     const roiData = await this.roiService.calculateROI(firmId, filters);
 
     // Map existing savings categories to platform format
-    const savingsByCategory: PlatformSavingsCategory[] = roiData.topSavingsCategories.map((cat) => ({
-      category: cat.category.toLowerCase().replace(/ /g, '_'),
-      hoursSaved: cat.hoursSaved,
-      valueInCurrency: cat.valueSaved,
-      percentOfTotal: cat.percentageOfTotal,
-    }));
+    const savingsByCategory: PlatformSavingsCategory[] = roiData.topSavingsCategories.map(
+      (cat) => ({
+        category: cat.category.toLowerCase().replace(/ /g, '_'),
+        hoursSaved: cat.hoursSaved,
+        valueInCurrency: cat.valueSaved,
+        percentOfTotal: cat.percentageOfTotal,
+      })
+    );
 
     return {
       totalValueSaved: roiData.currentPeriod.totalValueSaved,
@@ -617,10 +607,12 @@ export class PlatformIntelligenceService {
           }));
         }
         if (parsed.documentQuality?.qualityTrend) {
-          parsed.documentQuality.qualityTrend = parsed.documentQuality.qualityTrend.map((t: any) => ({
-            ...t,
-            date: new Date(t.date),
-          }));
+          parsed.documentQuality.qualityTrend = parsed.documentQuality.qualityTrend.map(
+            (t: any) => ({
+              ...t,
+              date: new Date(t.date),
+            })
+          );
         }
         if (parsed.taskCompletion?.trend) {
           parsed.taskCompletion.trend = parsed.taskCompletion.trend.map((t: any) => ({

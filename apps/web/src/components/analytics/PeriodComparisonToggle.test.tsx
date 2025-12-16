@@ -121,9 +121,7 @@ describe('PeriodComparisonToggle', () => {
 
   describe('Styling', () => {
     it('applies custom className', () => {
-      const { container } = render(
-        <PeriodComparisonToggle className="custom-toggle" />
-      );
+      const { container } = render(<PeriodComparisonToggle className="custom-toggle" />);
 
       expect(container.firstChild).toHaveClass('custom-toggle');
     });

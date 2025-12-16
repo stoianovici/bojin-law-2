@@ -274,9 +274,7 @@ describe('AnalyticsPage', () => {
     it('includes descriptive text for screen readers', () => {
       render(<AnalyticsPage />);
 
-      const description = screen.getByText(
-        'Vizualizare KPI-uri și metrici firmă pentru parteneri'
-      );
+      const description = screen.getByText('Vizualizare KPI-uri și metrici firmă pentru parteneri');
       expect(description).toBeInTheDocument();
     });
   });

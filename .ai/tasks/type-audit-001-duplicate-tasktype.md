@@ -13,8 +13,8 @@
 
 ## Files to Modify
 
-| File | Action |
-|------|--------|
+| File                                             | Action                          |
+| ------------------------------------------------ | ------------------------------- |
 | `packages/shared/types/src/task-dependencies.ts` | Remove duplicate, update import |
 
 ## Current State
@@ -22,11 +22,13 @@
 **File:** `packages/shared/types/src/task-dependencies.ts`
 
 Line 3 - Current import:
+
 ```typescript
 import { Task, CaseType } from './entities';
 ```
 
 Lines 196-202 - Duplicate definition (REMOVE THIS):
+
 ```typescript
 export type TaskType =
   | 'Research'

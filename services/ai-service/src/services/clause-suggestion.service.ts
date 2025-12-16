@@ -8,7 +8,11 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@legal-platform/database';
-import { ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate } from '@langchain/core/prompts';
+import {
+  ChatPromptTemplate,
+  SystemMessagePromptTemplate,
+  HumanMessagePromptTemplate,
+} from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import {
   ClauseSuggestion,

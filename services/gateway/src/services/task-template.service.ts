@@ -1,7 +1,16 @@
 // Story 4.4: Task Template Service
 // Manages task templates and template steps with dependency validation
 
-import { prisma, TaskTemplate, TaskTemplateStep, TemplateStepDependency, TaskTypeEnum, CaseType, OffsetType, DependencyType } from '@legal-platform/database';
+import {
+  prisma,
+  TaskTemplate,
+  TaskTemplateStep,
+  TemplateStepDependency,
+  TaskTypeEnum,
+  CaseType,
+  OffsetType,
+  DependencyType,
+} from '@legal-platform/database';
 
 // Class wrapper for compatibility with resolvers
 export class TaskTemplateService {
@@ -137,11 +146,7 @@ export async function updateTemplate(
   });
 }
 
-export async function deleteTemplate(
-  id: string,
-  userId: string,
-  firmId: string
-): Promise<void> {
+export async function deleteTemplate(id: string, userId: string, firmId: string): Promise<void> {
   // Verify template belongs to user's firm
   const template = await prisma.taskTemplate.findUnique({
     where: { id },
@@ -170,10 +175,7 @@ export async function deleteTemplate(
   }
 }
 
-export async function getTemplateById(
-  id: string,
-  firmId: string
-): Promise<TaskTemplate | null> {
+export async function getTemplateById(id: string, firmId: string): Promise<TaskTemplate | null> {
   return prisma.taskTemplate.findFirst({
     where: {
       id,
@@ -214,10 +216,7 @@ export async function getTemplates(
         },
       },
     },
-    orderBy: [
-      { isDefault: 'desc' },
-      { name: 'asc' },
-    ],
+    orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
   });
 }
 
@@ -391,10 +390,7 @@ export async function updateStep(
   });
 }
 
-export async function removeStep(
-  stepId: string,
-  firmId: string
-): Promise<void> {
+export async function removeStep(stepId: string, firmId: string): Promise<void> {
   // Verify step belongs to template in user's firm
   const step = await prisma.taskTemplateStep.findUnique({
     where: { id: stepId },
@@ -466,10 +462,7 @@ export async function reorderSteps(
 /**
  * Validates that adding a dependency won't create a cycle using DFS
  */
-async function validateNoCycle(
-  sourceStepId: string,
-  targetStepId: string
-): Promise<boolean> {
+async function validateNoCycle(sourceStepId: string, targetStepId: string): Promise<boolean> {
   // Build adjacency list of dependencies
   const dependencies = await prisma.templateStepDependency.findMany();
   const graph = new Map<string, string[]>();
@@ -565,10 +558,7 @@ export async function addStepDependency(
   });
 }
 
-export async function removeStepDependency(
-  dependencyId: string,
-  firmId: string
-): Promise<void> {
+export async function removeStepDependency(dependencyId: string, firmId: string): Promise<void> {
   // Verify dependency belongs to template in user's firm
   const dependency = await prisma.templateStepDependency.findUnique({
     where: { id: dependencyId },

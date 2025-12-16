@@ -42,10 +42,7 @@ describe('RetainerService', () => {
       it('should return first and last day of the month', () => {
         // Test with date in middle of January 2024
         const referenceDate = new Date('2024-01-15');
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Monthly',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Monthly', referenceDate);
 
         expect(start.getFullYear()).toBe(2024);
         expect(start.getMonth()).toBe(0); // January
@@ -58,10 +55,7 @@ describe('RetainerService', () => {
 
       it('should handle February correctly', () => {
         const referenceDate = new Date('2024-02-15'); // 2024 is leap year
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Monthly',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Monthly', referenceDate);
 
         expect(start.getDate()).toBe(1);
         expect(end.getDate()).toBe(29); // Leap year
@@ -69,10 +63,7 @@ describe('RetainerService', () => {
 
       it('should handle non-leap year February', () => {
         const referenceDate = new Date('2023-02-15');
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Monthly',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Monthly', referenceDate);
 
         expect(end.getDate()).toBe(28);
       });
@@ -81,10 +72,7 @@ describe('RetainerService', () => {
     describe('Quarterly period', () => {
       it('should return Q1 dates for January', () => {
         const referenceDate = new Date('2024-01-15');
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Quarterly',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Quarterly', referenceDate);
 
         expect(start.getMonth()).toBe(0); // January
         expect(start.getDate()).toBe(1);
@@ -94,10 +82,7 @@ describe('RetainerService', () => {
 
       it('should return Q1 dates for March', () => {
         const referenceDate = new Date('2024-03-20');
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Quarterly',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Quarterly', referenceDate);
 
         expect(start.getMonth()).toBe(0); // January
         expect(end.getMonth()).toBe(2); // March
@@ -105,10 +90,7 @@ describe('RetainerService', () => {
 
       it('should return Q2 dates for April', () => {
         const referenceDate = new Date('2024-04-15');
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Quarterly',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Quarterly', referenceDate);
 
         expect(start.getMonth()).toBe(3); // April
         expect(start.getDate()).toBe(1);
@@ -118,10 +100,7 @@ describe('RetainerService', () => {
 
       it('should return Q3 dates for August', () => {
         const referenceDate = new Date('2024-08-15');
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Quarterly',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Quarterly', referenceDate);
 
         expect(start.getMonth()).toBe(6); // July
         expect(end.getMonth()).toBe(8); // September
@@ -130,10 +109,7 @@ describe('RetainerService', () => {
 
       it('should return Q4 dates for December', () => {
         const referenceDate = new Date('2024-12-15');
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Quarterly',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Quarterly', referenceDate);
 
         expect(start.getMonth()).toBe(9); // October
         expect(end.getMonth()).toBe(11); // December
@@ -144,10 +120,7 @@ describe('RetainerService', () => {
     describe('Annually period', () => {
       it('should return Jan 1 to Dec 31 of the year', () => {
         const referenceDate = new Date('2024-06-15');
-        const { start, end } = retainerService.getRetainerPeriodDates(
-          'Annually',
-          referenceDate
-        );
+        const { start, end } = retainerService.getRetainerPeriodDates('Annually', referenceDate);
 
         expect(start.getMonth()).toBe(0); // January
         expect(start.getDate()).toBe(1);
@@ -262,10 +235,7 @@ describe('RetainerService', () => {
     it('should return null for non-retainer cases', async () => {
       jest.mocked(prisma.case.findFirst).mockResolvedValue(null);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-123',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
       expect(usage).toBeNull();
     });
@@ -279,10 +249,7 @@ describe('RetainerService', () => {
         firm: { defaultRates: { partnerRate: 25000 } },
       } as any);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-123',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
       expect(usage).toBeNull();
     });
@@ -298,10 +265,7 @@ describe('RetainerService', () => {
         firm: { defaultRates: null },
       } as any);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-123',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
       expect(usage).toBeNull();
     });
@@ -322,10 +286,7 @@ describe('RetainerService', () => {
         _sum: { hours: null },
       } as any);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-123',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
       expect(usage).not.toBeNull();
       expect(usage!.hoursUsed).toBe(0);
@@ -351,10 +312,7 @@ describe('RetainerService', () => {
         _sum: { hours: 10 as any },
       } as any);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-123',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
       expect(usage).not.toBeNull();
       expect(usage!.hoursUsed).toBe(10);
@@ -379,10 +337,7 @@ describe('RetainerService', () => {
         _sum: { hours: null },
       } as any);
 
-      const usage = await retainerService.calculateCurrentUsage(
-        'case-123',
-        'firm-1'
-      );
+      const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
       expect(usage).not.toBeNull();
       expect(usage!.hoursIncluded).toBe(10); // 500000/50000 = 10 (using custom rate)
@@ -393,10 +348,7 @@ describe('RetainerService', () => {
     it('should return empty array for non-retainer cases', async () => {
       jest.mocked(prisma.case.findFirst).mockResolvedValue(null);
 
-      const history = await retainerService.getUsageHistory(
-        'case-123',
-        'firm-1'
-      );
+      const history = await retainerService.getUsageHistory('case-123', 'firm-1');
 
       expect(history).toEqual([]);
     });
@@ -418,10 +370,7 @@ describe('RetainerService', () => {
         _sum: { hours: null },
       } as any);
 
-      const history = await retainerService.getUsageHistory(
-        'case-123',
-        'firm-1'
-      );
+      const history = await retainerService.getUsageHistory('case-123', 'firm-1');
 
       expect(history.length).toBe(1);
       expect(history[0].hoursIncluded).toBe(20);
@@ -452,19 +401,13 @@ describe('RetainerService', () => {
         updatedAt: new Date(),
       }));
 
-      jest.mocked(prisma.retainerPeriodUsage.findMany).mockResolvedValue(
-        records.slice(0, 5)
-      );
+      jest.mocked(prisma.retainerPeriodUsage.findMany).mockResolvedValue(records.slice(0, 5));
       jest.mocked(prisma.retainerPeriodUsage.findFirst).mockResolvedValue(null);
       jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
         _sum: { hours: null },
       } as any);
 
-      const history = await retainerService.getUsageHistory(
-        'case-123',
-        'firm-1',
-        5
-      );
+      const history = await retainerService.getUsageHistory('case-123', 'firm-1', 5);
 
       expect(history.length).toBeLessThanOrEqual(5);
     });
@@ -492,10 +435,7 @@ describe('RetainerService', () => {
           _sum: { hours: null }, // No hours used
         } as any);
 
-        const usage = await retainerService.calculateCurrentUsage(
-          'case-123',
-          'firm-1'
-        );
+        const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
         expect(usage).not.toBeNull();
         expect(usage!.hoursUsed).toBe(0);
@@ -533,10 +473,7 @@ describe('RetainerService', () => {
           _sum: { hours: null },
         } as any);
 
-        const usage = await retainerService.calculateCurrentUsage(
-          'case-123',
-          'firm-1'
-        );
+        const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
         expect(usage).not.toBeNull();
         expect(usage!.hoursUsed).toBe(0);
@@ -562,10 +499,7 @@ describe('RetainerService', () => {
           _sum: { hours: 30 as any }, // 30 hours used, 150% of 20 included
         } as any);
 
-        const usage = await retainerService.calculateCurrentUsage(
-          'case-123',
-          'firm-1'
-        );
+        const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
         expect(usage).not.toBeNull();
         expect(usage!.hoursUsed).toBe(30);
@@ -590,10 +524,7 @@ describe('RetainerService', () => {
           _sum: { hours: 30 as any }, // 30 hours used, 300% of 10 included
         } as any);
 
-        const usage = await retainerService.calculateCurrentUsage(
-          'case-123',
-          'firm-1'
-        );
+        const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
         expect(usage).not.toBeNull();
         expect(usage!.utilizationPercent).toBe(300);
@@ -629,10 +560,7 @@ describe('RetainerService', () => {
       it('should correctly identify year boundary for monthly period', () => {
         // December 31, 2024
         const decDate = new Date('2024-12-31');
-        const decPeriod = retainerService.getRetainerPeriodDates(
-          'Monthly',
-          decDate
-        );
+        const decPeriod = retainerService.getRetainerPeriodDates('Monthly', decDate);
 
         expect(decPeriod.start.getMonth()).toBe(11); // December
         expect(decPeriod.start.getDate()).toBe(1);
@@ -643,10 +571,7 @@ describe('RetainerService', () => {
 
         // January 1, 2025
         const janDate = new Date('2025-01-01');
-        const janPeriod = retainerService.getRetainerPeriodDates(
-          'Monthly',
-          janDate
-        );
+        const janPeriod = retainerService.getRetainerPeriodDates('Monthly', janDate);
 
         expect(janPeriod.start.getMonth()).toBe(0); // January
         expect(janPeriod.start.getDate()).toBe(1);
@@ -659,10 +584,7 @@ describe('RetainerService', () => {
       it('should correctly handle Q4 to Q1 transition', () => {
         // December 31, 2024 - Q4
         const q4Date = new Date('2024-12-31');
-        const q4Period = retainerService.getRetainerPeriodDates(
-          'Quarterly',
-          q4Date
-        );
+        const q4Period = retainerService.getRetainerPeriodDates('Quarterly', q4Date);
 
         expect(q4Period.start.getMonth()).toBe(9); // October
         expect(q4Period.end.getMonth()).toBe(11); // December
@@ -670,10 +592,7 @@ describe('RetainerService', () => {
 
         // January 1, 2025 - Q1
         const q1Date = new Date('2025-01-01');
-        const q1Period = retainerService.getRetainerPeriodDates(
-          'Quarterly',
-          q1Date
-        );
+        const q1Period = retainerService.getRetainerPeriodDates('Quarterly', q1Date);
 
         expect(q1Period.start.getMonth()).toBe(0); // January
         expect(q1Period.end.getMonth()).toBe(2); // March
@@ -684,10 +603,7 @@ describe('RetainerService', () => {
       it('should correctly handle annual year-end transition', () => {
         // December 31, 2024
         const dec2024 = new Date('2024-12-31T23:59:59');
-        const period2024 = retainerService.getRetainerPeriodDates(
-          'Annually',
-          dec2024
-        );
+        const period2024 = retainerService.getRetainerPeriodDates('Annually', dec2024);
 
         expect(period2024.start.getMonth()).toBe(0); // Jan 1
         expect(period2024.end.getMonth()).toBe(11); // Dec 31
@@ -696,10 +612,7 @@ describe('RetainerService', () => {
 
         // January 1, 2025
         const jan2025 = new Date('2025-01-01T00:00:00');
-        const period2025 = retainerService.getRetainerPeriodDates(
-          'Annually',
-          jan2025
-        );
+        const period2025 = retainerService.getRetainerPeriodDates('Annually', jan2025);
 
         expect(period2025.start.getMonth()).toBe(0);
         expect(period2025.end.getMonth()).toBe(11);
@@ -712,10 +625,7 @@ describe('RetainerService', () => {
       it('should correctly handle leap year (2024) annual period', () => {
         // 2024 is a leap year (Feb has 29 days)
         const leapYearDate = new Date('2024-02-29');
-        const period = retainerService.getRetainerPeriodDates(
-          'Annually',
-          leapYearDate
-        );
+        const period = retainerService.getRetainerPeriodDates('Annually', leapYearDate);
 
         expect(period.start.getFullYear()).toBe(2024);
         expect(period.start.getMonth()).toBe(0);
@@ -734,10 +644,7 @@ describe('RetainerService', () => {
 
       it('should correctly handle non-leap year February for monthly', () => {
         const nonLeapFeb = new Date('2025-02-15'); // 2025 is not a leap year
-        const period = retainerService.getRetainerPeriodDates(
-          'Monthly',
-          nonLeapFeb
-        );
+        const period = retainerService.getRetainerPeriodDates('Monthly', nonLeapFeb);
 
         expect(period.end.getMonth()).toBe(1); // February
         expect(period.end.getDate()).toBe(28); // Non-leap year = 28 days
@@ -745,10 +652,7 @@ describe('RetainerService', () => {
 
       it('should correctly handle Q1 in leap year (includes Feb 29)', () => {
         const q1LeapYear = new Date('2024-02-29');
-        const period = retainerService.getRetainerPeriodDates(
-          'Quarterly',
-          q1LeapYear
-        );
+        const period = retainerService.getRetainerPeriodDates('Quarterly', q1LeapYear);
 
         expect(period.start.getMonth()).toBe(0); // January
         expect(period.start.getDate()).toBe(1);
@@ -759,10 +663,7 @@ describe('RetainerService', () => {
       it('should handle century leap year (2000)', () => {
         // 2000 is a leap year (divisible by 400)
         const centuryLeap = new Date('2000-02-15');
-        const period = retainerService.getRetainerPeriodDates(
-          'Monthly',
-          centuryLeap
-        );
+        const period = retainerService.getRetainerPeriodDates('Monthly', centuryLeap);
 
         expect(period.end.getDate()).toBe(29);
       });
@@ -770,10 +671,7 @@ describe('RetainerService', () => {
       it('should handle non-century leap year exception (2100)', () => {
         // 2100 is NOT a leap year (divisible by 100 but not 400)
         const centuryNonLeap = new Date('2100-02-15');
-        const period = retainerService.getRetainerPeriodDates(
-          'Monthly',
-          centuryNonLeap
-        );
+        const period = retainerService.getRetainerPeriodDates('Monthly', centuryNonLeap);
 
         expect(period.end.getDate()).toBe(28);
       });
@@ -796,10 +694,7 @@ describe('RetainerService', () => {
           _sum: { hours: 10.75 as any }, // 10 hours 45 minutes
         } as any);
 
-        const usage = await retainerService.calculateCurrentUsage(
-          'case-123',
-          'firm-1'
-        );
+        const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
         expect(usage).not.toBeNull();
         expect(usage!.hoursUsed).toBe(10.75);
@@ -823,10 +718,7 @@ describe('RetainerService', () => {
           _sum: { hours: 0.1 as any }, // 6 minutes
         } as any);
 
-        const usage = await retainerService.calculateCurrentUsage(
-          'case-123',
-          'firm-1'
-        );
+        const usage = await retainerService.calculateCurrentUsage('case-123', 'firm-1');
 
         expect(usage).not.toBeNull();
         expect(usage!.hoursUsed).toBe(0.1);

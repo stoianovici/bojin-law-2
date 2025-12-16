@@ -58,7 +58,8 @@ describe('Auth Routes', () => {
 
   describe('GET /auth/login', () => {
     it('should initiate OAuth flow and redirect to Azure AD', async () => {
-      const mockAuthUrl = 'https://login.microsoftonline.com/tenant-id/oauth2/v2.0/authorize?client_id=...';
+      const mockAuthUrl =
+        'https://login.microsoftonline.com/tenant-id/oauth2/v2.0/authorize?client_id=...';
       const mockPkceParams = {
         codeVerifier: 'mock-code-verifier',
         codeChallenge: 'mock-code-challenge',
@@ -166,9 +167,7 @@ describe('Auth Routes', () => {
         lastActive: new Date(),
       };
 
-      mockUserService.provisionUserFromAzureAD.mockResolvedValue(
-        mockActiveUser
-      );
+      mockUserService.provisionUserFromAzureAD.mockResolvedValue(mockActiveUser);
       mockJWTService.generateAccessToken.mockReturnValue('jwt-access-token');
       mockJWTService.generateRefreshToken.mockReturnValue('jwt-refresh-token');
 
@@ -212,9 +211,7 @@ describe('Auth Routes', () => {
       });
 
       // Verify PKCE session was deleted
-      expect(sessionManager.delete).toHaveBeenCalledWith(
-        `pkce:${mockState}`
-      );
+      expect(sessionManager.delete).toHaveBeenCalledWith(`pkce:${mockState}`);
     });
 
     it('should block Pending user with 403 Forbidden', async () => {
@@ -232,9 +229,7 @@ describe('Auth Routes', () => {
         lastActive: new Date(),
       };
 
-      mockUserService.provisionUserFromAzureAD.mockResolvedValue(
-        mockPendingUser
-      );
+      mockUserService.provisionUserFromAzureAD.mockResolvedValue(mockPendingUser);
 
       const response = await request(app)
         .get('/auth/callback')
@@ -269,9 +264,7 @@ describe('Auth Routes', () => {
         lastActive: new Date(),
       };
 
-      mockUserService.provisionUserFromAzureAD.mockResolvedValue(
-        mockInactiveUser
-      );
+      mockUserService.provisionUserFromAzureAD.mockResolvedValue(mockInactiveUser);
 
       const response = await request(app)
         .get('/auth/callback')
@@ -301,8 +294,7 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(400);
       expect(response.body).toEqual({
         error: 'invalid_state',
-        message:
-          'Authentication session expired or invalid. Please try again.',
+        message: 'Authentication session expired or invalid. Please try again.',
       });
 
       // Verify user provisioning was NOT called
@@ -317,19 +309,15 @@ describe('Auth Routes', () => {
         errorDescription: 'User denied consent',
       });
 
-      const response = await request(app)
-        .get('/auth/callback')
-        .query({
-          state: mockState,
-          error: 'access_denied',
-          error_description: 'User denied consent',
-        });
+      const response = await request(app).get('/auth/callback').query({
+        state: mockState,
+        error: 'access_denied',
+        error_description: 'User denied consent',
+      });
 
       expect(response.status).toBe(302); // Redirect
       expect(response.headers.location).toContain('error=access_denied');
-      expect(response.headers.location).toContain(
-        'error_description=User%20denied%20consent'
-      );
+      expect(response.headers.location).toContain('error_description=User%20denied%20consent');
 
       // Verify user provisioning was NOT called
       expect(mockUserService.provisionUserFromAzureAD).not.toHaveBeenCalled();

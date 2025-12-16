@@ -83,13 +83,7 @@ describe('RevenueOverviewWidget', () => {
     it('shows retry button when onRetry is provided', () => {
       const mockRetry = jest.fn();
       const testError = new Error('Network error');
-      render(
-        <RevenueOverviewWidget
-          {...defaultProps}
-          error={testError}
-          onRetry={mockRetry}
-        />
-      );
+      render(<RevenueOverviewWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
       expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
     });
@@ -194,12 +188,7 @@ describe('RevenueOverviewWidget', () => {
     });
 
     it('handles undefined revenueByBillingType gracefully', () => {
-      render(
-        <RevenueOverviewWidget
-          totalRevenue={1000}
-          revenueByBillingType={undefined as any}
-        />
-      );
+      render(<RevenueOverviewWidget totalRevenue={1000} revenueByBillingType={undefined as any} />);
 
       // Should not crash
       expect(screen.getByText('Revenue Overview')).toBeInTheDocument();

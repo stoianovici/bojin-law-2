@@ -115,24 +115,22 @@ export function useCheckDocumentCompleteness() {
   const [checkCompleteness, { data, loading, error }] = useMutation<
     { documentCompleteness: CompletenessResult },
     { input: DocumentCompletenessInput }
-  >(
-    gql`
-      query CheckDocumentCompleteness($input: DocumentCompletenessInput!) {
-        documentCompleteness(input: $input) {
-          documentId
-          documentType
-          completenessScore
-          missingItems {
-            item
-            severity
-            section
-            suggestion
-          }
-          suggestions
+  >(gql`
+    query CheckDocumentCompleteness($input: DocumentCompletenessInput!) {
+      documentCompleteness(input: $input) {
+        documentId
+        documentType
+        completenessScore
+        missingItems {
+          item
+          severity
+          section
+          suggestion
         }
+        suggestions
       }
-    `
-  );
+    }
+  `);
 
   const check = async (input: DocumentCompletenessInput) => {
     const result = await checkCompleteness({ variables: { input } });
@@ -236,9 +234,7 @@ export function useDocumentsCompleteness(
       loading,
       withIssues,
       averageScore:
-        results.length > 0
-          ? results.reduce((sum, r) => sum + r.score, 0) / results.length
-          : 0,
+        results.length > 0 ? results.reduce((sum, r) => sum + r.score, 0) / results.length : 0,
     };
   }, [results, documents.length]);
 

@@ -302,9 +302,7 @@ describe('TaskDependencyService', () => {
     it('should throw error when dependency not found', async () => {
       mockPrisma.taskDependency.findUnique.mockResolvedValue(null);
 
-      await expect(removeDependency('dep-999', 'firm-123')).rejects.toThrow(
-        'Dependency not found'
-      );
+      await expect(removeDependency('dep-999', 'firm-123')).rejects.toThrow('Dependency not found');
     });
 
     it('should throw error when firm does not match', async () => {

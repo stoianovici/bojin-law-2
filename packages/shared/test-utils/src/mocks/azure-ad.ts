@@ -67,9 +67,7 @@ export function createMockJwt(payload?: Partial<AzureAdTokenPayload>): string {
 /**
  * Create mock Azure AD configuration
  */
-export function createMockAzureAdConfig(
-  overrides?: Partial<MockAzureAdConfig>
-): MockAzureAdConfig {
+export function createMockAzureAdConfig(overrides?: Partial<MockAzureAdConfig>): MockAzureAdConfig {
   return {
     clientId: faker.string.uuid(),
     tenantId: faker.string.uuid(),

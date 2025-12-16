@@ -154,8 +154,12 @@ describe('AIAssistantPanel', () => {
 
       fireEvent.click(screen.getByText('Documente'));
 
-      expect(screen.getByText('Contract de Consultanță Juridică - Tech Innovations SRL')).toBeInTheDocument();
-      expect(screen.getByText('Contract Servicii Juridice - Digital Media Group')).toBeInTheDocument();
+      expect(
+        screen.getByText('Contract de Consultanță Juridică - Tech Innovations SRL')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('Contract Servicii Juridice - Digital Media Group')
+      ).toBeInTheDocument();
     });
 
     it('displays similarity scores', () => {
@@ -172,7 +176,9 @@ describe('AIAssistantPanel', () => {
 
       fireEvent.click(screen.getByText('Documente'));
 
-      expect(screen.getByText(/Contract similar privind servicii de consultanță juridică/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Contract similar privind servicii de consultanță juridică/)
+      ).toBeInTheDocument();
       expect(screen.getByText('2024-10-15')).toBeInTheDocument();
     });
 
@@ -182,7 +188,9 @@ describe('AIAssistantPanel', () => {
 
       fireEvent.click(screen.getByText('Documente'));
 
-      const docCard = screen.getByText('Contract de Consultanță Juridică - Tech Innovations SRL').closest('div');
+      const docCard = screen
+        .getByText('Contract de Consultanță Juridică - Tech Innovations SRL')
+        .closest('div');
       fireEvent.click(docCard!);
 
       expect(consoleSpy).toHaveBeenCalledWith('Open document:', '1');
@@ -225,7 +233,9 @@ describe('AIAssistantPanel', () => {
 
       fireEvent.click(screen.getByText('Șabloane'));
 
-      expect(screen.getByText('Template standard pentru contract de prestări servicii')).toBeInTheDocument();
+      expect(
+        screen.getByText('Template standard pentru contract de prestări servicii')
+      ).toBeInTheDocument();
       expect(screen.getByText('Acord bilateral de confidențialitate')).toBeInTheDocument();
     });
 

@@ -22,7 +22,12 @@ let processedCount = 0;
 /**
  * Extracts email addresses from recipient fields
  */
-function parseRecipients(message: pst.PSTMessage): { toNames: string[]; toEmails: string[]; ccNames: string[]; ccEmails: string[] } {
+function parseRecipients(message: pst.PSTMessage): {
+  toNames: string[];
+  toEmails: string[];
+  ccNames: string[];
+  ccEmails: string[];
+} {
   const toNames: string[] = [];
   const toEmails: string[] = [];
   const ccNames: string[] = [];
@@ -113,11 +118,7 @@ function processFolder(folder: pst.PSTFolder, folderPath: string): void {
           const dateObj = receivedDate instanceof Date ? receivedDate : null;
 
           // Track from email
-          updateContact(
-            message.senderEmailAddress || '',
-            message.senderName || '',
-            dateObj
-          );
+          updateContact(message.senderEmailAddress || '', message.senderName || '', dateObj);
 
           // Track to emails
           for (let i = 0; i < toEmails.length; i++) {
@@ -168,7 +169,7 @@ async function extractEmails(pstPath: string): Promise<void> {
   // Convert contact map to sorted array (by count descending)
   const contacts = Array.from(contactMap.values())
     .sort((a, b) => b.count - a.count)
-    .map(c => ({
+    .map((c) => ({
       email: c.email,
       name: c.name,
       lastCommunication: formatDate(c.lastDate),
@@ -204,7 +205,7 @@ if (!pstPath) {
   process.exit(1);
 }
 
-extractEmails(pstPath).catch(err => {
+extractEmails(pstPath).catch((err) => {
   console.error('Error:', err.message);
   process.exit(1);
 });

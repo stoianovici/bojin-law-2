@@ -194,10 +194,7 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {cases.map((caseItem) => (
-                <tr
-                  key={caseItem.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
+                <tr key={caseItem.id} className="hover:bg-gray-50 transition-colors">
                   <td
                     className="px-4 py-4 cursor-pointer"
                     onClick={() => handleRowClick(caseItem.id)}
@@ -270,10 +267,7 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
         <div className="md:hidden divide-y divide-gray-200">
           {cases.map((caseItem) => (
             <div key={caseItem.id} className="p-4">
-              <div
-                className="cursor-pointer"
-                onClick={() => handleRowClick(caseItem.id)}
-              >
+              <div className="cursor-pointer" onClick={() => handleRowClick(caseItem.id)}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="min-w-0 flex-1 mr-2">
                     <div className="text-sm font-medium text-gray-900 truncate">

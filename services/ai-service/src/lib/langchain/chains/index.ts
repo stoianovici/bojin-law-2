@@ -20,56 +20,32 @@ const stringParser = new StringOutputParser();
 
 // Document summary chain
 export function createDocumentSummaryChain(model: ChatAnthropic) {
-  return RunnableSequence.from([
-    documentSummaryPrompt,
-    model,
-    stringParser,
-  ]);
+  return RunnableSequence.from([documentSummaryPrompt, model, stringParser]);
 }
 
 // Legal analysis chain
 export function createLegalAnalysisChain(model: ChatAnthropic) {
-  return RunnableSequence.from([
-    legalAnalysisPrompt,
-    model,
-    stringParser,
-  ]);
+  return RunnableSequence.from([legalAnalysisPrompt, model, stringParser]);
 }
 
 // Classification chain
 export function createClassificationChain(model: ChatAnthropic) {
-  return RunnableSequence.from([
-    classificationPrompt,
-    model,
-    stringParser,
-  ]);
+  return RunnableSequence.from([classificationPrompt, model, stringParser]);
 }
 
 // Entity extraction chain
 export function createExtractionChain(model: ChatAnthropic) {
-  return RunnableSequence.from([
-    extractionPrompt,
-    model,
-    stringParser,
-  ]);
+  return RunnableSequence.from([extractionPrompt, model, stringParser]);
 }
 
 // General text generation chain
 export function createTextGenerationChain(model: ChatAnthropic) {
-  return RunnableSequence.from([
-    textGenerationPrompt,
-    model,
-    stringParser,
-  ]);
+  return RunnableSequence.from([textGenerationPrompt, model, stringParser]);
 }
 
 // Chat chain
 export function createChatChain(model: ChatAnthropic) {
-  return RunnableSequence.from([
-    chatPrompt,
-    model,
-    stringParser,
-  ]);
+  return RunnableSequence.from([chatPrompt, model, stringParser]);
 }
 
 // Get chain by operation type

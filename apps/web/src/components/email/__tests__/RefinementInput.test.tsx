@@ -222,10 +222,7 @@ describe('RefinementInput', () => {
   describe('Recent refinements', () => {
     it('should show recent refinements when available', () => {
       render(
-        <RefinementInput
-          {...defaultProps}
-          recentRefinements={['Mai scurt', 'Adaugă detalii']}
-        />
+        <RefinementInput {...defaultProps} recentRefinements={['Mai scurt', 'Adaugă detalii']} />
       );
 
       expect(screen.getByText(/Rafinări recente/i)).toBeInTheDocument();

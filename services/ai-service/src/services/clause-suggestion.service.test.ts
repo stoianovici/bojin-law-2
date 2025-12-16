@@ -52,17 +52,19 @@ describe('ClauseSuggestionService', () => {
   const mockPatterns = [
     {
       id: 'pattern-1',
-      patternText: 'Prestatorul se obligă să păstreze confidențialitatea asupra tuturor informațiilor',
+      patternText:
+        'Prestatorul se obligă să păstreze confidențialitatea asupra tuturor informațiilor',
       category: 'Contract',
       frequency: 10,
       confidenceScore: 0.85,
     },
     {
       id: 'pattern-2',
-      patternText: 'Obligația de confidențialitate rămâne în vigoare și după încetarea contractului',
+      patternText:
+        'Obligația de confidențialitate rămâne în vigoare și după încetarea contractului',
       category: 'Contract',
       frequency: 8,
-      confidenceScore: 0.80,
+      confidenceScore: 0.8,
     },
   ];
 
@@ -90,9 +92,7 @@ describe('ClauseSuggestionService', () => {
     it('should include firm patterns in suggestions', async () => {
       const result = await clauseSuggestionService.getSuggestions(mockRequest);
 
-      const firmPatternSuggestions = result.filter(
-        (s) => s.source === 'FIRM_PATTERN'
-      );
+      const firmPatternSuggestions = result.filter((s) => s.source === 'FIRM_PATTERN');
       expect(firmPatternSuggestions.length).toBeGreaterThanOrEqual(0);
     });
 
@@ -194,10 +194,16 @@ describe('ClauseSuggestion validation', () => {
   });
 
   it('should validate source enum values', () => {
-    const validSources: ClauseSource[] = [ClauseSource.FirmPattern, ClauseSource.Template, ClauseSource.AIGenerated];
+    const validSources: ClauseSource[] = [
+      ClauseSource.FirmPattern,
+      ClauseSource.Template,
+      ClauseSource.AIGenerated,
+    ];
 
     for (const source of validSources) {
-      expect([ClauseSource.FirmPattern, ClauseSource.Template, ClauseSource.AIGenerated]).toContain(source);
+      expect([ClauseSource.FirmPattern, ClauseSource.Template, ClauseSource.AIGenerated]).toContain(
+        source
+      );
     }
   });
 });

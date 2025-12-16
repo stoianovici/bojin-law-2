@@ -8,16 +8,7 @@
  */
 
 import { useState } from 'react';
-import {
-  FileText,
-  Sparkles,
-  Link2,
-  ClipboardList,
-  Loader2,
-  Check,
-  X,
-  Eye,
-} from 'lucide-react';
+import { FileText, Sparkles, Link2, ClipboardList, Loader2, Check, X, Eye } from 'lucide-react';
 import type { GenerateHandoffInput, GenerateHandoffResponse } from '@legal-platform/types';
 
 interface DelegationHandoffFormProps {
@@ -110,11 +101,7 @@ export function DelegationHandoffForm({
           <FileText className="h-5 w-5 text-gray-500" />
           <h2 className="text-lg font-semibold text-gray-900">Delegation Handoff</h2>
         </div>
-        <button
-          onClick={onCancel}
-          className="p-1 hover:bg-gray-100 rounded"
-          aria-label="Close"
-        >
+        <button onClick={onCancel} className="p-1 hover:bg-gray-100 rounded" aria-label="Close">
           <X className="h-5 w-5 text-gray-400" />
         </button>
       </div>
@@ -175,9 +162,7 @@ export function DelegationHandoffForm({
 
         {/* Manual Notes */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Handoff Notes
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Handoff Notes</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

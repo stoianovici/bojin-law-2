@@ -98,12 +98,16 @@ test.describe('Dashboard Interactions', () => {
     await aiWidget.waitFor({ state: 'visible' });
 
     // Find first suggestion dismiss button
-    const dismissButton = aiWidget.locator('button:has-text("Închide"), button:has-text("Dismiss")').first();
+    const dismissButton = aiWidget
+      .locator('button:has-text("Închide"), button:has-text("Dismiss")')
+      .first();
 
     // Check if suggestions exist
-    const suggestionCount = await aiWidget.locator('[class*="suggestion"], [data-testid*="suggestion"]').count();
+    const suggestionCount = await aiWidget
+      .locator('[class*="suggestion"], [data-testid*="suggestion"]')
+      .count();
 
-    if (suggestionCount > 0 && await dismissButton.isVisible()) {
+    if (suggestionCount > 0 && (await dismissButton.isVisible())) {
       // Click dismiss button
       await dismissButton.click();
 
@@ -111,7 +115,9 @@ test.describe('Dashboard Interactions', () => {
       await page.waitForTimeout(500);
 
       // Verify suggestion count decreased
-      const newCount = await aiWidget.locator('[class*="suggestion"], [data-testid*="suggestion"]').count();
+      const newCount = await aiWidget
+        .locator('[class*="suggestion"], [data-testid*="suggestion"]')
+        .count();
       expect(newCount).toBeLessThan(suggestionCount);
     } else {
       // If no dismissible suggestions, verify widget still renders correctly

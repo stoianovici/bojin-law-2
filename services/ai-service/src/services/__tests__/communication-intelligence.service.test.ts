@@ -228,10 +228,7 @@ describe('CommunicationIntelligenceService', () => {
     });
 
     it('should calculate total tokens used across batch', async () => {
-      const emails: EmailForAnalysis[] = [
-        sampleEmail,
-        { ...sampleEmail, id: 'email-124' },
-      ];
+      const emails: EmailForAnalysis[] = [sampleEmail, { ...sampleEmail, id: 'email-124' }];
 
       const result = await service.batchAnalyze(emails, 'user-1', 'firm-1');
 
@@ -239,10 +236,7 @@ describe('CommunicationIntelligenceService', () => {
     });
 
     it('should calculate total processing time for batch', async () => {
-      const emails: EmailForAnalysis[] = [
-        sampleEmail,
-        { ...sampleEmail, id: 'email-124' },
-      ];
+      const emails: EmailForAnalysis[] = [sampleEmail, { ...sampleEmail, id: 'email-124' }];
 
       const result = await service.batchAnalyze(emails, 'user-1', 'firm-1');
 
@@ -258,13 +252,9 @@ describe('CommunicationIntelligenceService', () => {
           { description: 'High confidence', dueDate: '2024-12-15', confidence: 0.9 },
           { description: 'Low confidence', dueDate: '2024-12-20', confidence: 0.3 },
         ],
-        commitments: [
-          { party: 'Test', commitmentText: 'Low confidence', confidence: 0.4 },
-        ],
+        commitments: [{ party: 'Test', commitmentText: 'Low confidence', confidence: 0.4 }],
         actionItems: [],
-        questions: [
-          { questionText: 'High confidence', confidence: 0.8 },
-        ],
+        questions: [{ questionText: 'High confidence', confidence: 0.8 }],
         tokensUsed: 100,
         processingTimeMs: 100,
       };
@@ -316,15 +306,9 @@ describe('CommunicationIntelligenceService', () => {
           { description: 'High', dueDate: '2024-12-15', confidence: 0.9 },
           { description: 'Medium', dueDate: '2024-12-15', confidence: 0.7 },
         ],
-        commitments: [
-          { party: 'Test', commitmentText: 'Low', confidence: 0.4 },
-        ],
-        actionItems: [
-          { description: 'High', priority: 'High', confidence: 0.85 },
-        ],
-        questions: [
-          { questionText: 'Medium', confidence: 0.65 },
-        ],
+        commitments: [{ party: 'Test', commitmentText: 'Low', confidence: 0.4 }],
+        actionItems: [{ description: 'High', priority: 'High', confidence: 0.85 }],
+        questions: [{ questionText: 'Medium', confidence: 0.65 }],
         tokensUsed: 100,
         processingTimeMs: 100,
       };
@@ -344,9 +328,7 @@ describe('CommunicationIntelligenceService', () => {
         content: JSON.stringify({
           deadlines: [],
           commitments: [],
-          actionItems: [
-            { description: 'Action without optional fields', confidence: 0.8 },
-          ],
+          actionItems: [{ description: 'Action without optional fields', confidence: 0.8 }],
           questions: [],
         }),
       });

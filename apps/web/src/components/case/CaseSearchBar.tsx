@@ -128,10 +128,10 @@ export function CaseSearchBar() {
                             caseItem.status === 'Active'
                               ? 'bg-green-100 text-green-800'
                               : caseItem.status === 'OnHold'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : caseItem.status === 'Closed'
-                              ? 'bg-gray-100 text-gray-800'
-                              : 'bg-slate-100 text-slate-800'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : caseItem.status === 'Closed'
+                                  ? 'bg-gray-100 text-gray-800'
+                                  : 'bg-slate-100 text-slate-800'
                           }`}
                       >
                         {caseItem.status}

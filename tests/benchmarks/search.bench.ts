@@ -43,7 +43,7 @@ interface SearchBenchmarkResult {
 const SEARCH_THRESHOLDS = {
   fullText: { p95: 100 }, // < 100ms for 10k documents
   semantic: { p95: 200 }, // < 200ms for 10k embeddings
-  hybrid: { p95: 300 },   // < 300ms combined
+  hybrid: { p95: 300 }, // < 300ms combined
 };
 
 // Document set sizes to test
@@ -152,10 +152,7 @@ async function simulateSemanticSearch(
 /**
  * Simulate hybrid search (full-text + semantic combined)
  */
-async function simulateHybridSearch(
-  query: string,
-  documentCount: number
-): Promise<SearchMetrics> {
+async function simulateHybridSearch(query: string, documentCount: number): Promise<SearchMetrics> {
   // Hybrid search runs both in parallel and merges results
   const fullTextLatency = 10 + Math.log10(documentCount + 1) * 10;
   const semanticLatency = 20 + Math.log10(documentCount + 1) * 15;
@@ -332,7 +329,9 @@ async function runBenchmarks(): Promise<void> {
 
   // Overall result
   const allPassed = tenKResults.every((r) => r.passed);
-  console.log(`\n  Overall: ${allPassed ? '✅ All search benchmarks passed' : '❌ Some benchmarks failed'}`);
+  console.log(
+    `\n  Overall: ${allPassed ? '✅ All search benchmarks passed' : '❌ Some benchmarks failed'}`
+  );
   console.log(`  Report saved: ${reportPath}`);
 
   if (!allPassed) {

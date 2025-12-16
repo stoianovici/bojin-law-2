@@ -20,10 +20,7 @@ export interface ActivationResult {
 /**
  * Called when a task is completed to check for successor tasks that can now be activated
  */
-export async function onTaskCompleted(
-  taskId: string,
-  firmId: string
-): Promise<ActivationResult> {
+export async function onTaskCompleted(taskId: string, firmId: string): Promise<ActivationResult> {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: {

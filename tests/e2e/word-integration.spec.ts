@@ -188,7 +188,10 @@ test.describe('Word Integration E2E Tests', () => {
     await page.goto(`${BASE_URL}/login`);
 
     // Check if already logged in
-    const isLoggedIn = await page.locator('[data-testid="user-menu"]').isVisible().catch(() => false);
+    const isLoggedIn = await page
+      .locator('[data-testid="user-menu"]')
+      .isVisible()
+      .catch(() => false);
 
     if (!isLoggedIn) {
       // Fill login form

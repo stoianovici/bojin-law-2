@@ -357,9 +357,9 @@ describe('Word Sync Integration Tests', () => {
         new Error('Document is locked by another user')
       );
 
-      await expect(
-        acquireDocumentLock('doc-001', 'user-002', 'word_desktop')
-      ).rejects.toThrow('Document is locked by another user');
+      await expect(acquireDocumentLock('doc-001', 'user-002', 'word_desktop')).rejects.toThrow(
+        'Document is locked by another user'
+      );
     });
 
     it('should extend lock for long editing sessions', async () => {
@@ -545,7 +545,11 @@ async function createDocumentInOneDrive(doc: WordDocument): Promise<SyncStatus> 
 }
 
 async function syncToOneDrive(doc: WordDocument, itemId: string): Promise<SyncStatus> {
-  await mockGraphClient.updateFile({ id: itemId, content: doc.content, trackChanges: doc.trackChanges });
+  await mockGraphClient.updateFile({
+    id: itemId,
+    content: doc.content,
+    trackChanges: doc.trackChanges,
+  });
   return {
     documentId: doc.id,
     oneDriveItemId: itemId,
@@ -580,16 +584,23 @@ async function syncCommentsToOneDrive(itemId: string, comments: Comment[]): Prom
 
 async function syncCommentsFromOneDrive(itemId: string): Promise<Comment[]> {
   const odComments = await mockGraphClient.getComments(itemId);
-  return odComments.map((c: { id: string; content: { content: string }; author: { user: { displayName: string } }; createdDateTime: string }) => ({
-    id: c.id,
-    author: c.author.user.displayName,
-    content: c.content.content,
-    timestamp: new Date(c.createdDateTime),
-    resolved: false,
-    replies: [],
-    anchorText: '',
-    position: 0,
-  }));
+  return odComments.map(
+    (c: {
+      id: string;
+      content: { content: string };
+      author: { user: { displayName: string } };
+      createdDateTime: string;
+    }) => ({
+      id: c.id,
+      author: c.author.user.displayName,
+      content: c.content.content,
+      timestamp: new Date(c.createdDateTime),
+      resolved: false,
+      replies: [],
+      anchorText: '',
+      position: 0,
+    })
+  );
 }
 
 async function acquireDocumentLock(docId: string, userId: string, sessionType: string) {
@@ -633,7 +644,9 @@ async function queueOfflineChanges(changes: { documentId: string; changes: unkno
   return { documentId: changes.documentId, pendingChanges: changes.changes.length };
 }
 
-async function syncQueuedChanges(queue: { documentId: string; changeType: string; data: unknown }[]) {
+async function syncQueuedChanges(
+  queue: { documentId: string; changeType: string; data: unknown }[]
+) {
   let synced = 0;
   let failed = 0;
   const retryQueue: typeof queue = [];

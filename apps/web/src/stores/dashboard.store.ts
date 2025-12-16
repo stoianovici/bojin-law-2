@@ -110,9 +110,7 @@ export const useDashboardStore = create<DashboardState>()(
           if (isCollapsed) {
             // Remove from collapsed list
             return {
-              collapsedWidgets: state.collapsedWidgets.filter(
-                (id) => id !== widgetId
-              ),
+              collapsedWidgets: state.collapsedWidgets.filter((id) => id !== widgetId),
             };
           } else {
             // Add to collapsed list
@@ -165,7 +163,9 @@ export const useDashboardStore = create<DashboardState>()(
       // Migration logic for existing users
       onRehydrateStorage: () => (state) => {
         if (state && needsPartnerLayoutMigration(state.partnerLayout)) {
-          console.log('[Dashboard Migration] Migrating Partner layout from KPI-based to operational layout');
+          console.log(
+            '[Dashboard Migration] Migrating Partner layout from KPI-based to operational layout'
+          );
           state.partnerLayout = defaultLayouts.Partner;
           // Ensure analyticsLayout exists for migrated users
           if (!state.analyticsLayout || state.analyticsLayout.length === 0) {

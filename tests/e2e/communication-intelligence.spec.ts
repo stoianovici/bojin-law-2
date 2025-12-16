@@ -44,7 +44,10 @@ test.describe('Communication Intelligence', () => {
       if (deadlineItems > 0) {
         // Verify deadline has date
         await expect(
-          page.locator('[data-testid="deadline-item"]').first().locator('[data-testid="deadline-date"]')
+          page
+            .locator('[data-testid="deadline-item"]')
+            .first()
+            .locator('[data-testid="deadline-date"]')
         ).toBeVisible();
       }
     });
@@ -64,7 +67,10 @@ test.describe('Communication Intelligence', () => {
       if (commitmentItems > 0) {
         // Verify commitment has party label
         await expect(
-          page.locator('[data-testid="commitment-item"]').first().locator('[data-testid="commitment-party"]')
+          page
+            .locator('[data-testid="commitment-item"]')
+            .first()
+            .locator('[data-testid="commitment-party"]')
         ).toBeVisible();
       }
     });
@@ -84,7 +90,10 @@ test.describe('Communication Intelligence', () => {
       if (actionItems > 0) {
         // Verify action item has priority badge
         await expect(
-          page.locator('[data-testid="action-item"]').first().locator('[data-testid="priority-badge"]')
+          page
+            .locator('[data-testid="action-item"]')
+            .first()
+            .locator('[data-testid="priority-badge"]')
         ).toBeVisible();
       }
     });
@@ -168,10 +177,14 @@ test.describe('Communication Intelligence', () => {
       await page.waitForSelector('[data-testid="extracted-items-panel"]', { timeout: 5000 });
 
       // Check for convert button
-      const convertButtons = await page.locator('button:has-text("Convert"), button:has-text("Create Task")').count();
+      const convertButtons = await page
+        .locator('button:has-text("Convert"), button:has-text("Create Task")')
+        .count();
 
       if (convertButtons > 0) {
-        await expect(page.locator('button:has-text("Convert"), button:has-text("Create Task")').first()).toBeVisible();
+        await expect(
+          page.locator('button:has-text("Convert"), button:has-text("Create Task")').first()
+        ).toBeVisible();
       }
     });
 
@@ -186,13 +199,17 @@ test.describe('Communication Intelligence', () => {
       await page.waitForSelector('[data-testid="extracted-items-panel"]', { timeout: 5000 });
 
       // Find and click convert button
-      const convertButton = page.locator('button:has-text("Convert"), button:has-text("Create Task")').first();
+      const convertButton = page
+        .locator('button:has-text("Convert"), button:has-text("Create Task")')
+        .first();
 
       if (await convertButton.isVisible()) {
         await convertButton.click();
 
         // Verify task creation modal opens
-        await expect(page.locator('[data-testid="task-creation-modal"], [data-testid="task-dialog"]')).toBeVisible();
+        await expect(
+          page.locator('[data-testid="task-creation-modal"], [data-testid="task-dialog"]')
+        ).toBeVisible();
       }
     });
 
@@ -211,10 +228,14 @@ test.describe('Communication Intelligence', () => {
 
       if (await deadlineItem.isVisible()) {
         // Get deadline description
-        const description = await deadlineItem.locator('[data-testid="deadline-description"]').textContent();
+        const description = await deadlineItem
+          .locator('[data-testid="deadline-description"]')
+          .textContent();
 
         // Click convert
-        await deadlineItem.locator('button:has-text("Convert"), button:has-text("Create Task")').click();
+        await deadlineItem
+          .locator('button:has-text("Convert"), button:has-text("Create Task")')
+          .click();
 
         // Check task modal has pre-filled description
         const taskDescriptionInput = page.locator(
@@ -242,7 +263,9 @@ test.describe('Communication Intelligence', () => {
       const pendingBefore = await page.locator('[data-testid="extraction-status-pending"]').count();
 
       // Find and convert first item
-      const convertButton = page.locator('button:has-text("Convert"), button:has-text("Create Task")').first();
+      const convertButton = page
+        .locator('button:has-text("Convert"), button:has-text("Create Task")')
+        .first();
 
       if (await convertButton.isVisible()) {
         await convertButton.click();
@@ -256,7 +279,9 @@ test.describe('Communication Intelligence', () => {
           await page.waitForTimeout(500);
 
           // Verify item shows converted status or is removed from pending
-          const convertedItems = await page.locator('[data-testid="extraction-status-converted"]').count();
+          const convertedItems = await page
+            .locator('[data-testid="extraction-status-converted"]')
+            .count();
           expect(convertedItems).toBeGreaterThan(0);
         }
       }
@@ -294,7 +319,9 @@ test.describe('Communication Intelligence', () => {
 
       // Count items before
       const itemsBefore = await page
-        .locator('[data-testid="deadline-item"], [data-testid="action-item"], [data-testid="commitment-item"]')
+        .locator(
+          '[data-testid="deadline-item"], [data-testid="action-item"], [data-testid="commitment-item"]'
+        )
         .count();
 
       // Click dismiss on first item
@@ -308,7 +335,9 @@ test.describe('Communication Intelligence', () => {
 
         // Count items after
         const itemsAfter = await page
-          .locator('[data-testid="deadline-item"], [data-testid="action-item"], [data-testid="commitment-item"]')
+          .locator(
+            '[data-testid="deadline-item"], [data-testid="action-item"], [data-testid="commitment-item"]'
+          )
           .count();
 
         // Should have one fewer item or show dismissed status
@@ -345,7 +374,9 @@ test.describe('Communication Intelligence', () => {
 
       if (riskIndicators > 0) {
         // Risk indicator should have warning color
-        await expect(page.locator('[data-testid="risk-indicator"]').first()).toHaveClass(/red|orange|warning/);
+        await expect(page.locator('[data-testid="risk-indicator"]').first()).toHaveClass(
+          /red|orange|warning/
+        );
       }
     });
   });
@@ -409,7 +440,9 @@ test.describe('Communication Intelligence', () => {
       await page.goto('/cases');
 
       // Wait for cases to load
-      await page.waitForSelector('[data-testid="case-card"], [data-testid="case-row"]', { timeout: 10000 });
+      await page.waitForSelector('[data-testid="case-card"], [data-testid="case-row"]', {
+        timeout: 10000,
+      });
 
       // Click first case
       await page.locator('[data-testid="case-card"], [data-testid="case-row"]').first().click();
@@ -418,13 +451,17 @@ test.describe('Communication Intelligence', () => {
       await page.waitForURL(/\/cases\/.+/);
 
       // Verify intelligence tab exists
-      await expect(page.locator('button:has-text("Intelligence"), [data-testid="intelligence-tab"]')).toBeVisible();
+      await expect(
+        page.locator('button:has-text("Intelligence"), [data-testid="intelligence-tab"]')
+      ).toBeVisible();
     });
 
     test('should show case-specific extractions in intelligence tab', async ({ page }) => {
       // Navigate to a case
       await page.goto('/cases');
-      await page.waitForSelector('[data-testid="case-card"], [data-testid="case-row"]', { timeout: 10000 });
+      await page.waitForSelector('[data-testid="case-card"], [data-testid="case-row"]', {
+        timeout: 10000,
+      });
       await page.locator('[data-testid="case-card"], [data-testid="case-row"]').first().click();
       await page.waitForURL(/\/cases\/.+/);
 
@@ -435,7 +472,9 @@ test.describe('Communication Intelligence', () => {
       await expect(page.locator('[data-testid="case-intelligence-content"]')).toBeVisible();
 
       // Should show extraction categories
-      await expect(page.locator('text=/Deadlines|Commitments|Action Items|Questions/')).toBeVisible();
+      await expect(
+        page.locator('text=/Deadlines|Commitments|Action Items|Questions/')
+      ).toBeVisible();
     });
   });
 

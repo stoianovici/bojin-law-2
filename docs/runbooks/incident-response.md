@@ -13,6 +13,7 @@
 This guide provides structured procedures for responding to skills infrastructure incidents. Follow these procedures for consistent, efficient incident resolution.
 
 **SLA Targets**:
+
 - SEV1: 15min acknowledgment, 1 hour resolution
 - SEV2: 30min acknowledgment, 4 hour resolution
 - SEV3: 2 hour acknowledgment, 24 hour resolution
@@ -21,12 +22,12 @@ This guide provides structured procedures for responding to skills infrastructur
 
 ## Incident Severity Levels
 
-| Level | Definition | Examples | Response Time | Escalation |
-|-------|------------|----------|---------------|------------|
-| SEV1 | Complete service outage | Skills API down, All requests failing | 15 minutes | Immediate page |
-| SEV2 | Significant degradation | Error rate >10%, Response time >10s | 30 minutes | Page during business hours |
-| SEV3 | Minor degradation | Error rate 5-10%, Cache issues | 2 hours | Slack notification |
-| SEV4 | Low impact | Individual skill errors, Warnings | Next business day | Ticket only |
+| Level | Definition              | Examples                              | Response Time     | Escalation                 |
+| ----- | ----------------------- | ------------------------------------- | ----------------- | -------------------------- |
+| SEV1  | Complete service outage | Skills API down, All requests failing | 15 minutes        | Immediate page             |
+| SEV2  | Significant degradation | Error rate >10%, Response time >10s   | 30 minutes        | Page during business hours |
+| SEV3  | Minor degradation       | Error rate 5-10%, Cache issues        | 2 hours           | Slack notification         |
+| SEV4  | Low impact              | Individual skill errors, Warnings     | Next business day | Ticket only                |
 
 ---
 
@@ -35,6 +36,7 @@ This guide provides structured procedures for responding to skills infrastructur
 ### SEV1: Complete Skills Outage
 
 **Symptoms**:
+
 - All skill-enhanced requests failing
 - Health check failures
 - Claude Skills API unreachable
@@ -57,6 +59,7 @@ render logs legal-platform-ai-service --tail | grep ERROR
 ```
 
 **Common Causes**:
+
 1. Anthropic API outage
 2. Network connectivity issues
 3. Invalid API credentials
@@ -89,6 +92,7 @@ curl https://legal-platform-web.onrender.com/api/ai/analyze \
 4. Monitor for 1 hour before full rollout
 
 **Prevention**:
+
 - Implement health check monitoring with PagerDuty integration
 - Add automatic circuit breaker
 - Set up Anthropic status page monitoring
@@ -98,6 +102,7 @@ curl https://legal-platform-web.onrender.com/api/ai/analyze \
 ### SEV2: High Error Rate (>5%)
 
 **Symptoms**:
+
 - Error rate elevated but <50%
 - Some requests succeeding
 - Degraded user experience
@@ -136,6 +141,7 @@ console.log('Problematic skills:', problematicSkills);
 ```
 
 **Common Causes**:
+
 1. Single skill failing repeatedly
 2. Skill timeout issues
 3. Invalid skill configuration
@@ -150,16 +156,17 @@ await skillsManager.deleteSkill(problematicSkillId);
 
 // Option 2: Reduce rollout percentage
 const rolloutManager = new RolloutManager();
-await rolloutManager.setRolloutPercentage(5);  // From higher percentage
+await rolloutManager.setRolloutPercentage(5); // From higher percentage
 
 // Option 3: Increase timeout
 const apiClient = new SkillsAPIClient({
   apiKey: process.env.ANTHROPIC_API_KEY,
-  timeout: 60000,  // Increase from 30s to 60s
+  timeout: 60000, // Increase from 30s to 60s
 });
 ```
 
 **Recovery Steps**:
+
 1. Fix identified skill issues
 2. Re-upload corrected skill
 3. Test in staging
@@ -170,6 +177,7 @@ const apiClient = new SkillsAPIClient({
 ### SEV2: Slow Response Times (p95 >7s)
 
 **Symptoms**:
+
 - Response times elevated
 - User complaints about slowness
 - Timeout warnings
@@ -203,6 +211,7 @@ redis-cli -u $REDIS_URL INFO stats | grep keyspace_hits
 ```
 
 **Common Causes**:
+
 1. Low cache hit rate
 2. Complex skill prompts
 3. Anthropic API latency
@@ -214,7 +223,7 @@ redis-cli -u $REDIS_URL INFO stats | grep keyspace_hits
 // 1. Warm cache for frequently used skills
 const popularSkills = await getPopularSkills();
 for (const skillId of popularSkills) {
-  await skillsManager.getSkill(skillId, useCache=true);
+  await skillsManager.getSkill(skillId, (useCache = true));
 }
 
 // 2. Optimize skill content
@@ -222,9 +231,9 @@ for (const skillId of popularSkills) {
 // Update skill configuration:
 const updates = {
   config: {
-    max_tokens: 4000,  // Reduce from 8000
+    max_tokens: 4000, // Reduce from 8000
     temperature: 0.3,
-  }
+  },
 };
 await skillsManager.updateSkill(skillId, updates);
 
@@ -234,6 +243,7 @@ await skillsManager.updateSkill(skillId, updates);
 ```
 
 **Recovery Steps**:
+
 1. Monitor response times after changes
 2. Validate p95 <5s sustained for 1 hour
 3. Document optimizations for future skills
@@ -243,6 +253,7 @@ await skillsManager.updateSkill(skillId, updates);
 ### SEV3: Cache Performance Issues
 
 **Symptoms**:
+
 - Cache hit rate <30%
 - Increased API costs
 - Slower response times
@@ -268,6 +279,7 @@ redis-cli -u $REDIS_URL --scan --pattern "skill:cache:*" | \
 ```
 
 **Common Causes**:
+
 1. TTL too short
 2. Cache evictions (memory pressure)
 3. Poor key distribution
@@ -278,8 +290,8 @@ redis-cli -u $REDIS_URL --scan --pattern "skill:cache:*" | \
 ```typescript
 // 1. Increase cache TTL
 const skillsManager = new SkillsManager(apiClient, {
-  cacheTTL: 7200,  // Increase from 3600 (1h to 2h)
-  maxCacheSize: 200,  // Increase from 100
+  cacheTTL: 7200, // Increase from 3600 (1h to 2h)
+  maxCacheSize: 200, // Increase from 100
 });
 
 // 2. Increase Redis memory
@@ -295,7 +307,7 @@ const criticalSkills = [
 ];
 
 for (const skillId of criticalSkills) {
-  await skillsManager.getSkill(skillId, useCache=true);
+  await skillsManager.getSkill(skillId, (useCache = true));
 }
 ```
 
@@ -304,6 +316,7 @@ for (const skillId of criticalSkills) {
 ### SEV3: Cost Spike (>50% above baseline)
 
 **Symptoms**:
+
 - Daily costs significantly elevated
 - Cost savings <35%
 - Unusual token usage
@@ -315,7 +328,7 @@ const costTracker = new CostTracker();
 
 // 1. Analyze cost breakdown
 const report = await costTracker.generateReport(
-  new Date(Date.now() - 24 * 60 * 60 * 1000),  // Last 24h
+  new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24h
   new Date()
 );
 
@@ -344,6 +357,7 @@ console.log('Most expensive skills:', expensiveSkills);
 ```
 
 **Common Causes**:
+
 1. Skill misconfiguration (high max_tokens)
 2. Unexpected usage spike
 3. Inefficient skill prompts
@@ -355,21 +369,22 @@ console.log('Most expensive skills:', expensiveSkills);
 // 1. Reduce max_tokens for expensive skills
 await skillsManager.updateSkill(skillId, {
   config: {
-    max_tokens: 4000,  // Reduce from higher value
+    max_tokens: 4000, // Reduce from higher value
     temperature: 0.3,
-  }
+  },
 });
 
 // 2. Optimize skill selection
 // Review SkillSelector thresholds
 const skillSelector = new SkillSelector(registry);
-skillSelector.setEffectivenessThreshold(0.8);  // Increase from 0.7
+skillSelector.setEffectivenessThreshold(0.8); // Increase from 0.7
 
 // 3. Set cost alerts
 // Via New Relic: Alert when hourly cost >$10
 ```
 
 **Recovery Steps**:
+
 1. Identify root cause of cost spike
 2. Implement cost optimizations
 3. Monitor for 48 hours
@@ -499,12 +514,12 @@ Thank you for your patience.
 
 ## Escalation Matrix
 
-| Time Since Alert | Contact | Method |
-|------------------|---------|--------|
-| 0-15 min | Primary On-Call | PagerDuty auto-page |
-| 15-30 min | Secondary On-Call | Manual page |
-| 30-60 min | Engineering Manager | Phone call |
-| 60+ min or SEV1 | CTO | Phone call + Email |
+| Time Since Alert | Contact             | Method              |
+| ---------------- | ------------------- | ------------------- |
+| 0-15 min         | Primary On-Call     | PagerDuty auto-page |
+| 15-30 min        | Secondary On-Call   | Manual page         |
+| 30-60 min        | Engineering Manager | Phone call          |
+| 60+ min or SEV1  | CTO                 | Phone call + Email  |
 
 ---
 
@@ -550,6 +565,6 @@ node scripts/monitoring/daily-cost-report.js
 
 ## Change Log
 
-| Date | Version | Changes | Author |
-|------|---------|---------|--------|
-| 2025-11-19 | 1.0 | Initial runbook creation | James (Dev Agent) |
+| Date       | Version | Changes                  | Author            |
+| ---------- | ------- | ------------------------ | ----------------- |
+| 2025-11-19 | 1.0     | Initial runbook creation | James (Dev Agent) |

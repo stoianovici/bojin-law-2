@@ -103,9 +103,7 @@ function CustomBarTooltip({ active, payload }: any) {
   return (
     <div className="bg-white px-3 py-2 shadow-lg rounded-lg border border-gray-200">
       <p className="text-sm font-medium text-gray-900 mb-1">{data.role}</p>
-      <p className="text-sm text-gray-600">
-        Utilization: {formatPercent(data.utilizationRate)}
-      </p>
+      <p className="text-sm text-gray-600">Utilization: {formatPercent(data.utilizationRate)}</p>
       <p className="text-xs text-gray-500">
         {formatHours(data.billableHours)} / {formatHours(data.totalHours)}
       </p>
@@ -169,11 +167,7 @@ export function UtilizationWidget({
               startAngle={180}
               endAngle={0}
             >
-              <RadialBar
-                dataKey="value"
-                cornerRadius={10}
-                background={{ fill: '#E5E7EB' }}
-              />
+              <RadialBar dataKey="value" cornerRadius={10} background={{ fill: '#E5E7EB' }} />
             </RadialBarChart>
           </ResponsiveContainer>
 
@@ -197,37 +191,25 @@ export function UtilizationWidget({
         <div className="flex justify-center gap-6 text-sm">
           <div className="text-center">
             <p className="text-gray-500">Facturabile</p>
-            <p className="font-semibold text-gray-900">
-              {formatHours(totalBillableHours)}
-            </p>
+            <p className="font-semibold text-gray-900">{formatHours(totalBillableHours)}</p>
           </div>
           <div className="text-center">
             <p className="text-gray-500">Non-facturabile</p>
-            <p className="font-semibold text-gray-900">
-              {formatHours(totalNonBillableHours)}
-            </p>
+            <p className="font-semibold text-gray-900">{formatHours(totalNonBillableHours)}</p>
           </div>
           <div className="text-center">
             <p className="text-gray-500">Total</p>
-            <p className="font-semibold text-gray-900">
-              {formatHours(totalHours)}
-            </p>
+            <p className="font-semibold text-gray-900">{formatHours(totalHours)}</p>
           </div>
         </div>
 
         {/* Role breakdown */}
         {roleData.length > 0 && (
           <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-medium text-gray-500 uppercase mb-3">
-              După rol
-            </p>
+            <p className="text-xs font-medium text-gray-500 uppercase mb-3">După rol</p>
             <div className="h-[100px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={roleData}
-                  layout="vertical"
-                  margin={{ left: 10, right: 10 }}
-                >
+                <BarChart data={roleData} layout="vertical" margin={{ left: 10, right: 10 }}>
                   <XAxis
                     type="number"
                     domain={[0, 100]}

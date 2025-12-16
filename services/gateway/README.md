@@ -34,6 +34,7 @@ The GraphQL playground (Apollo Sandbox) is available in development mode:
 **URL:** http://localhost:4000/graphql
 
 Features:
+
 - 🔍 Interactive schema explorer
 - 📝 Query and mutation testing
 - 🔐 Automatic authentication (via session cookies)
@@ -41,6 +42,7 @@ Features:
 - 💾 Query history
 
 **Quick Test Query:**
+
 ```graphql
 query GetMyCases {
   cases(assignedToMe: true) {
@@ -75,6 +77,7 @@ The documentation is automatically regenerated on every push to main/develop tha
 ### GraphQL Schema
 
 Schema files are organized in `src/graphql/schema/`:
+
 - `scalars.graphql` - Custom scalar types (DateTime, UUID, JSON)
 - `enums.graphql` - Enumeration types
 - `case.graphql` - Case management types, queries, and mutations
@@ -82,6 +85,7 @@ Schema files are organized in `src/graphql/schema/`:
 ### Resolvers
 
 Resolvers are implemented in `src/graphql/resolvers/`:
+
 - `case.resolvers.ts` - Case management business logic
 
 ### Authentication

@@ -111,8 +111,7 @@ export function useDeadlineWarnings(input?: DeadlineWarningsInput) {
     return [...data.deadlineWarnings].sort((a, b) => {
       // Severity order: critical > warning > info
       const severityOrder = { critical: 0, warning: 1, info: 2 };
-      const severityDiff =
-        (severityOrder[a.severity] ?? 3) - (severityOrder[b.severity] ?? 3);
+      const severityDiff = (severityOrder[a.severity] ?? 3) - (severityOrder[b.severity] ?? 3);
 
       if (severityDiff !== 0) return severityDiff;
 

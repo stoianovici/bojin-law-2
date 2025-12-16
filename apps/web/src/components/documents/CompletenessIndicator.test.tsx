@@ -4,7 +4,11 @@
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { CompletenessIndicator, CompletenessIndicatorInline, CompletenessStatusBadge } from './CompletenessIndicator';
+import {
+  CompletenessIndicator,
+  CompletenessIndicatorInline,
+  CompletenessStatusBadge,
+} from './CompletenessIndicator';
 import type { MissingItem } from '@legal-platform/types';
 
 const mockMissingItems: MissingItem[] = [
@@ -28,42 +32,24 @@ const mockMissingItems: MissingItem[] = [
   },
 ];
 
-const mockSuggestions = [
-  'Add dispute resolution mechanism.',
-  'Include force majeure clause.',
-];
+const mockSuggestions = ['Add dispute resolution mechanism.', 'Include force majeure clause.'];
 
 describe('CompletenessIndicator', () => {
   describe('rendering', () => {
     it('should render completeness percentage', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.75}
-          missingItems={mockMissingItems}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.75} missingItems={mockMissingItems} />);
 
       expect(screen.getByText('75%')).toBeInTheDocument();
     });
 
     it('should render progress ring', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.75}
-          missingItems={mockMissingItems}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.75} missingItems={mockMissingItems} />);
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('should show correct aria-valuenow', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.85}
-          missingItems={[]}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.85} missingItems={[]} />);
 
       expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '85');
     });
@@ -71,36 +57,21 @@ describe('CompletenessIndicator', () => {
 
   describe('color coding', () => {
     it('should show green for score >= 90%', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.95}
-          missingItems={[]}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.95} missingItems={[]} />);
 
       const indicator = screen.getByRole('progressbar');
       expect(indicator).toHaveClass(/green|success/i);
     });
 
     it('should show yellow for score 70-90%', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.75}
-          missingItems={mockMissingItems}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.75} missingItems={mockMissingItems} />);
 
       const label = screen.getByText(/parțial/i);
       expect(label).toHaveClass(/yellow|warning/i);
     });
 
     it('should show red for score < 70%', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.45}
-          missingItems={mockMissingItems}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.45} missingItems={mockMissingItems} />);
 
       const label = screen.getByText(/incomplet/i);
       expect(label).toHaveClass(/red|danger/i);
@@ -147,23 +118,13 @@ describe('CompletenessIndicator', () => {
 
   describe('missing items count', () => {
     it('should show badge with count', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.75}
-          missingItems={mockMissingItems}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.75} missingItems={mockMissingItems} />);
 
       expect(screen.getByText('3')).toBeInTheDocument();
     });
 
     it('should count required items separately', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.75}
-          missingItems={mockMissingItems}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.75} missingItems={mockMissingItems} />);
 
       expect(screen.getByText(/1 element obligatoriu/i)).toBeInTheDocument();
     });
@@ -171,25 +132,13 @@ describe('CompletenessIndicator', () => {
 
   describe('sizes', () => {
     it('should render sm size', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.75}
-          missingItems={[]}
-          size="sm"
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.75} missingItems={[]} size="sm" />);
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('should render lg size', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.75}
-          missingItems={[]}
-          size="lg"
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.75} missingItems={[]} size="lg" />);
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
@@ -197,12 +146,7 @@ describe('CompletenessIndicator', () => {
 
   describe('accessibility', () => {
     it('should have proper aria-label', () => {
-      render(
-        <CompletenessIndicator
-          completenessScore={0.75}
-          missingItems={mockMissingItems}
-        />
-      );
+      render(<CompletenessIndicator completenessScore={0.75} missingItems={mockMissingItems} />);
 
       expect(screen.getByLabelText(/complet/i)).toBeInTheDocument();
     });
@@ -276,23 +220,13 @@ describe('CompletenessIndicator', () => {
 
 describe('CompletenessIndicatorInline', () => {
   it('should render inline version', () => {
-    render(
-      <CompletenessIndicatorInline
-        completenessScore={0.75}
-        missingCount={3}
-      />
-    );
+    render(<CompletenessIndicatorInline completenessScore={0.75} missingCount={3} />);
 
     expect(screen.getByText('75')).toBeInTheDocument();
   });
 
   it('should show label when showLabel is true', () => {
-    render(
-      <CompletenessIndicatorInline
-        completenessScore={0.75}
-        showLabel
-      />
-    );
+    render(<CompletenessIndicatorInline completenessScore={0.75} showLabel />);
 
     expect(screen.getByText(/parțial/i)).toBeInTheDocument();
   });

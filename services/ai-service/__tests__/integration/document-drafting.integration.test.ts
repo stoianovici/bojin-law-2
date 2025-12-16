@@ -141,15 +141,13 @@ describe('Document Drafting Integration Tests', () => {
     });
 
     skipIfNoIntegration('should return 401 without authorization', async () => {
-      const response = await request(AI_SERVICE_URL)
-        .post('/api/ai/documents/generate')
-        .send({
-          caseId: testCase.id,
-          prompt: 'Generate a contract',
-          documentType: 'Contract',
-          userId: testUser.id,
-          firmId: testFirm.id,
-        });
+      const response = await request(AI_SERVICE_URL).post('/api/ai/documents/generate').send({
+        caseId: testCase.id,
+        prompt: 'Generate a contract',
+        documentType: 'Contract',
+        userId: testUser.id,
+        firmId: testFirm.id,
+      });
 
       expect(response.status).toBe(401);
     });

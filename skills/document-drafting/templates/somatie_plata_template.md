@@ -1,4 +1,5 @@
 # Somație de Plată (Payment Notice)
+
 ## Romanian Legal Document Template
 
 **Template ID:** 14
@@ -25,6 +26,7 @@
 ## Purpose
 
 A Somație de Plată is a formal demand for payment of an outstanding debt, serving as:
+
 - Official notice putting the debtor in default (punere în întârziere)
 - Prerequisite for legal action in Romanian courts
 - Documentation for interest and penalty calculations
@@ -35,17 +37,20 @@ A Somație de Plată is a formal demand for payment of an outstanding debt, serv
 ## Required Variables
 
 ### Creditor Information
+
 - `{{CREDITOR_NUME}}` - Creditor name / business name
 - `{{CREDITOR_CUI}}` - Fiscal identification code (CUI)
 - `{{CREDITOR_SEDIU}}` - Registered address
 - `{{CREDITOR_REPREZENTANT}}` - Legal representative name
 
 ### Debtor Information
+
 - `{{DEBTOR_NUME}}` - Debtor name / business name
 - `{{DEBTOR_CNP_CUI}}` - Personal/fiscal identification
 - `{{DEBTOR_DOMICILIU}}` - Address/domicile
 
 ### Debt Details
+
 - `{{SUMA_DATORATA}}` - Amount owed
 - `{{MONEDA}}` - Currency (RON, EUR, etc.)
 - `{{TEMEIUL_JURIDIC}}` - Legal basis (contract number, invoice, etc.)
@@ -53,15 +58,18 @@ A Somație de Plată is a formal demand for payment of an outstanding debt, serv
 - `{{DESCRIERE_OBLIGATIE}}` - Description of the obligation
 
 ### Payment Terms
+
 - `{{TERMEN_PLATA}}` - Payment deadline (e.g., "15 zile")
 - `{{CONT_BANCAR}}` - Bank account IBAN
 - `{{BANCA}}` - Bank name
 
 ### Optional Variables
+
 - `{{DOBANDA_INTARZIERE}}` - Late interest percentage
 - `{{PENALITATI}}` - Contractual penalties
 
 ### Footer
+
 - `{{DATA_EMITERE}}` - Issue date
 - `{{LOCALITATE}}` - City/location
 
@@ -121,6 +129,7 @@ Vă solicităm să achitați suma în termen de **{{TERMEN_PLATA}}** de la primi
 ## Consecințe în Caz de Nerespectare
 
 În cazul în care nu veți achita suma, vom fi nevoiți să ne adresăm instanței judecătorești competente pentru:
+
 1. Recuperarea debitului principal
 2. Dobânzi de întârziere
 3. Penalități contractuale
@@ -153,18 +162,21 @@ Vă solicităm să achitați suma în termen de **{{TERMEN_PLATA}}** de la primi
 ## Usage Notes
 
 ### When to Use
+
 - Unpaid invoices after due date
 - Breach of payment obligations
 - Before initiating legal proceedings
 - To establish official default date
 
 ### Legal Requirements
+
 - Must clearly identify both parties
 - Must specify exact amount and legal basis
 - Should reference Civil Code articles
 - Must set reasonable payment deadline
 
 ### Best Practices
+
 - Send via registered mail with return receipt
 - Keep proof of delivery
 - Allow reasonable time for payment (minimum 15 days)
@@ -176,11 +188,13 @@ Vă solicităm să achitați suma în termen de **{{TERMEN_PLATA}}** de la primi
 ## Common Variations
 
 ### For Business Debt
+
 - Reference commercial contracts
 - Include VAT details if applicable
 - Mention commercial register numbers
 
 ### For Personal Debt
+
 - Use more formal but accessible language
 - Reference loan agreements or court decisions
 - Include CNP (personal identification number)
@@ -190,6 +204,7 @@ Vă solicităm să achitați suma în termen de **{{TERMEN_PLATA}}** de la primi
 ## Workflow Integration
 
 After generating this document:
+
 1. Review and customize for specific case
 2. Obtain creditor's signature
 3. Send via registered mail ("scrisoare recomandată cu confirmare de primire")

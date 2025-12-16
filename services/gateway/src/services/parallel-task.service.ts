@@ -150,14 +150,23 @@ export async function suggestAssignees(
   );
 
   // Map to AssigneeSuggestion format
-  const suggestions: AssigneeSuggestion[] = suggestionResponse.suggestions.map((s: { userId: string; user: { firstName: string; lastName: string }; matchScore: number; currentWorkload: number; availableCapacity: number; reasoning: string }) => ({
-    userId: s.userId,
-    userName: `${s.user.firstName} ${s.user.lastName}`,
-    matchScore: s.matchScore,
-    currentWorkload: s.currentWorkload,
-    availableCapacity: s.availableCapacity,
-    reasoning: s.reasoning,
-  }));
+  const suggestions: AssigneeSuggestion[] = suggestionResponse.suggestions.map(
+    (s: {
+      userId: string;
+      user: { firstName: string; lastName: string };
+      matchScore: number;
+      currentWorkload: number;
+      availableCapacity: number;
+      reasoning: string;
+    }) => ({
+      userId: s.userId,
+      userName: `${s.user.firstName} ${s.user.lastName}`,
+      matchScore: s.matchScore,
+      currentWorkload: s.currentWorkload,
+      availableCapacity: s.availableCapacity,
+      reasoning: s.reasoning,
+    })
+  );
 
   return suggestions;
 }

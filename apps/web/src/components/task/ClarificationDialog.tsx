@@ -175,9 +175,7 @@ function OptionButton({ option, isSelected, onClick, disabled }: OptionButtonPro
       )}
     >
       <div className="font-medium">{option.label}</div>
-      {option.context && (
-        <div className="text-sm text-gray-500 mt-1">{option.context}</div>
-      )}
+      {option.context && <div className="text-sm text-gray-500 mt-1">{option.context}</div>}
     </button>
   );
 }
@@ -338,11 +336,7 @@ export function ClarificationDialog({
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <svg
-                    className="animate-spin w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"

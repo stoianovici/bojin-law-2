@@ -185,6 +185,31 @@ type ThreadSummary {
 }
 
 # ============================================================================
+# Types - Case Conversation Summary (OPS-026)
+# ============================================================================
+
+type ChronologyEvent {
+  date: String!
+  summary: String!
+  significance: String!
+  parties: [String!]!
+  emailId: ID!
+}
+
+type CaseConversationSummary {
+  caseId: ID!
+  executiveSummary: String!
+  chronology: [ChronologyEvent!]!
+  keyDevelopments: [String!]!
+  currentStatus: String!
+  openIssues: [String!]!
+  nextSteps: [String!]!
+  lastEmailDate: String
+  emailCount: Int!
+  generatedAt: String!
+}
+
+# ============================================================================
 # Types - Aggregates
 # ============================================================================
 
@@ -354,6 +379,9 @@ extend type Mutation {
   # Manual Analysis Trigger
   triggerEmailAnalysis(emailId: ID!): Boolean!
   triggerThreadAnalysis(conversationId: String!): ThreadSummary
+
+  # Case Conversation Summary (OPS-026)
+  generateCaseConversationSummary(caseId: ID!): CaseConversationSummary!
 
   # Calendar Event Creation
   createCalendarEvent(suggestionId: ID!): CalendarEventResult!

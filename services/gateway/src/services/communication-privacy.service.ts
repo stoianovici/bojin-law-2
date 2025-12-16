@@ -159,10 +159,7 @@ export class CommunicationPrivacyService {
   /**
    * Update privacy settings for a communication
    */
-  async updatePrivacy(
-    input: PrivacyUpdateInput,
-    userContext: UserContext
-  ): Promise<boolean> {
+  async updatePrivacy(input: PrivacyUpdateInput, userContext: UserContext): Promise<boolean> {
     // Get the communication
     const entry = await prisma.communicationEntry.findUnique({
       where: { id: input.communicationId },

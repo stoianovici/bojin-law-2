@@ -82,7 +82,11 @@ export interface SkillEffectivenessMetrics {
 
 export interface AnomalyDetectionResult {
   isAnomaly: boolean;
-  anomalyType?: 'success_rate_drop' | 'execution_time_spike' | 'token_savings_drop' | 'error_rate_spike';
+  anomalyType?:
+    | 'success_rate_drop'
+    | 'execution_time_spike'
+    | 'token_savings_drop'
+    | 'error_rate_spike';
   severity: 'low' | 'medium' | 'high';
   message: string;
   detectedAt: Date;
@@ -165,7 +169,9 @@ export class SkillMetrics {
       await this.persistExecution(record);
     }
 
-    console.log(`[SkillMetrics] Recorded execution for ${record.skillId}: success=${record.success}, time=${record.executionTimeMs}ms`);
+    console.log(
+      `[SkillMetrics] Recorded execution for ${record.skillId}: success=${record.success}, time=${record.executionTimeMs}ms`
+    );
   }
 
   /**
@@ -203,7 +209,9 @@ export class SkillMetrics {
   /**
    * Get effectiveness for multiple skills (parallel execution)
    */
-  async getEffectivenessForSkills(skillIds: string[]): Promise<Map<string, SkillEffectivenessMetrics>> {
+  async getEffectivenessForSkills(
+    skillIds: string[]
+  ): Promise<Map<string, SkillEffectivenessMetrics>> {
     const results = new Map<string, SkillEffectivenessMetrics>();
 
     // Execute effectiveness queries in parallel for better performance
@@ -234,7 +242,10 @@ export class SkillMetrics {
   /**
    * Get top performing skills
    */
-  getTopSkills(limit = 10, sortBy: 'effectiveness' | 'usage' | 'savings' = 'effectiveness'): SkillEffectivenessMetrics[] {
+  getTopSkills(
+    limit = 10,
+    sortBy: 'effectiveness' | 'usage' | 'savings' = 'effectiveness'
+  ): SkillEffectivenessMetrics[] {
     const allMetrics = this.getAllMetrics();
 
     const sortFn = {
@@ -268,9 +279,7 @@ export class SkillMetrics {
     const last24h = history.filter(
       (r) => now - r.timestamp.getTime() < this.config.rollingWindow24h
     );
-    const last7d = history.filter(
-      (r) => now - r.timestamp.getTime() < this.config.rollingWindow7d
-    );
+    const last7d = history.filter((r) => now - r.timestamp.getTime() < this.config.rollingWindow7d);
 
     // Calculate basic metrics
     const totalExecutions = history.length;
@@ -302,9 +311,10 @@ export class SkillMetrics {
 
     // User satisfaction
     const satisfactionRecords = history.filter((r) => r.userSatisfaction !== undefined);
-    const averageUserSatisfaction = satisfactionRecords.length > 0
-      ? this.calculateMean(satisfactionRecords.map((r) => r.userSatisfaction!))
-      : undefined;
+    const averageUserSatisfaction =
+      satisfactionRecords.length > 0
+        ? this.calculateMean(satisfactionRecords.map((r) => r.userSatisfaction!))
+        : undefined;
     const userSatisfactionCount = satisfactionRecords.length;
 
     // Calculate effectiveness score
@@ -319,28 +329,20 @@ export class SkillMetrics {
     // Rolling window metrics
     const last24Hours = {
       executions: last24h.length,
-      successRate: last24h.length > 0
-        ? last24h.filter((r) => r.success).length / last24h.length
-        : 0,
-      avgTokensSaved: last24h.length > 0
-        ? this.calculateMean(last24h.map((r) => r.tokensSaved))
-        : 0,
-      avgExecutionTime: last24h.length > 0
-        ? this.calculateMean(last24h.map((r) => r.executionTimeMs))
-        : 0,
+      successRate:
+        last24h.length > 0 ? last24h.filter((r) => r.success).length / last24h.length : 0,
+      avgTokensSaved:
+        last24h.length > 0 ? this.calculateMean(last24h.map((r) => r.tokensSaved)) : 0,
+      avgExecutionTime:
+        last24h.length > 0 ? this.calculateMean(last24h.map((r) => r.executionTimeMs)) : 0,
     };
 
     const last7Days = {
       executions: last7d.length,
-      successRate: last7d.length > 0
-        ? last7d.filter((r) => r.success).length / last7d.length
-        : 0,
-      avgTokensSaved: last7d.length > 0
-        ? this.calculateMean(last7d.map((r) => r.tokensSaved))
-        : 0,
-      avgExecutionTime: last7d.length > 0
-        ? this.calculateMean(last7d.map((r) => r.executionTimeMs))
-        : 0,
+      successRate: last7d.length > 0 ? last7d.filter((r) => r.success).length / last7d.length : 0,
+      avgTokensSaved: last7d.length > 0 ? this.calculateMean(last7d.map((r) => r.tokensSaved)) : 0,
+      avgExecutionTime:
+        last7d.length > 0 ? this.calculateMean(last7d.map((r) => r.executionTimeMs)) : 0,
     };
 
     const metrics: SkillEffectivenessMetrics = {
@@ -495,8 +497,7 @@ export class SkillMetrics {
         const last24h = history.filter(
           (r) => now - r.timestamp.getTime() < this.config.rollingWindow24h
         );
-        const recent24hErrorRate =
-          last24h.filter((r) => !r.success).length / last24h.length;
+        const recent24hErrorRate = last24h.filter((r) => !r.success).length / last24h.length;
         const deviation = recent24hErrorRate - metrics.errorRate;
 
         if (deviation > this.config.anomalyThresholds.errorRateSpike) {
@@ -601,10 +602,7 @@ export class SkillMetrics {
     }
   }
 
-  private async persistAnomaly(
-    skillId: string,
-    anomaly: AnomalyDetectionResult
-  ): Promise<void> {
+  private async persistAnomaly(skillId: string, anomaly: AnomalyDetectionResult): Promise<void> {
     if (!this.dbConnection) return;
 
     try {
@@ -657,8 +655,10 @@ export class SkillMetrics {
     totalExecutions: number;
     cacheSize: number;
   } {
-    const totalExecutions = Array.from(this.executionHistory.values())
-      .reduce((sum, history) => sum + history.length, 0);
+    const totalExecutions = Array.from(this.executionHistory.values()).reduce(
+      (sum, history) => sum + history.length,
+      0
+    );
 
     return {
       skillsTracked: this.executionHistory.size,

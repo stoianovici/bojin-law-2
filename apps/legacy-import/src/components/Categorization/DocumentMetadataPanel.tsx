@@ -1,6 +1,16 @@
 'use client';
 
-import { Mail, Calendar, Folder, User, Send, Inbox, FileType, Languages, Sparkles } from 'lucide-react';
+import {
+  Mail,
+  Calendar,
+  Folder,
+  User,
+  Send,
+  Inbox,
+  FileType,
+  Languages,
+  Sparkles,
+} from 'lucide-react';
 import type { DocumentMetadata } from '@/stores/documentStore';
 
 interface DocumentMetadataPanelProps {
@@ -23,18 +33,25 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function LanguageBadge({ language, confidence }: { language: string | null; confidence: number | null }) {
+function LanguageBadge({
+  language,
+  confidence,
+}: {
+  language: string | null;
+  confidence: number | null;
+}) {
   if (!language) return null;
 
   const confidencePercent = confidence ? Math.round(confidence * 100) : null;
-  const bgColor = language === 'Romanian' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700';
+  const bgColor =
+    language === 'Romanian' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700';
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${bgColor}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${bgColor}`}
+    >
       {language}
-      {confidencePercent && (
-        <span className="text-[10px] opacity-75">({confidencePercent}%)</span>
-      )}
+      {confidencePercent && <span className="text-[10px] opacity-75">({confidencePercent}%)</span>}
     </span>
   );
 }
@@ -55,7 +72,9 @@ function TemplateBadge({ potential }: { potential: string | null }) {
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${colors[potential] || colors.Low}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${colors[potential] || colors.Low}`}
+    >
       <Sparkles className="h-3 w-3" />
       Potențial șablon: {labels[potential] || potential}
     </span>
@@ -187,9 +206,7 @@ export function DocumentMetadataPanel({ document }: DocumentMetadataPanelProps) 
 
       {/* Status */}
       <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Status
-        </h4>
+        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</h4>
         <div className="flex items-center gap-2">
           {document.status === 'Categorized' && (
             <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">

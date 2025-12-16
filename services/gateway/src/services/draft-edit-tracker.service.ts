@@ -58,7 +58,8 @@ export class DraftEditTrackerService {
     const editType = this.detectEditType(input.originalText, input.editedText);
 
     // Detect edit location if not provided
-    const editLocation = input.editLocation || this.detectEditLocation(input.originalText, input.editedText);
+    const editLocation =
+      input.editLocation || this.detectEditLocation(input.originalText, input.editedText);
 
     // Create the edit history record
     const editRecord = await prisma.draftEditHistory.create({
@@ -93,10 +94,7 @@ export class DraftEditTrackerService {
    * @param userId - User ID
    * @param limit - Maximum number of records to return
    */
-  async getUnanalyzedEdits(
-    userId: string,
-    limit: number = 50
-  ): Promise<DraftEditRecord[]> {
+  async getUnanalyzedEdits(userId: string, limit: number = 50): Promise<DraftEditRecord[]> {
     const edits = await prisma.draftEditHistory.findMany({
       where: {
         userId,
@@ -144,10 +142,7 @@ export class DraftEditTrackerService {
    * @param draftId - Draft ID
    * @param userId - User ID for access control
    */
-  async getDraftEditHistory(
-    draftId: string,
-    userId: string
-  ): Promise<DraftEditRecord[]> {
+  async getDraftEditHistory(draftId: string, userId: string): Promise<DraftEditRecord[]> {
     const edits = await prisma.draftEditHistory.findMany({
       where: {
         draftId,
@@ -252,8 +247,14 @@ export class DraftEditTrackerService {
     }
 
     // Check for style-only changes (same words, different format)
-    const originalNormalized = original.toLowerCase().replace(/[^\w\s]/g, '').trim();
-    const editedNormalized = edited.toLowerCase().replace(/[^\w\s]/g, '').trim();
+    const originalNormalized = original
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '')
+      .trim();
+    const editedNormalized = edited
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '')
+      .trim();
 
     if (originalNormalized === editedNormalized) {
       return 'StyleChange';
@@ -313,10 +314,7 @@ export class DraftEditTrackerService {
    * @param userId - User ID
    * @param olderThanDays - Delete records older than this many days
    */
-  async cleanupOldEdits(
-    userId: string,
-    olderThanDays: number = 90
-  ): Promise<number> {
+  async cleanupOldEdits(userId: string, olderThanDays: number = 90): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 

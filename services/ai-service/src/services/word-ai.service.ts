@@ -242,10 +242,7 @@ export class WordAIService {
       // Get precedent context for precedent-type suggestions
       let precedentContext = '';
       if (request.suggestionType === 'precedent' && caseInfo) {
-        precedentContext = await this.getPrecedentContext(
-          request.selectedText,
-          document.firmId
-        );
+        precedentContext = await this.getPrecedentContext(request.selectedText, document.firmId);
       }
 
       // Build prompt
@@ -265,10 +262,7 @@ export class WordAIService {
       });
 
       // Parse response
-      const suggestions = this.parseSuggestionResponse(
-        aiResponse.content,
-        request.suggestionType
-      );
+      const suggestions = this.parseSuggestionResponse(aiResponse.content, request.suggestionType);
 
       const response: WordSuggestionResponse = {
         suggestions,
@@ -397,10 +391,7 @@ export class WordAIService {
   /**
    * Parse AI response into suggestions array
    */
-  private parseSuggestionResponse(
-    response: string,
-    type: SuggestionType
-  ): WordAISuggestion[] {
+  private parseSuggestionResponse(response: string, type: SuggestionType): WordAISuggestion[] {
     try {
       // Extract JSON array from response
       const jsonMatch = response.match(/\[[\s\S]*\]/);
@@ -449,10 +440,7 @@ export class WordAIService {
   /**
    * Get precedent context using semantic search
    */
-  private async getPrecedentContext(
-    text: string,
-    _firmId: string
-  ): Promise<string> {
+  private async getPrecedentContext(text: string, _firmId: string): Promise<string> {
     try {
       const searchResults = await semanticSearchService.search({
         query: text,
@@ -464,9 +452,12 @@ export class WordAIService {
         return 'No relevant precedents found.';
       }
 
-      const precedents = searchResults.results.map((r, i) =>
-        `${i + 1}. Document ${r.documentId} (relevance: ${Math.round(r.similarity * 100)}%)\n   "${r.chunkText.substring(0, 200)}..."`
-      ).join('\n\n');
+      const precedents = searchResults.results
+        .map(
+          (r, i) =>
+            `${i + 1}. Document ${r.documentId} (relevance: ${Math.round(r.similarity * 100)}%)\n   "${r.chunkText.substring(0, 200)}..."`
+        )
+        .join('\n\n');
 
       return `Relevant precedents found:\n${precedents}`;
     } catch (error) {

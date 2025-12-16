@@ -37,9 +37,7 @@ function formatBytes(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-async function listObjects(
-  client: S3Client
-): Promise<{
+async function listObjects(client: S3Client): Promise<{
   count: number;
   totalSize: number;
   prefixes: Map<string, { count: number; size: number }>;

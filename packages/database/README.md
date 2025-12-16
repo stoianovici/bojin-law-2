@@ -32,6 +32,7 @@ npx prisma migrate dev --name add_user_table --schema=./prisma/schema.prisma
 ```
 
 This will:
+
 1. Generate migration SQL in `prisma/migrations/{timestamp}_{name}/migration.sql`
 2. Apply migration to development database
 3. Regenerate Prisma Client with new schema
@@ -53,6 +54,7 @@ pnpm db:migrate:status
 ```
 
 Output shows:
+
 - Applied migrations (timestamp, name, checksum)
 - Pending migrations not yet applied
 - Migration history from `_prisma_migrations` table
@@ -67,6 +69,7 @@ pnpm db:migrate:undo
 ```
 
 This script:
+
 1. Prompts for confirmation
 2. Shows current migration state
 3. Requires manual DOWN migration SQL
@@ -80,6 +83,7 @@ pnpm db:migrate:history
 ```
 
 Shows:
+
 - Migration name
 - Applied timestamp
 - Checksum
@@ -109,11 +113,11 @@ Example: `000_enable_extensions.sql`
 
 ### Current Migrations
 
-| Migration                     | Description                                          | Date       |
-| ----------------------------- | ---------------------------------------------------- | ---------- |
-| 000_enable_extensions.sql     | Enable pgvector, uuid-ossp, pg_trgm extensions       | 2025-11-20 |
-| 001_add_skills_tables.sql     | Add Claude Skills infrastructure tables              | 2025-11-19 |
-| 002_add_discovery_tables.sql  | Add Document Type Discovery infrastructure tables    | 2025-11-19 |
+| Migration                    | Description                                       | Date       |
+| ---------------------------- | ------------------------------------------------- | ---------- |
+| 000_enable_extensions.sql    | Enable pgvector, uuid-ossp, pg_trgm extensions    | 2025-11-20 |
+| 001_add_skills_tables.sql    | Add Claude Skills infrastructure tables           | 2025-11-19 |
+| 002_add_discovery_tables.sql | Add Document Type Discovery infrastructure tables | 2025-11-19 |
 
 ### Migration Best Practices
 
@@ -136,6 +140,7 @@ ORDER BY finished_at DESC;
 ```
 
 Fields tracked:
+
 - `migration_name`: Unique migration identifier
 - `checksum`: SHA256 hash to detect tampering
 - `started_at`: Migration start timestamp
@@ -221,14 +226,17 @@ npm run db:seed
 The seed script creates the following test data:
 
 **Law Firm:**
+
 - 1 demo law firm with complete profile (name, address, VAT ID, contact info)
 
 **Users (5 total):**
+
 - 1 Partner
 - 2 Associates
 - 2 Paralegals
 
 **Cases (10 total):**
+
 - 4 Active
 - 2 OnHold
 - 2 Closed
@@ -236,12 +244,14 @@ The seed script creates the following test data:
 - Mixed case types covering all enum values
 
 **Documents (20 total):**
+
 - Various document types (Contract, Motion, Brief, etc.)
 - Different statuses (Draft, Review, Approved, Filed)
 - 50% marked as AI-generated
 - Mock storage URLs
 
 **Tasks (30 total):**
+
 - All task types (Research, DocumentCreation, ClientCommunication, etc.)
 - Assigned to different users
 - Various due dates (past, current, future)
@@ -316,6 +326,7 @@ pg_dump $DATABASE_URL | gzip > backup-$(date +%Y%m%d-%H%M%S).sql.gz
 ```
 
 **When to Create Manual Backups:**
+
 - Before production migrations (always)
 - Before major schema changes (always)
 - Before data anonymization (recommended)
@@ -393,14 +404,14 @@ ts-node scripts/anonymize-data.ts
 
 The anonymization script replaces personally identifiable information (PII) while preserving data structure and relationships:
 
-| Entity    | Fields Anonymized              | Anonymization Strategy          |
-|-----------|--------------------------------|---------------------------------|
-| Users     | first_name, last_name          | "Demo User {N}"                 |
-| Users     | email                          | "demo{N}@example.com"           |
-| Users     | azure_ad_id                    | Random UUID                     |
-| Clients   | name, address, contact_info    | "Demo Client {N}"               |
-| Cases     | title, description             | Generic descriptions            |
-| Documents | title, content                 | Lorem ipsum                     |
+| Entity    | Fields Anonymized           | Anonymization Strategy |
+| --------- | --------------------------- | ---------------------- |
+| Users     | first_name, last_name       | "Demo User {N}"        |
+| Users     | email                       | "demo{N}@example.com"  |
+| Users     | azure_ad_id                 | Random UUID            |
+| Clients   | name, address, contact_info | "Demo Client {N}"      |
+| Cases     | title, description          | Generic descriptions   |
+| Documents | title, content              | Lorem ipsum            |
 
 ### What Gets Preserved
 
@@ -444,6 +455,7 @@ pnpm db:import:anonymized
 ```
 
 This script:
+
 1. Prompts for backup file path
 2. Imports to development database
 3. Runs anonymization automatically
@@ -468,7 +480,7 @@ const anonymizationConfig = {
   users: ['first_name', 'last_name', 'email', 'azure_ad_id'],
   clients: ['name', 'address', 'phone', 'email'],
   cases: ['title', 'description'],
-  documents: ['title', 'content']
+  documents: ['title', 'content'],
 };
 ```
 
@@ -570,12 +582,14 @@ Common issues and solutions when working with the database package.
 **Q: Do I need to run migrations manually?**
 
 A: No. Prisma migrations are applied automatically:
+
 - Development: `pnpm db:migrate` creates and applies migrations
 - Production: `pnpm db:migrate:deploy` applies pending migrations during deployment
 
 **Q: Can I edit an applied migration?**
 
 A: No. Prisma migrations are immutable after being applied. To change schema:
+
 1. Create a new migration with the desired changes
 2. Never edit migration files in `prisma/migrations/` after they're applied
 
@@ -616,6 +630,7 @@ pnpm db:migrate:status
 **Q: Can I run migrations on production safely?**
 
 Yes, but follow these best practices:
+
 1. Test migration on staging first
 2. Create manual backup: `pnpm db:backup`
 3. Schedule maintenance window (if downtime needed)
@@ -695,11 +710,13 @@ All emails should be `demo{N}@example.com` format and names should be `Demo User
 **Q: Why are migrations slow?**
 
 Possible causes:
+
 - Large tables (index creation locks table)
 - Foreign key validation on large datasets
 - No concurrent index creation
 
 Solutions:
+
 - Use `CREATE INDEX CONCURRENTLY` for large tables
 - Add foreign keys as `NOT VALID` then validate separately
 - Batch large data migrations
@@ -828,18 +845,19 @@ The database client is configured with optimized connection pooling for producti
 
 All parameters are configurable via environment variables:
 
-| Variable                        | Description                        | Default | Example  |
-| ------------------------------- | ---------------------------------- | ------- | -------- |
-| `DATABASE_MAX_CONNECTIONS`      | Max database connections           | 20      | 20       |
-| `DATABASE_POOL_SIZE`            | Pool size per service instance     | 10      | 10       |
-| `DATABASE_CONNECTION_TIMEOUT`   | Connection timeout (milliseconds)  | 30000   | 30000    |
-| `DATABASE_STATEMENT_TIMEOUT`    | Query timeout (milliseconds)       | 60000   | 60000    |
-| `DATABASE_IDLE_TIMEOUT`         | Idle connection timeout (ms)       | 10000   | 10000    |
-| `DATABASE_SSL_MODE`             | SSL mode for connections           | require | require  |
+| Variable                      | Description                       | Default | Example |
+| ----------------------------- | --------------------------------- | ------- | ------- |
+| `DATABASE_MAX_CONNECTIONS`    | Max database connections          | 20      | 20      |
+| `DATABASE_POOL_SIZE`          | Pool size per service instance    | 10      | 10      |
+| `DATABASE_CONNECTION_TIMEOUT` | Connection timeout (milliseconds) | 30000   | 30000   |
+| `DATABASE_STATEMENT_TIMEOUT`  | Query timeout (milliseconds)      | 60000   | 60000   |
+| `DATABASE_IDLE_TIMEOUT`       | Idle connection timeout (ms)      | 10000   | 10000   |
+| `DATABASE_SSL_MODE`           | SSL mode for connections          | require | require |
 
 ### Pool Size Calculation
 
 **Render PostgreSQL Standard Tier:**
+
 - Max connections: 20 (platform limit)
 - Services: 2 instances (web + gateway)
 - Pool size per service: 10
@@ -848,6 +866,7 @@ All parameters are configurable via environment variables:
 **Scaling Considerations:**
 
 If you add more service instances:
+
 - 3 instances: Pool size = 6 per instance (3 × 6 = 18)
 - 4 instances: Pool size = 5 per instance (4 × 5 = 20)
 - 5+ instances: Upgrade to Render PostgreSQL Pro tier (100 connections)
@@ -886,11 +905,11 @@ Redis is used for session storage with automatic expiration and cleanup.
 
 ### Session Configuration
 
-| Parameter         | Default | Description                           |
-| ----------------- | ------- | ------------------------------------- |
-| Session TTL       | 24 hours| Session expiration time               |
-| Session Prefix    | `session:`| Key prefix for all sessions        |
-| Auto Expiration   | Yes     | Redis automatically removes expired sessions |
+| Parameter       | Default    | Description                                  |
+| --------------- | ---------- | -------------------------------------------- |
+| Session TTL     | 24 hours   | Session expiration time                      |
+| Session Prefix  | `session:` | Key prefix for all sessions                  |
+| Auto Expiration | Yes        | Redis automatically removes expired sessions |
 
 ### Session Usage
 
@@ -941,11 +960,11 @@ Redis caching improves API response times and reduces database load.
 
 ### Cache Configuration
 
-| Parameter            | Default | Description                          |
-| -------------------- | ------- | ------------------------------------ |
-| Cache TTL            | 5 min   | Default cache expiration time        |
-| Cache Prefix         | `cache:`| Key prefix for all cached data       |
-| Cache Key Pattern    | `{service}:{entity}:{id}` | Standard key naming |
+| Parameter         | Default                   | Description                    |
+| ----------------- | ------------------------- | ------------------------------ |
+| Cache TTL         | 5 min                     | Default cache expiration time  |
+| Cache Prefix      | `cache:`                  | Key prefix for all cached data |
+| Cache Key Pattern | `{service}:{entity}:{id}` | Standard key naming            |
 
 ### Cache Usage
 
@@ -989,13 +1008,13 @@ console.log(`Memory used: ${stats.memoryUsed}`);
 
 ### Cache Invalidation Patterns
 
-| Event                  | Invalidation Pattern        | Example                     |
-| ---------------------- | --------------------------- | --------------------------- |
-| Case updated           | `case:{id}`                 | `case:123`                  |
-| Case deleted           | `case:{id}`                 | `case:123`                  |
+| Event                  | Invalidation Pattern          | Example                  |
+| ---------------------- | ----------------------------- | ------------------------ |
+| Case updated           | `case:{id}`                   | `case:123`               |
+| Case deleted           | `case:{id}`                   | `case:123`               |
 | Document added to case | `case:{caseId}`, `document:*` | `case:123`, `document:*` |
-| User role changed      | `user:{userId}:*`           | `user:123:*`                |
-| Firm data updated      | `firm:{firmId}:*`           | `firm:456:*`                |
+| User role changed      | `user:{userId}:*`             | `user:123:*`             |
+| Firm data updated      | `firm:{firmId}:*`             | `firm:456:*`             |
 
 ## Dependencies
 

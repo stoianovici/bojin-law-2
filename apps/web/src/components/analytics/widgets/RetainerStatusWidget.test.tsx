@@ -55,12 +55,7 @@ describe('RetainerStatusWidget', () => {
     });
 
     it('renders singular "case" for single retainer', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={50}
-          retainerCasesCount={1}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={50} retainerCasesCount={1} />);
       expect(screen.getByText('case')).toBeInTheDocument();
     });
   });
@@ -89,13 +84,7 @@ describe('RetainerStatusWidget', () => {
       const mockRetry = jest.fn();
       const testError = new Error('Network error');
 
-      render(
-        <RetainerStatusWidget
-          {...defaultProps}
-          error={testError}
-          onRetry={mockRetry}
-        />
-      );
+      render(<RetainerStatusWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
       screen.getByRole('button', { name: /retry/i }).click();
       expect(mockRetry).toHaveBeenCalledTimes(1);
@@ -104,12 +93,7 @@ describe('RetainerStatusWidget', () => {
 
   describe('No Retainer Cases State', () => {
     it('shows special empty state when no retainer cases', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={null}
-          retainerCasesCount={0}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={null} retainerCasesCount={0} />);
 
       expect(screen.getByText('No retainer cases')).toBeInTheDocument();
       expect(
@@ -118,12 +102,7 @@ describe('RetainerStatusWidget', () => {
     });
 
     it('does not show gauge when no retainer cases', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={null}
-          retainerCasesCount={0}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={null} retainerCasesCount={0} />);
 
       expect(screen.queryByTestId('radial-bar-chart')).not.toBeInTheDocument();
     });
@@ -131,12 +110,7 @@ describe('RetainerStatusWidget', () => {
 
   describe('Status Color Coding (Inverse - Lower is Better)', () => {
     it('shows green color for healthy utilization (<80%)', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={50}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={50} retainerCasesCount={5} />);
 
       const percentageElement = screen.getByText('50.0%');
       // Green is #10B981
@@ -144,23 +118,13 @@ describe('RetainerStatusWidget', () => {
     });
 
     it('shows green status text for healthy', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={50}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={50} retainerCasesCount={5} />);
 
       expect(screen.getByText('Healthy')).toBeInTheDocument();
     });
 
     it('shows yellow color for approaching limit (80-100%)', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={90}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={90} retainerCasesCount={5} />);
 
       const percentageElement = screen.getByText('90.0%');
       // Yellow is #F59E0B
@@ -168,23 +132,13 @@ describe('RetainerStatusWidget', () => {
     });
 
     it('shows approaching limit status text', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={90}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={90} retainerCasesCount={5} />);
 
       expect(screen.getByText('Approaching limit')).toBeInTheDocument();
     });
 
     it('shows red color for over-utilized (>100%)', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={120}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={120} retainerCasesCount={5} />);
 
       const percentageElement = screen.getByText('120.0%');
       // Red is #EF4444
@@ -192,12 +146,7 @@ describe('RetainerStatusWidget', () => {
     });
 
     it('shows over utilized status text', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={120}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={120} retainerCasesCount={5} />);
 
       expect(screen.getByText('Over utilized')).toBeInTheDocument();
     });
@@ -205,26 +154,14 @@ describe('RetainerStatusWidget', () => {
 
   describe('Overage Warning', () => {
     it('shows warning banner when utilization exceeds 100%', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={115}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={115} retainerCasesCount={5} />);
 
       expect(screen.getByText('Retainer hours exceeded')).toBeInTheDocument();
-      expect(
-        screen.getByText(/Some retainer agreements are over-utilized/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Some retainer agreements are over-utilized/)).toBeInTheDocument();
     });
 
     it('does not show warning when utilization is under 100%', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={95}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={95} retainerCasesCount={5} />);
 
       expect(screen.queryByText('Retainer hours exceeded')).not.toBeInTheDocument();
     });
@@ -270,9 +207,7 @@ describe('RetainerStatusWidget', () => {
         direction: 'up',
       };
 
-      const { container } = render(
-        <RetainerStatusWidget {...defaultProps} delta={delta} />
-      );
+      const { container } = render(<RetainerStatusWidget {...defaultProps} delta={delta} />);
 
       // When positiveIsGood is false, an increase should be shown in red
       // This is important because for retainer, using MORE hours is typically bad
@@ -282,82 +217,47 @@ describe('RetainerStatusWidget', () => {
 
   describe('Edge Cases', () => {
     it('handles 0% utilization', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={0}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={0} retainerCasesCount={5} />);
 
       expect(screen.getByText('0.0%')).toBeInTheDocument();
     });
 
     it('handles exactly 80% utilization (boundary)', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={80}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={80} retainerCasesCount={5} />);
 
       expect(screen.getByText('80.0%')).toBeInTheDocument();
       expect(screen.getByText('Approaching limit')).toBeInTheDocument();
     });
 
     it('handles exactly 100% utilization (boundary)', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={100}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={100} retainerCasesCount={5} />);
 
       expect(screen.getByText('100.0%')).toBeInTheDocument();
       expect(screen.getByText('Approaching limit')).toBeInTheDocument();
     });
 
     it('handles extreme overage (200%)', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={200}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={200} retainerCasesCount={5} />);
 
       expect(screen.getByText('200.0%')).toBeInTheDocument();
       expect(screen.getByText('Over utilized')).toBeInTheDocument();
     });
 
     it('handles null utilization with cases', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={null}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={null} retainerCasesCount={5} />);
 
       // Should default to 0 and still render
       expect(screen.getByText('0.0%')).toBeInTheDocument();
     });
 
     it('handles decimal utilization', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={65.5}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={65.5} retainerCasesCount={5} />);
 
       expect(screen.getByText('65.5%')).toBeInTheDocument();
     });
 
     it('handles large number of retainer cases', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={50}
-          retainerCasesCount={150}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={50} retainerCasesCount={150} />);
 
       expect(screen.getByText('150')).toBeInTheDocument();
     });
@@ -373,12 +273,7 @@ describe('RetainerStatusWidget', () => {
 
   describe('Gauge Behavior', () => {
     it('caps gauge display at 100% even when over', () => {
-      render(
-        <RetainerStatusWidget
-          retainerUtilizationAverage={150}
-          retainerCasesCount={5}
-        />
-      );
+      render(<RetainerStatusWidget retainerUtilizationAverage={150} retainerCasesCount={5} />);
 
       // The gauge should exist but text should show actual value
       expect(screen.getByTestId('radial-bar-chart')).toBeInTheDocument();

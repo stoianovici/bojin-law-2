@@ -9,7 +9,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useNotifications, useUnreadNotificationCount, useMarkNotificationAsRead } from '@/hooks/useNotifications';
+import {
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationAsRead,
+} from '@/hooks/useNotifications';
 import type { Notification } from '@legal-platform/types';
 
 export function NotificationCenter() {
@@ -62,12 +66,7 @@ export function NotificationCenter() {
         className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
         aria-label="Notifications"
       >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -86,18 +85,13 @@ export function NotificationCenter() {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
 
           {/* Notification Dropdown */}
           <div className="absolute right-0 z-20 w-96 mt-2 bg-white rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 max-h-[600px] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Notifications
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
             </div>
 
             {/* Notifications List */}
@@ -118,10 +112,18 @@ export function NotificationCenter() {
                     >
                       {notification.link ? (
                         <Link href={notification.link} className="block">
-                          <NotificationItem notification={notification} getNotificationIcon={getNotificationIcon} getTimeAgo={getTimeAgo} />
+                          <NotificationItem
+                            notification={notification}
+                            getNotificationIcon={getNotificationIcon}
+                            getTimeAgo={getTimeAgo}
+                          />
                         </Link>
                       ) : (
-                        <NotificationItem notification={notification} getNotificationIcon={getNotificationIcon} getTimeAgo={getTimeAgo} />
+                        <NotificationItem
+                          notification={notification}
+                          getNotificationIcon={getNotificationIcon}
+                          getTimeAgo={getTimeAgo}
+                        />
                       )}
                     </div>
                   ))}
@@ -160,19 +162,15 @@ function NotificationItem({
 }) {
   return (
     <div className="flex items-start space-x-3">
-      <div className="flex-shrink-0 text-2xl">
-        {getNotificationIcon(notification.type)}
-      </div>
+      <div className="flex-shrink-0 text-2xl">{getNotificationIcon(notification.type)}</div>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium text-gray-900 ${!notification.read ? 'font-semibold' : ''}`}>
+        <p
+          className={`text-sm font-medium text-gray-900 ${!notification.read ? 'font-semibold' : ''}`}
+        >
           {notification.title}
         </p>
-        <p className="text-sm text-gray-600 mt-1">
-          {notification.message}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          {getTimeAgo(notification.createdAt)}
-        </p>
+        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+        <p className="text-xs text-gray-500 mt-1">{getTimeAgo(notification.createdAt)}</p>
       </div>
       {!notification.read && (
         <div className="flex-shrink-0">

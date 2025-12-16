@@ -98,7 +98,12 @@ export const cerereChemareJudecataSections: CerereChemareJudecataSection[] = [
     id: 'plaintiff',
     labelRo: 'Reclamant',
     labelEn: 'Plaintiff',
-    variables: ['{{RECLAMANT_NUME}}', '{{RECLAMANT_CNP_CUI}}', '{{RECLAMANT_DOMICILIU}}', '{{RECLAMANT_AVOCAT}}'],
+    variables: [
+      '{{RECLAMANT_NUME}}',
+      '{{RECLAMANT_CNP_CUI}}',
+      '{{RECLAMANT_DOMICILIU}}',
+      '{{RECLAMANT_AVOCAT}}',
+    ],
     required: true,
   },
   {
@@ -168,7 +173,8 @@ export const cerereChemareJudecataSections: CerereChemareJudecataSection[] = [
     id: 'conclusion',
     labelRo: 'Încheiere',
     labelEn: 'Conclusion',
-    content: 'Pentru considerentele expuse mai sus, vă rugăm să admiteți prezenta cerere conform pretențiilor formulate.',
+    content:
+      'Pentru considerentele expuse mai sus, vă rugăm să admiteți prezenta cerere conform pretențiilor formulate.',
     required: true,
   },
   {
@@ -204,9 +210,7 @@ export const cerereChemareJudecataStandardClauses = {
 /**
  * Generate a Cerere de Chemare în Judecată document
  */
-export function generateCerereChemareJudecata(
-  variables: CerereChemareJudecataVariables
-): string {
+export function generateCerereChemareJudecata(variables: CerereChemareJudecataVariables): string {
   const pretentiiList = variables.PRETENTII.map((p, i) => `${i + 1}. ${p}`).join('\n');
   const doveziList = variables.DOVEZI.map((d, i) => `${i + 1}. ${d}`).join('\n');
   const cereriAcList = variables.CERERI_ACCESORII
@@ -304,7 +308,9 @@ Conform **Art. 195 Cod Procedură Civilă**, anexăm prezentei cereri documentel
 
 ---
 
-${variables.CERERI_ACCESORII && variables.CERERI_ACCESORII.length > 0 ? `
+${
+  variables.CERERI_ACCESORII && variables.CERERI_ACCESORII.length > 0
+    ? `
 ## Cereri Accesorii
 
 Solicităm de asemenea:
@@ -312,7 +318,9 @@ Solicităm de asemenea:
 ${cereriAcList}
 
 ---
-` : ''}
+`
+    : ''
+}
 
 ## Concluzie
 
@@ -349,9 +357,10 @@ Conform Art. 195 CPC, se anexează:
 /**
  * Validate Cerere de Chemare în Judecată variables
  */
-export function validateCerereChemareJudecata(
-  variables: Partial<CerereChemareJudecataVariables>
-): { valid: boolean; errors: string[] } {
+export function validateCerereChemareJudecata(variables: Partial<CerereChemareJudecataVariables>): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // Required court fields

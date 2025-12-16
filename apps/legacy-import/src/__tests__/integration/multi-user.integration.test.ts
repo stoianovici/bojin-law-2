@@ -61,10 +61,7 @@ describe('Multi-User Integration Tests', () => {
 
         let unassignedIndex = 0;
         for (const user of users) {
-          const userBatches = allBatches.slice(
-            unassignedIndex,
-            unassignedIndex + batchesPerUser
-          );
+          const userBatches = allBatches.slice(unassignedIndex, unassignedIndex + batchesPerUser);
           userAllocations.set(user, userBatches);
           unassignedIndex += batchesPerUser;
         }
@@ -106,9 +103,7 @@ describe('Multi-User Integration Tests', () => {
           { monthYear: '2020-01', id: '4' },
         ];
 
-        const sorted = [...batches].sort((a, b) =>
-          a.monthYear.localeCompare(b.monthYear)
-        );
+        const sorted = [...batches].sort((a, b) => a.monthYear.localeCompare(b.monthYear));
 
         expect(sorted[0].monthYear).toBe('2019-01');
         expect(sorted[1].monthYear).toBe('2019-12');
@@ -201,9 +196,7 @@ describe('Multi-User Integration Tests', () => {
           { id: 'doc-4', batchId: 'batch-4' }, // Different user's batch
         ];
 
-        const userADocuments = allDocuments.filter((d) =>
-          userABatchIds.includes(d.batchId)
-        );
+        const userADocuments = allDocuments.filter((d) => userABatchIds.includes(d.batchId));
 
         expect(userADocuments.length).toBe(2);
         expect(userADocuments.every((d) => userABatchIds.includes(d.batchId))).toBe(true);
@@ -237,14 +230,14 @@ describe('Multi-User Integration Tests', () => {
         const endTime = Date.now();
         const syncTime = endTime - startTime;
 
-        expect(categories).toContainEqual(expect.objectContaining({ name: 'Notificare Avocatească' }));
+        expect(categories).toContainEqual(
+          expect.objectContaining({ name: 'Notificare Avocatească' })
+        );
         expect(syncTime).toBeLessThan(1000); // Should complete in under 1 second
       });
 
       it('should aggregate document counts across all batches', async () => {
-        const categories = [
-          { id: 'cat-1', name: 'Contract', documentCount: 0 },
-        ];
+        const categories = [{ id: 'cat-1', name: 'Contract', documentCount: 0 }];
 
         // Documents from different batches
         const documents = [
@@ -284,9 +277,7 @@ describe('Multi-User Integration Tests', () => {
 
     describe('Category Conflict Resolution', () => {
       it('should prevent duplicate category names', async () => {
-        const existingCategories = [
-          { id: 'cat-1', name: 'Contract' },
-        ];
+        const existingCategories = [{ id: 'cat-1', name: 'Contract' }];
 
         (prisma.importCategory.findMany as jest.Mock).mockResolvedValue(existingCategories);
 
@@ -328,8 +319,18 @@ describe('Multi-User Integration Tests', () => {
         // Simulate concurrent categorization operations
         const operations = [
           { userId: 'user-A', documentId: 'doc-1', categoryId: 'cat-1', timestamp: Date.now() },
-          { userId: 'user-B', documentId: 'doc-2', categoryId: 'cat-2', timestamp: Date.now() + 10 },
-          { userId: 'user-C', documentId: 'doc-3', categoryId: 'cat-1', timestamp: Date.now() + 20 },
+          {
+            userId: 'user-B',
+            documentId: 'doc-2',
+            categoryId: 'cat-2',
+            timestamp: Date.now() + 10,
+          },
+          {
+            userId: 'user-C',
+            documentId: 'doc-3',
+            categoryId: 'cat-1',
+            timestamp: Date.now() + 20,
+          },
         ];
 
         // Each operation should succeed independently
@@ -491,9 +492,27 @@ describe('Multi-User Integration Tests', () => {
     it('should reassign batches when user completes early', async () => {
       // User A completes their batches
       const allBatches = [
-        { id: 'batch-1', assignedTo: 'user-A', documentCount: 30, categorizedCount: 30, skippedCount: 0 },
-        { id: 'batch-2', assignedTo: 'user-B', documentCount: 50, categorizedCount: 20, skippedCount: 0 },
-        { id: 'batch-3', assignedTo: null, documentCount: 40, categorizedCount: 0, skippedCount: 0 },
+        {
+          id: 'batch-1',
+          assignedTo: 'user-A',
+          documentCount: 30,
+          categorizedCount: 30,
+          skippedCount: 0,
+        },
+        {
+          id: 'batch-2',
+          assignedTo: 'user-B',
+          documentCount: 50,
+          categorizedCount: 20,
+          skippedCount: 0,
+        },
+        {
+          id: 'batch-3',
+          assignedTo: null,
+          documentCount: 40,
+          categorizedCount: 0,
+          skippedCount: 0,
+        },
       ];
 
       (prisma.documentBatch.findMany as jest.Mock).mockResolvedValue(allBatches);
@@ -527,16 +546,26 @@ describe('Multi-User Integration Tests', () => {
       const yesterday = new Date(now.getTime() - 25 * 60 * 60 * 1000);
 
       const batches = [
-        { id: 'batch-1', updatedAt: now, categorizedCount: 10, documentCount: 50, assignedTo: 'user-A' },
-        { id: 'batch-2', updatedAt: yesterday, categorizedCount: 5, documentCount: 50, assignedTo: 'user-B' },
+        {
+          id: 'batch-1',
+          updatedAt: now,
+          categorizedCount: 10,
+          documentCount: 50,
+          assignedTo: 'user-A',
+        },
+        {
+          id: 'batch-2',
+          updatedAt: yesterday,
+          categorizedCount: 5,
+          documentCount: 50,
+          assignedTo: 'user-B',
+        },
       ];
 
       const stalledThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
       const stalledBatches = batches.filter(
-        (b) =>
-          b.updatedAt < stalledThreshold &&
-          b.categorizedCount < b.documentCount
+        (b) => b.updatedAt < stalledThreshold && b.categorizedCount < b.documentCount
       );
 
       expect(stalledBatches.length).toBe(1);

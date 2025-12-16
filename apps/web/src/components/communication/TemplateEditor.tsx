@@ -21,17 +21,7 @@ import {
   type CommunicationChannel,
   type TemplateVariable,
 } from '@/hooks/useCommunicationTemplates';
-import {
-  X,
-  Save,
-  Eye,
-  Plus,
-  Trash2,
-  AlertCircle,
-  Loader2,
-  Info,
-  Code,
-} from 'lucide-react';
+import { X, Save, Eye, Plus, Trash2, AlertCircle, Loader2, Info, Code } from 'lucide-react';
 
 interface TemplateEditorProps {
   template?: CommunicationTemplate;
@@ -56,18 +46,14 @@ export function TemplateEditor({
   // Form state
   const [name, setName] = useState(template?.name || '');
   const [description, setDescription] = useState(template?.description || '');
-  const [category, setCategory] = useState<TemplateCategory>(
-    template?.category || 'General'
-  );
+  const [category, setCategory] = useState<TemplateCategory>(template?.category || 'General');
   const [channelType, setChannelType] = useState<CommunicationChannel>(
     template?.channelType || 'Email'
   );
   const [subject, setSubject] = useState(template?.subject || '');
   const [body, setBody] = useState(template?.body || '');
   const [isGlobal, setIsGlobal] = useState(template?.isGlobal || false);
-  const [variables, setVariables] = useState<TemplateVariable[]>(
-    template?.variables || []
-  );
+  const [variables, setVariables] = useState<TemplateVariable[]>(template?.variables || []);
 
   // Preview state
   const [showPreview, setShowPreview] = useState(false);
@@ -167,31 +153,31 @@ export function TemplateEditor({
 
   const handleVariableChange = useCallback(
     (index: number, field: keyof TemplateVariable, value: string | boolean) => {
-      setVariables((prev) =>
-        prev.map((v, i) => (i === index ? { ...v, [field]: value } : v))
-      );
+      setVariables((prev) => prev.map((v, i) => (i === index ? { ...v, [field]: value } : v)));
     },
     []
   );
 
-  const insertVariable = useCallback((varName: string) => {
-    const textarea = document.getElementById('template-body') as HTMLTextAreaElement;
-    if (!textarea) return;
+  const insertVariable = useCallback(
+    (varName: string) => {
+      const textarea = document.getElementById('template-body') as HTMLTextAreaElement;
+      if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = `{{${varName}}}`;
-    const newBody =
-      body.substring(0, start) + text + body.substring(end);
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = `{{${varName}}}`;
+      const newBody = body.substring(0, start) + text + body.substring(end);
 
-    setBody(newBody);
+      setBody(newBody);
 
-    // Restore cursor
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + text.length, start + text.length);
-    }, 0);
-  }, [body]);
+      // Restore cursor
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + text.length, start + text.length);
+      }, 0);
+    },
+    [body]
+  );
 
   const previewSubject = previewTemplate(subject, previewValues);
   const previewBody = previewTemplate(body, previewValues);
@@ -361,23 +347,21 @@ export function TemplateEditor({
                   >
                     <Code className="h-4 w-4 text-gray-400" />
                     <span className="min-w-[120px] font-mono text-sm text-gray-700">
-                      {'{{'}{variable.name}{'}}'}
+                      {'{{'}
+                      {variable.name}
+                      {'}}'}
                     </span>
                     <input
                       type="text"
                       value={variable.description}
-                      onChange={(e) =>
-                        handleVariableChange(index, 'description', e.target.value)
-                      }
+                      onChange={(e) => handleVariableChange(index, 'description', e.target.value)}
                       placeholder="Description"
                       className="flex-1 rounded border border-gray-200 px-2 py-1 text-sm"
                     />
                     <input
                       type="text"
                       value={variable.defaultValue || ''}
-                      onChange={(e) =>
-                        handleVariableChange(index, 'defaultValue', e.target.value)
-                      }
+                      onChange={(e) => handleVariableChange(index, 'defaultValue', e.target.value)}
                       placeholder="Default"
                       className="w-24 rounded border border-gray-200 px-2 py-1 text-sm"
                     />
@@ -385,9 +369,7 @@ export function TemplateEditor({
                       <input
                         type="checkbox"
                         checked={variable.required}
-                        onChange={(e) =>
-                          handleVariableChange(index, 'required', e.target.checked)
-                        }
+                        onChange={(e) => handleVariableChange(index, 'required', e.target.checked)}
                         className="h-3 w-3"
                       />
                       Required
@@ -446,14 +428,10 @@ export function TemplateEditor({
             {/* Sample Values */}
             {variables.length > 0 && (
               <div className="mb-4 space-y-2">
-                <h4 className="text-xs font-medium uppercase text-gray-500">
-                  Sample Values
-                </h4>
+                <h4 className="text-xs font-medium uppercase text-gray-500">Sample Values</h4>
                 {variables.map((v) => (
                   <div key={v.name} className="flex items-center gap-2">
-                    <label className="min-w-[100px] text-xs text-gray-500">
-                      {v.name}:
-                    </label>
+                    <label className="min-w-[100px] text-xs text-gray-500">{v.name}:</label>
                     <input
                       type="text"
                       value={previewValues[v.name] || ''}

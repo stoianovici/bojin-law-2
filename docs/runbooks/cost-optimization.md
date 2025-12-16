@@ -9,12 +9,12 @@
 
 ## Cost Targets (AC#5)
 
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| Cost Savings | >35% | <30% |
-| Cost per Request | <$0.02 | >$0.03 |
-| Daily AI Cost | Varies | >$150 |
-| Token Reduction | >70% | <60% |
+| Metric           | Target | Alert Threshold |
+| ---------------- | ------ | --------------- |
+| Cost Savings     | >35%   | <30%            |
+| Cost per Request | <$0.02 | >$0.03          |
+| Daily AI Cost    | Varies | >$150           |
+| Token Reduction  | >70%   | <60%            |
 
 ---
 
@@ -22,20 +22,22 @@
 
 ### Model Pricing (Anthropic Claude)
 
-| Model | Input (per 1M tokens) | Output (per 1M tokens) | Use Case |
-|-------|----------------------|------------------------|----------|
-| Haiku | $0.25 | $1.25 | Simple, fast tasks |
-| Sonnet | $3.00 | $15.00 | Most tasks |
-| Opus | $15.00 | $75.00 | Complex reasoning |
+| Model  | Input (per 1M tokens) | Output (per 1M tokens) | Use Case           |
+| ------ | --------------------- | ---------------------- | ------------------ |
+| Haiku  | $0.25                 | $1.25                  | Simple, fast tasks |
+| Sonnet | $3.00                 | $15.00                 | Most tasks         |
+| Opus   | $15.00                | $75.00                 | Complex reasoning  |
 
 ### Skills Impact on Costs
 
 **Without Skills**:
+
 - Average tokens per request: 10,000
 - Model: Sonnet (most requests)
 - Cost per request: ~$0.18
 
 **With Skills** (Target):
+
 - Average tokens per request: 3,000 (70% reduction)
 - Model mix: 60% Haiku, 35% Sonnet, 5% Opus
 - Cost per request: ~$0.015
@@ -83,12 +85,12 @@ await costTracker.trackUsage({
   inputTokens: 1500,
   outputTokens: 500,
   skillsUsed: ['contract-analysis-ro'],
-  savingsFromSkills: 0.72,  // 72% token reduction
+  savingsFromSkills: 0.72, // 72% token reduction
 });
 
 // Generate report
 const report = await costTracker.generateReport(
-  new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),  // 7 days ago
+  new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
   new Date()
 );
 
@@ -109,6 +111,7 @@ console.log('Cost Report:', {
 **Problem**: Skills using too many tokens
 
 **Diagnosis**:
+
 ```typescript
 const expensiveSkills = await db.query(`
   SELECT
@@ -132,9 +135,9 @@ console.log('Skills using >5K tokens:', expensiveSkills);
 // Option 1: Reduce max_tokens
 await skillsManager.updateSkill(skillId, {
   config: {
-    max_tokens: 4000,  // Reduce from 8000
+    max_tokens: 4000, // Reduce from 8000
     temperature: 0.3,
-  }
+  },
 });
 
 // Option 2: Optimize skill content
@@ -149,6 +152,7 @@ await skillsManager.updateSkill(skillId, {
 ```
 
 **Expected Impact**:
+
 - Token usage: -40%
 - Cost per request: -35%
 - Response time: -20%
@@ -160,6 +164,7 @@ await skillsManager.updateSkill(skillId, {
 **Problem**: Too many requests using expensive models (Sonnet/Opus)
 
 **Diagnosis**:
+
 ```typescript
 const modelDistribution = await db.query(`
   SELECT
@@ -218,6 +223,7 @@ async selectModelWithCostConstraint(request: Request, maxCost: number): Promise<
 ```
 
 **Expected Impact**:
+
 - Haiku usage: 40% → 60%
 - Average cost per request: -25%
 - Total savings: 30% → 40%
@@ -229,6 +235,7 @@ async selectModelWithCostConstraint(request: Request, maxCost: number): Promise<
 **Problem**: Low cache hit rate increases API costs
 
 **Diagnosis**:
+
 ```bash
 # Check cache hit rate
 redis-cli -u $REDIS_URL INFO stats | grep keyspace_hits
@@ -246,7 +253,7 @@ echo "Daily cache savings: \$$cache_savings"
 ```typescript
 // Option 1: Increase cache TTL for stable skills
 const skillsManager = new SkillsManager(apiClient, {
-  cacheTTL: 7200,  // 2 hours for stable skills
+  cacheTTL: 7200, // 2 hours for stable skills
   maxCacheSize: 200,
 });
 
@@ -254,9 +261,9 @@ const skillsManager = new SkillsManager(apiClient, {
 class SmartSkillCache {
   getCacheTTL(skillId: string, effectiveness: number): number {
     // High effectiveness = longer cache
-    if (effectiveness > 0.9) return 7200;  // 2 hours
-    if (effectiveness > 0.8) return 3600;  // 1 hour
-    return 1800;  // 30 minutes
+    if (effectiveness > 0.9) return 7200; // 2 hours
+    if (effectiveness > 0.8) return 3600; // 1 hour
+    return 1800; // 30 minutes
   }
 
   async cacheSkill(skillId: string, skill: Skill, effectiveness: number) {
@@ -267,9 +274,9 @@ class SmartSkillCache {
 
 // Option 3: Prefetch popular skills
 async function prefetchPopularSkills() {
-  const popular = await getPopularSkills(limit=10);
+  const popular = await getPopularSkills((limit = 10));
   for (const skillId of popular) {
-    await skillsManager.getSkill(skillId, useCache=true);
+    await skillsManager.getSkill(skillId, (useCache = true));
   }
 }
 
@@ -279,6 +286,7 @@ setInterval(prefetchPopularSkills, 60 * 60 * 1000);
 ```
 
 **Expected Impact**:
+
 - Cache hit rate: 30% → 50%
 - Cached requests per day: +5,000
 - Daily cost savings: +$75
@@ -290,6 +298,7 @@ setInterval(prefetchPopularSkills, 60 * 60 * 1000);
 **Problem**: Low-effectiveness skills not providing value
 
 **Diagnosis**:
+
 ```typescript
 const skillEffectiveness = await db.query(`
   SELECT
@@ -305,7 +314,7 @@ const skillEffectiveness = await db.query(`
 `);
 
 // Identify skills with <50% token savings
-const ineffectiveSkills = skillEffectiveness.filter(s => s.avg_token_savings < 0.5);
+const ineffectiveSkills = skillEffectiveness.filter((s) => s.avg_token_savings < 0.5);
 console.log('Ineffective skills:', ineffectiveSkills);
 ```
 
@@ -327,10 +336,11 @@ for (const skill of ineffectiveSkills) {
 
 // Option 3: Adjust skill selection thresholds
 const skillSelector = new SkillSelector(registry);
-skillSelector.setEffectivenessThreshold(0.7);  // Only use skills with >70% savings
+skillSelector.setEffectivenessThreshold(0.7); // Only use skills with >70% savings
 ```
 
 **Expected Impact**:
+
 - Remove 2-3 ineffective skills
 - Focus usage on high-value skills
 - Cost savings: +5-10%
@@ -347,7 +357,7 @@ skillSelector.setEffectivenessThreshold(0.7);  // Only use skills with >70% savi
 class BatchedSkillExecutor {
   private queue: Request[] = [];
   private batchSize = 5;
-  private batchInterval = 100;  // ms
+  private batchInterval = 100; // ms
 
   async execute(request: Request): Promise<Response> {
     this.queue.push(request);
@@ -365,9 +375,7 @@ class BatchedSkillExecutor {
     const batch = this.queue.splice(0, this.batchSize);
 
     // Execute all in parallel
-    const responses = await Promise.all(
-      batch.map(req => this.executeSkill(req))
-    );
+    const responses = await Promise.all(batch.map((req) => this.executeSkill(req)));
 
     return responses;
   }
@@ -375,6 +383,7 @@ class BatchedSkillExecutor {
 ```
 
 **Expected Impact**:
+
 - Reduced API overhead
 - Potential cost savings: 5-10%
 - Improved throughput
@@ -495,7 +504,7 @@ async function projectMonthlyCost(): Promise<CostProjection> {
 
   // Project to monthly
   const monthlyProjection = avgDailyCost * 30;
-  const monthlyBaseline = avgDailyCost * 30 / (1 - 0.35);  // Assume 35% savings
+  const monthlyBaseline = (avgDailyCost * 30) / (1 - 0.35); // Assume 35% savings
   const monthlySavings = monthlyBaseline - monthlyProjection;
 
   return {
@@ -517,17 +526,20 @@ async function projectMonthlyCost(): Promise<CostProjection> {
 ## Cost Optimization Checklist
 
 ### Daily
+
 - [ ] Review daily cost report
 - [ ] Check cost alerts
 - [ ] Verify savings >35%
 
 ### Weekly
+
 - [ ] Analyze model distribution
 - [ ] Review skill effectiveness
 - [ ] Identify optimization opportunities
 - [ ] Generate weekly cost report
 
 ### Monthly
+
 - [ ] Conduct cost review meeting
 - [ ] Update cost projections
 - [ ] Implement approved optimizations
@@ -540,6 +552,7 @@ async function projectMonthlyCost(): Promise<CostProjection> {
 ### Scenario: Cost Spike (>50% above baseline)
 
 **Investigation**:
+
 ```typescript
 // 1. Identify time of spike
 const costByHour = await db.query(`
@@ -553,17 +566,21 @@ const costByHour = await db.query(`
 `);
 
 // 2. Identify cause
-const expensiveRequests = await db.query(`
+const expensiveRequests = await db.query(
+  `
   SELECT *
   FROM skill_usage_logs
   WHERE timestamp BETWEEN $1 AND $2
   AND cost_usd > 0.05
   ORDER BY cost_usd DESC
   LIMIT 20
-`, [spikeStart, spikeEnd]);
+`,
+  [spikeStart, spikeEnd]
+);
 ```
 
 **Mitigation**:
+
 1. Disable expensive skill if problematic
 2. Reduce rollout percentage
 3. Implement rate limiting
@@ -581,6 +598,6 @@ const expensiveRequests = await db.query(`
 
 ## Change Log
 
-| Date | Version | Changes | Author |
-|------|---------|---------|--------|
-| 2025-11-19 | 1.0 | Initial guide creation | James (Dev Agent) |
+| Date       | Version | Changes                | Author            |
+| ---------- | ------- | ---------------------- | ----------------- |
+| 2025-11-19 | 1.0     | Initial guide creation | James (Dev Agent) |

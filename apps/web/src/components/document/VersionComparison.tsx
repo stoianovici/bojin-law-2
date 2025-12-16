@@ -198,7 +198,11 @@ export function VersionComparison({
       // Check for changes in this line
       if (version === 'previous') {
         // Highlight removed/modified content in red
-        if (line.includes('4.500 EUR') || line.includes('ziua 10') || line.includes('Data: 10 noiembrie')) {
+        if (
+          line.includes('4.500 EUR') ||
+          line.includes('ziua 10') ||
+          line.includes('Data: 10 noiembrie')
+        ) {
           bgColor = 'bg-red-50';
           className += ' border-l-4 border-red-400';
         } else if (line.includes('c) Contracte comerciale')) {
@@ -207,7 +211,11 @@ export function VersionComparison({
         }
       } else {
         // Highlight added/modified content in green
-        if (line.includes('5.000 EUR') || line.includes('ziua 5') || line.includes('Data: 15 noiembrie')) {
+        if (
+          line.includes('5.000 EUR') ||
+          line.includes('ziua 5') ||
+          line.includes('Data: 15 noiembrie')
+        ) {
           bgColor = 'bg-green-50';
           className += ' border-l-4 border-green-400';
         } else if (line.includes('GDPR') || line.includes('litigii comerciale')) {

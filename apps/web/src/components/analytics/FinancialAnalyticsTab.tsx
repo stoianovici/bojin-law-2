@@ -28,16 +28,14 @@ import { useFinancialKPIsComparison } from '../../hooks/useFinancialKPIsComparis
  * Financial Analytics Tab Content
  */
 export function FinancialAnalyticsTab() {
-  const { dateRange, comparisonEnabled, getPreviousPeriod } =
-    useAnalyticsFiltersStore();
+  const { dateRange, comparisonEnabled, getPreviousPeriod } = useAnalyticsFiltersStore();
 
   // Get financial KPIs with comparison
-  const { current, previous, deltas, isLoading, error, refetch } =
-    useFinancialKPIsComparison({
-      dateRange,
-      previousDateRange: getPreviousPeriod(),
-      comparisonEnabled,
-    });
+  const { current, previous, deltas, isLoading, error, refetch } = useFinancialKPIsComparison({
+    dateRange,
+    previousDateRange: getPreviousPeriod(),
+    comparisonEnabled,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -58,9 +56,7 @@ export function FinancialAnalyticsTab() {
                 className="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
                 title="Refresh data"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
-                />
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                 <span className="sr-only">Refresh</span>
               </button>
             </div>
@@ -137,8 +133,7 @@ export function FinancialAnalyticsTab() {
         {current && (
           <div className="mt-8 text-center text-xs text-gray-400">
             <p>
-              Date calculate la{' '}
-              {new Date(current.calculatedAt).toLocaleString('ro-RO')} •{' '}
+              Date calculate la {new Date(current.calculatedAt).toLocaleString('ro-RO')} •{' '}
               {current.caseCount} dosare în analiză
             </p>
           </div>

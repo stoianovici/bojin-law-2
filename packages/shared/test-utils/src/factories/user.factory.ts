@@ -9,24 +9,68 @@ import type { User, UserRole, UserOverrides } from '@legal-platform/types';
 
 // Romanian first names with diacritics
 const ROMANIAN_FIRST_NAMES_MALE = [
-  'Ion', 'Gheorghe', 'Nicolae', 'Vasile', 'Constantin',
-  'Ștefan', 'Mihai', 'Alexandru', 'Andrei', 'Cristian',
-  'Adrian', 'Marian', 'Florin', 'Gabriel', 'Ionuț',
-  'Vlad', 'Răzvan', 'Bogdan', 'Cosmin', 'Daniel'
+  'Ion',
+  'Gheorghe',
+  'Nicolae',
+  'Vasile',
+  'Constantin',
+  'Ștefan',
+  'Mihai',
+  'Alexandru',
+  'Andrei',
+  'Cristian',
+  'Adrian',
+  'Marian',
+  'Florin',
+  'Gabriel',
+  'Ionuț',
+  'Vlad',
+  'Răzvan',
+  'Bogdan',
+  'Cosmin',
+  'Daniel',
 ];
 
 const ROMANIAN_FIRST_NAMES_FEMALE = [
-  'Maria', 'Elena', 'Ana', 'Ioana', 'Andreea',
-  'Gabriela', 'Mihaela', 'Cristina', 'Alexandra', 'Raluca',
-  'Daniela', 'Simona', 'Monica', 'Claudia', 'Alina'
+  'Maria',
+  'Elena',
+  'Ana',
+  'Ioana',
+  'Andreea',
+  'Gabriela',
+  'Mihaela',
+  'Cristina',
+  'Alexandra',
+  'Raluca',
+  'Daniela',
+  'Simona',
+  'Monica',
+  'Claudia',
+  'Alina',
 ];
 
 // Romanian last names with diacritics
 const ROMANIAN_LAST_NAMES = [
-  'Popescu', 'Ionescu', 'Popa', 'Gheorghiu', 'Dumitrescu',
-  'Constantinescu', 'Ștefănescu', 'Munteanu', 'Stoica', 'Stanciu',
-  'Moldoveanu', 'Văduva', 'Țurcanu', 'Rădulescu', 'Cristescu',
-  'Marinescu', 'Nicolescu', 'Iliescu', 'Petrescu', 'Barbu'
+  'Popescu',
+  'Ionescu',
+  'Popa',
+  'Gheorghiu',
+  'Dumitrescu',
+  'Constantinescu',
+  'Ștefănescu',
+  'Munteanu',
+  'Stoica',
+  'Stanciu',
+  'Moldoveanu',
+  'Văduva',
+  'Țurcanu',
+  'Rădulescu',
+  'Cristescu',
+  'Marinescu',
+  'Nicolescu',
+  'Iliescu',
+  'Petrescu',
+  'Barbu',
 ];
 
 /**
@@ -35,7 +79,8 @@ const ROMANIAN_LAST_NAMES = [
  * @returns User entity
  */
 export function createUser(overrides: UserOverrides = {}): User {
-  const role = overrides.role || faker.helpers.arrayElement<UserRole>(['Partner', 'Associate', 'Paralegal']);
+  const role =
+    overrides.role || faker.helpers.arrayElement<UserRole>(['Partner', 'Associate', 'Paralegal']);
   const useRomanianName = faker.datatype.boolean();
 
   let firstName: string;

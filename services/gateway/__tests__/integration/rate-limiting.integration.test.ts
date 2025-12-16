@@ -6,7 +6,8 @@
  */
 
 // Set environment variables before imports
-process.env.SESSION_SECRET = 'test-session-secret-at-least-32-characters-long-for-integration-tests';
+process.env.SESSION_SECRET =
+  'test-session-secret-at-least-32-characters-long-for-integration-tests';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long';
 process.env.AZURE_AD_CLIENT_ID = 'test-client-id';

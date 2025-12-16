@@ -119,7 +119,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
    * Sort tasks based on current sort configuration
    */
   const sortedTasks = useMemo(() => {
-    const sorted = [...tasks].sort((a: typeof tasks[number], b: typeof tasks[number]) => {
+    const sorted = [...tasks].sort((a: (typeof tasks)[number], b: (typeof tasks)[number]) => {
       const aValue = a[sortConfig.field];
       const bValue = b[sortConfig.field];
 
@@ -186,7 +186,12 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
   const SortIcon = ({ field }: { field: keyof Task }) => {
     if (sortConfig.field !== field) {
       return (
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-4 h-4 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -345,7 +350,9 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                             >
                               {user?.initials || 'U'}
                             </div>
-                            <span className="text-sm text-gray-700">{user?.name || task.assignedTo}</span>
+                            <span className="text-sm text-gray-700">
+                              {user?.name || task.assignedTo}
+                            </span>
                           </>
                         );
                       })()}
@@ -369,7 +376,9 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
                       />
-                      <span className="text-sm text-gray-700">{PRIORITY_LABELS[task.priority]}</span>
+                      <span className="text-sm text-gray-700">
+                        {PRIORITY_LABELS[task.priority]}
+                      </span>
                     </div>
                   </td>
 
@@ -386,7 +395,12 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                           caseId={task.caseId}
                           taskId={task.id}
                           taskTitle={task.title}
-                          onSubmit={(data: { description: string; hours: number; minutes: number; notes?: string }) => handleTimeLogSubmit(task.id, data)}
+                          onSubmit={(data: {
+                            description: string;
+                            hours: number;
+                            minutes: number;
+                            notes?: string;
+                          }) => handleTimeLogSubmit(task.id, data)}
                           onCancel={() => setLogTimeTaskId(null)}
                           isLoading={loggingTime}
                           compact={false}

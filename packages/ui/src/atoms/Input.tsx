@@ -75,10 +75,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       validationState === 'error'
         ? errorMessage
         : validationState === 'success'
-        ? successMessage
-        : validationState === 'warning'
-        ? warningMessage
-        : helperText;
+          ? successMessage
+          : validationState === 'warning'
+            ? warningMessage
+            : helperText;
 
     // Base input styles
     const inputBaseStyles =
@@ -93,13 +93,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     // Validation state styles
     const stateStyles = {
-      default:
-        'border-neutral-300 focus:border-primary-500 focus:ring-primary-500',
+      default: 'border-neutral-300 focus:border-primary-500 focus:ring-primary-500',
       error: 'border-error-500 focus:border-error-500 focus:ring-error-500',
-      success:
-        'border-success-500 focus:border-success-500 focus:ring-success-500',
-      warning:
-        'border-warning-500 focus:border-warning-500 focus:ring-warning-500',
+      success: 'border-success-500 focus:border-success-500 focus:ring-success-500',
+      warning: 'border-warning-500 focus:border-warning-500 focus:ring-warning-500',
     };
 
     // Message color styles
@@ -113,10 +110,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={clsx('w-full', className)}>
         {label && (
-          <label
-            htmlFor={inputId}
-            className="mb-1 block text-sm font-medium text-neutral-700"
-          >
+          <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-neutral-700">
             {label}
             {required && (
               <span className="ml-1 text-error-500" aria-label="required">

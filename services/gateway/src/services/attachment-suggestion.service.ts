@@ -148,7 +148,8 @@ export class AttachmentSuggestionService {
 
       // 3. Classify email intent for document type matching
       const emailIntent = this.classifyEmailIntent(combinedContent);
-      const relevantDocTypes = ATTACHMENT_RELEVANCE_MATRIX[emailIntent] || ATTACHMENT_RELEVANCE_MATRIX.general;
+      const relevantDocTypes =
+        ATTACHMENT_RELEVANCE_MATRIX[emailIntent] || ATTACHMENT_RELEVANCE_MATRIX.general;
 
       // 4. Generate embeddings for key terms
       const queryEmbedding = await this.embeddingService.generateEmbedding(keyTerms.join(' '));
@@ -363,7 +364,7 @@ export class AttachmentSuggestionService {
     similarities: Map<string, number>,
     relevantDocTypes: string[],
     userId: string
-  ): Promise<Array<{ document: typeof documents[0]; score: number }>> {
+  ): Promise<Array<{ document: (typeof documents)[0]; score: number }>> {
     // Get user access frequency (simplified - in production would use actual access logs)
     const accessFrequency = await this.getAccessFrequency(
       documents.map((d) => d.id),

@@ -68,7 +68,9 @@ test.describe('AI Provider Failover E2E Tests', () => {
       expect(response.ok()).toBeTruthy();
     });
 
-    test('should handle Claude 429 rate limit with automatic retry to Grok', async ({ request }) => {
+    test('should handle Claude 429 rate limit with automatic retry to Grok', async ({
+      request,
+    }) => {
       // Simulate rate limiting
       await request.post(`${API_BASE_URL}${MOCK_ENDPOINTS.controlClaudeStatus}`, {
         data: { status: 'rate_limited', errorCode: 429 },
@@ -279,7 +281,9 @@ test.describe('AI Provider Failover E2E Tests', () => {
       expect(result.provider).toBe('claude');
     });
 
-    test('should gradually shift traffic back to Claude in half-open state', async ({ request }) => {
+    test('should gradually shift traffic back to Claude in half-open state', async ({
+      request,
+    }) => {
       // This test verifies the half-open behavior where a single test request
       // is sent to Claude before fully closing the circuit
 

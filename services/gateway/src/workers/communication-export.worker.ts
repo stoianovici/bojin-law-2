@@ -7,12 +7,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  CommunicationChannel,
-  ExportFormat,
-  ExportStatus,
-  NotificationType,
-} from '@prisma/client';
+import { CommunicationChannel, ExportFormat, ExportStatus, NotificationType } from '@prisma/client';
 import { r2StorageService } from '../services/r2-storage.service';
 import * as archiver from 'archiver';
 import { Writable } from 'stream';
@@ -44,9 +39,7 @@ let activeExports = 0;
 /**
  * Start the communication export worker
  */
-export function startCommunicationExportWorker(
-  config: Partial<ExportWorkerConfig> = {}
-): void {
+export function startCommunicationExportWorker(config: Partial<ExportWorkerConfig> = {}): void {
   if (isRunning) {
     console.log('[Communication Export Worker] Already running');
     return;
@@ -189,7 +182,15 @@ export async function processExport(
           select: { id: true, firstName: true, lastName: true, email: true },
         },
         attachments: exportRecord.includeAttachments
-          ? { select: { id: true, fileName: true, fileSize: true, mimeType: true, storageUrl: true } }
+          ? {
+              select: {
+                id: true,
+                fileName: true,
+                fileSize: true,
+                mimeType: true,
+                storageUrl: true,
+              },
+            }
           : false,
       },
       orderBy: { sentAt: 'asc' },
@@ -248,7 +249,10 @@ export async function processExport(
         await sendExportNotification(exportRecord, false, error.message);
       }
     } catch (notifError) {
-      console.error('[Communication Export Worker] Failed to send failure notification:', notifError);
+      console.error(
+        '[Communication Export Worker] Failed to send failure notification:',
+        notifError
+      );
     }
   }
 }
@@ -286,10 +290,22 @@ async function generateExport(
       return generateCsvExport(exportRecord.id, caseRef, timestamp, entries);
 
     case ExportFormat.PDF:
-      return await generatePdfExport(exportRecord.id, caseRef, timestamp, entries, exportRecord.case);
+      return await generatePdfExport(
+        exportRecord.id,
+        caseRef,
+        timestamp,
+        entries,
+        exportRecord.case
+      );
 
     case ExportFormat.DOCX:
-      return await generateDocxExport(exportRecord.id, caseRef, timestamp, entries, exportRecord.case);
+      return await generateDocxExport(
+        exportRecord.id,
+        caseRef,
+        timestamp,
+        entries,
+        exportRecord.case
+      );
 
     default:
       throw new Error(`Unsupported format: ${exportRecord.format}`);
@@ -418,9 +434,9 @@ async function generatePdfExport(
   const lines: string[] = [];
 
   // Header
-  lines.push('=' .repeat(80));
+  lines.push('='.repeat(80));
   lines.push('COMMUNICATION EXPORT REPORT');
-  lines.push('=' .repeat(80));
+  lines.push('='.repeat(80));
   lines.push('');
   lines.push(`Case: ${caseInfo?.title || 'N/A'} (${caseInfo?.caseNumber || 'N/A'})`);
   lines.push(`Export Date: ${new Date().toLocaleString()}`);
@@ -470,9 +486,9 @@ async function generatePdfExport(
 
   // Footer
   lines.push('');
-  lines.push('=' .repeat(80));
+  lines.push('='.repeat(80));
   lines.push('END OF EXPORT');
-  lines.push('=' .repeat(80));
+  lines.push('='.repeat(80));
 
   return {
     content: Buffer.from(lines.join('\n'), 'utf-8'),
@@ -611,7 +627,9 @@ async function sendExportNotification(
       message: success
         ? `Your ${exportRecord.format} communication export is ready for download.`
         : `Your communication export failed: ${errorMessage || 'Unknown error'}`,
-      link: success ? `/cases/${exportRecord.caseId}/communications?export=${exportRecord.id}` : undefined,
+      link: success
+        ? `/cases/${exportRecord.caseId}/communications?export=${exportRecord.id}`
+        : undefined,
       caseId: exportRecord.caseId,
     },
   });
@@ -695,15 +713,20 @@ export async function cleanupExpiredExports(): Promise<number> {
   }
 
   if (expiredExports.length > 0) {
-    console.log(`[Communication Export Worker] Cleaned up ${expiredExports.length} expired exports`);
+    console.log(
+      `[Communication Export Worker] Cleaned up ${expiredExports.length} expired exports`
+    );
   }
 
   return expiredExports.length;
 }
 
 // Run cleanup daily
-setInterval(() => {
-  cleanupExpiredExports().catch((error) => {
-    console.error('[Communication Export Worker] Cleanup error:', error);
-  });
-}, 24 * 60 * 60 * 1000);
+setInterval(
+  () => {
+    cleanupExpiredExports().catch((error) => {
+      console.error('[Communication Export Worker] Cleanup error:', error);
+    });
+  },
+  24 * 60 * 60 * 1000
+);

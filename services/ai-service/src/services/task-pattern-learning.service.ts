@@ -173,9 +173,15 @@ export class TaskPatternLearningService {
 
     // Replace specific dates with placeholders
     // "15 decembrie" -> "{date}"
-    pattern = pattern.replace(/\d{1,2}\s+(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)/gi, '{date}');
+    pattern = pattern.replace(
+      /\d{1,2}\s+(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)/gi,
+      '{date}'
+    );
     // "December 15" -> "{date}"
-    pattern = pattern.replace(/(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}/gi, '{date}');
+    pattern = pattern.replace(
+      /(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}/gi,
+      '{date}'
+    );
     // "15/12" or "12/15" -> "{date}"
     pattern = pattern.replace(/\d{1,2}\/\d{1,2}(\/\d{2,4})?/g, '{date}');
 
@@ -213,10 +219,7 @@ export class TaskPatternLearningService {
             contains: partialInput.toLowerCase(),
           },
         },
-        orderBy: [
-          { frequency: 'desc' },
-          { lastUsed: 'desc' },
-        ],
+        orderBy: [{ frequency: 'desc' }, { lastUsed: 'desc' }],
         take: limit,
       });
 
@@ -238,9 +241,7 @@ export class TaskPatternLearningService {
    * Format pattern for display (replace placeholders with readable text)
    */
   private formatPatternForDisplay(pattern: string): string {
-    return pattern
-      .replace(/\{date\}/g, '[data]')
-      .replace(/\{time\}/g, '[ora]');
+    return pattern.replace(/\{date\}/g, '[data]').replace(/\{time\}/g, '[ora]');
   }
 
   /**
@@ -297,11 +298,7 @@ export class TaskPatternLearningService {
   /**
    * Get parse history for a user (for debugging/analytics)
    */
-  async getParseHistory(
-    userId: string,
-    firmId: string,
-    limit: number = 20
-  ): Promise<unknown[]> {
+  async getParseHistory(userId: string, firmId: string, limit: number = 20): Promise<unknown[]> {
     if (!prisma) return [];
 
     try {

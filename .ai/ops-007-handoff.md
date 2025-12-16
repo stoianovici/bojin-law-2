@@ -9,10 +9,13 @@
 **Simple 1-line prompt fix** - Let Claude detect and match the language automatically.
 
 Changed the AI service system prompt rule #7 from:
+
 ```
 7. Use {language} language primarily
 ```
+
 To:
+
 ```
 7. IMPORTANT: Reply in the SAME LANGUAGE as the original email. If the original email is in Romanian, reply in Romanian. If it's in English, reply in English.
 ```
@@ -20,6 +23,7 @@ To:
 ## Why This Approach
 
 User correctly pointed out that Claude already receives the full email content and is far better at language detection than any code we could write. This is:
+
 - **Simpler**: 1 line change vs complex language detection code
 - **More accurate**: Claude understands context and nuance
 - **Natural**: Matches how humans reply to emails
@@ -35,6 +39,7 @@ None.
 ## Next Steps
 
 1. **Deploy to production**:
+
    ```bash
    pnpm deploy:production
    ```
@@ -47,8 +52,8 @@ None.
 
 ## Key File Changed
 
-| File | Change |
-|------|--------|
+| File                                                         | Change                 |
+| ------------------------------------------------------------ | ---------------------- |
 | `services/ai-service/src/services/email-drafting.service.ts` | Updated prompt rule #7 |
 
 ## Commands

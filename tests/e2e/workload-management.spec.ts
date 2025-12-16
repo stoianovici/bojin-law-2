@@ -36,9 +36,7 @@ test.describe('Team Workload Management', () => {
       await expect(page.locator('[data-testid="team-calendar"]')).toBeVisible();
 
       // Verify team members are listed
-      await expect(page.locator('[data-testid="team-member-row"]')).toHaveCount(
-        { minimum: 1 }
-      );
+      await expect(page.locator('[data-testid="team-member-row"]')).toHaveCount({ minimum: 1 });
     });
 
     test('should show tasks on calendar for each day', async ({ page }) => {
@@ -57,7 +55,7 @@ test.describe('Team Workload Management', () => {
       // Check for availability indicator (vacation, OOO, etc.)
       const availabilityBadge = page.locator('[data-testid="availability-badge"]');
 
-      if (await availabilityBadge.count() > 0) {
+      if ((await availabilityBadge.count()) > 0) {
         await expect(availabilityBadge.first()).toBeVisible();
       }
     });
@@ -128,9 +126,9 @@ test.describe('Team Workload Management', () => {
       await page.fill('[data-testid="estimated-hours-input"]', '4');
 
       // Wait for suggestions panel
-      await expect(
-        page.locator('[data-testid="assignment-suggestion-panel"]')
-      ).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('[data-testid="assignment-suggestion-panel"]')).toBeVisible({
+        timeout: 5000,
+      });
     });
 
     test('should display match scores for suggested assignees', async ({ page }) => {
@@ -264,9 +262,7 @@ test.describe('Team Workload Management', () => {
         await expect(bottlenecks.first()).toBeVisible();
 
         // Verify severity indicator
-        await expect(
-          page.locator('[data-testid="bottleneck-severity"]').first()
-        ).toBeVisible();
+        await expect(page.locator('[data-testid="bottleneck-severity"]').first()).toBeVisible();
       }
     });
 

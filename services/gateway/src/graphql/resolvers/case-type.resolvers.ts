@@ -65,11 +65,7 @@ export const caseTypeResolvers = {
      * Get all case types for the current user's firm
      * Returns both system default types and custom firm-specific types
      */
-    caseTypes: async (
-      _parent: unknown,
-      args: { includeInactive?: boolean },
-      context: Context
-    ) => {
+    caseTypes: async (_parent: unknown, args: { includeInactive?: boolean }, context: Context) => {
       const user = requireAuth(context);
 
       // Get custom case types for the firm
@@ -104,11 +100,7 @@ export const caseTypeResolvers = {
     /**
      * Get a single case type by ID
      */
-    caseType: async (
-      _parent: unknown,
-      args: { id: string },
-      context: Context
-    ) => {
+    caseType: async (_parent: unknown, args: { id: string }, context: Context) => {
       const user = requireAuth(context);
 
       // Check if it's a default type
@@ -167,10 +159,17 @@ export const caseTypeResolvers = {
       // Validate code (alphanumeric with underscores only)
       const codeRegex = /^[A-Z0-9_]+$/;
       const normalizedCode = code.toUpperCase().replace(/\s+/g, '_');
-      if (!codeRegex.test(normalizedCode) || normalizedCode.length < 2 || normalizedCode.length > 50) {
-        throw new GraphQLError('Codul trebuie să conțină doar litere, cifre și underscore (2-50 caractere)', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
+      if (
+        !codeRegex.test(normalizedCode) ||
+        normalizedCode.length < 2 ||
+        normalizedCode.length > 50
+      ) {
+        throw new GraphQLError(
+          'Codul trebuie să conțină doar litere, cifre și underscore (2-50 caractere)',
+          {
+            extensions: { code: 'BAD_USER_INPUT' },
+          }
+        );
       }
 
       // Check if code already exists for this firm
@@ -283,11 +282,7 @@ export const caseTypeResolvers = {
      * Deactivate a case type (soft delete)
      * Only Partners can deactivate case types
      */
-    deactivateCaseType: async (
-      _parent: unknown,
-      args: { id: string },
-      context: Context
-    ) => {
+    deactivateCaseType: async (_parent: unknown, args: { id: string }, context: Context) => {
       const user = requirePartner(context);
 
       // Cannot deactivate default types

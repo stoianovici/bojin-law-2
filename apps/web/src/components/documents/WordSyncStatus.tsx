@@ -11,21 +11,9 @@ import React from 'react';
 import { useQuery, useSubscription, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client/core';
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import {
-  Cloud,
-  CloudOff,
-  RefreshCw,
-  Check,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 // GraphQL Operations
@@ -89,10 +77,13 @@ export function WordSyncStatus({
   className,
 }: WordSyncStatusProps) {
   // Query sync status
-  const { data, loading, error, refetch } = useQuery<DocumentSyncStatusData>(GET_DOCUMENT_SYNC_STATUS, {
-    variables: { documentId },
-    pollInterval: 60000, // Poll every minute
-  });
+  const { data, loading, error, refetch } = useQuery<DocumentSyncStatusData>(
+    GET_DOCUMENT_SYNC_STATUS,
+    {
+      variables: { documentId },
+      pollInterval: 60000, // Poll every minute
+    }
+  );
 
   // Subscribe to sync status changes
   useSubscription(SYNC_STATUS_CHANGED, {
@@ -155,7 +146,9 @@ export function WordSyncStatus({
 
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING_CHANGES;
   const StatusIcon = config.icon;
-  const lastSyncTime = lastSyncAt ? formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true }) : 'Never';
+  const lastSyncTime = lastSyncAt
+    ? formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true })
+    : 'Never';
 
   // Not connected to OneDrive
   if (!oneDriveId) {
@@ -205,7 +198,9 @@ export function WordSyncStatus({
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge variant="outline" className={config.color}>
-                <StatusIcon className={`h-3 w-3 mr-1 ${status === 'SYNCING' ? 'animate-spin' : ''}`} />
+                <StatusIcon
+                  className={`h-3 w-3 mr-1 ${status === 'SYNCING' ? 'animate-spin' : ''}`}
+                />
                 {config.label}
               </Badge>
             </TooltipTrigger>
@@ -245,7 +240,9 @@ export function WordSyncStatus({
 
   // Detailed variant
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-lg border ${config.color} ${config.bgColor} ${className}`}>
+    <div
+      className={`flex items-center gap-3 p-3 rounded-lg border ${config.color} ${config.bgColor} ${className}`}
+    >
       <div className="flex-shrink-0">
         <StatusIcon className={`h-5 w-5 ${status === 'SYNCING' ? 'animate-spin' : ''}`} />
       </div>
@@ -260,12 +257,7 @@ export function WordSyncStatus({
         </div>
       </div>
       {showSyncButton && status !== 'SYNCING' && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => syncFromOneDrive()}
-          disabled={syncing}
-        >
+        <Button variant="outline" size="sm" onClick={() => syncFromOneDrive()} disabled={syncing}>
           {syncing ? (
             <Loader2 className="h-3 w-3 mr-1 animate-spin" />
           ) : (

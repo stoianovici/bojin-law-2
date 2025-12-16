@@ -55,9 +55,7 @@ export class DocumentStructurePreferenceService {
     });
 
     if (existing) {
-      throw new Error(
-        `Preferințele pentru tipul de document "${input.documentType}" există deja`
-      );
+      throw new Error(`Preferințele pentru tipul de document "${input.documentType}" există deja`);
     }
 
     // Validate sections
@@ -117,14 +115,16 @@ export class DocumentStructurePreferenceService {
       updateData.footerContent = input.footerContent;
     }
     if (input.marginPreferences !== undefined) {
-      updateData.marginPreferences = input.marginPreferences === null
-        ? Prisma.JsonNull
-        : input.marginPreferences as unknown as Prisma.InputJsonValue;
+      updateData.marginPreferences =
+        input.marginPreferences === null
+          ? Prisma.JsonNull
+          : (input.marginPreferences as unknown as Prisma.InputJsonValue);
     }
     if (input.fontPreferences !== undefined) {
-      updateData.fontPreferences = input.fontPreferences === null
-        ? Prisma.JsonNull
-        : input.fontPreferences as unknown as Prisma.InputJsonValue;
+      updateData.fontPreferences =
+        input.fontPreferences === null
+          ? Prisma.JsonNull
+          : (input.fontPreferences as unknown as Prisma.InputJsonValue);
     }
 
     const updated = await prisma.documentStructurePreference.update({
@@ -447,5 +447,4 @@ export class DocumentStructurePreferenceService {
 }
 
 // Export singleton instance
-export const documentStructurePreferenceService =
-  new DocumentStructurePreferenceService();
+export const documentStructurePreferenceService = new DocumentStructurePreferenceService();

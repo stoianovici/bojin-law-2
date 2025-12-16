@@ -80,11 +80,7 @@ export const aiLearningResolvers = {
     /**
      * Get all personal snippets for the current user
      */
-    mySnippets: async (
-      _: unknown,
-      args: { category?: SnippetCategory },
-      context: Context
-    ) => {
+    mySnippets: async (_: unknown, args: { category?: SnippetCategory }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -114,11 +110,7 @@ export const aiLearningResolvers = {
     /**
      * Search snippets by shortcut or content
      */
-    searchSnippets: async (
-      _: unknown,
-      args: { query: string },
-      context: Context
-    ) => {
+    searchSnippets: async (_: unknown, args: { query: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -133,11 +125,7 @@ export const aiLearningResolvers = {
     /**
      * Get learned task creation patterns
      */
-    myTaskPatterns: async (
-      _: unknown,
-      args: { isActive?: boolean },
-      context: Context
-    ) => {
+    myTaskPatterns: async (_: unknown, args: { isActive?: boolean }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -187,11 +175,7 @@ export const aiLearningResolvers = {
     /**
      * Get response time patterns
      */
-    myResponseTimePatterns: async (
-      _: unknown,
-      args: { taskType?: string },
-      context: Context
-    ) => {
+    myResponseTimePatterns: async (_: unknown, args: { taskType?: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -448,11 +432,7 @@ export const aiLearningResolvers = {
     /**
      * Dismiss a snippet suggestion
      */
-    dismissSnippetSuggestion: async (
-      _: unknown,
-      args: { content: string },
-      context: Context
-    ) => {
+    dismissSnippetSuggestion: async (_: unknown, args: { content: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -789,10 +769,7 @@ export const aiLearningResolvers = {
         });
       }
 
-      return personalizationDashboardService.updatePersonalizationSettings(
-        user.id,
-        args.input
-      );
+      return personalizationDashboardService.updatePersonalizationSettings(user.id, args.input);
     },
 
     /**

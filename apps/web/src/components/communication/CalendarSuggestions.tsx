@@ -124,8 +124,10 @@ function ReminderDisplay({ reminderMinutes }: ReminderDisplayProps) {
   return (
     <div className="flex items-center gap-1 text-xs text-gray-500">
       <Bell className="h-3 w-3" aria-hidden="true" />
-      <span aria-label={`Reminders: ${reminderMinutes.map(m => formatReminder(m)).join(', ')} before`}>
-        {reminderMinutes.map(m => formatReminder(m)).join(', ')}
+      <span
+        aria-label={`Reminders: ${reminderMinutes.map((m) => formatReminder(m)).join(', ')} before`}
+      >
+        {reminderMinutes.map((m) => formatReminder(m)).join(', ')}
       </span>
     </div>
   );
@@ -223,9 +225,7 @@ function SuggestionCard({
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-sm text-gray-900 truncate">
-                {suggestion.title}
-              </h3>
+              <h3 className="font-medium text-sm text-gray-900 truncate">{suggestion.title}</h3>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <SourceTypeBadge sourceType={suggestion.sourceType} />
                 <PriorityBadge priority={suggestion.priority} />
@@ -240,13 +240,13 @@ function SuggestionCard({
                   {format(startDate, suggestion.isAllDay ? 'MMM d, yyyy' : 'MMM d, yyyy h:mm a')}
                 </span>
               </div>
-              {suggestion.isAllDay && (
-                <span className="text-xs text-gray-500">(All day)</span>
-              )}
+              {suggestion.isAllDay && <span className="text-xs text-gray-500">(All day)</span>}
             </div>
 
             {/* Time until/overdue */}
-            <div className={`mt-1 text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+            <div
+              className={`mt-1 text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+            >
               {isOverdue
                 ? `Overdue by ${formatDistanceToNow(startDate)}`
                 : `In ${formatDistanceToNow(startDate)}`}
@@ -304,14 +304,9 @@ function SuggestionCard({
 
       {/* Expanded Details */}
       {isExpanded && (
-        <div
-          id={descriptionId}
-          className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50"
-        >
+        <div id={descriptionId} className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50">
           <h4 className="text-xs font-medium text-gray-700 mb-2">Event Description</h4>
-          <p className="text-sm text-gray-600 whitespace-pre-wrap">
-            {suggestion.description}
-          </p>
+          <p className="text-sm text-gray-600 whitespace-pre-wrap">{suggestion.description}</p>
           {suggestion.caseId && (
             <a
               href={`/cases/${suggestion.caseId}`}
@@ -528,9 +523,7 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
         <h2 className="font-semibold text-lg flex items-center gap-2">
           <Calendar className="h-5 w-5 text-blue-500" aria-hidden="true" />
           Calendar Suggestions
-          <span className="text-sm font-normal text-gray-500">
-            ({displaySuggestions.length})
-          </span>
+          <span className="text-sm font-normal text-gray-500">({displaySuggestions.length})</span>
         </h2>
 
         {/* Outlook sync status indicator */}
@@ -621,9 +614,7 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
       )}
 
       {/* Toast notification */}
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={dismissToast} />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={dismissToast} />}
     </div>
   );
 }

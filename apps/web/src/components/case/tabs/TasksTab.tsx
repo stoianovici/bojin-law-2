@@ -69,9 +69,7 @@ export function TasksTab({
         Medium: 1,
         Low: 2,
       };
-      result.sort(
-        (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority],
-      );
+      result.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
     } else if (sort === 'recently-updated') {
       result.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     }
@@ -90,12 +88,7 @@ export function TasksTab({
               className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600"
               disabled
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -110,12 +103,7 @@ export function TasksTab({
               disabled
               title="Vizualizare listă - în dezvoltare"
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -130,10 +118,7 @@ export function TasksTab({
           <div className="flex items-center gap-3">
             {/* Filter Dropdown */}
             <div className="flex items-center gap-2">
-              <label
-                htmlFor="filter-select"
-                className="text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="filter-select" className="text-sm font-medium text-gray-700">
                 Filtru:
               </label>
               <select
@@ -150,10 +135,7 @@ export function TasksTab({
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <label
-                htmlFor="sort-select"
-                className="text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="sort-select" className="text-sm font-medium text-gray-700">
                 Sortare:
               </label>
               <select

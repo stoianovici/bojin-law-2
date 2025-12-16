@@ -172,7 +172,7 @@ export const emailImportResolvers = {
     },
   },
 
-  DateRange: {
+  EmailImportDateRange: {
     start: (parent: { start: Date | null }) => parent.start,
     end: (parent: { end: Date | null }) => parent.end,
   },

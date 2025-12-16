@@ -200,7 +200,7 @@ describe('AI Document Analyzer Service', () => {
   describe('Batch Processing', () => {
     it('should process documents in batches of 25', () => {
       const documents = Array(100).fill({ id: 'doc' });
-      const batches: typeof documents[] = [];
+      const batches: (typeof documents)[] = [];
 
       for (let i = 0; i < documents.length; i += BATCH_SIZE) {
         batches.push(documents.slice(i, i + BATCH_SIZE));
@@ -213,7 +213,7 @@ describe('AI Document Analyzer Service', () => {
 
     it('should handle partial final batch', () => {
       const documents = Array(73).fill({ id: 'doc' });
-      const batches: typeof documents[] = [];
+      const batches: (typeof documents)[] = [];
 
       for (let i = 0; i < documents.length; i += BATCH_SIZE) {
         batches.push(documents.slice(i, i + BATCH_SIZE));
@@ -227,7 +227,7 @@ describe('AI Document Analyzer Service', () => {
 
     it('should handle single document', () => {
       const documents = [{ id: 'doc-1' }];
-      const batches: typeof documents[] = [];
+      const batches: (typeof documents)[] = [];
 
       for (let i = 0; i < documents.length; i += BATCH_SIZE) {
         batches.push(documents.slice(i, i + BATCH_SIZE));
@@ -390,10 +390,7 @@ ${mockDocument.extractedText}
     });
 
     it('should validate language ratio sums to 1', () => {
-      const ratioSum = Object.values(validResult.languageRatio).reduce(
-        (sum, val) => sum + val,
-        0
-      );
+      const ratioSum = Object.values(validResult.languageRatio).reduce((sum, val) => sum + val, 0);
       expect(ratioSum).toBeCloseTo(1.0, 2);
     });
 

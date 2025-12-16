@@ -51,10 +51,10 @@ During term and {{NON_SOLICIT_PERIOD}} after: Consultant shall not solicit Clien
 Governing Law: {{JURISDICTION}} | Dispute Resolution: {{DISPUTE_METHOD}} | Entire Agreement | Amendment: Written only
 
 **{{CLIENT_NAME}}**
-By: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_  Date: \_\_\_\_\_\_\_\_\_\_
+By: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ Date: \_\_\_\_\_\_\_\_\_\_
 
 **{{CONSULTANT_NAME}}**
-By: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_  Date: \_\_\_\_\_\_\_\_\_\_
+By: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ Date: \_\_\_\_\_\_\_\_\_\_
 
 ---
 

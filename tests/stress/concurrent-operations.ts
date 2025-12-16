@@ -55,10 +55,10 @@ const CONCURRENCY_LEVELS = {
 
 // Error rate thresholds
 const ERROR_THRESHOLDS = {
-  reads: 0.01,   // < 1% error rate
-  writes: 0.02,  // < 2% error rate
-  aiOps: 0.05,   // < 5% error rate (AI ops can timeout)
-  mixed: 0.03,   // < 3% error rate
+  reads: 0.01, // < 1% error rate
+  writes: 0.02, // < 2% error rate
+  aiOps: 0.05, // < 5% error rate (AI ops can timeout)
+  mixed: 0.03, // < 3% error rate
 };
 
 // Simulated connection pool limits
@@ -89,7 +89,8 @@ async function simulateRead(documentId: string): Promise<{
   await new Promise((resolve) => setTimeout(resolve, latencyMs * 0.1));
 
   // Simulate occasional failures
-  if (Math.random() < 0.005) { // 0.5% failure rate
+  if (Math.random() < 0.005) {
+    // 0.5% failure rate
     return {
       success: false,
       latencyMs,
@@ -103,7 +104,10 @@ async function simulateRead(documentId: string): Promise<{
 /**
  * Simulate a document write operation
  */
-async function simulateWrite(documentId: string, content: string): Promise<{
+async function simulateWrite(
+  documentId: string,
+  content: string
+): Promise<{
   success: boolean;
   latencyMs: number;
   error?: string;
@@ -113,7 +117,8 @@ async function simulateWrite(documentId: string, content: string): Promise<{
   await new Promise((resolve) => setTimeout(resolve, latencyMs * 0.1));
 
   // Simulate occasional failures
-  if (Math.random() < 0.01) { // 1% failure rate
+  if (Math.random() < 0.01) {
+    // 1% failure rate
     return {
       success: false,
       latencyMs,
@@ -137,7 +142,8 @@ async function simulateAIOperation(prompt: string): Promise<{
   await new Promise((resolve) => setTimeout(resolve, latencyMs * 0.05));
 
   // Simulate occasional failures (AI ops have higher failure rate)
-  if (Math.random() < 0.03) { // 3% failure rate
+  if (Math.random() < 0.03) {
+    // 3% failure rate
     return {
       success: false,
       latencyMs,
@@ -468,13 +474,17 @@ export async function runConcurrentOperationsStressTests(): Promise<ConcurrentOp
   console.log('\n  [4/5] Testing mixed workload...');
   const mixedResult = await runMixedWorkload();
   results.push(mixedResult);
-  console.log(`    ${(mixedResult.errorRate * 100).toFixed(1)}% errors ${mixedResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `    ${(mixedResult.errorRate * 100).toFixed(1)}% errors ${mixedResult.passed ? '✓' : '✗'}`
+  );
 
   // Test 5: Connection Pool Limits
   console.log('\n  [5/5] Testing connection pool limits...');
   const poolResult = await testConnectionPoolLimits();
   results.push(poolResult);
-  console.log(`    ${(poolResult.errorRate * 100).toFixed(1)}% errors ${poolResult.passed ? '✓' : '✗'}`);
+  console.log(
+    `    ${(poolResult.errorRate * 100).toFixed(1)}% errors ${poolResult.passed ? '✓' : '✗'}`
+  );
 
   // Verify data integrity
   console.log('\n  Verifying data integrity...');

@@ -28,12 +28,7 @@ const ChevronDownIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M19 9l-7 7-7-7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
 
@@ -142,12 +137,7 @@ const CheckIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 13l4 4L19 7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
@@ -255,20 +245,12 @@ export function DeadlineActionMenu({
         <DropdownMenuLabel>Acțiuni Rapide</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          onClick={handleCreateTask}
-          role="menuitem"
-          className="cursor-pointer"
-        >
+        <DropdownMenuItem onClick={handleCreateTask} role="menuitem" className="cursor-pointer">
           <TaskIcon className="mr-2 text-blue-600" />
           Creează sarcină
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={handleSendReminder}
-          role="menuitem"
-          className="cursor-pointer"
-        >
+        <DropdownMenuItem onClick={handleSendReminder} role="menuitem" className="cursor-pointer">
           <MailIcon className="mr-2 text-green-600" />
           Trimite reminder
         </DropdownMenuItem>
@@ -282,11 +264,7 @@ export function DeadlineActionMenu({
           Solicită prelungire
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={handleMarkHandled}
-          role="menuitem"
-          className="cursor-pointer"
-        >
+        <DropdownMenuItem onClick={handleMarkHandled} role="menuitem" className="cursor-pointer">
           <CheckIcon className="mr-2 text-gray-600" />
           Marchează ca rezolvat
         </DropdownMenuItem>
@@ -383,27 +361,15 @@ export function DeadlineActionButtons({
 
   return (
     <div className="flex items-center gap-2" role="group" aria-label="Acțiuni deadline">
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => onCreateTask?.(deadline)}
-      >
+      <Button size="sm" variant="outline" onClick={() => onCreateTask?.(deadline)}>
         <TaskIcon className="mr-1" />
         Sarcină
       </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => onSendReminder?.(deadline)}
-      >
+      <Button size="sm" variant="outline" onClick={() => onSendReminder?.(deadline)}>
         <MailIcon className="mr-1" />
         Reminder
       </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => onMarkHandled?.(deadline)}
-      >
+      <Button size="sm" variant="ghost" onClick={() => onMarkHandled?.(deadline)}>
         <CheckIcon className="mr-1" />
         Rezolvat
       </Button>

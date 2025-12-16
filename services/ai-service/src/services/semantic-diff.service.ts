@@ -141,25 +141,27 @@ export class SemanticDiffService {
    * Removes formatting-only differences
    */
   normalizeDocument(content: string): string {
-    return content
-      // Normalize whitespace
-      .replace(/\s+/g, ' ')
-      // Remove extra line breaks
-      .replace(/\n\s*\n/g, '\n')
-      // Normalize quotes
-      .replace(/[""]/g, '"')
-      .replace(/['']/g, "'")
-      // Normalize dashes
-      .replace(/[–—]/g, '-')
-      // Remove page numbers and headers/footers patterns
-      .replace(/\b(page|pagina)\s*\d+\s*(of|din)\s*\d+\b/gi, '')
-      // Normalize legal citations (Romanian)
-      .replace(/\bNr\.\s*/gi, 'Nr. ')
-      .replace(/\bArt\.\s*/gi, 'Art. ')
-      // Normalize dates
-      .replace(/(\d{1,2})\.(\d{1,2})\.(\d{4})/g, '$1-$2-$3')
-      // Trim
-      .trim();
+    return (
+      content
+        // Normalize whitespace
+        .replace(/\s+/g, ' ')
+        // Remove extra line breaks
+        .replace(/\n\s*\n/g, '\n')
+        // Normalize quotes
+        .replace(/[""]/g, '"')
+        .replace(/['']/g, "'")
+        // Normalize dashes
+        .replace(/[–—]/g, '-')
+        // Remove page numbers and headers/footers patterns
+        .replace(/\b(page|pagina)\s*\d+\s*(of|din)\s*\d+\b/gi, '')
+        // Normalize legal citations (Romanian)
+        .replace(/\bNr\.\s*/gi, 'Nr. ')
+        .replace(/\bArt\.\s*/gi, 'Art. ')
+        // Normalize dates
+        .replace(/(\d{1,2})\.(\d{1,2})\.(\d{4})/g, '$1-$2-$3')
+        // Trim
+        .trim()
+    );
   }
 
   /**
@@ -179,7 +181,9 @@ export class SemanticDiffService {
         const sectionId = `section-${index}`;
 
         // Try to extract section path from content (e.g., "Art. 5.2")
-        const pathMatch = text.match(/^(Art\.|Articol|Section|§|Cap\.|Capitolul)\s*(\d+(?:\.\d+)*)/i);
+        const pathMatch = text.match(
+          /^(Art\.|Articol|Section|§|Cap\.|Capitolul)\s*(\d+(?:\.\d+)*)/i
+        );
         const path = pathMatch ? pathMatch[0] : `§${index + 1}`;
 
         sections.push({
@@ -267,7 +271,9 @@ export class SemanticDiffService {
   private levenshteinDistance(s1: string, s2: string): number {
     const m = s1.length;
     const n = s2.length;
-    const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+    const dp: number[][] = Array(m + 1)
+      .fill(null)
+      .map(() => Array(n + 1).fill(0));
 
     for (let i = 0; i <= m; i++) dp[i][0] = i;
     for (let j = 0; j <= n; j++) dp[0][j] = j;
@@ -430,9 +436,10 @@ Respond in JSON format only:
 
         if (significance !== ChangeSignificance.FORMATTING) {
           // Check if we already have this change
-          const isDuplicate = changes.some(c =>
-            c.beforeText.includes(oldSection.text.substring(0, 100)) ||
-            c.afterText.includes(newSection.text.substring(0, 100))
+          const isDuplicate = changes.some(
+            (c) =>
+              c.beforeText.includes(oldSection.text.substring(0, 100)) ||
+              c.afterText.includes(newSection.text.substring(0, 100))
           );
 
           if (!isDuplicate) {
@@ -454,9 +461,10 @@ Respond in JSON format only:
     // Calculate breakdown
     const breakdown: ChangeBreakdown = {
       formatting: 0,
-      minorWording: changes.filter(c => c.significance === ChangeSignificance.MINOR_WORDING).length,
-      substantive: changes.filter(c => c.significance === ChangeSignificance.SUBSTANTIVE).length,
-      critical: changes.filter(c => c.significance === ChangeSignificance.CRITICAL).length,
+      minorWording: changes.filter((c) => c.significance === ChangeSignificance.MINOR_WORDING)
+        .length,
+      substantive: changes.filter((c) => c.significance === ChangeSignificance.SUBSTANTIVE).length,
+      critical: changes.filter((c) => c.significance === ChangeSignificance.CRITICAL).length,
     };
 
     const result: SemanticDiffResult = {

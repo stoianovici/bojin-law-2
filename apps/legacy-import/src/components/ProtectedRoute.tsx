@@ -61,12 +61,9 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center bg-white rounded-xl shadow-sm border border-amber-200 p-8 max-w-md">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Access Restricted
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Restricted</h2>
           <p className="text-gray-600">
-            This feature requires {requiredRole} access.
-            Your current role is {user?.role}.
+            This feature requires {requiredRole} access. Your current role is {user?.role}.
           </p>
         </div>
       </div>

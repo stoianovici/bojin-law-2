@@ -38,7 +38,8 @@ const { useAuth } = require('./AuthContext');
 // Test component that uses the hook
 // Story 2.11.1: Updated to include isBusinessOwner and financialDataScope
 function TestComponent() {
-  const { hasFinancialAccess, userRole, isBusinessOwner, financialDataScope } = useFinancialAccess();
+  const { hasFinancialAccess, userRole, isBusinessOwner, financialDataScope } =
+    useFinancialAccess();
   return (
     <div>
       <div data-testid="has-access">{String(hasFinancialAccess)}</div>

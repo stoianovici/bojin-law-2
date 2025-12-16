@@ -86,9 +86,7 @@ export function NaturalLanguageEntry() {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        Intrare Rapidă - Limbaj Natural
-      </h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">Intrare Rapidă - Limbaj Natural</h2>
 
       {!showPreview ? (
         <div className="space-y-4">
@@ -153,8 +151,8 @@ export function NaturalLanguageEntry() {
                   {lastParseResult.confidence === 'High'
                     ? 'Ridicată'
                     : lastParseResult.confidence === 'Medium'
-                    ? 'Medie'
-                    : 'Scăzută'}
+                      ? 'Medie'
+                      : 'Scăzută'}
                 </span>
               </div>
 
@@ -196,9 +194,7 @@ export function NaturalLanguageEntry() {
               {/* Errors */}
               {lastParseResult.errors && lastParseResult.errors.length > 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-sm font-medium text-yellow-800 mb-1">
-                    Atenție:
-                  </p>
+                  <p className="text-sm font-medium text-yellow-800 mb-1">Atenție:</p>
                   <ul className="text-sm text-yellow-700 list-disc list-inside">
                     {lastParseResult.errors.map((error, i) => (
                       <li key={i}>{error}</li>

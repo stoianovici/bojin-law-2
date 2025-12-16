@@ -30,10 +30,7 @@ export class NotificationService {
    * Send notification to Partners when case is submitted for approval (AC2)
    * Sent to ALL Partners in the firm
    */
-  async notifyCasePendingApproval(
-    firmId: string,
-    context: NotificationContext
-  ): Promise<void> {
+  async notifyCasePendingApproval(firmId: string, context: NotificationContext): Promise<void> {
     // Get all Partners in the firm
     const partners = await prisma.user.findMany({
       where: {
@@ -69,10 +66,7 @@ export class NotificationService {
   /**
    * Send notification to Associate when case is approved (AC7)
    */
-  async notifyCaseApproved(
-    userId: string,
-    context: NotificationContext
-  ): Promise<void> {
+  async notifyCaseApproved(userId: string, context: NotificationContext): Promise<void> {
     await prisma.notification.create({
       data: {
         userId,
@@ -88,10 +82,7 @@ export class NotificationService {
   /**
    * Send notification to Associate when case is rejected (AC7)
    */
-  async notifyCaseRejected(
-    userId: string,
-    context: NotificationContext
-  ): Promise<void> {
+  async notifyCaseRejected(userId: string, context: NotificationContext): Promise<void> {
     const reasonPreview = context.rejectionReason
       ? ` Reason: ${context.rejectionReason.substring(0, 100)}${
           context.rejectionReason.length > 100 ? '...' : ''
@@ -147,10 +138,7 @@ export class NotificationService {
   /**
    * Get notifications for a user
    */
-  async getNotifications(
-    userId: string,
-    options?: { read?: boolean; limit?: number }
-  ) {
+  async getNotifications(userId: string, options?: { read?: boolean; limit?: number }) {
     const where: any = { userId };
 
     if (options?.read !== undefined) {
@@ -237,10 +225,7 @@ export class NotificationService {
   /**
    * Send notification when document is approved
    */
-  async notifyDocumentApproved(
-    submitterId: string,
-    context: DocumentReviewContext
-  ): Promise<void> {
+  async notifyDocumentApproved(submitterId: string, context: DocumentReviewContext): Promise<void> {
     await prisma.notification.create({
       data: {
         userId: submitterId,
@@ -255,10 +240,7 @@ export class NotificationService {
   /**
    * Send notification when document is rejected
    */
-  async notifyDocumentRejected(
-    submitterId: string,
-    context: DocumentReviewContext
-  ): Promise<void> {
+  async notifyDocumentRejected(submitterId: string, context: DocumentReviewContext): Promise<void> {
     const feedbackPreview = context.feedback
       ? ` Feedback: ${context.feedback.substring(0, 100)}${context.feedback.length > 100 ? '...' : ''}`
       : '';
@@ -299,10 +281,7 @@ export class NotificationService {
   /**
    * Send notification when comment is added to a review
    */
-  async notifyCommentAdded(
-    userId: string,
-    context: CommentContext
-  ): Promise<void> {
+  async notifyCommentAdded(userId: string, context: CommentContext): Promise<void> {
     await prisma.notification.create({
       data: {
         userId,
@@ -317,10 +296,7 @@ export class NotificationService {
   /**
    * Send notification when user is @mentioned in a comment
    */
-  async notifyMentioned(
-    userId: string,
-    context: MentionContext
-  ): Promise<void> {
+  async notifyMentioned(userId: string, context: MentionContext): Promise<void> {
     await prisma.notification.create({
       data: {
         userId,

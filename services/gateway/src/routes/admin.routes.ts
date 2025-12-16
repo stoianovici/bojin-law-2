@@ -72,13 +72,7 @@ adminRouter.post('/cleanup-sessions', async (req: Request, res: Response) => {
     let cursor = '0';
 
     do {
-      const [nextCursor, foundKeys] = await redis.scan(
-        cursor,
-        'MATCH',
-        pattern,
-        'COUNT',
-        100
-      );
+      const [nextCursor, foundKeys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
 
       keys.push(...foundKeys);
       cursor = nextCursor;

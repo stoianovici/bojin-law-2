@@ -57,9 +57,7 @@ describe('Case Factory', () => {
       const closedCase = createCase({ status: 'Closed' });
 
       if (closedCase.closedDate) {
-        expect(closedCase.closedDate.getTime()).toBeGreaterThan(
-          closedCase.openedDate.getTime()
-        );
+        expect(closedCase.closedDate.getTime()).toBeGreaterThan(closedCase.openedDate.getTime());
       }
     });
 
@@ -89,9 +87,7 @@ describe('Case Factory', () => {
 
     it('should have value as number or null', () => {
       const caseEntity = createCase();
-      expect(
-        typeof caseEntity.value === 'number' || caseEntity.value === null
-      ).toBe(true);
+      expect(typeof caseEntity.value === 'number' || caseEntity.value === null).toBe(true);
     });
   });
 

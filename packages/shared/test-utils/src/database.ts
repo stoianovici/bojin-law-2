@@ -48,7 +48,8 @@ export async function resetTestDatabase(): Promise<void> {
  */
 export async function getTestDatabaseClient(): Promise<unknown> {
   // TODO: Implement with actual database client (e.g., pg, prisma)
-  const connectionString = process.env.TEST_DATABASE_URL ||
+  const connectionString =
+    process.env.TEST_DATABASE_URL ||
     'postgresql://postgres:postgres@localhost:5433/legal_platform_test';
 
   console.log(`📦 Connecting to test database: ${connectionString}`);

@@ -12,11 +12,7 @@
  * [Source: docs/architecture/external-apis.md#anthropic-claude-api]
  */
 
-import {
-  AIOperationType,
-  ClaudeModel,
-  TaskComplexity,
-} from '@legal-platform/types';
+import { AIOperationType, ClaudeModel, TaskComplexity } from '@legal-platform/types';
 import { providerManager, ProviderRequest } from './provider-manager.service';
 import { modelRouter } from './model-router.service';
 import { tokenTracker } from './token-tracker.service';
@@ -228,7 +224,7 @@ export class RiskDetectionService {
       results.push(result);
 
       // Small delay between requests
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     return results;
@@ -238,10 +234,10 @@ export class RiskDetectionService {
    * Get highest risk level from multiple results
    */
   getAggregateRiskLevel(results: RiskDetectionResult[]): RiskSeverity {
-    const hasHighRisk = results.some(r => r.overallRiskLevel === 'High');
+    const hasHighRisk = results.some((r) => r.overallRiskLevel === 'High');
     if (hasHighRisk) return 'High';
 
-    const hasMediumRisk = results.some(r => r.overallRiskLevel === 'Medium');
+    const hasMediumRisk = results.some((r) => r.overallRiskLevel === 'Medium');
     if (hasMediumRisk) return 'Medium';
 
     return 'Low';
@@ -251,14 +247,14 @@ export class RiskDetectionService {
    * Filter risks by type
    */
   filterByType(risks: RiskIndicatorResult[], type: RiskType): RiskIndicatorResult[] {
-    return risks.filter(r => r.type === type);
+    return risks.filter((r) => r.type === type);
   }
 
   /**
    * Filter high-severity risks
    */
   getHighSeverityRisks(results: RiskDetectionResult[]): RiskIndicatorResult[] {
-    return results.flatMap(r => r.risks.filter(risk => risk.severity === 'High'));
+    return results.flatMap((r) => r.risks.filter((risk) => risk.severity === 'High'));
   }
 
   // ============================================================================
@@ -269,9 +265,10 @@ export class RiskDetectionService {
     email: EmailForRiskAnalysis,
     threadContext?: Partial<ThreadContext>
   ): string {
-    const date = email.receivedDateTime instanceof Date
-      ? email.receivedDateTime.toISOString().split('T')[0]
-      : String(email.receivedDateTime);
+    const date =
+      email.receivedDateTime instanceof Date
+        ? email.receivedDateTime.toISOString().split('T')[0]
+        : String(email.receivedDateTime);
 
     const fromLabel = email.isFromClient ? '[CLIENT]' : '[EXTERNAL]';
 
@@ -286,10 +283,14 @@ export class RiskDetectionService {
         contextParts.push('- Thread includes previous scope change requests');
       }
       if (threadContext.clientSentimentHistory?.length) {
-        contextParts.push(`- Previous client sentiment: ${threadContext.clientSentimentHistory.join(', ')}`);
+        contextParts.push(
+          `- Previous client sentiment: ${threadContext.clientSentimentHistory.join(', ')}`
+        );
       }
       if (threadContext.recentEmails?.length) {
-        contextParts.push(`- Thread contains ${threadContext.recentEmails.length} previous messages`);
+        contextParts.push(
+          `- Thread contains ${threadContext.recentEmails.length} previous messages`
+        );
       }
 
       if (contextParts.length > 0) {
@@ -351,13 +352,15 @@ Identify any risk indicators in this email.`;
     ];
 
     return risks
-      .filter((r): r is Record<string, unknown> =>
-        typeof r === 'object' && r !== null &&
-        typeof (r as Record<string, unknown>).type === 'string' &&
-        typeof (r as Record<string, unknown>).description === 'string'
+      .filter(
+        (r): r is Record<string, unknown> =>
+          typeof r === 'object' &&
+          r !== null &&
+          typeof (r as Record<string, unknown>).type === 'string' &&
+          typeof (r as Record<string, unknown>).description === 'string'
       )
-      .filter(r => validTypes.includes(r.type as RiskType))
-      .map(r => ({
+      .filter((r) => validTypes.includes(r.type as RiskType))
+      .map((r) => ({
         type: r.type as RiskType,
         severity: this.validateSeverity(r.severity),
         description: String(r.description),
@@ -368,9 +371,7 @@ Identify any risk indicators in this email.`;
 
   private validateSeverity(value: unknown): RiskSeverity {
     const valid: RiskSeverity[] = ['Low', 'Medium', 'High'];
-    return valid.includes(String(value) as RiskSeverity)
-      ? (String(value) as RiskSeverity)
-      : 'Low';
+    return valid.includes(String(value) as RiskSeverity) ? (String(value) as RiskSeverity) : 'Low';
   }
 }
 

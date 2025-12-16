@@ -95,13 +95,7 @@ describe('RevenueTrendWidget', () => {
       const mockRetry = jest.fn();
       const testError = new Error('Network error');
 
-      render(
-        <RevenueTrendWidget
-          {...defaultProps}
-          error={testError}
-          onRetry={mockRetry}
-        />
-      );
+      render(<RevenueTrendWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
       screen.getByRole('button', { name: /retry/i }).click();
       expect(mockRetry).toHaveBeenCalledTimes(1);
@@ -113,9 +107,7 @@ describe('RevenueTrendWidget', () => {
       render(<RevenueTrendWidget revenueTrend={[]} />);
 
       expect(screen.getByTestId('widget-empty')).toBeInTheDocument();
-      expect(
-        screen.getByText('No revenue data for this period')
-      ).toBeInTheDocument();
+      expect(screen.getByText('No revenue data for this period')).toBeInTheDocument();
     });
 
     it('shows empty message when revenueTrend is undefined', () => {
@@ -142,20 +134,14 @@ describe('RevenueTrendWidget', () => {
     });
 
     it('does not show legend when comparison is disabled', () => {
-      render(
-        <RevenueTrendWidget {...defaultProps} comparisonEnabled={false} />
-      );
+      render(<RevenueTrendWidget {...defaultProps} comparisonEnabled={false} />);
 
       expect(screen.queryByTestId('legend')).not.toBeInTheDocument();
     });
 
     it('handles null previousTrend gracefully', () => {
       render(
-        <RevenueTrendWidget
-          {...defaultProps}
-          comparisonEnabled={true}
-          previousTrend={null}
-        />
+        <RevenueTrendWidget {...defaultProps} comparisonEnabled={true} previousTrend={null} />
       );
 
       expect(screen.getByTestId('line-chart')).toBeInTheDocument();

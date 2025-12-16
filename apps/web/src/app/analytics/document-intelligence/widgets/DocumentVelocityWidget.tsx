@@ -104,8 +104,11 @@ export function DocumentVelocityWidget({ data }: DocumentVelocityWidgetProps) {
           <p className="text-xs text-gray-500">medie/zi</p>
         </div>
         <div>
-          <p className={`text-lg font-semibold ${data.trendPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {data.trendPercentage >= 0 ? '+' : ''}{data.trendPercentage.toFixed(1)}%
+          <p
+            className={`text-lg font-semibold ${data.trendPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}
+          >
+            {data.trendPercentage >= 0 ? '+' : ''}
+            {data.trendPercentage.toFixed(1)}%
           </p>
           <p className="text-xs text-gray-500">trend</p>
         </div>

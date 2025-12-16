@@ -22,20 +22,15 @@ export const useNavigationStore = create<NavigationState>()(
       isCommandPaletteOpen: false,
 
       // Actions
-      setCurrentSection: (section: NavigationSection) =>
-        set({ currentSection: section }),
+      setCurrentSection: (section: NavigationSection) => set({ currentSection: section }),
 
-      setCurrentRole: (role: UserRole) =>
-        set({ currentRole: role }),
+      setCurrentRole: (role: UserRole) => set({ currentRole: role }),
 
-      toggleSidebar: () =>
-        set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+      toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
 
-      openCommandPalette: () =>
-        set({ isCommandPaletteOpen: true }),
+      openCommandPalette: () => set({ isCommandPaletteOpen: true }),
 
-      closeCommandPalette: () =>
-        set({ isCommandPaletteOpen: false }),
+      closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
     }),
     {
       name: 'navigation-storage', // localStorage key

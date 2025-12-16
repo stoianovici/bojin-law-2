@@ -54,9 +54,7 @@ describe('PerformanceBudget', () => {
       });
 
       expect(result.passed).toBe(false);
-      expect(result.violations).toContain(
-        'Execution time 6000ms exceeds budget 5000ms'
-      );
+      expect(result.violations).toContain('Execution time 6000ms exceeds budget 5000ms');
     });
 
     it('should fail validation when routing time exceeds budget', () => {
@@ -71,9 +69,7 @@ describe('PerformanceBudget', () => {
       });
 
       expect(result.passed).toBe(false);
-      expect(result.violations).toContain(
-        'Routing time 150ms exceeds budget 100ms'
-      );
+      expect(result.violations).toContain('Routing time 150ms exceeds budget 100ms');
     });
 
     it('should fail validation when error rate exceeds threshold', () => {
@@ -88,9 +84,7 @@ describe('PerformanceBudget', () => {
       });
 
       expect(result.passed).toBe(false);
-      expect(result.violations).toContain(
-        'Error rate 3.00% exceeds threshold 2%'
-      );
+      expect(result.violations).toContain('Error rate 3.00% exceeds threshold 2%');
     });
 
     it('should fail validation when timeout rate exceeds threshold', () => {
@@ -105,9 +99,7 @@ describe('PerformanceBudget', () => {
       });
 
       expect(result.passed).toBe(false);
-      expect(result.violations).toContain(
-        'Timeout rate 1.50% exceeds threshold 1%'
-      );
+      expect(result.violations).toContain('Timeout rate 1.50% exceeds threshold 1%');
     });
 
     it('should fail validation when fallback rate exceeds threshold', () => {
@@ -122,9 +114,7 @@ describe('PerformanceBudget', () => {
       });
 
       expect(result.passed).toBe(false);
-      expect(result.violations).toContain(
-        'Fallback rate 7.00% exceeds threshold 5%'
-      );
+      expect(result.violations).toContain('Fallback rate 7.00% exceeds threshold 5%');
     });
 
     it('should fail validation when cost per request exceeds budget', () => {
@@ -139,9 +129,7 @@ describe('PerformanceBudget', () => {
       });
 
       expect(result.passed).toBe(false);
-      expect(result.violations).toContain(
-        'Cost per request $0.0250 exceeds budget $0.02'
-      );
+      expect(result.violations).toContain('Cost per request $0.0250 exceeds budget $0.02');
     });
 
     it('should fail validation when savings below target', () => {
@@ -156,9 +144,7 @@ describe('PerformanceBudget', () => {
       });
 
       expect(result.passed).toBe(false);
-      expect(result.violations).toContain(
-        'Savings 30.00% below target 35%'
-      );
+      expect(result.violations).toContain('Savings 30.00% below target 35%');
     });
 
     it('should report multiple violations', () => {
@@ -174,15 +160,9 @@ describe('PerformanceBudget', () => {
 
       expect(result.passed).toBe(false);
       expect(result.violations).toHaveLength(3);
-      expect(result.violations).toContain(
-        'Execution time 6000ms exceeds budget 5000ms'
-      );
-      expect(result.violations).toContain(
-        'Routing time 150ms exceeds budget 100ms'
-      );
-      expect(result.violations).toContain(
-        'Error rate 3.00% exceeds threshold 2%'
-      );
+      expect(result.violations).toContain('Execution time 6000ms exceeds budget 5000ms');
+      expect(result.violations).toContain('Routing time 150ms exceeds budget 100ms');
+      expect(result.violations).toContain('Error rate 3.00% exceeds threshold 2%');
     });
 
     it('should handle edge case values at exact budget limits', () => {

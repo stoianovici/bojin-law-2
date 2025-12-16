@@ -46,8 +46,7 @@ describe('User Factory', () => {
       // Run multiple times to increase chance of getting Romanian names
       const users = Array.from({ length: 50 }, () => createUser());
       const hasRomanianChars = users.some(
-        (user) =>
-          /[ăâîșț]/i.test(user.firstName) || /[ăâîșț]/i.test(user.lastName)
+        (user) => /[ăâîșț]/i.test(user.firstName) || /[ăâîșț]/i.test(user.lastName)
       );
 
       expect(hasRomanianChars).toBe(true);

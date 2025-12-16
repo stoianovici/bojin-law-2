@@ -29,18 +29,11 @@ import { TooltipProps } from '@legal-platform/types';
  * @param position - Position of the tooltip (top, bottom, left, right)
  * @param className - Additional CSS classes
  */
-export const Tooltip = ({
-  content,
-  children,
-  position = 'top',
-  className,
-}: TooltipProps) => {
+export const Tooltip = ({ content, children, position = 'top', className }: TooltipProps) => {
   return (
     <TooltipPrimitive.Provider delayDuration={300}>
       <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>
-          {children}
-        </TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             side={position}
@@ -53,11 +46,7 @@ export const Tooltip = ({
             aria-live="polite"
           >
             {content}
-            <TooltipPrimitive.Arrow
-              className="fill-neutral-900"
-              width={11}
-              height={5}
-            />
+            <TooltipPrimitive.Arrow className="fill-neutral-900" width={11} height={5} />
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>

@@ -190,21 +190,13 @@ describe('Retainer Resolvers - Story 2.11.2', () => {
 
       it('should deny Associate access to retainer usage', async () => {
         await expect(
-          caseResolvers.Query.retainerUsage(
-            {},
-            { caseId: 'case-retainer-1' },
-            associateContext
-          )
+          caseResolvers.Query.retainerUsage({}, { caseId: 'case-retainer-1' }, associateContext)
         ).rejects.toThrow('Financial access required');
       });
 
       it('should deny Paralegal access to retainer usage', async () => {
         await expect(
-          caseResolvers.Query.retainerUsage(
-            {},
-            { caseId: 'case-retainer-1' },
-            paralegalContext
-          )
+          caseResolvers.Query.retainerUsage({}, { caseId: 'case-retainer-1' }, paralegalContext)
         ).rejects.toThrow('Financial access required');
       });
 
@@ -225,11 +217,7 @@ describe('Retainer Resolvers - Story 2.11.2', () => {
         (prisma.case.findFirst as jest.Mock).mockResolvedValue(null);
 
         await expect(
-          caseResolvers.Query.retainerUsage(
-            {},
-            { caseId: 'case-other-firm' },
-            partnerContext
-          )
+          caseResolvers.Query.retainerUsage({}, { caseId: 'case-other-firm' }, partnerContext)
         ).rejects.toThrow('Case not found');
       });
 
@@ -237,11 +225,7 @@ describe('Retainer Resolvers - Story 2.11.2', () => {
         (prisma.case.findFirst as jest.Mock).mockResolvedValue(null);
 
         await expect(
-          caseResolvers.Query.retainerUsage(
-            {},
-            { caseId: 'case-other-firm' },
-            businessOwnerContext
-          )
+          caseResolvers.Query.retainerUsage({}, { caseId: 'case-other-firm' }, businessOwnerContext)
         ).rejects.toThrow('Case not found');
       });
     });
@@ -269,11 +253,7 @@ describe('Retainer Resolvers - Story 2.11.2', () => {
         (prisma.case.findFirst as jest.Mock).mockResolvedValue(mockRetainerCase);
         (retainerService.getUsageForPeriod as jest.Mock).mockResolvedValue(mockRetainerUsage);
 
-        await caseResolvers.Query.retainerUsage(
-          {},
-          { caseId: 'case-retainer-1' },
-          partnerContext
-        );
+        await caseResolvers.Query.retainerUsage({}, { caseId: 'case-retainer-1' }, partnerContext);
 
         expect(retainerService.getUsageForPeriod).toHaveBeenCalledWith(
           'case-retainer-1',
@@ -453,11 +433,7 @@ describe('Retainer Resolvers - Story 2.11.2', () => {
       it('should return null for Fixed billing type cases', async () => {
         const fixedCase = { ...mockHourlyCase, billingType: 'Fixed' };
 
-        const result = await caseResolvers.Case.currentRetainerUsage(
-          fixedCase,
-          {},
-          partnerContext
-        );
+        const result = await caseResolvers.Case.currentRetainerUsage(fixedCase, {}, partnerContext);
 
         expect(result).toBeNull();
         expect(retainerService.calculateCurrentUsage).not.toHaveBeenCalled();
@@ -479,11 +455,7 @@ describe('Retainer Resolvers - Story 2.11.2', () => {
       it('should use user firmId for service call', async () => {
         (retainerService.calculateCurrentUsage as jest.Mock).mockResolvedValue(mockRetainerUsage);
 
-        await caseResolvers.Case.currentRetainerUsage(
-          mockRetainerCase,
-          {},
-          businessOwnerContext
-        );
+        await caseResolvers.Case.currentRetainerUsage(mockRetainerCase, {}, businessOwnerContext);
 
         expect(retainerService.calculateCurrentUsage).toHaveBeenCalledWith(
           'case-retainer-1',
@@ -511,11 +483,7 @@ describe('Retainer Resolvers - Story 2.11.2', () => {
         );
 
         await expect(
-          caseResolvers.Case.currentRetainerUsage(
-            mockRetainerCase,
-            {},
-            partnerContext
-          )
+          caseResolvers.Case.currentRetainerUsage(mockRetainerCase, {}, partnerContext)
         ).rejects.toThrow('Service error');
       });
     });
@@ -554,11 +522,7 @@ describe('Retainer Resolvers - Story 2.11.2', () => {
       (prisma.case.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        caseResolvers.Query.retainerUsage(
-          {},
-          { caseId: 'case-retainer-1' },
-          differentFirmContext
-        )
+        caseResolvers.Query.retainerUsage({}, { caseId: 'case-retainer-1' }, differentFirmContext)
       ).rejects.toThrow('Case not found');
 
       // Verify the query was filtered by firmId

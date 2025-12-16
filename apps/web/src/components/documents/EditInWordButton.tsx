@@ -12,12 +12,7 @@ import React, { useState, useCallback } from 'react';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client/core';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -100,13 +95,14 @@ export function EditInWordButton({
   const [lockHolder, setLockHolder] = useState<{ name: string; email: string } | null>(null);
 
   // Query lock status
-  const { data: lockData, loading: lockLoading, refetch: refetchLockStatus } = useQuery<LockStatusData>(
-    GET_DOCUMENT_LOCK_STATUS,
-    {
-      variables: { documentId },
-      pollInterval: 30000, // Poll every 30 seconds
-    }
-  );
+  const {
+    data: lockData,
+    loading: lockLoading,
+    refetch: refetchLockStatus,
+  } = useQuery<LockStatusData>(GET_DOCUMENT_LOCK_STATUS, {
+    variables: { documentId },
+    pollInterval: 30000, // Poll every 30 seconds
+  });
 
   // Open in Word mutation
   interface OpenInWordData {
@@ -160,7 +156,10 @@ export function EditInWordButton({
   });
 
   const handleClick = useCallback(() => {
-    if (lockData?.documentLockStatus?.isLocked && !lockData.documentLockStatus.currentUserHoldsLock) {
+    if (
+      lockData?.documentLockStatus?.isLocked &&
+      !lockData.documentLockStatus.currentUserHoldsLock
+    ) {
       const lock = lockData.documentLockStatus.lock;
       if (lock) {
         setLockHolder({
@@ -231,8 +230,8 @@ export function EditInWordButton({
             </DialogTitle>
             <DialogDescription className="space-y-2">
               <p>
-                This document is currently being edited by{' '}
-                <strong>{lockHolder?.name}</strong> ({lockHolder?.email}).
+                This document is currently being edited by <strong>{lockHolder?.name}</strong> (
+                {lockHolder?.email}).
               </p>
               <p>
                 You can view the document but cannot edit it until the other user finishes editing.

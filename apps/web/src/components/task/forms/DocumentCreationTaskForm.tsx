@@ -64,9 +64,7 @@ export function DocumentCreationTaskForm({
             ))}
           </SelectContent>
         </Select>
-        {errors?.documentType && (
-          <p className="text-sm text-red-500 mt-1">{errors.documentType}</p>
-        )}
+        {errors?.documentType && <p className="text-sm text-red-500 mt-1">{errors.documentType}</p>}
       </div>
 
       <div>
@@ -76,7 +74,9 @@ export function DocumentCreationTaskForm({
         <Input
           id="templateId"
           value={value.templateId || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('templateId', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleChange('templateId', e.target.value)
+          }
           placeholder="Optional template ID"
         />
       </div>
@@ -111,7 +111,9 @@ export function DocumentCreationTaskForm({
         <Input
           id="outputDocumentId"
           value={value.outputDocumentId || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('outputDocumentId', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            handleChange('outputDocumentId', e.target.value)
+          }
           placeholder="ID of created document (if applicable)"
         />
       </div>

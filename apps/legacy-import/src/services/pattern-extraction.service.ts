@@ -100,10 +100,7 @@ export class PatternExtractionService {
     const phrases: string[] = [];
 
     // Normalize text
-    const normalized = content
-      .replace(/\s+/g, ' ')
-      .replace(/\n+/g, ' ')
-      .trim();
+    const normalized = content.replace(/\s+/g, ' ').replace(/\n+/g, ' ').trim();
 
     // Split into sentences (Romanian punctuation)
     const sentences = normalized.split(/[.;!?]\s+/);
@@ -315,13 +312,13 @@ export class PatternExtractionService {
       'în termen de': 'within',
       'zile de la': 'days from',
       'prin prezenta': 'hereby',
-      'solicităm': 'we request',
+      solicităm: 'we request',
       'vă rugăm': 'we ask you',
       'sub sancțiunea': 'under penalty of',
       'ne rezervăm dreptul': 'we reserve the right',
       'în caz contrar': 'otherwise',
       'cod civil': 'civil code',
-      'articol': 'article',
+      articol: 'article',
     };
 
     let translated = romanianText;
@@ -442,11 +439,7 @@ export class PatternExtractionService {
       .map((p) => p.pattern_text_ro);
 
     // Calculate quality score
-    const qualityScore = await this.calculateTemplateQuality(
-      typeName,
-      documents,
-      patterns
-    );
+    const qualityScore = await this.calculateTemplateQuality(typeName, documents, patterns);
 
     return {
       typeName,

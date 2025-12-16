@@ -1,8 +1,8 @@
 # Project Brief: Romanian Legal Practice Management Platform
 
-*Document Status: In Progress*
-*Mode: Interactive*
-*Date: November 2025*
+_Document Status: In Progress_
+_Mode: Interactive_
+_Date: November 2025_
 
 ---
 
@@ -23,6 +23,7 @@ An AI-native legal practice management platform designed specifically for small 
 Romanian legal practices currently face a perfect storm of operational inefficiencies that compound daily:
 
 **Current State & Pain Points:**
+
 - **Tool Fragmentation:** Lawyers juggle between Outlook for emails, Word for documents, Excel for timesheets, physical calendars for court dates, and WhatsApp for quick client communications—with no unified view of case progress
 - **Document Chaos:** Version control relies on manual naming conventions (Contract_v3_final_FINAL_reviewed.docx), leading to costly errors when wrong versions are sent to courts or clients
 - **Communication Tracking:** Critical case decisions buried in email threads, with no systematic way to extract commitments, deadlines, or action items across hundreds of messages
@@ -30,6 +31,7 @@ Romanian legal practices currently face a perfect storm of operational inefficie
 - **Manual Time Tracking:** Lawyers retroactively reconstruct their day for billing, losing 15-30% of billable time to poor recall and administrative overhead
 
 **Quantifiable Impact:**
+
 - Average small firm loses 2-3 billable hours per lawyer per day to administrative tasks
 - Document errors requiring court corrections occur in ~5% of filings
 - Client complaints about communication delays affect 1 in 4 matters
@@ -37,12 +39,14 @@ Romanian legal practices currently face a perfect storm of operational inefficie
 - Associate burnout from poor workload distribution leads to 40% annual turnover
 
 **Why Existing Solutions Fall Short:**
+
 - **International platforms** (Clio, MyCase, PracticePanther) ignore Romanian legal processes, lack Romanian language support, and price themselves for Western markets
 - **Generic project management tools** (Asana, Monday.com) require extensive customization and lack legal-specific workflows like court date management or document precedent systems
 - **Local solutions** are either outdated desktop applications or simple CRMs that digitize paper processes without reimagining workflows
 - **Current "AI additions"** are superficial—chatbots for FAQ or basic document templates—rather than intelligence woven into the daily workflow
 
 **Urgency of Solution:**
+
 - **Generational shift:** Younger lawyers expect modern tools and leave firms using outdated systems
 - **Client expectations:** Post-pandemic clients demand real-time updates and digital document exchange
 - **Competitive pressure:** Tech-forward firms are winning clients through superior service delivery
@@ -58,6 +62,7 @@ Our platform reimagines legal practice management by making AI the primary inter
 A conversational-first legal operating system where lawyers interact primarily through natural language for complex inputs while retaining visual dashboards and structured views for rapid information consumption. The AI doesn't just respond to commands—it anticipates needs, suggests next actions, and proactively fills information gaps.
 
 **Key Architectural Principles:**
+
 - **Unified Data Lake:** All case information (emails, documents, tasks, communications) flows into a single, AI-indexed repository enabling cross-artifact intelligence
 - **Context-Aware AI Layer:** Every interaction carries full case context, allowing the AI to draft documents that reference prior emails, suggest tasks based on document changes, and alert to inconsistencies across artifacts
 - **Progressive Disclosure Interface:** Natural language for complex inputs (e.g., "Schedule a meeting with the client next week about the contract amendments") with structured UI for quick scanning (calendar view, document lists)
@@ -87,6 +92,7 @@ A conversational-first legal operating system where lawyers interact primarily t
 **High-Level Product Vision:**
 
 The platform becomes an intelligent legal assistant that:
+
 - **Learns** from every document the firm has ever created to suggest optimal structures and language
 - **Monitors** all incoming communications to extract deadlines, commitments, and required actions
 - **Coordinates** team efforts by understanding task dependencies and workload distribution
@@ -102,6 +108,7 @@ This isn't just software—it's a new member of the legal team that never forget
 ### Primary User Segment: Small Romanian Law Firms (5-20 lawyers)
 
 **Firm Profile:**
+
 - **Size:** 5-20 total staff (3-10 lawyers, 2-10 support staff)
 - **Practice Areas:** Civil law focus—litigation, contracts, real estate transactions, corporate counseling, family law
 - **Client Base:** SMEs, individual property buyers/sellers, local businesses, private individuals
@@ -110,6 +117,7 @@ This isn't just software—it's a new member of the legal team that never forget
 - **Geographic Focus:** Primarily serving clients within Romania, occasional EU cross-border matters
 
 **Current Workflows:**
+
 - Manual case file management with physical folders supplemented by shared drives
 - Email as primary client communication channel with WhatsApp for urgent matters
 - Word templates manually customized for each document
@@ -120,18 +128,21 @@ This isn't just software—it's a new member of the legal team that never forget
 **Specific Needs by Role:**
 
 **1. Partners (1-3 per firm):**
+
 - **Pain Points:** No visibility into firm-wide operations, manual billing reviews, inability to track team productivity, difficulty in maintaining quality control across all matters
 - **Goals:** Maximize billable efficiency, ensure consistent service quality, make data-driven decisions about case allocation, maintain client relationships
 - **Platform Usage:** Strategic oversight, financial management, quality control, client relationship tracking
 - **Key Features Needed:** Real-time dashboard of all firm activities, automated timesheet review, profitability analysis per matter/client, document quality assurance
 
 **2. Associates (2-5 per firm):**
+
 - **Pain Points:** Juggling multiple cases without clear prioritization, recreating similar documents repeatedly, losing time to administrative tasks, unclear on what colleagues are working on
 - **Goals:** Bill more hours productively, advance professionally through quality work, maintain work-life balance, build expertise efficiently
 - **Platform Usage:** Daily case management, document creation, task coordination, client communication
 - **Key Features Needed:** AI-powered document drafting, intelligent task prioritization, automated email responses, collaborative case management
 
 **3. Paralegals (1-3 per firm):**
+
 - **Pain Points:** Unclear task instructions, repetitive document preparation, chasing information from multiple sources, no visibility into task urgency
 - **Goals:** Complete assigned tasks efficiently, understand priority levels, minimize rework, contribute meaningfully to cases
 - **Platform Usage:** Task execution, document preparation, deadline tracking, information gathering
@@ -140,12 +151,14 @@ This isn't just software—it's a new member of the legal team that never forget
 ### Secondary User Segment: Solo Practitioners Seeking Scale
 
 **Profile:**
+
 - Individual lawyers looking to grow beyond solo practice
 - Currently losing 50% of time to administration
 - Need system that will scale as they add their first employees
 - Particularly value AI assistance as "virtual paralegal"
 
 **Why They Matter:**
+
 - Natural upgrade path to primary segment
 - Early adopters willing to try new technology
 - Provide valuable feedback for product refinement
@@ -197,6 +210,7 @@ This isn't just software—it's a new member of the legal team that never forget
 ### Core Features (Must Have)
 
 **1. AI-Augmented Document Management:**
+
 - **Intelligent Document Drafting:** AI creates first drafts based on legacy documents and case context, with natural language refinement
 - **Semantic Version Control:** Track document changes with AI highlighting substantive edits (not just text diffs) and suggesting response strategies
 - **Template Learning System:** Import legacy documents via email attachments, automatically generate templates by document type
@@ -204,6 +218,7 @@ This isn't just software—it's a new member of the legal team that never forget
 - **Document Classification:** AI-powered categorization of received email attachments with automatic case assignment
 
 **2. Natural Language Task Management:**
+
 - **Six Task Types Implementation:**
   - Research tasks with AI-suggested sources and summaries
   - Document creation with automated completion tracking
@@ -216,30 +231,35 @@ This isn't just software—it's a new member of the legal team that never forget
 - **Visual Calendar Interface:** Business week view with role-based visibility and conflict detection
 
 **3. Role-Based Access Control:**
+
 - **Partner Dashboard:** Complete firm oversight, timesheet management, KPI tracking, settings administration
 - **Associate Workspace:** Case management, task delegation, paralegal oversight
 - **Paralegal Interface:** Assigned case access, task execution, progress reporting
 - **Dynamic Permissions:** Case-by-case access control with invitation workflows
 
 **4. Communication Intelligence:**
+
 - **Email Integration:** Full Outlook synchronization with automatic thread analysis
 - **AI Email Drafting:** Context-aware responses based on case history and triggers
 - **Deadline Extraction:** Automatic identification of commitments and deadlines from communications
 - **External Document Sharing:** Temporary OneDrive links with access tracking
 
 **5. Microsoft 365 Integration:**
+
 - **Single Tenant Setup:** One firm deployment with full Outlook/OneDrive integration
 - **Automatic Folder Management:** AI creates and maintains case folder structure
 - **Document Sync:** Bidirectional sync between platform and OneDrive
 - **Calendar Integration:** Court dates and meetings sync with Outlook calendar
 
 **6. AI Knowledge Base:**
+
 - **Legacy Document Import:** Process existing firm documents to train AI on firm's style
 - **Continuous Learning:** Every document edited improves future suggestions
 - **Proactive Suggestions:** AI proposes next actions based on case patterns
 - **Missing Information Detection:** AI identifies and requests missing case details
 
 **7. Romanian Language Support:**
+
 - **Full Romanian UI:** Complete interface localization
 - **Romanian AI Interactions:** Natural language processing in Romanian
 - **Legal Terminology:** Romanian legal terms and document formats
@@ -275,24 +295,28 @@ This isn't just software—it's a new member of the legal team that never forget
 ### Phase 2 Features (Months 7-12)
 
 **Multi-Tenant Architecture:**
+
 - Transition to SaaS model supporting multiple firms
 - Firm-level data isolation with shared infrastructure
 - Centralized updates and feature deployment
 - Inter-firm collaboration features for co-counsel scenarios
 
 **Mobile Applications:**
+
 - Native iOS/Android apps for core functionality
 - Offline document viewing and basic editing
 - Voice-to-text for task creation and time entry
 - Push notifications for urgent matters
 
 **Client Portal:**
+
 - Secure client access to case status and documents
 - Two-way communication with automatic thread organization
 - Document upload with AI-assisted information extraction
 - Automated status updates based on case milestones
 
 **Advanced AI Capabilities:**
+
 - Romanian legal database integration with citation suggestions
 - Predictive case outcome analysis based on historical data
 - Automated conflict checking across all firm matters
@@ -301,17 +325,20 @@ This isn't just software—it's a new member of the legal team that never forget
 ### Long-term Vision (Year 2+)
 
 **Platform Evolution:**
+
 - **Legal Intelligence Hub:** Evolve from practice management to comprehensive legal intelligence platform
 - **Romanian Legal Ecosystem Leadership:** Become the de facto platform for Romanian legal professionals
 - **AI Legal Assistant:** Develop specialized AI models trained on Romanian law and precedents
 - **Marketplace Integration:** Connect firms with expert witnesses, translators, and specialized consultants
 
 **Geographic Expansion:**
+
 - **Regional Coverage:** Extend to Moldova, Bulgaria, and other Romanian-speaking regions
 - **EU Market Entry:** Adapt platform for other EU civil law jurisdictions (starting with similar markets like Poland, Czech Republic)
 - **Cross-Border Specialization:** Build features specifically for EU cross-border litigation and transactions
 
 **Technology Advancement:**
+
 - **Autonomous Legal Research:** AI conducts comprehensive legal research and prepares memoranda
 - **Predictive Workflow Optimization:** AI learns firm patterns and automatically optimizes processes
 - **Real-Time Language Processing:** Live transcription and analysis of court proceedings and depositions
@@ -320,18 +347,21 @@ This isn't just software—it's a new member of the legal team that never forget
 ### Expansion Opportunities
 
 **Vertical Expansions:**
+
 - **Corporate Legal Departments:** Adapt platform for in-house counsel with different workflows
 - **Notary Offices:** Specialized features for notarial acts and authentication
 - **Legal Education:** Training modules for law students and continuing legal education
 - **Government Legal Services:** Public sector version for prosecutors and public defenders
 
 **Horizontal Expansions:**
+
 - **Complete Financial Integration:** Full accounting, invoicing, and payment processing
 - **Court System API:** Direct filing and case status monitoring (as Romanian courts digitize)
 - **Legal Marketplace:** Connect clients with lawyers based on specialization and success rates
 - **Insurance Integration:** Automated professional liability documentation and claims support
 
 **Revenue Model Evolution:**
+
 - **Base Platform:** Per-user SaaS subscription (€80-100/user/month)
 - **AI Premium Tier:** Advanced AI features and higher token limits (+€30-50/user/month)
 - **Success-Based Pricing:** Share of efficiency gains or successful case outcomes
@@ -341,12 +371,14 @@ This isn't just software—it's a new member of the legal team that never forget
 **Strategic Positioning:**
 
 By Year 3, the platform transforms from a productivity tool into an essential legal operating system that:
+
 1. **Defines Best Practices:** The platform's workflows become the standard for modern legal practice
 2. **Creates Network Effects:** As more firms join, the AI improves, creating competitive moat
 3. **Enables New Business Models:** Firms can offer fixed-fee services based on predictable efficiency
 4. **Democratizes Legal Services:** Smaller firms can compete with larger ones through technology leverage
 
 **Exit Strategy Considerations:**
+
 - **Strategic Acquisition:** Thomson Reuters, LexisNexis, or other legal tech giants expanding into Eastern Europe
 - **Private Equity Roll-up:** Platform for consolidating fragmented legal tech market
 - **Regional Tech Leader:** Acquisition by companies like UiPath (Romanian unicorn) diversifying portfolio
@@ -369,6 +401,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 ### Technology Preferences
 
 **Frontend:**
+
 - **Framework:** Next.js 14+ with React 18 for optimal SEO and performance
 - **UI Components:** Tailwind CSS with Radix UI for accessible, customizable components
 - **State Management:** Zustand for lightweight state + React Query for server state
@@ -376,6 +409,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 - **Natural Language Input:** Custom command palette with fuzzy search and AI parsing
 
 **Backend:**
+
 - **Primary Stack:** Node.js with TypeScript for consistency across stack
 - **API Layer:** GraphQL with Apollo Server for flexible data fetching
 - **Real-time Engine:** Socket.io for bidirectional communication
@@ -383,6 +417,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 - **File Processing:** Sharp for images, PDFtron for document manipulation
 
 **Database:**
+
 - **Primary Database:** PostgreSQL with pgvector for semantic search
 - **Cache Layer:** Redis for session management and real-time features
 - **Document Storage:** Azure Blob Storage (matches Microsoft ecosystem)
@@ -390,6 +425,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 - **Vector Database:** Pinecone or Weaviate for AI embeddings
 
 **AI Infrastructure:**
+
 - **LLM Provider:** Anthropic Claude for primary interactions, with OpenAI GPT-4 fallback
 - **Model Routing:** LiteLLM for cost optimization and model selection
 - **Embeddings:** OpenAI Ada-002 for document similarity
@@ -397,6 +433,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 - **Prompt Management:** LangChain for complex reasoning chains
 
 **Hosting/Infrastructure:**
+
 - **Cloud Provider:** Azure (aligns with Microsoft 365 integration)
 - **Container Orchestration:** Azure Kubernetes Service (AKS)
 - **CDN:** Azure Front Door for global content delivery
@@ -406,6 +443,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 ### Architecture Considerations
 
 **Repository Structure:**
+
 ```
 /apps
   /web          # Next.js frontend application
@@ -420,6 +458,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 ```
 
 **Service Architecture:**
+
 - **Microservices Approach:** Core services separated but not over-engineered
   - Document Service: Handles all document operations and versioning
   - Task Service: Manages task lifecycle and dependencies
@@ -428,6 +467,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
   - Notification Service: Email, in-app, and push notifications
 
 **Integration Requirements:**
+
 - **Microsoft Graph API:** Full access to Outlook, OneDrive, Teams
 - **OAuth 2.0:** Azure AD authentication for enterprise SSO
 - **Webhook Support:** Real-time updates from Microsoft services
@@ -435,6 +475,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 - **Data Sync:** Bidirectional sync with conflict resolution
 
 **Security/Compliance:**
+
 - **Data Residency:** All data stored in EU data centers (GDPR compliance)
 - **Encryption:** AES-256 at rest, TLS 1.3 in transit
 - **Access Control:** Role-based with attribute-based refinements
@@ -447,18 +488,21 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 **AI-Specific Architecture:**
 
 **Context Management System:**
+
 - Sliding window approach for long conversations
 - Hierarchical context prioritization (case > task > document)
 - Smart summarization for context compression
 - Caching strategy for repeated queries
 
 **Prompt Engineering Infrastructure:**
+
 - Version-controlled prompt templates
 - A/B testing framework for prompt optimization
 - Monitoring and analytics for AI performance
 - Fallback strategies for AI failures
 
 **Cost Optimization:**
+
 - Intelligent model routing:
   - Claude 4.5 Haiku for simple tasks (form filling, basic queries)
   - Claude 4.5 Sonnet for standard document drafting and email composition
@@ -595,6 +639,7 @@ By Year 3, the platform transforms from a productivity tool into an essential le
 ### Success Criteria for Moving Forward
 
 Before committing to full development, validate:
+
 - **Interest from 3+ firms** willing to pilot
 - **Technical feasibility** of Microsoft integration
 - **AI performance** at 70%+ accuracy on Romanian legal text
@@ -606,6 +651,7 @@ Before committing to full development, validate:
 This Project Brief provides comprehensive foundation for building an AI-native legal practice management platform for Romanian law firms. The vision balances ambitious AI integration with practical constraints of the Romanian market.
 
 **Key Differentiators Captured:**
+
 - Deep LLM integration as core architecture, not add-on feature
 - Natural language-first interface design philosophy
 - Romanian market focus with local language and legal practice understanding
@@ -613,6 +659,7 @@ This Project Brief provides comprehensive foundation for building an AI-native l
 
 **Ready for Next Phase:**
 This brief can now be used to:
+
 - Guide technical architecture decisions
 - Support funding discussions
 - Align team on product vision
@@ -621,5 +668,5 @@ This brief can now be used to:
 
 ---
 
-*Document Complete: November 2025*
-*Next Document: Product Requirements Document (PRD)*
+_Document Complete: November 2025_
+_Next Document: Product Requirements Document (PRD)_

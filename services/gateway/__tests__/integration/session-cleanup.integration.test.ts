@@ -6,7 +6,8 @@
  */
 
 // Set environment variables before imports
-process.env.SESSION_SECRET = 'test-session-secret-at-least-32-characters-long-for-integration-tests';
+process.env.SESSION_SECRET =
+  'test-session-secret-at-least-32-characters-long-for-integration-tests';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long';
 process.env.AZURE_AD_CLIENT_ID = 'test-client-id';
@@ -40,8 +41,7 @@ describe('Session Cleanup Integration Tests', () => {
         memoryUsed: '2.5M',
       });
 
-      const response = await request(app)
-        .get('/admin/session-stats');
+      const response = await request(app).get('/admin/session-stats');
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Session statistics retrieved successfully');
@@ -56,8 +56,7 @@ describe('Session Cleanup Integration Tests', () => {
       // Mock error
       mockCacheManager.stats.mockRejectedValue(new Error('Redis connection failed'));
 
-      const response = await request(app)
-        .get('/admin/session-stats');
+      const response = await request(app).get('/admin/session-stats');
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('stats_retrieval_failed');
@@ -82,22 +81,26 @@ describe('Session Cleanup Integration Tests', () => {
         });
 
       // Mock Redis scan to return session keys
-      mockRedis.scan = jest.fn()
-        .mockResolvedValueOnce(['0', ['sess:key1', 'sess:key2', 'sess:key3', 'sess:key4', 'sess:key5']]);
+      mockRedis.scan = jest
+        .fn()
+        .mockResolvedValueOnce([
+          '0',
+          ['sess:key1', 'sess:key2', 'sess:key3', 'sess:key4', 'sess:key5'],
+        ]);
 
       // Mock TTL checks: 3 valid, 2 without TTL (-1)
-      mockRedis.ttl = jest.fn()
+      mockRedis.ttl = jest
+        .fn()
         .mockResolvedValueOnce(3600) // sess:key1 - valid
-        .mockResolvedValueOnce(-1)   // sess:key2 - no TTL (cleanup)
+        .mockResolvedValueOnce(-1) // sess:key2 - no TTL (cleanup)
         .mockResolvedValueOnce(7200) // sess:key3 - valid
-        .mockResolvedValueOnce(-1)   // sess:key4 - no TTL (cleanup)
+        .mockResolvedValueOnce(-1) // sess:key4 - no TTL (cleanup)
         .mockResolvedValueOnce(1800); // sess:key5 - valid
 
       // Mock delete
       mockRedis.del = jest.fn().mockResolvedValue(1);
 
-      const response = await request(app)
-        .post('/admin/cleanup-sessions');
+      const response = await request(app).post('/admin/cleanup-sessions');
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Session cleanup completed');
@@ -110,8 +113,7 @@ describe('Session Cleanup Integration Tests', () => {
     it('should handle cleanup errors gracefully', async () => {
       mockCacheManager.stats.mockRejectedValue(new Error('Redis error'));
 
-      const response = await request(app)
-        .post('/admin/cleanup-sessions');
+      const response = await request(app).post('/admin/cleanup-sessions');
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('cleanup_failed');
@@ -122,8 +124,7 @@ describe('Session Cleanup Integration Tests', () => {
     it('should return healthy status when Redis is accessible', async () => {
       mockRedis.ping = jest.fn().mockResolvedValue('PONG');
 
-      const response = await request(app)
-        .get('/admin/health');
+      const response = await request(app).get('/admin/health');
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe('healthy');
@@ -133,8 +134,7 @@ describe('Session Cleanup Integration Tests', () => {
     it('should return unhealthy status when Redis is down', async () => {
       mockRedis.ping = jest.fn().mockRejectedValue(new Error('Connection refused'));
 
-      const response = await request(app)
-        .get('/admin/health');
+      const response = await request(app).get('/admin/health');
 
       expect(response.status).toBe(503);
       expect(response.body.status).toBe('unhealthy');

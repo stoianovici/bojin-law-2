@@ -8,7 +8,11 @@ import { contextAggregatorService } from './context-aggregator.service';
 import { precedentFinderService } from './precedent-finder.service';
 import { tokenTracker } from './token-tracker.service';
 import { cacheService } from './cache.service';
-import type { DocumentGenerationInput, GeneratedDocument, DocumentContext } from '@legal-platform/types';
+import type {
+  DocumentGenerationInput,
+  GeneratedDocument,
+  DocumentContext,
+} from '@legal-platform/types';
 
 // Mock dependencies
 jest.mock('./context-aggregator.service');
@@ -55,9 +59,7 @@ describe('DocumentGenerationService', () => {
       contactInfo: {},
       address: 'Bucharest, Romania',
     },
-    teamMembers: [
-      { id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'Partner' },
-    ],
+    teamMembers: [{ id: 'user-1', name: 'John Doe', email: 'john@example.com', role: 'Partner' }],
     relatedDocuments: [],
   };
 

@@ -126,7 +126,11 @@ function generateTaskMetadata(type: TaskType): Record<string, unknown> {
       estimatedDays: faker.number.int({ min: 1, max: 14 }),
     },
     CourtDate: {
-      courtName: faker.helpers.arrayElement(['Tribunalul București', 'Curtea de Apel', 'Judecătorie']),
+      courtName: faker.helpers.arrayElement([
+        'Tribunalul București',
+        'Curtea de Apel',
+        'Judecătorie',
+      ]),
       courtroom: faker.string.numeric({ length: 3 }),
       hearingType: faker.helpers.arrayElement(['Initial', 'Preliminary', 'Trial', 'Final']),
       requiresPreparation: true,
@@ -138,7 +142,13 @@ function generateTaskMetadata(type: TaskType): Record<string, unknown> {
       requiresPreparation: faker.datatype.boolean(),
     },
     BusinessTrip: {
-      destination: faker.helpers.arrayElement(['București', 'Cluj-Napoca', 'Timișoara', 'Iași', 'Constanța']),
+      destination: faker.helpers.arrayElement([
+        'București',
+        'Cluj-Napoca',
+        'Timișoara',
+        'Iași',
+        'Constanța',
+      ]),
       transportType: faker.helpers.arrayElement(['Car', 'Train', 'Flight']),
       overnight: faker.datatype.boolean(),
       estimatedCost: faker.number.int({ min: 200, max: 2000 }),
@@ -154,17 +164,22 @@ function generateTaskMetadata(type: TaskType): Record<string, unknown> {
  * @returns Task entity
  */
 export function createTask(overrides: TaskOverrides = {}): Task {
-  const type = overrides.type || faker.helpers.arrayElement<TaskType>([
-    'Research',
-    'DocumentCreation',
-    'DocumentRetrieval',
-    'CourtDate',
-    'Meeting',
-    'BusinessTrip',
-  ]);
+  const type =
+    overrides.type ||
+    faker.helpers.arrayElement<TaskType>([
+      'Research',
+      'DocumentCreation',
+      'DocumentRetrieval',
+      'CourtDate',
+      'Meeting',
+      'BusinessTrip',
+    ]);
 
-  const status = overrides.status || faker.helpers.arrayElement(['Pending', 'InProgress', 'Completed', 'Cancelled']);
-  const priority = overrides.priority || faker.helpers.arrayElement(['Low', 'Medium', 'High', 'Urgent']);
+  const status =
+    overrides.status ||
+    faker.helpers.arrayElement(['Pending', 'InProgress', 'Completed', 'Cancelled']);
+  const priority =
+    overrides.priority || faker.helpers.arrayElement(['Low', 'Medium', 'High', 'Urgent']);
 
   return {
     id: faker.string.uuid(),

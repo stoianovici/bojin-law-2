@@ -293,16 +293,18 @@ describe('SuggestionLearningService', () => {
 
     it('should increase confidence for high acceptance types', async () => {
       // Create 15 accepted feedbacks for TaskSuggestion
-      const manyAccepted = Array(15).fill(null).map((_, i) => ({
-        id: `fb-${i}`,
-        suggestionId: `sug-${i}`,
-        userId: 'user-123',
-        firmId: 'firm-456',
-        action: 'accepted',
-        responseTimeMs: 1000,
-        createdAt: new Date(),
-        suggestion: { type: 'TaskSuggestion', category: 'Task' },
-      }));
+      const manyAccepted = Array(15)
+        .fill(null)
+        .map((_, i) => ({
+          id: `fb-${i}`,
+          suggestionId: `sug-${i}`,
+          userId: 'user-123',
+          firmId: 'firm-456',
+          action: 'accepted',
+          responseTimeMs: 1000,
+          createdAt: new Date(),
+          suggestion: { type: 'TaskSuggestion', category: 'Task' },
+        }));
       (prisma.suggestionFeedback.findMany as jest.Mock).mockResolvedValue(manyAccepted);
 
       const stats = await service.getAcceptanceStats('user-123', 'firm-456', 30);
@@ -315,16 +317,18 @@ describe('SuggestionLearningService', () => {
 
     it('should decrease confidence for low acceptance types', async () => {
       // Create 15 dismissed feedbacks for TaskSuggestion
-      const manyDismissed = Array(15).fill(null).map((_, i) => ({
-        id: `fb-${i}`,
-        suggestionId: `sug-${i}`,
-        userId: 'user-123',
-        firmId: 'firm-456',
-        action: 'dismissed',
-        responseTimeMs: 500,
-        createdAt: new Date(),
-        suggestion: { type: 'TaskSuggestion', category: 'Task' },
-      }));
+      const manyDismissed = Array(15)
+        .fill(null)
+        .map((_, i) => ({
+          id: `fb-${i}`,
+          suggestionId: `sug-${i}`,
+          userId: 'user-123',
+          firmId: 'firm-456',
+          action: 'dismissed',
+          responseTimeMs: 500,
+          createdAt: new Date(),
+          suggestion: { type: 'TaskSuggestion', category: 'Task' },
+        }));
       (prisma.suggestionFeedback.findMany as jest.Mock).mockResolvedValue(manyDismissed);
 
       const stats = await service.getAcceptanceStats('user-123', 'firm-456', 30);

@@ -105,7 +105,8 @@ export class CostDashboard extends CostTracker {
     const totalTokens = report.totalTokens + report.totalTokensSaved;
     const avgCostPerToken = totalCostWithSkills / report.totalTokens;
     const totalCostWithoutSkills = totalTokens * avgCostPerToken;
-    const actualSavings = ((totalCostWithoutSkills - totalCostWithSkills) / totalCostWithoutSkills) * 100;
+    const actualSavings =
+      ((totalCostWithoutSkills - totalCostWithSkills) / totalCostWithoutSkills) * 100;
 
     // Model breakdown
     const modelBreakdown = await this.getModelCostBreakdown(startDate, endDate);
@@ -229,7 +230,7 @@ export class CostDashboard extends CostTracker {
     // Calculate savings percentage
     const totalTokens = last24Hours.reduce((sum, m) => sum + m.totalTokens, 0);
     const totalTokensSaved = last24Hours.reduce((sum, m) => sum + (m.tokenSavings || 0), 0);
-    const savingsPercentage = ((totalTokensSaved / (totalTokens + totalTokensSaved)) * 100) || 0;
+    const savingsPercentage = (totalTokensSaved / (totalTokens + totalTokensSaved)) * 100 || 0;
 
     // Detect anomaly (cost spike >50% above baseline)
     const anomaly = this.baselineCostPerHour > 0 && hourlyRate > this.baselineCostPerHour * 1.5;

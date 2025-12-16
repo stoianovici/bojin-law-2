@@ -185,12 +185,7 @@ class CreateCasePage {
     await this.page.waitForLoadState('networkidle');
   }
 
-  async fillForm(data: {
-    title: string;
-    client: string;
-    type: string;
-    description?: string;
-  }) {
+  async fillForm(data: { title: string; client: string; type: string; description?: string }) {
     await this.titleInput.fill(data.title);
 
     // Select from dropdown
@@ -211,12 +206,7 @@ class CreateCasePage {
     await this.page.waitForURL(/\/cases\/\w+/);
   }
 
-  async createCase(data: {
-    title: string;
-    client: string;
-    type: string;
-    description?: string;
-  }) {
+  async createCase(data: { title: string; client: string; type: string; description?: string }) {
     await this.fillForm(data);
     await this.submitForm();
   }
@@ -390,7 +380,7 @@ test.describe('Case Creation Workflow', () => {
       title: 'New Legal Case 2024',
       client: 'ACME Corporation',
       type: 'Civil Law',
-      description: 'Contract dispute regarding intellectual property rights'
+      description: 'Contract dispute regarding intellectual property rights',
     };
 
     await createCasePage.createCase(caseData);
@@ -432,7 +422,7 @@ test.describe('Case Creation Workflow', () => {
     await createCasePage.createCase({
       title: 'Case with Document',
       client: 'Test Client',
-      type: 'Civil Law'
+      type: 'Civil Law',
     });
 
     // Switch to documents tab

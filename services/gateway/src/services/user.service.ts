@@ -35,19 +35,14 @@ export class UserService {
    * @returns User profile from Microsoft Graph
    * @throws Error if Graph API call fails
    */
-  async fetchUserProfileFromGraph(
-    accessToken: string
-  ): Promise<GraphUserProfile> {
+  async fetchUserProfileFromGraph(accessToken: string): Promise<GraphUserProfile> {
     try {
-      const response = await axios.get<GraphUserProfile>(
-        'https://graph.microsoft.com/v1.0/me',
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          timeout: 5000, // 5 second timeout
-        }
-      );
+      const response = await axios.get<GraphUserProfile>('https://graph.microsoft.com/v1.0/me', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        timeout: 5000, // 5 second timeout
+      });
 
       return response.data;
     } catch (error: any) {
@@ -60,9 +55,7 @@ export class UserService {
         );
       } else if (error.request) {
         // Request was made but no response received
-        throw new Error(
-          'Microsoft Graph API request failed: No response received'
-        );
+        throw new Error('Microsoft Graph API request failed: No response received');
       } else {
         // Error setting up the request
         throw new Error(`Failed to call Microsoft Graph API: ${error.message}`);
@@ -210,10 +203,7 @@ export class UserService {
     }
 
     // Extract email (preferred_username or email claim)
-    const email =
-      idTokenClaims.preferred_username ||
-      idTokenClaims.email ||
-      idTokenClaims.upn;
+    const email = idTokenClaims.preferred_username || idTokenClaims.email || idTokenClaims.upn;
     if (!email) {
       throw new Error('Email not found in ID token claims');
     }
@@ -222,7 +212,8 @@ export class UserService {
     const firstName = idTokenClaims.given_name || idTokenClaims.name?.split(' ')[0] || 'Unknown';
 
     // Extract last name (family_name claim)
-    const lastName = idTokenClaims.family_name || idTokenClaims.name?.split(' ').slice(1).join(' ') || 'User';
+    const lastName =
+      idTokenClaims.family_name || idTokenClaims.name?.split(' ').slice(1).join(' ') || 'User';
 
     return {
       azureAdId,
@@ -243,10 +234,7 @@ export class UserService {
    * @param idTokenClaims - ID token claims (contains basic user info)
    * @returns User record from database
    */
-  async provisionUserFromAzureAD(
-    accessToken: string,
-    idTokenClaims: any
-  ): Promise<User> {
+  async provisionUserFromAzureAD(accessToken: string, idTokenClaims: any): Promise<User> {
     // Extract user info from ID token claims
     const { azureAdId, email, firstName, lastName } =
       this.extractUserInfoFromIdToken(idTokenClaims);
@@ -258,9 +246,7 @@ export class UserService {
     try {
       graphProfile = await this.fetchUserProfileFromGraph(accessToken);
     } catch (error: any) {
-      console.warn(
-        `Failed to fetch user profile from Microsoft Graph API: ${error.message}`
-      );
+      console.warn(`Failed to fetch user profile from Microsoft Graph API: ${error.message}`);
       // Continue with ID token claims only
     }
 
@@ -270,12 +256,7 @@ export class UserService {
     const finalLastName = graphProfile?.surname || lastName;
 
     // Find or create user in database
-    const user = await this.findOrCreateUser(
-      azureAdId,
-      finalEmail,
-      finalFirstName,
-      finalLastName
-    );
+    const user = await this.findOrCreateUser(azureAdId, finalEmail, finalFirstName, finalLastName);
 
     return user;
   }

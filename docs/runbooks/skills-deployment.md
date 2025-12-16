@@ -52,6 +52,7 @@ NEW_RELIC_APP_NAME=legal-platform-ai-service
 ```
 
 Validate configuration:
+
 ```bash
 cd services/ai-service
 ./scripts/validate-skills-env.sh
@@ -84,6 +85,7 @@ npm run type-check
 ```
 
 **Expected Results:**
+
 - ✅ All tests passing
 - ✅ Database connection successful
 - ✅ Redis responds with `PONG`
@@ -146,11 +148,7 @@ try {
 const skillPatterns = [
   {
     skillId: metadata.skill_id,
-    patterns: [
-      /contract.*analy[sz]is/i,
-      /analiz[ăa].*contract/i,
-      /review.*agreement/i,
-    ],
+    patterns: [/contract.*analy[sz]is/i, /analiz[ăa].*contract/i, /review.*agreement/i],
     category: 'legal_analysis',
     priority: 1,
     minConfidence: 0.7,
@@ -233,6 +231,7 @@ redis-cli -u $REDIS_URL KEYS "skill:cache:*" | grep $SKILL_ID
 ```
 
 **Expected Results:**
+
 - ✅ Skill appears in API listing
 - ✅ Integration tests pass
 - ✅ Metrics appearing in New Relic
@@ -249,6 +248,7 @@ curl https://legal-platform-ai-service.onrender.com/health | jq
 ```
 
 **Expected response:**
+
 ```json
 {
   "status": "healthy",
@@ -286,7 +286,7 @@ npm run test:load:staging
 // Check cost savings (AC#5: >35%)
 const costTracker = new CostTracker();
 const report = await costTracker.generateReport(
-  new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),  // 7 days ago
+  new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
   new Date()
 );
 
@@ -301,16 +301,19 @@ console.log(`Savings: ${report.savingsPercent}%`);
 ### Issue: Skill Upload Fails with 400 Bad Request
 
 **Symptoms:**
+
 ```
 SkillUploadError: Failed to upload skill: Validation failed
 ```
 
 **Diagnosis:**
+
 1. Check skill content validation
 2. Verify dangerous patterns not present
 3. Confirm content size <1MB
 
 **Resolution:**
+
 ```bash
 # Run validation locally
 node -e "
@@ -330,22 +333,25 @@ try {
 ### Issue: Skill Not Appearing in Registry Recommendations
 
 **Symptoms:**
+
 - Skill uploaded successfully
 - Not being recommended for relevant queries
 
 **Diagnosis:**
+
 1. Check pattern matching configuration
 2. Verify skill category and type
 3. Check effectiveness score
 
 **Resolution:**
+
 ```typescript
 // Test pattern matching
 const registry = new SkillsRegistry(db);
-const recommendations = await registry.recommendSkills(
-  'I need to analyze this contract',
-  { type: 'code', category: 'analysis' }
-);
+const recommendations = await registry.recommendSkills('I need to analyze this contract', {
+  type: 'code',
+  category: 'analysis',
+});
 
 console.log('Recommendations:', recommendations);
 // Verify your skill appears in results
@@ -356,11 +362,13 @@ console.log('Recommendations:', recommendations);
 ### Issue: High Cache Miss Rate
 
 **Symptoms:**
+
 - Cache hit rate <30%
 - Increased API costs
 - Slower response times
 
 **Diagnosis:**
+
 ```bash
 # Check Redis memory usage
 redis-cli -u $REDIS_URL INFO memory | grep used_memory_human
@@ -373,6 +381,7 @@ redis-cli -u $REDIS_URL TTL "skill:cache:$SKILL_ID"
 ```
 
 **Resolution:**
+
 1. Increase cache TTL if appropriate
 2. Warm cache for frequently used skills
 3. Increase Redis memory allocation
@@ -381,7 +390,7 @@ redis-cli -u $REDIS_URL TTL "skill:cache:$SKILL_ID"
 // Warm cache for critical skills
 const criticalSkills = ['skill-id-1', 'skill-id-2', 'skill-id-3'];
 for (const skillId of criticalSkills) {
-  await skillsManager.getSkill(skillId, useCache=true);
+  await skillsManager.getSkill(skillId, (useCache = true));
 }
 ```
 
@@ -390,21 +399,24 @@ for (const skillId of criticalSkills) {
 ### Issue: Skill Execution Timeout
 
 **Symptoms:**
+
 ```
 SkillAPIError: Request timeout after 30000ms
 ```
 
 **Diagnosis:**
+
 1. Check skill complexity
 2. Verify Claude API status
 3. Review skill configuration
 
 **Resolution:**
+
 ```typescript
 // Option 1: Increase timeout
 const apiClient = new SkillsAPIClient({
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  timeout: 60000,  // Increase to 60s
+  timeout: 60000, // Increase to 60s
 });
 
 // Option 2: Reduce skill complexity
@@ -420,10 +432,12 @@ const apiClient = new SkillsAPIClient({
 ### Issue: Cost Savings Below Target (<35%)
 
 **Symptoms:**
+
 - Cost savings consistently <35%
 - Model distribution skewed to expensive models
 
 **Diagnosis:**
+
 ```typescript
 const costTracker = new CostTracker();
 const report = await costTracker.generateReport(startDate, endDate);
@@ -433,6 +447,7 @@ console.log('Model breakdown:', report.modelBreakdown);
 ```
 
 **Resolution:**
+
 1. Review skill effectiveness scores
 2. Optimize skill selection logic
 3. Tune routing thresholds
@@ -446,6 +461,7 @@ See `cost-optimization.md` for detailed guidance
 ### Q: How long does it take to deploy a new skill?
 
 **A:** Full deployment process takes 3-7 days:
+
 - Day 0: Upload and validate skill
 - Days 1-3: 5% canary deployment with monitoring
 - Days 3-10: 25% beta deployment with monitoring
@@ -457,7 +473,7 @@ See `cost-optimization.md` for detailed guidance
 
 ```typescript
 const rolloutManager = new RolloutManager();
-await rolloutManager.setRolloutPercentage(0);  // Disable immediately
+await rolloutManager.setRolloutPercentage(0); // Disable immediately
 ```
 
 See `skills-rollback.md` for complete procedures.
@@ -465,6 +481,7 @@ See `skills-rollback.md` for complete procedures.
 ### Q: How many skills can be deployed simultaneously?
 
 **A:** Technical limit is 100 cached skills (configurable). Recommended:
+
 - Start with 4-6 core skills
 - Add 2-3 skills per month
 - Monitor performance impact
@@ -472,6 +489,7 @@ See `skills-rollback.md` for complete procedures.
 ### Q: What happens if Anthropic Skills API is down?
 
 **A:** Automatic fallback to non-skills routing:
+
 - Circuit breaker triggers after 3 consecutive failures
 - Requests routed to standard Claude API
 - No user-facing errors
@@ -500,6 +518,7 @@ npm run test:load:staging
 ### Q: Can skills access user data or environment variables?
 
 **A:** No. Skills execute in Anthropic's isolated infrastructure:
+
 - No access to local file system
 - No access to environment variables
 - No network access outside Anthropic's environment
@@ -550,9 +569,9 @@ Priority: Option 1 for immediate disable.
 
 ## Change Log
 
-| Date | Version | Changes | Author |
-|------|---------|---------|--------|
-| 2025-11-19 | 1.0 | Initial runbook creation | James (Dev Agent) |
+| Date       | Version | Changes                  | Author            |
+| ---------- | ------- | ------------------------ | ----------------- |
+| 2025-11-19 | 1.0     | Initial runbook creation | James (Dev Agent) |
 
 ---
 

@@ -257,8 +257,8 @@ export function PendingApprovalsWidget({
       {approvalItems.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            {approvalItems.length} {approvalItems.length === 1 ? 'cerere' : 'cereri'} în așteptare
-            - Date mockup
+            {approvalItems.length} {approvalItems.length === 1 ? 'cerere' : 'cereri'} în așteptare -
+            Date mockup
           </p>
         </div>
       )}

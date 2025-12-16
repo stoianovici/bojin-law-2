@@ -20,11 +20,7 @@ export function AttachmentSuggestionsPanel({
   onToggle,
 }: AttachmentSuggestionsPanelProps) {
   return (
-    <div
-      className="p-4"
-      role="group"
-      aria-label="Suggested attachments"
-    >
+    <div className="p-4" role="group" aria-label="Suggested attachments">
       <div className="space-y-3">
         {suggestions.map((suggestion) => (
           <AttachmentSuggestionItem
@@ -46,11 +42,7 @@ function AttachmentSuggestionItem({
   onToggle: (suggestionId: string, selected: boolean) => void;
 }) {
   const relevanceLevel =
-    suggestion.relevanceScore >= 0.8
-      ? 'high'
-      : suggestion.relevanceScore >= 0.6
-      ? 'medium'
-      : 'low';
+    suggestion.relevanceScore >= 0.8 ? 'high' : suggestion.relevanceScore >= 0.6 ? 'medium' : 'low';
 
   return (
     <div className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
@@ -68,10 +60,7 @@ function AttachmentSuggestionItem({
 
       {/* Document icon */}
       <div className="flex-shrink-0">
-        <DocumentIcon
-          type={suggestion.document?.fileType}
-          className="h-10 w-10 text-gray-400"
-        />
+        <DocumentIcon type={suggestion.document?.fileType} className="h-10 w-10 text-gray-400" />
       </div>
 
       {/* Content */}
@@ -117,7 +106,9 @@ function RelevanceIndicator({ level }: { level: 'high' | 'medium' | 'low' }) {
   const { label, className } = config[level];
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${className}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${className}`}
+    >
       {label}
     </span>
   );

@@ -6,12 +6,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  TaskDelegation,
-  DelegationStatus,
-  NotificationType,
-  TaskTypeEnum,
-} from '@prisma/client';
+import { TaskDelegation, DelegationStatus, NotificationType, TaskTypeEnum } from '@prisma/client';
 import { NotificationService } from './notification.service';
 
 export interface DelegationInput {
@@ -101,9 +96,7 @@ export class DelegationService {
       });
 
       if (tasksToDelegate.length !== input.taskIds.length) {
-        throw new Error(
-          'One or more tasks not found or not assigned to you'
-        );
+        throw new Error('One or more tasks not found or not assigned to you');
       }
     } else {
       // Delegate all user's pending/in-progress tasks
@@ -171,10 +164,7 @@ export class DelegationService {
   /**
    * Accept a delegation request
    */
-  async acceptDelegation(
-    delegationId: string,
-    userId: string
-  ): Promise<TaskDelegation> {
+  async acceptDelegation(delegationId: string, userId: string): Promise<TaskDelegation> {
     // Get user's firmId for firm isolation
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -263,9 +253,7 @@ export class DelegationService {
       where: { id: delegationId },
       data: {
         status: DelegationStatus.Declined,
-        notes: reason
-          ? `${delegation.notes || ''}\n\nDecline reason: ${reason}`
-          : delegation.notes,
+        notes: reason ? `${delegation.notes || ''}\n\nDecline reason: ${reason}` : delegation.notes,
       },
     });
 
@@ -325,10 +313,7 @@ export class DelegationService {
   /**
    * Get active delegations for a user on a specific date
    */
-  async getActiveDelegations(
-    userId: string,
-    date: Date
-  ): Promise<TaskDelegation[]> {
+  async getActiveDelegations(userId: string, date: Date): Promise<TaskDelegation[]> {
     return await prisma.taskDelegation.findMany({
       where: {
         delegatedTo: userId,

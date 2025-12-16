@@ -129,9 +129,7 @@ export function ResponseTimeAnalyticsPanel({
           </div>
           {baselineComparison && (
             <div
-              className={`text-xs font-medium ${
-                isImproved ? 'text-emerald-600' : 'text-red-600'
-              }`}
+              className={`text-xs font-medium ${isImproved ? 'text-emerald-600' : 'text-red-600'}`}
             >
               {isImproved ? '↓' : '↑'} {Math.abs(improvement).toFixed(1)}%
             </div>
@@ -161,9 +159,7 @@ export function ResponseTimeAnalyticsPanel({
           <div className="text-2xl font-bold text-emerald-600">
             {currentResponseTime.withinSLAPercent.toFixed(1)}%
           </div>
-          <div className="text-xs text-gray-400">
-            răspuns în max 24 ore
-          </div>
+          <div className="text-xs text-gray-400">răspuns în max 24 ore</div>
         </div>
 
         {/* Total Analyzed */}
@@ -185,10 +181,7 @@ export function ResponseTimeAnalyticsPanel({
           const isGoodSLA = slaPercent >= 80;
 
           return (
-            <div
-              key={item.emailType}
-              className="flex items-center gap-4 p-3 rounded-lg bg-gray-50"
-            >
+            <div key={item.emailType} className="flex items-center gap-4 p-3 rounded-lg bg-gray-50">
               {/* Type Label */}
               <div
                 className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
@@ -214,9 +207,7 @@ export function ResponseTimeAnalyticsPanel({
                 <div>
                   <div className="text-xs text-gray-400">În SLA</div>
                   <div
-                    className={`font-semibold ${
-                      isGoodSLA ? 'text-emerald-600' : 'text-amber-600'
-                    }`}
+                    className={`font-semibold ${isGoodSLA ? 'text-emerald-600' : 'text-amber-600'}`}
                   >
                     {slaPercent.toFixed(1)}%
                   </div>
@@ -249,14 +240,10 @@ export function ResponseTimeAnalyticsPanel({
       {baselineComparison && (
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Comparație cu perioada de bază
-            </div>
+            <div className="text-sm text-gray-600">Comparație cu perioada de bază</div>
             <div
               className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                isImproved
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-red-100 text-red-700'
+                isImproved ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
               }`}
             >
               {isImproved ? (

@@ -7,7 +7,9 @@ import { waitFor } from '@testing-library/react';
 export async function waitForLoadingToFinish(): Promise<void> {
   await waitFor(
     () => {
-      const loadingElements = document.querySelectorAll('[aria-busy="true"], [role="progressbar"], [data-loading="true"]');
+      const loadingElements = document.querySelectorAll(
+        '[aria-busy="true"], [role="progressbar"], [data-loading="true"]'
+      );
       if (loadingElements.length > 0) {
         throw new Error('Still loading');
       }
@@ -36,5 +38,5 @@ export async function waitForElementRemoval(selector: string): Promise<void> {
  * Use sparingly - prefer waitFor with specific conditions
  */
 export function wait(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

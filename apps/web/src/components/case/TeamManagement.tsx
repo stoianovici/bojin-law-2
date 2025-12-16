@@ -197,8 +197,8 @@ function RemoveConfirmDialog({
             Remove Team Member
           </AlertDialog.Title>
           <AlertDialog.Description className="text-sm text-gray-600 mb-6">
-            Are you sure you want to remove <strong>{memberName}</strong> from this case team?
-            This action cannot be undone.
+            Are you sure you want to remove <strong>{memberName}</strong> from this case team? This
+            action cannot be undone.
           </AlertDialog.Description>
 
           <div className="flex gap-3 justify-end">
@@ -334,9 +334,7 @@ export function TeamManagement({ caseId, teamMembers, currentUserRole }: TeamMan
           })}
         </div>
       ) : (
-        <p className="text-gray-500 text-sm text-center py-6">
-          No team members assigned yet.
-        </p>
+        <p className="text-gray-500 text-sm text-center py-6">No team members assigned yet.</p>
       )}
 
       {/* Add Team Member Modal */}

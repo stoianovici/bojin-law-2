@@ -57,10 +57,7 @@ interface UseRetainerUsageResult {
  * @param periodStart - Optional start of period to query (ISO date string, defaults to current period)
  * @returns Retainer usage data, loading state, error, and refetch function
  */
-export function useRetainerUsage(
-  caseId: string,
-  periodStart?: string
-): UseRetainerUsageResult {
+export function useRetainerUsage(caseId: string, periodStart?: string): UseRetainerUsageResult {
   const { data, loading, error, refetch } = useQuery<
     { retainerUsage: RetainerUsage | null },
     UseRetainerUsageVariables
@@ -96,10 +93,7 @@ interface UseRetainerHistoryResult {
  * @param limit - Maximum number of periods to return (default 12)
  * @returns Retainer usage history array, loading state, error, and refetch function
  */
-export function useRetainerHistory(
-  caseId: string,
-  limit: number = 12
-): UseRetainerHistoryResult {
+export function useRetainerHistory(caseId: string, limit: number = 12): UseRetainerHistoryResult {
   const { data, loading, error, refetch } = useQuery<
     { retainerUsageHistory: RetainerUsage[] },
     UseRetainerHistoryVariables

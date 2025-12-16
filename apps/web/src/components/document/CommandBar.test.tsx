@@ -209,9 +209,12 @@ describe('CommandBar', () => {
 
       fireEvent.blur(input);
 
-      await waitFor(() => {
-        expect(screen.queryByText('Comenzi sugerate')).not.toBeInTheDocument();
-      }, { timeout: 300 });
+      await waitFor(
+        () => {
+          expect(screen.queryByText('Comenzi sugerate')).not.toBeInTheDocument();
+        },
+        { timeout: 300 }
+      );
     });
 
     it('populates input when suggestion is clicked', () => {

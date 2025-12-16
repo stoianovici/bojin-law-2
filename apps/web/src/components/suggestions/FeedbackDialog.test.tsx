@@ -153,26 +153,14 @@ describe('FeedbackDialog', () => {
 
   describe('suggestion preview', () => {
     it('should show suggestion preview', () => {
-      render(
-        <FeedbackDialog
-          suggestion={mockSuggestion}
-          isOpen={true}
-          onClose={mockOnClose}
-        />
-      );
+      render(<FeedbackDialog suggestion={mockSuggestion} isOpen={true} onClose={mockOnClose} />);
 
       expect(screen.getByText('Finalizează revizuirea contractului')).toBeInTheDocument();
       expect(screen.getByText(/ai început revizuirea/i)).toBeInTheDocument();
     });
 
     it('should show suggestion type badge', () => {
-      render(
-        <FeedbackDialog
-          suggestion={mockSuggestion}
-          isOpen={true}
-          onClose={mockOnClose}
-        />
-      );
+      render(<FeedbackDialog suggestion={mockSuggestion} isOpen={true} onClose={mockOnClose} />);
 
       expect(screen.getByText('TaskSuggestion')).toBeInTheDocument();
     });
@@ -269,13 +257,7 @@ describe('FeedbackDialog', () => {
 
   describe('cancel', () => {
     it('should call onClose when cancel is clicked', () => {
-      render(
-        <FeedbackDialog
-          suggestion={mockSuggestion}
-          isOpen={true}
-          onClose={mockOnClose}
-        />
-      );
+      render(<FeedbackDialog suggestion={mockSuggestion} isOpen={true} onClose={mockOnClose} />);
 
       const cancelButton = screen.getByText(/anulează/i);
       fireEvent.click(cancelButton);
@@ -326,13 +308,7 @@ describe('FeedbackDialog', () => {
 
   describe('accessibility', () => {
     it('should have dialog role', () => {
-      render(
-        <FeedbackDialog
-          suggestion={mockSuggestion}
-          isOpen={true}
-          onClose={mockOnClose}
-        />
-      );
+      render(<FeedbackDialog suggestion={mockSuggestion} isOpen={true} onClose={mockOnClose} />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
@@ -351,13 +327,7 @@ describe('FeedbackDialog', () => {
     });
 
     it('should trap focus within dialog', () => {
-      render(
-        <FeedbackDialog
-          suggestion={mockSuggestion}
-          isOpen={true}
-          onClose={mockOnClose}
-        />
-      );
+      render(<FeedbackDialog suggestion={mockSuggestion} isOpen={true} onClose={mockOnClose} />);
 
       const dialog = screen.getByRole('dialog');
       expect(dialog).toBeInTheDocument();
@@ -401,37 +371,19 @@ describe('QuickFeedbackPopover', () => {
   });
 
   it('should render when open', () => {
-    render(
-      <QuickFeedbackPopover
-        suggestionId="sug-123"
-        isOpen={true}
-        onClose={mockOnClose}
-      />
-    );
+    render(<QuickFeedbackPopover suggestionId="sug-123" isOpen={true} onClose={mockOnClose} />);
 
     expect(screen.getByRole('menu')).toBeInTheDocument();
   });
 
   it('should not render when closed', () => {
-    render(
-      <QuickFeedbackPopover
-        suggestionId="sug-123"
-        isOpen={false}
-        onClose={mockOnClose}
-      />
-    );
+    render(<QuickFeedbackPopover suggestionId="sug-123" isOpen={false} onClose={mockOnClose} />);
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
   it('should show quick reason options', () => {
-    render(
-      <QuickFeedbackPopover
-        suggestionId="sug-123"
-        isOpen={true}
-        onClose={mockOnClose}
-      />
-    );
+    render(<QuickFeedbackPopover suggestionId="sug-123" isOpen={true} onClose={mockOnClose} />);
 
     expect(screen.getByText(/nu este relevant/i)).toBeInTheDocument();
     expect(screen.getByText(/deja rezolvat/i)).toBeInTheDocument();
@@ -463,13 +415,7 @@ describe('QuickFeedbackPopover', () => {
   });
 
   it('should close when "No feedback" is clicked', () => {
-    render(
-      <QuickFeedbackPopover
-        suggestionId="sug-123"
-        isOpen={true}
-        onClose={mockOnClose}
-      />
-    );
+    render(<QuickFeedbackPopover suggestionId="sug-123" isOpen={true} onClose={mockOnClose} />);
 
     const noFeedbackButton = screen.getByText(/fără feedback/i);
     fireEvent.click(noFeedbackButton);
@@ -479,13 +425,7 @@ describe('QuickFeedbackPopover', () => {
   });
 
   it('should have menu role for accessibility', () => {
-    render(
-      <QuickFeedbackPopover
-        suggestionId="sug-123"
-        isOpen={true}
-        onClose={mockOnClose}
-      />
-    );
+    render(<QuickFeedbackPopover suggestionId="sug-123" isOpen={true} onClose={mockOnClose} />);
 
     expect(screen.getByRole('menu')).toBeInTheDocument();
     expect(screen.getAllByRole('menuitem').length).toBeGreaterThan(0);

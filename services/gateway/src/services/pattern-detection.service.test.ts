@@ -175,8 +175,7 @@ describe('PatternDetectionService', () => {
       // Should not find Meeting+Research pattern (only 2 occurrences)
       const meetingResearchPattern = patterns.find(
         (p) =>
-          p.taskTypes.includes(TaskTypeEnum.Research) &&
-          p.taskTypes.includes(TaskTypeEnum.Meeting)
+          p.taskTypes.includes(TaskTypeEnum.Research) && p.taskTypes.includes(TaskTypeEnum.Meeting)
       );
 
       expect(meetingResearchPattern).toBeUndefined();

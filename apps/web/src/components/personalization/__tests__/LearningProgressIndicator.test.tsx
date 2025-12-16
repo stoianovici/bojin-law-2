@@ -94,9 +94,7 @@ describe('LearningProgressIndicator', () => {
 
       // With moderate progress, should show an encouraging message
       // The message is displayed below the circular gauge
-      expect(
-        screen.getByText(/continuă să folosești|progres bun/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/continuă să folosești|progres bun/i)).toBeInTheDocument();
     });
   });
 
@@ -259,8 +257,6 @@ describe('LearningProgressMini', () => {
 
     render(<LearningProgressMini />);
 
-    expect(
-      screen.getByText(/începe să folosești/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/începe să folosești/i)).toBeInTheDocument();
   });
 });

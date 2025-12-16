@@ -135,7 +135,11 @@ export function usePartnerDashboard(): UsePartnerDashboardResult {
       clientName: c.client.name,
       status: c.status,
       teamSize: c.teamMembers.length,
-      riskLevel: (c.value && c.value > 100000 ? 'high' : c.value && c.value > 50000 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+      riskLevel: (c.value && c.value > 100000
+        ? 'high'
+        : c.value && c.value > 50000
+          ? 'medium'
+          : 'low') as 'high' | 'medium' | 'low',
     }));
 
   // Transform high value cases (value > 100k)
@@ -149,7 +153,10 @@ export function usePartnerDashboard(): UsePartnerDashboardResult {
       title: c.title,
       value: c.value || 0,
       assignedPartner: getLeadPartner(c.teamMembers),
-      priority: (c.value && c.value > 200000 ? 'strategic' : 'vip') as 'strategic' | 'vip' | 'normal',
+      priority: (c.value && c.value > 200000 ? 'strategic' : 'vip') as
+        | 'strategic'
+        | 'vip'
+        | 'normal',
     }));
 
   // Transform at-risk cases (OnHold cases)

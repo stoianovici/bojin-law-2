@@ -123,11 +123,7 @@ describe('Time Entry GraphQL API Integration Tests', () => {
       mockPrisma.firm.findUnique.mockResolvedValue(testFirm as any);
       mockPrisma.timeEntry.create.mockResolvedValue(createdEntry as any);
 
-      const result = await timeEntryResolvers.Mutation.createTimeEntry(
-        {},
-        { input },
-        mockContext
-      );
+      const result = await timeEntryResolvers.Mutation.createTimeEntry({}, { input }, mockContext);
 
       expect(result.id).toBe('entry-123');
       expect(result.hourlyRate).toBe(50000);
@@ -148,11 +144,7 @@ describe('Time Entry GraphQL API Integration Tests', () => {
       mockPrisma.firm.findUnique.mockResolvedValue(testFirm as any);
       mockPrisma.timeEntry.create.mockResolvedValue({ id: 'entry-456', ...input } as any);
 
-      const result = await timeEntryResolvers.Mutation.createTimeEntry(
-        {},
-        { input },
-        mockContext
-      );
+      const result = await timeEntryResolvers.Mutation.createTimeEntry({}, { input }, mockContext);
 
       expect(result.id).toBe('entry-456');
     });
@@ -166,7 +158,15 @@ describe('Time Entry GraphQL API Integration Tests', () => {
       await expect(
         timeEntryResolvers.Mutation.createTimeEntry(
           {},
-          { input: { caseId: testCase.id, date: '2025-12-01', hours: 1, description: 'Test', billable: true } },
+          {
+            input: {
+              caseId: testCase.id,
+              date: '2025-12-01',
+              hours: 1,
+              description: 'Test',
+              billable: true,
+            },
+          },
           mockContext
         )
       ).rejects.toThrow();
@@ -328,11 +328,7 @@ describe('Time Entry GraphQL API Integration Tests', () => {
 
       mockPrisma.timeEntry.findUnique.mockResolvedValue(entry as any);
 
-      const result = await timeEntryResolvers.Query.timeEntry(
-        {},
-        { id: 'entry-123' },
-        mockContext
-      );
+      const result = await timeEntryResolvers.Query.timeEntry({}, { id: 'entry-123' }, mockContext);
 
       expect(result.id).toBe('entry-123');
       expect(mockPrisma.timeEntry.findUnique).toHaveBeenCalledWith({
@@ -363,11 +359,7 @@ describe('Time Entry GraphQL API Integration Tests', () => {
 
       mockPrisma.timeEntry.findMany.mockResolvedValue(entries as any);
 
-      const result = await timeEntryResolvers.Query.myTimeEntries(
-        {},
-        { filters: {} },
-        mockContext
-      );
+      const result = await timeEntryResolvers.Query.myTimeEntries({}, { filters: {} }, mockContext);
 
       expect(result).toHaveLength(2);
       expect(mockPrisma.timeEntry.findMany).toHaveBeenCalledWith({

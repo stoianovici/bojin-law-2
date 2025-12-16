@@ -7,13 +7,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -62,12 +56,7 @@ const CheckIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M5 13l4 4L19 7"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
@@ -81,12 +70,7 @@ const XIcon = ({ className }: { className?: string }) => (
     height="16"
     aria-hidden="true"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M6 18L18 6M6 6l12 12"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
@@ -131,11 +115,7 @@ export interface SnippetSuggestionPanelProps {
 function ConfidenceIndicator({ confidence }: { confidence: number }) {
   const percentage = Math.round(confidence * 100);
   const color =
-    percentage >= 80
-      ? 'bg-green-500'
-      : percentage >= 60
-        ? 'bg-yellow-500'
-        : 'bg-orange-500';
+    percentage >= 80 ? 'bg-green-500' : percentage >= 60 ? 'bg-yellow-500' : 'bg-orange-500';
 
   return (
     <div className="flex items-center gap-2">
@@ -185,9 +165,7 @@ function SuggestionItem({
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <SparklesIcon className="h-4 w-4 text-amber-500 shrink-0" />
-          <Badge className={`text-xs ${categoryStyle.color}`}>
-            {categoryStyle.label}
-          </Badge>
+          <Badge className={`text-xs ${categoryStyle.color}`}>{categoryStyle.label}</Badge>
         </div>
         <ConfidenceIndicator confidence={suggestion.confidence} />
       </div>
@@ -203,9 +181,7 @@ function SuggestionItem({
 
       {/* Content preview */}
       <div className="p-3 rounded bg-muted/50 mb-3">
-        <p className="text-sm text-foreground line-clamp-3">
-          {suggestion.content}
-        </p>
+        <p className="text-sm text-foreground line-clamp-3">{suggestion.content}</p>
       </div>
 
       {/* Usage info */}
@@ -214,17 +190,8 @@ function SuggestionItem({
       </p>
 
       {/* Actions */}
-      <div
-        className="flex items-center gap-2"
-        role="group"
-        aria-label="Acțiuni sugestie"
-      >
-        <Button
-          size="sm"
-          onClick={onAccept}
-          disabled={isProcessing}
-          className="flex-1"
-        >
+      <div className="flex items-center gap-2" role="group" aria-label="Acțiuni sugestie">
+        <Button size="sm" onClick={onAccept} disabled={isProcessing} className="flex-1">
           <CheckIcon className="mr-1" />
           Acceptă
         </Button>
@@ -259,12 +226,9 @@ function EmptyState() {
   return (
     <div className="text-center py-8">
       <SparklesIcon className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-      <h4 className="text-sm font-medium text-foreground mb-1">
-        Nicio sugestie momentan
-      </h4>
+      <h4 className="text-sm font-medium text-foreground mb-1">Nicio sugestie momentan</h4>
       <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-        AI-ul analizează comunicările tale și va sugera snippet-uri când
-        detectează fraze repetate.
+        AI-ul analizează comunicările tale și va sugera snippet-uri când detectează fraze repetate.
       </p>
     </div>
   );
@@ -340,9 +304,7 @@ function CustomizeDialog({
               <Input
                 id="customize-shortcut"
                 value={shortcut}
-                onChange={(e) =>
-                  setShortcut(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))
-                }
+                onChange={(e) => setShortcut(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
                 className="pl-7"
                 placeholder="shortcut"
               />
@@ -351,17 +313,10 @@ function CustomizeDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Anulează
           </Button>
-          <Button
-            onClick={() => onSave(shortcut, title)}
-            disabled={saving || !shortcut || !title}
-          >
+          <Button onClick={() => onSave(shortcut, title)} disabled={saving || !shortcut || !title}>
             {saving ? 'Se salvează...' : 'Salvează Snippet'}
           </Button>
         </DialogFooter>
@@ -379,14 +334,12 @@ export function SnippetSuggestionPanel({
   maxSuggestions = 5,
   onSuggestionAccepted,
 }: SnippetSuggestionPanelProps) {
-  const [customizeSuggestion, setCustomizeSuggestion] =
-    useState<SnippetSuggestion | null>(null);
+  const [customizeSuggestion, setCustomizeSuggestion] = useState<SnippetSuggestion | null>(null);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   const { suggestions, loading, error, refetch } = useSnippetSuggestions();
   const { acceptSuggestion, loading: accepting } = useAcceptSnippetSuggestion();
-  const { dismissSuggestion, loading: dismissing } =
-    useDismissSnippetSuggestion();
+  const { dismissSuggestion, loading: dismissing } = useDismissSnippetSuggestion();
 
   const displayedSuggestions = suggestions.slice(0, maxSuggestions);
 
@@ -450,15 +403,8 @@ export function SnippetSuggestionPanel({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Eroare la încărcarea sugestiilor.
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2"
-            onClick={() => refetch()}
-          >
+          <p className="text-sm text-destructive">Eroare la încărcarea sugestiilor.</p>
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => refetch()}>
             Încearcă din nou
           </Button>
         </CardContent>
@@ -474,9 +420,7 @@ export function SnippetSuggestionPanel({
             <div className="flex items-center gap-2">
               <SparklesIcon className="text-amber-500" />
               <CardTitle className="text-lg">Sugestii AI</CardTitle>
-              {suggestions.length > 0 && (
-                <Badge variant="secondary">{suggestions.length}</Badge>
-              )}
+              {suggestions.length > 0 && <Badge variant="secondary">{suggestions.length}</Badge>}
             </div>
             {suggestions.length > maxSuggestions && (
               <span className="text-xs text-muted-foreground">
@@ -484,18 +428,13 @@ export function SnippetSuggestionPanel({
               </span>
             )}
           </div>
-          <CardDescription>
-            Fraze detectate automat în comunicările tale
-          </CardDescription>
+          <CardDescription>Fraze detectate automat în comunicările tale</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-lg border bg-card animate-pulse"
-                >
+                <div key={i} className="p-4 rounded-lg border bg-card animate-pulse">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="h-4 w-4 bg-muted rounded" />
                     <div className="h-5 w-20 bg-muted rounded" />
@@ -517,11 +456,7 @@ export function SnippetSuggestionPanel({
                   onAccept={() => handleAccept(suggestion)}
                   onCustomize={() => setCustomizeSuggestion(suggestion)}
                   onDismiss={() => handleDismiss(suggestion)}
-                  isProcessing={
-                    processingIds.has(suggestion.content) ||
-                    accepting ||
-                    dismissing
-                  }
+                  isProcessing={processingIds.has(suggestion.content) || accepting || dismissing}
                 />
               ))}
             </div>
@@ -546,11 +481,7 @@ SnippetSuggestionPanel.displayName = 'SnippetSuggestionPanel';
 /**
  * Compact version for sidebar/widget usage
  */
-export function SnippetSuggestionBadge({
-  onClick,
-}: {
-  onClick?: () => void;
-}) {
+export function SnippetSuggestionBadge({ onClick }: { onClick?: () => void }) {
   const { suggestions, loading } = useSnippetSuggestions();
 
   if (loading || suggestions.length === 0) {

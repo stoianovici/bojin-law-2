@@ -123,12 +123,7 @@ describe('Modal', () => {
   describe('Accessibility', () => {
     it('has correct ARIA attributes with description', () => {
       render(
-        <Modal
-          open={true}
-          onOpenChange={() => {}}
-          title="Modal"
-          description="Modal description"
-        >
+        <Modal open={true} onOpenChange={() => {}} title="Modal" description="Modal description">
           Content
         </Modal>
       );
@@ -180,12 +175,7 @@ describe('Modal', () => {
   describe('Custom Styling', () => {
     it('applies custom className', () => {
       render(
-        <Modal
-          open={true}
-          onOpenChange={() => {}}
-          title="Modal"
-          className="custom-modal"
-        >
+        <Modal open={true} onOpenChange={() => {}} title="Modal" className="custom-modal">
           Content
         </Modal>
       );
@@ -231,12 +221,7 @@ describe('Modal', () => {
 
     it('renders description with correct styling', () => {
       render(
-        <Modal
-          open={true}
-          onOpenChange={() => {}}
-          title="Modal"
-          description="Description text"
-        >
+        <Modal open={true} onOpenChange={() => {}} title="Modal" description="Description text">
           Content
         </Modal>
       );

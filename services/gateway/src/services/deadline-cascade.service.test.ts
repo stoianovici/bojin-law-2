@@ -153,8 +153,12 @@ describe('DeadlineCascadeService', () => {
       const newDueDate = new Date('2025-12-12');
       const result = await analyzeDeadlineChange('task-1', newDueDate, 'firm-123');
 
-      expect(result.conflicts.some((c: DeadlineConflict) => c.conflictType === 'OverlapConflict')).toBe(true);
-      const overlapConflict = result.conflicts.find((c: DeadlineConflict) => c.conflictType === 'OverlapConflict');
+      expect(
+        result.conflicts.some((c: DeadlineConflict) => c.conflictType === 'OverlapConflict')
+      ).toBe(true);
+      const overlapConflict = result.conflicts.find(
+        (c: DeadlineConflict) => c.conflictType === 'OverlapConflict'
+      );
       expect(overlapConflict?.severity).toBe('Warning');
       expect(overlapConflict?.message).toContain('other task');
     });
@@ -311,9 +315,7 @@ describe('DeadlineCascadeService', () => {
           },
         ] as any)
         .mockResolvedValueOnce([]);
-      mockPrisma.task.findMany.mockResolvedValue([
-        { id: 'task-3', title: 'Overlap' },
-      ] as any);
+      mockPrisma.task.findMany.mockResolvedValue([{ id: 'task-3', title: 'Overlap' }] as any);
 
       const newDueDate = new Date('2025-12-12');
       const result = await analyzeDeadlineChange('task-1', newDueDate, 'firm-123');
@@ -326,9 +328,9 @@ describe('DeadlineCascadeService', () => {
     it('should throw error when task not found', async () => {
       mockPrisma.task.findUnique.mockResolvedValue(null);
 
-      await expect(
-        analyzeDeadlineChange('task-999', new Date(), 'firm-123')
-      ).rejects.toThrow('Task not found or access denied');
+      await expect(analyzeDeadlineChange('task-999', new Date(), 'firm-123')).rejects.toThrow(
+        'Task not found or access denied'
+      );
     });
 
     it('should throw error when firm does not match', async () => {
@@ -339,9 +341,9 @@ describe('DeadlineCascadeService', () => {
 
       mockPrisma.task.findUnique.mockResolvedValue(wrongFirmTask as any);
 
-      await expect(
-        analyzeDeadlineChange('task-1', new Date(), 'firm-123')
-      ).rejects.toThrow('Task not found or access denied');
+      await expect(analyzeDeadlineChange('task-1', new Date(), 'firm-123')).rejects.toThrow(
+        'Task not found or access denied'
+      );
     });
   });
 
@@ -427,9 +429,9 @@ describe('DeadlineCascadeService', () => {
         ] as any)
         .mockResolvedValueOnce([]);
 
-      await expect(
-        applyDeadlineCascade('task-1', pastDate, false, 'firm-123')
-      ).rejects.toThrow('Critical conflicts detected');
+      await expect(applyDeadlineCascade('task-1', pastDate, false, 'firm-123')).rejects.toThrow(
+        'Critical conflicts detected'
+      );
     });
 
     it('should apply cascade when critical conflicts exist but confirmed', async () => {
@@ -494,9 +496,7 @@ describe('DeadlineCascadeService', () => {
           },
         ] as any)
         .mockResolvedValueOnce([]);
-      mockPrisma.task.findMany.mockResolvedValue([
-        { id: 'task-3', title: 'Overlap' },
-      ] as any);
+      mockPrisma.task.findMany.mockResolvedValue([{ id: 'task-3', title: 'Overlap' }] as any);
 
       const updatedOriginal = { ...mockTask, dueDate: new Date('2025-12-12') };
       const updatedSuccessor = { ...successor, dueDate: new Date('2025-12-12') };

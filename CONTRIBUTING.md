@@ -67,6 +67,7 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) speci
 ### Scope
 
 The scope is optional and should reference the affected package or service:
+
 - `auth`, `document`, `task`, `ai`, `integration`, `notification`
 - `ui`, `shared`, `database`, `config`, `logger`
 - `web`, `admin`, `gateway`
@@ -96,6 +97,7 @@ The scope is optional and should reference the affected package or service:
 ### Examples
 
 #### Simple Commit
+
 ```
 feat(document): add version comparison feature
 
@@ -106,6 +108,7 @@ Story: 2.3
 ```
 
 #### Bug Fix
+
 ```
 fix(auth): prevent token expiration during active session
 
@@ -117,6 +120,7 @@ Story: 1.4
 ```
 
 #### Breaking Change
+
 ```
 refactor(api)!: change GraphQL schema for documents
 
@@ -203,6 +207,7 @@ Our testing strategy follows this distribution:
 #### 1. Unit Tests
 
 **Use For:**
+
 - Individual React components in isolation
 - Utility functions and helpers
 - Custom hooks
@@ -212,6 +217,7 @@ Our testing strategy follows this distribution:
 **Template:** `packages/shared/test-utils/templates/unit-test.template.tsx`
 
 **Key Practices:**
+
 - Test behavior, not implementation details
 - Use accessible queries (`getByRole`, `getByLabel`)
 - Mock external dependencies
@@ -219,6 +225,7 @@ Our testing strategy follows this distribution:
 - Use `renderWithProviders()` for components needing context
 
 **Example:**
+
 ```typescript
 import { render, screen } from '@testing-library/react';
 
@@ -231,6 +238,7 @@ test('should display user name', () => {
 #### 2. Integration Tests
 
 **Use For:**
+
 - API endpoints with database connections
 - GraphQL resolvers with data loaders
 - Component integration with backend services
@@ -241,6 +249,7 @@ test('should display user name', () => {
 **Template:** `packages/shared/test-utils/templates/integration-test.template.tsx`
 
 **Key Practices:**
+
 - Use real test database connection
 - Clean database between tests
 - Use Supertest for API testing
@@ -249,6 +258,7 @@ test('should display user name', () => {
 - Use factories for test data creation
 
 **Example:**
+
 ```typescript
 import request from 'supertest';
 
@@ -267,6 +277,7 @@ describe('POST /api/cases', () => {
 #### 3. E2E Tests
 
 **Use For:**
+
 - Complete user workflows (login → create case → upload document)
 - AI features requiring full integration
 - Multi-page navigation flows
@@ -277,6 +288,7 @@ describe('POST /api/cases', () => {
 **Template:** `tests/e2e/templates/e2e-test.template.spec.ts`
 
 **Key Practices:**
+
 - Use Page Object Model pattern
 - Test real user scenarios end-to-end
 - Use accessible locators
@@ -285,6 +297,7 @@ describe('POST /api/cases', () => {
 - Test authentication and sessions
 
 **Example:**
+
 ```typescript
 test('should create case and upload document', async ({ page }) => {
   const loginPage = new LoginPage(page);
@@ -300,6 +313,7 @@ test('should create case and upload document', async ({ page }) => {
 #### 4. Accessibility Tests
 
 **Use For:**
+
 - WCAG 2.0/2.1/2.2 Level AA compliance
 - Keyboard navigation
 - Screen reader compatibility
@@ -311,6 +325,7 @@ test('should create case and upload document', async ({ page }) => {
 **Template:** `tests/e2e/templates/a11y-test.template.spec.ts`
 
 **Key Practices:**
+
 - Test every page for a11y compliance
 - Use `testA11y()` helper from test-utils
 - Test keyboard navigation
@@ -319,6 +334,7 @@ test('should create case and upload document', async ({ page }) => {
 - Zero violations policy
 
 **Example:**
+
 ```typescript
 import { testA11y } from '@legal-platform/test-utils/a11y';
 
@@ -331,6 +347,7 @@ test('should have no accessibility violations', async ({ page }) => {
 #### 5. Performance Tests
 
 **Use For:**
+
 - Page load times
 - Core Web Vitals (LCP, FID, CLS)
 - Bundle size monitoring
@@ -341,6 +358,7 @@ test('should have no accessibility violations', async ({ page }) => {
 **Template:** `tests/performance/template.spec.ts`
 
 **Key Practices:**
+
 - Set performance budgets
 - Monitor Core Web Vitals
 - Test on throttled networks
@@ -349,6 +367,7 @@ test('should have no accessibility violations', async ({ page }) => {
 - Use Lighthouse CI for automation
 
 **Example:**
+
 ```typescript
 test('should load within performance budget', async ({ page }) => {
   const startTime = Date.now();
@@ -420,6 +439,7 @@ Each test template provides comprehensive examples and best practices:
 4. **Follow** the patterns and best practices documented in the template
 
 Templates include:
+
 - Detailed comments explaining each pattern
 - Multiple examples for common scenarios
 - Best practices checklist
@@ -444,12 +464,14 @@ const document = createDocument({ caseId: caseData.id });
 ```
 
 Available factories:
+
 - `createUser()` - User entities with all role variations
 - `createCase()` - Case entities with all status types
 - `createDocument()` - Document entities with all document types
 - `createTask()` - Task entities with all 6 task types
 
 All factories support:
+
 - Default values following project standards
 - Romanian names with diacritics for localization testing
 - Override capabilities for specific test scenarios
@@ -537,6 +559,7 @@ All tests run automatically on:
 ### Best Practices Summary
 
 ✅ **DO:**
+
 - Write tests before or alongside code (TDD/BDD)
 - Test behavior, not implementation
 - Use accessible queries
@@ -549,6 +572,7 @@ All tests run automatically on:
 - Use factories for test data
 
 ❌ **DON'T:**
+
 - Test implementation details
 - Use test IDs unless absolutely necessary
 - Write tests that depend on other tests
@@ -624,12 +648,12 @@ Each role has a default layout defined as an array of layout items:
 ```typescript
 const partnerLayout: LayoutItem[] = [
   {
-    id: 'supervised-cases',        // Unique widget ID
-    type: 'supervised-cases',       // Widget type
-    x: 0,                           // Grid column position (0-11)
-    y: 0,                           // Grid row position
-    w: 6,                           // Width in grid units (1-12)
-    h: 4,                           // Height in grid units
+    id: 'supervised-cases', // Unique widget ID
+    type: 'supervised-cases', // Widget type
+    x: 0, // Grid column position (0-11)
+    y: 0, // Grid row position
+    w: 6, // Width in grid units (1-12)
+    h: 4, // Height in grid units
   },
   // More widgets...
 ];
@@ -662,7 +686,9 @@ const initialPartnerWidgets = {
     id: 'my-new-widget',
     type: WidgetType.MY_NEW_WIDGET,
     title: 'My New Widget',
-    data: { /* widget data */ },
+    data: {
+      /* widget data */
+    },
   } as MyNewWidget,
 };
 ```
@@ -675,10 +701,10 @@ const partnerLayout = [
   {
     id: 'my-new-widget',
     type: 'my-new-widget',
-    x: 0,           // Start at column 0
-    y: 16,          // Position below existing widgets
-    w: 6,           // Half-width widget
-    h: 3,           // 3 row units tall
+    x: 0, // Start at column 0
+    y: 16, // Position below existing widgets
+    w: 6, // Half-width widget
+    h: 3, // 3 row units tall
   },
 ];
 ```
@@ -751,7 +777,7 @@ persist(
     name: 'dashboard-storage',
     storage: createJSONStorage(() => localStorage),
   }
-)
+);
 ```
 
 To reset to default layout:
@@ -837,21 +863,25 @@ This comprehensive guide covers:
 When modifying dashboards or widgets:
 
 1. **Unit Tests**: Test widget components in isolation
+
    ```bash
    pnpm test --filter=@legal-platform/web
    ```
 
 2. **Storybook**: Preview widgets in Storybook
+
    ```bash
    pnpm storybook
    ```
 
 3. **E2E Tests**: Test dashboard functionality end-to-end
+
    ```bash
    pnpm test:e2e tests/e2e/dashboard/
    ```
 
 4. **Accessibility**: Verify WCAG AA compliance
+
    ```bash
    pnpm test:a11y
    ```
@@ -866,6 +896,7 @@ When modifying dashboards or widgets:
 #### Issue: Widget Not Rendering
 
 **Solution**: Ensure widget is:
+
 1. Defined in the store's initial state
 2. Added to the role's layout array
 3. Registered in the dashboard page rendering logic
@@ -874,6 +905,7 @@ When modifying dashboards or widgets:
 #### Issue: Layout Not Persisting
 
 **Solution**: Check that:
+
 1. Zustand persist middleware is configured
 2. localStorage is available in the browser
 3. No console errors related to localStorage quota
@@ -882,6 +914,7 @@ When modifying dashboards or widgets:
 #### Issue: Widget Overlapping
 
 **Solution**: React Grid Layout prevents overlaps automatically, but check:
+
 1. Grid positions are within bounds (x: 0-11, y: any positive integer)
 2. Widget widths don't exceed 12 columns
 3. No duplicate widget IDs in the layout

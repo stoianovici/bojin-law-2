@@ -34,9 +34,7 @@ export function EmailsTab({ caseId }: EmailsTabProps) {
       {/* Email list for this case */}
       <div className="w-80 flex-shrink-0 border-r border-gray-200 overflow-y-auto dark:border-gray-700">
         <div className="border-b border-gray-200 p-3 dark:border-gray-700">
-          <h3 className="font-medium text-gray-900 dark:text-white">
-            Case Emails
-          </h3>
+          <h3 className="font-medium text-gray-900 dark:text-white">Case Emails</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {totalCount} email{totalCount !== 1 ? 's' : ''} in this case
           </p>
@@ -46,9 +44,7 @@ export function EmailsTab({ caseId }: EmailsTabProps) {
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">
             <EmailIcon className="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600" />
             <p className="mt-2 text-sm">No emails assigned to this case</p>
-            <p className="mt-1 text-xs">
-              Assign emails from the Email page
-            </p>
+            <p className="mt-1 text-xs">Assign emails from the Email page</p>
           </div>
         ) : (
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -63,9 +59,7 @@ export function EmailsTab({ caseId }: EmailsTabProps) {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {!email.isRead && (
-                      <span className="h-2 w-2 rounded-full bg-blue-600" />
-                    )}
+                    {!email.isRead && <span className="h-2 w-2 rounded-full bg-blue-600" />}
                     <span className="truncate text-sm font-medium text-gray-900 dark:text-white">
                       {email.from.name || email.from.address}
                     </span>

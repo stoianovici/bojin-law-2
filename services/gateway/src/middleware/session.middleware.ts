@@ -21,11 +21,7 @@ import { UserSessionData } from '../config/session.config';
  *     // req.user contains session data
  *   });
  */
-export const validateSession = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const validateSession = (req: Request, res: Response, next: NextFunction) => {
   // Check if session exists and has user data
   if (!req.session || !req.session.user) {
     return res.status(401).json({
@@ -71,11 +67,7 @@ export const validateSession = (
  *     // req.user may or may not exist
  *   });
  */
-export const optionalSession = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const optionalSession = (req: Request, res: Response, next: NextFunction) => {
   if (req.session && req.session.user) {
     const sessionUser = req.session.user;
     const now = Math.floor(Date.now() / 1000);
@@ -99,7 +91,9 @@ export const optionalSession = (
  *     // Only Partners can access
  *   });
  */
-export const requireRole = (allowedRoles: Array<'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner'>) => {
+export const requireRole = (
+  allowedRoles: Array<'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner'>
+) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({

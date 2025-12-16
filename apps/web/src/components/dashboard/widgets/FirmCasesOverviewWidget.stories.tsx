@@ -171,9 +171,9 @@ export const VariousPriorities: Story = {
   args: {
     widget: createFirmCasesOverviewWidget({
       highValueCases: [
-        ...generateHighValueCases(2).map(c => ({ ...c, priority: 'strategic' as const })),
-        ...generateHighValueCases(2).map(c => ({ ...c, priority: 'vip' as const })),
-        ...generateHighValueCases(1).map(c => ({ ...c, priority: 'highValue' as const })),
+        ...generateHighValueCases(2).map((c) => ({ ...c, priority: 'strategic' as const })),
+        ...generateHighValueCases(2).map((c) => ({ ...c, priority: 'vip' as const })),
+        ...generateHighValueCases(1).map((c) => ({ ...c, priority: 'highValue' as const })),
       ],
     }),
   },
@@ -186,9 +186,9 @@ export const AIInsightTypes: Story = {
   args: {
     widget: createFirmCasesOverviewWidget({
       aiInsights: [
-        ...generateAIInsights(2).map(i => ({ ...i, type: 'pattern' as const })),
-        ...generateAIInsights(2).map(i => ({ ...i, type: 'bottleneck' as const })),
-        ...generateAIInsights(2).map(i => ({ ...i, type: 'opportunity' as const })),
+        ...generateAIInsights(2).map((i) => ({ ...i, type: 'pattern' as const })),
+        ...generateAIInsights(2).map((i) => ({ ...i, type: 'bottleneck' as const })),
+        ...generateAIInsights(2).map((i) => ({ ...i, type: 'opportunity' as const })),
       ],
     }),
   },

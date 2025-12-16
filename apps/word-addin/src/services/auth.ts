@@ -95,15 +95,18 @@ async function initAuth(): Promise<void> {
 async function getOfficeSsoToken(): Promise<string | null> {
   return new Promise((resolve) => {
     try {
-      Office.auth.getAccessToken({
-        allowSignInPrompt: false,
-        allowConsentPrompt: false,
-      }).then((token: string) => {
-        resolve(token);
-      }).catch((error: { code: string }) => {
-        console.log('SSO token not available:', error.code);
-        resolve(null);
-      });
+      Office.auth
+        .getAccessToken({
+          allowSignInPrompt: false,
+          allowConsentPrompt: false,
+        })
+        .then((token: string) => {
+          resolve(token);
+        })
+        .catch((error: { code: string }) => {
+          console.log('SSO token not available:', error.code);
+          resolve(null);
+        });
     } catch {
       resolve(null);
     }
@@ -203,7 +206,8 @@ async function login(): Promise<void> {
  */
 async function dialogLogin(): Promise<void> {
   return new Promise((resolve, reject) => {
-    const authUrl = `${AUTH_CONFIG.authority}/oauth2/v2.0/authorize?` +
+    const authUrl =
+      `${AUTH_CONFIG.authority}/oauth2/v2.0/authorize?` +
       `client_id=${AUTH_CONFIG.clientId}` +
       `&response_type=code` +
       `&redirect_uri=${encodeURIComponent(AUTH_CONFIG.redirectUri)}` +

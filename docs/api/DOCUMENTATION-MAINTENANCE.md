@@ -10,22 +10,22 @@ This document provides guidelines for maintaining API documentation and ensuring
 
 ### Core Documentation Files
 
-| File | Purpose | Update Frequency | Owner |
-|------|---------|------------------|-------|
-| [README.md](./README.md) | Master API documentation index | As needed | Backend Team |
-| [schema/schema.md](./schema/schema.md) | Auto-generated GraphQL schema | Automatic on schema change | Auto-generated |
-| [playground-guide.md](./playground-guide.md) | Interactive testing guide | Quarterly | Backend Team |
-| [case-management-api.md](./case-management-api.md) | Case API reference | On feature changes | Backend Team |
-| [error-handling.md](./error-handling.md) | Error codes and handling | On error changes | Backend Team |
-| [versioning-strategy.md](./versioning-strategy.md) | API versioning policy | Annually | API Governance |
-| [breaking-changes.md](./breaking-changes.md) | Breaking change process | Annually | API Governance |
+| File                                               | Purpose                        | Update Frequency           | Owner          |
+| -------------------------------------------------- | ------------------------------ | -------------------------- | -------------- |
+| [README.md](./README.md)                           | Master API documentation index | As needed                  | Backend Team   |
+| [schema/schema.md](./schema/schema.md)             | Auto-generated GraphQL schema  | Automatic on schema change | Auto-generated |
+| [playground-guide.md](./playground-guide.md)       | Interactive testing guide      | Quarterly                  | Backend Team   |
+| [case-management-api.md](./case-management-api.md) | Case API reference             | On feature changes         | Backend Team   |
+| [error-handling.md](./error-handling.md)           | Error codes and handling       | On error changes           | Backend Team   |
+| [versioning-strategy.md](./versioning-strategy.md) | API versioning policy          | Annually                   | API Governance |
+| [breaking-changes.md](./breaking-changes.md)       | Breaking change process        | Annually                   | API Governance |
 
 ### Supporting Files
 
-| File | Purpose |
-|------|---------|
+| File                                                                                 | Purpose                |
+| ------------------------------------------------------------------------------------ | ---------------------- |
 | [collections/legal-platform.postman.json](./collections/legal-platform.postman.json) | Postman API collection |
-| [DOCUMENTATION-MAINTENANCE.md](./DOCUMENTATION-MAINTENANCE.md) | This file |
+| [DOCUMENTATION-MAINTENANCE.md](./DOCUMENTATION-MAINTENANCE.md)                       | This file              |
 
 ---
 
@@ -69,17 +69,20 @@ This document provides guidelines for maintaining API documentation and ensuring
 **Location:** `docs/api/schema/schema.md`
 
 **Generation Command:**
+
 ```bash
 cd services/gateway
 pnpm docs:generate
 ```
 
 **Automation:**
+
 - Auto-generated via GitHub Actions on schema changes
 - Triggered on push to main/develop
 - Workflow: `.github/workflows/docs-generation.yml`
 
 **Manual Regeneration:**
+
 ```bash
 # From project root
 cd services/gateway
@@ -95,15 +98,15 @@ cat ../../docs/api/schema/schema.md
 
 ### When to Update Documentation
 
-| Trigger | Files to Update |
-|---------|-----------------|
-| **New GraphQL type added** | schema.md (auto), case-management-api.md, playground-guide.md |
-| **New query/mutation** | case-management-api.md, playground-guide.md, Postman collection |
-| **Field deprecated** | schema.md (auto), breaking-changes.md, migration guide |
-| **Error code added** | error-handling.md |
-| **Authentication changed** | README.md, playground-guide.md |
-| **Breaking change announced** | breaking-changes.md, versioning-strategy.md, email |
-| **API version released** | README.md, CHANGELOG.md |
+| Trigger                       | Files to Update                                                 |
+| ----------------------------- | --------------------------------------------------------------- |
+| **New GraphQL type added**    | schema.md (auto), case-management-api.md, playground-guide.md   |
+| **New query/mutation**        | case-management-api.md, playground-guide.md, Postman collection |
+| **Field deprecated**          | schema.md (auto), breaking-changes.md, migration guide          |
+| **Error code added**          | error-handling.md                                               |
+| **Authentication changed**    | README.md, playground-guide.md                                  |
+| **Breaking change announced** | breaking-changes.md, versioning-strategy.md, email              |
+| **API version released**      | README.md, CHANGELOG.md                                         |
 
 ---
 
@@ -114,6 +117,7 @@ cat ../../docs/api/schema/schema.md
 Run this checklist quarterly:
 
 **README.md:**
+
 - [ ] Link to playground-guide.md
 - [ ] Link to schema/schema.md
 - [ ] Link to case-management-api.md
@@ -122,21 +126,25 @@ Run this checklist quarterly:
 - [ ] Link to breaking-changes.md
 
 **playground-guide.md:**
+
 - [ ] Link to schema/schema.md
 - [ ] Link to case-management-api.md
 - [ ] Link to error-handling.md
 
 **error-handling.md:**
+
 - [ ] Link to ../architecture/error-handling-strategy.md
 - [ ] Link to README.md
 - [ ] Link to playground-guide.md
 
 **versioning-strategy.md:**
+
 - [ ] Link to breaking-changes.md
 - [ ] Link to README.md
 - [ ] Link to schema/schema.md
 
 **breaking-changes.md:**
+
 - [ ] Link to versioning-strategy.md
 - [ ] Link to README.md
 - [ ] Link to error-handling.md
@@ -209,7 +217,7 @@ echo "All tests passed!"
 
 ### Formatting Standards
 
-```markdown
+````markdown
 # Main Title (H1)
 
 > Blockquote for important notes
@@ -225,11 +233,13 @@ echo "All tests passed!"
 ```language
 code block with language specified
 ```
+````
 
 | Table | Formatting |
-|-------|------------|
-| Value | Aligned |
-```
+| ----- | ---------- |
+| Value | Aligned    |
+
+````
 
 ### Common Patterns
 
@@ -237,11 +247,13 @@ code block with language specified
 ```markdown
 **Development:** http://localhost:4000/graphql
 **Production:** https://api.legal-platform.com/graphql
-```
+````
 
 **Query Examples:**
-```markdown
+
+````markdown
 **Query:**
+
 ```graphql
 query GetCase($id: UUID!) {
   case(id: $id) {
@@ -250,13 +262,16 @@ query GetCase($id: UUID!) {
   }
 }
 ```
+````
 
 **Variables:**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
 ```
 
 ---
@@ -292,18 +307,22 @@ query GetCase($id: UUID!) {
 
 **Branch Naming:**
 ```
+
 docs/api/[feature-name]
+
 ```
 
 **Commit Messages:**
 ```
+
 docs: [brief description]
 
 - Detailed change 1
 - Detailed change 2
 
 Story: 2.7
-```
+
+````
 
 **Pull Request Template:**
 ```markdown
@@ -322,7 +341,7 @@ Story: 2.7
 ### Related
 Story: [Story ID]
 Issue: [Issue ID if applicable]
-```
+````
 
 ---
 
@@ -339,6 +358,7 @@ For critical errors in documentation:
    - Wrong error codes
 
 2. **Quick Fix Process**
+
    ```bash
    # Create hotfix branch
    git checkout -b docs/hotfix/[issue]
@@ -366,13 +386,13 @@ For critical errors in documentation:
 
 Track these metrics quarterly:
 
-| Metric | Target | How to Measure |
-|--------|--------|----------------|
-| **Doc Coverage** | 100% of API surface | Compare schema to docs |
-| **Link Health** | 0 broken links | Automated link checker |
-| **Freshness** | Updated within 1 week of changes | Git history analysis |
-| **User Satisfaction** | >80% satisfied | Quarterly survey |
-| **Support Tickets** | <10/month for doc issues | Ticket analysis |
+| Metric                | Target                           | How to Measure         |
+| --------------------- | -------------------------------- | ---------------------- |
+| **Doc Coverage**      | 100% of API surface              | Compare schema to docs |
+| **Link Health**       | 0 broken links                   | Automated link checker |
+| **Freshness**         | Updated within 1 week of changes | Git history analysis   |
+| **User Satisfaction** | >80% satisfied                   | Quarterly survey       |
+| **Support Tickets**   | <10/month for doc issues         | Ticket analysis        |
 
 ---
 
@@ -381,11 +401,13 @@ Track these metrics quarterly:
 ### Current Automation
 
 ✅ **Implemented:**
+
 - Schema documentation auto-generation
 - CI/CD integration for schema docs
 - Auto-commit of generated docs
 
 ⏳ **Planned:**
+
 - Link checker in CI/CD
 - Code example validation
 - Spell check automation

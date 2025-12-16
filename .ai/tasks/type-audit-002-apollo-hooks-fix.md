@@ -13,9 +13,9 @@ Two hooks incorrectly import `useQueryClient` from `@apollo/client` (doesn't exi
 
 ## Files to Modify
 
-| File | Action |
-|------|--------|
-| `apps/web/src/hooks/useTaskTemplates.ts` | Fix imports and mutation callbacks |
+| File                                        | Action                             |
+| ------------------------------------------- | ---------------------------------- |
+| `apps/web/src/hooks/useTaskTemplates.ts`    | Fix imports and mutation callbacks |
 | `apps/web/src/hooks/useTaskDependencies.ts` | Fix imports and mutation callbacks |
 
 ---
@@ -37,6 +37,7 @@ import { useQuery, useMutation } from '@apollo/client';
 Replace `onSuccess` with `refetchQueries`. There are 5 mutations to fix:
 
 **useCreateTemplate (lines 251-265):**
+
 ```typescript
 // FROM:
 export function useCreateTemplate() {
@@ -59,6 +60,7 @@ export function useCreateTemplate() {
 ```
 
 **useUpdateTemplate (lines 268-282):**
+
 ```typescript
 // TO:
 export function useUpdateTemplate() {
@@ -70,6 +72,7 @@ export function useUpdateTemplate() {
 ```
 
 **useDeleteTemplate (lines 285-299):**
+
 ```typescript
 // TO:
 export function useDeleteTemplate() {
@@ -81,6 +84,7 @@ export function useDeleteTemplate() {
 ```
 
 **useDuplicateTemplate (lines 302-316):**
+
 ```typescript
 // TO:
 export function useDuplicateTemplate() {
@@ -92,6 +96,7 @@ export function useDuplicateTemplate() {
 ```
 
 **useApplyTemplate (lines 319-334):**
+
 ```typescript
 // TO:
 export function useApplyTemplate() {
@@ -119,6 +124,7 @@ import { useQuery, useMutation } from '@apollo/client';
 ### Step 2: Fix all mutation hooks
 
 **useAddDependency (lines 254-276):**
+
 ```typescript
 // FROM:
 export function useAddDependency() {
@@ -142,6 +148,7 @@ export function useAddDependency() {
 ```
 
 **useRemoveDependency (lines 279-294):**
+
 ```typescript
 // TO:
 export function useRemoveDependency() {
@@ -153,6 +160,7 @@ export function useRemoveDependency() {
 ```
 
 **useApplyCascade (lines 309-325):**
+
 ```typescript
 // TO:
 export function useApplyCascade() {
@@ -164,6 +172,7 @@ export function useApplyCascade() {
 ```
 
 **useRecalculateCriticalPath (lines 328-343):**
+
 ```typescript
 // TO:
 export function useRecalculateCriticalPath() {

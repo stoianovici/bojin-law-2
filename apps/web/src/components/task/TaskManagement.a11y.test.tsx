@@ -84,7 +84,7 @@ describe('Task Management Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });
@@ -112,11 +112,7 @@ describe('Task Management Accessibility', () => {
 
     it('should not have any accessibility violations', async () => {
       const { container } = render(
-        <KanbanBoard
-          tasks={mockTasks}
-          onTaskClick={jest.fn()}
-          onTaskStatusChange={jest.fn()}
-        />
+        <KanbanBoard tasks={mockTasks} onTaskClick={jest.fn()} onTaskStatusChange={jest.fn()} />
       );
 
       const results = await axe(container);
@@ -125,11 +121,7 @@ describe('Task Management Accessibility', () => {
 
     it('should have proper ARIA labels for kanban columns', async () => {
       const { container } = render(
-        <KanbanBoard
-          tasks={mockTasks}
-          onTaskClick={jest.fn()}
-          onTaskStatusChange={jest.fn()}
-        />
+        <KanbanBoard tasks={mockTasks} onTaskClick={jest.fn()} onTaskStatusChange={jest.fn()} />
       );
 
       const results = await axe(container, {
@@ -144,16 +136,12 @@ describe('Task Management Accessibility', () => {
 
     it('should have accessible drag-and-drop with keyboard alternatives', async () => {
       const { container } = render(
-        <KanbanBoard
-          tasks={mockTasks}
-          onTaskClick={jest.fn()}
-          onTaskStatusChange={jest.fn()}
-        />
+        <KanbanBoard tasks={mockTasks} onTaskClick={jest.fn()} onTaskStatusChange={jest.fn()} />
       );
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'button-name': { enabled: true },
         },
       });
@@ -163,11 +151,7 @@ describe('Task Management Accessibility', () => {
 
     it('should have proper color contrast for task cards', async () => {
       const { container } = render(
-        <KanbanBoard
-          tasks={mockTasks}
-          onTaskClick={jest.fn()}
-          onTaskStatusChange={jest.fn()}
-        />
+        <KanbanBoard tasks={mockTasks} onTaskClick={jest.fn()} onTaskStatusChange={jest.fn()} />
       );
 
       const results = await axe(container, {
@@ -277,7 +261,7 @@ describe('Task Management Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });
@@ -299,7 +283,7 @@ describe('Task Management Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'label': { enabled: true },
+          label: { enabled: true },
           'form-field-multiple-labels': { enabled: true },
         },
       });
@@ -314,7 +298,7 @@ describe('Task Management Accessibility', () => {
         rules: {
           'button-name': { enabled: true },
           'aria-required-attr': { enabled: true },
-          'label': { enabled: true },
+          label: { enabled: true },
         },
       });
 
@@ -338,7 +322,7 @@ describe('Task Management Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });
@@ -380,7 +364,7 @@ describe('Task Management Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'label': { enabled: true },
+          label: { enabled: true },
           'form-field-multiple-labels': { enabled: true },
           'aria-required-attr': { enabled: true },
         },
@@ -398,7 +382,7 @@ describe('Task Management Accessibility', () => {
         rules: {
           'button-name': { enabled: true },
           'aria-required-attr': { enabled: true },
-          'label': { enabled: true },
+          label: { enabled: true },
         },
       });
 
@@ -412,7 +396,7 @@ describe('Task Management Accessibility', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });
@@ -506,11 +490,7 @@ describe('Task Management Accessibility', () => {
       }));
 
       const { container } = render(
-        <KanbanBoard
-          tasks={researchTasks}
-          onTaskClick={jest.fn()}
-          onTaskStatusChange={jest.fn()}
-        />
+        <KanbanBoard tasks={researchTasks} onTaskClick={jest.fn()} onTaskStatusChange={jest.fn()} />
       );
 
       const results = await axe(container, {
@@ -567,11 +547,7 @@ describe('Task Management Accessibility', () => {
       }));
 
       const { container } = render(
-        <KanbanBoard
-          tasks={meetingTasks}
-          onTaskClick={jest.fn()}
-          onTaskStatusChange={jest.fn()}
-        />
+        <KanbanBoard tasks={meetingTasks} onTaskClick={jest.fn()} onTaskStatusChange={jest.fn()} />
       );
 
       const results = await axe(container, {

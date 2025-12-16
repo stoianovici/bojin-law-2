@@ -72,7 +72,12 @@ export function ReviewCaseModal({
             </div>
             <Dialog.Close className="text-gray-400 hover:text-gray-500">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </Dialog.Close>
           </div>
@@ -92,17 +97,20 @@ export function ReviewCaseModal({
               <div>
                 <span className="text-blue-700 font-medium">Submitted on:</span>{' '}
                 <span className="text-blue-900">
-                  {caseData.approval?.submittedAt ? formatDate(caseData.approval.submittedAt) : 'N/A'}
+                  {caseData.approval?.submittedAt
+                    ? formatDate(caseData.approval.submittedAt)
+                    : 'N/A'}
                 </span>
               </div>
-              {caseData.approval?.revisionCount !== undefined && caseData.approval.revisionCount > 0 && (
-                <div className="col-span-2">
-                  <span className="text-blue-700 font-medium">Revision:</span>{' '}
-                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 border border-amber-200">
-                    Revision #{caseData.approval.revisionCount}
-                  </span>
-                </div>
-              )}
+              {caseData.approval?.revisionCount !== undefined &&
+                caseData.approval.revisionCount > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-blue-700 font-medium">Revision:</span>{' '}
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 border border-amber-200">
+                      Revision #{caseData.approval.revisionCount}
+                    </span>
+                  </div>
+                )}
               {caseData.approval?.status === 'Rejected' && caseData.approval?.rejectionReason && (
                 <div className="col-span-2">
                   <span className="text-blue-700 font-medium">Previous rejection reason:</span>
@@ -154,7 +162,9 @@ export function ReviewCaseModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <div className="text-base text-gray-900 whitespace-pre-wrap">{caseData.description}</div>
+              <div className="text-base text-gray-900 whitespace-pre-wrap">
+                {caseData.description}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -168,16 +178,15 @@ export function ReviewCaseModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Opened Date</label>
-                <div className="text-base text-gray-900">
-                  {formatDate(caseData.openedDate)}
-                </div>
+                <div className="text-base text-gray-900">{formatDate(caseData.openedDate)}</div>
               </div>
             </div>
 
             {isEditMode && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-4">
                 <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> Inline editing is not yet implemented. This will be added in a future update.
+                  <strong>Note:</strong> Inline editing is not yet implemented. This will be added
+                  in a future update.
                 </p>
               </div>
             )}

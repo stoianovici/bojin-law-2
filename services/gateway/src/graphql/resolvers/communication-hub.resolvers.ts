@@ -74,11 +74,7 @@ const Query = {
     );
   },
 
-  communicationEntry: async (
-    _: any,
-    args: { id: string },
-    context: Context
-  ) => {
+  communicationEntry: async (_: any, args: { id: string }, context: Context) => {
     return unifiedTimelineService.getCommunicationEntry(args.id, {
       userId: context.user.id,
       role: context.user.role,
@@ -108,11 +104,7 @@ const Query = {
     return result.templates;
   },
 
-  communicationTemplate: async (
-    _: any,
-    args: { id: string },
-    context: Context
-  ) => {
+  communicationTemplate: async (_: any, args: { id: string }, context: Context) => {
     return communicationTemplateService.getTemplate(args.id, {
       userId: context.user.id,
       firmId: context.user.firmId,
@@ -132,11 +124,7 @@ const Query = {
     return result.items;
   },
 
-  bulkCommunicationProgress: async (
-    _: any,
-    args: { id: string },
-    context: Context
-  ) => {
+  bulkCommunicationProgress: async (_: any, args: { id: string }, context: Context) => {
     const bulkComm = await bulkCommunicationService.getBulkCommunication(args.id, {
       userId: context.user.id,
       firmId: context.user.firmId,
@@ -195,11 +183,7 @@ const Query = {
   },
 
   // Export Queries
-  communicationExports: async (
-    _: any,
-    args: { caseId: string },
-    context: Context
-  ) => {
+  communicationExports: async (_: any, args: { caseId: string }, context: Context) => {
     const result = await communicationExportService.listExports(args.caseId, {
       userId: context.user.id,
       firmId: context.user.firmId,
@@ -207,11 +191,7 @@ const Query = {
     return result.exports;
   },
 
-  communicationExport: async (
-    _: any,
-    args: { id: string },
-    context: Context
-  ) => {
+  communicationExport: async (_: any, args: { id: string }, context: Context) => {
     return communicationExportService.getExport(args.id, {
       userId: context.user.id,
       firmId: context.user.firmId,
@@ -271,11 +251,7 @@ const Mutation = {
     };
   },
 
-  updateInternalNote: async (
-    _: any,
-    args: { id: string; body: string },
-    context: Context
-  ) => {
+  updateInternalNote: async (_: any, args: { id: string; body: string }, context: Context) => {
     const note = await internalNotesService.updateInternalNote(
       args.id,
       { body: args.body },
@@ -303,11 +279,7 @@ const Mutation = {
     };
   },
 
-  deleteInternalNote: async (
-    _: any,
-    args: { id: string },
-    context: Context
-  ) => {
+  deleteInternalNote: async (_: any, args: { id: string }, context: Context) => {
     return internalNotesService.deleteInternalNote(args.id, {
       userId: context.user.id,
       role: context.user.role,
@@ -377,18 +349,13 @@ const Mutation = {
     },
     context: Context
   ) => {
-    return communicationTemplateService.updateTemplate(
-      args.id,
-      args.input,
-      { userId: context.user.id, firmId: context.user.firmId }
-    );
+    return communicationTemplateService.updateTemplate(args.id, args.input, {
+      userId: context.user.id,
+      firmId: context.user.firmId,
+    });
   },
 
-  deleteCommunicationTemplate: async (
-    _: any,
-    args: { id: string },
-    context: Context
-  ) => {
+  deleteCommunicationTemplate: async (_: any, args: { id: string }, context: Context) => {
     return communicationTemplateService.deleteTemplate(args.id, {
       userId: context.user.id,
       firmId: context.user.firmId,
@@ -445,11 +412,7 @@ const Mutation = {
     );
   },
 
-  sendBulkCommunication: async (
-    _: any,
-    args: { id: string },
-    context: Context
-  ) => {
+  sendBulkCommunication: async (_: any, args: { id: string }, context: Context) => {
     // Resolve recipients first if not done
     await bulkCommunicationService.resolveRecipients(args.id, {
       userId: context.user.id,
@@ -462,11 +425,7 @@ const Mutation = {
     });
   },
 
-  cancelBulkCommunication: async (
-    _: any,
-    args: { id: string },
-    context: Context
-  ) => {
+  cancelBulkCommunication: async (_: any, args: { id: string }, context: Context) => {
     return bulkCommunicationService.cancelBulkCommunication(args.id, {
       userId: context.user.id,
       firmId: context.user.firmId,

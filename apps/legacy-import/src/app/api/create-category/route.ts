@@ -12,18 +12,12 @@ export async function POST(request: NextRequest) {
     const { sessionId, name } = body;
 
     if (!sessionId || !name) {
-      return NextResponse.json(
-        { error: 'Missing sessionId or name' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing sessionId or name' }, { status: 400 });
     }
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      return NextResponse.json(
-        { error: 'Category name cannot be empty' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Category name cannot be empty' }, { status: 400 });
     }
 
     // TODO: Get actual user ID from auth context
@@ -69,9 +63,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newCategory, { status: 201 });
   } catch (error) {
     console.error('Failed to create category:', error);
-    return NextResponse.json(
-      { error: 'Failed to create category' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
   }
 }

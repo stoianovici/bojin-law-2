@@ -14,7 +14,17 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 import type { WeeklySummary } from '@legal-platform/types';
 
 export interface WeeklySummaryDashboardProps {
@@ -133,27 +143,13 @@ export function WeeklySummaryDashboard({
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={handlePreviousWeek}
-          >
+          <Button type="button" variant="outline" size="icon" onClick={handlePreviousWeek}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleThisWeek}
-          >
+          <Button type="button" variant="outline" onClick={handleThisWeek}>
             This Week
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={handleNextWeek}
-          >
+          <Button type="button" variant="outline" size="icon" onClick={handleNextWeek}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -216,7 +212,11 @@ export function WeeklySummaryDashboard({
             <div>
               <p className="text-sm font-medium text-gray-600">Billable Amount</p>
               <p className="text-3xl font-bold text-blue-700 mt-2">
-                ${billableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                $
+                {billableAmount.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-blue-600" />
@@ -231,10 +231,7 @@ export function WeeklySummaryDashboard({
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 12 }}
-            />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis
               label={{ value: 'Hours', angle: -90, position: 'insideLeft' }}
               tick={{ fontSize: 12 }}
@@ -246,9 +243,7 @@ export function WeeklySummaryDashboard({
                   return (
                     <div className="bg-white p-3 border rounded shadow-lg">
                       <p className="font-semibold text-sm mb-2">{data.date}</p>
-                      <p className="text-sm text-green-600">
-                        Billable: {data.Billable}h
-                      </p>
+                      <p className="text-sm text-green-600">Billable: {data.Billable}h</p>
                       <p className="text-sm text-orange-600">
                         Non-Billable: {data['Non-Billable']}h
                       </p>
@@ -271,11 +266,7 @@ export function WeeklySummaryDashboard({
       {/* View Details Link */}
       {onViewDetails && (
         <div className="flex justify-center">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onViewDetails}
-          >
+          <Button type="button" variant="outline" onClick={onViewDetails}>
             View Detailed Timesheet
           </Button>
         </div>

@@ -188,9 +188,7 @@ test.describe('Semantic Version Control', () => {
       await page.click('[data-testid="filter-critical"]');
 
       // Check filter is applied
-      await expect(page.locator('[data-testid="significance-filter"]')).toContainText(
-        'Critical'
-      );
+      await expect(page.locator('[data-testid="significance-filter"]')).toContainText('Critical');
     });
 
     test('should toggle formatting changes visibility', async ({ page }) => {
@@ -477,13 +475,13 @@ test.describe('Semantic Version Control', () => {
       await page.waitForURL(/\/dashboard|\/cases/);
 
       // Try to access version comparison
-      await page.goto(
-        `/cases/${TEST_CASE_ID}/documents/${TEST_DOCUMENT_ID}/compare?from=v1&to=v2`
-      );
+      await page.goto(`/cases/${TEST_CASE_ID}/documents/${TEST_DOCUMENT_ID}/compare?from=v1&to=v2`);
 
       // Should see access denied or redirect
       await expect(
-        page.locator('[data-testid="access-denied"]').or(page.locator('[data-testid="document-detail"]'))
+        page
+          .locator('[data-testid="access-denied"]')
+          .or(page.locator('[data-testid="document-detail"]'))
       ).toBeVisible();
     });
   });

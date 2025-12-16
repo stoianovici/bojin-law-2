@@ -8,15 +8,7 @@
  */
 
 import { useState } from 'react';
-import {
-  Award,
-  Plus,
-  Trash2,
-  CheckCircle,
-  Loader2,
-  Star,
-  Save,
-} from 'lucide-react';
+import { Award, Plus, Trash2, CheckCircle, Loader2, Star, Save } from 'lucide-react';
 import type { UserSkill, SkillType } from '@legal-platform/types';
 
 interface UserSkillsManagerProps {
@@ -101,9 +93,7 @@ function ProficiencySlider({
             onClick={() => !disabled && onChange(level)}
             disabled={disabled}
             className={`h-2 flex-1 rounded-full transition-colors ${
-              level <= value
-                ? 'bg-blue-500'
-                : 'bg-gray-200'
+              level <= value ? 'bg-blue-500' : 'bg-gray-200'
             } ${disabled ? 'cursor-default' : 'hover:bg-blue-400'}`}
             aria-label={`Set proficiency to ${labels[level - 1]}`}
           />
@@ -136,9 +126,7 @@ function SkillCard({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-900">
-              {skillInfo?.label || skill.skillType}
-            </span>
+            <span className="font-medium text-gray-900">{skillInfo?.label || skill.skillType}</span>
             {skill.verified && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
                 <CheckCircle className="h-3 w-3" />
@@ -173,11 +161,7 @@ function SkillCard({
       </div>
 
       <div className="mt-3">
-        <ProficiencySlider
-          value={skill.proficiency}
-          onChange={onUpdate}
-          disabled={disabled}
-        />
+        <ProficiencySlider value={skill.proficiency} onChange={onUpdate} disabled={disabled} />
       </div>
     </div>
   );
@@ -207,10 +191,7 @@ export function UserSkillsManager({
   const availableSkills = ALL_SKILLS.filter((s) => !existingSkillTypes.has(s.type));
 
   const handleAddSkill = (skillType: SkillType) => {
-    setLocalSkills((prev) => [
-      ...prev,
-      { skillType, proficiency: 3, verified: false },
-    ]);
+    setLocalSkills((prev) => [...prev, { skillType, proficiency: 3, verified: false }]);
     setShowAddSkill(false);
   };
 
@@ -239,7 +220,9 @@ export function UserSkillsManager({
   };
 
   const hasChanges =
-    JSON.stringify(localSkills.map((s) => ({ skillType: s.skillType, proficiency: s.proficiency }))) !==
+    JSON.stringify(
+      localSkills.map((s) => ({ skillType: s.skillType, proficiency: s.proficiency }))
+    ) !==
     JSON.stringify(skills.map((s) => ({ skillType: s.skillType, proficiency: s.proficiency })));
 
   if (isLoading) {
@@ -334,9 +317,7 @@ export function UserSkillsManager({
               onUpdate={(proficiency) => handleUpdateSkill(skill.skillType, proficiency)}
               onRemove={() => handleRemoveSkill(skill.skillType)}
               onVerify={
-                isPartner && skill.id && onVerifySkill
-                  ? () => onVerifySkill(skill.id!)
-                  : undefined
+                isPartner && skill.id && onVerifySkill ? () => onVerifySkill(skill.id!) : undefined
               }
               canVerify={isPartner}
             />
@@ -347,7 +328,8 @@ export function UserSkillsManager({
       {/* Legend */}
       <div className="pt-4 border-t">
         <div className="text-xs text-gray-500">
-          <span className="font-medium">Proficiency Levels:</span> Beginner → Basic → Intermediate → Advanced → Expert
+          <span className="font-medium">Proficiency Levels:</span> Beginner → Basic → Intermediate →
+          Advanced → Expert
         </div>
         {isPartner && (
           <div className="text-xs text-gray-500 mt-1">

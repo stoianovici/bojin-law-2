@@ -107,9 +107,7 @@ export function ExportModal({
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Cloud className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              Exportă în OneDrive
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Exportă în OneDrive</h2>
           </div>
           {status !== 'exporting' && (
             <button
@@ -126,8 +124,8 @@ export function ExportModal({
           {status === 'ready' && (
             <>
               <p className="text-gray-600 mb-4">
-                Exportă documentele categorizate în contul tău OneDrive pentru
-                antrenament AI. Aceasta va:
+                Exportă documentele categorizate în contul tău OneDrive pentru antrenament AI.
+                Aceasta va:
               </p>
 
               <ul className="space-y-3 mb-6">
@@ -140,25 +138,23 @@ export function ExportModal({
                 <li className="flex items-start gap-3 text-sm">
                   <FileText className="h-5 w-5 text-green-500 mt-0.5" />
                   <span>
-                    Încărca <strong>{stats.categorizedCount}</strong> documente
-                    categorizate în <strong>{stats.categoriesCount}</strong>{' '}
-                    foldere de categorii
+                    Încărca <strong>{stats.categorizedCount}</strong> documente categorizate în{' '}
+                    <strong>{stats.categoriesCount}</strong> foldere de categorii
                   </span>
                 </li>
                 <li className="flex items-start gap-3 text-sm">
                   <Trash2 className="h-5 w-5 text-red-500 mt-0.5" />
                   <span>
-                    Șterge automat fișierele temporare din stocare cloud
-                    (PST și documentele extrase)
+                    Șterge automat fișierele temporare din stocare cloud (PST și documentele
+                    extrase)
                   </span>
                 </li>
               </ul>
 
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
                 <p className="text-sm text-amber-800">
-                  <strong>Notă:</strong> {stats.skippedCount} documente sărite
-                  NU vor fi exportate. Asigură-te că ai verificat și
-                  categorizat toate documentele importante.
+                  <strong>Notă:</strong> {stats.skippedCount} documente sărite NU vor fi exportate.
+                  Asigură-te că ai verificat și categorizat toate documentele importante.
                 </p>
               </div>
             </>
@@ -167,18 +163,14 @@ export function ExportModal({
           {status === 'authenticating' && (
             <div className="text-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">
-                Se autentifică cu Microsoft...
-              </p>
+              <p className="text-gray-600">Se autentifică cu Microsoft...</p>
             </div>
           )}
 
           {status === 'exporting' && (
             <div className="py-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Se exportă documentele...
-                </span>
+                <span className="text-sm font-medium text-gray-700">Se exportă documentele...</span>
                 <span className="text-sm text-gray-500">{progress}%</span>
               </div>
               <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-3">
@@ -188,9 +180,7 @@ export function ExportModal({
                 />
               </div>
               {currentCategory && (
-                <p className="text-sm text-gray-500 text-center">
-                  {currentCategory}
-                </p>
+                <p className="text-sm text-gray-500 text-center">{currentCategory}</p>
               )}
             </div>
           )}
@@ -198,9 +188,7 @@ export function ExportModal({
           {status === 'success' && result && (
             <div className="text-center py-4">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Export finalizat!
-              </h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Export finalizat!</h3>
               <p className="text-gray-600 mb-4">
                 {result.documentsExported} documente exportate cu succes în{' '}
                 {result.categoriesExported} categorii.
@@ -234,9 +222,7 @@ export function ExportModal({
           {status === 'error' && (
             <div className="text-center py-4">
               <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Export eșuat
-              </h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Export eșuat</h3>
               <p className="text-red-600 mb-4">{error}</p>
             </div>
           )}
@@ -302,9 +288,8 @@ async function getMicrosoftAccessToken(): Promise<string | null> {
   // https://developer.microsoft.com/en-us/graph/graph-explorer
 
   // Check if there's a token in localStorage (for testing)
-  const testToken = typeof window !== 'undefined'
-    ? localStorage.getItem('ms_graph_test_token')
-    : null;
+  const testToken =
+    typeof window !== 'undefined' ? localStorage.getItem('ms_graph_test_token') : null;
 
   if (testToken) {
     return testToken;

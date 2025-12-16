@@ -22,10 +22,7 @@ export class TextExtractionService {
    * @param fileBuffer - File content as Buffer
    * @returns Extracted text with metadata
    */
-  async extractText(
-    input: ExtractTextInput,
-    fileBuffer: Buffer
-  ): Promise<ExtractTextOutput> {
+  async extractText(input: ExtractTextInput, fileBuffer: Buffer): Promise<ExtractTextOutput> {
     const startTime = Date.now();
 
     try {
@@ -116,17 +113,19 @@ export class TextExtractionService {
    * @returns Cleaned text
    */
   private cleanText(text: string): string {
-    return text
-      // Normalize whitespace
-      .replace(/\s+/g, ' ')
-      // Remove control characters except newlines and tabs
-      // eslint-disable-next-line no-control-regex
-      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '')
-      // Normalize quotes
-      .replace(/[""]/g, '"')
-      .replace(/['']/g, "'")
-      // Trim
-      .trim();
+    return (
+      text
+        // Normalize whitespace
+        .replace(/\s+/g, ' ')
+        // Remove control characters except newlines and tabs
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '')
+        // Normalize quotes
+        .replace(/[""]/g, '"')
+        .replace(/['']/g, "'")
+        // Trim
+        .trim()
+    );
   }
 
   /**

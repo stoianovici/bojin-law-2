@@ -19,9 +19,9 @@ Romanian law firms currently operate with fragmented tools that create costly in
 
 ### Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|---------|
-| Nov 2024 | 1.0 | Initial PRD creation based on Project Brief | John (PM) |
+| Date     | Version | Description                                 | Author    |
+| -------- | ------- | ------------------------------------------- | --------- |
+| Nov 2024 | 1.0     | Initial PRD creation based on Project Brief | John (PM) |
 
 ## Requirements
 
@@ -130,6 +130,7 @@ We will use a monorepo structure to maintain all services and packages in a sing
 ### Service Architecture
 
 **CRITICAL DECISION** - The platform will use a **Microservices within Monorepo** architecture, with services separated by domain but not over-engineered:
+
 - **Document Service:** Handles all document operations, versioning, and Word integration
 - **Task Service:** Manages task lifecycle, dependencies, and automated workflows
 - **AI Service:** Coordinates LLM interactions, prompt management, and response caching
@@ -141,6 +142,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Testing Requirements
 
 **CRITICAL DECISION** - We will implement a **Full Testing Pyramid** approach:
+
 - **Unit Tests:** Jest for business logic with 80% coverage target
 - **Integration Tests:** Testing API endpoints and service interactions
 - **E2E Tests:** Playwright for critical user journeys (login, document creation, task management)
@@ -150,48 +152,56 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Additional Technical Assumptions and Requests
 
 **Frontend Stack:**
+
 - Next.js 14+ with React 18 for optimal performance and SEO
 - Tailwind CSS with Radix UI for accessible, customizable components
 - Zustand for client state + React Query for server state management
 - TypeScript throughout for type safety
 
 **Backend Stack:**
+
 - Node.js with TypeScript for consistency across stack
 - GraphQL with Apollo Server for flexible data fetching
 - BullMQ with Redis for background job processing
 - Prisma ORM for database management
 
 **Database Architecture:**
+
 - PostgreSQL with pgvector extension for semantic search
 - Redis for session management and caching
 - Azure Blob Storage for document storage (aligns with Microsoft ecosystem)
 - Elasticsearch for full-text search (consider Algolia for faster MVP)
 
 **AI Infrastructure:**
+
 - Anthropic Claude as primary LLM (4.5 Haiku for simple, 4.5 Sonnet for standard, 4.1 Opus for complex)
 - OpenAI GPT-4 as fallback provider
 - LangChain for prompt management and complex reasoning chains
 - Token usage tracking per user/feature for cost management
 
 **Deployment & Infrastructure:**
+
 - Azure cloud (aligns with Microsoft 365 integration)
 - Docker containers with Azure Kubernetes Service (AKS)
 - GitHub Actions for CI/CD pipeline
 - Application Insights + Sentry for monitoring
 
 **Integration Requirements:**
+
 - Microsoft Graph API for full Outlook/OneDrive/Calendar access
 - OAuth 2.0 with Azure AD for enterprise SSO
 - Webhook support for real-time Microsoft 365 updates
 - Rate limiting with intelligent request queuing
 
 **Security & Compliance:**
+
 - All data stored in EU data centers (GDPR compliance)
 - AES-256 encryption at rest, TLS 1.3 in transit
 - Row-level security in PostgreSQL for data isolation
 - Complete audit logging for legal compliance
 
 **Performance Targets:**
+
 - Page loads under 2 seconds
 - AI responses under 5 seconds
 - Support 100+ concurrent users per firm
@@ -202,6 +212,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Data Retention Requirements
 
 **Legal Compliance Periods:**
+
 - **Active Case Data:** Retained indefinitely while case is active
 - **Closed Case Data:** 10 years from case closure date (Romanian Civil Code requirement)
 - **Financial Records:** 10 years per Romanian accounting law
@@ -212,19 +223,20 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 
 **Data Categories & Retention:**
 
-| Data Type | Active Retention | Archive Period | Purge After | Storage Location |
-|-----------|-----------------|----------------|-------------|------------------|
-| Case Documents | Indefinite | 10 years post-closure | 10 years | Azure Blob (Hot) → Cool → Archive |
-| Emails | Indefinite | 10 years post-case | 10 years | Exchange Online + Azure Blob |
-| Client Data | Indefinite | 10 years post-relationship | 10 years | PostgreSQL + Blob |
-| Time Entries | Indefinite | 10 years | 10 years | PostgreSQL |
-| Audit Trails | 7 years | N/A | 7 years | PostgreSQL (partitioned) |
-| AI Conversations | 90 days | 2 years (anonymized) | 2 years | PostgreSQL + Blob |
-| User Sessions | 30 days | N/A | 30 days | Redis → PostgreSQL |
+| Data Type        | Active Retention | Archive Period             | Purge After | Storage Location                  |
+| ---------------- | ---------------- | -------------------------- | ----------- | --------------------------------- |
+| Case Documents   | Indefinite       | 10 years post-closure      | 10 years    | Azure Blob (Hot) → Cool → Archive |
+| Emails           | Indefinite       | 10 years post-case         | 10 years    | Exchange Online + Azure Blob      |
+| Client Data      | Indefinite       | 10 years post-relationship | 10 years    | PostgreSQL + Blob                 |
+| Time Entries     | Indefinite       | 10 years                   | 10 years    | PostgreSQL                        |
+| Audit Trails     | 7 years          | N/A                        | 7 years     | PostgreSQL (partitioned)          |
+| AI Conversations | 90 days          | 2 years (anonymized)       | 2 years     | PostgreSQL + Blob                 |
+| User Sessions    | 30 days          | N/A                        | 30 days     | Redis → PostgreSQL                |
 
 ### Backup Strategy
 
 **Backup Schedule:**
+
 - **Real-time Replication:** PostgreSQL streaming replication to standby server
 - **Incremental Backups:** Every 4 hours (6 daily backups)
 - **Daily Snapshots:** Complete database and blob storage snapshots at 2 AM EET
@@ -232,12 +244,14 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 - **Monthly Archives:** First Sunday of month, retained for 7 years
 
 **Backup Storage:**
+
 - **Primary:** Azure Backup vault in EU West (Amsterdam)
 - **Secondary:** Cross-region replication to EU North (Stockholm)
 - **Long-term:** Azure Archive Storage for monthly backups
 - **Encryption:** AES-256 encryption for all backups at rest
 
 **Recovery Objectives:**
+
 - **Recovery Time Objective (RTO):** 4 hours for full system restore
 - **Recovery Point Objective (RPO):** Maximum 4 hours data loss
 - **Point-in-Time Recovery:** Any point within last 30 days
@@ -246,6 +260,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Data Purge & Disposal
 
 **Automatic Purge Process:**
+
 1. **Notification:** 90 days before retention expiry, notify data owner
 2. **Review Period:** 30-day grace period for retention extension requests
 3. **Approval Workflow:** Partner-level approval required for purge
@@ -254,6 +269,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 6. **Audit Trail:** Complete record of purged data maintained
 
 **Manual Disposal Requests:**
+
 - **Client Request:** GDPR right to erasure within 30 days
 - **Validation:** Verify no legal obligations prevent deletion
 - **Partial Deletion:** Anonymization where complete deletion not possible
@@ -262,6 +278,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Disaster Recovery Plan
 
 **Recovery Scenarios:**
+
 1. **Single Service Failure:** Automatic failover to standby (< 1 minute)
 2. **Database Corruption:** Restore from last clean backup (< 2 hours)
 3. **Regional Outage:** Failover to secondary region (< 4 hours)
@@ -269,6 +286,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 5. **Ransomware Attack:** Restore from immutable backups (< 6 hours)
 
 **Testing Requirements:**
+
 - **Monthly:** Backup restoration verification (sample data)
 - **Quarterly:** Single service failover test
 - **Annually:** Complete disaster recovery drill
@@ -279,6 +297,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Success Metrics & KPIs
 
 **Quantitative Success Metrics:**
+
 - **User Adoption:** 80% daily active usage across all licensed users within 60 days
 - **Time Savings:** Minimum 2 hours saved per user per day (measured via time tracking analysis)
 - **Document Efficiency:** 50% reduction in document creation time compared to baseline
@@ -288,6 +307,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 - **Performance:** All page loads under 2 seconds, AI responses under 5 seconds
 
 **Qualitative Success Metrics:**
+
 - **User Satisfaction:** CSAT score >4.5/5 across all roles
 - **Workflow Improvement:** Positive feedback on natural language interaction efficiency
 - **Trust in AI:** Users confident in AI suggestions and draft quality
@@ -296,6 +316,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Pilot Partner Feedback Collection
 
 **Feedback Mechanisms:**
+
 1. **Weekly Check-ins:** Structured 30-minute calls with pilot firm champion
 2. **In-App Feedback Widget:** Contextual feedback collection at key interaction points
 3. **Monthly Surveys:** Role-specific questionnaires measuring satisfaction and feature usage
@@ -304,6 +325,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 6. **Feature Request Log:** Structured intake process for enhancement ideas
 
 **Feedback Schedule:**
+
 - **Week 1-2:** Daily standups during initial onboarding
 - **Week 3-8:** Bi-weekly formal reviews with written reports
 - **Month 3-6:** Monthly executive reviews with metrics analysis
@@ -311,6 +333,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### MVP Go/No-Go Criteria
 
 **Proceed to Scale Criteria (ALL must be met):**
+
 1. **Core Functionality:** All 5 epics deployed and stable for 30+ days
 2. **Performance Targets:** Meeting all NFRs consistently for 2+ weeks
 3. **User Adoption:** >75% daily active usage sustained for 30 days
@@ -320,6 +343,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 7. **Cost Viability:** Token costs stabilized under €40/user/month
 
 **Pivot Criteria (triggers for major changes):**
+
 - User adoption below 50% after 90 days
 - Time savings under 1 hour per day per user
 - Token costs exceeding €60/user/month
@@ -327,6 +351,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 - Pilot partner unwilling to continue past 6 months
 
 **Kill Criteria (abandon MVP):**
+
 - Unable to achieve stable Microsoft 365 integration
 - AI accuracy below 60% for Romanian legal text
 - Data breach or security incident
@@ -336,6 +361,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Learning Goals & Iteration Plan
 
 **Primary Learning Goals:**
+
 1. **Workflow Validation:** Which of the 6 task types provides most value?
 2. **AI Effectiveness:** What's the actual accuracy of AI suggestions for Romanian legal documents?
 3. **Integration Stability:** Can we maintain 95%+ Microsoft 365 sync reliability?
@@ -343,6 +369,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 5. **Training Requirements:** How much onboarding is needed for adoption?
 
 **Iteration Approach:**
+
 - **2-Week Sprints:** Rapid iteration on pilot feedback
 - **Feature Flags:** Ability to enable/disable features without deployment
 - **A/B Testing:** Test different AI prompts and UI approaches
@@ -352,21 +379,22 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 
 ### Stakeholder Matrix
 
-| Stakeholder Group | Role in Project | Influence | Interest | Communication Frequency | Primary Channel |
-|------------------|-----------------|-----------|----------|------------------------|-----------------|
-| **Executive Sponsors** | CEO/Founders | High | High | Weekly status, Monthly strategic | Email, Board meetings |
-| **Pilot Law Firm Partners** | Decision makers, Budget holders | High | High | Bi-weekly reviews | Video calls, In-person |
-| **Pilot Law Firm Associates** | Primary users, Feedback providers | Medium | High | Weekly feedback sessions | Teams/Slack, Surveys |
-| **Pilot Law Firm Paralegals** | End users | Low | High | Weekly check-ins | Teams/Slack, Training |
-| **Development Team** | Build product | Medium | High | Daily standups | Slack, Jira |
-| **Investors/Board** | Funding, Strategic guidance | High | Medium | Monthly updates | Board reports, Quarterly meetings |
-| **Legal Advisors** | Compliance, Regulations | Medium | Low | As-needed, Quarterly review | Email, Documents |
-| **Microsoft Partnership Team** | Technical support, Co-marketing | Medium | Medium | Monthly sync | Teams, Partner portal |
-| **Future Customers** | Market validation | Low | High | Monthly newsletter | Email, Webinars |
+| Stakeholder Group              | Role in Project                   | Influence | Interest | Communication Frequency          | Primary Channel                   |
+| ------------------------------ | --------------------------------- | --------- | -------- | -------------------------------- | --------------------------------- |
+| **Executive Sponsors**         | CEO/Founders                      | High      | High     | Weekly status, Monthly strategic | Email, Board meetings             |
+| **Pilot Law Firm Partners**    | Decision makers, Budget holders   | High      | High     | Bi-weekly reviews                | Video calls, In-person            |
+| **Pilot Law Firm Associates**  | Primary users, Feedback providers | Medium    | High     | Weekly feedback sessions         | Teams/Slack, Surveys              |
+| **Pilot Law Firm Paralegals**  | End users                         | Low       | High     | Weekly check-ins                 | Teams/Slack, Training             |
+| **Development Team**           | Build product                     | Medium    | High     | Daily standups                   | Slack, Jira                       |
+| **Investors/Board**            | Funding, Strategic guidance       | High      | Medium   | Monthly updates                  | Board reports, Quarterly meetings |
+| **Legal Advisors**             | Compliance, Regulations           | Medium    | Low      | As-needed, Quarterly review      | Email, Documents                  |
+| **Microsoft Partnership Team** | Technical support, Co-marketing   | Medium    | Medium   | Monthly sync                     | Teams, Partner portal             |
+| **Future Customers**           | Market validation                 | Low       | High     | Monthly newsletter               | Email, Webinars                   |
 
 ### Communication Protocols
 
 **Internal Team Communications:**
+
 - **Daily Standup:** 9:30 AM EET, 15 minutes, via Teams
 - **Sprint Planning:** Bi-weekly Monday, 2 hours
 - **Sprint Retrospective:** Bi-weekly Friday, 1 hour
@@ -374,6 +402,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 - **Slack Channels:** #general, #dev, #pilot-feedback, #urgent-issues
 
 **Pilot Partner Communications:**
+
 - **Kickoff Meeting:** 2-hour in-person session with all stakeholders
 - **Weekly User Check-ins:** 30 minutes with champion and power users
 - **Bi-weekly Executive Review:** 1 hour with partners, metrics review
@@ -381,6 +410,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 - **Quarterly Business Review:** ROI analysis and renewal discussion
 
 **Investor & Board Communications:**
+
 - **Monthly Update Email:** First Monday of month, metrics and highlights
 - **Quarterly Board Package:** 10 days before meeting, comprehensive analysis
 - **Ad-hoc Updates:** Major milestones, critical issues within 24 hours
@@ -390,17 +420,18 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 
 **RACI Matrix for Key Decisions:**
 
-| Decision Type | Responsible | Accountable | Consulted | Informed |
-|--------------|-------------|-------------|-----------|----------|
-| Feature Prioritization | Product Manager | CEO | Dev Team, Pilot Users | All Stakeholders |
-| Technical Architecture | Tech Lead | CTO | Dev Team, Security Advisor | PM, CEO |
-| Pricing Changes | CEO | Board | PM, Sales, Pilot Partner | All Stakeholders |
-| Go/No-Go for Scale | CEO | Board | All Leads, Pilot Partner | All Stakeholders |
-| Security Policies | Security Lead | CTO | Legal Advisor, Dev Team | All Users |
-| UI/UX Changes | Design Lead | Product Manager | Pilot Users, Dev Team | All Users |
-| Integration Partners | BD Lead | CEO | Tech Lead, Legal | Board, Team |
+| Decision Type          | Responsible     | Accountable     | Consulted                  | Informed         |
+| ---------------------- | --------------- | --------------- | -------------------------- | ---------------- |
+| Feature Prioritization | Product Manager | CEO             | Dev Team, Pilot Users      | All Stakeholders |
+| Technical Architecture | Tech Lead       | CTO             | Dev Team, Security Advisor | PM, CEO          |
+| Pricing Changes        | CEO             | Board           | PM, Sales, Pilot Partner   | All Stakeholders |
+| Go/No-Go for Scale     | CEO             | Board           | All Leads, Pilot Partner   | All Stakeholders |
+| Security Policies      | Security Lead   | CTO             | Legal Advisor, Dev Team    | All Users        |
+| UI/UX Changes          | Design Lead     | Product Manager | Pilot Users, Dev Team      | All Users        |
+| Integration Partners   | BD Lead         | CEO             | Tech Lead, Legal           | Board, Team      |
 
 **Approval Thresholds:**
+
 - **< €5,000 spend:** Team Lead approval
 - **€5,000 - €20,000:** CEO approval
 - **> €20,000:** Board approval required
@@ -410,6 +441,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Communication Templates & Cadence
 
 **Weekly Status Report (Every Friday):**
+
 ```
 1. Sprint Progress: X of Y story points complete
 2. Key Achievements: [Bullet list]
@@ -420,6 +452,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ```
 
 **Monthly Investor Update (First Monday):**
+
 ```
 1. KPI Dashboard: Users, Usage, Revenue, Burn
 2. Product Milestones: Completed vs. Planned
@@ -430,6 +463,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ```
 
 **Pilot Partner Feedback Report (Bi-weekly):**
+
 ```
 1. Usage Analytics: DAU, Features Used, Time Saved
 2. Top Issues: Prioritized list with resolution timeline
@@ -441,18 +475,21 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Escalation Procedures
 
 **Issue Escalation Path:**
+
 1. **Level 1 - Team Lead:** Response within 4 hours
 2. **Level 2 - Department Head:** Response within 2 hours
 3. **Level 3 - CEO:** Response within 1 hour
 4. **Level 4 - Board:** For existential issues only
 
 **Critical Issue Categories:**
+
 - **P0 - System Down:** All hands response, 15-minute updates
 - **P1 - Major Feature Broken:** Fix within 4 hours, hourly updates
 - **P2 - Significant Bug:** Fix within 24 hours, daily updates
 - **P3 - Minor Issue:** Fix within sprint, weekly updates
 
 **Stakeholder Complaint Resolution:**
+
 1. Acknowledge within 2 hours
 2. Investigate and provide initial response within 24 hours
 3. Resolution plan within 48 hours
@@ -462,6 +499,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ### Communication Tools & Channels
 
 **Primary Platforms:**
+
 - **Slack:** Real-time team communication
 - **Microsoft Teams:** Pilot partner collaboration
 - **Jira:** Development tracking and reporting
@@ -471,6 +509,7 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 - **Tableau:** Stakeholder dashboards
 
 **Access Control:**
+
 - **Public:** Marketing website, blog
 - **Customers:** Support portal, knowledge base
 - **Internal:** Slack, Jira, Confluence
@@ -480,18 +519,23 @@ Services communicate via GraphQL API (Apollo Server) with WebSocket support for 
 ## Epic List
 
 ### Epic 1: UI Foundation & Interactive Prototype
+
 Create comprehensive UI design system, component library, and clickable prototype demonstrating all major workflows including navigation, case workspace, document editor, task management, and role-based dashboards to validate UX with pilot firm before backend development.
 
 ### Epic 2: Foundation & Microsoft 365 Integration with Basic Case Management
+
 Establish core platform infrastructure, Azure AD authentication, Microsoft Graph API integration, and deliver a functional case management system with basic document storage and AI-powered search capabilities using the UI framework from Epic 1.
 
 ### Epic 3: AI-Powered Document Management & Semantic Version Control
+
 Build comprehensive document creation and management system with AI-assisted drafting, Word integration, semantic version tracking that understands legal changes, and template learning from existing firm documents.
 
 ### Epic 4: Natural Language Task Management & Workflow Automation
+
 Implement all six task types (Research, Document Creation, Document Retrieval, Court Dates, Meetings, Business Trips) with conversational task creation, intelligent time tracking, and role-based task delegation.
 
 ### Epic 5: Communication Intelligence & Proactive AI Assistant
+
 Complete email integration with automatic thread analysis, AI-drafted responses, deadline extraction from communications, and proactive AI suggestions based on learned patterns and case context.
 
 ## Epic 1: UI Foundation & Interactive Prototype
@@ -505,6 +549,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** all UI elements maintain consistency across the platform.
 
 **Acceptance Criteria:**
+
 1. Design tokens defined for colors, typography (with Romanian diacritic support), spacing, and shadows in CSS variables
 2. Base components created: buttons (primary, secondary, ghost), form inputs, cards, modals, tooltips
 3. Tailwind CSS configuration customized with design tokens and Radix UI integrated
@@ -519,6 +564,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can access all platform features and validate role-specific views.
 
 **Acceptance Criteria:**
+
 1. Sidebar navigation implemented with sections: Dashboard, Cases, Documents, Tasks, Communications, Time Tracking, Reports
 2. Top bar includes search/command palette trigger (Cmd+K), notifications icon, user menu
 3. Role switcher allows instant switching between Partner, Associate, Paralegal views
@@ -533,6 +579,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can quickly understand my priorities and firm status.
 
 **Acceptance Criteria:**
+
 1. Partner dashboard shows: firm KPIs, billable hours chart, case distribution, pending approvals
 2. Associate dashboard displays: my active cases, today's tasks, deadlines this week, recent documents
 3. Paralegal dashboard presents: assigned tasks, document requests, deadline calendar
@@ -547,6 +594,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can efficiently manage all aspects of a legal matter.
 
 **Acceptance Criteria:**
+
 1. Case header shows: case name, client, status, assigned team, next deadline
 2. Tab navigation for: Overview, Documents, Tasks, Communications, Time Entries, Notes
 3. Documents tab demonstrates folder tree, document list with version badges, preview pane
@@ -561,6 +609,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can efficiently draft legal documents with intelligent support.
 
 **Acceptance Criteria:**
+
 1. Split-screen layout: document editor (left), AI assistant panel (right)
 2. Editor toolbar includes formatting options, insert menu, version history button
 3. AI panel shows: suggested completions, similar documents, relevant templates
@@ -575,6 +624,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can work in my preferred style.
 
 **Acceptance Criteria:**
+
 1. Calendar view shows week with tasks as time blocks, color-coded by type
 2. Kanban board displays tasks in columns: To Do, In Progress, Review, Complete
 3. List view presents tasks in table format with sortable columns
@@ -589,6 +639,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can track conversations and respond efficiently.
 
 **Acceptance Criteria:**
+
 1. Thread list shows email subjects with case tags, sender, preview, date
 2. Message view displays full thread with collapse/expand for individual messages
 3. AI draft response panel shows suggested reply based on context
@@ -603,6 +654,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can validate the UX before development.
 
 **Acceptance Criteria:**
+
 1. Prototype allows navigation between all major screens
 2. Three complete workflows demonstrated: create document, assign task, respond to email
 3. Role switching shows different data and permissions for same screens
@@ -621,6 +673,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** we can develop and deploy features consistently and safely.
 
 **Acceptance Criteria:**
+
 1. Monorepo structure created with apps/ and packages/ folders per architecture
 2. TypeScript, ESLint, Prettier configured with shared rules across all packages
 3. GitHub Actions workflow runs tests and builds on every PR
@@ -635,6 +688,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** the application can run reliably in production.
 
 **Acceptance Criteria:**
+
 1. Azure Kubernetes Service (AKS) cluster provisioned in EU West region
 2. PostgreSQL database with pgvector extension deployed on Azure
 3. Redis cache configured for session management
@@ -649,6 +703,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can access the platform with single sign-on.
 
 **Acceptance Criteria:**
+
 1. Azure AD app registration configured with proper permissions
 2. OAuth 2.0 flow implemented for user authentication
 3. JWT tokens issued and validated for API requests
@@ -663,6 +718,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** we can access Outlook, OneDrive, and Calendar data.
 
 **Acceptance Criteria:**
+
 1. Microsoft Graph client configured with app-level permissions
 2. Token management implements refresh token flow automatically
 3. Rate limiting middleware prevents exceeding API quotas
@@ -677,6 +733,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** the frontend can perform all case operations.
 
 **Acceptance Criteria:**
+
 1. Prisma schema defines: Case, Client, CaseTeam, CaseStatus, CaseType entities
 2. GraphQL schema includes queries: getCases, getCase, searchCases
 3. GraphQL mutations: createCase, updateCase, archiveCase, assignTeam
@@ -691,6 +748,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can organize my legal work effectively.
 
 **Acceptance Criteria:**
+
 1. Case list page displays all cases with filtering by status, client, assigned user
 2. Create case form includes: client selection, case type, description, team assignment
 3. Case detail page shows all case information with inline editing
@@ -705,6 +763,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can access files from Microsoft 365 apps.
 
 **Acceptance Criteria:**
+
 1. OneDrive folder structure created: /Cases/{CaseID}/Documents/
 2. File upload stores in both Azure Blob Storage and OneDrive
 3. Document metadata tracked in PostgreSQL with OneDrive file ID
@@ -719,6 +778,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can quickly find relevant information.
 
 **Acceptance Criteria:**
+
 1. Elasticsearch index created for cases and document metadata
 2. OpenAI embeddings generated for all text content
 3. Semantic search finds related content even with different wording
@@ -737,6 +797,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** all AI features have consistent, performant infrastructure.
 
 **Acceptance Criteria:**
+
 1. AI service created with LangChain for prompt management and chaining
 2. Multi-model routing: Haiku for simple, Sonnet for standard, Opus for complex tasks
 3. Token tracking implemented per user, case, and operation type
@@ -751,6 +812,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** new documents match our firm's style and standards.
 
 **Acceptance Criteria:**
+
 1. Bulk import accepts documents via Outlook mailbox attachment scanning (select folders/date ranges)
 2. AI extracts and categorizes document sections and standard clauses
 3. Template patterns identified across similar documents (>80% similarity)
@@ -765,6 +827,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can create accurate documents in less time.
 
 **Acceptance Criteria:**
+
 1. Natural language prompt generates complete first draft
 2. AI incorporates case facts, client information, and relevant dates
 3. Clause suggestions appear as user types with Tab to accept
@@ -779,6 +842,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can work in my familiar environment.
 
 **Acceptance Criteria:**
+
 1. "Edit in Word" opens document in desktop Word via OneDrive
 2. Changes in Word sync back to platform within 30 seconds
 3. AI suggestions panel accessible via Word add-in or web sidebar
@@ -793,6 +857,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can quickly identify substantive changes.
 
 **Acceptance Criteria:**
+
 1. Version comparison highlights legally significant changes in different color
 2. AI summarizes changes in plain language: "Payment terms extended from 30 to 60 days"
 3. Change impact assessment: "Low", "Medium", "High" risk rating
@@ -807,6 +872,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can ensure quality while maintaining speed.
 
 **Acceptance Criteria:**
+
 1. Review request notification sent to designated approver
 2. Review interface shows document with AI-flagged areas of concern
 3. Inline comments and suggestions tracked with author attribution
@@ -821,6 +887,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can identify efficiency opportunities.
 
 **Acceptance Criteria:**
+
 1. Dashboard shows document creation velocity by user and type
 2. AI assistance utilization rate per user with adoption trends
 3. Error detection rate showing problems caught before filing
@@ -839,6 +906,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can quickly capture work without filling out forms.
 
 **Acceptance Criteria:**
+
 1. Command palette accepts natural language like "Schedule client meeting next Tuesday at 2pm"
 2. AI extracts: task type, assignee, due date, related case, priority
 3. Ambiguous inputs trigger clarification dialog: "Which case is this for?"
@@ -853,6 +921,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** each type of work follows appropriate processes.
 
 **Acceptance Criteria:**
+
 1. Six task types implemented: Research, Document Creation, Document Retrieval, Court Dates, Meetings, Business Trips
 2. Each type has specific required fields and validation rules
 3. Court Date tasks auto-generate preparation subtasks based on deadline
@@ -867,6 +936,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I capture all billable hours accurately.
 
 **Acceptance Criteria:**
+
 1. Background service tracks active window and document interactions
 2. AI suggests time entries based on activity: "Drafted contract (2.5 hours) for Case X"
 3. Daily review screen shows all suggested entries for confirmation
@@ -881,6 +951,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** workflow progresses without manual intervention.
 
 **Acceptance Criteria:**
+
 1. Task templates define common workflows with dependencies
 2. Completing prerequisite task automatically activates next task
 3. Deadline changes cascade to dependent tasks with conflict warnings
@@ -895,6 +966,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can assign work effectively.
 
 **Acceptance Criteria:**
+
 1. Team calendar shows all members' tasks and availability
 2. Workload meter displays hours allocated per person per day
 3. AI suggests optimal task assignments based on skills and capacity
@@ -909,6 +981,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** we can coordinate efficiently.
 
 **Acceptance Criteria:**
+
 1. Task comments thread with @mentions sending notifications
 2. Status updates automatically posted to case activity feed
 3. File attachments linked to tasks with version tracking
@@ -923,6 +996,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** we can improve our workflows.
 
 **Acceptance Criteria:**
+
 1. Average task completion time by type and user
 2. Overdue task analysis identifies bottleneck patterns
 3. Task velocity trends show productivity changes
@@ -941,6 +1015,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I have complete communication history per case.
 
 **Acceptance Criteria:**
+
 1. Outlook inbox synchronizes all emails in real-time via Graph API
 2. AI categorizes emails by case based on content and participants
 3. Email threads grouped with proper conversation tracking
@@ -955,6 +1030,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I never miss important commitments or deadlines.
 
 **Acceptance Criteria:**
+
 1. AI identifies and extracts: deadlines, commitments, questions requiring response
 2. Extracted items appear in case timeline with source email link
 3. Calendar events suggested for identified dates and meetings
@@ -969,6 +1045,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can respond quickly and consistently.
 
 **Acceptance Criteria:**
+
 1. Reply button generates draft based on email content and case history
 2. Multiple response options provided: formal, brief, detailed
 3. AI incorporates relevant case facts and prior communications
@@ -983,6 +1060,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I stay ahead of my work.
 
 **Acceptance Criteria:**
+
 1. Morning briefing shows AI-prioritized tasks and suggestions
 2. Context-aware suggestions based on current screen/case
 3. Pattern recognition: "You usually send status update to client after filing"
@@ -997,6 +1075,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I have complete interaction history.
 
 **Acceptance Criteria:**
+
 1. Email, internal notes, and future WhatsApp in one timeline
 2. Communication templates for standard responses
 3. Bulk communication for case updates to multiple parties
@@ -1011,6 +1090,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** suggestions become increasingly relevant.
 
 **Acceptance Criteria:**
+
 1. AI learns user's writing style from edits to drafts
 2. Frequently used phrases saved as personal snippets
 3. Task creation patterns recognized and suggested
@@ -1025,6 +1105,7 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 **so that** I can measure ROI and optimize usage.
 
 **Acceptance Criteria:**
+
 1. Efficiency metrics: time saved through AI assistance
 2. Communication response times before/after platform adoption
 3. Document error rates and revision statistics
@@ -1036,24 +1117,24 @@ Complete email integration with automatic thread analysis, AI-drafted responses,
 
 ### Executive Summary
 
-- **Overall PRD Completeness:** 95% *(Improved from 85%)*
+- **Overall PRD Completeness:** 95% _(Improved from 85%)_
 - **MVP Scope Appropriateness:** Just Right
 - **Readiness for Architecture Phase:** **READY**
 - **Critical Gaps Addressed:** ✅ MVP validation strategy, ✅ Stakeholder communication plan, ✅ Data retention & backup policies
 
 ### Category Analysis
 
-| Category | Status | Issues Resolved |
-|----------|--------|-----------------|
-| Problem Definition & Context | PASS (92%) | Timeframes defined in MVP Validation |
-| MVP Scope Definition | **PASS (95%)** | ✅ MVP validation approach fully detailed |
-| User Experience Requirements | PASS (95%) | Comprehensive UX coverage maintained |
-| Functional Requirements | PASS (90%) | Priority levels to be refined during sprint planning |
-| Non-Functional Requirements | **PASS (95%)** | ✅ Backup/recovery procedures fully documented |
-| Epic & Story Structure | PASS (93%) | Well-structured with clear progression |
-| Technical Guidance | PARTIAL (85%) | Technical debt approach for sprint planning |
-| Cross-Functional Requirements | **PASS (95%)** | ✅ Data retention policies fully defined |
-| Clarity & Communication | **PASS (95%)** | ✅ Complete stakeholder communication plan added |
+| Category                      | Status         | Issues Resolved                                      |
+| ----------------------------- | -------------- | ---------------------------------------------------- |
+| Problem Definition & Context  | PASS (92%)     | Timeframes defined in MVP Validation                 |
+| MVP Scope Definition          | **PASS (95%)** | ✅ MVP validation approach fully detailed            |
+| User Experience Requirements  | PASS (95%)     | Comprehensive UX coverage maintained                 |
+| Functional Requirements       | PASS (90%)     | Priority levels to be refined during sprint planning |
+| Non-Functional Requirements   | **PASS (95%)** | ✅ Backup/recovery procedures fully documented       |
+| Epic & Story Structure        | PASS (93%)     | Well-structured with clear progression               |
+| Technical Guidance            | PARTIAL (85%)  | Technical debt approach for sprint planning          |
+| Cross-Functional Requirements | **PASS (95%)** | ✅ Data retention policies fully defined             |
+| Clarity & Communication       | **PASS (95%)** | ✅ Complete stakeholder communication plan added     |
 
 ### Improvements Made
 

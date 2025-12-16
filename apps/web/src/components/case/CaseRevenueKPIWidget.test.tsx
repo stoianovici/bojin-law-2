@@ -52,9 +52,7 @@ jest.mock('@/hooks/useFinancialAccess', () => ({
 // Wrapper component to provide necessary context
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>
-    <FinancialAccessProvider>
-      {children}
-    </FinancialAccessProvider>
+    <FinancialAccessProvider>{children}</FinancialAccessProvider>
   </AuthProvider>
 );
 
@@ -290,7 +288,9 @@ describe('CaseRevenueKPIWidget', () => {
       );
 
       expect(screen.getByText('No time tracked yet')).toBeInTheDocument();
-      expect(screen.getByText(/kpi will be available once time entries are logged/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/kpi will be available once time entries are logged/i)
+      ).toBeInTheDocument();
     });
 
     it('still shows fixed amount when no time entries', () => {

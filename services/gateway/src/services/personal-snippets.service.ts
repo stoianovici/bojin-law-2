@@ -111,9 +111,7 @@ export class PersonalSnippetsService {
     // Validate shortcut if changing
     if (input.shortcut && input.shortcut !== existing.shortcut) {
       if (!this.isValidShortcut(input.shortcut)) {
-        throw new Error(
-          'Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore'
-        );
+        throw new Error('Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore');
       }
 
       // Check for duplicate
@@ -169,10 +167,7 @@ export class PersonalSnippetsService {
   /**
    * Get a snippet by ID
    */
-  async getSnippetById(
-    snippetId: string,
-    userId: string
-  ): Promise<PersonalSnippet | null> {
+  async getSnippetById(snippetId: string, userId: string): Promise<PersonalSnippet | null> {
     const snippet = await prisma.personalSnippet.findFirst({
       where: {
         id: snippetId,
@@ -186,19 +181,13 @@ export class PersonalSnippetsService {
   /**
    * Get all snippets for a user, optionally filtered by category
    */
-  async getUserSnippets(
-    userId: string,
-    category?: SnippetCategory
-  ): Promise<PersonalSnippet[]> {
+  async getUserSnippets(userId: string, category?: SnippetCategory): Promise<PersonalSnippet[]> {
     const snippets = await prisma.personalSnippet.findMany({
       where: {
         userId,
         ...(category && { category }),
       },
-      orderBy: [
-        { usageCount: 'desc' },
-        { updatedAt: 'desc' },
-      ],
+      orderBy: [{ usageCount: 'desc' }, { updatedAt: 'desc' }],
     });
 
     return snippets.map(this.mapToPersonalSnippet);
@@ -207,10 +196,7 @@ export class PersonalSnippetsService {
   /**
    * Search snippets by query (searches shortcut, title, content)
    */
-  async searchSnippets(
-    userId: string,
-    input: SearchSnippetsInput
-  ): Promise<PersonalSnippet[]> {
+  async searchSnippets(userId: string, input: SearchSnippetsInput): Promise<PersonalSnippet[]> {
     const { query, category, limit = 50, offset = 0 } = input;
 
     const snippets = await prisma.personalSnippet.findMany({
@@ -236,10 +222,7 @@ export class PersonalSnippetsService {
   /**
    * Expand a shortcut to its full content
    */
-  async expandShortcut(
-    shortcut: string,
-    userId: string
-  ): Promise<PersonalSnippet | null> {
+  async expandShortcut(shortcut: string, userId: string): Promise<PersonalSnippet | null> {
     const normalizedShortcut = shortcut.toLowerCase().replace(/^\//, '');
 
     const snippet = await prisma.personalSnippet.findUnique({
@@ -283,10 +266,7 @@ export class PersonalSnippetsService {
   /**
    * Get most used snippets
    */
-  async getMostUsedSnippets(
-    userId: string,
-    limit: number = 5
-  ): Promise<PersonalSnippet[]> {
+  async getMostUsedSnippets(userId: string, limit: number = 5): Promise<PersonalSnippet[]> {
     const snippets = await prisma.personalSnippet.findMany({
       where: {
         userId,
@@ -302,10 +282,7 @@ export class PersonalSnippetsService {
   /**
    * Get recently used snippets
    */
-  async getRecentlyUsedSnippets(
-    userId: string,
-    limit: number = 5
-  ): Promise<PersonalSnippet[]> {
+  async getRecentlyUsedSnippets(userId: string, limit: number = 5): Promise<PersonalSnippet[]> {
     const snippets = await prisma.personalSnippet.findMany({
       where: {
         userId,
@@ -332,9 +309,7 @@ export class PersonalSnippetsService {
 
     // Validate shortcut
     if (!this.isValidShortcut(shortcut)) {
-      throw new Error(
-        'Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore'
-      );
+      throw new Error('Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore');
     }
 
     // Check for duplicate

@@ -11,11 +11,7 @@
  * [Source: docs/architecture/external-apis.md#anthropic-claude-api]
  */
 
-import {
-  AIOperationType,
-  ClaudeModel,
-  TaskComplexity,
-} from '@legal-platform/types';
+import { AIOperationType, ClaudeModel, TaskComplexity } from '@legal-platform/types';
 import { providerManager, ProviderRequest } from './provider-manager.service';
 import { modelRouter } from './model-router.service';
 import { tokenTracker } from './token-tracker.service';
@@ -254,10 +250,10 @@ export class CommunicationIntelligenceService {
   filterByConfidence(result: EmailIntelligenceResult): EmailIntelligenceResult {
     return {
       ...result,
-      deadlines: result.deadlines.filter(d => d.confidence >= MIN_CONFIDENCE_THRESHOLD),
-      commitments: result.commitments.filter(c => c.confidence >= MIN_CONFIDENCE_THRESHOLD),
-      actionItems: result.actionItems.filter(a => a.confidence >= MIN_CONFIDENCE_THRESHOLD),
-      questions: result.questions.filter(q => q.confidence >= MIN_CONFIDENCE_THRESHOLD),
+      deadlines: result.deadlines.filter((d) => d.confidence >= MIN_CONFIDENCE_THRESHOLD),
+      commitments: result.commitments.filter((c) => c.confidence >= MIN_CONFIDENCE_THRESHOLD),
+      actionItems: result.actionItems.filter((a) => a.confidence >= MIN_CONFIDENCE_THRESHOLD),
+      questions: result.questions.filter((q) => q.confidence >= MIN_CONFIDENCE_THRESHOLD),
     };
   }
 
@@ -267,10 +263,10 @@ export class CommunicationIntelligenceService {
   hasHighConfidenceItems(result: EmailIntelligenceResult): boolean {
     const threshold = 0.8;
     return (
-      result.deadlines.some(d => d.confidence >= threshold) ||
-      result.commitments.some(c => c.confidence >= threshold) ||
-      result.actionItems.some(a => a.confidence >= threshold) ||
-      result.questions.some(q => q.confidence >= threshold)
+      result.deadlines.some((d) => d.confidence >= threshold) ||
+      result.commitments.some((c) => c.confidence >= threshold) ||
+      result.actionItems.some((a) => a.confidence >= threshold) ||
+      result.questions.some((q) => q.confidence >= threshold)
     );
   }
 
@@ -283,16 +279,16 @@ export class CommunicationIntelligenceService {
     low: number;
   } {
     const allConfidences = [
-      ...result.deadlines.map(d => d.confidence),
-      ...result.commitments.map(c => c.confidence),
-      ...result.actionItems.map(a => a.confidence),
-      ...result.questions.map(q => q.confidence),
+      ...result.deadlines.map((d) => d.confidence),
+      ...result.commitments.map((c) => c.confidence),
+      ...result.actionItems.map((a) => a.confidence),
+      ...result.questions.map((q) => q.confidence),
     ];
 
     return {
-      high: allConfidences.filter(c => c >= 0.8).length,
-      medium: allConfidences.filter(c => c >= 0.6 && c < 0.8).length,
-      low: allConfidences.filter(c => c < 0.6).length,
+      high: allConfidences.filter((c) => c >= 0.8).length,
+      medium: allConfidences.filter((c) => c >= 0.6 && c < 0.8).length,
+      low: allConfidences.filter((c) => c < 0.6).length,
     };
   }
 
@@ -305,11 +301,12 @@ export class CommunicationIntelligenceService {
    */
   private buildAnalysisPrompt(email: EmailForAnalysis): string {
     const formatRecipients = (recipients: Array<{ name?: string; address: string }>) =>
-      recipients.map(r => r.name ? `${r.name} <${r.address}>` : r.address).join(', ');
+      recipients.map((r) => (r.name ? `${r.name} <${r.address}>` : r.address)).join(', ');
 
-    const receivedDate = email.receivedDateTime instanceof Date
-      ? email.receivedDateTime.toISOString().split('T')[0]
-      : email.receivedDateTime;
+    const receivedDate =
+      email.receivedDateTime instanceof Date
+        ? email.receivedDateTime.toISOString().split('T')[0]
+        : email.receivedDateTime;
 
     return `Analyze the following email received on ${receivedDate}:
 
@@ -368,12 +365,14 @@ Extract all deadlines, commitments, action items, and questions from this email.
     if (!Array.isArray(deadlines)) return [];
 
     return deadlines
-      .filter((d): d is Record<string, unknown> =>
-        typeof d === 'object' && d !== null &&
-        typeof (d as Record<string, unknown>).description === 'string' &&
-        typeof (d as Record<string, unknown>).dueDate === 'string'
+      .filter(
+        (d): d is Record<string, unknown> =>
+          typeof d === 'object' &&
+          d !== null &&
+          typeof (d as Record<string, unknown>).description === 'string' &&
+          typeof (d as Record<string, unknown>).dueDate === 'string'
       )
-      .map(d => ({
+      .map((d) => ({
         description: String(d.description),
         dueDate: String(d.dueDate),
         confidence: this.normalizeConfidence(d.confidence),
@@ -387,12 +386,14 @@ Extract all deadlines, commitments, action items, and questions from this email.
     if (!Array.isArray(commitments)) return [];
 
     return commitments
-      .filter((c): c is Record<string, unknown> =>
-        typeof c === 'object' && c !== null &&
-        typeof (c as Record<string, unknown>).party === 'string' &&
-        typeof (c as Record<string, unknown>).commitmentText === 'string'
+      .filter(
+        (c): c is Record<string, unknown> =>
+          typeof c === 'object' &&
+          c !== null &&
+          typeof (c as Record<string, unknown>).party === 'string' &&
+          typeof (c as Record<string, unknown>).commitmentText === 'string'
       )
-      .map(c => ({
+      .map((c) => ({
         party: String(c.party),
         commitmentText: String(c.commitmentText),
         dueDate: c.dueDate ? String(c.dueDate) : undefined,
@@ -409,11 +410,13 @@ Extract all deadlines, commitments, action items, and questions from this email.
     const validPriorities = ['Low', 'Medium', 'High', 'Urgent'];
 
     return actionItems
-      .filter((a): a is Record<string, unknown> =>
-        typeof a === 'object' && a !== null &&
-        typeof (a as Record<string, unknown>).description === 'string'
+      .filter(
+        (a): a is Record<string, unknown> =>
+          typeof a === 'object' &&
+          a !== null &&
+          typeof (a as Record<string, unknown>).description === 'string'
       )
-      .map(a => ({
+      .map((a) => ({
         description: String(a.description),
         suggestedAssignee: a.suggestedAssignee ? String(a.suggestedAssignee) : undefined,
         priority: validPriorities.includes(String(a.priority))
@@ -430,11 +433,13 @@ Extract all deadlines, commitments, action items, and questions from this email.
     if (!Array.isArray(questions)) return [];
 
     return questions
-      .filter((q): q is Record<string, unknown> =>
-        typeof q === 'object' && q !== null &&
-        typeof (q as Record<string, unknown>).questionText === 'string'
+      .filter(
+        (q): q is Record<string, unknown> =>
+          typeof q === 'object' &&
+          q !== null &&
+          typeof (q as Record<string, unknown>).questionText === 'string'
       )
-      .map(q => ({
+      .map((q) => ({
         questionText: String(q.questionText),
         respondBy: q.respondBy ? String(q.respondBy) : undefined,
         confidence: this.normalizeConfidence(q.confidence),

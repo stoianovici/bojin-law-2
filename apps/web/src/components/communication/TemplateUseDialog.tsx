@@ -209,18 +209,14 @@ export function TemplateUseDialog({
               <div className="rounded-lg border border-gray-200 bg-white">
                 {template.channelType === 'Email' && template.subject && (
                   <div className="border-b px-4 py-3">
-                    <span className="text-xs font-medium uppercase text-gray-400">
-                      Subject
-                    </span>
+                    <span className="text-xs font-medium uppercase text-gray-400">Subject</span>
                     <p className="mt-1 font-medium text-gray-900">
                       {previewSubject || '(empty subject)'}
                     </p>
                   </div>
                 )}
                 <div className="p-4">
-                  <span className="text-xs font-medium uppercase text-gray-400">
-                    Body
-                  </span>
+                  <span className="text-xs font-medium uppercase text-gray-400">Body</span>
                   <div className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
                     {previewBody || '(empty body)'}
                   </div>
@@ -285,7 +281,8 @@ interface VariableInputProps {
 }
 
 function VariableInput({ variable, value, onChange, autoFilled }: VariableInputProps) {
-  const isLongText = variable.name.toLowerCase().includes('body') ||
+  const isLongText =
+    variable.name.toLowerCase().includes('body') ||
     variable.name.toLowerCase().includes('message') ||
     variable.name.toLowerCase().includes('content');
 
@@ -303,9 +300,7 @@ function VariableInput({ variable, value, onChange, autoFilled }: VariableInputP
           </span>
         )}
       </div>
-      {variable.description && (
-        <p className="mb-1 text-xs text-gray-500">{variable.description}</p>
-      )}
+      {variable.description && <p className="mb-1 text-xs text-gray-500">{variable.description}</p>}
       {isLongText ? (
         <textarea
           value={value}
@@ -314,7 +309,9 @@ function VariableInput({ variable, value, onChange, autoFilled }: VariableInputP
           className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
             autoFilled ? 'border-green-300 bg-green-50' : 'border-gray-300'
           }`}
-          placeholder={variable.defaultValue || `Enter ${formatVariableName(variable.name).toLowerCase()}`}
+          placeholder={
+            variable.defaultValue || `Enter ${formatVariableName(variable.name).toLowerCase()}`
+          }
         />
       ) : (
         <input
@@ -324,7 +321,9 @@ function VariableInput({ variable, value, onChange, autoFilled }: VariableInputP
           className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
             autoFilled ? 'border-green-300 bg-green-50' : 'border-gray-300'
           }`}
-          placeholder={variable.defaultValue || `Enter ${formatVariableName(variable.name).toLowerCase()}`}
+          placeholder={
+            variable.defaultValue || `Enter ${formatVariableName(variable.name).toLowerCase()}`
+          }
         />
       )}
     </div>

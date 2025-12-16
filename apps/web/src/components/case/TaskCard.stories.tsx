@@ -8,7 +8,8 @@ import { createTask, createUser } from '@legal-platform/test-utils';
 
 const mockTask = createTask({
   title: 'Revizuire contract de închiriere',
-  description: 'Analizează clauzele din contractul de închiriere și identifică potențiale probleme legale.',
+  description:
+    'Analizează clauzele din contractul de închiriere și identifică potențiale probleme legale.',
   priority: 'High',
   dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
 });
@@ -171,7 +172,8 @@ export const RomanianDiacritics: Story = {
     ...Default.args,
     task: createTask({
       title: 'Întâlnire cu judecătorul - Secția civilă',
-      description: 'Pregătește dosarul pentru ședința de judecată. Verifică toate documentele și asigură-te că sunt semnate și ștampilate corect.',
+      description:
+        'Pregătește dosarul pentru ședința de judecată. Verifică toate documentele și asigură-te că sunt semnate și ștampilate corect.',
       priority: 'High',
       dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     }),

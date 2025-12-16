@@ -114,8 +114,18 @@ const DELETE_TIME_ENTRY = gql`
 
 const LOG_TIME_AGAINST_TASK = gql`
   ${TIME_ENTRY_WITH_RELATIONS_FRAGMENT}
-  mutation LogTimeAgainstTask($taskId: ID!, $hours: Float!, $description: String!, $billable: Boolean) {
-    logTimeAgainstTask(taskId: $taskId, hours: $hours, description: $description, billable: $billable) {
+  mutation LogTimeAgainstTask(
+    $taskId: ID!
+    $hours: Float!
+    $description: String!
+    $billable: Boolean
+  ) {
+    logTimeAgainstTask(
+      taskId: $taskId
+      hours: $hours
+      description: $description
+      billable: $billable
+    ) {
       ...TimeEntryWithRelations
     }
   }

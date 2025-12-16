@@ -171,7 +171,9 @@ function createHeavyLoadTasks(count: number = 80): Task[] {
       createMockTask({
         type: taskType,
         dueDate,
-        priority: ['Low', 'Medium', 'High', 'Urgent'][Math.floor(Math.random() * 4)] as Task['priority'],
+        priority: ['Low', 'Medium', 'High', 'Urgent'][
+          Math.floor(Math.random() * 4)
+        ] as Task['priority'],
       })
     );
   }
@@ -247,7 +249,8 @@ export const HeavyLoad: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrează gestionarea unui program aglomerat cu 10+ sarcini pe zi. Sarcinile sunt stivuite vertical în fiecare coloană de zi.',
+        story:
+          'Demonstrează gestionarea unui program aglomerat cu 10+ sarcini pe zi. Sarcinile sunt stivuite vertical în fiecare coloană de zi.',
       },
     },
   },
@@ -267,7 +270,8 @@ export const Sparse: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Programare rară cu 1-3 sarcini pe zi. Multe zile afișează "Fără sarcini" pentru a indica zilele goale.',
+        story:
+          'Programare rară cu 1-3 sarcini pe zi. Multe zile afișează "Fără sarcini" pentru a indica zilele goale.',
       },
     },
   },
@@ -287,7 +291,8 @@ export const TimeSpecificOnly: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Toate sarcinile au ore specifice (ex: termene în instanță, întâlniri). Badge-urile "HH:MM" sunt vizibile pentru fiecare sarcină.',
+        story:
+          'Toate sarcinile au ore specifice (ex: termene în instanță, întâlniri). Badge-urile "HH:MM" sunt vizibile pentru fiecare sarcină.',
       },
     },
   },
@@ -307,7 +312,8 @@ export const AllDayOnly: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Toate sarcinile sunt "toată ziua" fără ore specifice. Niciun badge de timp nu este afișat, doar titlul sarcinii.',
+        story:
+          'Toate sarcinile sunt "toată ziua" fără ore specifice. Niciun badge de timp nu este afișat, doar titlul sarcinii.',
       },
     },
   },
@@ -382,7 +388,8 @@ export const WeekendEmphasis: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrează coloanele comprimate de weekend (50px față de 140px pentru zile lucrătoare). Observați lățimea vizibil mai mică pentru Sâmbătă și Duminică.',
+        story:
+          'Demonstrează coloanele comprimate de weekend (50px față de 140px pentru zile lucrătoare). Observați lățimea vizibil mai mică pentru Sâmbătă și Duminică.',
       },
     },
   },
@@ -422,7 +429,8 @@ export const TwoWeeks: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Vizualizare de 2 săptămâni pentru planificare pe termen scurt. Utilizează proprietatea weeksToShow.',
+        story:
+          'Vizualizare de 2 săptămâni pentru planificare pe termen scurt. Utilizează proprietatea weeksToShow.',
       },
     },
   },
@@ -476,7 +484,8 @@ export const SixWeeks: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Vizualizare de 6 săptămâni pentru planificare pe termen lung. Necesită derulare verticală pentru a vedea toate săptămânile.',
+        story:
+          'Vizualizare de 6 săptămâni pentru planificare pe termen lung. Necesită derulare verticală pentru a vedea toate săptămânile.',
       },
     },
   },
@@ -549,7 +558,8 @@ export const RomanianLocale: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Verifică redarea corectă a diacriticelor românești: ă, â, î, ș, ț. Numele lunilor și zilelor sunt afișate în limba română.',
+        story:
+          'Verifică redarea corectă a diacriticelor românești: ă, â, î, ș, ț. Numele lunilor și zilelor sunt afișate în limba română.',
       },
     },
   },
@@ -569,7 +579,8 @@ export const WithoutDragAndDrop: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Calendar în modul citire (fără drag-and-drop). Sarcinile nu pot fi replanificate prin tragere.',
+        story:
+          'Calendar în modul citire (fără drag-and-drop). Sarcinile nu pot fi replanificate prin tragere.',
       },
     },
   },

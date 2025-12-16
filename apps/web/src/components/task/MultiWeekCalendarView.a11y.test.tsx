@@ -142,7 +142,11 @@ describe('MultiWeekCalendarView Accessibility (WCAG AA)', () => {
       ];
 
       const { container } = render(
-        <MultiWeekCalendarView tasks={tasks} onTaskClick={mockTaskClick} onTaskDrop={mockTaskDrop} />
+        <MultiWeekCalendarView
+          tasks={tasks}
+          onTaskClick={mockTaskClick}
+          onTaskDrop={mockTaskDrop}
+        />
       );
 
       const taskCards = container.querySelectorAll('[role="button"]');
@@ -270,7 +274,7 @@ describe('MultiWeekCalendarView Accessibility (WCAG AA)', () => {
 
       const results = await axe(container, {
         rules: {
-          'tabindex': { enabled: true },
+          tabindex: { enabled: true },
           'focus-order-semantics': { enabled: true },
         },
       });

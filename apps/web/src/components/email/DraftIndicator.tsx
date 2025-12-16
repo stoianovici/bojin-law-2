@@ -152,12 +152,7 @@ function StatusIcon({ type, size }: { type: 'edit' | 'check' | 'send' | 'x'; siz
     case 'check':
       return (
         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5 13l4 4L19 7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       );
     case 'send':
@@ -188,7 +183,13 @@ function StatusIcon({ type, size }: { type: 'edit' | 'check' | 'send' | 'x'; siz
 /**
  * Compact draft indicator for thread list items
  */
-export function DraftIndicatorCompact({ hasDraft, status }: { hasDraft: boolean; status?: DraftStatus }) {
+export function DraftIndicatorCompact({
+  hasDraft,
+  status,
+}: {
+  hasDraft: boolean;
+  status?: DraftStatus;
+}) {
   if (!hasDraft) return null;
 
   const config = status ? STATUS_CONFIG[status] : STATUS_CONFIG.Generated;
@@ -198,7 +199,12 @@ export function DraftIndicatorCompact({ hasDraft, status }: { hasDraft: boolean;
       className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${config.bgColor}`}
       title={`Draft: ${config.label}`}
     >
-      <svg className={`h-3 w-3 ${config.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg
+        className={`h-3 w-3 ${config.color}`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -10,9 +10,7 @@ import { useFinancialAccess } from '@/hooks/useFinancialAccess';
 // Mock the useFinancialAccess hook
 jest.mock('@/hooks/useFinancialAccess');
 
-const mockUseFinancialAccess = useFinancialAccess as jest.MockedFunction<
-  typeof useFinancialAccess
->;
+const mockUseFinancialAccess = useFinancialAccess as jest.MockedFunction<typeof useFinancialAccess>;
 
 describe('FinancialData Component', () => {
   beforeEach(() => {

@@ -125,9 +125,7 @@ Grefier Principal`,
     priorCommunications: [
       { subject: 'Initial consultation', date: new Date(), summary: 'Discussed case details' },
     ],
-    activeDeadlines: [
-      { description: 'File motion', dueDate: new Date('2025-12-15') },
-    ],
+    activeDeadlines: [{ description: 'File motion', dueDate: new Date('2025-12-15') }],
     pendingTasks: [{ title: 'Review documents', priority: 'High' }],
     extractedCommitments: [],
     riskIndicators: [],
@@ -300,7 +298,8 @@ Grefier Principal`,
     it('should recommend Detailed tone for emails with multiple questions', () => {
       const detailedEmail: Email = {
         ...mockEmail,
-        bodyContent: 'Care este statusul? Ce termene avem? Când ne întâlnim? Ce documente sunt necesare?',
+        bodyContent:
+          'Care este statusul? Ce termene avem? Când ne întâlnim? Ce documente sunt necesare?',
       };
 
       const recommendTone = (service as any).recommendTone.bind(service);

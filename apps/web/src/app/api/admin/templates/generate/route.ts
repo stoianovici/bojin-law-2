@@ -16,24 +16,15 @@ export async function POST(request: NextRequest) {
 
     // Validate request
     if (!body.typeId) {
-      return NextResponse.json(
-        { error: 'Type ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Type ID is required' }, { status: 400 });
     }
 
     if (!body.language) {
-      return NextResponse.json(
-        { error: 'Language is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Language is required' }, { status: 400 });
     }
 
     if (typeof body.includeEnglish !== 'boolean') {
-      return NextResponse.json(
-        { error: 'includeEnglish must be a boolean' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'includeEnglish must be a boolean' }, { status: 400 });
     }
 
     // Trigger template generation

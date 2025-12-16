@@ -114,7 +114,7 @@ function BottleneckCard({
             {bottleneck.impactedTasks.length !== 1 ? 's' : ''}
           </div>
           <div className="space-y-1">
-            {bottleneck.impactedTasks.slice(0, 2).map((task: typeof upcomingTasks[number]) => (
+            {bottleneck.impactedTasks.slice(0, 2).map((task: (typeof upcomingTasks)[number]) => (
               <div
                 key={task.id}
                 className={`text-sm px-2 py-1 rounded ${
@@ -168,12 +168,10 @@ export function CapacityForecastPanel({
 
   // Calculate daily utilization for chart
   const dailyUtilization = useMemo(() => {
-    return forecast.teamCapacityByDay.map((day: typeof forecast.dailyCapacity[number]) => ({
+    return forecast.teamCapacityByDay.map((day: (typeof forecast.dailyCapacity)[number]) => ({
       date: day.date,
       utilization:
-        day.totalCapacity > 0
-          ? Math.round((day.totalAllocated / day.totalCapacity) * 100)
-          : 0,
+        day.totalCapacity > 0 ? Math.round((day.totalAllocated / day.totalCapacity) * 100) : 0,
     }));
   }, [forecast.teamCapacityByDay]);
 
@@ -210,24 +208,30 @@ export function CapacityForecastPanel({
       <div className="px-4 py-3 border-b">
         <div className="text-sm font-medium text-gray-700 mb-2">Team Utilization</div>
         <div className="flex gap-1 items-end h-16">
-          {dailyUtilization.slice(0, 14).map((day: typeof forecast.dailyCapacity[number], i: number) => {
-            const height = Math.min(100, day.utilization);
-            const isOverloaded = day.utilization > 100;
-            return (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center gap-0.5"
-                title={`${formatDate(day.date)}: ${day.utilization}%`}
-              >
+          {dailyUtilization
+            .slice(0, 14)
+            .map((day: (typeof forecast.dailyCapacity)[number], i: number) => {
+              const height = Math.min(100, day.utilization);
+              const isOverloaded = day.utilization > 100;
+              return (
                 <div
-                  className={`w-full rounded-t ${
-                    isOverloaded ? 'bg-red-500' : day.utilization > 80 ? 'bg-orange-400' : 'bg-green-400'
-                  }`}
-                  style={{ height: `${height}%` }}
-                />
-              </div>
-            );
-          })}
+                  key={i}
+                  className="flex-1 flex flex-col items-center gap-0.5"
+                  title={`${formatDate(day.date)}: ${day.utilization}%`}
+                >
+                  <div
+                    className={`w-full rounded-t ${
+                      isOverloaded
+                        ? 'bg-red-500'
+                        : day.utilization > 80
+                          ? 'bg-orange-400'
+                          : 'bg-green-400'
+                    }`}
+                    style={{ height: `${height}%` }}
+                  />
+                </div>
+              );
+            })}
         </div>
         <div className="flex justify-between mt-1 text-xs text-gray-400">
           <span>Today</span>
@@ -244,13 +248,15 @@ export function CapacityForecastPanel({
               {forecast.bottlenecks.length !== 1 ? 's' : ''} Detected
             </div>
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {forecast.bottlenecks.slice(0, 5).map((bottleneck: typeof forecast.bottlenecks[number], i: number) => (
-                <BottleneckCard
-                  key={`${bottleneck.userId}-${bottleneck.date}-${i}`}
-                  bottleneck={bottleneck}
-                  onClick={() => onBottleneckClick?.(bottleneck)}
-                />
-              ))}
+              {forecast.bottlenecks
+                .slice(0, 5)
+                .map((bottleneck: (typeof forecast.bottlenecks)[number], i: number) => (
+                  <BottleneckCard
+                    key={`${bottleneck.userId}-${bottleneck.date}-${i}`}
+                    bottleneck={bottleneck}
+                    onClick={() => onBottleneckClick?.(bottleneck)}
+                  />
+                ))}
               {forecast.bottlenecks.length > 5 && (
                 <div className="text-center text-sm text-gray-500">
                   +{forecast.bottlenecks.length - 5} more bottlenecks
@@ -272,12 +278,14 @@ export function CapacityForecastPanel({
         <div className="px-4 py-3 border-t bg-gray-50">
           <div className="text-sm font-medium text-gray-700 mb-2">Recommendations</div>
           <ul className="space-y-1">
-            {forecast.recommendations.map((rec: typeof forecast.recommendations[number], i: number) => (
-              <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
-                <Lightbulb className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
-                {rec}
-              </li>
-            ))}
+            {forecast.recommendations.map(
+              (rec: (typeof forecast.recommendations)[number], i: number) => (
+                <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                  <Lightbulb className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
+                  {rec}
+                </li>
+              )
+            )}
           </ul>
         </div>
       )}

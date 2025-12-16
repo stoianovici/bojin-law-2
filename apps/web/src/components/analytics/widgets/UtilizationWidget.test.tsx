@@ -102,13 +102,7 @@ describe('UtilizationWidget', () => {
       const mockRetry = jest.fn();
       const testError = new Error('Network error');
 
-      render(
-        <UtilizationWidget
-          {...defaultProps}
-          error={testError}
-          onRetry={mockRetry}
-        />
-      );
+      render(<UtilizationWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
       screen.getByRole('button', { name: /retry/i }).click();
       expect(mockRetry).toHaveBeenCalledTimes(1);
@@ -127,20 +121,13 @@ describe('UtilizationWidget', () => {
       );
 
       expect(screen.getByTestId('widget-empty')).toBeInTheDocument();
-      expect(
-        screen.getByText('No utilization data for this period')
-      ).toBeInTheDocument();
+      expect(screen.getByText('No utilization data for this period')).toBeInTheDocument();
     });
   });
 
   describe('Color Coding', () => {
     it('shows green color for high utilization (>=80%)', () => {
-      render(
-        <UtilizationWidget
-          {...defaultProps}
-          utilizationRate={85}
-        />
-      );
+      render(<UtilizationWidget {...defaultProps} utilizationRate={85} />);
 
       // The percentage text should be styled with green
       const percentageElement = screen.getByText('85.0%');
@@ -149,12 +136,7 @@ describe('UtilizationWidget', () => {
     });
 
     it('shows yellow color for medium utilization (60-79%)', () => {
-      render(
-        <UtilizationWidget
-          {...defaultProps}
-          utilizationRate={70}
-        />
-      );
+      render(<UtilizationWidget {...defaultProps} utilizationRate={70} />);
 
       const percentageElement = screen.getByText('70.0%');
       // Yellow is #F59E0B
@@ -162,12 +144,7 @@ describe('UtilizationWidget', () => {
     });
 
     it('shows red color for low utilization (<60%)', () => {
-      render(
-        <UtilizationWidget
-          {...defaultProps}
-          utilizationRate={45}
-        />
-      );
+      render(<UtilizationWidget {...defaultProps} utilizationRate={45} />);
 
       const percentageElement = screen.getByText('45.0%');
       // Red is #EF4444
@@ -209,12 +186,7 @@ describe('UtilizationWidget', () => {
 
   describe('Role Breakdown', () => {
     it('does not show role breakdown section when empty', () => {
-      render(
-        <UtilizationWidget
-          {...defaultProps}
-          utilizationByRole={[]}
-        />
-      );
+      render(<UtilizationWidget {...defaultProps} utilizationByRole={[]} />);
 
       expect(screen.queryByText('By Role')).not.toBeInTheDocument();
     });
@@ -262,12 +234,7 @@ describe('UtilizationWidget', () => {
     });
 
     it('handles decimal utilization rates', () => {
-      render(
-        <UtilizationWidget
-          {...defaultProps}
-          utilizationRate={72.5}
-        />
-      );
+      render(<UtilizationWidget {...defaultProps} utilizationRate={72.5} />);
 
       expect(screen.getByText('72.5%')).toBeInTheDocument();
     });

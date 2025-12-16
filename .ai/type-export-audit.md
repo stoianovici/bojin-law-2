@@ -7,13 +7,13 @@
 
 ## Task Index
 
-| Task ID | Priority | Description | Est. Time | Status |
-|---------|----------|-------------|-----------|--------|
-| [001](tasks/type-audit-001-duplicate-tasktype.md) | P0 | Fix duplicate TaskType export | 5 min | Open |
-| [002](tasks/type-audit-002-apollo-hooks-fix.md) | P0 | Fix Apollo/React Query API mixing | 20 min | Open |
-| [003](tasks/type-audit-003-legacy-import-paths.md) | P1 | Fix legacy-import module paths | 30 min | Open |
-| [004](tasks/type-audit-004-implicit-any-types.md) | P2 | Fix implicit any types | 45 min | Open |
-| [005](tasks/type-audit-005-error-type-handling.md) | P2 | Fix unknown error type handling | 20 min | Open |
+| Task ID                                            | Priority | Description                       | Est. Time | Status |
+| -------------------------------------------------- | -------- | --------------------------------- | --------- | ------ |
+| [001](tasks/type-audit-001-duplicate-tasktype.md)  | P0       | Fix duplicate TaskType export     | 5 min     | Open   |
+| [002](tasks/type-audit-002-apollo-hooks-fix.md)    | P0       | Fix Apollo/React Query API mixing | 20 min    | Open   |
+| [003](tasks/type-audit-003-legacy-import-paths.md) | P1       | Fix legacy-import module paths    | 30 min    | Open   |
+| [004](tasks/type-audit-004-implicit-any-types.md)  | P2       | Fix implicit any types            | 45 min    | Open   |
+| [005](tasks/type-audit-005-error-type-handling.md) | P2       | Fix unknown error type handling   | 20 min    | Open   |
 
 ---
 

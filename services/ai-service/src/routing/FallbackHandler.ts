@@ -142,9 +142,7 @@ export class FallbackHandler {
           circuitState: this.getCircuitState(skillId),
         });
 
-        console.warn(
-          `[FallbackHandler] Circuit breaker open for skill ${skillId}, using fallback`
-        );
+        console.warn(`[FallbackHandler] Circuit breaker open for skill ${skillId}, using fallback`);
 
         return fallbackFn();
       }
@@ -152,12 +150,7 @@ export class FallbackHandler {
 
     // Execute with timeout and retry
     try {
-      const result = await this.executeWithRetry(
-        skillIds,
-        request,
-        executeFn,
-        fallbackFn
-      );
+      const result = await this.executeWithRetry(skillIds, request, executeFn, fallbackFn);
 
       // Record success for circuit breakers
       for (const skillId of skillIds) {
@@ -210,8 +203,7 @@ export class FallbackHandler {
         // Check if enough time has passed to try half-open
         if (
           state.lastFailureTime &&
-          Date.now() - state.lastFailureTime.getTime() >=
-            this.config.circuitBreaker.resetTimeout
+          Date.now() - state.lastFailureTime.getTime() >= this.config.circuitBreaker.resetTimeout
         ) {
           // Transition to half-open
           state.state = 'half_open';
@@ -223,9 +215,7 @@ export class FallbackHandler {
 
       case 'half_open':
         // Allow limited attempts in half-open state
-        if (
-          state.halfOpenAttempts < this.config.circuitBreaker.halfOpenMaxAttempts
-        ) {
+        if (state.halfOpenAttempts < this.config.circuitBreaker.halfOpenMaxAttempts) {
           state.halfOpenAttempts++;
           this.circuitBreakers.set(skillId, state);
           return true;
@@ -399,8 +389,7 @@ export class FallbackHandler {
    */
   private calculateBackoffDelay(attempt: number): number {
     const delay = Math.min(
-      this.config.retry.initialDelayMs *
-        Math.pow(this.config.retry.backoffMultiplier, attempt),
+      this.config.retry.initialDelayMs * Math.pow(this.config.retry.backoffMultiplier, attempt),
       this.config.retry.maxDelayMs
     );
 
@@ -436,7 +425,8 @@ export class FallbackHandler {
     // Console logging
     if (this.config.enableLogging) {
       const errorMsg = event.error ? ` - ${event.error.message}` : '';
-      const retryMsg = event.retryAttempt !== undefined ? ` (attempt ${event.retryAttempt + 1})` : '';
+      const retryMsg =
+        event.retryAttempt !== undefined ? ` (attempt ${event.retryAttempt + 1})` : '';
       const circuitMsg = event.circuitState ? ` [circuit: ${event.circuitState}]` : '';
 
       console.warn(

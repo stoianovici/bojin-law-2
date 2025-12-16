@@ -26,10 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  useCreateSnippet,
-  useUpdateSnippet,
-} from '@/hooks/usePersonalSnippets';
+import { useCreateSnippet, useUpdateSnippet } from '@/hooks/usePersonalSnippets';
 import type { CreateSnippetInput } from '@/hooks/usePersonalSnippets';
 import type { PersonalSnippet, SnippetCategory } from '@legal-platform/types';
 
@@ -84,16 +81,13 @@ interface ValidationErrors {
   category?: string;
 }
 
-function validateSnippet(
-  data: Partial<CreateSnippetInput>
-): ValidationErrors {
+function validateSnippet(data: Partial<CreateSnippetInput>): ValidationErrors {
   const errors: ValidationErrors = {};
 
   if (!data.shortcut) {
     errors.shortcut = 'Shortcut-ul este obligatoriu';
   } else if (!SHORTCUT_REGEX.test(data.shortcut)) {
-    errors.shortcut =
-      'Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore';
+    errors.shortcut = 'Shortcut-ul poate conține doar litere, cifre, liniuțe și underscore';
   } else if (data.shortcut.length > MAX_SHORTCUT_LENGTH) {
     errors.shortcut = `Shortcut-ul nu poate depăși ${MAX_SHORTCUT_LENGTH} caractere`;
   }
@@ -153,12 +147,7 @@ function SnippetPreview({ content }: { content: string }) {
  * SnippetEditor provides a form for creating or editing personal snippets
  * with real-time validation and live preview.
  */
-export function SnippetEditor({
-  snippet,
-  onSave,
-  onCancel,
-  className = '',
-}: SnippetEditorProps) {
+export function SnippetEditor({ snippet, onSave, onCancel, className = '' }: SnippetEditorProps) {
   const isEditing = !!snippet;
 
   // Form state
@@ -173,10 +162,8 @@ export function SnippetEditor({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Mutations
-  const { createSnippet, loading: creating, error: createError } =
-    useCreateSnippet();
-  const { updateSnippet, loading: updating, error: updateError } =
-    useUpdateSnippet();
+  const { createSnippet, loading: creating, error: createError } = useCreateSnippet();
+  const { updateSnippet, loading: updating, error: updateError } = useUpdateSnippet();
 
   const isLoading = creating || updating;
 
@@ -204,14 +191,11 @@ export function SnippetEditor({
   }, [formData, touched]);
 
   // Handle field changes
-  const handleChange = useCallback(
-    (field: keyof CreateSnippetInput, value: string) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-      setTouched((prev) => ({ ...prev, [field]: true }));
-      setSubmitError(null);
-    },
-    []
-  );
+  const handleChange = useCallback((field: keyof CreateSnippetInput, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setSubmitError(null);
+  }, []);
 
   // Handle blur for validation
   const handleBlur = useCallback((field: keyof CreateSnippetInput) => {
@@ -266,9 +250,7 @@ export function SnippetEditor({
       }
     } catch (err) {
       const message =
-        err instanceof Error
-          ? err.message
-          : 'A apărut o eroare la salvarea snippet-ului';
+        err instanceof Error ? err.message : 'A apărut o eroare la salvarea snippet-ului';
       setSubmitError(message);
     }
   };
@@ -281,9 +263,7 @@ export function SnippetEditor({
     <Card className={className}>
       <form onSubmit={handleSubmit}>
         <CardHeader>
-          <CardTitle>
-            {isEditing ? 'Editează Snippet' : 'Snippet Nou'}
-          </CardTitle>
+          <CardTitle>{isEditing ? 'Editează Snippet' : 'Snippet Nou'}</CardTitle>
           <CardDescription>
             {isEditing
               ? 'Modifică detaliile snippet-ului existent'
@@ -356,17 +336,12 @@ export function SnippetEditor({
                     placeholder="salut-formal"
                     value={formData.shortcut}
                     onChange={(e) =>
-                      handleChange(
-                        'shortcut',
-                        e.target.value.replace(/[^a-zA-Z0-9_-]/g, '')
-                      )
+                      handleChange('shortcut', e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))
                     }
                     onBlur={() => handleBlur('shortcut')}
                     className="pl-7"
                     aria-invalid={touched.shortcut && !!errors.shortcut}
-                    aria-describedby={
-                      errors.shortcut ? 'shortcut-error' : 'shortcut-hint'
-                    }
+                    aria-describedby={errors.shortcut ? 'shortcut-error' : 'shortcut-hint'}
                     maxLength={MAX_SHORTCUT_LENGTH}
                   />
                 </div>
@@ -376,8 +351,7 @@ export function SnippetEditor({
                   </p>
                 ) : (
                   <p id="shortcut-hint" className="text-xs text-muted-foreground">
-                    Tastează /{formData.shortcut || 'shortcut'} pentru a insera
-                    rapid
+                    Tastează /{formData.shortcut || 'shortcut'} pentru a insera rapid
                   </p>
                 )}
               </div>
@@ -392,9 +366,7 @@ export function SnippetEditor({
                 </label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) =>
-                    handleChange('category', value as SnippetCategory)
-                  }
+                  onValueChange={(value) => handleChange('category', value as SnippetCategory)}
                 >
                   <SelectTrigger
                     id="snippet-category"
@@ -436,9 +408,7 @@ export function SnippetEditor({
                   onBlur={() => handleBlur('content')}
                   rows={6}
                   aria-invalid={touched.content && !!errors.content}
-                  aria-describedby={
-                    errors.content ? 'content-error' : 'content-hint'
-                  }
+                  aria-describedby={errors.content ? 'content-error' : 'content-hint'}
                   maxLength={MAX_CONTENT_LENGTH}
                 />
                 {touched.content && errors.content ? (
@@ -447,8 +417,8 @@ export function SnippetEditor({
                   </p>
                 ) : (
                   <p id="content-hint" className="text-xs text-muted-foreground">
-                    {formData.content.length}/{MAX_CONTENT_LENGTH} caractere.
-                    Suportă **bold** și *italic*.
+                    {formData.content.length}/{MAX_CONTENT_LENGTH} caractere. Suportă **bold** și
+                    *italic*.
                   </p>
                 )}
               </div>
@@ -460,8 +430,8 @@ export function SnippetEditor({
                 <span className="text-sm font-medium">Previzualizare</span>
                 {formData.category && (
                   <Badge variant="outline">
-                    {CATEGORY_OPTIONS.find((o) => o.value === formData.category)
-                      ?.label ?? formData.category}
+                    {CATEGORY_OPTIONS.find((o) => o.value === formData.category)?.label ??
+                      formData.category}
                   </Badge>
                 )}
               </div>
@@ -479,21 +449,12 @@ export function SnippetEditor({
 
         <CardFooter className="flex justify-end gap-2">
           {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
               Anulează
             </Button>
           )}
           <Button type="submit" disabled={isLoading}>
-            {isLoading
-              ? 'Se salvează...'
-              : isEditing
-                ? 'Salvează Modificările'
-                : 'Creează Snippet'}
+            {isLoading ? 'Se salvează...' : isEditing ? 'Salvează Modificările' : 'Creează Snippet'}
           </Button>
         </CardFooter>
       </form>
@@ -540,11 +501,7 @@ export function SnippetEditorDialog({
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
-        <SnippetEditor
-          snippet={snippet}
-          onSave={handleSave}
-          onCancel={() => onOpenChange(false)}
-        />
+        <SnippetEditor snippet={snippet} onSave={handleSave} onCancel={() => onOpenChange(false)} />
       </div>
     </div>
   );

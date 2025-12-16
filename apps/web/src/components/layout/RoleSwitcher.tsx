@@ -42,7 +42,7 @@ export interface RoleSwitcherProps {
 export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
   const { currentRole, setCurrentRole } = useNavigationStore();
 
-  const currentRoleOption = roleOptions.find(option => option.value === currentRole);
+  const currentRoleOption = roleOptions.find((option) => option.value === currentRole);
 
   const handleRoleChange = (role: UserRole) => {
     setCurrentRole(role);
@@ -88,12 +88,7 @@ export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
       </DropdownMenu.Trigger>
@@ -130,9 +125,7 @@ export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
               onSelect={() => handleRoleChange(option.value)}
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-900">
-                  {option.label}
-                </span>
+                <span className="font-medium text-gray-900">{option.label}</span>
                 {currentRole === option.value && (
                   <svg
                     className="w-4 h-4 text-blue-600"
@@ -150,9 +143,7 @@ export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
                   </svg>
                 )}
               </div>
-              <span className="text-xs text-gray-500 mt-1">
-                {option.description}
-              </span>
+              <span className="text-xs text-gray-500 mt-1">{option.description}</span>
             </DropdownMenu.Item>
           ))}
 

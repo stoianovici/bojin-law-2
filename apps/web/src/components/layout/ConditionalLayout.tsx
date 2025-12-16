@@ -29,14 +29,17 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   // Check if current route is public
   const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname?.startsWith(route));
 
-  // Redirect unauthenticated users to login in production
+  // Redirect unauthenticated users to login
+  // Set NEXT_PUBLIC_SKIP_AUTH=true to bypass in development
+  const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
+
   useEffect(() => {
     // Skip all checks for public routes, authenticated users, or still loading
-    if (isPublicRoute || isAuthenticated || isLoading) return;
+    if (isPublicRoute || isAuthenticated || isLoading || skipAuth) return;
 
     // AuthContext says not authenticated and not loading
     // Double-check session cookie before redirecting to avoid race conditions
-    if (process.env.NODE_ENV === 'production' && sessionVerified === null) {
+    if (sessionVerified === null) {
       const checkBeforeRedirect = async () => {
         try {
           console.log('[ConditionalLayout] Checking /api/auth/me before redirect...');
@@ -59,12 +62,12 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
       };
 
       checkBeforeRedirect();
-    } else if (process.env.NODE_ENV === 'production' && sessionVerified === false) {
+    } else if (sessionVerified === false) {
       // Already verified as not authenticated, redirect
       const returnUrl = encodeURIComponent(pathname || '/');
       router.replace(`/login?returnUrl=${returnUrl}`);
     }
-  }, [isLoading, isAuthenticated, isPublicRoute, router, pathname, sessionVerified]);
+  }, [isLoading, isAuthenticated, isPublicRoute, router, pathname, sessionVerified, skipAuth]);
 
   // Show loading state during auth initialization
   if (isLoading) {
@@ -83,9 +86,9 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     return <>{children}</>;
   }
 
-  // In production, require authentication
+  // Require authentication (unless NEXT_PUBLIC_SKIP_AUTH=true)
   // But also allow if we've independently verified the session
-  if (!isAuthenticated && !sessionVerified && process.env.NODE_ENV === 'production') {
+  if (!isAuthenticated && !sessionVerified && !skipAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -96,6 +99,6 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     );
   }
 
-  // Authenticated user (or dev mode) on protected route - use MainLayout
+  // Authenticated user (or skipAuth mode) on protected route - use MainLayout
   return <MainLayout>{children}</MainLayout>;
 }

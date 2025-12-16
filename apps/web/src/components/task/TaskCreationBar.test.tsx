@@ -346,13 +346,7 @@ describe('TaskCreationBar', () => {
       const user = userEvent.setup();
       render(<TaskCreationBar onCreateTask={mockOnCreateTask} />);
 
-      const taskTypeKeywords = [
-        'cercetare',
-        'redactare',
-        'întâlnire',
-        'termen',
-        'deplasare',
-      ];
+      const taskTypeKeywords = ['cercetare', 'redactare', 'întâlnire', 'termen', 'deplasare'];
 
       for (const keyword of taskTypeKeywords) {
         const input = screen.getByRole('textbox');

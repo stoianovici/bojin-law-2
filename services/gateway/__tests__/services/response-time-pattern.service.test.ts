@@ -231,7 +231,12 @@ describe('ResponseTimePatternService', () => {
 
       // Use a Monday
       const monday = new Date('2024-01-15T10:00:00Z');
-      const result = await service.predictCompletionTime('document_review', userId, undefined, monday);
+      const result = await service.predictCompletionTime(
+        'document_review',
+        userId,
+        undefined,
+        monday
+      );
 
       expect(result).not.toBeNull();
       // Monday has lower response time (4.0) than average, so adjustment should be applied
@@ -242,7 +247,12 @@ describe('ResponseTimePatternService', () => {
 
       // Use morning time
       const morningTime = new Date('2024-01-15T10:00:00Z');
-      const result = await service.predictCompletionTime('document_review', userId, undefined, morningTime);
+      const result = await service.predictCompletionTime(
+        'document_review',
+        userId,
+        undefined,
+        morningTime
+      );
 
       expect(result).not.toBeNull();
       // Morning has specific response time pattern

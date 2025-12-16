@@ -164,10 +164,7 @@ export class TimeEstimationService {
     // Calculate actual hours for each task
     const tasksWithActualHours = completedTasks
       .map((task) => {
-        const actualHours = task.timeEntries.reduce(
-          (sum, entry) => sum + Number(entry.hours),
-          0
-        );
+        const actualHours = task.timeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
         return {
           id: task.id,
           title: task.title,
@@ -230,8 +227,7 @@ export class TimeEstimationService {
     // Calculate range using standard deviation
     const hours = historicalData.completedTasks.map((t) => t.actualHours);
     const mean = avgHours;
-    const variance =
-      hours.reduce((sum, h) => sum + Math.pow(h - mean, 2), 0) / hours.length;
+    const variance = hours.reduce((sum, h) => sum + Math.pow(h - mean, 2), 0) / hours.length;
     const stdDev = Math.sqrt(variance);
 
     // Range: mean +/- 1 standard deviation

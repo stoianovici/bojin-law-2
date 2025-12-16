@@ -197,13 +197,7 @@ export class UserManagementService {
     });
 
     // Create audit log entry
-    await this.createAuditLog(
-      userId,
-      'Deactivated',
-      adminUserId,
-      'Active',
-      'Inactive'
-    );
+    await this.createAuditLog(userId, 'Deactivated', adminUserId, 'Active', 'Inactive');
 
     return updatedUser;
   }
@@ -223,11 +217,7 @@ export class UserManagementService {
    * @returns Updated user record
    * @throws Error if user not found, not active, or validation fails
    */
-  async updateUserRole(
-    userId: string,
-    newRole: UserRole,
-    adminUserId: string
-  ): Promise<User> {
+  async updateUserRole(userId: string, newRole: UserRole, adminUserId: string): Promise<User> {
     // Validate user exists and is active
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -245,9 +235,7 @@ export class UserManagementService {
 
     // Validate new role is different from current role
     if (user.role === newRole) {
-      throw new Error(
-        `User already has role: ${newRole}. No change needed.`
-      );
+      throw new Error(`User already has role: ${newRole}. No change needed.`);
     }
 
     // Validate new role is valid enum value
@@ -266,13 +254,7 @@ export class UserManagementService {
     });
 
     // Create audit log entry
-    await this.createAuditLog(
-      userId,
-      'RoleChanged',
-      adminUserId,
-      oldRole,
-      newRole
-    );
+    await this.createAuditLog(userId, 'RoleChanged', adminUserId, oldRole, newRole);
 
     return updatedUser;
   }

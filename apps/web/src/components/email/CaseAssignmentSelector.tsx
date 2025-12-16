@@ -76,9 +76,7 @@ export function CaseAssignmentSelector({
       <div className="w-full max-w-lg rounded-lg bg-white shadow-xl dark:bg-gray-800">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Assign to Case
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Assign to Case</h3>
           <button
             onClick={onClose}
             className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700"
@@ -132,9 +130,7 @@ export function CaseAssignmentSelector({
               <Spinner />
             </div>
           ) : error ? (
-            <div className="p-4 text-center text-red-600">
-              Error loading cases
-            </div>
+            <div className="p-4 text-center text-red-600">Error loading cases</div>
           ) : filteredCases.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               {search ? 'No matching cases found' : 'No active cases'}

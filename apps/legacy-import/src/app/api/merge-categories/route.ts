@@ -20,17 +20,11 @@ export async function POST(request: NextRequest) {
 
     // Validate request
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'sessionId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
     }
 
     if (!targetCategoryId) {
-      return NextResponse.json(
-        { error: 'targetCategoryId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'targetCategoryId is required' }, { status: 400 });
     }
 
     if (!sourceCategoryIds || sourceCategoryIds.length === 0) {
@@ -46,10 +40,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // Verify target category exists and belongs to this session
@@ -152,15 +143,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof AuthError) {
       const { message, statusCode } = error;
-      return NextResponse.json(
-        { error: message },
-        { status: statusCode }
-      );
+      return NextResponse.json({ error: message }, { status: statusCode });
     }
     console.error('Error merging categories:', error);
-    return NextResponse.json(
-      { error: 'Failed to merge categories' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to merge categories' }, { status: 500 });
   }
 }

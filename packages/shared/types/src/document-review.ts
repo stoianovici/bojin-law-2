@@ -4,12 +4,7 @@
  */
 
 // Review status lifecycle
-export type ReviewStatus =
-  | 'PENDING'
-  | 'IN_REVIEW'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'REVISION_REQUESTED';
+export type ReviewStatus = 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | 'REVISION_REQUESTED';
 
 // Review priority levels
 export type ReviewPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';

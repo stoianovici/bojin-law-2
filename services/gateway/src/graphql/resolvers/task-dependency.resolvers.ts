@@ -115,10 +115,7 @@ export const taskDependencyResolvers = {
       }
 
       // Validate no circular dependency
-      const isValid = await dependencyService.validateNoCycle(
-        args.predecessorId,
-        args.successorId
-      );
+      const isValid = await dependencyService.validateNoCycle(args.predecessorId, args.successorId);
 
       if (!isValid) {
         throw new GraphQLError('Cannot add dependency: would create circular dependency', {
@@ -137,11 +134,7 @@ export const taskDependencyResolvers = {
     /**
      * Remove a task dependency
      */
-    removeTaskDependency: async (
-      _: any,
-      args: { dependencyId: string },
-      context: Context
-    ) => {
+    removeTaskDependency: async (_: any, args: { dependencyId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {
@@ -199,11 +192,7 @@ export const taskDependencyResolvers = {
     /**
      * Recalculate critical path for a case
      */
-    recalculateCriticalPath: async (
-      _: any,
-      args: { caseId: string },
-      context: Context
-    ) => {
+    recalculateCriticalPath: async (_: any, args: { caseId: string }, context: Context) => {
       const { user } = context;
 
       if (!user) {

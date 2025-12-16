@@ -25,11 +25,7 @@ jest.mock('@/lib/r2-storage', () => ({
 }));
 
 import { downloadFromR2 } from '@/lib/r2-storage';
-import {
-  OneDriveExportService,
-  DocumentToExport,
-  ExportProgress,
-} from './onedrive-export.service';
+import { OneDriveExportService, DocumentToExport, ExportProgress } from './onedrive-export.service';
 
 describe('OneDrive Export Service', () => {
   let service: OneDriveExportService;
@@ -71,9 +67,7 @@ describe('OneDrive Export Service', () => {
 
     it('should handle special characters in file name', () => {
       const originalFileName = 'Contract <Client> "Special" | Test?.docx';
-      const sanitized = originalFileName
-        .replace(/\.[^/.]+$/, '')
-        .replace(/[<>:"/\\|?*]/g, '_');
+      const sanitized = originalFileName.replace(/\.[^/.]+$/, '').replace(/[<>:"/\\|?*]/g, '_');
 
       expect(sanitized).toBe('Contract _Client_ _Special_ _ Test_');
       expect(sanitized).not.toMatch(/[<>:"/\\|?*]/);
@@ -339,7 +333,7 @@ describe('OneDrive Export Service', () => {
 
     it('should limit concurrent uploads to 5', () => {
       const documents = Array(20).fill({});
-      const batches: typeof documents[] = [];
+      const batches: (typeof documents)[] = [];
 
       for (let i = 0; i < documents.length; i += MAX_CONCURRENT_UPLOADS) {
         batches.push(documents.slice(i, i + MAX_CONCURRENT_UPLOADS));
@@ -351,7 +345,7 @@ describe('OneDrive Export Service', () => {
 
     it('should handle partial final batch', () => {
       const documents = Array(17).fill({});
-      const batches: typeof documents[] = [];
+      const batches: (typeof documents)[] = [];
 
       for (let i = 0; i < documents.length; i += MAX_CONCURRENT_UPLOADS) {
         batches.push(documents.slice(i, i + MAX_CONCURRENT_UPLOADS));
@@ -440,9 +434,7 @@ describe('OneDrive Export Service', () => {
 
     it('should create category subfolders', () => {
       const categories = ['Contract', 'Notificare', 'Intampinare'];
-      const folderPaths = categories.map(
-        (cat) => `/AI-Training/${cat}/`
-      );
+      const folderPaths = categories.map((cat) => `/AI-Training/${cat}/`);
 
       expect(folderPaths).toEqual([
         '/AI-Training/Contract/',
@@ -480,10 +472,7 @@ describe('OneDrive Export Service', () => {
         categoriesExported: 3,
         documentsExported: 485,
         oneDrivePath: '/AI-Training',
-        errors: [
-          'Document doc-123: Network timeout',
-          'Document doc-456: File corrupted',
-        ],
+        errors: ['Document doc-123: Network timeout', 'Document doc-456: File corrupted'],
       };
 
       expect(result.success).toBe(false);

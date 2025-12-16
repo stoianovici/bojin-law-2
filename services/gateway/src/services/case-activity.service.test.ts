@@ -144,15 +144,17 @@ describe('CaseActivityService', () => {
     it('should throw error if case not found', async () => {
       prisma.case.findFirst.mockResolvedValue(null);
 
-      await expect(
-        caseActivityService.getActivityFeed('case-123', 'firm-123')
-      ).rejects.toThrow('Case not found or access denied');
+      await expect(caseActivityService.getActivityFeed('case-123', 'firm-123')).rejects.toThrow(
+        'Case not found or access denied'
+      );
     });
 
     it('should indicate hasMore when more entries exist', async () => {
       prisma.case.findFirst.mockResolvedValue(mockCase);
       // Return 21 entries (limit + 1)
-      const entries = Array(21).fill(mockActivityEntry).map((e, i) => ({ ...e, id: `activity-${i}` }));
+      const entries = Array(21)
+        .fill(mockActivityEntry)
+        .map((e, i) => ({ ...e, id: `activity-${i}` }));
       prisma.caseActivityEntry.findMany.mockResolvedValue(entries);
 
       const result = await caseActivityService.getActivityFeed('case-123', 'firm-123');

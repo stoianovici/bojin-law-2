@@ -7,11 +7,7 @@
 
 import { prisma } from '@legal-platform/database';
 import { Prisma } from '@prisma/client';
-import {
-  PrecedentDocument,
-  SimilarDocumentSearchInput,
-  DocumentType,
-} from '@legal-platform/types';
+import { PrecedentDocument, SimilarDocumentSearchInput, DocumentType } from '@legal-platform/types';
 import { embeddingGenerationService } from './embedding-generation.service';
 import { semanticSearchService } from './semantic-search.service';
 import logger from '../lib/logger';
@@ -107,9 +103,10 @@ export class PrecedentFinderService {
       const embeddingStr = `[${queryEmbedding.join(',')}]`;
 
       // Build category filter
-      const categoryFilter = categories.length > 0
-        ? Prisma.sql`AND td.category IN (${Prisma.join(categories)})`
-        : Prisma.empty;
+      const categoryFilter =
+        categories.length > 0
+          ? Prisma.sql`AND td.category IN (${Prisma.join(categories)})`
+          : Prisma.empty;
 
       // Perform vector similarity search
       const results = await prisma.$queryRaw<
@@ -160,9 +157,7 @@ export class PrecedentFinderService {
     if (limit <= 0) return [];
 
     try {
-      const whereClause = categories.length > 0
-        ? { category: { in: categories } }
-        : {};
+      const whereClause = categories.length > 0 ? { category: { in: categories } } : {};
 
       const documents = await prisma.trainingDocument.findMany({
         where: whereClause,
