@@ -10,6 +10,29 @@ import { TaskDetailModal } from './TaskDetailModal';
 import { createMockTask } from '@legal-platform/test-utils';
 import type { Task } from '@legal-platform/types';
 
+// Mock the time entry hooks that require Apollo Client
+jest.mock('@/hooks/useTimeEntries', () => ({
+  useLogTimeAgainstTask: () => [jest.fn(), { loading: false }],
+  useTimeEntriesByTask: () => ({ data: null, loading: false }),
+}));
+
+// Mock child components that use Apollo Client (for unit testing TaskDetailModal only)
+jest.mock('./TaskComments', () => ({
+  TaskComments: () => <div data-testid="task-comments-mock">Task Comments</div>,
+}));
+
+jest.mock('./SubtaskPanel', () => ({
+  SubtaskPanel: () => <div data-testid="subtask-panel-mock">Subtask Panel</div>,
+}));
+
+jest.mock('./TaskAttachments', () => ({
+  TaskAttachments: () => <div data-testid="task-attachments-mock">Task Attachments</div>,
+}));
+
+jest.mock('./TaskHistoryTimeline', () => ({
+  TaskHistoryTimeline: () => <div data-testid="task-history-mock">Task History</div>,
+}));
+
 describe('TaskDetailModal', () => {
   const mockOnClose = jest.fn();
   const mockOnSave = jest.fn();
@@ -158,9 +181,9 @@ describe('TaskDetailModal', () => {
       const typeSelect = screen.getByLabelText(/Tip Sarcină/i);
       await user.selectOptions(typeSelect, 'CourtDate');
 
-      expect(screen.getByLabelText(/Nume Instanță/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Tip Ședință/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Număr Dosar/i)).toBeInTheDocument();
+      expect(screen.getByText(/Nume Instanță/i)).toBeInTheDocument();
+      expect(screen.getByText(/Tip Ședință/i)).toBeInTheDocument();
+      expect(screen.getByText(/Număr Dosar/i)).toBeInTheDocument();
     });
   });
 
@@ -174,8 +197,8 @@ describe('TaskDetailModal', () => {
       const typeSelect = screen.getByLabelText(/Tip Sarcină/i);
       await user.selectOptions(typeSelect, 'Research');
 
-      expect(screen.getByLabelText(/Subiect Cercetare/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Domeniu Juridic/i)).toBeInTheDocument();
+      expect(screen.getByText(/Subiect Cercetare/i)).toBeInTheDocument();
+      expect(screen.getByText(/Domeniu Juridic/i)).toBeInTheDocument();
     });
   });
 
@@ -189,8 +212,8 @@ describe('TaskDetailModal', () => {
       const typeSelect = screen.getByLabelText(/Tip Sarcină/i);
       await user.selectOptions(typeSelect, 'DocumentCreation');
 
-      expect(screen.getByLabelText(/Tip Document/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Nume Client/i)).toBeInTheDocument();
+      expect(screen.getByText(/Tip Document/i)).toBeInTheDocument();
+      expect(screen.getByText(/Nume Client/i)).toBeInTheDocument();
     });
   });
 
@@ -204,8 +227,8 @@ describe('TaskDetailModal', () => {
       const typeSelect = screen.getByLabelText(/Tip Sarcină/i);
       await user.selectOptions(typeSelect, 'DocumentRetrieval');
 
-      expect(screen.getByLabelText(/Nume Document/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Locație Sursă/i)).toBeInTheDocument();
+      expect(screen.getByText(/Nume Document/i)).toBeInTheDocument();
+      expect(screen.getByText(/Locație Sursă/i)).toBeInTheDocument();
     });
   });
 
@@ -219,10 +242,10 @@ describe('TaskDetailModal', () => {
       const typeSelect = screen.getByLabelText(/Tip Sarcină/i);
       await user.selectOptions(typeSelect, 'CourtDate');
 
-      expect(screen.getByLabelText(/Nume Instanță/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Tip Ședință/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Număr Dosar/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Locație/i)).toBeInTheDocument();
+      expect(screen.getByText(/Nume Instanță/i)).toBeInTheDocument();
+      expect(screen.getByText(/Tip Ședință/i)).toBeInTheDocument();
+      expect(screen.getByText(/Număr Dosar/i)).toBeInTheDocument();
+      expect(screen.getByText('Locație')).toBeInTheDocument();
     });
   });
 
@@ -236,9 +259,9 @@ describe('TaskDetailModal', () => {
       const typeSelect = screen.getByLabelText(/Tip Sarcină/i);
       await user.selectOptions(typeSelect, 'Meeting');
 
-      expect(screen.getByLabelText(/Tip Întâlnire/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Locație/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Participanți/i)).toBeInTheDocument();
+      expect(screen.getByText(/Tip Întâlnire/i)).toBeInTheDocument();
+      expect(screen.getByText('Locație')).toBeInTheDocument();
+      expect(screen.getByText(/Participanți/i)).toBeInTheDocument();
     });
   });
 
@@ -252,9 +275,9 @@ describe('TaskDetailModal', () => {
       const typeSelect = screen.getByLabelText(/Tip Sarcină/i);
       await user.selectOptions(typeSelect, 'BusinessTrip');
 
-      expect(screen.getByLabelText(/Destinație/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Scop/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Cazare/i)).toBeInTheDocument();
+      expect(screen.getByText(/Destinație/i)).toBeInTheDocument();
+      expect(screen.getByText(/Scop/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cazare/i)).toBeInTheDocument();
     });
   });
 

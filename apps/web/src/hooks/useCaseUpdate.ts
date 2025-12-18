@@ -7,7 +7,7 @@
 
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
-import type { Case, CaseStatus, CaseType, BillingType, CustomRates } from '@legal-platform/types';
+import type { Case, CaseStatus, BillingType, CustomRates } from '@legal-platform/types';
 
 // GraphQL mutation for updating a case
 const UPDATE_CASE = gql`
@@ -37,7 +37,7 @@ const UPDATE_CASE = gql`
 export interface UpdateCaseInput {
   title?: string;
   status?: CaseStatus;
-  type?: CaseType;
+  type?: string; // Dynamic case type code
   description?: string;
   closedDate?: Date;
   value?: number;

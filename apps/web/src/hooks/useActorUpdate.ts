@@ -11,6 +11,7 @@ import { useNotificationStore } from '../stores/notificationStore';
 
 /**
  * GraphQL Mutation: Update Case Actor
+ * OPS-038: Added emailDomains field support
  */
 const UPDATE_CASE_ACTOR_MUTATION = gql`
   mutation UpdateCaseActor($id: UUID!, $input: UpdateCaseActorInput!) {
@@ -21,6 +22,7 @@ const UPDATE_CASE_ACTOR_MUTATION = gql`
       name
       organization
       email
+      emailDomains
       phone
       address
       notes
@@ -33,11 +35,13 @@ const UPDATE_CASE_ACTOR_MUTATION = gql`
 
 /**
  * Input type for updating a case actor
+ * OPS-038: Added emailDomains field
  */
 export interface UpdateCaseActorInput {
   name?: string;
   organization?: string;
   email?: string;
+  emailDomains?: string[];
   phone?: string;
   address?: string;
   notes?: string;

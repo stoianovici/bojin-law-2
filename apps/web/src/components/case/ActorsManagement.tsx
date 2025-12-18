@@ -1,6 +1,7 @@
 /**
  * Case Actors Management Component
  * Story 2.8: Case CRUD Operations UI - Task 13
+ * OPS-038: Added emailDomains support, Romanian translations
  *
  * Manages case actors (external parties) with add/edit/remove functionality
  */
@@ -22,14 +23,14 @@ interface ActorsManagementProps {
 }
 
 /**
- * Get actor role display name
+ * Get actor role display name (Romanian)
  */
 function getActorRoleDisplay(role: CaseActorRole): string {
   const roleMap: Record<CaseActorRole, string> = {
     Client: 'Client',
-    OpposingParty: 'Opposing Party',
-    OpposingCounsel: 'Opposing Counsel',
-    Witness: 'Witness',
+    OpposingParty: 'Parte adversă',
+    OpposingCounsel: 'Avocat parte adversă',
+    Witness: 'Martor',
     Expert: 'Expert',
   };
   return roleMap[role];
@@ -51,6 +52,7 @@ function getRoleColorClasses(role: CaseActorRole): string {
 
 /**
  * Add/Edit Actor Form Modal Component
+ * OPS-038: Added emailDomains support
  */
 function ActorFormModal({
   open,
@@ -73,10 +75,32 @@ function ActorFormModal({
     name: actor?.name || '',
     organization: actor?.organization || '',
     email: actor?.email || '',
+    emailDomains: (actor as any)?.emailDomains || [],
     phone: actor?.phone || '',
     address: actor?.address || '',
     notes: actor?.notes || '',
   });
+
+  // OPS-038: State for new email domain input
+  const [newEmailDomain, setNewEmailDomain] = useState('');
+
+  const handleAddEmailDomain = () => {
+    const trimmed = newEmailDomain.trim();
+    if (trimmed && !formData.emailDomains?.includes(trimmed)) {
+      setFormData((prev) => ({
+        ...prev,
+        emailDomains: [...(prev.emailDomains || []), trimmed],
+      }));
+      setNewEmailDomain('');
+    }
+  };
+
+  const handleRemoveEmailDomain = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      emailDomains: (prev.emailDomains || []).filter((_, i) => i !== index),
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +116,7 @@ function ActorFormModal({
           name: formData.name?.trim(),
           organization: formData.organization?.trim() || undefined,
           email: formData.email?.trim() || undefined,
+          emailDomains: formData.emailDomains?.length ? formData.emailDomains : undefined,
           phone: formData.phone?.trim() || undefined,
           address: formData.address?.trim() || undefined,
           notes: formData.notes?.trim() || undefined,
@@ -105,6 +130,7 @@ function ActorFormModal({
           name: formData.name.trim(),
           organization: formData.organization?.trim() || undefined,
           email: formData.email?.trim() || undefined,
+          emailDomains: formData.emailDomains?.length ? formData.emailDomains : undefined,
           phone: formData.phone?.trim() || undefined,
           address: formData.address?.trim() || undefined,
           notes: formData.notes?.trim() || undefined,
@@ -135,7 +161,7 @@ function ActorFormModal({
         <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fadeIn" />
         <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto focus:outline-none">
           <Dialog.Title className="text-xl font-semibold text-gray-900 mb-4">
-            {actor ? 'Edit Case Actor' : 'Add Case Actor'}
+            {actor ? 'Editare persoană contact' : 'Adăugare persoană contact'}
           </Dialog.Title>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -143,7 +169,7 @@ function ActorFormModal({
             {!actor && (
               <div>
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                  Role <span className="text-red-500">*</span>
+                  Rol <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="role"
@@ -156,9 +182,9 @@ function ActorFormModal({
                   disabled={loading}
                 >
                   <option value="Client">Client</option>
-                  <option value="OpposingParty">Opposing Party</option>
-                  <option value="OpposingCounsel">Opposing Counsel</option>
-                  <option value="Witness">Witness</option>
+                  <option value="OpposingParty">Parte adversă</option>
+                  <option value="OpposingCounsel">Avocat parte adversă</option>
+                  <option value="Witness">Martor</option>
                   <option value="Expert">Expert</option>
                 </select>
               </div>
@@ -167,14 +193,14 @@ function ActorFormModal({
             {/* Name */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Name <span className="text-red-500">*</span>
+                Nume <span className="text-red-500">*</span>
               </label>
               <input
                 id="name"
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter actor's full name"
+                placeholder="Nume complet"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
                 minLength={2}
@@ -189,14 +215,14 @@ function ActorFormModal({
                 htmlFor="organization"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Organization
+                Organizație
               </label>
               <input
                 id="organization"
                 type="text"
                 value={formData.organization}
                 onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                placeholder="Company or organization name"
+                placeholder="Numele firmei sau organizației"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={loading}
               />
@@ -213,7 +239,7 @@ function ActorFormModal({
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="email@example.com"
+                  placeholder="email@exemplu.ro"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={loading}
                 />
@@ -221,30 +247,84 @@ function ActorFormModal({
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
+                  Telefon
                 </label>
                 <input
                   id="phone"
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="(555) 123-4567"
+                  placeholder="+40 721 123 456"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={loading}
                 />
               </div>
             </div>
 
+            {/* OPS-038: Additional Email Domains */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Adrese email suplimentare
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Adaugă alte adrese de email pentru clasificarea automată a emailurilor
+              </p>
+              {formData.emailDomains && formData.emailDomains.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {formData.emailDomains.map((email, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-sm"
+                    >
+                      {email}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveEmailDomain(index)}
+                        className="hover:text-blue-900"
+                        disabled={loading}
+                      >
+                        <Cross2Icon className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={newEmailDomain}
+                  onChange={(e) => setNewEmailDomain(e.target.value)}
+                  placeholder="alt.email@exemplu.ro"
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={loading}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddEmailDomain();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddEmailDomain}
+                  disabled={loading || !newEmailDomain.trim()}
+                  className="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-50"
+                >
+                  Adaugă
+                </button>
+              </div>
+            </div>
+
             {/* Address */}
             <div>
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                Address
+                Adresă
               </label>
               <textarea
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Full address"
+                placeholder="Adresa completă"
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 disabled={loading}
@@ -254,13 +334,13 @@ function ActorFormModal({
             {/* Notes */}
             <div>
               <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
+                Note
               </label>
               <textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Additional notes or information"
+                placeholder="Informații suplimentare"
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 disabled={loading}
@@ -275,7 +355,7 @@ function ActorFormModal({
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                   disabled={loading}
                 >
-                  Cancel
+                  Anulează
                 </button>
               </Dialog.Close>
               <button
@@ -285,11 +365,11 @@ function ActorFormModal({
               >
                 {loading
                   ? actor
-                    ? 'Updating...'
-                    : 'Adding...'
+                    ? 'Se actualizează...'
+                    : 'Se adaugă...'
                   : actor
-                    ? 'Update Actor'
-                    : 'Add Actor'}
+                    ? 'Actualizează'
+                    : 'Adaugă'}
               </button>
             </div>
           </form>
@@ -297,7 +377,7 @@ function ActorFormModal({
           <Dialog.Close asChild>
             <button
               className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close"
+              aria-label="Închide"
             >
               <Cross2Icon className="h-5 w-5" />
             </button>
@@ -330,11 +410,11 @@ function RemoveConfirmDialog({
         <AlertDialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fadeIn" />
         <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md focus:outline-none">
           <AlertDialog.Title className="text-xl font-semibold text-gray-900 mb-2">
-            Remove Case Actor
+            Ștergere persoană contact
           </AlertDialog.Title>
           <AlertDialog.Description className="text-sm text-gray-600 mb-6">
-            Are you sure you want to remove <strong>{actorName}</strong>? This action cannot be
-            undone.
+            Sigur doriți să ștergeți <strong>{actorName}</strong>? Această acțiune nu poate fi
+            anulată.
           </AlertDialog.Description>
 
           <div className="flex gap-3 justify-end">
@@ -343,7 +423,7 @@ function RemoveConfirmDialog({
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 disabled={loading}
               >
-                Cancel
+                Anulează
               </button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
@@ -352,7 +432,7 @@ function RemoveConfirmDialog({
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
-                {loading ? 'Removing...' : 'Remove'}
+                {loading ? 'Se șterge...' : 'Șterge'}
               </button>
             </AlertDialog.Action>
           </div>
@@ -417,7 +497,7 @@ export function ActorsManagement({ caseId, actors }: ActorsManagementProps) {
           className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
         >
           <PlusIcon className="mr-2 h-4 w-4" />
-          Add Actor
+          Adaugă contact
         </button>
       </div>
 
@@ -461,16 +541,16 @@ export function ActorsManagement({ caseId, actors }: ActorsManagementProps) {
                           <button
                             onClick={() => handleEditClick(actor)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            aria-label={`Edit ${actor.name}`}
-                            title={`Edit ${actor.name}`}
+                            aria-label={`Editează ${actor.name}`}
+                            title={`Editează ${actor.name}`}
                           >
                             <Pencil1Icon className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleRemoveClick(actor)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            aria-label={`Remove ${actor.name}`}
-                            title={`Remove ${actor.name}`}
+                            aria-label={`Șterge ${actor.name}`}
+                            title={`Șterge ${actor.name}`}
                           >
                             <TrashIcon className="h-4 w-4" />
                           </button>
@@ -494,7 +574,7 @@ export function ActorsManagement({ caseId, actors }: ActorsManagementProps) {
                         )}
                         {actor.phone && (
                           <div>
-                            <dt className="text-gray-500">Phone</dt>
+                            <dt className="text-gray-500">Telefon</dt>
                             <dd className="text-gray-900">
                               <a
                                 href={`tel:${actor.phone}`}
@@ -507,13 +587,13 @@ export function ActorsManagement({ caseId, actors }: ActorsManagementProps) {
                         )}
                         {actor.address && (
                           <div className="md:col-span-2">
-                            <dt className="text-gray-500">Address</dt>
+                            <dt className="text-gray-500">Adresă</dt>
                             <dd className="text-gray-900">{actor.address}</dd>
                           </div>
                         )}
                         {actor.notes && (
                           <div className="md:col-span-2">
-                            <dt className="text-gray-500">Notes</dt>
+                            <dt className="text-gray-500">Note</dt>
                             <dd className="text-gray-900">{actor.notes}</dd>
                           </div>
                         )}
@@ -526,7 +606,9 @@ export function ActorsManagement({ caseId, actors }: ActorsManagementProps) {
           })}
         </div>
       ) : (
-        <p className="text-gray-500 text-sm text-center py-6">No case actors added yet.</p>
+        <p className="text-gray-500 text-sm text-center py-6">
+          Nu au fost adăugate persoane de contact.
+        </p>
       )}
 
       {/* Add Actor Modal */}

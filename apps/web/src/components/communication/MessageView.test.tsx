@@ -7,7 +7,41 @@ import type { CommunicationThread } from '@legal-platform/types';
 // Mock the communication store
 jest.mock('@/stores/communication.store');
 
-// Mock window.alert
+// Mock the AuthContext
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: {
+      id: 'user-current',
+      email: 'current@example.com',
+      firstName: 'Current',
+      lastName: 'User',
+    },
+    isAuthenticated: true,
+    loading: false,
+  }),
+}));
+
+// Mock the useMyCases hook that requires Apollo Client
+jest.mock('@/hooks/useMyCases', () => ({
+  useMyCases: () => ({ cases: [], loading: false, error: null }),
+}));
+
+// Mock Apollo Client's react hooks
+jest.mock('@apollo/client/react', () => ({
+  ...jest.requireActual('@apollo/client/react'),
+  useMutation: () => [jest.fn(), { loading: false }],
+  useLazyQuery: () => [jest.fn(), { data: null, loading: false }],
+}));
+
+// Mock the notification store
+const mockAddNotification = jest.fn();
+jest.mock('@/stores/notificationStore', () => ({
+  useNotificationStore: () => ({
+    addNotification: mockAddNotification,
+  }),
+}));
+
+// Mock window.alert (legacy - some tests may still use this)
 const mockAlert = jest.fn();
 global.alert = mockAlert;
 
@@ -123,6 +157,7 @@ describe('MessageView', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockAlert.mockClear();
+    mockAddNotification.mockClear();
     (useCommunicationStore as jest.Mock).mockReturnValue({
       getSelectedThread: mockGetSelectedThread,
       expandedMessageIds: mockExpandedMessageIds,
@@ -419,7 +454,7 @@ describe('MessageView', () => {
       );
     });
 
-    it('should show success alert when marked as processed', async () => {
+    it('should show success notification when marked as processed', async () => {
       mockGetSelectedThread.mockReturnValue(mockThread);
       render(<MessageView />);
 
@@ -427,7 +462,11 @@ describe('MessageView', () => {
       fireEvent.click(markButton);
 
       await waitFor(() => {
-        expect(mockAlert).toHaveBeenCalledWith('Comunicare mutată în dosar');
+        expect(mockAddNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'success',
+          })
+        );
       });
     });
 

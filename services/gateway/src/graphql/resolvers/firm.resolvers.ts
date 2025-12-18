@@ -161,6 +161,28 @@ export const firmResolvers = {
 
       return firm;
     },
+
+    /**
+     * Get all users in the current firm
+     * Authorization: Authenticated users can view firm members
+     */
+    firmUsers: async (_: any, __: any, context: Context) => {
+      const user = requireAuth(context);
+
+      const users = await prisma.user.findMany({
+        where: { firmId: user.firmId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+        },
+        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+      });
+
+      return users;
+    },
   },
 
   Mutation: {

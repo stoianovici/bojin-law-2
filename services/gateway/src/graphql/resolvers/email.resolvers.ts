@@ -19,6 +19,8 @@ import {
 import { EmailWebhookService, getEmailWebhookService } from '../../services/email-webhook.service';
 import { triggerProcessing } from '../../workers/email-categorization.worker';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
+import { classificationScoringService, CaseScore } from '../../services/classification-scoring';
+import { CaseStatus, EmailClassificationState } from '@prisma/client';
 import Redis from 'ioredis';
 
 // ============================================================================
@@ -64,6 +66,205 @@ function getRedis(): Redis {
     redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   }
   return redis;
+}
+
+// ============================================================================
+// Helper Functions (OPS-042)
+// ============================================================================
+
+interface UserContext {
+  id: string;
+  firmId: string;
+}
+
+interface EmailForSuggestions {
+  id: string;
+  subject: string;
+  from: any;
+  bodyPreview: string;
+  bodyContent?: string | null;
+  receivedDateTime: Date;
+}
+
+/**
+ * Get suggested cases for an uncertain email
+ * Finds cases where the sender is associated (as actor or client)
+ * and scores them using the classification algorithm
+ */
+async function getSuggestedCasesForEmail(
+  email: EmailForSuggestions,
+  user: UserContext
+): Promise<
+  Array<{
+    id: string;
+    caseNumber: string;
+    title: string;
+    score: number;
+    signals: Array<{ type: string; weight: number; matched: string }>;
+    lastActivityAt: Date | null;
+  }>
+> {
+  // Get sender email address
+  const senderEmail = (
+    email.from?.address ||
+    email.from?.emailAddress?.address ||
+    ''
+  ).toLowerCase();
+
+  if (!senderEmail) {
+    return [];
+  }
+
+  // Find cases where sender is an actor or client
+  const candidateCases = await prisma.case.findMany({
+    where: {
+      firmId: user.firmId,
+      status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
+      OR: [
+        { actors: { some: { email: { equals: senderEmail, mode: 'insensitive' } } } },
+        {
+          client: {
+            contactInfo: {
+              path: ['email'],
+              string_contains: senderEmail,
+            },
+          },
+        },
+      ],
+      // User must be on the case team
+      teamMembers: { some: { userId: user.id } },
+    },
+    include: {
+      actors: { select: { email: true, name: true, role: true } },
+      client: { select: { name: true, contactInfo: true } },
+      activityFeed: {
+        select: { createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    },
+  });
+
+  if (candidateCases.length === 0) {
+    return [];
+  }
+
+  // Score each case
+  const scores: Array<{
+    id: string;
+    caseNumber: string;
+    title: string;
+    score: number;
+    signals: Array<{ type: string; weight: number; matched: string }>;
+    lastActivityAt: Date | null;
+  }> = [];
+
+  const WEIGHTS = {
+    REFERENCE_NUMBER: 50,
+    KEYWORD_SUBJECT: 30,
+    KEYWORD_BODY: 20,
+    RECENT_ACTIVITY: 20,
+    CONTACT_MATCH: 10,
+  };
+
+  for (const caseData of candidateCases) {
+    const signals: Array<{ type: string; weight: number; matched: string }> = [];
+    let totalScore = WEIGHTS.CONTACT_MATCH;
+
+    signals.push({
+      type: 'CONTACT_MATCH',
+      weight: WEIGHTS.CONTACT_MATCH,
+      matched: senderEmail,
+    });
+
+    // Check keywords in subject
+    const subjectLower = email.subject.toLowerCase();
+    const keywords = caseData.keywords || [];
+    for (const keyword of keywords) {
+      if (keyword && subjectLower.includes(keyword.toLowerCase())) {
+        signals.push({
+          type: 'KEYWORD_SUBJECT',
+          weight: WEIGHTS.KEYWORD_SUBJECT,
+          matched: keyword,
+        });
+        totalScore += WEIGHTS.KEYWORD_SUBJECT;
+        break;
+      }
+    }
+
+    // Check keywords in body
+    const bodyLower = (email.bodyPreview || '').toLowerCase();
+    const bodyContentLower = (email.bodyContent || '').toLowerCase();
+    for (const keyword of keywords) {
+      if (
+        keyword &&
+        (bodyLower.includes(keyword.toLowerCase()) ||
+          bodyContentLower.includes(keyword.toLowerCase()))
+      ) {
+        if (!signals.some((s) => s.type === 'KEYWORD_SUBJECT' && s.matched === keyword)) {
+          signals.push({
+            type: 'KEYWORD_BODY',
+            weight: WEIGHTS.KEYWORD_BODY,
+            matched: keyword,
+          });
+          totalScore += WEIGHTS.KEYWORD_BODY;
+          break;
+        }
+      }
+    }
+
+    // Check reference numbers
+    const referenceNumbers = caseData.referenceNumbers || [];
+    const textToSearch = `${email.subject} ${email.bodyPreview} ${email.bodyContent || ''}`;
+    const extractedRefs = classificationScoringService.extractReferenceNumbers(textToSearch);
+    for (const ref of referenceNumbers) {
+      const refNormalized = ref.toLowerCase().replace(/\s+/g, '');
+      for (const extracted of extractedRefs) {
+        const extractedNormalized = extracted.toLowerCase().replace(/\s+/g, '');
+        if (refNormalized === extractedNormalized) {
+          signals.push({
+            type: 'REFERENCE_NUMBER',
+            weight: WEIGHTS.REFERENCE_NUMBER,
+            matched: ref,
+          });
+          totalScore += WEIGHTS.REFERENCE_NUMBER;
+          break;
+        }
+      }
+    }
+
+    // Check recent activity
+    const lastActivity = caseData.activityFeed[0]?.createdAt;
+    if (lastActivity) {
+      const daysSinceActivity = Math.floor(
+        (email.receivedDateTime.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSinceActivity >= 0 && daysSinceActivity <= 7) {
+        signals.push({
+          type: 'RECENT_ACTIVITY',
+          weight: WEIGHTS.RECENT_ACTIVITY,
+          matched: `${daysSinceActivity} zile în urmă`,
+        });
+        totalScore += WEIGHTS.RECENT_ACTIVITY;
+      }
+    }
+
+    // Sort signals by weight
+    signals.sort((a, b) => b.weight - a.weight);
+
+    scores.push({
+      id: caseData.id,
+      caseNumber: caseData.caseNumber,
+      title: caseData.title,
+      score: totalScore,
+      signals,
+      lastActivityAt: lastActivity || null,
+    });
+  }
+
+  // Sort by score descending and return top 5
+  scores.sort((a, b) => b.score - a.score);
+  return scores.slice(0, 5);
 }
 
 // ============================================================================
@@ -313,6 +514,246 @@ export const emailResolvers = {
         name: attachment.name,
         contentType: attachment.contentType,
         size: attachment.size,
+      };
+    },
+
+    // =========================================================================
+    // INSTANȚE Queries (OPS-040: Court Email Detection)
+    // =========================================================================
+
+    /**
+     * Get unassigned court emails for the INSTANȚE folder
+     */
+    unassignedCourtEmails: async (
+      _: any,
+      args: { limit?: number; offset?: number },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const limit = args.limit || 50;
+      const offset = args.offset || 0;
+
+      // Get emails with CourtUnassigned state for this user's firm
+      const emails = await prisma.email.findMany({
+        where: {
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.CourtUnassigned,
+        },
+        select: {
+          id: true,
+          subject: true,
+          from: true,
+          receivedDateTime: true,
+          bodyPreview: true,
+          bodyContent: true,
+        },
+        orderBy: { receivedDateTime: 'desc' },
+        take: limit,
+        skip: offset,
+      });
+
+      // For each email, extract references and find suggested cases
+      const results = await Promise.all(
+        emails.map(async (email) => {
+          const textToSearch = `${email.subject} ${email.bodyPreview} ${email.bodyContent || ''}`;
+          const extractedReferences =
+            classificationScoringService.extractReferenceNumbers(textToSearch);
+
+          // Find suggested cases based on extracted references
+          let suggestedCases: any[] = [];
+          if (extractedReferences.length > 0) {
+            const matchingCases = await prisma.case.findMany({
+              where: {
+                firmId: user.firmId,
+                referenceNumbers: { hasSome: extractedReferences },
+              },
+              select: {
+                id: true,
+                caseNumber: true,
+                title: true,
+                referenceNumbers: true,
+              },
+              take: 5,
+            });
+            suggestedCases = matchingCases.map((c) => ({
+              id: c.id,
+              caseNumber: c.caseNumber,
+              title: c.title,
+              referenceNumbers: c.referenceNumbers || [],
+            }));
+          }
+
+          return {
+            id: email.id,
+            subject: email.subject,
+            from: email.from || { address: '' },
+            receivedDateTime: email.receivedDateTime,
+            extractedReferences,
+            suggestedCases,
+            institutionCategory: null, // Could be enhanced to store this on Email model
+            bodyPreview: email.bodyPreview,
+          };
+        })
+      );
+
+      return results;
+    },
+
+    /**
+     * Get count of unassigned court emails
+     */
+    unassignedCourtEmailsCount: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return await prisma.email.count({
+        where: {
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.CourtUnassigned,
+        },
+      });
+    },
+
+    // =========================================================================
+    // NECLAR Queries (OPS-042: Classification Modal)
+    // =========================================================================
+
+    /**
+     * Get uncertain emails for the NECLAR queue
+     */
+    uncertainEmails: async (
+      _: any,
+      args: { limit?: number; offset?: number },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const limit = args.limit || 50;
+      const offset = args.offset || 0;
+
+      // Get emails with Uncertain state for this user
+      const emails = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.Uncertain,
+        },
+        select: {
+          id: true,
+          subject: true,
+          from: true,
+          receivedDateTime: true,
+          bodyPreview: true,
+          bodyContent: true,
+        },
+        orderBy: { receivedDateTime: 'desc' },
+        take: limit,
+        skip: offset,
+      });
+
+      // For each email, calculate suggested cases by re-running the scoring
+      const results = await Promise.all(
+        emails.map(async (email) => {
+          const suggestedCases = await getSuggestedCasesForEmail(email, user);
+          return {
+            id: email.id,
+            subject: email.subject,
+            from: email.from || { address: '' },
+            receivedDateTime: email.receivedDateTime,
+            bodyPreview: email.bodyPreview,
+            bodyContent: email.bodyContent,
+            suggestedCases,
+            uncertaintyReason: 'AMBIGUOUS', // Could be enhanced to store reason
+          };
+        })
+      );
+
+      return results;
+    },
+
+    /**
+     * Get count of uncertain emails
+     */
+    uncertainEmailsCount: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return await prisma.email.count({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.Uncertain,
+        },
+      });
+    },
+
+    /**
+     * Get a single uncertain email with full details
+     */
+    uncertainEmail: async (_: any, args: { id: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.id,
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.Uncertain,
+        },
+        select: {
+          id: true,
+          subject: true,
+          from: true,
+          receivedDateTime: true,
+          bodyPreview: true,
+          bodyContent: true,
+        },
+      });
+
+      if (!email) {
+        return null;
+      }
+
+      const suggestedCases = await getSuggestedCasesForEmail(email, user);
+
+      return {
+        id: email.id,
+        subject: email.subject,
+        from: email.from || { address: '' },
+        receivedDateTime: email.receivedDateTime,
+        bodyPreview: email.bodyPreview,
+        bodyContent: email.bodyContent,
+        suggestedCases,
+        uncertaintyReason: 'AMBIGUOUS',
       };
     },
   },
@@ -1165,6 +1606,278 @@ export const emailResolvers = {
 
       return result;
     },
+
+    // =========================================================================
+    // INSTANȚE Mutations (OPS-040: Court Email Detection)
+    // =========================================================================
+
+    /**
+     * Assign a court email to a case manually
+     * Optionally adds extracted reference numbers to the case
+     */
+    assignCourtEmailToCase: async (
+      _: any,
+      args: { emailId: string; caseId: string; addReference?: boolean },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify email exists and is in CourtUnassigned state
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.CourtUnassigned,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found or not a court email', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify case exists and user has access
+      const caseAccess = await prisma.caseTeam.findFirst({
+        where: { caseId: args.caseId, userId: user.id },
+        include: { case: true },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Extract reference numbers from email
+      const textToSearch = `${email.subject} ${email.bodyPreview} ${email.bodyContent || ''}`;
+      const extractedReferences =
+        classificationScoringService.extractReferenceNumbers(textToSearch);
+
+      // Start transaction
+      let referenceAdded = false;
+      const result = await prisma.$transaction(async (tx) => {
+        // Update email classification
+        const updatedEmail = await tx.email.update({
+          where: { id: args.emailId },
+          data: {
+            caseId: args.caseId,
+            classificationState: EmailClassificationState.Classified,
+            classificationConfidence: 1.0,
+            classifiedAt: new Date(),
+            classifiedBy: user.id,
+          },
+          include: { case: true, attachments: true },
+        });
+
+        // Add reference to case if requested
+        if (args.addReference && extractedReferences.length > 0) {
+          const caseData = await tx.case.findUnique({
+            where: { id: args.caseId },
+            select: { referenceNumbers: true },
+          });
+
+          const existingRefs = caseData?.referenceNumbers || [];
+          const newRefs = extractedReferences.filter((r) => !existingRefs.includes(r));
+
+          if (newRefs.length > 0) {
+            await tx.case.update({
+              where: { id: args.caseId },
+              data: {
+                referenceNumbers: [...existingRefs, ...newRefs],
+              },
+            });
+            referenceAdded = true;
+          }
+        }
+
+        return updatedEmail;
+      });
+
+      // Get updated case
+      const updatedCase = await prisma.case.findUnique({
+        where: { id: args.caseId },
+      });
+
+      // Log classification for audit
+      await prisma.emailClassificationLog.create({
+        data: {
+          firmId: user.firmId,
+          emailId: args.emailId,
+          action: 'MANUAL_COURT_ASSIGN',
+          previousState: EmailClassificationState.CourtUnassigned,
+          newState: EmailClassificationState.Classified,
+          caseId: args.caseId,
+          userId: user.id,
+          reason: referenceAdded
+            ? `Manual assignment with reference added: ${extractedReferences.join(', ')}`
+            : 'Manual assignment from INSTANȚE folder',
+        },
+      });
+
+      // Sync to CommunicationEntry for unified timeline
+      try {
+        await unifiedTimelineService.syncEmailToCommunicationEntry(args.emailId);
+      } catch (syncError) {
+        console.error('[assignCourtEmailToCase] Failed to sync to timeline:', syncError);
+      }
+
+      return {
+        email: result,
+        case: updatedCase,
+        referenceAdded,
+      };
+    },
+
+    // =========================================================================
+    // NECLAR Mutations (OPS-042: Classification Modal)
+    // =========================================================================
+
+    /**
+     * Classify an uncertain email (NECLAR queue)
+     * User selects a case or marks as ignored
+     */
+    classifyUncertainEmail: async (
+      _: any,
+      args: {
+        emailId: string;
+        action: {
+          type: 'ASSIGN_TO_CASE' | 'IGNORE';
+          caseId?: string;
+        };
+      },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Validate action
+      if (args.action.type === 'ASSIGN_TO_CASE' && !args.action.caseId) {
+        throw new GraphQLError('Case ID is required for ASSIGN_TO_CASE action', {
+          extensions: { code: 'BAD_REQUEST' },
+        });
+      }
+
+      // Verify email exists and is in Uncertain state
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.Uncertain,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found or not in NECLAR queue', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Handle IGNORE action
+      if (args.action.type === 'IGNORE') {
+        const updatedEmail = await prisma.email.update({
+          where: { id: args.emailId },
+          data: {
+            classificationState: EmailClassificationState.Ignored,
+            classifiedAt: new Date(),
+            classifiedBy: user.id,
+            isIgnored: true,
+            ignoredAt: new Date(),
+          },
+          include: { case: true, attachments: true },
+        });
+
+        // Log classification for audit
+        await prisma.emailClassificationLog.create({
+          data: {
+            firmId: user.firmId,
+            emailId: args.emailId,
+            action: 'MANUAL_IGNORE',
+            previousState: EmailClassificationState.Uncertain,
+            newState: EmailClassificationState.Ignored,
+            userId: user.id,
+            reason: 'User marked email as not relevant',
+          },
+        });
+
+        return {
+          email: updatedEmail,
+          case: null,
+          wasIgnored: true,
+        };
+      }
+
+      // Handle ASSIGN_TO_CASE action
+      const caseId = args.action.caseId!;
+
+      // Verify case exists and user has access
+      const caseAccess = await prisma.caseTeam.findFirst({
+        where: { caseId, userId: user.id },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Update email classification
+      const updatedEmail = await prisma.email.update({
+        where: { id: args.emailId },
+        data: {
+          caseId,
+          classificationState: EmailClassificationState.Classified,
+          classificationConfidence: 1.0,
+          classifiedAt: new Date(),
+          classifiedBy: user.id,
+        },
+        include: { case: true, attachments: true },
+      });
+
+      // Get the updated case
+      const updatedCase = await prisma.case.findUnique({
+        where: { id: caseId },
+      });
+
+      // Log classification for audit
+      await prisma.emailClassificationLog.create({
+        data: {
+          firmId: user.firmId,
+          emailId: args.emailId,
+          action: 'MANUAL_CLASSIFY',
+          previousState: EmailClassificationState.Uncertain,
+          newState: EmailClassificationState.Classified,
+          caseId,
+          userId: user.id,
+          reason: 'Manual assignment from NECLAR queue',
+        },
+      });
+
+      // Sync to CommunicationEntry for unified timeline
+      try {
+        await unifiedTimelineService.syncEmailToCommunicationEntry(args.emailId);
+      } catch (syncError) {
+        console.error('[classifyUncertainEmail] Failed to sync to timeline:', syncError);
+      }
+
+      return {
+        email: updatedEmail,
+        case: updatedCase,
+        wasIgnored: false,
+      };
+    },
   },
 
   Subscription: {
@@ -1185,6 +1898,11 @@ export const emailResolvers = {
     from: (parent: any) => parent.from || { address: '' },
     toRecipients: (parent: any) => parent.toRecipients || [],
     ccRecipients: (parent: any) => parent.ccRecipients || [],
+    // OPS-035: Classification state fields - map from Prisma to GraphQL
+    classificationState: (parent: any) => parent.classificationState || 'Pending',
+    classificationConfidence: (parent: any) => parent.classificationConfidence || null,
+    classifiedAt: (parent: any) => parent.classifiedAt || null,
+    classifiedBy: (parent: any) => parent.classifiedBy || null,
     case: async (parent: any) => {
       if (!parent.caseId) return null;
       if (parent.case) return parent.case;

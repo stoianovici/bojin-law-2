@@ -64,6 +64,8 @@ interface TimelineEntryCardProps {
   entry: TimelineEntry;
   onClick?: () => void;
   isDisabled?: boolean;
+  /** Hide action buttons (reply, forward, etc.) for read-only views */
+  readOnly?: boolean;
   'aria-setsize'?: number;
   'aria-posinset'?: number;
 }
@@ -72,6 +74,7 @@ export function TimelineEntryCard({
   entry,
   onClick,
   isDisabled = false,
+  readOnly = false,
   'aria-setsize': setsize,
   'aria-posinset': posinset,
 }: TimelineEntryCardProps) {
@@ -253,38 +256,40 @@ export function TimelineEntryCard({
           )}
         </div>
 
-        {/* Actions */}
-        <div
-          className={`flex items-center gap-1 transition-opacity ${
-            showActions ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          {entry.channelType === 'Email' && (
-            <>
-              <button
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                title="Reply"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Reply className="h-4 w-4" />
-              </button>
-              <button
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                title="Forward"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Forward className="h-4 w-4" />
-              </button>
-            </>
-          )}
-          <button
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-            title="More actions"
-            onClick={(e) => e.stopPropagation()}
+        {/* Actions - hidden in read-only mode */}
+        {!readOnly && (
+          <div
+            className={`flex items-center gap-1 transition-opacity ${
+              showActions ? 'opacity-100' : 'opacity-0'
+            }`}
           >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </div>
+            {entry.channelType === 'Email' && (
+              <>
+                <button
+                  className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  title="Reply"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Reply className="h-4 w-4" />
+                </button>
+                <button
+                  className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  title="Forward"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Forward className="h-4 w-4" />
+                </button>
+              </>
+            )}
+            <button
+              className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              title="More actions"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
     </article>
   );

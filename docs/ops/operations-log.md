@@ -41,14 +41,14 @@
 | OPS-032 | Repurpose /communications as Pending Queue        | Feature     | P1-High     | Superseded | [archive/ops-032.md](archive/ops-032.md) |
 | OPS-033 | Firm-wide Email Search                            | Feature     | P3-Low      | Superseded | [archive/ops-033.md](archive/ops-033.md) |
 | OPS-034 | Fix Web App TypeScript Errors (377→38)            | Bug         | P0-Critical | Resolved   | [archive/ops-034.md](archive/ops-034.md) |
-| OPS-035 | Data Model - Classification State & Case Metadata | Feature     | P1-High     | Open       | [issues/ops-035.md](issues/ops-035.md)   |
-| OPS-036 | Simplify /communications UI                       | Feature     | P2-Medium   | Open       | [issues/ops-036.md](issues/ops-036.md)   |
-| OPS-037 | Case Communications Tab - Read-Only Mode          | Feature     | P2-Medium   | Open       | [issues/ops-037.md](issues/ops-037.md)   |
-| OPS-038 | Contacts & Metadata in Case Flow                  | Feature     | P1-High     | Open       | [issues/ops-038.md](issues/ops-038.md)   |
-| OPS-039 | Enhanced Multi-Case Classification Algorithm      | Feature     | P1-High     | Open       | [issues/ops-039.md](issues/ops-039.md)   |
-| OPS-040 | Court Email Detection & INSTANȚE Routing          | Feature     | P1-High     | Open       | [issues/ops-040.md](issues/ops-040.md)   |
-| OPS-041 | /communications Case-Organized Redesign           | Feature     | P1-High     | Open       | [issues/ops-041.md](issues/ops-041.md)   |
-| OPS-042 | Classification Modal (NECLAR Queue)               | Feature     | P1-High     | Open       | [issues/ops-042.md](issues/ops-042.md)   |
+| OPS-035 | Data Model - Classification State & Case Metadata | Feature     | P1-High     | Resolved   | [archive/ops-035.md](archive/ops-035.md) |
+| OPS-036 | Simplify /communications UI                       | Feature     | P2-Medium   | Resolved   | [archive/ops-036.md](archive/ops-036.md) |
+| OPS-037 | Case Communications Tab - Read-Only Mode          | Feature     | P2-Medium   | Resolved   | [archive/ops-037.md](archive/ops-037.md) |
+| OPS-038 | Contacts & Metadata in Case Flow                  | Feature     | P1-High     | Resolved   | [archive/ops-038.md](archive/ops-038.md) |
+| OPS-039 | Enhanced Multi-Case Classification Algorithm      | Feature     | P1-High     | Resolved   | [archive/ops-039.md](archive/ops-039.md) |
+| OPS-040 | Court Email Detection & INSTANȚE Routing          | Feature     | P1-High     | Resolved   | [archive/ops-040.md](archive/ops-040.md) |
+| OPS-041 | /communications Case-Organized Redesign           | Feature     | P1-High     | Resolved   | [archive/ops-041.md](archive/ops-041.md) |
+| OPS-042 | Classification Modal (NECLAR Queue)               | Feature     | P1-High     | Resolved   | [archive/ops-042.md](archive/ops-042.md) |
 
 ---
 
@@ -81,9 +81,9 @@ Useful work from these issues (schema, algorithm foundations) is incorporated in
 
 ---
 
-### [OPS-035 → OPS-042] Communications Architecture Rethink
+### [OPS-035 → OPS-042] Communications Architecture Rethink ✅
 
-**Status:** Open | **Priority:** P1-High | **Type:** Feature Set | **Created:** 2025-12-18
+**Status:** Resolved | **Priority:** P1-High | **Type:** Feature Set | **Created:** 2025-12-18 | **Completed:** 2025-12-18
 
 Comprehensive redesign of how communications work across the platform.
 

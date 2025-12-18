@@ -13,6 +13,29 @@ import { TaskCreationBar } from './TaskCreationBar';
 import { TaskDetailModal } from './TaskDetailModal';
 import { createMockTasks, createMockTask } from '@legal-platform/test-utils';
 
+// Mock the time entry hooks that require Apollo Client
+jest.mock('@/hooks/useTimeEntries', () => ({
+  useLogTimeAgainstTask: () => [jest.fn(), { loading: false }],
+  useTimeEntriesByTask: () => ({ data: null, loading: false }),
+}));
+
+// Mock child components that use Apollo Client
+jest.mock('./TaskComments', () => ({
+  TaskComments: () => <div data-testid="task-comments-mock">Task Comments</div>,
+}));
+
+jest.mock('./SubtaskPanel', () => ({
+  SubtaskPanel: () => <div data-testid="subtask-panel-mock">Subtask Panel</div>,
+}));
+
+jest.mock('./TaskAttachments', () => ({
+  TaskAttachments: () => <div data-testid="task-attachments-mock">Task Attachments</div>,
+}));
+
+jest.mock('./TaskHistoryTimeline', () => ({
+  TaskHistoryTimeline: () => <div data-testid="task-history-mock">Task History</div>,
+}));
+
 expect.extend(toHaveNoViolations);
 
 describe('Task Management Accessibility', () => {

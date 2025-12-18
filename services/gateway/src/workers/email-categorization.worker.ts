@@ -1,54 +1,27 @@
-// @ts-nocheck
 /**
  * Email Categorization Worker
  * Story 5.1: Email Integration and Synchronization
+ * OPS-039: Enhanced Multi-Case Classification Algorithm
  *
- * Background worker that processes uncategorized emails using AI.
- * Uses Claude API for categorization with batch processing for cost efficiency.
+ * Background worker that processes uncategorized emails using the
+ * enhanced classification scoring algorithm with weighted signals.
  *
  * Configuration via environment variables:
  * - EMAIL_CATEGORIZATION_BATCH_SIZE: Emails per batch (default: 10)
  * - EMAIL_CATEGORIZATION_INTERVAL_MS: Worker interval (default: 300000 = 5 min)
  */
 
-import { PrismaClient } from '@prisma/client';
+import { EmailClassificationState, PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
+import {
+  classificationScoringService,
+  type EmailForClassification,
+  type ClassificationResult,
+} from '../services/classification-scoring';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface CaseContext {
-  id: string;
-  title: string;
-  caseNumber: string;
-  clientName: string;
-  clientEmail?: string;
-  description?: string;
-  actors: Array<{
-    name: string;
-    email?: string;
-    role: string;
-  }>;
-}
-
-interface EmailForCategorization {
-  id: string;
-  subject: string;
-  bodyPreview: string;
-  from: { name?: string; address: string };
-  toRecipients: Array<{ name?: string; address: string }>;
-  ccRecipients?: Array<{ name?: string; address: string }>;
-  receivedDateTime: Date;
-}
-
-interface CategorizationResult {
-  emailId: string;
-  caseId: string | null;
-  confidence: number;
-  reasoning: string;
-  tokensUsed: number;
-}
 
 interface WorkerConfig {
   batchSize: number;
@@ -249,20 +222,30 @@ async function processCategorizationBatch(): Promise<void> {
 }
 
 /**
+ * Extended email type with firmId for worker processing
+ */
+type EmailForClassificationWithFirm = EmailForClassification & { firmId: string };
+
+/**
  * Get uncategorized emails grouped by user
+ * Now queries for emails with Pending classification state (OPS-039)
  */
 async function getUncategorizedEmailsByUser(
   limit: number
-): Promise<Record<string, EmailForCategorization[]>> {
+): Promise<Record<string, EmailForClassificationWithFirm[]>> {
   const emails = await prisma.email.findMany({
     where: {
-      caseId: null,
+      classificationState: EmailClassificationState.Pending,
+      isIgnored: false,
     },
     select: {
       id: true,
       userId: true,
+      firmId: true,
+      conversationId: true,
       subject: true,
       bodyPreview: true,
+      bodyContent: true,
       from: true,
       toRecipients: true,
       ccRecipients: true,
@@ -275,7 +258,7 @@ async function getUncategorizedEmailsByUser(
   });
 
   // Group by user
-  const byUser: Record<string, EmailForCategorization[]> = {};
+  const byUser: Record<string, EmailForClassificationWithFirm[]> = {};
 
   for (const email of emails) {
     if (!byUser[email.userId]) {
@@ -283,8 +266,11 @@ async function getUncategorizedEmailsByUser(
     }
     byUser[email.userId].push({
       id: email.id,
+      firmId: email.firmId,
+      conversationId: email.conversationId,
       subject: email.subject,
       bodyPreview: email.bodyPreview,
+      bodyContent: email.bodyContent,
       from: email.from as { name?: string; address: string },
       toRecipients: (email.toRecipients as Array<{ name?: string; address: string }>) || [],
       ccRecipients: (email.ccRecipients as Array<{ name?: string; address: string }>) || [],
@@ -296,11 +282,12 @@ async function getUncategorizedEmailsByUser(
 }
 
 /**
- * Process emails for a single user
+ * Process emails for a single user using the enhanced classification scoring algorithm
+ * OPS-039: Uses weighted signals for multi-case classification
  */
 async function processUserEmails(
   userId: string,
-  emails: EmailForCategorization[]
+  emails: EmailForClassificationWithFirm[]
 ): Promise<{
   processed: number;
   assigned: number;
@@ -311,189 +298,83 @@ async function processUserEmails(
     processed: 0,
     assigned: 0,
     flaggedForReview: 0,
-    totalTokensUsed: 0,
+    totalTokensUsed: 0, // No longer using AI tokens for basic classification
   };
 
-  // Get user's firm and active cases
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { firmId: true },
-  });
-
-  if (!user?.firmId) {
-    console.log(`[Email Categorization Worker] User ${userId} has no firm, skipping`);
+  if (emails.length === 0) {
     return stats;
   }
 
-  // Get user's cases with actors
-  const cases = await getUserCases(userId, user.firmId);
+  // Get firmId from first email (all emails for a user should have same firmId)
+  const firmId = emails[0].firmId;
 
-  if (cases.length === 0) {
-    console.log(`[Email Categorization Worker] No cases for user ${userId}, skipping`);
-    return stats;
-  }
-
-  // Categorize each email
+  // Classify each email using the enhanced scoring service
   for (const email of emails) {
     try {
-      const result = await categorizeEmailWithAI(email, cases, userId, user.firmId);
+      const result: ClassificationResult = await classificationScoringService.classifyEmail(
+        email,
+        firmId,
+        userId
+      );
       stats.processed++;
-      stats.totalTokensUsed += result.tokensUsed;
 
-      if (result.caseId && result.confidence >= config.lowConfidenceThreshold) {
-        // Auto-assign high confidence matches
+      // Update email based on classification result
+      if (result.state === EmailClassificationState.Classified && result.caseId) {
+        // Auto-assign with classification metadata
         await prisma.email.update({
           where: { id: email.id },
-          data: { caseId: result.caseId },
+          data: {
+            caseId: result.caseId,
+            classificationState: EmailClassificationState.Classified,
+            classificationConfidence: result.confidence,
+            classifiedAt: new Date(),
+            classifiedBy: 'auto',
+          },
         });
         stats.assigned++;
-      } else {
-        // Flag for manual review (low confidence or no match)
+        console.log(
+          `[Email Categorization Worker] Classified email ${email.id} to case ${result.caseId} (confidence: ${result.confidence}, match: ${result.matchType})`
+        );
+      } else if (result.state === EmailClassificationState.CourtUnassigned) {
+        // OPS-040: Court email without matching case - goes to INSTANȚE folder
+        await prisma.email.update({
+          where: { id: email.id },
+          data: {
+            classificationState: EmailClassificationState.CourtUnassigned,
+            classificationConfidence: result.confidence,
+            classifiedAt: new Date(),
+            classifiedBy: 'auto',
+          },
+        });
         stats.flaggedForReview++;
+        console.log(
+          `[Email Categorization Worker] Court email ${email.id} → INSTANȚE folder (reason: ${result.reason || result.matchType}, refs: ${result.extractedReferences?.join(', ') || 'none'})`
+        );
+      } else {
+        // Mark as uncertain for manual review (NECLAR queue)
+        await prisma.email.update({
+          where: { id: email.id },
+          data: {
+            classificationState: EmailClassificationState.Uncertain,
+            classificationConfidence: result.confidence,
+            classifiedAt: new Date(),
+            classifiedBy: 'auto',
+          },
+        });
+        stats.flaggedForReview++;
+        console.log(
+          `[Email Categorization Worker] Flagged email ${email.id} as uncertain (reason: ${result.reason || result.matchType})`
+        );
       }
 
-      // Rate limit: wait 100ms between API calls
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Small delay between classifications to avoid overwhelming the database
+      await new Promise((resolve) => setTimeout(resolve, 50));
     } catch (error) {
       console.error(`[Email Categorization Worker] Error categorizing email ${email.id}:`, error);
     }
   }
 
   return stats;
-}
-
-/**
- * Get user's active cases with actors
- */
-async function getUserCases(userId: string, _firmId: string): Promise<CaseContext[]> {
-  const caseTeams = await prisma.caseTeam.findMany({
-    where: { userId },
-    include: {
-      case: {
-        include: {
-          client: true,
-          actors: true,
-        },
-      },
-    },
-  });
-
-  return caseTeams
-    .filter((ct) => ct.case.status === 'Active' || ct.case.status === 'Pending')
-    .map((ct) => {
-      // Extract email from client's contactInfo JSON field
-      const clientContactInfo = ct.case.client?.contactInfo as { email?: string } | null;
-      return {
-        id: ct.case.id,
-        title: ct.case.title,
-        caseNumber: ct.case.caseNumber,
-        clientName: ct.case.client?.name || 'Unknown',
-        clientEmail: clientContactInfo?.email || undefined,
-        description: ct.case.description || undefined,
-        actors: ct.case.actors.map((a) => ({
-          name: a.name,
-          email: a.email || undefined,
-          role: a.role,
-        })),
-      };
-    });
-}
-
-/**
- * Categorize email using AI service
- *
- * Note: In production, this would call the AI service via HTTP.
- * For now, we implement a simplified version.
- */
-async function categorizeEmailWithAI(
-  email: EmailForCategorization,
-  cases: CaseContext[],
-  userId: string,
-  firmId: string
-): Promise<CategorizationResult> {
-  // For now, use simple heuristic matching
-  // In production, this would call the AI service
-  return categorizeByHeuristics(email, cases);
-}
-
-/**
- * Simple heuristic categorization (fallback/fast path)
- *
- * Matches emails based on:
- * 1. Exact email address match with case actors
- * 2. Client name in subject or body
- * 3. Case number in subject
- */
-function categorizeByHeuristics(
-  email: EmailForCategorization,
-  cases: CaseContext[]
-): CategorizationResult {
-  const senderEmail = email.from.address.toLowerCase();
-  const subjectLower = email.subject.toLowerCase();
-  const bodyLower = email.bodyPreview.toLowerCase();
-
-  let bestMatch: { caseId: string; confidence: number; reasoning: string } | null = null;
-
-  for (const caseCtx of cases) {
-    let confidence = 0;
-    const reasons: string[] = [];
-
-    // Check sender email against case actors
-    const matchingActor = caseCtx.actors.find((a) => a.email?.toLowerCase() === senderEmail);
-    if (matchingActor) {
-      confidence = 0.95;
-      reasons.push(`Sender matches case actor: ${matchingActor.role}`);
-    }
-
-    // Check client email
-    if (caseCtx.clientEmail?.toLowerCase() === senderEmail) {
-      confidence = Math.max(confidence, 0.95);
-      reasons.push('Sender is case client');
-    }
-
-    // Check case number in subject
-    if (subjectLower.includes(caseCtx.caseNumber.toLowerCase())) {
-      confidence = Math.max(confidence, 0.9);
-      reasons.push('Case number found in subject');
-    }
-
-    // Check client name in subject or body
-    const clientNameLower = caseCtx.clientName.toLowerCase();
-    if (subjectLower.includes(clientNameLower) || bodyLower.includes(clientNameLower)) {
-      confidence = Math.max(confidence, 0.7);
-      reasons.push('Client name found in email');
-    }
-
-    // Check case title keywords
-    const titleWords = caseCtx.title
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > 3);
-    const matchingWords = titleWords.filter(
-      (w) => subjectLower.includes(w) || bodyLower.includes(w)
-    );
-    if (matchingWords.length >= 2) {
-      confidence = Math.max(confidence, 0.6);
-      reasons.push(`Case title keywords found: ${matchingWords.join(', ')}`);
-    }
-
-    // Update best match
-    if (confidence > 0 && (!bestMatch || confidence > bestMatch.confidence)) {
-      bestMatch = {
-        caseId: caseCtx.id,
-        confidence,
-        reasoning: reasons.join('; '),
-      };
-    }
-  }
-
-  return {
-    emailId: email.id,
-    caseId: bestMatch?.caseId || null,
-    confidence: bestMatch?.confidence || 0,
-    reasoning: bestMatch?.reasoning || 'No matching case found',
-    tokensUsed: 0, // Heuristic approach uses no tokens
-  };
 }
 
 // ============================================================================

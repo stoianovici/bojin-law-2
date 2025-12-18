@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
 import { clsx } from 'clsx';
 import { useCaseWorkspaceStore } from '../../../stores/case-workspace.store';
 import { CaseHeader } from '../../../components/case/CaseHeader';
@@ -24,6 +24,8 @@ import { useCase } from '../../../hooks/useCase';
 import { useSuggestions } from '../../../hooks/useSuggestions';
 import { useSetAIContext } from '../../../contexts/AIAssistantContext';
 import { useAuth } from '../../../lib/hooks/useAuth';
+import { EditCaseModal } from '../../../components/case/EditCaseModal';
+import { AddTeamMemberModal } from '../../../components/case/AddTeamMemberModal';
 import type { Case, User, Document, Task, DocumentNode } from '@legal-platform/types';
 
 interface CaseWorkspacePageProps {
@@ -91,6 +93,10 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   const { caseId } = React.use(params);
   const { activeTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
 
+  // Modal state
+  const [editCaseModalOpen, setEditCaseModalOpen] = useState(false);
+  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
+
   // Use the real useCase hook to get actual case data
   const { case: realCaseData, loading, error } = useCase(caseId);
 
@@ -130,6 +136,15 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
     },
     [acceptSuggestion]
   );
+
+  // Handlers for header actions
+  const handleEditCase = useCallback(() => {
+    setEditCaseModalOpen(true);
+  }, []);
+
+  const handleAddTeamMember = useCallback(() => {
+    setAddMemberModalOpen(true);
+  }, []);
 
   // Derive case workspace data from API response using useMemo
   const caseData = useMemo<CaseWorkspaceData | null>(() => {
@@ -240,7 +255,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
       case 'tasks':
         return <TasksTab tasks={caseData.tasks} users={caseData.teamMembers} />;
       case 'communications':
-        return <CommunicationsTab caseId={caseId} caseTitle={caseData.case.title} />;
+        return <CommunicationsTab caseId={caseId} />;
       case 'time-entries':
         return <TimeEntriesTab />;
       case 'notes':
@@ -261,6 +276,8 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           case={caseData.case}
           teamMembers={caseData.teamMembers}
           nextDeadline={caseData.nextDeadline}
+          onEditCase={handleEditCase}
+          onAddTeamMember={handleAddTeamMember}
         />
 
         {/* Workspace Tabs */}
@@ -284,6 +301,20 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           loading={suggestionsLoading}
           onDismissSuggestion={handleDismissSuggestion}
           onTakeAction={handleTakeAction}
+        />
+
+        {/* Edit Case Modal */}
+        <EditCaseModal
+          caseData={caseData.case}
+          open={editCaseModalOpen}
+          onOpenChange={setEditCaseModalOpen}
+        />
+
+        {/* Add Team Member Modal */}
+        <AddTeamMemberModal
+          caseId={caseId}
+          open={addMemberModalOpen}
+          onOpenChange={setAddMemberModalOpen}
         />
       </div>
     </ErrorBoundary>

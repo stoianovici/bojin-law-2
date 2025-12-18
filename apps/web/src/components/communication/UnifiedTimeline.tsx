@@ -19,6 +19,8 @@ interface UnifiedTimelineProps {
   className?: string;
   showFilters?: boolean;
   showComposer?: boolean;
+  /** Hide action buttons (reply, forward, etc.) for read-only views like case details */
+  readOnly?: boolean;
   onEntryClick?: (entryId: string) => void;
 }
 
@@ -27,6 +29,7 @@ export function UnifiedTimeline({
   className = '',
   showFilters = true,
   showComposer = true,
+  readOnly = false,
   onEntryClick,
 }: UnifiedTimelineProps) {
   const [filter, setFilter] = React.useState<Omit<TimelineFilter, 'caseId'>>({});
@@ -161,6 +164,7 @@ export function UnifiedTimeline({
               entry={entry}
               onClick={onEntryClick ? () => onEntryClick(entry.id) : undefined}
               isDisabled={isChannelDisabled(entry.channelType)}
+              readOnly={readOnly}
               aria-setsize={totalCount}
               aria-posinset={index + 1}
             />

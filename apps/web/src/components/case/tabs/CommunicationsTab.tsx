@@ -1,44 +1,34 @@
 /**
  * CommunicationsTab - Shows unified communication timeline for a case
  *
- * Redesigned to use UnifiedTimeline component for full feature parity
- * with the main /communications page, including:
- * - Proper HTML email rendering
- * - Internal note composer with privacy controls
- * - Advanced filtering (channel, date, direction)
- * - Infinite scroll
- * - Email import wizard (OPS-022)
+ * OPS-037: Read-only view of all firm users' communications for a case.
+ * - No compose, reply, or action buttons (actions happen in /communications)
+ * - Shows ALL firm users' emails for this case
+ * - AI summary panel at top
+ * - Proper HTML email rendering with infinite scroll
  */
 
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { clsx } from 'clsx';
 import { ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { UnifiedTimeline } from '../../communication/UnifiedTimeline';
-import { EmailImportWizard } from '../EmailImportWizard';
 import { CaseConversationSummaryPanel } from '../../communication/CaseConversationSummaryPanel';
 
 export interface CommunicationsTabProps {
   caseId?: string;
-  caseTitle?: string;
   className?: string;
 }
 
 /**
  * CommunicationsTab Component
  *
- * Displays the unified timeline for case communications.
- * Requires a caseId to function properly.
+ * Read-only view of all firm users' communications for a case.
+ * Users who want to take action go to /communications (their personal workspace).
  */
-export function CommunicationsTab({ caseId, caseTitle, className }: CommunicationsTabProps) {
+export function CommunicationsTab({ caseId, className }: CommunicationsTabProps) {
   const [isAISummaryExpanded, setIsAISummaryExpanded] = useState(false);
-
-  // Callback to refresh timeline after email import
-  const handleImportSuccess = useCallback(() => {
-    // The UnifiedTimeline will auto-refresh when emails are linked to case
-    // This callback can be used for additional UI feedback if needed
-  }, []);
 
   if (!caseId) {
     return (
@@ -50,16 +40,9 @@ export function CommunicationsTab({ caseId, caseTitle, className }: Communicatio
 
   return (
     <div className={clsx('flex flex-col h-full bg-white', className)}>
-      {/* Action Bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+      {/* Header */}
+      <div className="flex items-center px-4 py-3 border-b border-gray-200 bg-gray-50">
         <h3 className="text-sm font-medium text-gray-700">Comunicări</h3>
-        <div className="flex items-center gap-2">
-          <EmailImportWizard
-            caseId={caseId}
-            caseTitle={caseTitle}
-            onSuccess={handleImportSuccess}
-          />
-        </div>
       </div>
 
       {/* AI Thread Summary Section */}
@@ -87,12 +70,13 @@ export function CommunicationsTab({ caseId, caseTitle, className }: Communicatio
         )}
       </div>
 
-      {/* Timeline */}
+      {/* Timeline (read-only, no composer) */}
       <div className="flex-1 p-4 overflow-hidden">
         <UnifiedTimeline
           caseId={caseId}
           showFilters={true}
-          showComposer={true}
+          showComposer={false}
+          readOnly={true}
           className="h-full"
         />
       </div>

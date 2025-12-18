@@ -63,6 +63,26 @@ input DefaultRatesInput {
 # Queries
 # ============================================================================
 
+"""
+Basic user info for selection dropdowns
+"""
+type FirmUserInfo {
+  """User ID"""
+  id: UUID!
+
+  """User's first name"""
+  firstName: String!
+
+  """User's last name"""
+  lastName: String!
+
+  """User's email"""
+  email: String!
+
+  """User's role (Partner, Associate, Paralegal)"""
+  role: String!
+}
+
 extend type Query {
   """
   Get the current firm's default billing rates
@@ -76,6 +96,13 @@ extend type Query {
   Authorization: Authenticated users can view their firm
   """
   firm: Firm
+
+  """
+  Get all users in the current firm
+  Returns a list of users for selection in team assignment
+  Authorization: Authenticated users can view firm members
+  """
+  firmUsers: [FirmUserInfo!]!
 }
 
 # ============================================================================

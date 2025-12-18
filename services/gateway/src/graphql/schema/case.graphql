@@ -244,6 +244,9 @@ type CaseActor {
   """Email address of the actor (optional)"""
   email: String
 
+  """Additional email domains for this actor - used for email classification (OPS-038)"""
+  emailDomains: [String!]!
+
   """Phone number of the actor (optional)"""
   phone: String
 
@@ -413,6 +416,9 @@ input AddCaseActorInput {
   """Email address (optional)"""
   email: String
 
+  """Additional email domains for classification (OPS-038)"""
+  emailDomains: [String!]
+
   """Phone number (optional)"""
   phone: String
 
@@ -437,6 +443,9 @@ input UpdateCaseActorInput {
   """Updated email"""
   email: String
 
+  """Updated email domains for classification (OPS-038)"""
+  emailDomains: [String!]
+
   """Updated phone"""
   phone: String
 
@@ -445,6 +454,24 @@ input UpdateCaseActorInput {
 
   """Updated notes"""
   notes: String
+}
+
+"""
+Input for updating case classification metadata (OPS-038)
+All fields optional - only provided fields will be updated
+"""
+input CaseMetadataInput {
+  """Court file numbers, contract references (e.g., \"1234/5/2024\")"""
+  referenceNumbers: [String!]
+
+  """User-defined keywords for matching emails to this case"""
+  keywords: [String!]
+
+  """Email subject patterns for classification - glob-style"""
+  subjectPatterns: [String!]
+
+  """Free text guidance for AI email classifier"""
+  classificationNotes: String
 }
 
 # ============================================================================
@@ -602,6 +629,13 @@ type Mutation {
   Authorization: User must be on case team OR be a Partner
   """
   removeCaseActor(id: UUID!): Boolean!
+
+  """
+  Update case classification metadata (OPS-038)
+  Side effects: Updates case classification fields, creates audit log entry
+  Authorization: User must be on case team OR be a Partner
+  """
+  updateCaseMetadata(caseId: UUID!, input: CaseMetadataInput!): Case!
 }
 
 # ============================================================================

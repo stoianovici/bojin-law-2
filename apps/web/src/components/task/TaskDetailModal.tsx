@@ -497,10 +497,11 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
           >
             {/* Task Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="taskType" className="block text-sm font-medium text-gray-700 mb-1">
                 Tip Sarcină <span className="text-red-500">*</span>
               </label>
               <select
+                id="taskType"
                 value={formData.type}
                 onChange={(e) => updateField('type', e.target.value as TaskType)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -564,8 +565,11 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
 
             {/* Priority */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Prioritate</label>
+              <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+                Prioritate
+              </label>
               <select
+                id="priority"
                 value={formData.priority}
                 onChange={(e) => updateField('priority', e.target.value as Task['priority'])}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -580,8 +584,11 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
               <select
+                id="status"
                 value={formData.status}
                 onChange={(e) => updateField('status', e.target.value as Task['status'])}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"

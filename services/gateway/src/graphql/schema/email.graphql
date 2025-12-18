@@ -17,6 +17,22 @@ type EmailAddress {
 }
 
 """
+Email classification state machine (OPS-035)
+"""
+enum EmailClassificationState {
+  """Just synced, not yet processed"""
+  Pending
+  """Assigned to case (auto or manual)"""
+  Classified
+  """In NECLAR queue (needs user review)"""
+  Uncertain
+  """In INSTANȚE folder (court email, no case match)"""
+  CourtUnassigned
+  """Marked as not relevant"""
+  Ignored
+}
+
+"""
 Email message from Microsoft Graph
 """
 type Email {
@@ -35,6 +51,14 @@ type Email {
   hasAttachments: Boolean!
   importance: String!
   isRead: Boolean!
+  """Classification state machine (OPS-035)"""
+  classificationState: EmailClassificationState!
+  """AI confidence score for classification (0.0 - 1.0)"""
+  classificationConfidence: Float
+  """When the email was classified"""
+  classifiedAt: DateTime
+  """Who classified the email - 'auto' or userId"""
+  classifiedBy: String
   case: Case
   attachments: [EmailAttachment!]!
   thread: EmailThread
@@ -136,6 +160,128 @@ type EmailCaseCount {
 }
 
 # ============================================================================
+# INSTANȚE Types (OPS-040: Court Email Detection)
+# ============================================================================
+
+"""
+Suggested case for unassigned court emails
+"""
+type SuggestedCase {
+  id: ID!
+  caseNumber: String!
+  title: String!
+  referenceNumbers: [String!]!
+}
+
+"""
+Unassigned court email for the INSTANȚE folder
+"""
+type UnassignedCourtEmail {
+  id: ID!
+  subject: String!
+  from: EmailAddress!
+  receivedDateTime: DateTime!
+  """Reference numbers extracted from email but no case match"""
+  extractedReferences: [String!]!
+  """If multiple cases match, these are the suggestions"""
+  suggestedCases: [SuggestedCase!]!
+  """Institution category (Court, Notary, Bailiff, Authority, Other)"""
+  institutionCategory: String
+  """Body preview for context"""
+  bodyPreview: String!
+}
+
+# ============================================================================
+# NECLAR Types (OPS-042: Classification Modal)
+# ============================================================================
+
+"""
+Classification signal explaining why a case was suggested
+"""
+type ClassificationSignal {
+  """Signal type: KEYWORD_SUBJECT, KEYWORD_BODY, REFERENCE_NUMBER, RECENT_ACTIVITY, CONTACT_MATCH"""
+  type: String!
+  """Weight of this signal (higher = more important)"""
+  weight: Int!
+  """What matched (e.g., the keyword or reference number)"""
+  matched: String!
+}
+
+"""
+Suggested case for uncertain email classification
+"""
+type UncertainEmailCase {
+  id: ID!
+  caseNumber: String!
+  title: String!
+  """Match confidence score (0-100)"""
+  score: Int!
+  """Signals explaining why this case was suggested"""
+  signals: [ClassificationSignal!]!
+  """Last activity date for context"""
+  lastActivityAt: DateTime
+}
+
+"""
+Uncertain email from the NECLAR queue
+"""
+type UncertainEmail {
+  id: ID!
+  subject: String!
+  from: EmailAddress!
+  receivedDateTime: DateTime!
+  """Body preview for context"""
+  bodyPreview: String!
+  """Full body content (expandable)"""
+  bodyContent: String
+  """Suggested cases with confidence scores"""
+  suggestedCases: [UncertainEmailCase!]!
+  """Reason for uncertainty: AMBIGUOUS, LOW_CONFIDENCE, UNKNOWN_CONTACT"""
+  uncertaintyReason: String
+}
+
+"""
+Result of assigning a court email to a case
+"""
+type AssignCourtEmailResult {
+  email: Email!
+  case: Case!
+  """Whether reference number was added to case"""
+  referenceAdded: Boolean!
+}
+
+"""
+Action type for classifying uncertain emails
+"""
+enum ClassificationActionType {
+  """Assign email to selected case"""
+  ASSIGN_TO_CASE
+  """Mark email as not relevant (ignored)"""
+  IGNORE
+}
+
+"""
+Input for classifying an uncertain email
+"""
+input ClassificationActionInput {
+  """Action type: ASSIGN_TO_CASE or IGNORE"""
+  type: ClassificationActionType!
+  """Case ID - required if type is ASSIGN_TO_CASE"""
+  caseId: ID
+}
+
+"""
+Result of classifying an uncertain email
+"""
+type ClassifyUncertainEmailResult {
+  email: Email!
+  """The case it was assigned to (null if ignored)"""
+  case: Case
+  """Whether this was an ignore action"""
+  wasIgnored: Boolean!
+}
+
+# ============================================================================
 # Inputs
 # ============================================================================
 
@@ -218,6 +364,41 @@ extend type Query {
   Get attachment content directly from MS Graph (for download)
   """
   emailAttachmentContent(emailId: ID!, attachmentId: ID!): AttachmentContent
+
+  # ============================================================================
+  # INSTANȚE Queries (OPS-040)
+  # ============================================================================
+
+  """
+  Get unassigned court emails for the INSTANȚE folder
+  Returns emails from courts/authorities that couldn't be matched to a case
+  """
+  unassignedCourtEmails(limit: Int, offset: Int): [UnassignedCourtEmail!]!
+
+  """
+  Get count of unassigned court emails
+  """
+  unassignedCourtEmailsCount: Int!
+
+  # ============================================================================
+  # NECLAR Queries (OPS-042)
+  # ============================================================================
+
+  """
+  Get uncertain emails for the NECLAR queue (needs user classification)
+  Returns emails with classificationState = Uncertain
+  """
+  uncertainEmails(limit: Int, offset: Int): [UncertainEmail!]!
+
+  """
+  Get count of uncertain emails
+  """
+  uncertainEmailsCount: Int!
+
+  """
+  Get a single uncertain email with full details for the classification modal
+  """
+  uncertainEmail(id: ID!): UncertainEmail
 }
 
 # ============================================================================
@@ -303,6 +484,34 @@ extend type Mutation {
   Authorization: Partner or BusinessOwner role required
   """
   bulkDeleteCaseEmails(caseId: ID!): BulkDeleteEmailsResult!
+
+  # ============================================================================
+  # INSTANȚE Mutations (OPS-040)
+  # ============================================================================
+
+  """
+  Assign a court email to a case manually
+  Optionally adds the extracted reference number to the case
+  """
+  assignCourtEmailToCase(
+    emailId: ID!
+    caseId: ID!
+    """If true and there are extracted references, add them to the case"""
+    addReference: Boolean
+  ): AssignCourtEmailResult!
+
+  # ============================================================================
+  # NECLAR Mutations (OPS-042: Classification Modal)
+  # ============================================================================
+
+  """
+  Classify an uncertain email (NECLAR queue)
+  User selects a case or marks as ignored
+  """
+  classifyUncertainEmail(
+    emailId: ID!
+    action: ClassificationActionInput!
+  ): ClassifyUncertainEmailResult!
 }
 
 """

@@ -9,6 +9,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
+import { EmailClassificationState } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { Decimal } from '@prisma/client/runtime/library';
 import { notificationService } from '../../services/notification.service';
@@ -1034,6 +1035,62 @@ export const caseResolvers = {
         return created;
       });
 
+      // Auto-assign unclassified emails from this contact to the case
+      // OPS-041: When a contact with email is added, find matching emails and assign them
+      const contactEmail = args.input.email?.toLowerCase();
+      const contactDomains = args.input.emailDomains || [];
+
+      if (contactEmail || contactDomains.length > 0) {
+        try {
+          // Build conditions for matching emails
+          const emailConditions: any[] = [];
+
+          if (contactEmail) {
+            // Match exact email address in the "from" JSON field
+            emailConditions.push({
+              from: { path: ['address'], string_contains: contactEmail },
+            });
+          }
+
+          // Match email domains
+          for (const domain of contactDomains) {
+            emailConditions.push({
+              from: { path: ['address'], string_ends_with: `@${domain.toLowerCase()}` },
+            });
+          }
+
+          if (emailConditions.length > 0) {
+            // Find and assign matching emails that are Pending or Uncertain
+            const assignResult = await prisma.email.updateMany({
+              where: {
+                firmId: user.firmId,
+                caseId: null, // Only unassigned emails
+                classificationState: {
+                  in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
+                },
+                OR: emailConditions,
+              },
+              data: {
+                caseId: args.input.caseId,
+                classificationState: EmailClassificationState.Classified,
+                classificationConfidence: 0.95,
+                classifiedAt: new Date(),
+                classifiedBy: 'contact_match',
+              },
+            });
+
+            if (assignResult.count > 0) {
+              console.log(
+                `[addCaseActor] Auto-assigned ${assignResult.count} emails to case ${args.input.caseId} based on contact ${contactEmail || contactDomains.join(', ')}`
+              );
+            }
+          }
+        } catch (err) {
+          // Log but don't fail the mutation if email assignment fails
+          console.error('[addCaseActor] Error auto-assigning emails:', err);
+        }
+      }
+
       return actor;
     },
 
@@ -1098,6 +1155,61 @@ export const caseResolvers = {
         return actor;
       });
 
+      // Auto-assign emails if email or emailDomains were updated
+      // OPS-041: Same logic as addCaseActor
+      const newEmail = args.input.email?.toLowerCase();
+      const newDomains = args.input.emailDomains || [];
+      const emailChanged = newEmail && newEmail !== existing.email?.toLowerCase();
+      const domainsChanged =
+        newDomains.length > 0 &&
+        JSON.stringify(newDomains.sort()) !== JSON.stringify((existing.emailDomains || []).sort());
+
+      if (emailChanged || domainsChanged) {
+        try {
+          const emailConditions: any[] = [];
+
+          if (newEmail) {
+            emailConditions.push({
+              from: { path: ['address'], string_contains: newEmail },
+            });
+          }
+
+          for (const domain of newDomains) {
+            emailConditions.push({
+              from: { path: ['address'], string_ends_with: `@${domain.toLowerCase()}` },
+            });
+          }
+
+          if (emailConditions.length > 0) {
+            const assignResult = await prisma.email.updateMany({
+              where: {
+                firmId: user.firmId,
+                caseId: null,
+                classificationState: {
+                  in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
+                },
+                OR: emailConditions,
+              },
+              data: {
+                caseId: existing.caseId,
+                classificationState: EmailClassificationState.Classified,
+                classificationConfidence: 0.95,
+                classifiedAt: new Date(),
+                classifiedBy: 'contact_match',
+              },
+            });
+
+            if (assignResult.count > 0) {
+              console.log(
+                `[updateCaseActor] Auto-assigned ${assignResult.count} emails to case ${existing.caseId} based on contact update`
+              );
+            }
+          }
+        } catch (err) {
+          console.error('[updateCaseActor] Error auto-assigning emails:', err);
+        }
+      }
+
       return updated;
     },
 
@@ -1138,6 +1250,74 @@ export const caseResolvers = {
       });
 
       return true;
+    },
+
+    // OPS-038: Update case classification metadata
+    updateCaseMetadata: async (_: any, args: { caseId: string; input: any }, context: Context) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessCase(args.caseId, user))) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const existingCase = await prisma.case.findUnique({
+        where: { id: args.caseId },
+      });
+
+      if (!existingCase) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Build update data - only include provided fields
+      const updateData: any = {};
+      if (args.input.referenceNumbers !== undefined) {
+        updateData.referenceNumbers = args.input.referenceNumbers;
+      }
+      if (args.input.keywords !== undefined) {
+        updateData.keywords = args.input.keywords;
+      }
+      if (args.input.subjectPatterns !== undefined) {
+        updateData.subjectPatterns = args.input.subjectPatterns;
+      }
+      if (args.input.classificationNotes !== undefined) {
+        updateData.classificationNotes = args.input.classificationNotes;
+      }
+
+      const updatedCase = await prisma.$transaction(async (tx) => {
+        const updated = await tx.case.update({
+          where: { id: args.caseId },
+          data: updateData,
+          include: {
+            client: true,
+            teamMembers: {
+              include: {
+                user: true,
+              },
+            },
+            actors: true,
+          },
+        });
+
+        // Create audit log for metadata update
+        await tx.caseAuditLog.create({
+          data: {
+            caseId: args.caseId,
+            userId: user.id,
+            action: 'METADATA_UPDATED',
+            fieldName: 'classification_metadata',
+            newValue: JSON.stringify(args.input),
+            timestamp: new Date(),
+          },
+        });
+
+        return updated;
+      });
+
+      return updatedCase;
     },
   },
 
@@ -1190,6 +1370,14 @@ export const caseResolvers = {
       }
 
       return retainerService.calculateCurrentUsage(parent.id, user.firmId);
+    },
+  },
+
+  // OPS-038: CaseActor field resolvers
+  CaseActor: {
+    // Ensure emailDomains always returns an array (even if null in DB)
+    emailDomains: (parent: any) => {
+      return parent.emailDomains || [];
     },
   },
 };

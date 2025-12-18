@@ -12,6 +12,7 @@ import type { CaseActorRole } from '@legal-platform/types';
 
 /**
  * GraphQL Mutation: Add Case Actor
+ * OPS-038: Added emailDomains field support
  */
 const ADD_CASE_ACTOR_MUTATION = gql`
   mutation AddCaseActor($input: AddCaseActorInput!) {
@@ -22,6 +23,7 @@ const ADD_CASE_ACTOR_MUTATION = gql`
       name
       organization
       email
+      emailDomains
       phone
       address
       notes
@@ -34,6 +36,7 @@ const ADD_CASE_ACTOR_MUTATION = gql`
 
 /**
  * Input type for adding a case actor
+ * OPS-038: Added emailDomains field
  */
 export interface AddCaseActorInput {
   caseId: string;
@@ -41,6 +44,7 @@ export interface AddCaseActorInput {
   name: string;
   organization?: string;
   email?: string;
+  emailDomains?: string[];
   phone?: string;
   address?: string;
   notes?: string;

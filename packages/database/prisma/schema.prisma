@@ -2524,12 +2524,19 @@ model Email {
   isRead            Boolean   @map("is_read")
   isIgnored         Boolean   @default(false) @map("is_ignored") // Marked as not case-related
   ignoredAt         DateTime? @map("ignored_at") @db.Timestamptz // When the email was ignored
-  userId            String    @map("user_id") // User who owns this email
-  caseId            String?   @map("case_id") // Assigned case (nullable until categorized)
-  firmId            String    @map("firm_id")
-  syncedAt          DateTime  @default(now()) @map("synced_at") @db.Timestamptz
-  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Classification state machine (OPS-035)
+  classificationState      EmailClassificationState @default(Pending) @map("classification_state")
+  classificationConfidence Float?                   @map("classification_confidence") // 0.0 - 1.0
+  classifiedAt             DateTime?                @map("classified_at") @db.Timestamptz
+  classifiedBy             String?                  @map("classified_by") // "auto" or userId
+
+  userId    String   @map("user_id") // User who owns this email
+  caseId    String?  @map("case_id") // Assigned case (nullable until categorized)
+  firmId    String   @map("firm_id")
+  syncedAt  DateTime @default(now()) @map("synced_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
   user        User              @relation(fields: [userId], references: [id])
@@ -2557,6 +2564,7 @@ model Email {
   @@index([receivedDateTime])
   @@index([firmId])
   @@index([isIgnored])
+  @@index([classificationState])
   @@map("emails")
 }
 
@@ -3514,6 +3522,15 @@ enum ClassificationReason {
   NoMatchingCase // No case matched criteria
   CourtNoReference // Court email without reference number match
   UnknownContact // Sender not in any CaseActor
+}
+
+// Email classification state machine (OPS-035)
+enum EmailClassificationState {
+  Pending // Just synced, not yet processed
+  Classified // Assigned to case (auto or manual)
+  Uncertain // In NECLAR queue (needs user review)
+  CourtUnassigned // In INSTANȚE folder (court email, no case match)
+  Ignored // Marked as not relevant
 }
 
 // Email classification audit log - tracks all classification decisions (OPS-031)
