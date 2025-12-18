@@ -381,13 +381,19 @@ export const timeEntryResolvers = {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = (await response.json()) as { error?: string };
           throw new GraphQLError(errorData.error || 'AI service error', {
             extensions: { code: 'AI_SERVICE_ERROR' },
           });
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as {
+          estimatedHours: number;
+          confidence: number;
+          reasoning: string;
+          basedOnSimilarTasks: number;
+          range: { min: number; max: number };
+        };
 
         // Transform response to match GraphQL schema
         return {

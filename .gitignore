@@ -15,6 +15,7 @@ build/
 .next/
 out/
 .turbo/
+storybook-static/
 
 # Prisma generated client (regenerated during build)
 **/src/generated/prisma/

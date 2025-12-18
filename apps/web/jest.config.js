@@ -17,7 +17,9 @@ const customJestConfig = {
     '@legal-platform/romanian-templates': '<rootDir>/../../packages/romanian-templates/src',
     '@legal-platform/test-utils': '<rootDir>/../../packages/shared/test-utils/dist/index.js',
     // Force rxjs to use CommonJS build instead of ESM
-    '^rxjs(/.*)?$': '<rootDir>/../../node_modules/rxjs/dist/cjs$1',
+    // Handle base rxjs import and subpath imports separately
+    '^rxjs$': '<rootDir>/../../node_modules/.pnpm/rxjs@7.8.2/node_modules/rxjs/dist/cjs/index.js',
+    '^rxjs/(.*)$': '<rootDir>/../../node_modules/.pnpm/rxjs@7.8.2/node_modules/rxjs/dist/cjs/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],

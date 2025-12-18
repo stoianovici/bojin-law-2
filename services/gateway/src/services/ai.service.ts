@@ -84,10 +84,10 @@ async function makeRequest<T>(
 ): Promise<T> {
   const url = `${AI_SERVICE_URL}${endpoint}`;
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
-    ...options.headers,
+    ...(options.headers as Record<string, string> | undefined),
   };
 
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -130,7 +130,7 @@ async function makeRequest<T>(
         );
       }
 
-      return await response.json();
+      return (await response.json()) as T;
     } catch (error) {
       if (error instanceof AIServiceError) {
         throw error;

@@ -102,7 +102,7 @@ describe('QuickTaskCreator', () => {
       fireEvent.click(saveButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/Scadența este obligatorie/i)).toBeInTheDocument();
+        expect(screen.getByText(/Data scadenței este obligatorie/i)).toBeInTheDocument();
       });
 
       expect(defaultProps.onSave).not.toHaveBeenCalled();

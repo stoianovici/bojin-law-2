@@ -155,7 +155,7 @@ export class EmbeddingService {
 
           // Parse error body if available
           try {
-            const errorBody = await response.json();
+            const errorBody = (await response.json()) as { detail?: string };
             error.message = errorBody.detail || error.message;
           } catch {
             // Ignore JSON parse errors
@@ -164,7 +164,7 @@ export class EmbeddingService {
           throw error;
         }
 
-        const data: VoyageAPIResponse = await response.json();
+        const data = (await response.json()) as VoyageAPIResponse;
 
         if (!data.data || data.data.length === 0) {
           throw new Error('Voyage AI API returned no embeddings');
