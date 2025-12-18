@@ -21,7 +21,7 @@ log_warning() { echo -e "${YELLOW}[smoke-test]${NC} ⚠ $*"; }
 # Default URLs (can be overridden with environment variables)
 WEB_URL="${SMOKE_TEST_WEB_URL:-https://legal-platform-web.onrender.com}"
 GATEWAY_URL="${SMOKE_TEST_GATEWAY_URL:-https://legal-platform-gateway.onrender.com}"
-LEGACY_IMPORT_URL="${SMOKE_TEST_LEGACY_IMPORT_URL:-https://legacy-import.onrender.com}"
+LEGACY_IMPORT_URL="${SMOKE_TEST_LEGACY_IMPORT_URL:-https://bojin-legacy-import.onrender.com}"
 
 # Track failures
 FAILED=0
