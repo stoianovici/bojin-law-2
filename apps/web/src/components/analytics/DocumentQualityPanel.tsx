@@ -239,7 +239,7 @@ function IssuesByCategoryChart({ data, onCategoryClick }: IssuesByCategoryChartP
           dataKey="count"
           radius={[0, 4, 4, 0]}
           cursor={onCategoryClick ? 'pointer' : 'default'}
-          onClick={(data) => onCategoryClick?.(data.category)}
+          onClick={(data) => onCategoryClick?.((data as unknown as CategoryChartData).category)}
         >
           {data.map((entry) => (
             <Cell key={entry.category} fill={entry.color} />
@@ -270,8 +270,9 @@ function QualityTrendChart({ data, onDateClick }: QualityTrendChartProps) {
         data={data}
         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         onClick={(e) => {
-          if (e?.activePayload?.[0]?.payload && onDateClick) {
-            const dateStr = e.activePayload[0].payload.date;
+          const event = e as unknown as { activePayload?: Array<{ payload: TrendChartData }> };
+          if (event?.activePayload?.[0]?.payload && onDateClick) {
+            const dateStr = event.activePayload[0].payload.date;
             onDateClick(new Date(dateStr));
           }
         }}

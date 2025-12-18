@@ -17,7 +17,7 @@ import {
   ArrowRight,
   Lightbulb,
 } from 'lucide-react';
-import type { CapacityForecast, CapacityBottleneck } from '@legal-platform/types';
+import type { CapacityForecast, CapacityBottleneck, BottleneckTask } from '@legal-platform/types';
 
 interface CapacityForecastPanelProps {
   forecast: CapacityForecast;
@@ -114,7 +114,7 @@ function BottleneckCard({
             {bottleneck.impactedTasks.length !== 1 ? 's' : ''}
           </div>
           <div className="space-y-1">
-            {bottleneck.impactedTasks.slice(0, 2).map((task: (typeof upcomingTasks)[number]) => (
+            {bottleneck.impactedTasks.slice(0, 2).map((task: BottleneckTask) => (
               <div
                 key={task.id}
                 className={`text-sm px-2 py-1 rounded ${
@@ -153,22 +153,9 @@ export function CapacityForecastPanel({
   const riskConfig = RISK_CONFIG[forecast.overallRisk];
   const RiskIcon = riskConfig.icon;
 
-  // Group bottlenecks by date
-  const bottlenecksByDate = useMemo(() => {
-    const grouped: Record<string, CapacityBottleneck[]> = {};
-    for (const bottleneck of forecast.bottlenecks) {
-      const dateKey = new Date(bottleneck.date).toDateString();
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey].push(bottleneck);
-    }
-    return grouped;
-  }, [forecast.bottlenecks]);
-
   // Calculate daily utilization for chart
   const dailyUtilization = useMemo(() => {
-    return forecast.teamCapacityByDay.map((day: (typeof forecast.dailyCapacity)[number]) => ({
+    return forecast.teamCapacityByDay.map((day) => ({
       date: day.date,
       utilization:
         day.totalCapacity > 0 ? Math.round((day.totalAllocated / day.totalCapacity) * 100) : 0,
@@ -208,30 +195,28 @@ export function CapacityForecastPanel({
       <div className="px-4 py-3 border-b">
         <div className="text-sm font-medium text-gray-700 mb-2">Team Utilization</div>
         <div className="flex gap-1 items-end h-16">
-          {dailyUtilization
-            .slice(0, 14)
-            .map((day: (typeof forecast.dailyCapacity)[number], i: number) => {
-              const height = Math.min(100, day.utilization);
-              const isOverloaded = day.utilization > 100;
-              return (
+          {dailyUtilization.slice(0, 14).map((day, i: number) => {
+            const height = Math.min(100, day.utilization);
+            const isOverloaded = day.utilization > 100;
+            return (
+              <div
+                key={i}
+                className="flex-1 flex flex-col items-center gap-0.5"
+                title={`${formatDate(day.date)}: ${day.utilization}%`}
+              >
                 <div
-                  key={i}
-                  className="flex-1 flex flex-col items-center gap-0.5"
-                  title={`${formatDate(day.date)}: ${day.utilization}%`}
-                >
-                  <div
-                    className={`w-full rounded-t ${
-                      isOverloaded
-                        ? 'bg-red-500'
-                        : day.utilization > 80
-                          ? 'bg-orange-400'
-                          : 'bg-green-400'
-                    }`}
-                    style={{ height: `${height}%` }}
-                  />
-                </div>
-              );
-            })}
+                  className={`w-full rounded-t ${
+                    isOverloaded
+                      ? 'bg-red-500'
+                      : day.utilization > 80
+                        ? 'bg-orange-400'
+                        : 'bg-green-400'
+                  }`}
+                  style={{ height: `${height}%` }}
+                />
+              </div>
+            );
+          })}
         </div>
         <div className="flex justify-between mt-1 text-xs text-gray-400">
           <span>Today</span>

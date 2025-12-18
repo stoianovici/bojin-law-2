@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MissingItemsChecklist } from './MissingItemsChecklist';
-import type { CompletenessCheckResult, MissingItem } from '@legal-platform/types';
+import type { MissingItem } from '@legal-platform/types';
 
 export interface CompletenessIndicatorProps {
   completenessScore: number; // 0.0 - 1.0
@@ -82,7 +82,7 @@ export function CompletenessIndicator({
   completenessScore,
   missingItems = [],
   suggestions = [],
-  documentType,
+  documentType: _documentType,
   onItemCheck,
   onItemNavigate,
   showDetails = true,

@@ -214,7 +214,7 @@ function FeatureUsageChart({ data, onFeatureClick }: FeatureUsageChartProps) {
           fill="#3B82F6"
           radius={[0, 4, 4, 0]}
           cursor={onFeatureClick ? 'pointer' : 'default'}
-          onClick={(data) => onFeatureClick?.(data.feature)}
+          onClick={(data) => onFeatureClick?.((data as unknown as FeatureChartData).feature)}
         />
       </BarChart>
     </ResponsiveContainer>

@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { EmailThreadList, EmailThreadView } from '@/components/email';
+import { EmailThreadView } from '@/components/email';
 import { useEmails } from '@/hooks/useEmailSync';
 import { Spinner } from '@/components/ui/spinner';
 import { format } from 'date-fns';

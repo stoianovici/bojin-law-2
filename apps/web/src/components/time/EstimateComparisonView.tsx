@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
   Select,
@@ -20,7 +19,6 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
 } from 'recharts';
 import {
   TrendingUp,
@@ -31,7 +29,7 @@ import {
   CheckCircle,
   Lightbulb,
 } from 'lucide-react';
-import type { EstimateVsActualReport, TaskTypeComparison } from '@legal-platform/types';
+import type { EstimateVsActualReport } from '@legal-platform/types';
 
 export interface EstimateComparisonViewProps {
   report: EstimateVsActualReport | null;

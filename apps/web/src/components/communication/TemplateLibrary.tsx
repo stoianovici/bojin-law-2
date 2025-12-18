@@ -21,14 +21,12 @@ import {
   Plus,
   Mail,
   MessageCircle,
-  Folder,
   Clock,
   ChevronRight,
   MoreVertical,
   Edit,
   Trash2,
   Copy,
-  Eye,
   Loader2,
 } from 'lucide-react';
 

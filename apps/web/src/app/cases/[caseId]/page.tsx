@@ -142,23 +142,21 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         openedDate: new Date(realCaseData.openedDate),
         closedDate: realCaseData.closedDate ? new Date(realCaseData.closedDate) : null,
       },
-      teamMembers: (realCaseData.teamMembers || []).map(
-        (
-          member: {
-            user?: User;
-            createdAt?: string | Date;
-            lastActive?: string | Date;
-          } & Partial<User>
-        ) => {
-          // Handle case where member has a nested user object
-          const user = member.user || member;
-          return {
-            ...user,
-            createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
-            lastActive: user.lastActive ? new Date(user.lastActive) : new Date(),
-          } as User;
-        }
-      ),
+      teamMembers: (realCaseData.teamMembers || []).map((member) => {
+        // Type cast to handle both nested user and flat structures
+        const m = member as unknown as {
+          user?: User;
+          createdAt?: string | Date;
+          lastActive?: string | Date;
+        } & Partial<User>;
+        // Handle case where member has a nested user object
+        const user = m.user || m;
+        return {
+          ...user,
+          createdAt: user.createdAt ? new Date(user.createdAt as string | Date) : new Date(),
+          lastActive: user.lastActive ? new Date(user.lastActive as string | Date) : new Date(),
+        } as User;
+      }),
       nextDeadline: undefined,
       documents: [], // Documents are fetched by CaseDocumentsList component
       tasks: [], // TODO: Fetch from API

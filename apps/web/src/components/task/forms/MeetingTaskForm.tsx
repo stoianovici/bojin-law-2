@@ -90,7 +90,7 @@ export function MeetingTaskForm({ value, onChange, errors }: MeetingTaskFormProp
         <Textarea
           id="agenda"
           value={value.agenda || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
             handleChange('agenda', e.target.value)
           }
           placeholder="Meeting agenda and topics to discuss"

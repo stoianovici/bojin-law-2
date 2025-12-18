@@ -21,8 +21,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
 } from 'recharts';
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
@@ -42,17 +40,13 @@ type SuggestionCategory = 'Task' | 'Communication' | 'Document' | 'Calendar' | '
 
 interface TypeMetric {
   type: SuggestionType;
-  total: number;
-  accepted: number;
-  dismissed: number;
+  count: number;
   acceptanceRate: number;
 }
 
 interface CategoryMetric {
   category: SuggestionCategory;
-  total: number;
-  accepted: number;
-  dismissed: number;
+  count: number;
   acceptanceRate: number;
 }
 
@@ -156,18 +150,6 @@ interface SuggestionAnalyticsProps {
   className?: string;
 }
 
-interface TypeStat {
-  type: SuggestionType;
-  count: number;
-  acceptanceRate: number;
-}
-
-interface CategoryStat {
-  category: SuggestionCategory;
-  count: number;
-  acceptanceRate: number;
-}
-
 // ====================
 // Component
 // ====================
@@ -189,7 +171,7 @@ export function SuggestionAnalytics({ dateRange, className = '' }: SuggestionAna
   // Transform data for charts
   const typeChartData = useMemo(() => {
     if (!analytics?.byType) return [];
-    return analytics.byType.map((stat: TypeStat) => ({
+    return analytics.byType.map((stat: TypeMetric) => ({
       name: TYPE_LABELS[stat.type] || stat.type,
       count: stat.count,
       acceptanceRate: Math.round(stat.acceptanceRate * 100),
@@ -199,7 +181,7 @@ export function SuggestionAnalytics({ dateRange, className = '' }: SuggestionAna
 
   const categoryChartData = useMemo(() => {
     if (!analytics?.byCategory) return [];
-    return analytics.byCategory.map((stat: CategoryStat) => ({
+    return analytics.byCategory.map((stat: CategoryMetric) => ({
       name: CATEGORY_LABELS[stat.category] || stat.category,
       count: stat.count,
       acceptanceRate: Math.round(stat.acceptanceRate * 100),
@@ -354,7 +336,7 @@ export function SuggestionAnalytics({ dateRange, className = '' }: SuggestionAna
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                 >
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />

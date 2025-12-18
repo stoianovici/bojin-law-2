@@ -37,8 +37,13 @@ interface EmailAttachmentsPanelProps {
   emailId: string;
 }
 
+interface SyncEmailAttachmentsData {
+  syncEmailAttachments: Attachment[];
+}
+
 export function EmailAttachmentsPanel({ attachments, emailId }: EmailAttachmentsPanelProps) {
-  const [syncAttachments, { loading }] = useMutation(SYNC_EMAIL_ATTACHMENTS);
+  const [syncAttachments, { loading }] =
+    useMutation<SyncEmailAttachmentsData>(SYNC_EMAIL_ATTACHMENTS);
   const [syncedAttachments, setSyncedAttachments] = useState<Attachment[]>(attachments);
 
   const handleSync = async () => {

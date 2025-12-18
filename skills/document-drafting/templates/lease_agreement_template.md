@@ -204,19 +204,19 @@ Legal Description: {{LEGAL_DESCRIPTION}}
 
 {{LANDLORD_NAME}}
 
-By: **************\_\_\_**************
+By: **\*\***\*\***\*\***\_\_\_**\*\***\*\***\*\***
 Name: {{LANDLORD_SIGNATORY}}
 Title: {{LANDLORD_TITLE}}
-Date: ******\_\_******
+Date: **\*\***\_\_**\*\***
 
 **TENANT:**
 
 {{TENANT_NAME}}
 
-By: **************\_\_\_**************
+By: **\*\***\*\***\*\***\_\_\_**\*\***\*\***\*\***
 Name: {{TENANT_SIGNATORY}}
 Title: {{TENANT_TITLE}}
-Date: ******\_\_******
+Date: **\*\***\_\_**\*\***
 
 ---
 

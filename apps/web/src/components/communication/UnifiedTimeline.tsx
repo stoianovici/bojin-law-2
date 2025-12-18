@@ -8,13 +8,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  useCaseTimeline,
-  useChannelMetadata,
-  type CommunicationChannel,
-  type CommunicationDirection,
-  type TimelineFilter,
-} from '@/hooks/useCaseTimeline';
+import { useCaseTimeline, useChannelMetadata, type TimelineFilter } from '@/hooks/useCaseTimeline';
 import { TimelineEntryCard } from './TimelineEntryCard';
 import { TimelineFilterBar } from './TimelineFilterBar';
 import { InternalNoteComposer } from './InternalNoteComposer';

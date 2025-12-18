@@ -724,7 +724,12 @@ function PlatformIntelligenceDashboard() {
                 billableHoursRecovered: data?.roi?.billableHoursRecovered ?? 0,
                 projectedAnnualSavings: data?.roi?.projectedAnnualSavings ?? 0,
                 timeSavedHours: data?.efficiency?.totalTimeSavedHours ?? 0,
-                savingsByCategory: data?.roi?.savingsByCategory ?? [],
+                savingsByCategory: (data?.roi?.savingsByCategory ?? []).map((cat) => ({
+                  category: cat.category,
+                  hoursSaved: cat.hoursSaved,
+                  valueSaved: cat.valueInCurrency,
+                  percentageOfTotal: cat.percentOfTotal,
+                })),
               }}
               loading={loading}
             />

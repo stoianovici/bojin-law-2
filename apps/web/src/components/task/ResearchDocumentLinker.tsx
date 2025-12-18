@@ -62,7 +62,7 @@ export interface ResearchDocumentLinkerProps {
 }
 
 export function ResearchDocumentLinker({
-  taskId,
+  taskId: _taskId,
   linkedDocuments,
   availableDocuments = [],
   onLinkDocument,
@@ -283,7 +283,7 @@ export function ResearchDocumentLinker({
               <Textarea
                 id="linkNotes"
                 value={notes}
-                onChange={(e: React.MouseEvent) => setNotes(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
                 placeholder="Add notes about this link..."
                 rows={3}
               />

@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react';
-import { Activity, TrendingUp, TrendingDown, AlertCircle, CheckCircle, User } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, AlertCircle, CheckCircle } from 'lucide-react';
 import type { TeamWorkloadSummary, UserWorkload, WorkloadStatus } from '@legal-platform/types';
 
 interface WorkloadMeterProps {

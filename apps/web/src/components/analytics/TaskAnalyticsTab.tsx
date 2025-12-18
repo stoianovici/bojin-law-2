@@ -244,13 +244,13 @@ function OverviewTab() {
         />
         <SummaryCard
           title="Timp economisit"
-          value={`${roiData?.currentPeriod.totalTimeSavedHours.toFixed(0) || 0}h`}
+          value={`${roiData?.currentPeriod?.totalTimeSavedHours?.toFixed(0) || 0}h`}
           subtitle="Perioada curentă"
           icon={<Clock className="w-5 h-5 text-teal-600" />}
         />
         <SummaryCard
           title="Valoare economisită"
-          value={`${(roiData?.currentPeriod.totalValueSaved || 0).toLocaleString()} RON`}
+          value={`${(roiData?.currentPeriod?.totalValueSaved || 0).toLocaleString()} RON`}
           subtitle={`${roiData?.projectedAnnualSavings?.toLocaleString() || 0} RON proiectat anual`}
           icon={<DollarSign className="w-5 h-5 text-emerald-600" />}
         />

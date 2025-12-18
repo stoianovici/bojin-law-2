@@ -349,19 +349,19 @@ Licensor does not warrant that the Software will meet Licensee's requirements or
 
 {{LICENSOR_NAME}}
 
-By: **************\_\_\_**************
+By: **\*\***\*\***\*\***\_\_\_**\*\***\*\***\*\***
 Name: {{LICENSOR_SIGNATORY}}
 Title: {{LICENSOR_TITLE}}
-Date: ******\_\_******
+Date: **\*\***\_\_**\*\***
 
 **LICENSEE:**
 
 {{LICENSEE_NAME}}
 
-By: **************\_\_\_**************
+By: **\*\***\*\***\*\***\_\_\_**\*\***\*\***\*\***
 Name: {{LICENSEE_SIGNATORY}}
 Title: {{LICENSEE_TITLE}}
-Date: ******\_\_******
+Date: **\*\***\_\_**\*\***
 
 ---
 

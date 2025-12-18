@@ -105,8 +105,8 @@ const PENDING_REVIEWS_QUERY = `
 
 export default function ReviewsPage() {
   const router = useRouter();
-  const { isPartner, isAssociate } = useAuthorization();
-  const { user, loading: authLoading } = useAuth();
+  const { isPartner } = useAuthorization();
+  const { user, isLoading: authLoading } = useAuth();
   const [reviews, setReviews] = useState<PendingReview[]>([]);
   const [statistics, setStatistics] = useState<ReviewStatistics | undefined>();
   const [loading, setLoading] = useState(true);

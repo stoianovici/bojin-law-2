@@ -371,7 +371,6 @@ export function useCreateInternalNote(caseId: string) {
         },
         optimisticResponse: {
           createInternalNote: {
-            __typename: 'TimelineEntry',
             id: `temp-${Date.now()}`,
             channelType: 'InternalNote',
             direction: 'Internal',
@@ -391,7 +390,7 @@ export function useCreateInternalNote(caseId: string) {
             childCount: 0,
             case: undefined,
             metadata: undefined,
-          },
+          } as TimelineEntry & { __typename?: string },
         },
       });
 

@@ -100,7 +100,9 @@ export function TemplateUseDialog({
     try {
       setSubmitted(true);
       const rendered = await render(template.id, variableValues);
-      onInsert(rendered);
+      if (rendered) {
+        onInsert(rendered);
+      }
     } catch (err) {
       setSubmitted(false);
     }

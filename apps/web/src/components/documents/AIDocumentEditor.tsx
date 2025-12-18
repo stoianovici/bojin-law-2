@@ -35,13 +35,17 @@ const CLAUSE_SUGGESTIONS_QUERY = gql`
   }
 `;
 
+interface ClauseSuggestionsData {
+  clauseSuggestions: ClauseSuggestion[];
+}
+
 export interface AIDocumentEditorProps {
   /** Initial content for the editor */
   initialContent?: string;
   /** Document type for suggestions context */
   documentType: DocumentType;
   /** Document ID (reserved for future SSE suggestions) */
-  _documentId?: string;
+  documentId?: string;
   /** Callback when content changes */
   onContentChange?: (content: string) => void;
   /** Callback when text is selected (for explain feature) */
@@ -71,7 +75,7 @@ const DEBOUNCE_MS = 300;
 export function AIDocumentEditor({
   initialContent = '',
   documentType,
-  _documentId,
+  documentId: _documentId,
   onContentChange,
   onTextSelect,
   readOnly = false,
@@ -131,27 +135,14 @@ export function AIDocumentEditor({
   }, []);
 
   // GraphQL query for clause suggestions
-  const [fetchSuggestionsQuery, { loading: suggestionsLoading }] = useLazyQuery(
-    CLAUSE_SUGGESTIONS_QUERY,
-    {
+  const [fetchSuggestionsQuery, { loading: suggestionsLoading }] =
+    useLazyQuery<ClauseSuggestionsData>(CLAUSE_SUGGESTIONS_QUERY, {
       fetchPolicy: 'network-only',
-      onCompleted: (data) => {
-        if (data?.clauseSuggestions && data.clauseSuggestions.length > 0) {
-          showSuggestion(data.clauseSuggestions);
-        } else {
-          hideSuggestion();
-        }
-      },
-      onError: (error) => {
-        console.error('Failed to fetch suggestions:', error);
-        hideSuggestion();
-      },
-    }
-  );
+    });
 
   // Fetch suggestions from GraphQL API
   const fetchSuggestions = useCallback(
-    (text: string, position: number) => {
+    async (text: string, position: number) => {
       // Only fetch if there's enough text context
       if (text.length < 10 || !enableSuggestions) {
         hideSuggestion();
@@ -159,15 +150,25 @@ export function AIDocumentEditor({
       }
 
       // Use GraphQL query to fetch suggestions
-      fetchSuggestionsQuery({
-        variables: {
-          currentText: text,
-          documentType,
-          cursorPosition: position,
-        },
-      });
+      try {
+        const { data } = await fetchSuggestionsQuery({
+          variables: {
+            currentText: text,
+            documentType,
+            cursorPosition: position,
+          },
+        });
+        if (data?.clauseSuggestions && data.clauseSuggestions.length > 0) {
+          showSuggestion(data.clauseSuggestions);
+        } else {
+          hideSuggestion();
+        }
+      } catch (error) {
+        console.error('Failed to fetch suggestions:', error);
+        hideSuggestion();
+      }
     },
-    [documentType, enableSuggestions, fetchSuggestionsQuery, hideSuggestion]
+    [documentType, enableSuggestions, fetchSuggestionsQuery, hideSuggestion, showSuggestion]
   );
 
   // Initialize editor DOM content only once (use useLayoutEffect to sync before paint)

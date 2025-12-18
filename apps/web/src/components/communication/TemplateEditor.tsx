@@ -21,7 +21,7 @@ import {
   type CommunicationChannel,
   type TemplateVariable,
 } from '@/hooks/useCommunicationTemplates';
-import { X, Save, Eye, Plus, Trash2, AlertCircle, Loader2, Info, Code } from 'lucide-react';
+import { X, Save, Eye, AlertCircle, Loader2, Info, Code } from 'lucide-react';
 
 interface TemplateEditorProps {
   template?: CommunicationTemplate;
@@ -158,27 +158,6 @@ export function TemplateEditor({
       setVariables((prev) => prev.map((v, i) => (i === index ? { ...v, [field]: value } : v)));
     },
     []
-  );
-
-  const insertVariable = useCallback(
-    (varName: string) => {
-      const textarea = document.getElementById('template-body') as HTMLTextAreaElement;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const text = `{{${varName}}}`;
-      const newBody = body.substring(0, start) + text + body.substring(end);
-
-      setBody(newBody);
-
-      // Restore cursor
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + text.length, start + text.length);
-      }, 0);
-    },
-    [body]
   );
 
   const previewSubject = previewTemplate(subject, previewValues);

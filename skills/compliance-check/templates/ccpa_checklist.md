@@ -298,5 +298,5 @@ CCPA applies if the business meets ONE of the following:
 
 **Date:** {{NEXT_REVIEW_DATE}}
 
-**Assessor:** **********\_\_\_**********
-**Date:** **********\_\_\_**********
+**Assessor:** \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***
+**Date:** \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***

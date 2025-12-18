@@ -149,7 +149,7 @@ fi
 # Phase 1: Static checks (fast)
 log "=== Phase 1: Static Analysis ==="
 
-check "pnpm lockfile valid" pnpm install --frozen-lockfile --dry-run || true
+check "pnpm lockfile valid" pnpm install --frozen-lockfile || true
 check_with_output "TypeScript compiles" pnpm type-check || true
 warn "ESLint passes" pnpm lint || true
 warn "Prettier format check" pnpm format --check || true

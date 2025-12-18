@@ -218,7 +218,7 @@ export function QuickFeedbackPopover({
   onClose,
   onSubmit,
 }: QuickFeedbackPopoverProps) {
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
+  const [_selectedReason, setSelectedReason] = useState<string | null>(null);
   const { recordFeedback } = useRecordFeedback();
 
   if (!isOpen) return null;

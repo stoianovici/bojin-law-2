@@ -16,9 +16,16 @@ import type { OverdueAnalyticsResponse } from '@legal-platform/types';
 // Types
 // ============================================================================
 
+interface DateRangeInput {
+  start: string | Date;
+  end: string | Date;
+}
+
 interface OverdueAnalysisPanelProps {
-  data: OverdueAnalyticsResponse | undefined;
-  loading: boolean;
+  data?: OverdueAnalyticsResponse | undefined;
+  loading?: boolean;
+  /** Optional date range for self-fetching mode (Platform Intelligence) */
+  dateRange?: DateRangeInput;
 }
 
 // ============================================================================
@@ -65,7 +72,11 @@ const PRIORITY_BADGES: Record<string, { bg: string; text: string }> = {
 // Component
 // ============================================================================
 
-export function OverdueAnalysisPanel({ data, loading }: OverdueAnalysisPanelProps) {
+export function OverdueAnalysisPanel({
+  data,
+  loading = false,
+  dateRange: _dateRange,
+}: OverdueAnalysisPanelProps) {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'patterns' | 'critical'>('overview');
 
   if (loading) {

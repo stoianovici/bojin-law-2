@@ -9,7 +9,6 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { clsx } from 'clsx';
 import {
   useGlobalEmailSources,
   type GlobalEmailSource,
@@ -439,7 +438,7 @@ export function GlobalEmailSourcesPanel() {
     updateSource,
     updateLoading,
     deleteSource,
-    deleteLoading,
+    deleteLoading: _deleteLoading,
   } = useGlobalEmailSources();
   const { addNotification } = useNotificationStore();
 

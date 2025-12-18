@@ -322,14 +322,14 @@ _We request the court to admit this statement of defense, to dismiss the plainti
 **Pârât / Defendant:**
 
 {{PARAT_NUME}}
-Semnătură: ********\_********
+Semnătură: **\*\*\*\***\_**\*\*\*\***
 
 **Avocat / Attorney:**
 
 {{AVOCAT_PARAT_NUME}}
 Baroul {{BAROU_PARAT}}
-Semnătură: ********\_********
-Ștampilă: ********\_********
+Semnătură: **\*\*\*\***\_**\*\*\*\***
+Ștampilă: **\*\*\*\***\_**\*\*\*\***
 
 **Data / Date:** {{DATA_DEPUNERE}}
 

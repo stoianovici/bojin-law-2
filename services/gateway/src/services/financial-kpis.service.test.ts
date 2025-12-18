@@ -302,18 +302,16 @@ describe('FinancialKPIsService', () => {
     it('should calculate hourly revenue from time entries', async () => {
       jest.mocked(prisma.case.findMany).mockResolvedValue([mockCases[0]] as any);
       jest.mocked(prisma.case.count).mockResolvedValue(1);
-      jest
-        .mocked(prisma.timeEntry.findMany)
-        .mockResolvedValue([
-          {
-            hours: 10,
-            hourlyRate: 30000,
-            billable: true,
-            caseId: 'case-1',
-            date: new Date(),
-            user: { role: 'Partner' },
-          },
-        ] as any);
+      jest.mocked(prisma.timeEntry.findMany).mockResolvedValue([
+        {
+          hours: 10,
+          hourlyRate: 30000,
+          billable: true,
+          caseId: 'case-1',
+          date: new Date(),
+          user: { role: 'Partner' },
+        },
+      ] as any);
       jest.mocked(prisma.timeEntry.groupBy).mockResolvedValue([]);
       jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
         _avg: { hourlyRate: 30000 },
@@ -361,18 +359,16 @@ describe('FinancialKPIsService', () => {
     it('should calculate total revenue as sum of all billing types', async () => {
       jest.mocked(prisma.case.findMany).mockResolvedValue(mockCases as any);
       jest.mocked(prisma.case.count).mockResolvedValue(3);
-      jest
-        .mocked(prisma.timeEntry.findMany)
-        .mockResolvedValue([
-          {
-            hours: 10,
-            hourlyRate: 30000,
-            billable: true,
-            caseId: 'case-1',
-            date: new Date(),
-            user: { role: 'Partner' },
-          },
-        ] as any);
+      jest.mocked(prisma.timeEntry.findMany).mockResolvedValue([
+        {
+          hours: 10,
+          hourlyRate: 30000,
+          billable: true,
+          caseId: 'case-1',
+          date: new Date(),
+          user: { role: 'Partner' },
+        },
+      ] as any);
       jest.mocked(prisma.timeEntry.groupBy).mockResolvedValue([]);
       jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
         _avg: { hourlyRate: 30000 },
@@ -486,18 +482,16 @@ describe('FinancialKPIsService', () => {
     it('should calculate realization rate', async () => {
       jest.mocked(prisma.case.findMany).mockResolvedValue([mockCases[0]] as any);
       jest.mocked(prisma.case.count).mockResolvedValue(1);
-      jest
-        .mocked(prisma.timeEntry.findMany)
-        .mockResolvedValue([
-          {
-            hours: 10,
-            hourlyRate: 30000,
-            billable: true,
-            caseId: 'case-1',
-            date: new Date(),
-            user: { role: 'Partner' },
-          },
-        ] as any);
+      jest.mocked(prisma.timeEntry.findMany).mockResolvedValue([
+        {
+          hours: 10,
+          hourlyRate: 30000,
+          billable: true,
+          caseId: 'case-1',
+          date: new Date(),
+          user: { role: 'Partner' },
+        },
+      ] as any);
       jest.mocked(prisma.timeEntry.groupBy).mockResolvedValue([]);
       jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
         _avg: { hourlyRate: 30000 },
@@ -569,18 +563,16 @@ describe('FinancialKPIsService', () => {
     it('should calculate effective hourly rate', async () => {
       jest.mocked(prisma.case.findMany).mockResolvedValue([mockCases[0]] as any);
       jest.mocked(prisma.case.count).mockResolvedValue(1);
-      jest
-        .mocked(prisma.timeEntry.findMany)
-        .mockResolvedValue([
-          {
-            hours: 10,
-            hourlyRate: 30000,
-            billable: true,
-            caseId: 'case-1',
-            date: new Date(),
-            user: { role: 'Partner' },
-          },
-        ] as any);
+      jest.mocked(prisma.timeEntry.findMany).mockResolvedValue([
+        {
+          hours: 10,
+          hourlyRate: 30000,
+          billable: true,
+          caseId: 'case-1',
+          date: new Date(),
+          user: { role: 'Partner' },
+        },
+      ] as any);
       jest.mocked(prisma.timeEntry.groupBy).mockResolvedValue([]);
       jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
         _avg: { hourlyRate: 30000 },
@@ -596,18 +588,16 @@ describe('FinancialKPIsService', () => {
     it('should calculate profitability by case', async () => {
       jest.mocked(prisma.case.findMany).mockResolvedValue([mockCases[0]] as any);
       jest.mocked(prisma.case.count).mockResolvedValue(1);
-      jest
-        .mocked(prisma.timeEntry.findMany)
-        .mockResolvedValue([
-          {
-            hours: 10,
-            hourlyRate: 30000,
-            billable: true,
-            caseId: 'case-1',
-            date: new Date(),
-            user: { role: 'Partner' },
-          },
-        ] as any);
+      jest.mocked(prisma.timeEntry.findMany).mockResolvedValue([
+        {
+          hours: 10,
+          hourlyRate: 30000,
+          billable: true,
+          caseId: 'case-1',
+          date: new Date(),
+          user: { role: 'Partner' },
+        },
+      ] as any);
       jest.mocked(prisma.timeEntry.groupBy).mockResolvedValue([]);
       jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
         _avg: { hourlyRate: 30000 },
@@ -759,18 +749,16 @@ describe('FinancialKPIsService', () => {
         },
       ] as any);
       jest.mocked(prisma.case.count).mockResolvedValue(1);
-      jest
-        .mocked(prisma.timeEntry.findMany)
-        .mockResolvedValue([
-          {
-            hours: 0,
-            hourlyRate: 30000,
-            billable: true,
-            caseId: 'case-1',
-            date: new Date(),
-            user: { role: 'Partner' },
-          },
-        ] as any);
+      jest.mocked(prisma.timeEntry.findMany).mockResolvedValue([
+        {
+          hours: 0,
+          hourlyRate: 30000,
+          billable: true,
+          caseId: 'case-1',
+          date: new Date(),
+          user: { role: 'Partner' },
+        },
+      ] as any);
       jest.mocked(prisma.timeEntry.groupBy).mockResolvedValue([]);
       jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
         _avg: { hourlyRate: 30000 },
@@ -873,18 +861,16 @@ describe('FinancialKPIsService', () => {
       it('should return 0% utilization when all hours are non-billable', async () => {
         jest.mocked(prisma.case.findMany).mockResolvedValue([mockCases[0]] as any);
         jest.mocked(prisma.case.count).mockResolvedValue(1);
-        jest
-          .mocked(prisma.timeEntry.findMany)
-          .mockResolvedValue([
-            {
-              hours: 20,
-              hourlyRate: 30000,
-              billable: false,
-              caseId: 'case-1',
-              date: new Date(),
-              user: { role: 'Partner' },
-            },
-          ] as any);
+        jest.mocked(prisma.timeEntry.findMany).mockResolvedValue([
+          {
+            hours: 20,
+            hourlyRate: 30000,
+            billable: false,
+            caseId: 'case-1',
+            date: new Date(),
+            user: { role: 'Partner' },
+          },
+        ] as any);
         jest.mocked(prisma.timeEntry.groupBy).mockResolvedValue([]);
         jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
           _avg: { hourlyRate: 30000 },
@@ -940,18 +926,16 @@ describe('FinancialKPIsService', () => {
         // All three cases with different billing types
         jest.mocked(prisma.case.findMany).mockResolvedValue(mockCases as any);
         jest.mocked(prisma.case.count).mockResolvedValue(3);
-        jest
-          .mocked(prisma.timeEntry.findMany)
-          .mockResolvedValue([
-            {
-              hours: 10,
-              hourlyRate: 30000,
-              billable: true,
-              caseId: 'case-1',
-              date: new Date(),
-              user: { role: 'Partner' },
-            },
-          ] as any);
+        jest.mocked(prisma.timeEntry.findMany).mockResolvedValue([
+          {
+            hours: 10,
+            hourlyRate: 30000,
+            billable: true,
+            caseId: 'case-1',
+            date: new Date(),
+            user: { role: 'Partner' },
+          },
+        ] as any);
         jest.mocked(prisma.timeEntry.groupBy).mockResolvedValue([]);
         jest.mocked(prisma.timeEntry.aggregate).mockResolvedValue({
           _avg: { hourlyRate: 30000 },

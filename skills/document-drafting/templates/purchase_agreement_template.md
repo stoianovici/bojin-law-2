@@ -114,9 +114,9 @@ NOW, THEREFORE, in consideration of the mutual covenants and agreements containe
   - Year 2: ${{EARNOUT_YEAR_2}} if {{EARNOUT_METRIC_2}} achieved
   - Maximum earnout: ${{MAX_EARNOUT}}
 
-  2.3 **Deposit.** Buyer has deposited ${{DEPOSIT_AMOUNT}} with {{ESCROW_AGENT}} as earnest money, to be applied toward the Purchase Price at Closing or returned per Section 10.3.
+    2.3 **Deposit.** Buyer has deposited ${{DEPOSIT_AMOUNT}} with {{ESCROW_AGENT}} as earnest money, to be applied toward the Purchase Price at Closing or returned per Section 10.3.
 
-  2.4 **Purchase Price Adjustments.** The Purchase Price shall be adjusted at Closing for:
+    2.4 **Purchase Price Adjustments.** The Purchase Price shall be adjusted at Closing for:
 
 - Proration of rent, utilities, taxes, and insurance
 - Inventory valuation adjustments (based on physical count)
@@ -327,19 +327,19 @@ Exceptions: Seller may own up to {{PASSIVE_OWNERSHIP_THRESHOLD}}% of any publicl
 
 {{SELLER_NAME}}
 
-By: **************\_\_\_**************
+By: **\*\***\*\***\*\***\_\_\_**\*\***\*\***\*\***
 Name: {{SELLER_SIGNATORY}}
 Title: {{SELLER_TITLE}}
-Date: ******\_\_******
+Date: **\*\***\_\_**\*\***
 
 **BUYER:**
 
 {{BUYER_NAME}}
 
-By: **************\_\_\_**************
+By: **\*\***\*\***\*\***\_\_\_**\*\***\*\***\*\***
 Name: {{BUYER_SIGNATORY}}
 Title: {{BUYER_TITLE}}
-Date: ******\_\_******
+Date: **\*\***\_\_**\*\***
 
 ---
 

@@ -280,7 +280,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
  */
 function renderContentWithMentions(
   content: string,
-  mentionedUsers: Array<{ id: string; firstName: string; lastName: string }>
+  _mentionedUsers: Array<{ id: string; firstName: string; lastName: string }>
 ): React.ReactNode {
   if (!content) return null;
 

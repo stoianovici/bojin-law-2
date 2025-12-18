@@ -409,7 +409,7 @@ export function DocumentIssuesBreakdown({
                 dataKey="count"
                 radius={[0, 4, 4, 0]}
                 cursor={onCategoryClick ? 'pointer' : 'default'}
-                onClick={(data) => onCategoryClick?.(data.category)}
+                onClick={(data) => onCategoryClick?.((data as unknown as CategoryData).category)}
               >
                 {chartData.map((entry) => (
                   <Cell

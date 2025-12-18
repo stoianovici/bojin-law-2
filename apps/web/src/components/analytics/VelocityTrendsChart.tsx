@@ -26,11 +26,18 @@ import type { VelocityTrendsResponse, VelocityInterval } from '@legal-platform/t
 // Types
 // ============================================================================
 
+interface DateRangeInput {
+  start: string | Date;
+  end: string | Date;
+}
+
 interface VelocityTrendsChartProps {
-  data: VelocityTrendsResponse | undefined;
-  loading: boolean;
-  interval: VelocityInterval;
-  onIntervalChange: (interval: VelocityInterval) => void;
+  data?: VelocityTrendsResponse | undefined;
+  loading?: boolean;
+  interval?: VelocityInterval;
+  onIntervalChange?: (interval: VelocityInterval) => void;
+  /** Optional date range for self-fetching mode (Platform Intelligence) */
+  dateRange?: DateRangeInput;
 }
 
 // ============================================================================
@@ -61,9 +68,10 @@ const TREND_CONFIG: Record<string, { color: string; icon: string; bg: string }> 
 
 export function VelocityTrendsChart({
   data,
-  loading,
-  interval,
+  loading = false,
+  interval = 'weekly',
   onIntervalChange,
+  dateRange: _dateRange,
 }: VelocityTrendsChartProps) {
   if (loading) {
     return (
@@ -99,7 +107,7 @@ export function VelocityTrendsChart({
           {(['daily', 'weekly', 'monthly'] as VelocityInterval[]).map((int) => (
             <button
               key={int}
-              onClick={() => onIntervalChange(int)}
+              onClick={() => onIntervalChange?.(int)}
               className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                 interval === int
                   ? 'bg-blue-600 text-white'

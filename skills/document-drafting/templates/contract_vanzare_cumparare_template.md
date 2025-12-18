@@ -257,13 +257,13 @@ _The agreement was concluded today, {{DATA_CONTRACT}}, in {{NUMAR_EXEMPLARE}} or
 **VÂNZĂTOR / SELLER**
 
 Nume: {{VANZATOR_NUME}}
-Semnătură: ********\_********
+Semnătură: **\*\*\*\***\_**\*\*\*\***
 Data: {{DATA_SEMNARE}}
 
 **CUMPĂRĂTOR / BUYER**
 
 Nume: {{CUMPARATOR_NUME}}
-Semnătură: ********\_********
+Semnătură: **\*\*\*\***\_**\*\*\*\***
 Data: {{DATA_SEMNARE}}
 
 ---

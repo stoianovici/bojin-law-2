@@ -54,6 +54,7 @@ export interface TaskCreateModalProps {
     dueDate?: string;
     priority?: TaskPriority;
     typeMetadata?: TaskTypeMetadata;
+    estimatedHours?: number;
   };
   onSubmit: (data: TaskCreateFormData) => Promise<void>;
 }
@@ -410,7 +411,7 @@ export function TaskCreateModal({
                 <Textarea
                   id="description"
                   value={formData.description || ''}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     handleFieldChange('description', e.target.value)
                   }
                   placeholder="Enter task description"

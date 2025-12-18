@@ -111,7 +111,7 @@ export function DocumentCreationTaskForm({
         <Input
           id="outputDocumentId"
           value={value.outputDocumentId || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             handleChange('outputDocumentId', e.target.value)
           }
           placeholder="ID of created document (if applicable)"

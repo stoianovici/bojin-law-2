@@ -20,6 +20,15 @@ import {
   type CreateSubtaskInput,
 } from '@/hooks/useSubtasks';
 
+// Extended Task type for subtasks with assignee info from GraphQL
+interface Subtask extends Task {
+  assignee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
 interface SubtaskPanelProps {
   parentTaskId: string;
   caseId: string;
@@ -33,7 +42,7 @@ const PRIORITY_OPTIONS: Array<{ value: Task['priority']; label: string }> = [
   { value: 'Urgent', label: 'Urgentă' },
 ];
 
-export function SubtaskPanel({ parentTaskId, caseId, canEdit = true }: SubtaskPanelProps) {
+export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: SubtaskPanelProps) {
   const { data, loading, error } = useSubtasks(parentTaskId);
   const [createSubtask, { loading: creating }] = useCreateSubtask();
   const [toggleSubtask] = useToggleSubtask();
@@ -45,7 +54,7 @@ export function SubtaskPanel({ parentTaskId, caseId, canEdit = true }: SubtaskPa
     priority: 'Medium',
   });
 
-  const subtasks = data?.subtasks || [];
+  const subtasks = (data?.subtasks || []) as Subtask[];
   const progress = getSubtaskProgress(subtasks);
   const summary = getSubtaskSummary(subtasks);
 
@@ -219,7 +228,7 @@ export function SubtaskPanel({ parentTaskId, caseId, canEdit = true }: SubtaskPa
 }
 
 interface SubtaskItemProps {
-  subtask: Task;
+  subtask: Subtask;
   canEdit: boolean;
   onToggle: () => void;
 }

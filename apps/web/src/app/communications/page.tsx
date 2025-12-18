@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSetAIContext } from '../../contexts/AIAssistantContext';
 import { RefreshCw, Mail, AlertCircle, Link2 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
+import type { CommunicationThread } from '@legal-platform/types';
 
 export default function CommunicationsPage() {
   // Set AI assistant context to communications
@@ -156,7 +157,9 @@ export default function CommunicationsPage() {
             commitments: [],
             actionItems: [],
           },
-        };
+          createdAt: new Date(thread.lastMessageDate || Date.now()),
+          updatedAt: new Date(thread.lastMessageDate || Date.now()),
+        } as unknown as CommunicationThread;
       });
       setThreads(communicationThreads);
     }

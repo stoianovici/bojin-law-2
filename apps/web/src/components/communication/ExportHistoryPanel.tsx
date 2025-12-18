@@ -24,7 +24,6 @@ import {
   Clock,
   AlertCircle,
   RefreshCw,
-  Trash2,
 } from 'lucide-react';
 
 // ============================================================================

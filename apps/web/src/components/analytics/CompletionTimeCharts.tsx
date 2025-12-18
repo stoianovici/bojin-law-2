@@ -26,9 +26,16 @@ import type { CompletionTimeAnalyticsResponse } from '@legal-platform/types';
 // Types
 // ============================================================================
 
+interface DateRangeInput {
+  start: string | Date;
+  end: string | Date;
+}
+
 interface CompletionTimeChartsProps {
-  data: CompletionTimeAnalyticsResponse | undefined;
-  loading: boolean;
+  data?: CompletionTimeAnalyticsResponse | undefined;
+  loading?: boolean;
+  /** Optional date range for self-fetching mode (Platform Intelligence) */
+  dateRange?: DateRangeInput;
 }
 
 // ============================================================================
@@ -87,7 +94,11 @@ function getComparisonArrow(value: number | null | undefined): string {
 // Component
 // ============================================================================
 
-export function CompletionTimeCharts({ data, loading }: CompletionTimeChartsProps) {
+export function CompletionTimeCharts({
+  data,
+  loading = false,
+  dateRange: _dateRange,
+}: CompletionTimeChartsProps) {
   if (loading) {
     return (
       <div className="space-y-6">

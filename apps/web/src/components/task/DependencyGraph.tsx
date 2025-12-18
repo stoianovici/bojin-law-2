@@ -21,9 +21,9 @@ interface ExtendedTask extends Task {
 export interface DependencyGraphProps {
   tasks: ExtendedTask[];
   dependencies: TaskDependency[];
-  _onAddDependency?: (predecessorId: string, successorId: string) => void;
-  _onRemoveDependency?: (dependencyId: string) => void;
-  _onDateChange?: (taskId: string, newDueDate: Date) => void;
+  onAddDependency?: (predecessorId: string, successorId: string) => void;
+  onRemoveDependency?: (dependencyId: string) => void;
+  onDateChange?: (taskId: string, newDueDate: Date) => void;
 }
 
 type ViewMode = 'day' | 'week' | 'month';
@@ -31,9 +31,9 @@ type ViewMode = 'day' | 'week' | 'month';
 export function DependencyGraph({
   tasks,
   dependencies,
-  _onAddDependency,
-  _onRemoveDependency,
-  _onDateChange,
+  onAddDependency: _onAddDependency,
+  onRemoveDependency: _onRemoveDependency,
+  onDateChange: _onDateChange,
 }: DependencyGraphProps) {
   const [viewMode, setViewMode] = React.useState<ViewMode>('week');
   const [selectedTask, setSelectedTask] = React.useState<string | null>(null);
@@ -117,7 +117,7 @@ export function DependencyGraph({
     const ROW_HEIGHT = 60;
     const LEFT_MARGIN = 200;
 
-    dependencies.forEach((dep, idx) => {
+    dependencies.forEach((dep) => {
       const predecessorIndex = tasks.findIndex((t) => t.id === dep.predecessorId);
       const successorIndex = tasks.findIndex((t) => t.id === dep.successorId);
 
@@ -251,7 +251,7 @@ export function DependencyGraph({
               </svg>
 
               {/* Task Rows */}
-              {tasks.map((task, taskIdx) => {
+              {tasks.map((task) => {
                 const colPosition = getTaskPosition(task);
                 const statusClass = getTaskStatusClass(task);
                 const statusIcon = getTaskStatusIcon(task);

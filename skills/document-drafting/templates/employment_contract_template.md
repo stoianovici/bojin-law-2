@@ -39,11 +39,11 @@ NOW, THEREFORE, in consideration of the mutual covenants contained herein, the p
 - Disability insurance
 - {{ADDITIONAL_BENEFITS}}
 
-2.4 **Paid Time Off.** Employee shall be entitled to {{PTO_DAYS}} days of paid time off ("PTO") per year, accruing at the rate of {{PTO_ACCRUAL_RATE}} days per month, subject to Employer's PTO policy.
+  2.4 **Paid Time Off.** Employee shall be entitled to {{PTO_DAYS}} days of paid time off ("PTO") per year, accruing at the rate of {{PTO_ACCRUAL_RATE}} days per month, subject to Employer's PTO policy.
 
-2.5 **Holidays.** Employee shall be entitled to all paid holidays observed by Employer.
+  2.5 **Holidays.** Employee shall be entitled to all paid holidays observed by Employer.
 
-2.6 **Expense Reimbursement.** Employer shall reimburse Employee for all reasonable and necessary business expenses incurred in the performance of Employee's duties, subject to Employer's expense reimbursement policy.
+  2.6 **Expense Reimbursement.** Employer shall reimburse Employee for all reasonable and necessary business expenses incurred in the performance of Employee's duties, subject to Employer's expense reimbursement policy.
 
 ## 3. TERM AND TERMINATION
 

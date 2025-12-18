@@ -37,7 +37,7 @@ export interface DelegationManagerProps {
 }
 
 export function DelegationManager({
-  businessTripTaskId,
+  businessTripTaskId: _businessTripTaskId,
   availableUsers,
   userTasks,
   tripStartDate,

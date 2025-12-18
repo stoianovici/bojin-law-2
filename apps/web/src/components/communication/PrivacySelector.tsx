@@ -13,7 +13,6 @@ import {
   useTeamMembers,
   useUpdatePrivacy,
   type PrivacyLevel,
-  type TeamMember,
 } from '@/hooks/useCommunicationPrivacy';
 import {
   Lock,
@@ -25,7 +24,6 @@ import {
   Check,
   AlertTriangle,
   Loader2,
-  X,
   Info,
 } from 'lucide-react';
 
@@ -88,14 +86,8 @@ export function PrivacySelector({
   const [showWarning, setShowWarning] = useState(false);
 
   // Hooks
-  const {
-    getLevelLabel,
-    getLevelDescription,
-    getLevelColor,
-    requiresViewerSelection,
-    getAvailableLevels,
-  } = usePrivacyLevels();
-  const { teamMembers, getEligibleViewers } = useTeamMembers(caseId);
+  const { getLevelLabel, requiresViewerSelection, getAvailableLevels } = usePrivacyLevels();
+  const { getEligibleViewers } = useTeamMembers(caseId);
   const { updatePrivacy, loading, error } = useUpdatePrivacy();
 
   const availableLevels = getAvailableLevels(userRole);

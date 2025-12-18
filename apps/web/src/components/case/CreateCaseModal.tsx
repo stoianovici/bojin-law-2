@@ -90,7 +90,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
   const [newTypeCode, setNewTypeCode] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const clientInputRef = useRef<HTMLInputElement>(null);
+  const clientInputRef = useRef<HTMLInputElement | null>(null);
   const clientDropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { createCase, loading } = useCaseCreate();

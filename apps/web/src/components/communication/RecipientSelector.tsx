@@ -14,17 +14,7 @@ import {
   type RecipientFilter,
   type CustomRecipient,
 } from '@/hooks/useBulkCommunication';
-import {
-  Users,
-  Building,
-  Briefcase,
-  UserPlus,
-  X,
-  Search,
-  AlertCircle,
-  Loader2,
-  ChevronDown,
-} from 'lucide-react';
+import { Users, Building, Briefcase, UserPlus, X, AlertCircle, Loader2 } from 'lucide-react';
 
 // ============================================================================
 // Types
@@ -139,7 +129,7 @@ export function RecipientSelector({
   const [newRecipient, setNewRecipient] = useState({ name: '', email: '' });
 
   // Hooks
-  const { recipientTypes, getRecipientTypeDescription } = useRecipientTypes();
+  const { recipientTypes } = useRecipientTypes();
 
   // Get icon for recipient type
   const getTypeIcon = (type: BulkRecipientType) => {

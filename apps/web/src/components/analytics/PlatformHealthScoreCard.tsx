@@ -14,9 +14,19 @@ import React from 'react';
 // Types
 // ============================================================================
 
+interface HealthBreakdown {
+  communication?: number;
+  documentQuality?: number;
+  taskCompletion?: number;
+  aiAdoption?: number;
+  roi?: number;
+}
+
 interface PlatformHealthScoreCardProps {
   score: number;
   loading?: boolean;
+  /** Optional breakdown of health score components */
+  breakdown?: HealthBreakdown;
 }
 
 // ============================================================================

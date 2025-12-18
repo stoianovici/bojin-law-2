@@ -20,7 +20,6 @@ import {
   Bold,
   Italic,
   List,
-  X,
   ChevronDown,
   Loader2,
   AlertCircle,

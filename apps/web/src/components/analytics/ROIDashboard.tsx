@@ -322,9 +322,14 @@ export function ROIDashboard({
     return <div className="text-center py-8 text-gray-500">Nu există date ROI disponibile</div>;
   }
 
-  const { currentPeriod } = data;
+  const { currentPeriod, timeSeries = [], topSavingsCategories = [] } = data;
 
-  const timeSeriesData = data.timeSeries.map((point) => ({
+  // Early return if missing required data
+  if (!currentPeriod) {
+    return <div className="text-center py-8 text-gray-500">Nu există date ROI disponibile</div>;
+  }
+
+  const timeSeriesData = timeSeries.map((point) => ({
     date: new Date(point.date).toLocaleDateString('ro-RO', {
       month: 'short',
       day: 'numeric',
@@ -333,7 +338,7 @@ export function ROIDashboard({
     value: point.valueSaved,
   }));
 
-  const categoryData = data.topSavingsCategories.map((cat, index) => ({
+  const categoryData = topSavingsCategories.map((cat, index) => ({
     name: cat.category,
     value: cat.hoursSaved,
     valueSaved: cat.valueSaved,
@@ -590,7 +595,7 @@ export function ROIDashboard({
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h4 className="text-md font-semibold mb-4">Defalcare pe categorii</h4>
         <div className="space-y-4">
-          {data.topSavingsCategories.map((category, index) => (
+          {topSavingsCategories.map((category, index) => (
             <div key={category.category} className="flex items-center gap-4">
               <div
                 className="w-3 h-3 rounded-full"

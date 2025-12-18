@@ -42,7 +42,7 @@ export function EmailSearch({ onSelectEmail, caseId }: EmailSearchProps) {
     debouncedSetQuery(query);
   }, [query, debouncedSetQuery]);
 
-  const { suggestions, loading: suggestionsLoading } = useEmailSearchSuggestions(query);
+  const { suggestions } = useEmailSearchSuggestions(query);
 
   const { emails, totalCount, loading, hasMore, fetchMore } = useEmails(
     {

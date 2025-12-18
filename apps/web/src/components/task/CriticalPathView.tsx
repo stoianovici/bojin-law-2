@@ -18,7 +18,7 @@ import {
 import type { CriticalPathResult, Task } from '@legal-platform/types';
 
 export interface CriticalPathViewProps {
-  _caseId: string;
+  caseId: string;
   criticalPathResult: CriticalPathResult | null;
   isLoading?: boolean;
   onRecalculate: () => void;
@@ -26,7 +26,7 @@ export interface CriticalPathViewProps {
 }
 
 export function CriticalPathView({
-  _caseId,
+  caseId: _caseId,
   criticalPathResult,
   isLoading = false,
   onRecalculate,
@@ -162,7 +162,7 @@ export function CriticalPathView({
           ) : (
             <ScrollArea className="max-h-[400px] pr-4">
               <div className="space-y-3">
-                {criticalTasks.map((task: (typeof criticalPath)[number], idx: number) => {
+                {criticalTasks.map((task: (typeof criticalTasks)[number], idx: number) => {
                   const isSelected = selectedTask?.id === task.id;
                   const isCompleted = task.status === 'Completed';
 

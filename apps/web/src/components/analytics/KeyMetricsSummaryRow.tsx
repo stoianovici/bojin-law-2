@@ -20,6 +20,14 @@ interface KeyMetricsSummaryRowProps {
   taskCompletion?: TaskCompletionSummary;
   roi?: ROISummary;
   loading?: boolean;
+  /** Communication analytics data for Platform Intelligence */
+  communication?: unknown;
+  /** Document quality analytics data for Platform Intelligence */
+  documentQuality?: unknown;
+  /** AI utilization analytics data for Platform Intelligence */
+  aiUtilization?: unknown;
+  /** Navigation callback for section quick links */
+  onNavigate?: (section: string) => void;
 }
 
 interface MetricCardProps {

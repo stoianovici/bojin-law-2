@@ -19,7 +19,6 @@ import {
 import {
   X,
   Download,
-  FileText,
   Loader2,
   CheckCircle,
   XCircle,
@@ -74,10 +73,10 @@ export function ExportDialog({
 
   // Hooks
   const { requestExport, loading: requesting, error: requestError } = useExportCommunications();
-  const { export: exportData, isPolling } = useExportStatus(exportId || '', {
+  const { export: exportData } = useExportStatus(exportId || '', {
     enabled: !!exportId && step === 'processing',
   });
-  const { formats, getFormatIcon, getFormatDescription } = useExportFormats();
+  const { formats, getFormatIcon } = useExportFormats();
 
   // Watch export status
   useEffect(() => {

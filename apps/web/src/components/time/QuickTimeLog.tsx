@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Clock } from 'lucide-react';
@@ -17,8 +16,8 @@ export interface QuickTimeLogProps {
 }
 
 export function QuickTimeLog({
-  caseId,
-  taskId,
+  caseId: _caseId,
+  taskId: _taskId,
   taskTitle,
   onSubmit,
   onCancel,

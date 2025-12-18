@@ -58,7 +58,7 @@ function formatDate(date: Date): string {
 export function TeamCalendarView({
   data,
   onDateChange,
-  onTaskClick,
+  onTaskClick: _onTaskClick,
   onUserClick,
   isLoading = false,
 }: TeamCalendarViewProps) {
@@ -105,9 +105,7 @@ export function TeamCalendarView({
     member: TeamMemberCalendar,
     date: Date
   ): TeamCalendarEntry | undefined => {
-    return member.entries.find(
-      (e: Date) => new Date(e.date).toDateString() === date.toDateString()
-    );
+    return member.entries.find((e) => new Date(e.date).toDateString() === date.toDateString());
   };
 
   if (isLoading) {
@@ -176,7 +174,7 @@ export function TeamCalendarView({
             </tr>
           </thead>
           <tbody>
-            {data.members.map((member: (typeof teamMembers)[number]) => (
+            {data.members.map((member: TeamMemberCalendar) => (
               <tr key={member.userId} className="border-b hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <button

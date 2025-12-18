@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SuggestionCard, SuggestionCardCompact } from './SuggestionCard';
-import { useSuggestions, SuggestionContextInput } from '@/hooks/useSuggestions';
+import { useSuggestions, type SuggestionContextInput } from '@/hooks/useSuggestions';
 import type { AISuggestion } from './SuggestionCard';
 
 // Icons
@@ -30,20 +30,6 @@ const SparklesIcon = ({ className }: { className?: string }) => (
       strokeWidth={2}
       d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
     />
-  </svg>
-);
-
-const ChevronUpIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    width="20"
-    height="20"
-    aria-hidden="true"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
   </svg>
 );
 
@@ -77,20 +63,6 @@ const RefreshIcon = ({ className }: { className?: string }) => (
       strokeWidth={2}
       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
     />
-  </svg>
-);
-
-const CloseIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    width="16"
-    height="16"
-    aria-hidden="true"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 

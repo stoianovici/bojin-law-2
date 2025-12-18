@@ -43,7 +43,7 @@ export function DocumentRetrievalTaskForm({
         <Textarea
           id="documentDescription"
           value={value.documentDescription || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
             handleChange('documentDescription', e.target.value)
           }
           placeholder="Describe the document to retrieve"
@@ -106,7 +106,7 @@ export function DocumentRetrievalTaskForm({
         <Input
           id="trackingNumber"
           value={value.trackingNumber || ''}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             handleChange('trackingNumber', e.target.value)
           }
           placeholder="Tracking or reference number"

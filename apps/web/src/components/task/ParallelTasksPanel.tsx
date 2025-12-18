@@ -19,7 +19,7 @@ import type {
 } from '@legal-platform/types';
 
 export interface ParallelTasksPanelProps {
-  _caseId: string;
+  caseId: string;
   parallelTaskGroups: ParallelTaskGroup[];
   users: UserType[];
   isLoading?: boolean;
@@ -29,13 +29,13 @@ export interface ParallelTasksPanelProps {
 }
 
 export function ParallelTasksPanel({
-  _caseId,
+  caseId: _caseId,
   parallelTaskGroups,
   users,
-  isLoading = false,
-  onAssign,
+  isLoading: _isLoading = false,
+  onAssign: _onAssign,
   onBulkAssign,
-  onRefresh,
+  onRefresh: _onRefresh,
 }: ParallelTasksPanelProps) {
   const [selectedAssignments, setSelectedAssignments] = React.useState<Record<string, string>>({});
   const [isAssigning, setIsAssigning] = React.useState(false);

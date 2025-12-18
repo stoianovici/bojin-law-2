@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertCircle, CheckCircle, TrendingUp, Info, Edit2, Check, X } from 'lucide-react';
 import type { TimeEstimationResponse } from '@legal-platform/types';
+import type { TimeEstimation } from '@/hooks/useTimeEstimation';
 
 export interface TimeEstimationDisplayProps {
-  estimation: TimeEstimationResponse | null;
+  estimation: TimeEstimationResponse | TimeEstimation | null;
   isLoading?: boolean;
   onOverride?: (newEstimate: number) => void;
   value?: number;
@@ -114,9 +115,14 @@ export function TimeEstimationDisplay({
               <>
                 <div>
                   <p className="text-2xl font-bold text-blue-700">{currentValue.toFixed(2)}h</p>
-                  {estimation.range && (
+                  {'range' in estimation && estimation.range && (
                     <p className="text-xs text-gray-600">
                       Range: {estimation.range.min.toFixed(1)}h - {estimation.range.max.toFixed(1)}h
+                    </p>
+                  )}
+                  {'rangeMin' in estimation && 'rangeMax' in estimation && (
+                    <p className="text-xs text-gray-600">
+                      Range: {estimation.rangeMin.toFixed(1)}h - {estimation.rangeMax.toFixed(1)}h
                     </p>
                   )}
                 </div>
@@ -147,7 +153,9 @@ export function TimeEstimationDisplay({
                   min="0.25"
                   max="999"
                   value={editValue}
-                  onChange={(e: React.MouseEvent) => setEditValue(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setEditValue(e.target.value)
+                  }
                   className="w-24"
                   autoFocus
                 />

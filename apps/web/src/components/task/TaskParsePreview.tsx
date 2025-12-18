@@ -291,7 +291,11 @@ function EntityBadge({ entity }: EntityBadgeProps) {
     >
       <span className="capitalize">{entity.type}</span>
       <span className="text-gray-400">|</span>
-      <span>{entity.normalizedValue || entity.value}</span>
+      <span>
+        {entity.normalizedValue instanceof Date
+          ? entity.normalizedValue.toLocaleDateString()
+          : entity.normalizedValue || entity.value}
+      </span>
       <span
         className={cn('w-2 h-2 rounded-full', {
           'bg-green-500': level === 'high',

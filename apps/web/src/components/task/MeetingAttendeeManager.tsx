@@ -46,12 +46,12 @@ export interface MeetingAttendeeManagerProps {
 type AttendeeType = 'internal' | 'external';
 
 export function MeetingAttendeeManager({
-  taskId,
+  taskId: _taskId,
   attendees,
   availableUsers = [],
   onAddAttendee,
   onRemoveAttendee,
-  onUpdateResponse,
+  onUpdateResponse: _onUpdateResponse,
 }: MeetingAttendeeManagerProps) {
   const [attendeeType, setAttendeeType] = React.useState<AttendeeType>('internal');
   const [selectedUserId, setSelectedUserId] = React.useState<string>('');

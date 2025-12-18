@@ -32,7 +32,6 @@ import {
   Loader2,
   Clock,
   Mail,
-  Building,
 } from 'lucide-react';
 import { RecipientSelector } from './RecipientSelector';
 import { BulkProgressIndicator } from './BulkProgressIndicator';
@@ -107,7 +106,7 @@ export function BulkCommunicationWizard({
   const { send, loading: sending, error: sendError } = useSendBulkCommunication();
   const { templates } = useTemplates({ channelType: state.channelType });
   const { getRecipientTypeLabel } = useRecipientTypes();
-  const { getStatusLabel, getStatusColor } = useBulkCommunicationStatuses();
+  useBulkCommunicationStatuses(); // Status helpers available if needed
 
   const error = createError || sendError;
 

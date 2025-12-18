@@ -36,7 +36,7 @@ export function TimeEntryForm({
   const [caseId, setCaseId] = React.useState(initialCaseId || '');
   const [taskId, setTaskId] = React.useState(initialTaskId || '');
   const [date, setDate] = React.useState(format(new Date(), 'yyyy-MM-dd'));
-  const [hours, setHours] = React.useState('');
+  const [_hours, setHours] = React.useState('');
   const [hoursInput, setHoursInput] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [narrative, setNarrative] = React.useState('');

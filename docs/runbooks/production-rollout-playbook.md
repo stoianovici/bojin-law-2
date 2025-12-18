@@ -421,10 +421,10 @@ node scripts/deployment/monitor-full.js --duration 48 --intensive &
 **Critical Metrics** (AC#4, AC#6, AC#9):
 | Metric | Target (AC) | Current | Status |
 |--------|-------------|---------|--------|
-| **Response Time p95** | < 5s (AC#4) | **_ms | ✅/❌ |
-| **Error Rate** | < 2% (AC#6) | _**% | ✅/❌ |
-| **Uptime** | 99.9% (AC#9) | **_% | ✅/❌ |
-| **Cost Savings** | > 35% (AC#5) | _**% | ✅/❌ |
+| **Response Time p95** | < 5s (AC#4) | **\_ms | ✅/❌ |
+| **Error Rate** | < 2% (AC#6) | \_**% | ✅/❌ |
+| **Uptime** | 99.9% (AC#9) | **\_% | ✅/❌ |
+| **Cost Savings** | > 35% (AC#5) | \_**% | ✅/❌ |
 | Skills Success Rate | > 95% | **_% | ✅/❌ |
 | Memory Usage | < 85% | _**% | ✅/❌ |
 

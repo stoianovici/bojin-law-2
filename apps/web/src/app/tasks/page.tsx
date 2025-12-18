@@ -25,8 +25,8 @@ export default function TasksPage() {
   const {
     activeView,
     setActiveView,
-    tasks,
-    setTasks,
+    tasks: _tasks,
+    setTasks: _setTasks,
     filters,
     setFilters,
     clearFilters,

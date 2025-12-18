@@ -34,6 +34,10 @@ interface Case {
   };
 }
 
+interface GetUserCasesData {
+  myCases: Case[];
+}
+
 interface CaseAssignmentSelectorProps {
   onSelect: (caseId: string) => void;
   onClose: () => void;
@@ -51,7 +55,7 @@ export function CaseAssignmentSelector({
 }: CaseAssignmentSelectorProps) {
   const [search, setSearch] = useState('');
 
-  const { data, loading, error } = useQuery(GET_USER_CASES, {
+  const { data, loading, error } = useQuery<GetUserCasesData>(GET_USER_CASES, {
     variables: { status: 'Active' },
   });
 

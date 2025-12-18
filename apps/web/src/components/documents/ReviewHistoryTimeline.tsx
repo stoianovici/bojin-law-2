@@ -153,7 +153,6 @@ export function ReviewHistoryTimeline({ history }: ReviewHistoryTimelineProps) {
                 bgColor: 'bg-gray-100',
               };
               const Icon = config.icon;
-              const isFirst = index === 0;
               const isLast = index === history.length - 1;
 
               return (

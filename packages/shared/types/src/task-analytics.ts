@@ -267,10 +267,15 @@ export interface SavingsCategory {
 }
 
 export interface ROIDashboardResponse {
-  currentPeriod: ROIMetrics;
-  timeSeries: ROITimeSeriesPoint[];
+  currentPeriod?: ROIMetrics;
+  timeSeries?: ROITimeSeriesPoint[];
   projectedAnnualSavings: number;
-  topSavingsCategories: SavingsCategory[];
+  topSavingsCategories?: SavingsCategory[];
+  /** Platform Intelligence ROI fields */
+  totalValueSaved?: number;
+  billableHoursRecovered?: number;
+  timeSavedHours?: number;
+  savingsByCategory?: SavingsCategory[];
 }
 
 // ============================================================================

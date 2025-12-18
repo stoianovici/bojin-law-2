@@ -97,7 +97,7 @@ export function NotifyStakeholdersModal({ thread, onClose }: NotifyStakeholdersM
   // Generate suggested message
   const generateSuggestedMessage = useCallback(() => {
     const latestMessage = thread.messages?.[thread.messages.length - 1];
-    const preview = latestMessage?.content?.substring(0, 200) || thread.preview;
+    const preview = latestMessage?.body?.substring(0, 200) || '';
 
     setBody(
       `Bună ziua,

@@ -201,9 +201,9 @@ export function LearningProgressIndicator({
   showDetails = true,
 }: LearningProgressIndicatorProps) {
   // Fetch data from all learning sources
-  const { profile: writingProfile, learningProgress: writingProgress } = useWritingStyleProfile();
+  const { profile: writingProfile } = useWritingStyleProfile();
   const { count: snippetCount } = useSnippets();
-  const { count: patternCount, activeCount: activePatterns } = useTaskPatterns();
+  const { activeCount: activePatterns } = useTaskPatterns();
   const { count: docPrefCount } = useDocumentPreferences();
   const { hasPatterns: hasResponsePatterns, patterns: responsePatterns } = useResponsePatterns();
 

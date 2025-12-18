@@ -881,7 +881,7 @@ export default function PerformanceDashboardPage() {
                         <button
                           onClick={() => {
                             // In production: call mutation to acknowledge
-                            alert(`Acknowledge alert ${alert.id}`);
+                            window.alert(`Acknowledge alert ${alert.id}`);
                           }}
                           className="text-sm text-blue-600 hover:text-blue-800"
                         >

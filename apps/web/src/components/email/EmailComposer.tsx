@@ -94,9 +94,9 @@ export function EmailComposer({
   // Auto-save on body change
   useEffect(() => {
     if (body !== draft.body && autoSave) {
-      autoSave(body);
+      autoSave(draft.id, body);
     }
-  }, [body]);
+  }, [body, draft.id, autoSave]);
 
   // Get inline suggestions as user types
   const handleBodyChange = useCallback(

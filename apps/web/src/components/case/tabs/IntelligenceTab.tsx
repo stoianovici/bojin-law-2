@@ -14,13 +14,14 @@
 
 import { useState } from 'react';
 import { Brain, AlertTriangle, Calendar, MessageSquare, RefreshCw } from 'lucide-react';
+import type { ExtractedDeadline, ExtractedCommitment } from '../../../hooks/useExtractedItems';
 import { ExtractedItemsPanel } from '../../communication/ExtractedItemsPanel';
 import { RiskIndicatorsPanel } from '../RiskIndicatorsPanel';
 import { RiskAlertBanner } from '../RiskAlertBanner';
 import { CalendarSuggestions } from '../../communication/CalendarSuggestions';
 import { CaseThreadSummariesPanel } from '../../communication/ThreadSummaryPanel';
 import { useExtractedItemsCounts, useCaseThreadSummaries } from '../../../hooks/useExtractedItems';
-import { useRiskIndicators } from '../../../hooks/useRiskIndicators';
+import { useCaseRiskSummary, useHighSeverityRisks } from '../../../hooks/useRiskIndicators';
 
 // ============================================================================
 // Types
@@ -40,7 +41,8 @@ interface IntelligenceSummaryProps {
 
 function IntelligenceSummary({ caseId }: IntelligenceSummaryProps) {
   const { data: itemsData, loading: itemsLoading } = useExtractedItemsCounts(caseId);
-  const { riskSummary, loading: risksLoading } = useRiskIndicators({ caseId });
+  const { data: riskSummaryData, loading: risksLoading } = useCaseRiskSummary(caseId);
+  const riskSummary = riskSummaryData?.caseRiskSummary;
 
   const loading = itemsLoading || risksLoading;
   const counts = itemsData?.extractedItemsCounts;
@@ -90,14 +92,14 @@ function IntelligenceSummary({ caseId }: IntelligenceSummaryProps) {
           <span className="text-2xl font-bold text-gray-900">
             {riskSummary?.unresolvedCount ?? 0}
           </span>
-          {(riskSummary?.highSeverityCount ?? 0) > 0 && (
+          {(riskSummary?.highSeverity ?? 0) > 0 && (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-              {riskSummary?.highSeverityCount} high
+              {riskSummary?.highSeverity} high
             </span>
           )}
         </div>
         <div className="text-xs text-gray-400 mt-1">
-          {riskSummary?.mediumSeverityCount ?? 0} medium, {riskSummary?.lowSeverityCount ?? 0} low
+          {riskSummary?.mediumSeverity ?? 0} medium, {riskSummary?.lowSeverity ?? 0} low
         </div>
       </div>
     </div>
@@ -156,9 +158,12 @@ function Section({ title, icon, badge, children, defaultExpanded = true }: Secti
 export function IntelligenceTab({ caseId }: IntelligenceTabProps) {
   const { data: itemsData } = useExtractedItemsCounts(caseId);
   const { data: threadsData } = useCaseThreadSummaries(caseId);
-  const { riskSummary, highSeverityRisks } = useRiskIndicators({ caseId });
+  const { data: riskSummaryData } = useCaseRiskSummary(caseId);
+  const { data: highSeverityRisksData } = useHighSeverityRisks(caseId);
+  const riskSummary = riskSummaryData?.caseRiskSummary;
+  const highSeverityRisks = highSeverityRisksData?.riskIndicators;
 
-  const handleAddToCalendar = (item: { id: string; dueDate: string; description: string }) => {
+  const handleAddToCalendar = (item: ExtractedDeadline | ExtractedCommitment) => {
     // This would open a calendar modal or redirect
     console.log('Add to calendar:', item);
   };

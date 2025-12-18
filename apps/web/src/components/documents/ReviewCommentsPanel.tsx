@@ -8,7 +8,7 @@
  */
 
 import * as React from 'react';
-import { MessageSquare, Send, Check, Reply, AtSign, ChevronDown, ChevronRight } from 'lucide-react';
+import { MessageSquare, Send, Check, Reply, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -91,7 +91,7 @@ function getInitials(firstName: string, lastName: string): string {
 
 export function ReviewCommentsPanel({
   comments,
-  currentUserId,
+  currentUserId: _currentUserId,
   onAddComment,
   onReply,
   onResolve,

@@ -77,7 +77,7 @@ export function TemplateSelector({
 
     // Pre-populate assignees with empty values
     const defaultAssignees: Record<string, string> = {};
-    template.steps.forEach((step: (typeof selectedTemplate.steps)[number]) => {
+    template.steps.forEach((step: TaskTemplate['steps'][number]) => {
       defaultAssignees[step.id] = '';
     });
     setAssignees(defaultAssignees);
@@ -93,8 +93,7 @@ export function TemplateSelector({
 
   const calculateTotalHours = (template: TaskTemplate): number => {
     return template.steps.reduce(
-      (sum: number, step: (typeof selectedTemplate.steps)[number]) =>
-        sum + (step.estimatedHours || 0),
+      (sum: number, step: TaskTemplate['steps'][number]) => sum + (step.estimatedHours || 0),
       0
     );
   };
@@ -257,7 +256,7 @@ export function TemplateSelector({
                         <SelectContent>
                           {users.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
-                              {user.name} ({user.email})
+                              {user.firstName} {user.lastName} ({user.email})
                             </SelectItem>
                           ))}
                         </SelectContent>
