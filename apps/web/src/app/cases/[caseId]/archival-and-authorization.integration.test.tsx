@@ -120,7 +120,7 @@ describe('Case Archival and Authorization Integration Tests', () => {
       });
 
       // Verify case status is Closed
-      expect(screen.getByText('Closed')).toBeInTheDocument();
+      expect(screen.getByText('Închis')).toBeInTheDocument();
 
       // Find and click "Archive Case" button
       const archiveButton = screen.getByRole('button', { name: /archive case/i });
@@ -172,7 +172,7 @@ describe('Case Archival and Authorization Integration Tests', () => {
       });
 
       // Verify case status is Active (not Closed)
-      expect(screen.getByText('Active')).toBeInTheDocument();
+      expect(screen.getByText('Activ')).toBeInTheDocument();
 
       // Find archive button
       const archiveButton = screen.getByRole('button', { name: /archive case/i });
@@ -185,7 +185,7 @@ describe('Case Archival and Authorization Integration Tests', () => {
 
       // Verify tooltip explains why button is disabled
       await waitFor(() => {
-        expect(screen.getByText(/only closed cases can be archived/i)).toBeInTheDocument();
+        expect(screen.getByText(/doar dosarele închise pot fi arhivate/i)).toBeInTheDocument();
       });
     });
 
@@ -228,7 +228,7 @@ describe('Case Archival and Authorization Integration Tests', () => {
         expect(mockAddNotification).toHaveBeenCalledWith(
           expect.objectContaining({
             type: 'error',
-            message: expect.stringMatching(/only closed cases can be archived/i),
+            message: expect.stringMatching(/doar dosarele închise pot fi arhivate/i),
           })
         );
       });
@@ -308,7 +308,7 @@ describe('Case Archival and Authorization Integration Tests', () => {
         expect(mockAddNotification).toHaveBeenCalledWith(
           expect.objectContaining({
             type: 'error',
-            message: expect.stringMatching(/not authorized|permission denied/i),
+            message: expect.stringMatching(/neautorizat|acces interzis/i),
           })
         );
       });

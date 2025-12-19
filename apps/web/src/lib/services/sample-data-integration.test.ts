@@ -17,27 +17,21 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
           DESTINATAR_NUME: 'SC ALPHA CONSTRUCT SRL',
           DESTINATAR_ADRESA: 'Str. Constructorilor nr. 45, Sector 2, București, 023456',
           FIRMA_NUME: 'Cabinet Individual de Avocat Popescu & Asociații',
-          AVOCAT_NUME: 'Av. Dr. Ion Popescu',
-          BAROU: 'București',
+          FIRMA_CUI: 'RO23456789',
           FIRMA_ADRESA: 'Bd. Unirii nr. 12, etaj 5, Sector 3, București, 030825',
+          AVOCAT_NUME: 'Av. Dr. Ion Popescu',
+          BAROUL: 'Baroul București',
+          AVOCAT_ADRESA: 'Bd. Unirii nr. 12, etaj 5, Sector 3, București, 030825',
           OBIECT_NOTIFICARE:
             'Recuperare creanță contractuală - Contract de prestări servicii nr. 234/2024',
           DATA_NOTIFICARE: '19 noiembrie 2025',
+          DATA_FAPT: '15 martie 2024',
           DESCRIERE_FAPT:
             'La data de 15 martie 2024, între clientul nostru SC BETA SERVICES SRL și dumneavoastră s-a încheiat Contractul de prestări servicii nr. 234/2024, având ca obiect executarea lucrărilor de consultanță în IT. Conform clauzelor contractuale, plata avea termen la 30 de zile de la data facturării. Facturile nr. 145/2024 și nr. 167/2024, în valoare totală de 45.000 RON (inclusiv TVA), au rămas neachitate până în prezent, deși termenul de plată a expirat cu peste 180 de zile în urmă.',
           ACTIUNE_SOLICITATA:
             'Achitarea sumei totale de 45.000 RON reprezentând contravaloarea facturilor nr. 145/2024 și nr. 167/2024, împreună cu dobânda legală aferentă întârzierii calculate conform art. 1535 Cod Civil',
-          TERMEN_CONFORMARE: '15 zile calendaristice de la primirea prezentei',
-          TERMEN_ZILE: '15',
-          ARTICOL_CIVIL_1: '1270',
-          ARTICOL_CIVIL_2: '1350',
-          TEMEI_LEGAL_SUPLIMENTAR:
-            '- Art. 1535 Cod Civil (dobânda legală pentru obligații bănești)\n- Art. 1516-1523 Cod Civil (neexecutarea obligațiilor contractuale)',
-          CONSECINTE_NECONFORMARE:
-            'În lipsa conformării în termenul stabilit, vom proceda la sesizarea instanței competente cu o acțiune în obligarea la plată, solicitând totodată: (i) obligarea la plata dobânzii legale majorată; (ii) recuperarea cheltuielilor de judecată, inclusiv onorariul avocațial estimat la 8.000 RON; (iii) aplicarea de penalități contractuale conform art. 15 din contractul-cadru.',
-          LISTA_ANEXE:
-            '1. Copie Contract de prestări servicii nr. 234/2024\n2. Copie Factură nr. 145/2024\n3. Copie Factură nr. 167/2024\n4. Proces-verbal de recepție a serviciilor',
-          DATA_EMITERE: '19 noiembrie 2025',
+          TERMEN_CONFORMARE: '15',
+          DATA_EMITERII: '19 noiembrie 2025',
         },
         format: 'markdown',
       });
@@ -46,7 +40,6 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
       expect(result.document).toContain('NOTIFICARE AVOCATEASCA');
       expect(result.document).toContain('SC ALPHA CONSTRUCT SRL');
       expect(result.document).toContain('45.000 RON');
-      expect(result.document).toContain('Art. 1270 Cod Civil');
       expect(result.warnings).toBeDefined();
       expect(result.warnings?.some((w) => w.includes('registered mail'))).toBe(true);
     });
@@ -58,24 +51,20 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
           DESTINATAR_NUME: 'GAMMA ADVERTISING SRL',
           DESTINATAR_ADRESA: 'Str. Reclamei nr. 78, Cluj-Napoca, 400123',
           FIRMA_NUME: 'Societatea de Avocatură Ionescu și Partenerii',
-          AVOCAT_NUME: 'Av. Maria Ionescu',
-          BAROU: 'Cluj',
+          FIRMA_CUI: 'RO34567890',
           FIRMA_ADRESA: 'Str. Eroilor nr. 23, Cluj-Napoca, 400129',
+          AVOCAT_NUME: 'Av. Maria Ionescu',
+          BAROUL: 'Baroul Cluj',
+          AVOCAT_ADRESA: 'Str. Eroilor nr. 23, Cluj-Napoca, 400129',
           OBIECT_NOTIFICARE: 'Încetare utilizare abuzivă a mărcii comerciale înregistrate',
           DATA_NOTIFICARE: '19 noiembrie 2025',
+          DATA_FAPT: '2025-10-01',
           DESCRIERE_FAPT:
             'Clientul nostru, SC DELTA TECH SRL, este titularul mărcii comerciale "TECHNO+" înregistrată la OSIM sub nr. M202400123. Am constatat că societatea dumneavoastră utilizează în mod neautorizat marca "TECHNO+" pe site-ul web www.gamma-ad.ro și în materialele publicitare distribuite în județul Cluj, creând confuzie în rândul consumatorilor și prejudiciind reputația clientului nostru.',
           ACTIUNE_SOLICITATA:
             'Încetarea imediată a utilizării mărcii "TECHNO+" în orice formă (online, print, TV, radio) și retragerea tuturor materialelor publicitare ce conțin această marcă',
-          TERMEN_CONFORMARE: '7 zile calendaristice de la primirea prezentei',
-          TERMEN_ZILE: '7',
-          ARTICOL_CIVIL_1: '1349',
-          ARTICOL_CIVIL_2: '1357',
-          TEMEI_LEGAL_SUPLIMENTAR:
-            '- Legea nr. 84/1998 privind mărcile și indicațiile geografice\n- Art. 1 din Protocolul 28/2006 OSIM',
-          CONSECINTE_NECONFORMARE:
-            'Vom iniția proceduri judiciare pentru încălcarea drepturilor de proprietate intelectuală, solicitând despăgubiri estimate la minimum 100.000 RON pentru prejudiciul de imagine și pierderea clientelei.',
-          DATA_EMITERE: '19 noiembrie 2025',
+          TERMEN_CONFORMARE: '7',
+          DATA_EMITERII: '19 noiembrie 2025',
         },
       });
 
@@ -277,7 +266,7 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
     it('should list all available templates with metadata', () => {
       const templates = romanianDocumentGenerator.getAvailableTemplates();
 
-      expect(templates).toHaveLength(3);
+      expect(templates).toHaveLength(5);
       expect(templates[0].metadata.nameRo).toBeDefined();
       expect(templates[0].metadata.nameEn).toBeDefined();
       expect(templates[0].metadata.legalCategory).toBeDefined();
@@ -285,12 +274,12 @@ describe('Romanian Template Integration - Sample Data Tests', () => {
 
     it('should search templates by legal category', () => {
       const correspondenceTemplates = romanianDocumentGenerator.searchTemplates({
-        category: 'legal_correspondence',
+        category: 'correspondence',
       });
 
       expect(correspondenceTemplates.length).toBeGreaterThan(0);
       correspondenceTemplates.forEach((t) => {
-        expect(t.metadata.legalCategory).toBe('legal_correspondence');
+        expect(t.metadata.legalCategory).toBe('correspondence');
       });
     });
   });

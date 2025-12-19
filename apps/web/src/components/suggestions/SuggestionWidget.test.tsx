@@ -174,7 +174,7 @@ describe('SuggestionWidget', () => {
       });
 
       // Find and click dismiss button
-      const dismissButtons = screen.getAllByRole('button', { name: /respinge|ignoră/i });
+      const dismissButtons = screen.getAllByRole('button', { name: /respinge|ignoră|închide/i });
       fireEvent.click(dismissButtons[0]);
 
       expect(mockDismiss).toHaveBeenCalled();

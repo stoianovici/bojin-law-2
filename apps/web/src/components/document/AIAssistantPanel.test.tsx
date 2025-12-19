@@ -79,7 +79,7 @@ describe('AIAssistantPanel', () => {
 
       // Check that similar documents are displayed
       expect(screen.getByText(/Contract de Consultanță Juridică/)).toBeInTheDocument();
-      expect(screen.getByText(/% similar/)).toBeInTheDocument();
+      expect(screen.getByText(/% asemănare/)).toBeInTheDocument();
     });
 
     it('switches to templates tab when clicked', () => {
@@ -167,8 +167,8 @@ describe('AIAssistantPanel', () => {
 
       fireEvent.click(screen.getByText('Documente'));
 
-      expect(screen.getByText('94% similar')).toBeInTheDocument();
-      expect(screen.getByText('89% similar')).toBeInTheDocument();
+      expect(screen.getByText('94% asemănare')).toBeInTheDocument();
+      expect(screen.getByText('89% asemănare')).toBeInTheDocument();
     });
 
     it('displays document snippets and dates', () => {
@@ -310,7 +310,7 @@ describe('AIAssistantPanel', () => {
       documentsTab.focus();
       fireEvent.click(documentsTab);
 
-      expect(screen.getByText(/% similar/)).toBeInTheDocument();
+      expect(screen.getByText(/% asemănare/)).toBeInTheDocument();
     });
   });
 

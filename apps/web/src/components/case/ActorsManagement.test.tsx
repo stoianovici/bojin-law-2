@@ -87,7 +87,7 @@ describe('ActorsManagement', () => {
   it('shows empty state when no actors', () => {
     render(<ActorsManagement caseId="case-1" actors={[]} />);
 
-    expect(screen.getByText(/No case actors/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nu au fost adăugate persoane de contact/i)).toBeInTheDocument();
   });
 
   it('displays actor organizations', () => {
@@ -114,53 +114,53 @@ describe('ActorsManagement', () => {
   it('shows add actor button', () => {
     render(<ActorsManagement caseId="case-1" actors={mockActors} />);
 
-    expect(screen.getByText(/Add Actor/i)).toBeInTheDocument();
+    expect(screen.getByText(/Adaugă contact/i)).toBeInTheDocument();
   });
 
   it('opens add actor modal when button is clicked', async () => {
     render(<ActorsManagement caseId="case-1" actors={mockActors} />);
 
-    const addButton = screen.getByText(/Add Actor/i);
+    const addButton = screen.getByText(/Adaugă contact/i);
     fireEvent.click(addButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/Add Case Actor/i)).toBeInTheDocument();
+      expect(screen.getByText(/Adăugare persoană contact/i)).toBeInTheDocument();
     });
   });
 
   it('displays remove button for each actor', () => {
     render(<ActorsManagement caseId="case-1" actors={mockActors} />);
 
-    const removeButtons = screen.getAllByTitle(/Remove/i);
+    const removeButtons = screen.getAllByTitle(/Șterge/i);
     expect(removeButtons.length).toBe(mockActors.length);
   });
 
   it('shows confirmation before removing actor', async () => {
     render(<ActorsManagement caseId="case-1" actors={mockActors} />);
 
-    const removeButtons = screen.getAllByTitle(/Remove/i);
+    const removeButtons = screen.getAllByTitle(/Șterge/i);
     fireEvent.click(removeButtons[0]);
 
     // Check that the confirmation dialog appears
     await waitFor(() => {
-      expect(screen.getByText(/Remove Case Actor/i)).toBeInTheDocument();
-      expect(screen.getByText(/Are you sure you want to remove/i)).toBeInTheDocument();
+      expect(screen.getByText(/Ștergere persoană contact/i)).toBeInTheDocument();
+      expect(screen.getByText(/Sigur doriți să ștergeți/i)).toBeInTheDocument();
     });
   });
 
   it('does not remove if confirmation is cancelled', async () => {
     render(<ActorsManagement caseId="case-1" actors={mockActors} />);
 
-    const removeButtons = screen.getAllByTitle(/Remove/i);
+    const removeButtons = screen.getAllByTitle(/Șterge/i);
     fireEvent.click(removeButtons[0]);
 
     // Wait for confirmation dialog
     await waitFor(() => {
-      expect(screen.getByText(/Remove Case Actor/i)).toBeInTheDocument();
+      expect(screen.getByText(/Ștergere persoană contact/i)).toBeInTheDocument();
     });
 
     // Click Cancel button
-    const cancelButton = screen.getByRole('button', { name: /Cancel/i });
+    const cancelButton = screen.getByRole('button', { name: /Anulează/i });
     fireEvent.click(cancelButton);
 
     // Verify removeActor was not called

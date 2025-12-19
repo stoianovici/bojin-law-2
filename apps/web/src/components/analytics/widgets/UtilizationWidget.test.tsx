@@ -44,12 +44,12 @@ describe('UtilizationWidget', () => {
   describe('Basic Rendering', () => {
     it('renders the widget title', () => {
       render(<UtilizationWidget {...defaultProps} />);
-      expect(screen.getByText('Utilization')).toBeInTheDocument();
+      expect(screen.getByText('Utilizare')).toBeInTheDocument();
     });
 
     it('renders utilization percentage', () => {
       render(<UtilizationWidget {...defaultProps} />);
-      expect(screen.getByText('75.0%')).toBeInTheDocument();
+      expect(screen.getByText('75,0 %')).toBeInTheDocument();
     });
 
     it('renders gauge chart', () => {
@@ -59,8 +59,8 @@ describe('UtilizationWidget', () => {
 
     it('renders hours breakdown', () => {
       render(<UtilizationWidget {...defaultProps} />);
-      expect(screen.getByText('Billable')).toBeInTheDocument();
-      expect(screen.getByText('Non-Billable')).toBeInTheDocument();
+      expect(screen.getByText('Facturabile')).toBeInTheDocument();
+      expect(screen.getByText('Non-facturabile')).toBeInTheDocument();
       expect(screen.getByText('Total')).toBeInTheDocument();
     });
 
@@ -73,7 +73,7 @@ describe('UtilizationWidget', () => {
 
     it('renders role breakdown section', () => {
       render(<UtilizationWidget {...defaultProps} />);
-      expect(screen.getByText('By Role')).toBeInTheDocument();
+      expect(screen.getByText('După rol')).toBeInTheDocument();
       expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
     });
   });
@@ -86,7 +86,7 @@ describe('UtilizationWidget', () => {
 
     it('does not show utilization data when loading', () => {
       render(<UtilizationWidget {...defaultProps} isLoading={true} />);
-      expect(screen.queryByText('75.0%')).not.toBeInTheDocument();
+      expect(screen.queryByText('75,0 %')).not.toBeInTheDocument();
     });
   });
 
@@ -104,7 +104,7 @@ describe('UtilizationWidget', () => {
 
       render(<UtilizationWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
-      screen.getByRole('button', { name: /retry/i }).click();
+      screen.getByRole('button', { name: /reîncearcă/i }).click();
       expect(mockRetry).toHaveBeenCalledTimes(1);
     });
   });
@@ -121,7 +121,7 @@ describe('UtilizationWidget', () => {
       );
 
       expect(screen.getByTestId('widget-empty')).toBeInTheDocument();
-      expect(screen.getByText('No utilization data for this period')).toBeInTheDocument();
+      expect(screen.getByText('Nu există date pentru această perioadă')).toBeInTheDocument();
     });
   });
 
@@ -130,7 +130,7 @@ describe('UtilizationWidget', () => {
       render(<UtilizationWidget {...defaultProps} utilizationRate={85} />);
 
       // The percentage text should be styled with green
-      const percentageElement = screen.getByText('85.0%');
+      const percentageElement = screen.getByText('85,0 %');
       // Green is #10B981
       expect(percentageElement).toHaveStyle({ color: 'rgb(16, 185, 129)' });
     });
@@ -138,7 +138,7 @@ describe('UtilizationWidget', () => {
     it('shows yellow color for medium utilization (60-79%)', () => {
       render(<UtilizationWidget {...defaultProps} utilizationRate={70} />);
 
-      const percentageElement = screen.getByText('70.0%');
+      const percentageElement = screen.getByText('70,0 %');
       // Yellow is #F59E0B
       expect(percentageElement).toHaveStyle({ color: 'rgb(245, 158, 11)' });
     });
@@ -146,7 +146,7 @@ describe('UtilizationWidget', () => {
     it('shows red color for low utilization (<60%)', () => {
       render(<UtilizationWidget {...defaultProps} utilizationRate={45} />);
 
-      const percentageElement = screen.getByText('45.0%');
+      const percentageElement = screen.getByText('45,0 %');
       // Red is #EF4444
       expect(percentageElement).toHaveStyle({ color: 'rgb(239, 68, 68)' });
     });
@@ -188,7 +188,7 @@ describe('UtilizationWidget', () => {
     it('does not show role breakdown section when empty', () => {
       render(<UtilizationWidget {...defaultProps} utilizationByRole={[]} />);
 
-      expect(screen.queryByText('By Role')).not.toBeInTheDocument();
+      expect(screen.queryByText('După rol')).not.toBeInTheDocument();
     });
 
     it('handles single role', () => {
@@ -201,7 +201,7 @@ describe('UtilizationWidget', () => {
         />
       );
 
-      expect(screen.getByText('By Role')).toBeInTheDocument();
+      expect(screen.getByText('După rol')).toBeInTheDocument();
       expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
     });
   });
@@ -217,7 +217,7 @@ describe('UtilizationWidget', () => {
         />
       );
 
-      expect(screen.getByText('100.0%')).toBeInTheDocument();
+      expect(screen.getByText('100,0 %')).toBeInTheDocument();
     });
 
     it('handles 0% utilization', () => {
@@ -230,13 +230,13 @@ describe('UtilizationWidget', () => {
         />
       );
 
-      expect(screen.getByText('0.0%')).toBeInTheDocument();
+      expect(screen.getByText('0,0 %')).toBeInTheDocument();
     });
 
     it('handles decimal utilization rates', () => {
       render(<UtilizationWidget {...defaultProps} utilizationRate={72.5} />);
 
-      expect(screen.getByText('72.5%')).toBeInTheDocument();
+      expect(screen.getByText('72,5 %')).toBeInTheDocument();
     });
 
     it('handles very large hours', () => {
@@ -249,7 +249,7 @@ describe('UtilizationWidget', () => {
         />
       );
 
-      expect(screen.getByText('10,000h')).toBeInTheDocument();
+      expect(screen.getByText('10.000h')).toBeInTheDocument();
     });
 
     it('applies custom className', () => {

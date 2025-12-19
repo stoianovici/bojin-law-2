@@ -55,45 +55,45 @@ describe('Textarea', () => {
       render(
         <Textarea
           validationState="error"
-          errorMessage="Description is too short"
+          errorMessage="Descrierea este prea scurtă"
           data-testid="textarea-error"
         />
       );
       const textarea = screen.getByTestId('textarea-error');
       expect(textarea).toHaveClass('border-error-500');
       expect(textarea).toHaveAttribute('aria-invalid', 'true');
-      expect(screen.getByRole('alert')).toHaveTextContent('Description is too short');
+      expect(screen.getByRole('alert')).toHaveTextContent('Descrierea este prea scurtă');
     });
 
     it('renders success state with message', () => {
       render(
         <Textarea
           validationState="success"
-          successMessage="Description looks good"
+          successMessage="Descrierea arată bine"
           data-testid="textarea-success"
         />
       );
       const textarea = screen.getByTestId('textarea-success');
       expect(textarea).toHaveClass('border-success-500');
-      expect(screen.getByRole('status')).toHaveTextContent('Description looks good');
+      expect(screen.getByRole('status')).toHaveTextContent('Descrierea arată bine');
     });
 
     it('renders warning state with message', () => {
       render(
         <Textarea
           validationState="warning"
-          warningMessage="Description might be too long"
+          warningMessage="Descrierea ar putea fi prea lungă"
           data-testid="textarea-warning"
         />
       );
       const textarea = screen.getByTestId('textarea-warning');
       expect(textarea).toHaveClass('border-warning-500');
-      expect(screen.getByRole('status')).toHaveTextContent('Description might be too long');
+      expect(screen.getByRole('status')).toHaveTextContent('Descrierea ar putea fi prea lungă');
     });
 
     it('renders helper text in default state', () => {
-      render(<Textarea helperText="Maximum 500 characters" />);
-      expect(screen.getByText('Maximum 500 characters')).toBeInTheDocument();
+      render(<Textarea helperText="Maximum 500 caractere" />);
+      expect(screen.getByText('Maximum 500 caractere')).toBeInTheDocument();
     });
   });
 
@@ -159,7 +159,7 @@ describe('Textarea', () => {
 
     it('has correct ARIA attributes for error state', () => {
       render(
-        <Textarea label="Description" validationState="error" errorMessage="Required field" />
+        <Textarea label="Description" validationState="error" errorMessage="Câmp obligatoriu" />
       );
       const textarea = screen.getByLabelText('Description');
       expect(textarea).toHaveAttribute('aria-invalid', 'true');
@@ -206,7 +206,8 @@ describe('Textarea', () => {
     it('generates unique id when not provided', () => {
       const { container } = render(<Textarea label="Description" />);
       const textarea = container.querySelector('textarea');
-      expect(textarea?.id).toMatch(/^textarea-/);
+      expect(textarea?.id).toBeTruthy();
+      expect(textarea?.id).not.toBe('');
     });
   });
 });

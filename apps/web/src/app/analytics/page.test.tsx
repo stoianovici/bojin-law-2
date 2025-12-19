@@ -79,8 +79,8 @@ describe('AnalyticsPage', () => {
 
       // Check options
       expect(screen.getByText('Ultimele 7 zile')).toBeInTheDocument();
-      expect(screen.getByText('Ultimele 30 zile')).toBeInTheDocument();
-      expect(screen.getByText('Ultimele 90 zile')).toBeInTheDocument();
+      expect(screen.getByText('Ultimele 30 de zile')).toBeInTheDocument();
+      expect(screen.getByText('Ultimele 90 de zile')).toBeInTheDocument();
       expect(screen.getByText('Ultimul an')).toBeInTheDocument();
     });
 
@@ -227,8 +227,8 @@ describe('AnalyticsPage', () => {
       render(<AnalyticsPage />);
 
       expect(screen.getByText('Ultimele 7 zile')).toBeInTheDocument();
-      expect(screen.getByText('Ultimele 30 zile')).toBeInTheDocument();
-      expect(screen.getByText('Ultimele 90 zile')).toBeInTheDocument();
+      expect(screen.getByText('Ultimele 30 de zile')).toBeInTheDocument();
+      expect(screen.getByText('Ultimele 90 de zile')).toBeInTheDocument();
       expect(screen.getByText('Ultimul an')).toBeInTheDocument();
     });
   });

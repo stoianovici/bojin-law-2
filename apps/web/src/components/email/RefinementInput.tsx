@@ -18,11 +18,11 @@ interface RefinementInputProps {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Shorter', instruction: 'Make it shorter', icon: '📝' },
-  { label: 'More formal', instruction: 'Make it more formal', icon: '👔' },
-  { label: 'Add details', instruction: 'Add more details', icon: '📋' },
-  { label: 'Translate RO', instruction: 'Translate to Romanian', icon: '🇷🇴' },
-  { label: 'Translate EN', instruction: 'Translate to English', icon: '🇬🇧' },
+  { label: 'Mai scurt', instruction: 'Fă-l mai scurt', icon: '📝' },
+  { label: 'Mai formal', instruction: 'Fă-l mai formal', icon: '👔' },
+  { label: 'Mai detaliat', instruction: 'Adaugă mai multe detalii', icon: '📋' },
+  { label: 'În română', instruction: 'Traduce în română', icon: '🇷🇴' },
+  { label: 'În engleză', instruction: 'Traduce în engleză', icon: '🇬🇧' },
 ];
 
 export function RefinementInput({
@@ -55,13 +55,13 @@ export function RefinementInput({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-gray-900 dark:text-white">AI Refinement</h4>
+        <h4 className="text-sm font-medium text-gray-900 dark:text-white">Rafinare AI</h4>
         {refinementHistory.length > 0 && (
           <button
             onClick={() => setShowHistory(!showHistory)}
             className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
-            {showHistory ? 'Hide' : 'Show'} history ({refinementHistory.length})
+            {showHistory ? 'Ascunde' : 'Arată'} istoric ({refinementHistory.length})
           </button>
         )}
       </div>
@@ -85,17 +85,17 @@ export function RefinementInput({
       {/* Custom instruction input */}
       <form onSubmit={handleSubmit} className="flex gap-2">
         <label htmlFor="refinement-input" className="sr-only">
-          Custom refinement instruction
+          Instrucțiune personalizată de rafinare
         </label>
         <input
           id="refinement-input"
           type="text"
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
-          placeholder="Enter custom instruction (e.g., 'Add a paragraph about deadlines')"
+          placeholder="Instrucțiuni de rafinare personalizate (ex: 'Adaugă un paragraf despre termene limită')"
           disabled={loading}
           className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400"
-          aria-label="Custom refinement instruction"
+          aria-label="Instrucțiune personalizată de rafinare"
         />
         <button
           type="submit"
@@ -105,19 +105,19 @@ export function RefinementInput({
         >
           {loading ? (
             <>
-              <Spinner size="xs" /> Refining...
+              <Spinner size="xs" /> Se rafinează...
             </>
           ) : (
-            'Apply'
+            'Rafinează'
           )}
         </button>
       </form>
 
       {/* Refinement history */}
       {showHistory && refinementHistory.length > 0 && (
-        <div className="space-y-2" role="list" aria-label="Refinement history">
+        <div className="space-y-2" role="list" aria-label="Istoric rafinări">
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Recent refinements:
+            Rafinări recente:
           </p>
           {refinementHistory.slice(0, 5).map((refinement) => (
             <div
@@ -129,8 +129,8 @@ export function RefinementInput({
                 &ldquo;{refinement.instruction}&rdquo;
               </p>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {new Date(refinement.createdAt).toLocaleString()} · {refinement.tokensUsed} tokens
-                used
+                {new Date(refinement.createdAt).toLocaleString()} · {refinement.tokensUsed} token-uri
+                utilizați
               </p>
             </div>
           ))}

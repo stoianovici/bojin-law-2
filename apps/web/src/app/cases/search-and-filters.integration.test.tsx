@@ -80,7 +80,7 @@ describe('Case Search Integration Tests', () => {
       });
 
       // Find search input
-      const searchInput = screen.getByPlaceholderText(/search cases/i);
+      const searchInput = screen.getByPlaceholderText(/căutare dosare/i);
       expect(searchInput).toBeInTheDocument();
 
       // Type search query (minimum 3 characters)
@@ -116,7 +116,7 @@ describe('Case Search Integration Tests', () => {
         expect(screen.getByText('CASE-001')).toBeInTheDocument();
       });
 
-      const searchInput = screen.getByPlaceholderText(/search cases/i);
+      const searchInput = screen.getByPlaceholderText(/căutare dosare/i);
       await user.type(searchInput, 'contract');
 
       await waitFor(() => {
@@ -136,7 +136,7 @@ describe('Case Search Integration Tests', () => {
         expect(screen.getByText('CASE-001')).toBeInTheDocument();
       });
 
-      const searchInput = screen.getByPlaceholderText(/search cases/i);
+      const searchInput = screen.getByPlaceholderText(/căutare dosare/i);
       await user.type(searchInput, 'nonexistentquery123');
 
       await waitFor(() => {
@@ -151,14 +151,14 @@ describe('Case Search Integration Tests', () => {
         expect(screen.getByText('CASE-001')).toBeInTheDocument();
       });
 
-      const searchInput = screen.getByPlaceholderText(/search cases/i);
+      const searchInput = screen.getByPlaceholderText(/căutare dosare/i);
 
       // Type less than 3 characters
       await user.type(searchInput, 'ab');
 
       // Verify hint message appears
       await waitFor(() => {
-        expect(screen.getByText(/minimum 3 characters/i)).toBeInTheDocument();
+        expect(screen.getByText(/minim 3 caractere/i)).toBeInTheDocument();
       });
 
       // No search results should be displayed
@@ -179,11 +179,11 @@ describe('Case Search Integration Tests', () => {
       await user.click(statusFilter);
 
       // Select "Active" status
-      await user.click(screen.getByRole('option', { name: /active/i }));
+      await user.click(screen.getByRole('option', { name: /activ/i }));
 
       // Verify filter function was called
       await waitFor(() => {
-        expect(mockSetStatus).toHaveBeenCalledWith('Active');
+        expect(mockSetStatus).toHaveBeenCalledWith('Activ');
       });
 
       // Verify only active cases are displayed
@@ -217,12 +217,12 @@ describe('Case Search Integration Tests', () => {
       // Apply status filter
       const statusFilter = screen.getByLabelText(/status/i);
       await user.click(statusFilter);
-      await user.click(screen.getByRole('option', { name: /active/i }));
+      await user.click(screen.getByRole('option', { name: /activ/i }));
 
       // Verify URL was updated with query parameter
       await waitFor(() => {
         expect(mockPush).toHaveBeenCalledWith(
-          expect.stringContaining('status=Active'),
+          expect.stringContaining('status=Activ'),
           expect.anything()
         );
       });
@@ -258,13 +258,13 @@ describe('Case Search Integration Tests', () => {
       // Apply some filters first
       const statusFilter = screen.getByLabelText(/status/i);
       await user.click(statusFilter);
-      await user.click(screen.getByRole('option', { name: /active/i }));
+      await user.click(screen.getByRole('option', { name: /activ/i }));
 
       const assignedCheckbox = screen.getByLabelText(/assigned to me/i);
       await user.click(assignedCheckbox);
 
       // Click "Clear All Filters" button
-      const clearButton = screen.getByRole('button', { name: /clear.*filters/i });
+      const clearButton = screen.getByRole('button', { name: /șterge.*filtre/i });
       await user.click(clearButton);
 
       // Verify clear function was called
@@ -289,20 +289,20 @@ describe('Case Search Integration Tests', () => {
       // Apply both filters
       const statusFilter = screen.getByLabelText(/status/i);
       await user.click(statusFilter);
-      await user.click(screen.getByRole('option', { name: /active/i }));
+      await user.click(screen.getByRole('option', { name: /activ/i }));
 
       const assignedCheckbox = screen.getByLabelText(/assigned to me/i);
       await user.click(assignedCheckbox);
 
       // Verify both filters are applied
       await waitFor(() => {
-        expect(mockSetStatus).toHaveBeenCalledWith('Active');
+        expect(mockSetStatus).toHaveBeenCalledWith('Activ');
         expect(mockSetAssignedToMe).toHaveBeenCalledWith(true);
       });
 
       // Verify URL contains both parameters
       expect(mockPush).toHaveBeenCalledWith(
-        expect.stringMatching(/status=Active.*assignedToMe=true|assignedToMe=true.*status=Active/),
+        expect.stringMatching(/status=Activ.*assignedToMe=true|assignedToMe=true.*status=Activ/),
         expect.anything()
       );
     });
@@ -319,15 +319,15 @@ describe('Case Search Integration Tests', () => {
       // Apply a filter that returns no results (e.g., Archived status)
       const statusFilter = screen.getByLabelText(/status/i);
       await user.click(statusFilter);
-      await user.click(screen.getByRole('option', { name: /archived/i }));
+      await user.click(screen.getByRole('option', { name: /arhivat/i }));
 
       // Wait for filtered empty state
       await waitFor(() => {
-        expect(screen.getByText(/no cases match your filters|no cases found/i)).toBeInTheDocument();
+        expect(screen.getByText(/nu s-au găsit dosare|niciun dosar nu corespunde/i)).toBeInTheDocument();
       });
 
       // Verify "Clear Filters" button is present in empty state
-      const clearButton = screen.getByRole('button', { name: /clear.*filters/i });
+      const clearButton = screen.getByRole('button', { name: /șterge.*filtre/i });
       expect(clearButton).toBeInTheDocument();
 
       // Click clear filters from empty state

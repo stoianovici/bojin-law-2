@@ -5,36 +5,35 @@
  * Tests for the GlobalSearchBar component functionality.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GlobalSearchBar } from './GlobalSearchBar';
 
 // Mock next/navigation
-const mockPush = vi.fn();
-vi.mock('next/navigation', () => ({
+const mockPush = jest.fn();
+jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
-    back: vi.fn(),
+    back: jest.fn(),
   }),
 }));
 
 // Mock useSearch hook
-vi.mock('@/hooks/useSearch', () => ({
-  useRecentSearches: vi.fn(() => ({
+jest.mock('@/hooks/useSearch', () => ({
+  useRecentSearches: jest.fn(() => ({
     recentSearches: [],
     loading: false,
   })),
-  isCaseResult: vi.fn(() => false),
-  getResultTitle: vi.fn(() => ''),
-  formatScore: vi.fn(() => ''),
+  isCaseResult: jest.fn(() => false),
+  getResultTitle: jest.fn(() => ''),
+  formatScore: jest.fn(() => ''),
 }));
 
 import { useRecentSearches } from '@/hooks/useSearch';
 
 describe('GlobalSearchBar', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     (useRecentSearches as any).mockReturnValue({
       recentSearches: [],
       loading: false,
@@ -42,7 +41,7 @@ describe('GlobalSearchBar', () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
   });
 
   describe('Rendering', () => {
@@ -51,7 +50,7 @@ describe('GlobalSearchBar', () => {
 
       const input = screen.getByRole('combobox');
       expect(input).toBeInTheDocument();
-      expect(input).toHaveAttribute('placeholder', 'Search cases and documents...');
+      expect(input).toHaveAttribute('placeholder', 'Caută cazuri, documente, clienți, sarcini...');
     });
 
     it('should render custom placeholder when provided', () => {
@@ -132,7 +131,7 @@ describe('GlobalSearchBar', () => {
     });
 
     it('should call onSearch callback when provided', async () => {
-      const onSearch = vi.fn();
+      const onSearch = jest.fn();
       const user = userEvent.setup();
       render(<GlobalSearchBar onSearch={onSearch} />);
 
@@ -181,7 +180,7 @@ describe('GlobalSearchBar', () => {
       const input = screen.getByRole('combobox');
       await user.click(input);
 
-      expect(screen.getByText('Recent Searches')).toBeInTheDocument();
+      expect(screen.getByText('Căutări Recente')).toBeInTheDocument();
       expect(screen.getByText('contract law')).toBeInTheDocument();
       expect(screen.getByText('employment')).toBeInTheDocument();
     });
@@ -198,7 +197,7 @@ describe('GlobalSearchBar', () => {
       const input = screen.getByRole('combobox');
       await user.click(input);
 
-      expect(screen.getByText('10 results')).toBeInTheDocument();
+      expect(screen.getByText('10 rezultate')).toBeInTheDocument();
     });
 
     it('should select recent search on click', async () => {
@@ -231,7 +230,7 @@ describe('GlobalSearchBar', () => {
       const input = screen.getByRole('combobox');
       await user.click(input);
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByText('Se încarcă...')).toBeInTheDocument();
     });
   });
 

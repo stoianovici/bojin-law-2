@@ -98,9 +98,10 @@ describe('QuickActions', () => {
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThan(0);
 
-      // Each button should have an icon (emoji)
+      // Each button should have an icon (Lucide React icons render as SVG)
       buttons.forEach((button) => {
-        expect(button.textContent).toMatch(/[📝✅📊👥📋⏱️✓🔍📤📅💭➕]/);
+        const svg = button.querySelector('svg');
+        expect(svg).toBeInTheDocument();
       });
     });
 

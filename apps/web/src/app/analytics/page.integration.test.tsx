@@ -214,11 +214,11 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       // Wait for page to load
       await waitFor(() => {
-        expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
       });
 
       // Verify page rendered successfully (no access denied)
-      expect(screen.queryByText('Access Restricted')).not.toBeInTheDocument();
+      expect(screen.queryByText('Acces restricționat')).not.toBeInTheDocument();
     });
 
     it('should display revenue overview widget for Partner', async () => {
@@ -272,11 +272,11 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       renderAnalyticsPageAsRole(mockBusinessOwnerUser);
 
       await waitFor(() => {
-        expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
       });
 
       // Verify page rendered successfully (no access denied)
-      expect(screen.queryByText('Access Restricted')).not.toBeInTheDocument();
+      expect(screen.queryByText('Acces restricționat')).not.toBeInTheDocument();
     });
 
     it('BusinessOwner should see scope badge indicating firm-wide view', async () => {
@@ -306,12 +306,12 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       renderAnalyticsPageAsRole(mockAssociateUser);
 
       await waitFor(() => {
-        expect(screen.getByText('Access Restricted')).toBeInTheDocument();
+        expect(screen.getByText('Acces restricționat')).toBeInTheDocument();
       });
 
       // Verify access denied message
       expect(
-        screen.getByText(/Financial analytics are only available to Partners and Business Owners/i)
+        screen.getByText(/Analizele financiare sunt disponibile doar pentru Parteneri și Proprietari/i)
       ).toBeInTheDocument();
     });
 
@@ -319,7 +319,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       renderAnalyticsPageAsRole(mockParalegalUser);
 
       await waitFor(() => {
-        expect(screen.getByText('Access Restricted')).toBeInTheDocument();
+        expect(screen.getByText('Acces restricționat')).toBeInTheDocument();
       });
     });
 
@@ -327,7 +327,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       renderAnalyticsPageAsRole(mockAssociateUser);
 
       await waitFor(() => {
-        const dashboardButton = screen.getByText('Go to Dashboard');
+        const dashboardButton = screen.getByText('Înapoi la Dashboard');
         expect(dashboardButton).toBeInTheDocument();
       });
     });
@@ -337,10 +337,10 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       const user = userEvent.setup();
 
       await waitFor(() => {
-        expect(screen.getByText('Go to Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Înapoi la Dashboard')).toBeInTheDocument();
       });
 
-      const button = screen.getByText('Go to Dashboard');
+      const button = screen.getByText('Înapoi la Dashboard');
       await user.click(button);
 
       expect(mockPush).toHaveBeenCalledWith('/');
@@ -350,7 +350,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       renderAnalyticsPageAsRole(mockAssociateUser);
 
       await waitFor(() => {
-        expect(screen.getByText('Access Restricted')).toBeInTheDocument();
+        expect(screen.getByText('Acces restricționat')).toBeInTheDocument();
       });
 
       // Verify no financial widgets are shown
@@ -364,7 +364,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       renderAnalyticsPageAsRole(mockParalegalUser);
 
       await waitFor(() => {
-        expect(screen.getByText('Access Restricted')).toBeInTheDocument();
+        expect(screen.getByText('Acces restricționat')).toBeInTheDocument();
       });
 
       // Verify no financial widgets are shown
@@ -395,7 +395,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       // Should show loading indicator (skeleton or spinner)
       // The exact loading state depends on implementation
-      expect(screen.queryByText('Access Restricted')).not.toBeInTheDocument();
+      expect(screen.queryByText('Acces restricționat')).not.toBeInTheDocument();
     });
 
     it('should render date range picker', async () => {
@@ -447,7 +447,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       // Should show error state in widgets
       await waitFor(() => {
         // Error states should be visible but page shouldn't crash
-        expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
       });
     });
 
@@ -456,7 +456,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       // Should show access denied for unauthenticated users
       await waitFor(() => {
-        expect(screen.getByText('Access Restricted')).toBeInTheDocument();
+        expect(screen.getByText('Acces restricționat')).toBeInTheDocument();
       });
     });
   });
@@ -470,7 +470,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       const { container } = renderAnalyticsPageAsRole(mockPartnerUser);
 
       await waitFor(() => {
-        expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
       });
 
       // Check for grid classes
@@ -483,8 +483,8 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       await waitFor(() => {
         // Check for header elements
-        expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
-        expect(screen.getByTitle('Refresh data')).toBeInTheDocument();
+        expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
+        expect(screen.getByTitle('Reîmprospătează datele')).toBeInTheDocument();
       });
     });
   });
@@ -500,7 +500,7 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       // Step 1: Page loads
       await waitFor(() => {
-        expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
       });
 
       // Step 2: Verify all widgets are present
@@ -508,11 +508,11 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
       expect(screen.getByText(/Utilization/i)).toBeInTheDocument();
 
       // Step 3: Verify refresh button works
-      const refreshButton = screen.getByTitle('Refresh data');
+      const refreshButton = screen.getByTitle('Reîmprospătează datele');
       await user.click(refreshButton);
 
       // Should still be on page after refresh
-      expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
+      expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
     });
 
     it('BusinessOwner: complete analytics dashboard workflow', async () => {
@@ -521,12 +521,12 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       // Step 1: Page loads with firm-wide scope
       await waitFor(() => {
-        expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
       });
 
       // Step 2: Verify BusinessOwner sees firm scope badge
       await waitFor(() => {
-        expect(screen.getByText(/All Firm Cases|Firm/i)).toBeInTheDocument();
+        expect(screen.getByText(/Toate dosarele firmei|Firmă/i)).toBeInTheDocument();
       });
 
       // Step 3: All widgets accessible
@@ -540,14 +540,14 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       // Step 1: Access denied shown
       await waitFor(() => {
-        expect(screen.getByText('Access Restricted')).toBeInTheDocument();
+        expect(screen.getByText('Acces restricționat')).toBeInTheDocument();
       });
 
       // Step 2: No financial data visible
       expect(screen.queryByText(/Revenue Overview/i)).not.toBeInTheDocument();
 
       // Step 3: Click "Go to Dashboard"
-      await user.click(screen.getByText('Go to Dashboard'));
+      await user.click(screen.getByText('Înapoi la Dashboard'));
 
       // Step 4: Verify redirect called
       expect(mockPush).toHaveBeenCalledWith('/');
@@ -570,9 +570,9 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       await waitFor(() => {
         // Verify dashboard header is present
-        expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Analize Financiare')).toBeInTheDocument();
         // Verify scope indicator is present
-        expect(screen.getByText(/My Cases/i)).toBeInTheDocument();
+        expect(screen.getByText(/Dosarele mele/i)).toBeInTheDocument();
       });
     });
   });

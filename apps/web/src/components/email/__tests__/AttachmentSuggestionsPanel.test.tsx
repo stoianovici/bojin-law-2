@@ -81,11 +81,11 @@ describe('AttachmentSuggestionsPanel', () => {
       render(<AttachmentSuggestionsPanel {...defaultProps} />);
 
       // High relevance (>= 0.8)
-      expect(screen.getByText('High')).toBeInTheDocument();
+      expect(screen.getByText('Ridicată')).toBeInTheDocument();
       // Medium relevance (0.6-0.8)
-      expect(screen.getByText('Medium')).toBeInTheDocument();
+      expect(screen.getByText('Medie')).toBeInTheDocument();
       // Low relevance (< 0.6)
-      expect(screen.getByText('Low')).toBeInTheDocument();
+      expect(screen.getByText('Scăzută')).toBeInTheDocument();
     });
 
     it('should render checkboxes for each suggestion', () => {
@@ -185,21 +185,21 @@ describe('AttachmentSuggestionsPanel', () => {
     it('should style high relevance with green', () => {
       render(<AttachmentSuggestionsPanel {...defaultProps} />);
 
-      const highBadge = screen.getByText('High');
+      const highBadge = screen.getByText('Ridicată');
       expect(highBadge).toHaveClass('bg-green-100', 'text-green-800');
     });
 
     it('should style medium relevance with yellow', () => {
       render(<AttachmentSuggestionsPanel {...defaultProps} />);
 
-      const mediumBadge = screen.getByText('Medium');
+      const mediumBadge = screen.getByText('Medie');
       expect(mediumBadge).toHaveClass('bg-yellow-100', 'text-yellow-800');
     });
 
     it('should style low relevance with gray', () => {
       render(<AttachmentSuggestionsPanel {...defaultProps} />);
 
-      const lowBadge = screen.getByText('Low');
+      const lowBadge = screen.getByText('Scăzută');
       expect(lowBadge).toHaveClass('bg-gray-100', 'text-gray-800');
     });
   });

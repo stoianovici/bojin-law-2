@@ -29,12 +29,12 @@ describe('RetainerStatusWidget', () => {
   describe('Basic Rendering', () => {
     it('renders the widget title', () => {
       render(<RetainerStatusWidget {...defaultProps} />);
-      expect(screen.getByText('Retainer Status')).toBeInTheDocument();
+      expect(screen.getByText('Status Abonamente')).toBeInTheDocument();
     });
 
     it('renders utilization percentage', () => {
       render(<RetainerStatusWidget {...defaultProps} />);
-      expect(screen.getByText('65.0%')).toBeInTheDocument();
+      expect(screen.getByText('65,0 %')).toBeInTheDocument();
     });
 
     it('renders gauge chart', () => {
@@ -44,19 +44,19 @@ describe('RetainerStatusWidget', () => {
 
     it('renders average utilization label', () => {
       render(<RetainerStatusWidget {...defaultProps} />);
-      expect(screen.getByText('avg utilization')).toBeInTheDocument();
+      expect(screen.getByText('utilizare medie')).toBeInTheDocument();
     });
 
     it('renders retainer cases count', () => {
       render(<RetainerStatusWidget {...defaultProps} />);
-      expect(screen.getByText('Active Retainers')).toBeInTheDocument();
+      expect(screen.getByText('Abonamente active')).toBeInTheDocument();
       expect(screen.getByText('8')).toBeInTheDocument();
-      expect(screen.getByText('cases')).toBeInTheDocument();
+      expect(screen.getByText('dosare')).toBeInTheDocument();
     });
 
     it('renders singular "case" for single retainer', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={50} retainerCasesCount={1} />);
-      expect(screen.getByText('case')).toBeInTheDocument();
+      expect(screen.getByText('dosar')).toBeInTheDocument();
     });
   });
 
@@ -86,7 +86,7 @@ describe('RetainerStatusWidget', () => {
 
       render(<RetainerStatusWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
-      screen.getByRole('button', { name: /retry/i }).click();
+      screen.getByRole('button', { name: /reîncearcă/i }).click();
       expect(mockRetry).toHaveBeenCalledTimes(1);
     });
   });
@@ -95,9 +95,9 @@ describe('RetainerStatusWidget', () => {
     it('shows special empty state when no retainer cases', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={null} retainerCasesCount={0} />);
 
-      expect(screen.getByText('No retainer cases')).toBeInTheDocument();
+      expect(screen.getByText('Nu există abonamente')).toBeInTheDocument();
       expect(
-        screen.getByText('Retainer metrics will appear when you have active retainer agreements')
+        screen.getByText('Statisticile vor apărea când aveți contracte de tip abonament active')
       ).toBeInTheDocument();
     });
 
@@ -112,7 +112,7 @@ describe('RetainerStatusWidget', () => {
     it('shows green color for healthy utilization (<80%)', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={50} retainerCasesCount={5} />);
 
-      const percentageElement = screen.getByText('50.0%');
+      const percentageElement = screen.getByText('50,0 %');
       // Green is #10B981
       expect(percentageElement).toHaveStyle({ color: 'rgb(16, 185, 129)' });
     });
@@ -120,13 +120,13 @@ describe('RetainerStatusWidget', () => {
     it('shows green status text for healthy', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={50} retainerCasesCount={5} />);
 
-      expect(screen.getByText('Healthy')).toBeInTheDocument();
+      expect(screen.getByText('În regulă')).toBeInTheDocument();
     });
 
     it('shows yellow color for approaching limit (80-100%)', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={90} retainerCasesCount={5} />);
 
-      const percentageElement = screen.getByText('90.0%');
+      const percentageElement = screen.getByText('90,0 %');
       // Yellow is #F59E0B
       expect(percentageElement).toHaveStyle({ color: 'rgb(245, 158, 11)' });
     });
@@ -134,13 +134,13 @@ describe('RetainerStatusWidget', () => {
     it('shows approaching limit status text', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={90} retainerCasesCount={5} />);
 
-      expect(screen.getByText('Approaching limit')).toBeInTheDocument();
+      expect(screen.getByText('Aproape de limită')).toBeInTheDocument();
     });
 
     it('shows red color for over-utilized (>100%)', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={120} retainerCasesCount={5} />);
 
-      const percentageElement = screen.getByText('120.0%');
+      const percentageElement = screen.getByText('120,0 %');
       // Red is #EF4444
       expect(percentageElement).toHaveStyle({ color: 'rgb(239, 68, 68)' });
     });
@@ -148,7 +148,7 @@ describe('RetainerStatusWidget', () => {
     it('shows over utilized status text', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={120} retainerCasesCount={5} />);
 
-      expect(screen.getByText('Over utilized')).toBeInTheDocument();
+      expect(screen.getByText('Depășit')).toBeInTheDocument();
     });
   });
 
@@ -156,14 +156,14 @@ describe('RetainerStatusWidget', () => {
     it('shows warning banner when utilization exceeds 100%', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={115} retainerCasesCount={5} />);
 
-      expect(screen.getByText('Retainer hours exceeded')).toBeInTheDocument();
-      expect(screen.getByText(/Some retainer agreements are over-utilized/)).toBeInTheDocument();
+      expect(screen.getByText('Ore de abonament depășite')).toBeInTheDocument();
+      expect(screen.getByText(/Unele contracte de abonament sunt supra-utilizate/)).toBeInTheDocument();
     });
 
     it('does not show warning when utilization is under 100%', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={95} retainerCasesCount={5} />);
 
-      expect(screen.queryByText('Retainer hours exceeded')).not.toBeInTheDocument();
+      expect(screen.queryByText('Ore de abonament depășite')).not.toBeInTheDocument();
     });
   });
 
@@ -219,41 +219,41 @@ describe('RetainerStatusWidget', () => {
     it('handles 0% utilization', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={0} retainerCasesCount={5} />);
 
-      expect(screen.getByText('0.0%')).toBeInTheDocument();
+      expect(screen.getByText('0,0 %')).toBeInTheDocument();
     });
 
     it('handles exactly 80% utilization (boundary)', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={80} retainerCasesCount={5} />);
 
-      expect(screen.getByText('80.0%')).toBeInTheDocument();
-      expect(screen.getByText('Approaching limit')).toBeInTheDocument();
+      expect(screen.getByText('80,0 %')).toBeInTheDocument();
+      expect(screen.getByText('Aproape de limită')).toBeInTheDocument();
     });
 
     it('handles exactly 100% utilization (boundary)', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={100} retainerCasesCount={5} />);
 
-      expect(screen.getByText('100.0%')).toBeInTheDocument();
-      expect(screen.getByText('Approaching limit')).toBeInTheDocument();
+      expect(screen.getByText('100,0 %')).toBeInTheDocument();
+      expect(screen.getByText('Aproape de limită')).toBeInTheDocument();
     });
 
     it('handles extreme overage (200%)', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={200} retainerCasesCount={5} />);
 
-      expect(screen.getByText('200.0%')).toBeInTheDocument();
-      expect(screen.getByText('Over utilized')).toBeInTheDocument();
+      expect(screen.getByText('200,0 %')).toBeInTheDocument();
+      expect(screen.getByText('Depășit')).toBeInTheDocument();
     });
 
     it('handles null utilization with cases', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={null} retainerCasesCount={5} />);
 
       // Should default to 0 and still render
-      expect(screen.getByText('0.0%')).toBeInTheDocument();
+      expect(screen.getByText('0,0 %')).toBeInTheDocument();
     });
 
     it('handles decimal utilization', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={65.5} retainerCasesCount={5} />);
 
-      expect(screen.getByText('65.5%')).toBeInTheDocument();
+      expect(screen.getByText('65,5 %')).toBeInTheDocument();
     });
 
     it('handles large number of retainer cases', () => {
@@ -277,7 +277,7 @@ describe('RetainerStatusWidget', () => {
 
       // The gauge should exist but text should show actual value
       expect(screen.getByTestId('radial-bar-chart')).toBeInTheDocument();
-      expect(screen.getByText('150.0%')).toBeInTheDocument();
+      expect(screen.getByText('150,0 %')).toBeInTheDocument();
     });
   });
 });

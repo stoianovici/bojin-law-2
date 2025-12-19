@@ -32,7 +32,7 @@ describe('PeriodComparisonToggle', () => {
 
     it('renders the label text', () => {
       render(<PeriodComparisonToggle />);
-      expect(screen.getByText('Compare to previous period')).toBeInTheDocument();
+      expect(screen.getByText('Compară cu perioada anterioară')).toBeInTheDocument();
     });
 
     it('renders the comparison icon', () => {
@@ -44,7 +44,7 @@ describe('PeriodComparisonToggle', () => {
     it('label is associated with switch', () => {
       render(<PeriodComparisonToggle />);
       const switchElement = screen.getByRole('switch');
-      const label = screen.getByText('Compare to previous period');
+      const label = screen.getByText('Compară cu perioada anterioară');
 
       expect(switchElement).toHaveAttribute('id', 'period-comparison');
       expect(label.closest('label')).toHaveAttribute('for', 'period-comparison');
@@ -110,7 +110,7 @@ describe('PeriodComparisonToggle', () => {
     it('toggles via label click', () => {
       render(<PeriodComparisonToggle />);
 
-      const label = screen.getByText('Compare to previous period');
+      const label = screen.getByText('Compară cu perioada anterioară');
       expect(useAnalyticsFiltersStore.getState().comparisonEnabled).toBe(false);
 
       fireEvent.click(label);

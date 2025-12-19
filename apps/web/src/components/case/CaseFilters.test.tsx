@@ -41,7 +41,7 @@ describe('CaseFilters', () => {
     expect(assignedCheckbox).not.toBeChecked();
 
     // Clear Filters button should not be visible
-    expect(screen.queryByText('Clear Filters')).not.toBeInTheDocument();
+    expect(screen.queryByText('Șterge filtrele')).not.toBeInTheDocument();
   });
 
   it('calls setStatus when status dropdown changes', () => {
@@ -90,7 +90,7 @@ describe('CaseFilters', () => {
 
     render(<CaseFilters />);
 
-    const clearButton = screen.getByText('Clear Filters');
+    const clearButton = screen.getByText('Șterge filtrele');
     expect(clearButton).toBeInTheDocument();
   });
 
@@ -105,7 +105,7 @@ describe('CaseFilters', () => {
 
     render(<CaseFilters />);
 
-    const clearButton = screen.getByText('Clear Filters');
+    const clearButton = screen.getByText('Șterge filtrele');
     expect(clearButton).toBeInTheDocument();
   });
 
@@ -120,7 +120,7 @@ describe('CaseFilters', () => {
 
     render(<CaseFilters />);
 
-    const clearButton = screen.getByText('Clear Filters');
+    const clearButton = screen.getByText('Șterge filtrele');
     fireEvent.click(clearButton);
 
     expect(mockClearFilters).toHaveBeenCalledTimes(1);

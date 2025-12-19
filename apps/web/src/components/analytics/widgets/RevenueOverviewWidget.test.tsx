@@ -36,14 +36,14 @@ describe('RevenueOverviewWidget', () => {
   describe('Basic Rendering', () => {
     it('renders the widget title', () => {
       render(<RevenueOverviewWidget {...defaultProps} />);
-      expect(screen.getByText('Revenue Overview')).toBeInTheDocument();
+      expect(screen.getByText('Sumar Venituri')).toBeInTheDocument();
     });
 
     it('renders total revenue amount', () => {
       render(<RevenueOverviewWidget {...defaultProps} />);
-      expect(screen.getByText('Total Revenue')).toBeInTheDocument();
-      // Should show $150,000 formatted
-      expect(screen.getByText('$150,000')).toBeInTheDocument();
+      expect(screen.getByText('Total Venituri')).toBeInTheDocument();
+      // Should show 150.000 formatted (Romanian locale uses . as thousand separator)
+      expect(screen.getByText('150.000')).toBeInTheDocument();
     });
 
     it('renders the pie chart when there is data', () => {
@@ -53,9 +53,9 @@ describe('RevenueOverviewWidget', () => {
 
     it('renders legend with billing type breakdown', () => {
       render(<RevenueOverviewWidget {...defaultProps} />);
-      expect(screen.getByText('Hourly')).toBeInTheDocument();
-      expect(screen.getByText('Fixed Fee')).toBeInTheDocument();
-      expect(screen.getByText('Retainer')).toBeInTheDocument();
+      expect(screen.getByText('Orar')).toBeInTheDocument();
+      expect(screen.getByText('Fix')).toBeInTheDocument();
+      expect(screen.getByText('Abonament')).toBeInTheDocument();
     });
   });
 
@@ -67,7 +67,7 @@ describe('RevenueOverviewWidget', () => {
 
     it('does not show revenue data when loading', () => {
       render(<RevenueOverviewWidget {...defaultProps} isLoading={true} />);
-      expect(screen.queryByText('$150,000')).not.toBeInTheDocument();
+      expect(screen.queryByText('150.000')).not.toBeInTheDocument();
     });
   });
 
@@ -77,7 +77,7 @@ describe('RevenueOverviewWidget', () => {
       render(<RevenueOverviewWidget {...defaultProps} error={testError} />);
 
       expect(screen.getByTestId('widget-error')).toBeInTheDocument();
-      expect(screen.getByText('Failed to load data')).toBeInTheDocument();
+      expect(screen.getByText('Eroare la încărcarea datelor')).toBeInTheDocument();
     });
 
     it('shows retry button when onRetry is provided', () => {
@@ -85,7 +85,7 @@ describe('RevenueOverviewWidget', () => {
       const testError = new Error('Network error');
       render(<RevenueOverviewWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
-      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /reîncearcă/i })).toBeInTheDocument();
     });
   });
 
@@ -99,7 +99,7 @@ describe('RevenueOverviewWidget', () => {
       );
 
       expect(screen.getByTestId('widget-empty')).toBeInTheDocument();
-      expect(screen.getByText('No revenue data for this period')).toBeInTheDocument();
+      expect(screen.getByText('Nu există date pentru această perioadă')).toBeInTheDocument();
     });
 
     it('shows empty when all billing types are 0', () => {
@@ -158,9 +158,9 @@ describe('RevenueOverviewWidget', () => {
         />
       );
 
-      expect(screen.getByText('Hourly')).toBeInTheDocument();
-      expect(screen.queryByText('Fixed Fee')).not.toBeInTheDocument();
-      expect(screen.queryByText('Retainer')).not.toBeInTheDocument();
+      expect(screen.getByText('Orar')).toBeInTheDocument();
+      expect(screen.queryByText('Fix')).not.toBeInTheDocument();
+      expect(screen.queryByText('Abonament')).not.toBeInTheDocument();
     });
 
     it('handles very large revenue values', () => {
@@ -175,8 +175,8 @@ describe('RevenueOverviewWidget', () => {
         />
       );
 
-      // Should format large numbers correctly
-      expect(screen.getByText('$10,000,000')).toBeInTheDocument();
+      // Should format large numbers correctly (Romanian locale uses . as thousand separator)
+      expect(screen.getByText('10.000.000')).toBeInTheDocument();
     });
 
     it('applies custom className', () => {
@@ -191,7 +191,7 @@ describe('RevenueOverviewWidget', () => {
       render(<RevenueOverviewWidget totalRevenue={1000} revenueByBillingType={undefined as any} />);
 
       // Should not crash
-      expect(screen.getByText('Revenue Overview')).toBeInTheDocument();
+      expect(screen.getByText('Sumar Venituri')).toBeInTheDocument();
     });
   });
 });

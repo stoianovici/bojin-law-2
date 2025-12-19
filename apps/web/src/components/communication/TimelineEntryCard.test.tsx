@@ -140,7 +140,7 @@ describe('TimelineEntryCard', () => {
   it('should show "Coming Soon" badge when disabled', () => {
     render(<TimelineEntryCard entry={mockEntry} isDisabled={true} />);
 
-    expect(screen.getByText('Coming Soon')).toBeInTheDocument();
+    expect(screen.getByText('În curând')).toBeInTheDocument();
   });
 
   it('should have reduced opacity when disabled', () => {
@@ -158,15 +158,15 @@ describe('TimelineEntryCard', () => {
 
     render(<TimelineEntryCard entry={longBodyEntry} />);
 
-    // Should show "Show more" button
-    const expandButton = screen.getByRole('button', { name: /show more/i });
+    // Should show "Arată mai mult" button
+    const expandButton = screen.getByRole('button', { name: /arată mai mult/i });
     expect(expandButton).toBeInTheDocument();
 
     // Click to expand
     fireEvent.click(expandButton);
 
-    // Should now show "Show less"
-    expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument();
+    // Should now show "Arată mai puțin"
+    expect(screen.getByRole('button', { name: /arată mai puțin/i })).toBeInTheDocument();
   });
 
   it('should display thread reply count', () => {
@@ -177,7 +177,7 @@ describe('TimelineEntryCard', () => {
 
     render(<TimelineEntryCard entry={entryWithReplies} />);
 
-    expect(screen.getByText('3 replies in thread')).toBeInTheDocument();
+    expect(screen.getByText('3 răspunsuri în conversație')).toBeInTheDocument();
   });
 
   it('should display singular "reply" for single reply', () => {
@@ -188,7 +188,7 @@ describe('TimelineEntryCard', () => {
 
     render(<TimelineEntryCard entry={entryWithReply} />);
 
-    expect(screen.getByText('1 reply in thread')).toBeInTheDocument();
+    expect(screen.getByText('1 răspuns în conversație')).toBeInTheDocument();
   });
 
   it('should set aria attributes', () => {

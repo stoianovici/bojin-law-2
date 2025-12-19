@@ -29,31 +29,31 @@ const STATUS_CONFIG: Record<
   { label: string; color: string; bgColor: string; icon: 'edit' | 'check' | 'send' | 'x' }
 > = {
   Generated: {
-    label: 'AI Draft',
+    label: 'Draft AI',
     color: 'text-blue-700 dark:text-blue-300',
     bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     icon: 'edit',
   },
   Editing: {
-    label: 'Editing',
+    label: 'În editare',
     color: 'text-amber-700 dark:text-amber-300',
     bgColor: 'bg-amber-100 dark:bg-amber-900/30',
     icon: 'edit',
   },
   Ready: {
-    label: 'Ready',
+    label: 'Gata',
     color: 'text-green-700 dark:text-green-300',
     bgColor: 'bg-green-100 dark:bg-green-900/30',
     icon: 'check',
   },
   Sent: {
-    label: 'Sent',
+    label: 'Trimis',
     color: 'text-gray-700 dark:text-gray-300',
     bgColor: 'bg-gray-100 dark:bg-gray-800',
     icon: 'send',
   },
   Discarded: {
-    label: 'Discarded',
+    label: 'Anulat',
     color: 'text-red-700 dark:text-red-300',
     bgColor: 'bg-red-100 dark:bg-red-900/30',
     icon: 'x',

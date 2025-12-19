@@ -10,12 +10,15 @@ import { InlineSuggestion } from '../InlineSuggestion';
 
 describe('InlineSuggestion', () => {
   const defaultProps = {
-    suggestion: ' and we will respond within 48 hours.',
-    type: 'completion' as const,
-    confidence: 0.85,
+    suggestion: {
+      id: 'sugg-1',
+      type: 'Completion' as const,
+      suggestion: ' and we will respond within 48 hours.',
+      reason: 'Completing sentence pattern',
+      confidence: 0.85,
+    },
     onAccept: jest.fn(),
     onDismiss: jest.fn(),
-    position: { top: 100, left: 200 },
   };
 
   beforeEach(() => {
@@ -29,163 +32,190 @@ describe('InlineSuggestion', () => {
       expect(screen.getByText(/and we will respond/i)).toBeInTheDocument();
     });
 
-    it('should render completion type styling', () => {
+    it('should render completion type with correct label', () => {
       render(<InlineSuggestion {...defaultProps} />);
 
-      const suggestionElement = screen.getByRole('tooltip');
-      expect(suggestionElement).toHaveClass('text-gray-400');
+      expect(screen.getByText(/Sugestie/i)).toBeInTheDocument();
     });
 
-    it('should render correction type styling', () => {
-      render(<InlineSuggestion {...defaultProps} type="correction" />);
+    it('should render correction type with correct label', () => {
+      const correctionSuggestion = {
+        ...defaultProps.suggestion,
+        type: 'Correction' as const,
+      };
+      render(<InlineSuggestion {...defaultProps} suggestion={correctionSuggestion} />);
 
-      const suggestionElement = screen.getByRole('tooltip');
-      expect(suggestionElement).toHaveClass('text-yellow-600');
+      expect(screen.getByText(/Corecție/i)).toBeInTheDocument();
     });
 
-    it('should render improvement type styling', () => {
-      render(<InlineSuggestion {...defaultProps} type="improvement" />);
+    it('should render improvement type with correct label', () => {
+      const improvementSuggestion = {
+        ...defaultProps.suggestion,
+        type: 'Improvement' as const,
+      };
+      render(<InlineSuggestion {...defaultProps} suggestion={improvementSuggestion} />);
 
-      const suggestionElement = screen.getByRole('tooltip');
-      expect(suggestionElement).toHaveClass('text-blue-600');
+      expect(screen.getByText(/Îmbunătățire/i)).toBeInTheDocument();
     });
 
     it('should display keyboard hint', () => {
       render(<InlineSuggestion {...defaultProps} />);
 
+      expect(screen.getByText(/Apasă/i)).toBeInTheDocument();
       expect(screen.getByText(/Tab/i)).toBeInTheDocument();
-      expect(screen.getByText(/Esc/i)).toBeInTheDocument();
+      expect(screen.getByText(/pentru a accepta/i)).toBeInTheDocument();
     });
 
-    it('should position suggestion correctly', () => {
-      render(<InlineSuggestion {...defaultProps} position={{ top: 150, left: 250 }} />);
+    it('should display reason when provided', () => {
+      render(<InlineSuggestion {...defaultProps} />);
 
-      const container = screen.getByRole('tooltip').closest('div');
-      expect(container).toHaveStyle({ top: '150px', left: '250px' });
+      expect(screen.getByText(/Completing sentence pattern/i)).toBeInTheDocument();
+    });
+
+    it('should hide reason when not provided', () => {
+      const noReasonSuggestion = {
+        ...defaultProps.suggestion,
+        reason: undefined,
+      };
+      render(<InlineSuggestion {...defaultProps} suggestion={noReasonSuggestion} />);
+
+      expect(screen.queryByText(/pattern/i)).not.toBeInTheDocument();
     });
   });
 
-  describe('Keyboard interactions', () => {
-    it('should call onAccept when Tab is pressed', () => {
+  describe('Button interactions', () => {
+    it('should call onAccept when accept button is clicked', () => {
       const onAccept = jest.fn();
       render(<InlineSuggestion {...defaultProps} onAccept={onAccept} />);
 
-      fireEvent.keyDown(document, { key: 'Tab' });
+      fireEvent.click(screen.getByRole('button', { name: /Acceptă/i }));
 
-      expect(onAccept).toHaveBeenCalledWith(defaultProps.suggestion);
+      expect(onAccept).toHaveBeenCalled();
     });
 
-    it('should call onDismiss when Escape is pressed', () => {
+    it('should call onDismiss when dismiss button is clicked', () => {
       const onDismiss = jest.fn();
       render(<InlineSuggestion {...defaultProps} onDismiss={onDismiss} />);
 
-      fireEvent.keyDown(document, { key: 'Escape' });
+      fireEvent.click(screen.getByRole('button', { name: /Respinge/i }));
 
       expect(onDismiss).toHaveBeenCalled();
     });
 
-    it('should prevent default Tab behavior', () => {
-      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
-      const preventDefaultSpy = jest.spyOn(event, 'preventDefault');
-
-      render(<InlineSuggestion {...defaultProps} />);
-
-      document.dispatchEvent(event);
-
-      expect(preventDefaultSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('Click interactions', () => {
-    it('should call onAccept when suggestion is clicked', () => {
-      const onAccept = jest.fn();
-      render(<InlineSuggestion {...defaultProps} onAccept={onAccept} />);
-
-      fireEvent.click(screen.getByRole('tooltip'));
-
-      expect(onAccept).toHaveBeenCalledWith(defaultProps.suggestion);
-    });
-
-    it('should call onDismiss when clicking outside', () => {
+    it('should call onDismiss when close icon is clicked', () => {
       const onDismiss = jest.fn();
-      render(
-        <div>
-          <InlineSuggestion {...defaultProps} onDismiss={onDismiss} />
-          <button>Outside</button>
-        </div>
-      );
+      render(<InlineSuggestion {...defaultProps} onDismiss={onDismiss} />);
 
-      fireEvent.click(screen.getByText('Outside'));
+      const closeButton = screen.getByLabelText(/Respinge sugestia/i);
+      fireEvent.click(closeButton);
 
       expect(onDismiss).toHaveBeenCalled();
     });
   });
 
   describe('Confidence display', () => {
-    it('should show high confidence indicator', () => {
-      render(<InlineSuggestion {...defaultProps} confidence={0.9} />);
-
-      expect(screen.getByText(/90%/i)).toBeInTheDocument();
-    });
-
-    it('should style confidence based on level', () => {
-      const { rerender } = render(<InlineSuggestion {...defaultProps} confidence={0.9} />);
-      expect(screen.getByText(/90%/i)).toHaveClass('text-green-600');
-
-      rerender(<InlineSuggestion {...defaultProps} confidence={0.7} />);
-      expect(screen.getByText(/70%/i)).toHaveClass('text-yellow-600');
-
-      rerender(<InlineSuggestion {...defaultProps} confidence={0.4} />);
-      expect(screen.getByText(/40%/i)).toHaveClass('text-red-600');
-    });
-  });
-
-  describe('Type icons', () => {
-    it('should show completion icon for completion type', () => {
-      render(<InlineSuggestion {...defaultProps} type="completion" />);
-
-      expect(screen.getByRole('tooltip').querySelector('svg')).toBeInTheDocument();
-    });
-
-    it('should show different icon for correction type', () => {
-      render(<InlineSuggestion {...defaultProps} type="correction" />);
-
-      expect(screen.getByRole('tooltip').querySelector('svg')).toBeInTheDocument();
-    });
-  });
-
-  describe('Animation', () => {
-    it('should have fade-in animation class', () => {
+    it('should show confidence percentage', () => {
       render(<InlineSuggestion {...defaultProps} />);
 
-      const container = screen.getByRole('tooltip').closest('div');
-      expect(container).toHaveClass('animate-fade-in');
+      expect(screen.getByText(/85% încredere/i)).toBeInTheDocument();
+    });
+
+    it('should display confidence bar', () => {
+      render(<InlineSuggestion {...defaultProps} />);
+
+      const confidenceBar = screen.getByText(/85% încredere/i).previousElementSibling;
+      expect(confidenceBar).toBeInTheDocument();
+    });
+
+    it('should show high confidence with green color', () => {
+      const highConfidenceSuggestion = {
+        ...defaultProps.suggestion,
+        confidence: 0.9,
+      };
+      render(<InlineSuggestion {...defaultProps} suggestion={highConfidenceSuggestion} />);
+
+      expect(screen.getByText(/90% încredere/i)).toBeInTheDocument();
+    });
+
+    it('should show medium confidence with yellow color', () => {
+      const mediumConfidenceSuggestion = {
+        ...defaultProps.suggestion,
+        confidence: 0.7,
+      };
+      render(<InlineSuggestion {...defaultProps} suggestion={mediumConfidenceSuggestion} />);
+
+      expect(screen.getByText(/70% încredere/i)).toBeInTheDocument();
+    });
+
+    it('should show low confidence with gray color', () => {
+      const lowConfidenceSuggestion = {
+        ...defaultProps.suggestion,
+        confidence: 0.5,
+      };
+      render(<InlineSuggestion {...defaultProps} suggestion={lowConfidenceSuggestion} />);
+
+      expect(screen.getByText(/50% încredere/i)).toBeInTheDocument();
     });
   });
 
-  describe('Reason display', () => {
-    it('should show reason when provided', () => {
-      render(<InlineSuggestion {...defaultProps} reason="Completing sentence pattern" />);
+  describe('Type styling', () => {
+    it('should have blue styling for completion type', () => {
+      render(<InlineSuggestion {...defaultProps} />);
 
-      expect(screen.getByText(/Completing sentence/i)).toBeInTheDocument();
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toHaveClass('border-blue-200', 'bg-blue-50');
     });
 
-    it('should not show reason when not provided', () => {
-      render(<InlineSuggestion {...defaultProps} reason={undefined} />);
+    it('should have amber styling for correction type', () => {
+      const correctionSuggestion = {
+        ...defaultProps.suggestion,
+        type: 'Correction' as const,
+      };
+      render(<InlineSuggestion {...defaultProps} suggestion={correctionSuggestion} />);
 
-      // Only suggestion text should be present
-      expect(screen.queryByText(/reason/i)).not.toBeInTheDocument();
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toHaveClass('border-amber-200', 'bg-amber-50');
+    });
+
+    it('should have green styling for improvement type', () => {
+      const improvementSuggestion = {
+        ...defaultProps.suggestion,
+        type: 'Improvement' as const,
+      };
+      render(<InlineSuggestion {...defaultProps} suggestion={improvementSuggestion} />);
+
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toHaveClass('border-green-200', 'bg-green-50');
     });
   });
 
-  describe('Cleanup', () => {
-    it('should remove event listeners on unmount', () => {
-      const removeEventListenerSpy = jest.spyOn(document, 'removeEventListener');
+  describe('Accessibility', () => {
+    it('should have proper role for tooltip', () => {
+      render(<InlineSuggestion {...defaultProps} />);
 
-      const { unmount } = render(<InlineSuggestion {...defaultProps} />);
-      unmount();
+      expect(screen.getByRole('tooltip')).toBeInTheDocument();
+    });
 
-      expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
+    it('should have aria-live polite', () => {
+      render(<InlineSuggestion {...defaultProps} />);
+
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toHaveAttribute('aria-live', 'polite');
+    });
+
+    it('should have aria-label for dismiss button', () => {
+      render(<InlineSuggestion {...defaultProps} />);
+
+      expect(screen.getByLabelText(/Respinge sugestia/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Dark mode', () => {
+    it('should have dark mode classes', () => {
+      render(<InlineSuggestion {...defaultProps} />);
+
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toHaveClass('dark:border-blue-800', 'dark:bg-blue-900/50');
     });
   });
 });

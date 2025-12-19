@@ -1,19 +1,25 @@
 /**
  * Manual Mapping API Tests
  * Story 2.12.1 - Task 7: Admin Dashboard
+ * @jest-environment node
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { NextRequest } from 'next/server';
-import { POST } from './route';
 
-// Mock the discovery status service
+// Mock the discovery status service BEFORE importing the route
+const mockMapTypeToSkill = jest.fn<any, any>();
+
 jest.mock('@/lib/services/discovery-status.service', () => ({
   discoveryStatusService: {
-    mapTypeToSkill: jest.fn(),
+    get mapTypeToSkill() {
+      return mockMapTypeToSkill;
+    },
   },
 }));
 
+// Import route and mock AFTER mocking
+import { POST } from './route';
 import { discoveryStatusService } from '@/lib/services/discovery-status.service';
 
 describe('Manual Mapping API', () => {
@@ -31,11 +37,12 @@ describe('Manual Mapping API', () => {
         decisionBasis: 'Manual review of samples',
       };
 
-      (discoveryStatusService.mapTypeToSkill as jest.Mock).mockResolvedValue(undefined);
+      mockMapTypeToSkill.mockResolvedValue(undefined);
 
       const request = new NextRequest('http://localhost:3000/api/admin/discovery/map', {
         method: 'POST',
         body: JSON.stringify(mappingRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -48,7 +55,7 @@ describe('Manual Mapping API', () => {
         skillId: mappingRequest.targetSkill,
         confidence: mappingRequest.confidence,
       });
-      expect(discoveryStatusService.mapTypeToSkill).toHaveBeenCalledWith(mappingRequest);
+      expect(mockMapTypeToSkill).toHaveBeenCalledWith(mappingRequest);
     });
 
     it('should return 400 if typeId is missing', async () => {
@@ -62,6 +69,7 @@ describe('Manual Mapping API', () => {
       const request = new NextRequest('http://localhost:3000/api/admin/discovery/map', {
         method: 'POST',
         body: JSON.stringify(invalidRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -82,6 +90,7 @@ describe('Manual Mapping API', () => {
       const request = new NextRequest('http://localhost:3000/api/admin/discovery/map', {
         method: 'POST',
         body: JSON.stringify(invalidRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -103,6 +112,7 @@ describe('Manual Mapping API', () => {
       const request = new NextRequest('http://localhost:3000/api/admin/discovery/map', {
         method: 'POST',
         body: JSON.stringify(invalidRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -123,6 +133,7 @@ describe('Manual Mapping API', () => {
       const request = new NextRequest('http://localhost:3000/api/admin/discovery/map', {
         method: 'POST',
         body: JSON.stringify(invalidRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -141,13 +152,12 @@ describe('Manual Mapping API', () => {
         decisionBasis: 'Test',
       };
 
-      (discoveryStatusService.mapTypeToSkill as jest.Mock).mockRejectedValue(
-        new Error('Database error')
-      );
+      mockMapTypeToSkill.mockRejectedValue(new Error('Database error'));
 
       const request = new NextRequest('http://localhost:3000/api/admin/discovery/map', {
         method: 'POST',
         body: JSON.stringify(mappingRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);

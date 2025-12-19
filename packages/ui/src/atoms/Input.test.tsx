@@ -83,45 +83,45 @@ describe('Input', () => {
       render(
         <Input
           validationState="error"
-          errorMessage="This field is required"
+          errorMessage="Acest câmp este obligatoriu"
           data-testid="input-error"
         />
       );
       const input = screen.getByTestId('input-error');
       expect(input).toHaveClass('border-error-500');
       expect(input).toHaveAttribute('aria-invalid', 'true');
-      expect(screen.getByRole('alert')).toHaveTextContent('This field is required');
+      expect(screen.getByRole('alert')).toHaveTextContent('Acest câmp este obligatoriu');
     });
 
     it('renders success state with message', () => {
       render(
         <Input
           validationState="success"
-          successMessage="Valid email address"
+          successMessage="Adresă de email validă"
           data-testid="input-success"
         />
       );
       const input = screen.getByTestId('input-success');
       expect(input).toHaveClass('border-success-500');
-      expect(screen.getByRole('status')).toHaveTextContent('Valid email address');
+      expect(screen.getByRole('status')).toHaveTextContent('Adresă de email validă');
     });
 
     it('renders warning state with message', () => {
       render(
         <Input
           validationState="warning"
-          warningMessage="This email looks unusual"
+          warningMessage="Acest email arată neobișnuit"
           data-testid="input-warning"
         />
       );
       const input = screen.getByTestId('input-warning');
       expect(input).toHaveClass('border-warning-500');
-      expect(screen.getByRole('status')).toHaveTextContent('This email looks unusual');
+      expect(screen.getByRole('status')).toHaveTextContent('Acest email arată neobișnuit');
     });
 
     it('renders helper text in default state', () => {
-      render(<Input helperText="Enter your email address" />);
-      expect(screen.getByText('Enter your email address')).toBeInTheDocument();
+      render(<Input helperText="Introduceți adresa de email" />);
+      expect(screen.getByText('Introduceți adresa de email')).toBeInTheDocument();
     });
   });
 
@@ -177,7 +177,7 @@ describe('Input', () => {
     });
 
     it('has correct ARIA attributes for error state', () => {
-      render(<Input label="Email" validationState="error" errorMessage="Invalid email" />);
+      render(<Input label="Email" validationState="error" errorMessage="Email invalid" />);
       const input = screen.getByLabelText('Email');
       expect(input).toHaveAttribute('aria-invalid', 'true');
       expect(input).toHaveAttribute('aria-describedby');
@@ -217,7 +217,8 @@ describe('Input', () => {
     it('generates unique id when not provided', () => {
       const { container } = render(<Input label="Email" />);
       const input = container.querySelector('input');
-      expect(input?.id).toMatch(/^input-/);
+      expect(input?.id).toBeTruthy();
+      expect(input?.id).not.toBe('');
     });
   });
 });

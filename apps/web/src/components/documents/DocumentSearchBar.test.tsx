@@ -187,11 +187,16 @@ describe('DocumentSearchBar', () => {
 
   describe('Sync with Store', () => {
     it('should sync local query with store filters when cleared externally', () => {
+      // Start with a populated query in the store
+      (useDocumentsStore as unknown as jest.Mock).mockReturnValue({
+        filters: { ...defaultFilters, searchQuery: 'contract' },
+        setSearchQuery: mockSetSearchQuery,
+      });
+
       const { rerender } = render(<DocumentSearchBar />);
       const input = screen.getByRole('textbox', { name: /Search documents/i });
 
-      // Type in the search box
-      fireEvent.change(input, { target: { value: 'contract' } });
+      // Should sync with store's initial value
       expect(input).toHaveValue('contract');
 
       // Simulate external clear (e.g., clear all filters button)

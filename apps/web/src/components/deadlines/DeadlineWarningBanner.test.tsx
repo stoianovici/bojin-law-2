@@ -109,7 +109,7 @@ describe('DeadlineWarningBanner', () => {
     it('should be collapsible', async () => {
       render(<DeadlineWarningBanner />);
 
-      const collapseButton = screen.getByRole('button', { name: /collapse|ascunde/i });
+      const collapseButton = screen.getByRole('button', { name: /termene/i });
       fireEvent.click(collapseButton);
 
       await waitFor(() => {
@@ -120,7 +120,7 @@ describe('DeadlineWarningBanner', () => {
     it('should expand when clicked', async () => {
       render(<DeadlineWarningBanner initialCollapsed />);
 
-      const expandButton = screen.getByRole('button', { name: /expand|arată/i });
+      const expandButton = screen.getByRole('button', { name: /termene/i });
       fireEvent.click(expandButton);
 
       await waitFor(() => {

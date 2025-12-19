@@ -59,22 +59,22 @@ describe('CompletenessIndicator', () => {
     it('should show green for score >= 90%', () => {
       render(<CompletenessIndicator completenessScore={0.95} missingItems={[]} />);
 
-      const indicator = screen.getByRole('progressbar');
-      expect(indicator).toHaveClass(/green|success/i);
+      const label = screen.getByText(/complet/i);
+      expect(label.className).toMatch(/green/i);
     });
 
     it('should show yellow for score 70-90%', () => {
       render(<CompletenessIndicator completenessScore={0.75} missingItems={mockMissingItems} />);
 
       const label = screen.getByText(/parțial/i);
-      expect(label).toHaveClass(/yellow|warning/i);
+      expect(label.className).toMatch(/yellow/i);
     });
 
     it('should show red for score < 70%', () => {
       render(<CompletenessIndicator completenessScore={0.45} missingItems={mockMissingItems} />);
 
       const label = screen.getByText(/incomplet/i);
-      expect(label).toHaveClass(/red|danger/i);
+      expect(label.className).toMatch(/red/i);
     });
   });
 
@@ -148,7 +148,7 @@ describe('CompletenessIndicator', () => {
     it('should have proper aria-label', () => {
       render(<CompletenessIndicator completenessScore={0.75} missingItems={mockMissingItems} />);
 
-      expect(screen.getByLabelText(/complet/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/completitudine document/i)).toBeInTheDocument();
     });
 
     it('should have aria-expanded state', async () => {
@@ -210,7 +210,7 @@ describe('CompletenessIndicator', () => {
       fireEvent.click(trigger);
 
       await waitFor(() => {
-        const navigateButtons = screen.getAllByRole('button', { name: /navighează/i });
+        const navigateButtons = screen.getAllByRole('button', { name: /navighează la secțiune/i });
         fireEvent.click(navigateButtons[0]);
         expect(mockOnNavigate).toHaveBeenCalled();
       });
@@ -243,6 +243,6 @@ describe('CompletenessStatusBadge', () => {
     render(<CompletenessStatusBadge completenessScore={0.45} />);
 
     const badge = screen.getByText(/45%/);
-    expect(badge).toHaveClass(/red|danger/i);
+    expect(badge.className).toMatch(/red/i);
   });
 });

@@ -24,17 +24,17 @@ const SUGGESTION_CONFIG: Record<
   { label: string; color: string; bgColor: string }
 > = {
   Completion: {
-    label: 'Suggestion',
+    label: 'Sugestie',
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/50',
   },
   Correction: {
-    label: 'Correction',
+    label: 'Corecție',
     color: 'text-amber-600 dark:text-amber-400',
     bgColor: 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/50',
   },
   Improvement: {
-    label: 'Improvement',
+    label: 'Îmbunătățire',
     color: 'text-green-600 dark:text-green-400',
     bgColor: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/50',
   },
@@ -66,7 +66,7 @@ export function InlineSuggestion({ suggestion, onAccept, onDismiss }: InlineSugg
           <div className="mt-2 flex items-center gap-2">
             <ConfidenceBar confidence={suggestion.confidence} />
             <span className="text-xs text-gray-400">
-              {Math.round(suggestion.confidence * 100)}% confident
+              {Math.round(suggestion.confidence * 100)}% încredere
             </span>
           </div>
         </div>
@@ -76,14 +76,13 @@ export function InlineSuggestion({ suggestion, onAccept, onDismiss }: InlineSugg
           <button
             onClick={onDismiss}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            aria-label="Dismiss suggestion"
+            aria-label="Respinge sugestia"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
           <span className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Press{' '}
-            <kbd className="rounded bg-gray-200 px-1 py-0.5 font-mono dark:bg-gray-700">Tab</kbd> to
-            accept
+            Apasă{' '}
+            <kbd className="rounded bg-gray-200 px-1 py-0.5 font-mono dark:bg-gray-700">Tab</kbd> pentru a accepta
           </span>
         </div>
       </div>
@@ -94,13 +93,13 @@ export function InlineSuggestion({ suggestion, onAccept, onDismiss }: InlineSugg
           onClick={onAccept}
           className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
         >
-          <CheckIcon className="h-3 w-3" /> Accept
+          <CheckIcon className="h-3 w-3" /> Acceptă
         </button>
         <button
           onClick={onDismiss}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
         >
-          Dismiss
+          Respinge
         </button>
       </div>
     </div>

@@ -49,7 +49,7 @@ describe('RevenueTrendWidget', () => {
   describe('Basic Rendering', () => {
     it('renders the widget title', () => {
       render(<RevenueTrendWidget {...defaultProps} />);
-      expect(screen.getByText('Revenue Trend')).toBeInTheDocument();
+      expect(screen.getByText('Evoluție Venituri')).toBeInTheDocument();
     });
 
     it('renders the line chart when there is data', () => {
@@ -81,7 +81,7 @@ describe('RevenueTrendWidget', () => {
       render(<RevenueTrendWidget {...defaultProps} error={testError} />);
 
       expect(screen.getByTestId('widget-error')).toBeInTheDocument();
-      expect(screen.getByText('Failed to load data')).toBeInTheDocument();
+      expect(screen.getByText('Eroare la încărcarea datelor')).toBeInTheDocument();
     });
 
     it('displays error details', () => {
@@ -97,7 +97,7 @@ describe('RevenueTrendWidget', () => {
 
       render(<RevenueTrendWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
-      screen.getByRole('button', { name: /retry/i }).click();
+      screen.getByRole('button', { name: /reîncearcă/i }).click();
       expect(mockRetry).toHaveBeenCalledTimes(1);
     });
   });
@@ -107,7 +107,7 @@ describe('RevenueTrendWidget', () => {
       render(<RevenueTrendWidget revenueTrend={[]} />);
 
       expect(screen.getByTestId('widget-empty')).toBeInTheDocument();
-      expect(screen.getByText('No revenue data for this period')).toBeInTheDocument();
+      expect(screen.getByText('Nu există date pentru această perioadă')).toBeInTheDocument();
     });
 
     it('shows empty message when revenueTrend is undefined', () => {

@@ -42,23 +42,23 @@ describe('CaseSearchBar', () => {
   it('renders with placeholder text', () => {
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     expect(input).toBeInTheDocument();
   });
 
   it('shows hint when less than 3 characters are entered', () => {
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'ab' } });
 
-    expect(screen.getByText('Type at least 3 characters to search')).toBeInTheDocument();
+    expect(screen.getByText('Introduceți cel puțin 3 caractere pentru căutare')).toBeInTheDocument();
   });
 
   it('does not search with less than 3 characters', async () => {
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'ab' } });
 
     await waitFor(() => {
@@ -71,7 +71,7 @@ describe('CaseSearchBar', () => {
   it('debounces search input (300ms delay)', async () => {
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
     // Should not search immediately
@@ -89,7 +89,7 @@ describe('CaseSearchBar', () => {
     render(<CaseSearchBar />);
 
     const input = screen.getByPlaceholderText(
-      'Search cases (min 3 characters)...'
+      'Căutare dosare (min 3 caractere)...'
     ) as HTMLInputElement;
     const longString = 'a'.repeat(250);
 
@@ -107,7 +107,7 @@ describe('CaseSearchBar', () => {
 
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
     // Advance timers first
@@ -115,7 +115,7 @@ describe('CaseSearchBar', () => {
 
     // Wait for the component to re-render with the dropdown
     await waitFor(() => {
-      expect(screen.getByText('Searching...')).toBeInTheDocument();
+      expect(screen.getByText('Se caută...')).toBeInTheDocument();
     });
   });
 
@@ -128,7 +128,7 @@ describe('CaseSearchBar', () => {
 
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
     // Advance timers first
@@ -136,7 +136,7 @@ describe('CaseSearchBar', () => {
 
     // Wait for the component to re-render with the dropdown
     await waitFor(() => {
-      expect(screen.getByText(/No cases found for "test"/)).toBeInTheDocument();
+      expect(screen.getByText(/Nu s-au găsit dosare pentru "test"/)).toBeInTheDocument();
     });
   });
 
@@ -167,7 +167,7 @@ describe('CaseSearchBar', () => {
 
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
     // Advance timers to trigger the debounced search
@@ -206,7 +206,7 @@ describe('CaseSearchBar', () => {
 
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'Test' } });
 
     // Advance timers first
@@ -238,7 +238,7 @@ describe('CaseSearchBar', () => {
 
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'test' } });
 
     // Advance timers first
@@ -275,7 +275,7 @@ describe('CaseSearchBar', () => {
     render(<CaseSearchBar />);
 
     const input = screen.getByPlaceholderText(
-      'Search cases (min 3 characters)...'
+      'Căutare dosare (min 3 caractere)...'
     ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'test' } });
 
@@ -296,14 +296,14 @@ describe('CaseSearchBar', () => {
   it('does not show dropdown when query is less than 3 characters', async () => {
     render(<CaseSearchBar />);
 
-    const input = screen.getByPlaceholderText('Search cases (min 3 characters)...');
+    const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'ab' } });
 
     await waitFor(() => {
       jest.advanceTimersByTime(300);
     });
 
-    expect(screen.queryByText('Searching...')).not.toBeInTheDocument();
-    expect(screen.queryByText(/No cases found/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Se caută...')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Nu s-au găsit dosare/)).not.toBeInTheDocument();
   });
 });

@@ -42,23 +42,23 @@ describe('BaseWidget', () => {
     );
 
     expect(screen.getByTestId('widget-error')).toBeInTheDocument();
-    expect(screen.getByText('Failed to load data')).toBeInTheDocument();
+    expect(screen.getByText('Eroare la încărcarea datelor')).toBeInTheDocument();
     expect(screen.getByText('Test error message')).toBeInTheDocument();
 
-    const retryButton = screen.getByRole('button', { name: /retry/i });
+    const retryButton = screen.getByRole('button', { name: /reîncearcă/i });
     fireEvent.click(retryButton);
     expect(mockRetry).toHaveBeenCalledTimes(1);
   });
 
   it('shows empty state when isEmpty is true', () => {
     render(
-      <BaseWidget title="Test Widget" isEmpty={true} emptyMessage="No data available">
+      <BaseWidget title="Test Widget" isEmpty={true} emptyMessage="Nu există date disponibile">
         <div>Content</div>
       </BaseWidget>
     );
 
     expect(screen.getByTestId('widget-empty')).toBeInTheDocument();
-    expect(screen.getByText('No data available')).toBeInTheDocument();
+    expect(screen.getByText('Nu există date disponibile')).toBeInTheDocument();
     expect(screen.queryByText('Content')).not.toBeInTheDocument();
   });
 

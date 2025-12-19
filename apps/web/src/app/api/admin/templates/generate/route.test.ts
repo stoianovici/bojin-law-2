@@ -1,19 +1,25 @@
 /**
  * Template Generation API Tests
  * Story 2.12.1 - Task 7: Admin Dashboard
+ * @jest-environment node
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { NextRequest } from 'next/server';
-import { POST } from './route';
 
-// Mock the discovery status service
+// Mock the discovery status service BEFORE importing the route
+const mockTriggerTemplateGeneration = jest.fn<any, any>();
+
 jest.mock('@/lib/services/discovery-status.service', () => ({
   discoveryStatusService: {
-    triggerTemplateGeneration: jest.fn(),
+    get triggerTemplateGeneration() {
+      return mockTriggerTemplateGeneration;
+    },
   },
 }));
 
+// Import route and service AFTER mocking
+import { POST } from './route';
 import { discoveryStatusService } from '@/lib/services/discovery-status.service';
 
 describe('Template Generation API', () => {
@@ -29,11 +35,12 @@ describe('Template Generation API', () => {
         includeEnglish: true,
       };
 
-      (discoveryStatusService.triggerTemplateGeneration as jest.Mock).mockResolvedValue(undefined);
+      mockTriggerTemplateGeneration.mockResolvedValue(undefined);
 
       const request = new NextRequest('http://localhost:3000/api/admin/templates/generate', {
         method: 'POST',
         body: JSON.stringify(generationRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -46,9 +53,7 @@ describe('Template Generation API', () => {
         language: generationRequest.language,
         includeEnglish: generationRequest.includeEnglish,
       });
-      expect(discoveryStatusService.triggerTemplateGeneration).toHaveBeenCalledWith(
-        generationRequest
-      );
+      expect(mockTriggerTemplateGeneration).toHaveBeenCalledWith(generationRequest);
     });
 
     it('should return 400 if typeId is missing', async () => {
@@ -60,6 +65,7 @@ describe('Template Generation API', () => {
       const request = new NextRequest('http://localhost:3000/api/admin/templates/generate', {
         method: 'POST',
         body: JSON.stringify(invalidRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -78,6 +84,7 @@ describe('Template Generation API', () => {
       const request = new NextRequest('http://localhost:3000/api/admin/templates/generate', {
         method: 'POST',
         body: JSON.stringify(invalidRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -97,6 +104,7 @@ describe('Template Generation API', () => {
       const request = new NextRequest('http://localhost:3000/api/admin/templates/generate', {
         method: 'POST',
         body: JSON.stringify(invalidRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -113,11 +121,12 @@ describe('Template Generation API', () => {
         includeEnglish: false,
       };
 
-      (discoveryStatusService.triggerTemplateGeneration as jest.Mock).mockResolvedValue(undefined);
+      mockTriggerTemplateGeneration.mockResolvedValue(undefined);
 
       const request = new NextRequest('http://localhost:3000/api/admin/templates/generate', {
         method: 'POST',
         body: JSON.stringify(generationRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);
@@ -125,9 +134,7 @@ describe('Template Generation API', () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(discoveryStatusService.triggerTemplateGeneration).toHaveBeenCalledWith(
-        generationRequest
-      );
+      expect(mockTriggerTemplateGeneration).toHaveBeenCalledWith(generationRequest);
     });
 
     it('should handle service errors gracefully', async () => {
@@ -137,13 +144,12 @@ describe('Template Generation API', () => {
         includeEnglish: true,
       };
 
-      (discoveryStatusService.triggerTemplateGeneration as jest.Mock).mockRejectedValue(
-        new Error('Template creation failed')
-      );
+      mockTriggerTemplateGeneration.mockRejectedValue(new Error('Template creation failed'));
 
       const request = new NextRequest('http://localhost:3000/api/admin/templates/generate', {
         method: 'POST',
         body: JSON.stringify(generationRequest),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const response = await POST(request);

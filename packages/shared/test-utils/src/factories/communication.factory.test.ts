@@ -227,12 +227,17 @@ describe('Communication Factory', () => {
     describe('Extracted items with conversions', () => {
       it('should create deadlines with convertedToTaskId when withConversions is true', () => {
         const messageIds = ['msg-1', 'msg-2'];
-        const deadlines = createMockExtractedDeadlines(messageIds, { withConversions: true });
-
-        if (deadlines.length > 0) {
-          const hasConverted = deadlines.some((d) => d.convertedToTaskId !== undefined);
-          expect(hasConverted).toBe(true);
+        // Generate multiple times to ensure we get at least one deadline with conversion
+        let hasConverted = false;
+        for (let i = 0; i < 10; i++) {
+          const deadlines = createMockExtractedDeadlines(messageIds, { withConversions: true });
+          if (deadlines.length > 0 && deadlines.some((d) => d.convertedToTaskId !== undefined)) {
+            hasConverted = true;
+            break;
+          }
         }
+        // The factory should eventually create a converted deadline
+        expect(hasConverted).toBe(true);
       });
 
       it('should create commitments with dismissal data when withDismissals is true', () => {
@@ -341,7 +346,7 @@ describe('Communication Factory', () => {
           const task = createMockTaskFromCommunication(deadlines[0]!, 'deadline');
 
           expect(task.description).toContain('Task creat automat');
-          expect(task.description).toContain('Extragerere');
+          expect(task.description).toContain('Extrăgere');
           expect(task.description).toContain('Confidență AI');
         }
       });

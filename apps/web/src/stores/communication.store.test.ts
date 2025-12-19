@@ -422,7 +422,8 @@ describe('Communication Store', () => {
         const thread = result.current.threads.find((t) => t.id === 'thread-1');
         const deadline = thread?.extractedItems.deadlines.find((d) => d.id === 'deadline-1');
 
-        expect(deadline?.convertedToTaskId).toBe('task-123');
+        // Store generates taskId dynamically, so just verify it exists and matches pattern
+        expect(deadline?.convertedToTaskId).toMatch(/^task-/);
       });
 
       it('should log task creation to console', () => {
@@ -444,8 +445,10 @@ describe('Communication Store', () => {
         });
 
         expect(consoleSpy).toHaveBeenCalledWith(
-          '[Mock] Task created from deadline:',
-          expect.objectContaining({ id: 'task-456' })
+          'Task created from extracted item:',
+          expect.objectContaining({
+            id: expect.stringMatching(/^task-/),
+          })
         );
 
         consoleSpy.mockRestore();
@@ -487,10 +490,10 @@ describe('Communication Store', () => {
         });
 
         expect(consoleSpy).toHaveBeenCalledWith(
-          '[AI Learning] Item dismissed:',
+          'Item dismissed for AI learning:',
           expect.objectContaining({
-            itemId: 'deadline-1',
-            reason: 'Deja gestionat',
+            extractedItemId: 'deadline-1',
+            dismissReason: 'Deja gestionat',
           })
         );
 

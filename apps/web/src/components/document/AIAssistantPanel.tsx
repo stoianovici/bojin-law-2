@@ -255,7 +255,7 @@ export function AIAssistantPanel({ isCollapsed = false, onToggleCollapse }: AIAs
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="text-sm font-semibold text-gray-900 flex-1">{doc.title}</h3>
                   <span className="text-xs font-medium text-green-600 whitespace-nowrap">
-                    {doc.similarity}% similar
+                    {doc.similarity}% asemănare
                   </span>
                 </div>
                 <p className="text-xs text-gray-600 mb-2">{doc.snippet}</p>

@@ -23,32 +23,29 @@ describe('RoleSwitcher', () => {
     it('should render with current role', () => {
       render(<RoleSwitcher />);
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-      expect(screen.getByText('Partner')).toBeInTheDocument();
+      expect(screen.getByRole('button')).toBeInTheDocument();
+      expect(screen.getByText('Partener')).toBeInTheDocument();
     });
 
-    it('should display Partner role with blue styling', () => {
+    it('should display Partner role', () => {
       useNavigationStore.setState({ currentRole: 'Partner' });
       render(<RoleSwitcher />);
 
-      expect(screen.getByText('Partner')).toBeInTheDocument();
-      expect(screen.getByText('👔')).toBeInTheDocument();
+      expect(screen.getByText('Partener')).toBeInTheDocument();
     });
 
-    it('should display Associate role with green styling', () => {
+    it('should display Associate role', () => {
       useNavigationStore.setState({ currentRole: 'Associate' });
       render(<RoleSwitcher />);
 
-      expect(screen.getByText('Associate')).toBeInTheDocument();
-      expect(screen.getByText('⚖️')).toBeInTheDocument();
+      expect(screen.getByText('Asociat')).toBeInTheDocument();
     });
 
-    it('should display Paralegal role with purple styling', () => {
+    it('should display Paralegal role', () => {
       useNavigationStore.setState({ currentRole: 'Paralegal' });
       render(<RoleSwitcher />);
 
-      expect(screen.getByText('Paralegal')).toBeInTheDocument();
-      expect(screen.getByText('📋')).toBeInTheDocument();
+      expect(screen.getByText('Asistent Juridic')).toBeInTheDocument();
     });
   });
 
@@ -149,7 +146,7 @@ describe('RoleSwitcher', () => {
     it('should have proper ARIA label', () => {
       render(<RoleSwitcher />);
 
-      const trigger = screen.getByLabelText('Select role');
+      const trigger = screen.getByLabelText('Switch user role');
       expect(trigger).toBeInTheDocument();
     });
 

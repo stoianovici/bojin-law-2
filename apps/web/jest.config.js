@@ -13,7 +13,8 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '@legal-platform/types': '<rootDir>/../../packages/shared/types/src',
-    '@legal-platform/ui': '<rootDir>/../../packages/ui/src',
+    // Mock @legal-platform/ui to resolve React 19 compatibility issues
+    '@legal-platform/ui': '<rootDir>/__mocks__/@legal-platform/ui.tsx',
     '@legal-platform/romanian-templates': '<rootDir>/../../packages/romanian-templates/src',
     '@legal-platform/test-utils': '<rootDir>/../../packages/shared/test-utils/dist/index.js',
     // Force rxjs to use CommonJS build instead of ESM
@@ -23,6 +24,8 @@ const customJestConfig = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
+  // Integration tests are run separately via pnpm test:integration
+  testPathIgnorePatterns: ['/node_modules/', '\\.integration\\.test\\.'],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',

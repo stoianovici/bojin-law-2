@@ -70,7 +70,7 @@ describe('Case Detail Page Integration Tests', () => {
       expect(screen.getByText('Contract Dispute Case')).toBeInTheDocument();
 
       // Verify case status
-      expect(screen.getByText('Active')).toBeInTheDocument();
+      expect(screen.getByText('Activ')).toBeInTheDocument();
 
       // Verify case type
       expect(screen.getByText('Litigation')).toBeInTheDocument();

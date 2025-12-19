@@ -44,23 +44,23 @@ describe('ProfitabilityWidget', () => {
   describe('Basic Rendering', () => {
     it('renders the widget title', () => {
       render(<ProfitabilityWidget {...defaultProps} />);
-      expect(screen.getByText('Profitability')).toBeInTheDocument();
+      expect(screen.getByText('Profitabilitate')).toBeInTheDocument();
     });
 
     it('renders effective hourly rate', () => {
       render(<ProfitabilityWidget {...defaultProps} />);
-      expect(screen.getByText('Effective Hourly Rate')).toBeInTheDocument();
-      expect(screen.getByText('$350.00/hr')).toBeInTheDocument();
+      expect(screen.getByText('Tarif orar efectiv')).toBeInTheDocument();
+      expect(screen.getByText('350,00/oră')).toBeInTheDocument();
     });
 
     it('renders top performers section', () => {
       render(<ProfitabilityWidget {...defaultProps} />);
-      expect(screen.getByText('Top Performers')).toBeInTheDocument();
+      expect(screen.getByText('Cele mai performante')).toBeInTheDocument();
     });
 
     it('renders needs attention section for low-margin cases', () => {
       render(<ProfitabilityWidget {...defaultProps} />);
-      expect(screen.getByText('Needs Attention')).toBeInTheDocument();
+      expect(screen.getByText('Necesită atenție')).toBeInTheDocument();
     });
 
     it('renders case names', () => {
@@ -70,7 +70,7 @@ describe('ProfitabilityWidget', () => {
 
     it('renders billing type badges', () => {
       render(<ProfitabilityWidget {...defaultProps} />);
-      expect(screen.getAllByText('Hourly').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Orar').length).toBeGreaterThan(0);
     });
   });
 
@@ -82,7 +82,7 @@ describe('ProfitabilityWidget', () => {
 
     it('does not show profitability data when loading', () => {
       render(<ProfitabilityWidget {...defaultProps} isLoading={true} />);
-      expect(screen.queryByText('Effective Hourly Rate')).not.toBeInTheDocument();
+      expect(screen.queryByText('Tarif orar efectiv')).not.toBeInTheDocument();
     });
   });
 
@@ -100,7 +100,7 @@ describe('ProfitabilityWidget', () => {
 
       render(<ProfitabilityWidget {...defaultProps} error={testError} onRetry={mockRetry} />);
 
-      screen.getByRole('button', { name: /retry/i }).click();
+      screen.getByRole('button', { name: /reîncearcă/i }).click();
       expect(mockRetry).toHaveBeenCalledTimes(1);
     });
   });
@@ -110,7 +110,7 @@ describe('ProfitabilityWidget', () => {
       render(<ProfitabilityWidget effectiveHourlyRate={0} profitabilityByCase={[]} />);
 
       expect(screen.getByTestId('widget-empty')).toBeInTheDocument();
-      expect(screen.getByText('No profitability data for this period')).toBeInTheDocument();
+      expect(screen.getByText('Nu există date pentru această perioadă')).toBeInTheDocument();
     });
   });
 
@@ -140,14 +140,14 @@ describe('ProfitabilityWidget', () => {
       render(<ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={cases} />);
 
       // Top performers section should exist
-      expect(screen.getByText('Top Performers')).toBeInTheDocument();
+      expect(screen.getByText('Cele mai performante')).toBeInTheDocument();
     });
 
     it('shows low-margin cases in needs attention', () => {
       const cases = createMockCases(10);
       render(<ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={cases} />);
 
-      expect(screen.getByText('Needs Attention')).toBeInTheDocument();
+      expect(screen.getByText('Necesită atenție')).toBeInTheDocument();
     });
 
     it('does not show needs attention when all cases are profitable', () => {
@@ -172,7 +172,7 @@ describe('ProfitabilityWidget', () => {
         <ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={profitableCases} />
       );
 
-      expect(screen.queryByText('Needs Attention')).not.toBeInTheDocument();
+      expect(screen.queryByText('Necesită atenție')).not.toBeInTheDocument();
     });
   });
 
@@ -192,7 +192,7 @@ describe('ProfitabilityWidget', () => {
         <ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={highMarginCase} />
       );
 
-      const marginText = screen.getByText('35.0%');
+      const marginText = screen.getByText('35,0 %');
       expect(marginText).toHaveClass('text-green-600');
     });
 
@@ -212,7 +212,7 @@ describe('ProfitabilityWidget', () => {
       );
 
       // Case appears in both top performers and needs attention, so use getAllByText
-      const marginTexts = screen.getAllByText('15.0%');
+      const marginTexts = screen.getAllByText('15,0 %');
       expect(marginTexts.length).toBeGreaterThan(0);
       expect(marginTexts[0]).toHaveClass('text-amber-600');
     });
@@ -233,7 +233,7 @@ describe('ProfitabilityWidget', () => {
       );
 
       // Case appears in both top performers and needs attention, so use getAllByText
-      const marginTexts = screen.getAllByText('-10.0%');
+      const marginTexts = screen.getAllByText('-10,0 %');
       expect(marginTexts.length).toBeGreaterThan(0);
       expect(marginTexts[0]).toHaveClass('text-red-600');
     });
@@ -288,7 +288,7 @@ describe('ProfitabilityWidget', () => {
         <ProfitabilityWidget effectiveHourlyRate={0} profitabilityByCase={createMockCases(3)} />
       );
 
-      expect(screen.getByText('$0.00/hr')).toBeInTheDocument();
+      expect(screen.getByText('0,00/oră')).toBeInTheDocument();
     });
 
     it('handles very high effective hourly rate', () => {
@@ -296,7 +296,7 @@ describe('ProfitabilityWidget', () => {
         <ProfitabilityWidget effectiveHourlyRate={2500} profitabilityByCase={createMockCases(3)} />
       );
 
-      expect(screen.getByText('$2,500.00/hr')).toBeInTheDocument();
+      expect(screen.getByText('2.500,00/oră')).toBeInTheDocument();
     });
 
     it('applies custom className', () => {
@@ -334,9 +334,9 @@ describe('ProfitabilityWidget', () => {
 
       render(<ProfitabilityWidget effectiveHourlyRate={350} profitabilityByCase={allTypes} />);
 
-      expect(screen.getByText('HOURLY')).toBeInTheDocument();
-      expect(screen.getByText('FIXED')).toBeInTheDocument();
-      expect(screen.getByText('RETAINER')).toBeInTheDocument();
+      expect(screen.getByText('Orar')).toBeInTheDocument();
+      expect(screen.getByText('Fix')).toBeInTheDocument();
+      expect(screen.getByText('Abonament')).toBeInTheDocument();
     });
   });
 });

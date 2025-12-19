@@ -12,7 +12,7 @@ import { RefinementInput } from '../RefinementInput';
 describe('RefinementInput', () => {
   const defaultProps = {
     onRefine: jest.fn().mockResolvedValue(undefined),
-    isLoading: false,
+    loading: false,
   };
 
   beforeEach(() => {
@@ -23,7 +23,9 @@ describe('RefinementInput', () => {
     it('should render instruction input', () => {
       render(<RefinementInput {...defaultProps} />);
 
-      expect(screen.getByPlaceholderText(/Instrucțiuni de rafinare/i)).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i)
+      ).toBeInTheDocument();
     });
 
     it('should render refine button', () => {
@@ -39,24 +41,39 @@ describe('RefinementInput', () => {
       expect(screen.getByText(/Mai formal/i)).toBeInTheDocument();
       expect(screen.getByText(/Mai detaliat/i)).toBeInTheDocument();
     });
+
+    it('should render translation buttons', () => {
+      render(<RefinementInput {...defaultProps} />);
+
+      expect(screen.getByText(/În română/i)).toBeInTheDocument();
+      expect(screen.getByText(/În engleză/i)).toBeInTheDocument();
+    });
+
+    it('should render header', () => {
+      render(<RefinementInput {...defaultProps} />);
+
+      expect(screen.getByText(/Rafinare AI/i)).toBeInTheDocument();
+    });
   });
 
   describe('Instruction input', () => {
     it('should allow typing instruction', async () => {
+      const user = userEvent.setup();
       render(<RefinementInput {...defaultProps} />);
 
-      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare/i);
-      await userEvent.type(input, 'Make it more formal');
+      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i);
+      await user.type(input, 'Make it more formal');
 
       expect(input).toHaveValue('Make it more formal');
     });
 
     it('should clear input after successful refinement', async () => {
+      const user = userEvent.setup();
       const onRefine = jest.fn().mockResolvedValue(undefined);
       render(<RefinementInput {...defaultProps} onRefine={onRefine} />);
 
-      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare/i);
-      await userEvent.type(input, 'Test instruction');
+      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i);
+      await user.type(input, 'Test instruction');
       fireEvent.click(screen.getByRole('button', { name: /Rafinează/i }));
 
       await waitFor(() => {
@@ -67,24 +84,28 @@ describe('RefinementInput', () => {
 
   describe('Refine action', () => {
     it('should call onRefine with instruction when button is clicked', async () => {
+      const user = userEvent.setup();
       const onRefine = jest.fn().mockResolvedValue(undefined);
       render(<RefinementInput {...defaultProps} onRefine={onRefine} />);
 
-      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare/i);
-      await userEvent.type(input, 'Make it shorter');
+      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i);
+      await user.type(input, 'Make it shorter');
       fireEvent.click(screen.getByRole('button', { name: /Rafinează/i }));
 
       expect(onRefine).toHaveBeenCalledWith('Make it shorter');
     });
 
     it('should call onRefine when Enter is pressed', async () => {
+      const user = userEvent.setup();
       const onRefine = jest.fn().mockResolvedValue(undefined);
       render(<RefinementInput {...defaultProps} onRefine={onRefine} />);
 
-      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare/i);
-      await userEvent.type(input, 'Test{enter}');
+      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i);
+      await user.type(input, 'Test{enter}');
 
-      expect(onRefine).toHaveBeenCalledWith('Test');
+      await waitFor(() => {
+        expect(onRefine).toHaveBeenCalledWith('Test');
+      });
     });
 
     it('should not call onRefine with empty instruction', () => {
@@ -94,6 +115,13 @@ describe('RefinementInput', () => {
       fireEvent.click(screen.getByRole('button', { name: /Rafinează/i }));
 
       expect(onRefine).not.toHaveBeenCalled();
+    });
+
+    it('should disable button when input is empty', () => {
+      render(<RefinementInput {...defaultProps} />);
+
+      const button = screen.getByRole('button', { name: /Rafinează/i });
+      expect(button).toBeDisabled();
     });
   });
 
@@ -105,7 +133,7 @@ describe('RefinementInput', () => {
       fireEvent.click(screen.getByText(/Mai scurt/i));
 
       await waitFor(() => {
-        expect(onRefine).toHaveBeenCalledWith(expect.stringContaining('scurt'));
+        expect(onRefine).toHaveBeenCalledWith('Fă-l mai scurt');
       });
     });
 
@@ -116,7 +144,7 @@ describe('RefinementInput', () => {
       fireEvent.click(screen.getByText(/Mai formal/i));
 
       await waitFor(() => {
-        expect(onRefine).toHaveBeenCalledWith(expect.stringContaining('formal'));
+        expect(onRefine).toHaveBeenCalledWith('Fă-l mai formal');
       });
     });
 
@@ -127,19 +155,12 @@ describe('RefinementInput', () => {
       fireEvent.click(screen.getByText(/Mai detaliat/i));
 
       await waitFor(() => {
-        expect(onRefine).toHaveBeenCalledWith(expect.stringContaining('detaliat'));
+        expect(onRefine).toHaveBeenCalledWith('Adaugă mai multe detalii');
       });
     });
   });
 
   describe('Translation actions', () => {
-    it('should render translation buttons', () => {
-      render(<RefinementInput {...defaultProps} />);
-
-      expect(screen.getByText(/În română/i)).toBeInTheDocument();
-      expect(screen.getByText(/În engleză/i)).toBeInTheDocument();
-    });
-
     it('should call onRefine with Romanian translation instruction', async () => {
       const onRefine = jest.fn().mockResolvedValue(undefined);
       render(<RefinementInput {...defaultProps} onRefine={onRefine} />);
@@ -147,7 +168,7 @@ describe('RefinementInput', () => {
       fireEvent.click(screen.getByText(/În română/i));
 
       await waitFor(() => {
-        expect(onRefine).toHaveBeenCalledWith(expect.stringContaining('română'));
+        expect(onRefine).toHaveBeenCalledWith('Traduce în română');
       });
     });
 
@@ -158,46 +179,109 @@ describe('RefinementInput', () => {
       fireEvent.click(screen.getByText(/În engleză/i));
 
       await waitFor(() => {
-        expect(onRefine).toHaveBeenCalledWith(expect.stringContaining('engleză'));
+        expect(onRefine).toHaveBeenCalledWith('Traduce în engleză');
       });
     });
   });
 
   describe('Loading state', () => {
     it('should disable input when loading', () => {
-      render(<RefinementInput {...defaultProps} isLoading={true} />);
+      render(<RefinementInput {...defaultProps} loading={true} />);
 
-      expect(screen.getByPlaceholderText(/Instrucțiuni de rafinare/i)).toBeDisabled();
+      expect(
+        screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i)
+      ).toBeDisabled();
     });
 
     it('should disable buttons when loading', () => {
-      render(<RefinementInput {...defaultProps} isLoading={true} />);
+      render(<RefinementInput {...defaultProps} loading={true} />);
 
-      expect(screen.getByRole('button', { name: /Rafinează/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Se rafinează/i })).toBeDisabled();
       expect(screen.getByText(/Mai scurt/i).closest('button')).toBeDisabled();
     });
 
     it('should show loading indicator on refine button', () => {
-      render(<RefinementInput {...defaultProps} isLoading={true} />);
+      render(<RefinementInput {...defaultProps} loading={true} />);
 
-      expect(screen.getByRole('button', { name: /Rafinează/i })).toContainElement(
-        document.querySelector('.animate-spin')
-      );
+      expect(screen.getByText(/Se rafinează/i)).toBeInTheDocument();
+    });
+
+    it('should have aria-busy when loading', () => {
+      render(<RefinementInput {...defaultProps} loading={true} />);
+
+      const button = screen.getByRole('button', { name: /Se rafinează/i });
+      expect(button).toHaveAttribute('aria-busy', 'true');
     });
   });
 
-  describe('Error handling', () => {
-    it('should show error message when refinement fails', async () => {
-      const onRefine = jest.fn().mockRejectedValue(new Error('Refinement failed'));
-      render(<RefinementInput {...defaultProps} onRefine={onRefine} />);
+  describe('Refinement history', () => {
+    const mockHistory = [
+      {
+        id: 'ref-1',
+        instruction: 'Make it shorter',
+        createdAt: new Date().toISOString(),
+        tokensUsed: 150,
+      },
+      {
+        id: 'ref-2',
+        instruction: 'Add more details',
+        createdAt: new Date().toISOString(),
+        tokensUsed: 200,
+      },
+    ];
 
-      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare/i);
-      await userEvent.type(input, 'Test');
-      fireEvent.click(screen.getByRole('button', { name: /Rafinează/i }));
+    it('should show history toggle button when history exists', () => {
+      render(<RefinementInput {...defaultProps} refinementHistory={mockHistory} />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/eroare/i)).toBeInTheDocument();
-      });
+      expect(screen.getByText(/Arată istoric/i)).toBeInTheDocument();
+    });
+
+    it('should hide history toggle when no history', () => {
+      render(<RefinementInput {...defaultProps} refinementHistory={[]} />);
+
+      expect(screen.queryByText(/istoric/i)).not.toBeInTheDocument();
+    });
+
+    it('should toggle history visibility', () => {
+      render(<RefinementInput {...defaultProps} refinementHistory={mockHistory} />);
+
+      fireEvent.click(screen.getByText(/Arată istoric/i));
+
+      expect(screen.getByText(/Rafinări recente/i)).toBeInTheDocument();
+      expect(screen.getByText(/Make it shorter/i)).toBeInTheDocument();
+    });
+
+    it('should show hide text when history is visible', () => {
+      render(<RefinementInput {...defaultProps} refinementHistory={mockHistory} />);
+
+      fireEvent.click(screen.getByText(/Arată istoric/i));
+
+      expect(screen.getByText(/Ascunde istoric/i)).toBeInTheDocument();
+    });
+
+    it('should display token usage', () => {
+      render(<RefinementInput {...defaultProps} refinementHistory={mockHistory} />);
+
+      fireEvent.click(screen.getByText(/Arată istoric/i));
+
+      expect(screen.getByText(/150 token-uri utilizați/i)).toBeInTheDocument();
+      expect(screen.getByText(/200 token-uri utilizați/i)).toBeInTheDocument();
+    });
+
+    it('should limit history to 5 items', () => {
+      const longHistory = Array.from({ length: 10 }, (_, i) => ({
+        id: `ref-${i}`,
+        instruction: `Instruction ${i}`,
+        createdAt: new Date().toISOString(),
+        tokensUsed: 100,
+      }));
+
+      render(<RefinementInput {...defaultProps} refinementHistory={longHistory} />);
+
+      fireEvent.click(screen.getByText(/Arată istoric/i));
+
+      const items = screen.getAllByRole('listitem');
+      expect(items).toHaveLength(5);
     });
   });
 
@@ -205,44 +289,40 @@ describe('RefinementInput', () => {
     it('should have proper label for input', () => {
       render(<RefinementInput {...defaultProps} />);
 
-      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare/i);
-      expect(input).toHaveAttribute('aria-label');
+      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i);
+      expect(input).toHaveAttribute('aria-label', 'Instrucțiune personalizată de rafinare');
+    });
+
+    it('should have proper group role for quick actions', () => {
+      render(<RefinementInput {...defaultProps} />);
+
+      expect(screen.getByRole('group', { name: /Quick refinement actions/i })).toBeInTheDocument();
     });
 
     it('should be keyboard navigable', () => {
       render(<RefinementInput {...defaultProps} />);
 
-      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare/i);
+      const input = screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i);
       input.focus();
 
       expect(document.activeElement).toBe(input);
     });
-  });
 
-  describe('Recent refinements', () => {
-    it('should show recent refinements when available', () => {
-      render(
-        <RefinementInput {...defaultProps} recentRefinements={['Mai scurt', 'Adaugă detalii']} />
-      );
+    it('should have list role for history', () => {
+      const mockHistory = [
+        {
+          id: 'ref-1',
+          instruction: 'Test',
+          createdAt: new Date().toISOString(),
+          tokensUsed: 100,
+        },
+      ];
 
-      expect(screen.getByText(/Rafinări recente/i)).toBeInTheDocument();
-    });
+      render(<RefinementInput {...defaultProps} refinementHistory={mockHistory} />);
 
-    it('should allow clicking recent refinement', async () => {
-      const onRefine = jest.fn().mockResolvedValue(undefined);
-      render(
-        <RefinementInput
-          {...defaultProps}
-          onRefine={onRefine}
-          recentRefinements={['Previous instruction']}
-        />
-      );
+      fireEvent.click(screen.getByText(/Arată istoric/i));
 
-      fireEvent.click(screen.getByText('Previous instruction'));
-
-      await waitFor(() => {
-        expect(onRefine).toHaveBeenCalledWith('Previous instruction');
-      });
+      expect(screen.getByRole('list', { name: /Istoric rafinări/i })).toBeInTheDocument();
     });
   });
 });

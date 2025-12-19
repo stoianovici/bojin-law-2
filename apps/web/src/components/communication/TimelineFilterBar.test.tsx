@@ -49,7 +49,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: /filters/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filtre/i })).toBeInTheDocument();
   });
 
   it('should render search input', () => {
@@ -62,7 +62,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    expect(screen.getByPlaceholderText('Search communications...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Caută comunicări...')).toBeInTheDocument();
   });
 
   it('should display active filter count', () => {
@@ -88,7 +88,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /șterge/i })).toBeInTheDocument();
   });
 
   it('should not show clear button when no filters are active', () => {
@@ -101,7 +101,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    expect(screen.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /șterge/i })).not.toBeInTheDocument();
   });
 
   it('should call onClear when clear button is clicked', () => {
@@ -114,7 +114,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /clear/i }));
+    fireEvent.click(screen.getByRole('button', { name: /șterge/i }));
     expect(mockOnClear).toHaveBeenCalled();
   });
 
@@ -128,7 +128,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    const searchInput = screen.getByPlaceholderText('Search communications...');
+    const searchInput = screen.getByPlaceholderText('Caută comunicări...');
     fireEvent.change(searchInput, { target: { value: 'test query' } });
 
     expect(mockOnChange).toHaveBeenCalledWith({ searchTerm: 'test query' });
@@ -144,7 +144,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    const searchInput = screen.getByPlaceholderText('Search communications...');
+    const searchInput = screen.getByPlaceholderText('Caută comunicări...');
     fireEvent.change(searchInput, { target: { value: '' } });
 
     expect(mockOnChange).toHaveBeenCalledWith({ searchTerm: undefined });
@@ -160,7 +160,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    const filterButton = screen.getByRole('button', { name: /filters/i });
+    const filterButton = screen.getByRole('button', { name: /filtre/i });
     fireEvent.click(filterButton);
 
     expect(screen.getByRole('region', { name: /filter options/i })).toBeInTheDocument();
@@ -177,10 +177,10 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
     // Check for channel fieldset and checkboxes
-    expect(screen.getByRole('group', { name: /channels/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /canale/i })).toBeInTheDocument();
     expect(screen.getAllByText('Email').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Internal Note').length).toBeGreaterThan(0);
   });
@@ -196,10 +196,10 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
     // Find all Email elements and get the one in the expanded panel (within fieldset)
-    const channelsFieldset = screen.getByRole('group', { name: /channels/i });
+    const channelsFieldset = screen.getByRole('group', { name: /canale/i });
     const emailCheckbox = channelsFieldset.querySelector('input[type="checkbox"]');
     if (emailCheckbox) {
       const emailLabel = emailCheckbox.closest('label');
@@ -224,10 +224,10 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
     // Find the Email checkbox in the channels fieldset and click to deselect
-    const channelsFieldset = screen.getByRole('group', { name: /channels/i });
+    const channelsFieldset = screen.getByRole('group', { name: /canale/i });
     const emailCheckbox = channelsFieldset.querySelector('input[type="checkbox"]:checked');
     if (emailCheckbox) {
       const emailLabel = emailCheckbox.closest('label');
@@ -252,7 +252,7 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
     // WhatsApp should be disabled
     const whatsappCheckbox = screen.getAllByRole('checkbox').find((cb) => {
@@ -274,12 +274,12 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
-    expect(screen.getByText('All')).toBeInTheDocument();
-    expect(screen.getByText('Inbound')).toBeInTheDocument();
-    expect(screen.getByText('Outbound')).toBeInTheDocument();
-    expect(screen.getByText('Internal')).toBeInTheDocument();
+    expect(screen.getByText('Toate')).toBeInTheDocument();
+    expect(screen.getByText('Primite')).toBeInTheDocument();
+    expect(screen.getByText('Trimise')).toBeInTheDocument();
+    expect(screen.getByText('Interne')).toBeInTheDocument();
   });
 
   it('should call onChange when direction is changed', () => {
@@ -293,10 +293,10 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
     // Click Inbound direction
-    const inboundLabel = screen.getByText('Inbound').closest('label');
+    const inboundLabel = screen.getByText('Primite').closest('label');
     if (inboundLabel) {
       fireEvent.click(inboundLabel);
     }
@@ -315,10 +315,10 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
-    expect(screen.getByLabelText('From date')).toBeInTheDocument();
-    expect(screen.getByLabelText('To date')).toBeInTheDocument();
+    expect(screen.getByLabelText('De la data')).toBeInTheDocument();
+    expect(screen.getByLabelText('Până la data')).toBeInTheDocument();
   });
 
   it('should call onChange when date range is set', () => {
@@ -332,9 +332,9 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
-    const fromDate = screen.getByLabelText('From date');
+    const fromDate = screen.getByLabelText('De la data');
     fireEvent.change(fromDate, { target: { value: '2025-01-01' } });
 
     expect(mockOnChange).toHaveBeenCalledWith({
@@ -353,9 +353,9 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
-    expect(screen.getByText('Show private communications')).toBeInTheDocument();
+    expect(screen.getByText('Afișează comunicările private')).toBeInTheDocument();
   });
 
   it('should call onChange when privacy toggle is clicked', () => {
@@ -369,9 +369,9 @@ describe('TimelineFilterBar', () => {
     );
 
     // Expand the filter panel
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
-    const privacyCheckbox = screen.getByRole('checkbox', { name: /show private/i });
+    const privacyCheckbox = screen.getByRole('checkbox', { name: /afișează comunicările private/i });
     fireEvent.click(privacyCheckbox);
 
     expect(mockOnChange).toHaveBeenCalledWith({ includePrivate: true });
@@ -387,7 +387,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    const filterButton = screen.getByRole('button', { name: /filters/i });
+    const filterButton = screen.getByRole('button', { name: /filtre/i });
 
     // Initially collapsed
     expect(filterButton).toHaveAttribute('aria-expanded', 'false');
@@ -411,7 +411,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    expect(screen.getByRole('status')).toHaveTextContent('3 filters active');
+    expect(screen.getByRole('status')).toHaveTextContent('3 filtre active');
   });
 
   it('should announce when no filters are active', () => {
@@ -424,7 +424,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    expect(screen.getByRole('status')).toHaveTextContent('No filters active');
+    expect(screen.getByRole('status')).toHaveTextContent('Niciun filtru activ');
   });
 
   it('should display search term in input', () => {
@@ -437,7 +437,7 @@ describe('TimelineFilterBar', () => {
       />
     );
 
-    const searchInput = screen.getByPlaceholderText('Search communications...');
+    const searchInput = screen.getByPlaceholderText('Caută comunicări...');
     expect(searchInput).toHaveValue('existing search');
   });
 

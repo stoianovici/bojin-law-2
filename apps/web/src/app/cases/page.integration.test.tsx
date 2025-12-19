@@ -98,9 +98,9 @@ describe('Case Creation Flow Integration Test', () => {
     await user.type(descriptionInput, 'This is a new contract case for testing purposes');
 
     // Select case type
-    const typeSelect = within(dialog).getByLabelText(/case type/i);
+    const typeSelect = within(dialog).getByLabelText(/tip dosar/i);
     await user.click(typeSelect);
-    await user.click(screen.getByRole('option', { name: /contract/i }));
+    await user.click(screen.getByRole('option', { name: /contracte/i }));
 
     // Fill client ID (UUID format for mocked backend)
     const clientInput = within(dialog).getByLabelText(/client/i);
@@ -131,7 +131,7 @@ describe('Case Creation Flow Integration Test', () => {
     );
 
     // Verify case details are displayed
-    expect(screen.getByText('Contract')).toBeInTheDocument();
+    expect(screen.getByText('Contracte')).toBeInTheDocument();
   });
 
   it('should show validation errors when form is submitted with invalid data', async () => {
@@ -158,7 +158,7 @@ describe('Case Creation Flow Integration Test', () => {
 
     // Verify validation errors are displayed
     await waitFor(() => {
-      expect(screen.getByText(/title is required|title must be at least/i)).toBeInTheDocument();
+      expect(screen.getByText(/titlul este obligatoriu|titlul trebuie să aibă cel puțin/i)).toBeInTheDocument();
     });
   });
 
@@ -183,7 +183,7 @@ describe('Case Creation Flow Integration Test', () => {
     await user.type(titleInput, 'Abandoned Case');
 
     // Click cancel
-    const cancelButton = within(dialog).getByRole('button', { name: /cancel/i });
+    const cancelButton = within(dialog).getByRole('button', { name: /anulează/i });
     await user.click(cancelButton);
 
     // Verify modal is closed

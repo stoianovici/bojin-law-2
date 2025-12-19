@@ -62,8 +62,8 @@ export function DraftGenerationPanel({
     return (
       <div className="flex flex-col items-center justify-center p-8" aria-busy="true">
         <Spinner size="lg" />
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">Generating AI drafts...</p>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">This may take a few seconds</p>
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">Se generează draft-uri AI...</p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Aceasta poate dura câteva secunde</p>
       </div>
     );
   }
@@ -76,7 +76,7 @@ export function DraftGenerationPanel({
             <ErrorIcon className="h-5 w-5 text-red-400" />
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-                Draft generation failed
+                Generarea draft-ului a eșuat
               </h3>
               <p className="mt-1 text-sm text-red-700 dark:text-red-300">{error.message}</p>
               <div className="mt-4">
@@ -84,7 +84,7 @@ export function DraftGenerationPanel({
                   onClick={handleGenerate}
                   className="inline-flex items-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-700"
                 >
-                  Try Again
+                  Încearcă Din Nou
                 </button>
               </div>
             </div>
@@ -102,9 +102,9 @@ export function DraftGenerationPanel({
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b border-gray-200 p-4 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Draft Options</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Opțiuni Draft AI</h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Select the tone that best fits your response
+          Selectează tonul care se potrivește cel mai bine răspunsului tău
         </p>
       </div>
 
@@ -126,7 +126,7 @@ export function DraftGenerationPanel({
             {/* Subject */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Subject
+                Subiect
               </label>
               <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedDraft.subject}</p>
             </div>
@@ -134,7 +134,7 @@ export function DraftGenerationPanel({
             {/* Body Preview */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Preview
+                Previzualizare
               </label>
               <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
                 <div className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
@@ -145,7 +145,7 @@ export function DraftGenerationPanel({
 
             {/* Confidence */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Confidence:</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Încredere:</span>
               <ConfidenceIndicator confidence={selectedDraft.confidence} />
             </div>
           </div>
@@ -158,21 +158,21 @@ export function DraftGenerationPanel({
           onClick={onCancel}
           className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
         >
-          Cancel
+          Anulează
         </button>
         <button
           onClick={handleGenerate}
           className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
         >
           <RefreshIcon className="h-4 w-4" />
-          Regenerate
+          Regenerează
         </button>
         <button
           onClick={handleSelectDraft}
           disabled={!selectedTone}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          Use This Draft
+          Folosește Acest Draft
         </button>
       </div>
     </div>

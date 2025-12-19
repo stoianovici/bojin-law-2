@@ -5,7 +5,6 @@
  * Tests for the SearchFiltersPanel component functionality.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SearchFiltersPanel } from './SearchFiltersPanel';
@@ -14,26 +13,26 @@ describe('SearchFiltersPanel', () => {
   const defaultProps = {
     filters: {},
     searchMode: 'HYBRID' as const,
-    onFiltersChange: vi.fn(),
-    onSearchModeChange: vi.fn(),
-    onClearFilters: vi.fn(),
+    onFiltersChange: jest.fn(),
+    onSearchModeChange: jest.fn(),
+    onClearFilters: jest.fn(),
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Rendering', () => {
     it('should render filter panel with header', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Filters')).toBeInTheDocument();
+      expect(screen.getByText('Filtre')).toBeInTheDocument();
     });
 
     it('should show filter icon in header', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      const header = screen.getByRole('button', { name: /filters/i });
+      const header = screen.getByRole('button', { name: /filtre/i });
       expect(header).toBeInTheDocument();
     });
 
@@ -50,28 +49,28 @@ describe('SearchFiltersPanel', () => {
     it('should start expanded by default', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Search Mode')).toBeInTheDocument();
+      expect(screen.getByText('Mod de căutare')).toBeInTheDocument();
     });
 
     it('should start collapsed when collapsed prop is true', () => {
       render(<SearchFiltersPanel {...defaultProps} collapsed={true} />);
 
-      expect(screen.queryByText('Search Mode')).not.toBeInTheDocument();
+      expect(screen.queryByText('Mod de căutare')).not.toBeInTheDocument();
     });
 
     it('should toggle collapse on header click', async () => {
       const user = userEvent.setup();
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      const header = screen.getByRole('button', { name: /filters/i });
+      const header = screen.getByRole('button', { name: /filtre/i });
 
       // Collapse
       await user.click(header);
-      expect(screen.queryByText('Search Mode')).not.toBeInTheDocument();
+      expect(screen.queryByText('Mod de căutare')).not.toBeInTheDocument();
 
       // Expand
       await user.click(header);
-      expect(screen.getByText('Search Mode')).toBeInTheDocument();
+      expect(screen.getByText('Mod de căutare')).toBeInTheDocument();
     });
   });
 
@@ -99,33 +98,33 @@ describe('SearchFiltersPanel', () => {
     it('should render all search mode options', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Smart Search')).toBeInTheDocument();
-      expect(screen.getByText('Keyword Search')).toBeInTheDocument();
-      expect(screen.getByText('AI Search')).toBeInTheDocument();
+      expect(screen.getByText('Căutare inteligentă')).toBeInTheDocument();
+      expect(screen.getByText('Căutare după cuvinte cheie')).toBeInTheDocument();
+      expect(screen.getByText('Căutare AI')).toBeInTheDocument();
     });
 
     it('should show descriptions for search modes', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Best results using AI + keywords')).toBeInTheDocument();
-      expect(screen.getByText('Exact keyword matching')).toBeInTheDocument();
-      expect(screen.getByText('Find similar content')).toBeInTheDocument();
+      expect(screen.getByText('Cele mai bune rezultate folosind AI + cuvinte cheie')).toBeInTheDocument();
+      expect(screen.getByText('Potrivire exactă a cuvintelor cheie')).toBeInTheDocument();
+      expect(screen.getByText('Găsește conținut similar')).toBeInTheDocument();
     });
 
     it('should highlight selected mode', () => {
       render(<SearchFiltersPanel {...defaultProps} searchMode="SEMANTIC" />);
 
-      const semanticButton = screen.getByText('AI Search').closest('button');
+      const semanticButton = screen.getByText('Căutare AI').closest('button');
       expect(semanticButton).toHaveClass('border-blue-500');
     });
 
     it('should call onSearchModeChange when mode clicked', async () => {
       const user = userEvent.setup();
-      const onSearchModeChange = vi.fn();
+      const onSearchModeChange = jest.fn();
 
       render(<SearchFiltersPanel {...defaultProps} onSearchModeChange={onSearchModeChange} />);
 
-      await user.click(screen.getByText('Keyword Search'));
+      await user.click(screen.getByText('Căutare după cuvinte cheie'));
 
       expect(onSearchModeChange).toHaveBeenCalledWith('FULL_TEXT');
     });
@@ -135,7 +134,7 @@ describe('SearchFiltersPanel', () => {
     it('should render date inputs', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Date Range')).toBeInTheDocument();
+      expect(screen.getByText('Interval de date')).toBeInTheDocument();
       const dateInputs = screen.getAllByRole('textbox', { hidden: true });
       // Date inputs render as text inputs with type="date"
     });
@@ -150,17 +149,17 @@ describe('SearchFiltersPanel', () => {
 
       render(<SearchFiltersPanel {...defaultProps} filters={filters} />);
 
-      expect(screen.getByText('Clear')).toBeInTheDocument();
+      expect(screen.getByText('Șterge')).toBeInTheDocument();
     });
 
     it('should not show clear button when no date range', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.queryByText('Clear')).not.toBeInTheDocument();
+      expect(screen.queryByText('Șterge')).not.toBeInTheDocument();
     });
 
     it('should call onFiltersChange when date changed', async () => {
-      const onFiltersChange = vi.fn();
+      const onFiltersChange = jest.fn();
       render(<SearchFiltersPanel {...defaultProps} onFiltersChange={onFiltersChange} />);
 
       const dateInputs = document.querySelectorAll('input[type="date"]');
@@ -171,7 +170,7 @@ describe('SearchFiltersPanel', () => {
 
     it('should clear date range when clear clicked', async () => {
       const user = userEvent.setup();
-      const onFiltersChange = vi.fn();
+      const onFiltersChange = jest.fn();
       const filters = {
         dateRange: {
           start: new Date('2024-01-01'),
@@ -183,7 +182,7 @@ describe('SearchFiltersPanel', () => {
         <SearchFiltersPanel {...defaultProps} filters={filters} onFiltersChange={onFiltersChange} />
       );
 
-      await user.click(screen.getByText('Clear'));
+      await user.click(screen.getByText('Șterge'));
 
       expect(onFiltersChange).toHaveBeenCalledWith(
         expect.objectContaining({ dateRange: undefined })
@@ -195,11 +194,11 @@ describe('SearchFiltersPanel', () => {
     it('should render all case type options', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Litigation')).toBeInTheDocument();
+      expect(screen.getByText('Litigiu')).toBeInTheDocument();
       expect(screen.getByText('Contract')).toBeInTheDocument();
-      expect(screen.getByText('Advisory')).toBeInTheDocument();
-      expect(screen.getByText('Criminal')).toBeInTheDocument();
-      expect(screen.getByText('Other')).toBeInTheDocument();
+      expect(screen.getByText('Consultanță')).toBeInTheDocument();
+      expect(screen.getByText('Penal')).toBeInTheDocument();
+      expect(screen.getByText('Altele')).toBeInTheDocument();
     });
 
     it('should highlight selected case types', () => {
@@ -209,9 +208,9 @@ describe('SearchFiltersPanel', () => {
 
       render(<SearchFiltersPanel {...defaultProps} filters={filters} />);
 
-      const litigationButton = screen.getByText('Litigation').closest('button');
+      const litigationButton = screen.getByText('Litigiu').closest('button');
       const contractButton = screen.getByText('Contract').closest('button');
-      const advisoryButton = screen.getByText('Advisory').closest('button');
+      const advisoryButton = screen.getByText('Consultanță').closest('button');
 
       expect(litigationButton).toHaveClass('border-blue-500');
       expect(contractButton).toHaveClass('border-blue-500');
@@ -220,11 +219,11 @@ describe('SearchFiltersPanel', () => {
 
     it('should toggle case type on click', async () => {
       const user = userEvent.setup();
-      const onFiltersChange = vi.fn();
+      const onFiltersChange = jest.fn();
 
       render(<SearchFiltersPanel {...defaultProps} onFiltersChange={onFiltersChange} />);
 
-      await user.click(screen.getByText('Litigation'));
+      await user.click(screen.getByText('Litigiu'));
 
       expect(onFiltersChange).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -235,7 +234,7 @@ describe('SearchFiltersPanel', () => {
 
     it('should remove case type when already selected', async () => {
       const user = userEvent.setup();
-      const onFiltersChange = vi.fn();
+      const onFiltersChange = jest.fn();
       const filters = {
         caseTypes: ['Litigation', 'Contract'] as any[],
       };
@@ -244,7 +243,7 @@ describe('SearchFiltersPanel', () => {
         <SearchFiltersPanel {...defaultProps} filters={filters} onFiltersChange={onFiltersChange} />
       );
 
-      await user.click(screen.getByText('Litigation'));
+      await user.click(screen.getByText('Litigiu'));
 
       expect(onFiltersChange).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -258,11 +257,11 @@ describe('SearchFiltersPanel', () => {
     it('should render all case status options', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Active')).toBeInTheDocument();
-      expect(screen.getByText('Pending Approval')).toBeInTheDocument();
-      expect(screen.getByText('On Hold')).toBeInTheDocument();
-      expect(screen.getByText('Closed')).toBeInTheDocument();
-      expect(screen.getByText('Archived')).toBeInTheDocument();
+      expect(screen.getByText('Activ')).toBeInTheDocument();
+      expect(screen.getByText('În așteptare aprobare')).toBeInTheDocument();
+      expect(screen.getByText('În așteptare')).toBeInTheDocument();
+      expect(screen.getByText('Închis')).toBeInTheDocument();
+      expect(screen.getByText('Arhivat')).toBeInTheDocument();
     });
 
     it('should highlight selected case statuses', () => {
@@ -272,17 +271,17 @@ describe('SearchFiltersPanel', () => {
 
       render(<SearchFiltersPanel {...defaultProps} filters={filters} />);
 
-      const activeButton = screen.getByText('Active').closest('button');
+      const activeButton = screen.getByText('Activ').closest('button');
       expect(activeButton).toHaveClass('border-blue-500');
     });
 
     it('should toggle case status on click', async () => {
       const user = userEvent.setup();
-      const onFiltersChange = vi.fn();
+      const onFiltersChange = jest.fn();
 
       render(<SearchFiltersPanel {...defaultProps} onFiltersChange={onFiltersChange} />);
 
-      await user.click(screen.getByText('Active'));
+      await user.click(screen.getByText('Activ'));
 
       expect(onFiltersChange).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -316,7 +315,7 @@ describe('SearchFiltersPanel', () => {
 
     it('should toggle document type on click', async () => {
       const user = userEvent.setup();
-      const onFiltersChange = vi.fn();
+      const onFiltersChange = jest.fn();
 
       render(<SearchFiltersPanel {...defaultProps} onFiltersChange={onFiltersChange} />);
 
@@ -338,18 +337,18 @@ describe('SearchFiltersPanel', () => {
 
       render(<SearchFiltersPanel {...defaultProps} filters={filters} />);
 
-      expect(screen.getByText('Clear All Filters')).toBeInTheDocument();
+      expect(screen.getByText('Șterge toate filtrele')).toBeInTheDocument();
     });
 
     it('should not show clear all button when no filters', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.queryByText('Clear All Filters')).not.toBeInTheDocument();
+      expect(screen.queryByText('Șterge toate filtrele')).not.toBeInTheDocument();
     });
 
     it('should call onClearFilters when clicked', async () => {
       const user = userEvent.setup();
-      const onClearFilters = vi.fn();
+      const onClearFilters = jest.fn();
       const filters = {
         caseTypes: ['Contract'] as any[],
       };
@@ -358,7 +357,7 @@ describe('SearchFiltersPanel', () => {
         <SearchFiltersPanel {...defaultProps} filters={filters} onClearFilters={onClearFilters} />
       );
 
-      await user.click(screen.getByText('Clear All Filters'));
+      await user.click(screen.getByText('Șterge toate filtrele'));
 
       expect(onClearFilters).toHaveBeenCalled();
     });
@@ -384,7 +383,7 @@ describe('SearchFiltersPanel', () => {
 
     it('should preserve other filters when modifying one', async () => {
       const user = userEvent.setup();
-      const onFiltersChange = vi.fn();
+      const onFiltersChange = jest.fn();
       const filters = {
         caseTypes: ['Litigation'] as any[],
         caseStatuses: ['Active'] as any[],

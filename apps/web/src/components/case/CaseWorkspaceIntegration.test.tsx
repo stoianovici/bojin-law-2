@@ -10,30 +10,8 @@ import { useCaseWorkspaceStore } from '../../stores/case-workspace.store';
 import { WorkspaceTabs } from './WorkspaceTabs';
 import { createMockCaseWorkspace } from '@legal-platform/test-utils';
 
-// Mock child tab components to isolate integration testing
-jest.mock('./tabs/OverviewTab', () => ({
-  OverviewTab: () => <div data-testid="overview-tab">Overview Content</div>,
-}));
-
-jest.mock('./tabs/DocumentsTab', () => ({
-  DocumentsTab: () => <div data-testid="documents-tab">Documents Content</div>,
-}));
-
-jest.mock('./tabs/TasksTab', () => ({
-  TasksTab: () => <div data-testid="tasks-tab">Tasks Content</div>,
-}));
-
-jest.mock('./tabs/CommunicationsTab', () => ({
-  CommunicationsTab: () => <div data-testid="communications-tab">Communications Content</div>,
-}));
-
-jest.mock('./tabs/TimeEntriesTab', () => ({
-  TimeEntriesTab: () => <div data-testid="time-entries-tab">Time Entries Content</div>,
-}));
-
-jest.mock('./tabs/NotesTab', () => ({
-  NotesTab: () => <div data-testid="notes-tab">Notes Content</div>,
-}));
+// Note: WorkspaceTabs only renders tab headers, not content components.
+// Tab content is passed as children and rendered via TabContent wrappers.
 
 describe('Case Workspace Integration', () => {
   const mockWorkspaceData = createMockCaseWorkspace();

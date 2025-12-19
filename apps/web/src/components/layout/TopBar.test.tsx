@@ -9,11 +9,52 @@ import { TopBar } from './TopBar';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useNavigationStore } from '../../stores/navigation.store';
 
+// Mock next/navigation
+const mockPush = jest.fn();
+jest.mock('next/navigation', () => ({
+  usePathname: jest.fn(() => '/'),
+  useRouter: () => ({
+    push: mockPush,
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+}));
+
+// Mock next/link
+jest.mock('next/link', () => {
+  return ({ children, href, ...props }: any) => {
+    return (
+      <a href={href} {...props}>
+        {children}
+      </a>
+    );
+  };
+});
+
+// Mock the GlobalSearchBar component
+jest.mock('@/components/search/GlobalSearchBar', () => ({
+  GlobalSearchBar: React.forwardRef(({ className, placeholder }: any, ref: any) => (
+    <div className={className} data-testid="global-search-bar">
+      {placeholder}
+    </div>
+  )),
+}));
+
+// Mock NotificationCenter
+jest.mock('./NotificationCenter', () => ({
+  NotificationCenter: () => <button aria-label="Notifications">Notifications</button>,
+}));
+
+// Mock time simulation hook
+jest.mock('@/lib/hooks/useTimeSimulation', () => ({
+  useCurrentTimeDisplay: () => ({
+    currentTimeDisplay: '14:30',
+  }),
+}));
+
 describe('TopBar', () => {
   const mockOnLogout = jest.fn();
   const mockOnProfile = jest.fn();
-  const mockOnSettings = jest.fn();
-  const mockOnNotificationsClick = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,14 +71,14 @@ describe('TopBar', () => {
       render(<TopBar />);
 
       expect(screen.getByRole('banner')).toBeInTheDocument();
-      expect(screen.getByText('Legal Platform')).toBeInTheDocument();
+      expect(screen.getByText('Dashboard - Partener')).toBeInTheDocument();
     });
 
     it('should display user name and role', () => {
-      render(<TopBar userName="Alexandru Popescu" userRole="Partner" />);
+      render(<TopBar userName="Alexandru Popescu" userRole="Partener" />);
 
       expect(screen.getByText('Alexandru Popescu')).toBeInTheDocument();
-      expect(screen.getByText('Partner')).toBeInTheDocument();
+      expect(screen.getByText('Partener')).toBeInTheDocument();
     });
 
     it('should display user initials', () => {
@@ -46,56 +87,14 @@ describe('TopBar', () => {
       expect(screen.getByText('AP')).toBeInTheDocument();
     });
 
-    it('should render command palette trigger button', () => {
+    it('should render search button', () => {
       render(<TopBar />);
 
-      const searchButton = screen.getAllByLabelText(/command palette/i)[0];
+      const searchButton = screen.getByLabelText('Open search');
       expect(searchButton).toBeInTheDocument();
     });
-
-    it('should render notifications button', () => {
-      render(<TopBar />);
-
-      const notifButton = screen.getByLabelText(/notifications/i);
-      expect(notifButton).toBeInTheDocument();
-    });
   });
 
-  describe('notifications', () => {
-    it('should display unread count badge when > 0', () => {
-      render(<TopBar unreadCount={5} />);
-
-      expect(screen.getByText('5')).toBeInTheDocument();
-    });
-
-    it('should not display badge when count is 0', () => {
-      const { container } = render(<TopBar unreadCount={0} />);
-
-      const badge = container.querySelector('.bg-red-500');
-      expect(badge).not.toBeInTheDocument();
-    });
-
-    it('should display "99+" for counts over 99', () => {
-      render(<TopBar unreadCount={150} />);
-
-      expect(screen.getByText('99+')).toBeInTheDocument();
-    });
-
-    it('should call onNotificationsClick when clicked', () => {
-      render(<TopBar onNotificationsClick={mockOnNotificationsClick} />);
-
-      const notifButton = screen.getByLabelText(/notifications/i);
-      fireEvent.click(notifButton);
-
-      expect(mockOnNotificationsClick).toHaveBeenCalledTimes(1);
-    });
-
-    it('should include unread count in aria-label', () => {
-      render(<TopBar unreadCount={3} />);
-
-      expect(screen.getByLabelText('Notifications (3 unread)')).toBeInTheDocument();
-    });
-  });
 
   describe('sidebar toggle', () => {
     it('should toggle sidebar when hamburger button is clicked', () => {
@@ -109,55 +108,6 @@ describe('TopBar', () => {
     });
   });
 
-  describe('command palette', () => {
-    it('should open command palette when button is clicked', () => {
-      render(<TopBar />);
-
-      const searchButtons = screen.getAllByLabelText(/command palette/i);
-      fireEvent.click(searchButtons[0]);
-
-      const state = useNavigationStore.getState();
-      expect(state.isCommandPaletteOpen).toBe(true);
-    });
-
-    it('should open command palette with Cmd+K', () => {
-      render(<TopBar />);
-
-      fireEvent.keyDown(window, { key: 'k', metaKey: true });
-
-      const state = useNavigationStore.getState();
-      expect(state.isCommandPaletteOpen).toBe(true);
-    });
-
-    it('should open command palette with Ctrl+K', () => {
-      render(<TopBar />);
-
-      fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
-
-      const state = useNavigationStore.getState();
-      expect(state.isCommandPaletteOpen).toBe(true);
-    });
-
-    it('should not open command palette with other key combinations', () => {
-      render(<TopBar />);
-
-      fireEvent.keyDown(window, { key: 'k' });
-
-      const state = useNavigationStore.getState();
-      expect(state.isCommandPaletteOpen).toBe(false);
-    });
-
-    it('should clean up keyboard listener on unmount', () => {
-      const { unmount } = render(<TopBar />);
-
-      unmount();
-
-      fireEvent.keyDown(window, { key: 'k', metaKey: true });
-
-      // Should not throw error
-      expect(true).toBe(true);
-    });
-  });
 
   describe('user menu', () => {
     // Note: Portal-based dropdown menu tests are skipped due to jsdom limitations
@@ -168,7 +118,7 @@ describe('TopBar', () => {
       fireEvent.click(menuTrigger);
 
       await waitFor(() => {
-        expect(screen.getByText('Profile')).toBeInTheDocument();
+        expect(screen.getByText('Profil')).toBeInTheDocument();
       });
     });
 
@@ -179,9 +129,9 @@ describe('TopBar', () => {
       fireEvent.click(menuTrigger);
 
       await waitFor(() => {
-        expect(screen.getByText('Profile')).toBeInTheDocument();
-        expect(screen.getByText('Settings')).toBeInTheDocument();
-        expect(screen.getByText('Logout')).toBeInTheDocument();
+        expect(screen.getByText('Profil')).toBeInTheDocument();
+        expect(screen.getByText('Setări')).toBeInTheDocument();
+        expect(screen.getByText('Deconectare')).toBeInTheDocument();
       });
     });
 
@@ -195,10 +145,10 @@ describe('TopBar', () => {
       fireEvent.click(menuTrigger);
 
       await waitFor(() => {
-        expect(screen.getByText('Profile')).toBeInTheDocument();
+        expect(screen.getByText('Profil')).toBeInTheDocument();
       });
 
-      const profileItem = screen.getByText('Profile');
+      const profileItem = screen.getByText('Profil');
       fireEvent.click(profileItem);
 
       await waitFor(() => {
@@ -206,35 +156,17 @@ describe('TopBar', () => {
       });
     });
 
-    it.skip('should call onSettings when Settings is clicked', async () => {
-      render(<TopBar onSettings={mockOnSettings} />);
-
-      const menuTrigger = screen.getByLabelText('User menu');
-      fireEvent.click(menuTrigger);
-
-      await waitFor(() => {
-        expect(screen.getByText('Settings')).toBeInTheDocument();
-      });
-
-      const settingsItem = screen.getByText('Settings');
-      fireEvent.click(settingsItem);
-
-      await waitFor(() => {
-        expect(mockOnSettings).toHaveBeenCalledTimes(1);
-      });
-    });
-
-    it.skip('should call onLogout when Logout is clicked', async () => {
+    it.skip('should call onLogout when Deconectare is clicked', async () => {
       render(<TopBar onLogout={mockOnLogout} />);
 
       const menuTrigger = screen.getByLabelText('User menu');
       fireEvent.click(menuTrigger);
 
       await waitFor(() => {
-        expect(screen.getByText('Logout')).toBeInTheDocument();
+        expect(screen.getByText('Deconectare')).toBeInTheDocument();
       });
 
-      const logoutItem = screen.getByText('Logout');
+      const logoutItem = screen.getByText('Deconectare');
       fireEvent.click(logoutItem);
 
       await waitFor(() => {
@@ -244,20 +176,11 @@ describe('TopBar', () => {
   });
 
   describe('responsive behavior', () => {
-    it('should hide logo on small screens', () => {
+    it('should hide page title on small screens', () => {
       render(<TopBar />);
 
-      const logo = screen.getByText('Legal Platform');
-      expect(logo).toHaveClass('hidden', 'sm:block');
-    });
-
-    it('should hide search text on medium screens', () => {
-      render(<TopBar />);
-
-      const searchText = screen.queryByText('Search');
-      if (searchText) {
-        expect(searchText).toHaveClass('hidden', 'lg:inline');
-      }
+      const pageTitle = screen.getByText('Dashboard - Partener');
+      expect(pageTitle).toHaveClass('hidden', 'sm:block');
     });
   });
 
@@ -266,8 +189,7 @@ describe('TopBar', () => {
       render(<TopBar />);
 
       expect(screen.getByLabelText('Toggle sidebar')).toBeInTheDocument();
-      expect(screen.getAllByLabelText(/command palette/i).length).toBeGreaterThan(0);
-      expect(screen.getByLabelText(/notifications/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('Open search')).toBeInTheDocument();
       expect(screen.getByLabelText('User menu')).toBeInTheDocument();
     });
 
@@ -302,9 +224,9 @@ describe('TopBar', () => {
     });
 
     it('should use custom userRole', () => {
-      render(<TopBar userRole="Associate" />);
+      render(<TopBar userRole="Asociat" />);
 
-      expect(screen.getByText('Associate')).toBeInTheDocument();
+      expect(screen.getByText('Asociat')).toBeInTheDocument();
     });
   });
 });

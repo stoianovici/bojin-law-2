@@ -135,10 +135,10 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      expect(screen.getByText('Failed to load documents')).toBeInTheDocument();
-      expect(screen.getByText('Try again')).toBeInTheDocument();
+      expect(screen.getByText('Eroare la încărcarea documentelor')).toBeInTheDocument();
+      expect(screen.getByText('Reîncearcă')).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText('Try again'));
+      fireEvent.click(screen.getByText('Reîncearcă'));
       expect(mockRefetch).toHaveBeenCalled();
     });
 
@@ -152,9 +152,9 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      expect(screen.getByText('No documents yet')).toBeInTheDocument();
+      expect(screen.getByText('Niciun document încă')).toBeInTheDocument();
       expect(
-        screen.getByText('Import documents from other cases or upload new ones')
+        screen.getByText('Importați documente din alte dosare sau încărcați documente noi')
       ).toBeInTheDocument();
     });
 
@@ -183,8 +183,8 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      expect(screen.getByText('Imported')).toBeInTheDocument();
-      expect(screen.getByText(/From: CASE-2024-002/)).toBeInTheDocument();
+      expect(screen.getByText('Importat')).toBeInTheDocument();
+      expect(screen.getByText(/Din: CASE-2024-002/)).toBeInTheDocument();
     });
 
     it('shows document count in header', () => {
@@ -197,7 +197,7 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      expect(screen.getByText('2 documents linked to this case')).toBeInTheDocument();
+      expect(screen.getByText('2 documente asociate acestui dosar')).toBeInTheDocument();
     });
   });
 
@@ -213,7 +213,7 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      expect(screen.getByRole('button', { name: /Import Documents/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Importă documente/i })).toBeInTheDocument();
     });
 
     it('opens document browser modal when clicked', async () => {
@@ -227,7 +227,7 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      const importButton = screen.getByRole('button', { name: /Import Documents/i });
+      const importButton = screen.getByRole('button', { name: /Importă documente/i });
       await userEvent.click(importButton);
 
       expect(screen.getByTestId('document-browser-modal')).toBeInTheDocument();
@@ -245,7 +245,7 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      expect(screen.getByTitle('Unlink from case')).toBeInTheDocument();
+      expect(screen.getByTitle('Dezasociază de la dosar')).toBeInTheDocument();
     });
 
     it('shows confirmation modal when unlink is clicked', async () => {
@@ -258,11 +258,11 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      const unlinkButton = screen.getByTitle('Unlink from case');
+      const unlinkButton = screen.getByTitle('Dezasociază de la dosar');
       await userEvent.click(unlinkButton);
 
-      expect(screen.getByText('Unlink Document')).toBeInTheDocument();
-      expect(screen.getByText(/Are you sure you want to unlink/)).toBeInTheDocument();
+      expect(screen.getByText('Dezasociere document')).toBeInTheDocument();
+      expect(screen.getByText(/Sigur doriți să dezasociați/)).toBeInTheDocument();
     });
 
     it('calls unlinkDocument when confirmed', async () => {
@@ -281,10 +281,10 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      const unlinkButton = screen.getByTitle('Unlink from case');
+      const unlinkButton = screen.getByTitle('Dezasociază de la dosar');
       await userEvent.click(unlinkButton);
 
-      const confirmButton = screen.getByRole('button', { name: 'Unlink' });
+      const confirmButton = screen.getByRole('button', { name: 'Dezasociază' });
       await userEvent.click(confirmButton);
 
       await waitFor(() => {
@@ -302,13 +302,13 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} />);
 
-      const unlinkButton = screen.getByTitle('Unlink from case');
+      const unlinkButton = screen.getByTitle('Dezasociază de la dosar');
       await userEvent.click(unlinkButton);
 
-      const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+      const cancelButton = screen.getByRole('button', { name: 'Anulează' });
       await userEvent.click(cancelButton);
 
-      expect(screen.queryByText('Unlink Document')).not.toBeInTheDocument();
+      expect(screen.queryByText('Dezasociere document')).not.toBeInTheDocument();
     });
   });
 
@@ -323,7 +323,7 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} userRole="Partner" />);
 
-      expect(screen.getByTitle('Permanently delete')).toBeInTheDocument();
+      expect(screen.getByTitle('Șterge permanent')).toBeInTheDocument();
     });
 
     it('does not show delete button for Associates', () => {
@@ -336,7 +336,7 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} userRole="Associate" />);
 
-      expect(screen.queryByTitle('Permanently delete')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Șterge permanent')).not.toBeInTheDocument();
     });
 
     it('does not show delete button for Paralegals', () => {
@@ -349,7 +349,7 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} userRole="Paralegal" />);
 
-      expect(screen.queryByTitle('Permanently delete')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Șterge permanent')).not.toBeInTheDocument();
     });
 
     it('shows delete confirmation modal with warning', async () => {
@@ -362,11 +362,11 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} userRole="Partner" />);
 
-      const deleteButton = screen.getByTitle('Permanently delete');
+      const deleteButton = screen.getByTitle('Șterge permanent');
       await userEvent.click(deleteButton);
 
-      expect(screen.getByText('Permanently Delete Document')).toBeInTheDocument();
-      expect(screen.getByText(/This will remove it from ALL cases/)).toBeInTheDocument();
+      expect(screen.getByText('Ștergere permanentă document')).toBeInTheDocument();
+      expect(screen.getByText(/Aceasta îl va elimina din TOATE dosarele/)).toBeInTheDocument();
     });
 
     it('calls deleteDocument when confirmed', async () => {
@@ -385,10 +385,10 @@ describe('CaseDocumentsList', () => {
 
       render(<CaseDocumentsList {...defaultProps} userRole="Partner" />);
 
-      const deleteButton = screen.getByTitle('Permanently delete');
+      const deleteButton = screen.getByTitle('Șterge permanent');
       await userEvent.click(deleteButton);
 
-      const confirmButton = screen.getByRole('button', { name: 'Delete Permanently' });
+      const confirmButton = screen.getByRole('button', { name: 'Șterge permanent' });
       await userEvent.click(confirmButton);
 
       await waitFor(() => {

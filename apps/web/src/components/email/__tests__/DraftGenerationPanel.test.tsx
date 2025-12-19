@@ -7,170 +7,129 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { DraftGenerationPanel } from '../DraftGenerationPanel';
-import { useEmailDraft } from '@/hooks/useEmailDraft';
+import { useGenerateMultipleDrafts } from '@/hooks/useEmailDraft';
 
 // Mock the hook
-jest.mock('@/hooks/useEmailDraft');
+jest.mock('@/hooks/useEmailDraft', () => ({
+  useGenerateMultipleDrafts: jest.fn(),
+}));
 
-const mockUseEmailDraft = useEmailDraft as jest.MockedFunction<typeof useEmailDraft>;
+const mockUseGenerateMultipleDrafts = useGenerateMultipleDrafts as jest.MockedFunction<
+  typeof useGenerateMultipleDrafts
+>;
 
 describe('DraftGenerationPanel', () => {
-  const mockEmail = {
-    id: 'email-123',
-    subject: 'Test Subject',
-    bodyContent: 'Test body content',
-    from: { name: 'Sender', address: 'sender@example.com' },
-  };
-
   const mockDraft = {
     id: 'draft-123',
     subject: 'Re: Test Subject',
     body: 'Generated draft body',
     htmlBody: '<p>Generated draft body</p>',
     confidence: 0.85,
-    status: 'Generated',
-    tone: 'Professional',
-    keyPointsAddressed: ['Point 1', 'Point 2'],
-    tokensUsed: { input: 500, output: 300 },
   };
 
-  const mockMultipleDrafts = {
+  const mockResult = {
     drafts: [
-      { tone: 'Formal', draft: { ...mockDraft, tone: 'Formal' } },
-      { tone: 'Professional', draft: { ...mockDraft, tone: 'Professional' } },
-      { tone: 'Brief', draft: { ...mockDraft, tone: 'Brief' } },
+      { tone: 'Formal' as const, draft: { ...mockDraft, tone: 'Formal' as const } },
+      { tone: 'Professional' as const, draft: { ...mockDraft, tone: 'Professional' as const } },
+      { tone: 'Brief' as const, draft: { ...mockDraft, tone: 'Brief' as const } },
     ],
-    recommendedTone: 'Formal',
-    recommendationReason: 'Court correspondence requires formal tone',
+    recommendedTone: 'Formal' as const,
+    recommendationReason: 'Corespondența cu instanța necesită ton formal',
   };
 
   const defaultHookReturn = {
-    generateDraft: jest.fn().mockResolvedValue(mockDraft),
-    generateMultipleDrafts: jest.fn().mockResolvedValue(mockMultipleDrafts),
-    refineDraft: jest.fn(),
-    selectDraft: jest.fn(),
-    updateDraft: jest.fn(),
-    sendDraft: jest.fn(),
-    discardDraft: jest.fn(),
-    toggleAttachment: jest.fn(),
-    currentDraft: null,
-    drafts: [],
-    multipleDrafts: null,
-    attachmentSuggestions: [],
-    isLoading: false,
+    generate: jest.fn().mockResolvedValue(mockResult),
+    result: null,
+    loading: false,
     error: null,
   };
 
   const defaultProps = {
-    email: mockEmail,
-    caseId: 'case-123',
-    onDraftGenerated: jest.fn(),
+    emailId: 'email-123',
+    onDraftSelect: jest.fn(),
     onCancel: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseEmailDraft.mockReturnValue(defaultHookReturn);
+    mockUseGenerateMultipleDrafts.mockReturnValue(defaultHookReturn);
   });
 
-  describe('Rendering', () => {
-    it('should render tone selector', () => {
+  describe('Loading state', () => {
+    it('should show loading state during generation', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
+        ...defaultHookReturn,
+        loading: true,
+      });
+
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      expect(screen.getByText(/Formal/i)).toBeInTheDocument();
-      expect(screen.getByText(/Profesional/i)).toBeInTheDocument();
-      expect(screen.getByText(/Concis/i)).toBeInTheDocument();
-    });
-
-    it('should render generate button', () => {
-      render(<DraftGenerationPanel {...defaultProps} />);
-
-      expect(screen.getByRole('button', { name: /Generează/i })).toBeInTheDocument();
-    });
-
-    it('should render generate multiple button', () => {
-      render(<DraftGenerationPanel {...defaultProps} />);
-
-      expect(screen.getByRole('button', { name: /3 Variante/i })).toBeInTheDocument();
-    });
-
-    it('should render cancel button', () => {
-      render(<DraftGenerationPanel {...defaultProps} />);
-
-      expect(screen.getByRole('button', { name: /Anulează/i })).toBeInTheDocument();
+      expect(screen.getByText(/Se generează draft-uri AI/i)).toBeInTheDocument();
+      expect(screen.getByText(/Aceasta poate dura câteva secunde/i)).toBeInTheDocument();
     });
   });
 
-  describe('Single draft generation', () => {
-    it('should call generateDraft when generate button is clicked', async () => {
-      const generateDraft = jest.fn().mockResolvedValue(mockDraft);
-      mockUseEmailDraft.mockReturnValue({
+  describe('Error state', () => {
+    it('should display error message when generation fails', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
         ...defaultHookReturn,
-        generateDraft,
+        error: new Error('Failed to generate draft'),
       });
 
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole('button', { name: /Generează/i }));
-
-      await waitFor(() => {
-        expect(generateDraft).toHaveBeenCalledWith(
-          'email-123',
-          expect.any(String), // tone
-          undefined // recipientType
-        );
-      });
+      expect(screen.getByText(/Generarea draft-ului a eșuat/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to generate/i)).toBeInTheDocument();
     });
 
-    it('should call onDraftGenerated after successful generation', async () => {
-      const onDraftGenerated = jest.fn();
-      mockUseEmailDraft.mockReturnValue({
+    it('should show retry button after error', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
         ...defaultHookReturn,
-        generateDraft: jest.fn().mockResolvedValue(mockDraft),
-      });
-
-      render(<DraftGenerationPanel {...defaultProps} onDraftGenerated={onDraftGenerated} />);
-
-      fireEvent.click(screen.getByRole('button', { name: /Generează/i }));
-
-      await waitFor(() => {
-        expect(onDraftGenerated).toHaveBeenCalledWith(mockDraft);
-      });
-    });
-
-    it('should show loading state during generation', async () => {
-      mockUseEmailDraft.mockReturnValue({
-        ...defaultHookReturn,
-        isLoading: true,
+        error: new Error('Failed to generate draft'),
       });
 
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      expect(screen.getByRole('button', { name: /Generează/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Încearcă Din Nou/i })).toBeInTheDocument();
+    });
+
+    it('should allow retry after error', async () => {
+      const generate = jest.fn().mockResolvedValue(mockResult);
+      mockUseGenerateMultipleDrafts.mockReturnValue({
+        ...defaultHookReturn,
+        generate,
+        error: new Error('Failed'),
+      });
+
+      render(<DraftGenerationPanel {...defaultProps} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Încearcă Din Nou/i }));
+
+      await waitFor(() => {
+        expect(generate).toHaveBeenCalled();
+      });
     });
   });
 
-  describe('Multiple drafts generation', () => {
-    it('should call generateMultipleDrafts when button is clicked', async () => {
-      const generateMultipleDrafts = jest.fn().mockResolvedValue(mockMultipleDrafts);
-      mockUseEmailDraft.mockReturnValue({
+  describe('Draft display', () => {
+    it('should render draft options header', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
         ...defaultHookReturn,
-        generateMultipleDrafts,
+        result: mockResult,
       });
 
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole('button', { name: /3 Variante/i }));
-
-      await waitFor(() => {
-        expect(generateMultipleDrafts).toHaveBeenCalledWith('email-123', undefined);
-      });
+      expect(screen.getByText(/Opțiuni Draft AI/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Selectează tonul care se potrivește cel mai bine răspunsului tău/i)
+      ).toBeInTheDocument();
     });
 
-    it('should display draft options when multiple drafts are generated', async () => {
-      mockUseEmailDraft.mockReturnValue({
+    it('should render tone selector with all tones', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
         ...defaultHookReturn,
-        multipleDrafts: mockMultipleDrafts,
+        result: mockResult,
       });
 
       render(<DraftGenerationPanel {...defaultProps} />);
@@ -180,66 +139,60 @@ describe('DraftGenerationPanel', () => {
       expect(screen.getByText(/Brief/i)).toBeInTheDocument();
     });
 
-    it('should highlight recommended tone', async () => {
-      mockUseEmailDraft.mockReturnValue({
+    it('should display draft preview labels in Romanian', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
         ...defaultHookReturn,
-        multipleDrafts: mockMultipleDrafts,
+        result: mockResult,
       });
 
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      expect(screen.getByText(/Recomandat/i)).toBeInTheDocument();
+      expect(screen.getByText(/Subiect/i)).toBeInTheDocument();
+      expect(screen.getByText(/Previzualizare/i)).toBeInTheDocument();
+      expect(screen.getByText(/Încredere/i)).toBeInTheDocument();
     });
   });
 
-  describe('Tone selection', () => {
-    it('should update selected tone when clicked', () => {
-      render(<DraftGenerationPanel {...defaultProps} />);
-
-      fireEvent.click(screen.getByRole('button', { name: /Formal/i }));
-
-      const formalButton = screen.getByRole('button', { name: /Formal/i });
-      expect(formalButton).toHaveClass('border-blue-500');
-    });
-
-    it('should use selected tone for draft generation', async () => {
-      const generateDraft = jest.fn().mockResolvedValue(mockDraft);
-      mockUseEmailDraft.mockReturnValue({
+  describe('Actions', () => {
+    it('should render cancel button', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
         ...defaultHookReturn,
-        generateDraft,
+        result: mockResult,
       });
 
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole('button', { name: /Formal/i }));
-      fireEvent.click(screen.getByRole('button', { name: /Generează/i }));
-
-      await waitFor(() => {
-        expect(generateDraft).toHaveBeenCalledWith('email-123', 'Formal', undefined);
-      });
+      expect(screen.getByRole('button', { name: /Anulează/i })).toBeInTheDocument();
     });
-  });
 
-  describe('Recipient type', () => {
-    it('should pass recipientType when provided', async () => {
-      const generateDraft = jest.fn().mockResolvedValue(mockDraft);
-      mockUseEmailDraft.mockReturnValue({
+    it('should render regenerate button', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
         ...defaultHookReturn,
-        generateDraft,
+        result: mockResult,
       });
 
-      render(<DraftGenerationPanel {...defaultProps} recipientType="Court" />);
+      render(<DraftGenerationPanel {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole('button', { name: /Generează/i }));
-
-      await waitFor(() => {
-        expect(generateDraft).toHaveBeenCalledWith('email-123', expect.any(String), 'Court');
-      });
+      expect(screen.getByRole('button', { name: /Regenerează/i })).toBeInTheDocument();
     });
-  });
 
-  describe('Cancel functionality', () => {
+    it('should render use draft button', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
+        ...defaultHookReturn,
+        result: mockResult,
+      });
+
+      render(<DraftGenerationPanel {...defaultProps} />);
+
+      expect(screen.getByRole('button', { name: /Folosește Acest Draft/i })).toBeInTheDocument();
+    });
+
     it('should call onCancel when cancel button is clicked', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
+        ...defaultHookReturn,
+        result: mockResult,
+      });
+
       const onCancel = jest.fn();
       render(<DraftGenerationPanel {...defaultProps} onCancel={onCancel} />);
 
@@ -247,46 +200,59 @@ describe('DraftGenerationPanel', () => {
 
       expect(onCancel).toHaveBeenCalled();
     });
+
+    it('should call generate when regenerate button is clicked', async () => {
+      const generate = jest.fn().mockResolvedValue(mockResult);
+      mockUseGenerateMultipleDrafts.mockReturnValue({
+        ...defaultHookReturn,
+        generate,
+        result: mockResult,
+      });
+
+      render(<DraftGenerationPanel {...defaultProps} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Regenerează/i }));
+
+      await waitFor(() => {
+        expect(generate).toHaveBeenCalled();
+      });
+    });
   });
 
-  describe('Error handling', () => {
-    it('should display error message when generation fails', () => {
-      mockUseEmailDraft.mockReturnValue({
+  describe('Tone selection', () => {
+    it('should show recommended tone', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
         ...defaultHookReturn,
-        error: 'Failed to generate draft',
+        result: mockResult,
       });
 
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      expect(screen.getByText(/Failed to generate/i)).toBeInTheDocument();
-    });
-
-    it('should allow retry after error', () => {
-      mockUseEmailDraft.mockReturnValue({
-        ...defaultHookReturn,
-        error: 'Failed to generate draft',
-      });
-
-      render(<DraftGenerationPanel {...defaultProps} />);
-
-      expect(screen.getByRole('button', { name: /Generează/i })).not.toBeDisabled();
+      expect(screen.getByText(/Corespondența cu instanța necesită ton formal/i)).toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
-    it('should have proper aria-label on generate button', () => {
+    it('should have aria-busy during loading', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
+        ...defaultHookReturn,
+        loading: true,
+      });
+
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      expect(screen.getByRole('button', { name: /Generează/i })).toHaveAttribute('aria-label');
+      expect(screen.getByRole('generic', { busy: true })).toBeInTheDocument();
     });
 
-    it('should be keyboard accessible', () => {
+    it('should have proper role for error alert', () => {
+      mockUseGenerateMultipleDrafts.mockReturnValue({
+        ...defaultHookReturn,
+        error: new Error('Test error'),
+      });
+
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      const generateButton = screen.getByRole('button', { name: /Generează/i });
-      generateButton.focus();
-
-      expect(document.activeElement).toBe(generateButton);
+      expect(screen.getByRole('alert')).toBeInTheDocument();
     });
   });
 });

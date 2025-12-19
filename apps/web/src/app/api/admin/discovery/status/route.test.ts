@@ -1,22 +1,37 @@
 /**
  * Discovery Status API Tests
  * Story 2.12.1 - Task 7: Admin Dashboard
+ * @jest-environment node
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { NextRequest } from 'next/server';
-import { GET } from './route';
 
-// Mock the discovery status service
+// Mock the discovery status service BEFORE importing the route
+const mockGetStatus = jest.fn<any, any>();
+const mockGetDocumentTypes = jest.fn<any, any>();
+const mockGetPendingReview = jest.fn<any, any>();
+const mockGetDiscoveryTrends = jest.fn<any, any>();
+
 jest.mock('@/lib/services/discovery-status.service', () => ({
   discoveryStatusService: {
-    getStatus: jest.fn(),
-    getDocumentTypes: jest.fn(),
-    getPendingReview: jest.fn(),
-    getDiscoveryTrends: jest.fn(),
+    get getStatus() {
+      return mockGetStatus;
+    },
+    get getDocumentTypes() {
+      return mockGetDocumentTypes;
+    },
+    get getPendingReview() {
+      return mockGetPendingReview;
+    },
+    get getDiscoveryTrends() {
+      return mockGetDiscoveryTrends;
+    },
   },
 }));
 
+// Import route and service AFTER mocking
+import { GET } from './route';
 import { discoveryStatusService } from '@/lib/services/discovery-status.service';
 
 describe('Discovery Status API', () => {
@@ -36,7 +51,7 @@ describe('Discovery Status API', () => {
         averageConfidence: 0.85,
       };
 
-      (discoveryStatusService.getStatus as jest.Mock).mockResolvedValue(mockStatus);
+      mockGetStatus.mockResolvedValue(mockStatus);
 
       const request = new NextRequest('http://localhost:3000/api/admin/discovery/status');
       const response = await GET(request);
@@ -82,10 +97,10 @@ describe('Discovery Status API', () => {
         },
       ];
 
-      (discoveryStatusService.getStatus as jest.Mock).mockResolvedValue(mockStatus);
-      (discoveryStatusService.getDocumentTypes as jest.Mock).mockResolvedValue(mockDocumentTypes);
-      (discoveryStatusService.getPendingReview as jest.Mock).mockResolvedValue(mockPendingReview);
-      (discoveryStatusService.getDiscoveryTrends as jest.Mock).mockResolvedValue(mockTrends);
+      mockGetStatus.mockResolvedValue(mockStatus);
+      mockGetDocumentTypes.mockResolvedValue(mockDocumentTypes);
+      mockGetPendingReview.mockResolvedValue(mockPendingReview);
+      mockGetDiscoveryTrends.mockResolvedValue(mockTrends);
 
       const request = new NextRequest(
         'http://localhost:3000/api/admin/discovery/status?detailed=true'
@@ -113,15 +128,15 @@ describe('Discovery Status API', () => {
         averageConfidence: 0.9,
       };
 
-      (discoveryStatusService.getStatus as jest.Mock).mockResolvedValue(mockStatus);
-      (discoveryStatusService.getDocumentTypes as jest.Mock).mockResolvedValue([]);
+      mockGetStatus.mockResolvedValue(mockStatus);
+      mockGetDocumentTypes.mockResolvedValue([]);
 
       const request = new NextRequest(
         'http://localhost:3000/api/admin/discovery/status?detailed=true&limit=10&offset=20'
       );
       await GET(request);
 
-      expect(discoveryStatusService.getDocumentTypes).toHaveBeenCalledWith(10, 20, 'priority');
+      expect(mockGetDocumentTypes).toHaveBeenCalledWith(10, 20, 'priority');
     });
 
     it('should respect sortBy parameter', async () => {
@@ -135,21 +150,19 @@ describe('Discovery Status API', () => {
         averageConfidence: 0.9,
       };
 
-      (discoveryStatusService.getStatus as jest.Mock).mockResolvedValue(mockStatus);
-      (discoveryStatusService.getDocumentTypes as jest.Mock).mockResolvedValue([]);
+      mockGetStatus.mockResolvedValue(mockStatus);
+      mockGetDocumentTypes.mockResolvedValue([]);
 
       const request = new NextRequest(
         'http://localhost:3000/api/admin/discovery/status?detailed=true&sortBy=occurrences'
       );
       await GET(request);
 
-      expect(discoveryStatusService.getDocumentTypes).toHaveBeenCalledWith(50, 0, 'occurrences');
+      expect(mockGetDocumentTypes).toHaveBeenCalledWith(50, 0, 'occurrences');
     });
 
     it('should handle service errors gracefully', async () => {
-      (discoveryStatusService.getStatus as jest.Mock).mockRejectedValue(
-        new Error('Database connection failed')
-      );
+      mockGetStatus.mockRejectedValue(new Error('Database connection failed'));
 
       const request = new NextRequest('http://localhost:3000/api/admin/discovery/status');
       const response = await GET(request);

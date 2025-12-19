@@ -69,12 +69,12 @@ describe('Case Factory', () => {
       expect(caseEntity.status).toBe('Active');
     });
 
-    it('should include Romanian case types', () => {
-      // Run multiple times to increase chance of getting Romanian types
+    it('should include Romanian court names in metadata', () => {
+      // Run multiple times to increase chance of getting Romanian court names
       const cases = Array.from({ length: 50 }, () => createCase());
-      const hasRomanianType = cases.some((c) => /[ăâîșț]/i.test(c.type));
+      const hasRomanianCourt = cases.some((c) => /[ăâîșț]/i.test(c.metadata.court));
 
-      expect(hasRomanianType).toBe(true);
+      expect(hasRomanianCourt).toBe(true);
     });
 
     it('should have valid metadata', () => {
