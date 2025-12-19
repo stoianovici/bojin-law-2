@@ -38,6 +38,7 @@ const mockUseRouter = jest.fn(() => ({
 jest.mock('next/navigation', () => ({
   useRouter: () => mockUseRouter(),
   usePathname: () => '/analytics',
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock analytics filters store

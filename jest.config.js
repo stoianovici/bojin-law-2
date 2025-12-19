@@ -46,7 +46,14 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.(test|spec).(ts|tsx|js|jsx)', '**/*.(test|spec).(ts|tsx|js|jsx)'],
 
   // Test path ignore patterns
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/.turbo/', '/coverage/'],
+  // Note: Integration tests (*.integration.test.*) are run separately via pnpm test:integration
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/.turbo/',
+    '/coverage/',
+    '\\.integration\\.test\\.',
+  ],
 
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
