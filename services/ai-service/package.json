@@ -1,7 +1,7 @@
 {
   "name": "@legal-platform/ai-service",
   "version": "1.0.0",
-  "description": "AI Service for Legal Platform with Claude Skills integration and LangChain",
+  "description": "AI Service for Legal Platform with Claude integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -17,17 +17,13 @@
   "keywords": [
     "ai",
     "claude",
-    "skills",
     "anthropic",
-    "legal",
-    "langchain"
+    "legal"
   ],
   "author": "Legal Platform Team",
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
-    "@langchain/anthropic": "^0.3.0",
-    "@langchain/core": "^0.3.0",
     "@legal-platform/database": "workspace:*",
     "@prisma/client": "^5.8.0",
     "@legal-platform/types": "workspace:*",
@@ -38,7 +34,6 @@
     "express": "^4.19.0",
     "franc": "^6.2.0",
     "ioredis": "^5.8.2",
-    "langchain": "^0.3.0",
     "mammoth": "^1.11.0",
     "natural": "^8.1.0",
     "node-cron": "^4.2.1",

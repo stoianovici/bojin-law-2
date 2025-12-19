@@ -10,14 +10,8 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ClaudeModel, AIOperationType } from '@legal-platform/types';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { chat } from '../lib/claude/client';
 import { tokenTracker } from './token-tracker.service';
 import logger from '../lib/logger';
 import type { CaseContext } from './email-drafting.service';
@@ -169,55 +163,47 @@ export class DraftRefinementService {
       const normalizedInstruction = this.normalizeInstruction(params.instruction);
 
       // Build prompt variables
-      const promptVars = {
-        caseContext: params.caseContext
-          ? this.formatCaseContext(params.caseContext)
-          : 'No case context available.',
-        currentBody: params.currentBody,
-        instruction: normalizedInstruction,
-      };
+      const caseContextStr = params.caseContext
+        ? this.formatCaseContext(params.caseContext)
+        : 'No case context available.';
 
-      // Create LangChain prompt template
-      const systemPrompt = SystemMessagePromptTemplate.fromTemplate(REFINEMENT_SYSTEM_PROMPT);
-      const humanPrompt = HumanMessagePromptTemplate.fromTemplate(REFINEMENT_HUMAN_PROMPT);
-      const chatPrompt = ChatPromptTemplate.fromMessages([systemPrompt, humanPrompt]);
+      // Build system prompt with interpolated values
+      const systemPrompt = REFINEMENT_SYSTEM_PROMPT.replace('{caseContext}', caseContextStr);
 
-      // Create callback handler for metrics
-      const callbackHandler = new AICallbackHandler();
+      // Build user prompt with interpolated values
+      const userPrompt = REFINEMENT_HUMAN_PROMPT.replace(
+        '{currentBody}',
+        params.currentBody
+      ).replace('{instruction}', normalizedInstruction);
 
-      // Use Sonnet model for refinement accuracy
-      const model = createClaudeModel(ClaudeModel.Sonnet, {
+      // Generate response using direct Anthropic SDK
+      const response = await chat(systemPrompt, userPrompt, {
+        model: ClaudeModel.Sonnet,
         maxTokens: 2048,
         temperature: 0.2,
-        callbacks: [callbackHandler],
       });
 
-      // Create chain
-      const chain = chatPrompt.pipe(model).pipe(new StringOutputParser());
-
-      // Generate response
-      const response = await chain.invoke(promptVars);
+      const latencyMs = Date.now() - startTime;
 
       // Parse JSON response
-      const parsed = this.parseRefinementResponse(response);
-      const metrics = callbackHandler.getMetrics();
+      const parsed = this.parseRefinementResponse(response.content);
 
       // Track token usage
       await tokenTracker.recordUsage({
         operationType: AIOperationType.TextGeneration,
-        inputTokens: metrics.inputTokens,
-        outputTokens: metrics.outputTokens,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         modelUsed: ClaudeModel.Sonnet,
         userId: params.userId,
         firmId: params.firmId,
-        latencyMs: metrics.latencyMs,
+        latencyMs,
       });
 
       const result: RefinementResult = {
         refinedBody: parsed.refinedBody,
         refinedHtmlBody: parsed.refinedHtmlBody || this.convertToHtml(parsed.refinedBody),
         changesApplied: parsed.changesApplied || [normalizedInstruction],
-        tokensUsed: metrics.inputTokens + metrics.outputTokens,
+        tokensUsed: response.inputTokens + response.outputTokens,
       };
 
       logger.info('Draft refinement completed', {
@@ -261,52 +247,42 @@ export class DraftRefinementService {
     });
 
     try {
-      // Build prompt variables
-      const promptVars = {
-        originalSubject: context.originalEmailSubject,
-        recipientType: context.recipientType,
-        tone: context.tone,
-        caseTitle: context.caseTitle || 'N/A',
-        partialText: partialText.slice(-500), // Last 500 chars for context
-        originalBody: context.originalEmailBody.slice(0, 500), // First 500 chars
-      };
+      // Build system prompt with interpolated values
+      const systemPrompt = INLINE_SUGGESTION_SYSTEM_PROMPT.replace(
+        '{originalSubject}',
+        context.originalEmailSubject
+      )
+        .replace('{recipientType}', context.recipientType)
+        .replace('{tone}', context.tone)
+        .replace('{caseTitle}', context.caseTitle || 'N/A');
 
-      // Create LangChain prompt template
-      const systemPrompt = SystemMessagePromptTemplate.fromTemplate(
-        INLINE_SUGGESTION_SYSTEM_PROMPT
-      );
-      const humanPrompt = HumanMessagePromptTemplate.fromTemplate(INLINE_SUGGESTION_HUMAN_PROMPT);
-      const chatPrompt = ChatPromptTemplate.fromMessages([systemPrompt, humanPrompt]);
+      // Build user prompt with interpolated values
+      const userPrompt = INLINE_SUGGESTION_HUMAN_PROMPT.replace(
+        '{partialText}',
+        partialText.slice(-500)
+      ).replace('{originalBody}', context.originalEmailBody.slice(0, 500));
 
-      // Create callback handler for metrics
-      const callbackHandler = new AICallbackHandler();
-
-      // Use Haiku for fast inline suggestions (< 500ms latency target)
-      const model = createClaudeModel(ClaudeModel.Haiku, {
+      // Generate response using direct Anthropic SDK
+      const response = await chat(systemPrompt, userPrompt, {
+        model: ClaudeModel.Haiku,
         maxTokens: 256,
         temperature: 0.3,
-        callbacks: [callbackHandler],
       });
 
-      // Create chain
-      const chain = chatPrompt.pipe(model).pipe(new StringOutputParser());
-
-      // Generate response
-      const response = await chain.invoke(promptVars);
+      const latencyMs = Date.now() - startTime;
 
       // Parse JSON response
-      const parsed = this.parseInlineSuggestionResponse(response);
-      const metrics = callbackHandler.getMetrics();
+      const parsed = this.parseInlineSuggestionResponse(response.content);
 
       // Track token usage
       await tokenTracker.recordUsage({
         operationType: AIOperationType.TextGeneration,
-        inputTokens: metrics.inputTokens,
-        outputTokens: metrics.outputTokens,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         modelUsed: ClaudeModel.Haiku,
         userId,
         firmId,
-        latencyMs: metrics.latencyMs,
+        latencyMs,
       });
 
       logger.debug('Inline suggestion generated', {

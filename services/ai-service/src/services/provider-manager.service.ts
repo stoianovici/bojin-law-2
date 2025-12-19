@@ -6,8 +6,7 @@
  */
 
 import { CircuitState, ProviderStatus, AIProviderHealth, ClaudeModel } from '@legal-platform/types';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { sendMessage, ClaudeMessage } from '../lib/claude/client';
 import { grokClient, GrokMessage } from '../lib/grok/client';
 import { config } from '../config';
 
@@ -127,36 +126,27 @@ export class ProviderManagerService {
    */
   private async executeWithClaude(request: ProviderRequest): Promise<ProviderResponse> {
     const startTime = Date.now();
-    const callbackHandler = new AICallbackHandler();
 
     try {
-      const model = createClaudeModel(request.model || ClaudeModel.Sonnet, {
+      const messages: ClaudeMessage[] = [{ role: 'user', content: request.prompt }];
+
+      const response = await sendMessage(messages, {
+        model: request.model || ClaudeModel.Sonnet,
         maxTokens: request.maxTokens,
         temperature: request.temperature,
-        callbacks: [callbackHandler],
+        system: request.systemPrompt,
       });
 
-      const messages: Array<['system' | 'human', string]> = [];
-      if (request.systemPrompt) {
-        messages.push(['system', request.systemPrompt]);
-      }
-      messages.push(['human', request.prompt]);
-
-      const response = await model.invoke(messages);
       const latencyMs = Date.now() - startTime;
-      const metrics = callbackHandler.getMetrics();
 
       this.recordSuccess(this.claudeCircuit);
 
       return {
-        content:
-          typeof response.content === 'string'
-            ? response.content
-            : JSON.stringify(response.content),
+        content: response.content,
         provider: 'claude',
         model: request.model || ClaudeModel.Sonnet,
-        inputTokens: metrics.inputTokens,
-        outputTokens: metrics.outputTokens,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         latencyMs,
       };
     } catch (error) {

@@ -192,6 +192,9 @@ model User {
   // Custom case types created by this user
   createdCaseTypes CaseTypeConfig[]
 
+  // Relations (OPS-046: Case Events)
+  caseEventActions CaseEvent[] @relation("CaseEventActor")
+
   // Relations (Story 5.1: Email Integration)
   emails         Email[]
   emailSyncState EmailSyncState?
@@ -490,6 +493,10 @@ model Case {
   classificationLogsFrom EmailClassificationLog[] @relation("ClassificationFromCase")
   classificationLogsTo   EmailClassificationLog[] @relation("ClassificationToCase")
 
+  // Relations (OPS-046: Persistent AI Case Summary)
+  summary CaseSummary?
+  events  CaseEvent[]
+
   @@unique([firmId, caseNumber])
   @@index([firmId])
   @@index([clientId])
@@ -740,6 +747,7 @@ model TimeEntry {
 // Document status enum (Story 2.9)
 enum DocumentStatus {
   DRAFT
+  PENDING
   FINAL
   ARCHIVED
 }
@@ -3533,6 +3541,34 @@ enum EmailClassificationState {
   Ignored // Marked as not relevant
 }
 
+// ============================================================================
+// OPS-046: Case Summary Data Model - Persistent AI Summaries & Chronology
+// ============================================================================
+
+// Event types for unified case chronology
+enum CaseEventType {
+  DocumentUploaded
+  DocumentSigned
+  DocumentDeleted
+  EmailReceived
+  EmailSent
+  EmailCourt
+  NoteCreated
+  NoteUpdated
+  TaskCreated
+  TaskCompleted
+  CaseStatusChanged
+  TeamMemberAdded
+  ContactAdded
+}
+
+// Importance levels for event filtering
+enum EventImportance {
+  High
+  Medium
+  Low
+}
+
 // Email classification audit log - tracks all classification decisions (OPS-031)
 model EmailClassificationLog {
   id      String @id @default(uuid())
@@ -3601,4 +3637,79 @@ model PendingClassification {
   @@index([reason])
   @@index([createdAt])
   @@map("pending_classifications")
+}
+
+// ============================================================================
+// OPS-046: Persistent AI Case Summary
+// ============================================================================
+
+// Cached AI-generated case summary with stale detection
+model CaseSummary {
+  id     String @id @default(cuid())
+  caseId String @unique @map("case_id")
+
+  // Summary content
+  executiveSummary String @map("executive_summary") @db.Text
+  currentStatus    String @map("current_status") @db.Text
+  keyDevelopments  Json   @default("[]") @map("key_developments") // String[]
+  openIssues       Json   @default("[]") @map("open_issues") // String[]
+
+  // Cache management
+  generatedAt     DateTime @map("generated_at") @db.Timestamptz
+  isStale         Boolean  @default(false) @map("is_stale")
+  dataVersionHash String?  @map("data_version_hash") // Hash of input data to detect changes
+
+  // Input counts for staleness detection
+  emailCount    Int @default(0) @map("email_count")
+  documentCount Int @default(0) @map("document_count")
+  noteCount     Int @default(0) @map("note_count")
+  taskCount     Int @default(0) @map("task_count")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([isStale])
+  @@map("case_summaries")
+}
+
+// ============================================================================
+// OPS-046: Unified Case Chronology
+// ============================================================================
+
+// Event entry for case timeline with importance scoring
+model CaseEvent {
+  id     String @id @default(cuid())
+  caseId String @map("case_id")
+
+  // Event identification
+  eventType CaseEventType @map("event_type")
+  sourceId  String        @map("source_id") // ID of source record (email, document, note, task)
+
+  // Display content
+  title       String  @db.VarChar(500)
+  description String? @db.Text
+
+  // Importance scoring
+  importance EventImportance @default(Medium)
+
+  // Timing
+  occurredAt DateTime @map("occurred_at") @db.Timestamptz
+
+  // Actor (who caused this event)
+  actorId String? @map("actor_id")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  case  Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  actor User? @relation("CaseEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@unique([eventType, sourceId])
+  @@index([caseId, occurredAt])
+  @@index([caseId, importance])
+  @@map("case_events")
 }

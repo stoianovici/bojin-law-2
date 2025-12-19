@@ -16,7 +16,7 @@ export const config = {
     models: {
       haiku: process.env.CLAUDE_HAIKU_MODEL || 'claude-3-5-haiku-latest',
       sonnet: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-20250514',
-      opus: process.env.CLAUDE_OPUS_MODEL || 'claude-3-opus-latest',
+      opus: process.env.CLAUDE_OPUS_MODEL || 'claude-opus-4-5-20251101',
     },
     rateLimits: {
       haiku: { requestsPerMin: 1000, tokensPerMin: 100000 },

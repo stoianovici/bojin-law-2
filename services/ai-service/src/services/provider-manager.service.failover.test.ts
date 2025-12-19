@@ -19,11 +19,13 @@ import { ProviderManagerService, ProviderError } from './provider-manager.servic
 import { CircuitState } from '@legal-platform/types';
 
 // Mock the Claude client
-jest.mock('../lib/langchain/client', () => ({
-  createClaudeModel: jest.fn(),
-  AICallbackHandler: jest.fn().mockImplementation(() => ({
-    getMetrics: () => ({ inputTokens: 100, outputTokens: 200 }),
-  })),
+jest.mock('../lib/claude/client', () => ({
+  sendMessage: jest.fn().mockResolvedValue({
+    content: 'Test response',
+    inputTokens: 100,
+    outputTokens: 200,
+    stopReason: 'end_turn',
+  }),
 }));
 
 // Mock the Grok client
@@ -48,7 +50,7 @@ jest.mock('../config', () => ({
 
 describe('Provider Manager Circuit Breaker Tests', () => {
   let providerManager: ProviderManagerService;
-  let mockClaudeModel: jest.Mock;
+  let mockSendMessage: jest.Mock;
   let mockGrokClient: {
     createCompletion: jest.Mock;
     isConfigured: jest.Mock;
@@ -61,15 +63,23 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     jest.useFakeTimers();
 
     // Get mocked modules
-    const langchainModule = jest.requireMock('../lib/langchain/client') as {
-      createClaudeModel: jest.Mock;
+    const claudeModule = jest.requireMock('../lib/claude/client') as {
+      sendMessage: jest.Mock;
     };
     const grokModule = jest.requireMock('../lib/grok/client') as {
       grokClient: typeof mockGrokClient;
     };
 
-    mockClaudeModel = langchainModule.createClaudeModel;
+    mockSendMessage = claudeModule.sendMessage;
     mockGrokClient = grokModule.grokClient;
+
+    // Reset mock to default success response
+    mockSendMessage.mockResolvedValue({
+      content: 'Test response',
+      inputTokens: 100,
+      outputTokens: 200,
+      stopReason: 'end_turn',
+    });
 
     // Create fresh instance
     providerManager = new ProviderManagerService();
@@ -86,10 +96,11 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     });
 
     it('should remain Closed when requests succeed', async () => {
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockResolvedValue({
-          content: 'Success response',
-        }),
+      mockSendMessage.mockResolvedValue({
+        content: 'Success response',
+        inputTokens: 100,
+        outputTokens: 200,
+        stopReason: 'end_turn',
       });
 
       const result = await providerManager.execute({
@@ -102,9 +113,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
 
     it('should transition to Open after reaching failure threshold', async () => {
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
 
       // Grok fallback succeeds
       mockGrokClient.createCompletion.mockResolvedValue({
@@ -127,9 +136,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should transition from Open to Half-Open after reset timeout', async () => {
       // First, open the circuit
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -154,9 +161,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should transition from Half-Open to Closed on success', async () => {
       // Open the circuit
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -173,10 +178,11 @@ describe('Provider Manager Circuit Breaker Tests', () => {
       jest.advanceTimersByTime(31000);
 
       // Now make successful request
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockResolvedValue({
-          content: 'Success after recovery',
-        }),
+      mockSendMessage.mockResolvedValue({
+        content: 'Success after recovery',
+        inputTokens: 100,
+        outputTokens: 200,
+        stopReason: 'end_turn',
       });
 
       const result = await providerManager.execute({ prompt: 'Recovery test' });
@@ -188,9 +194,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should transition from Half-Open back to Open on failure', async () => {
       // Open the circuit
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -217,9 +221,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
   describe('Failure Threshold Triggering', () => {
     it('should not open circuit before threshold is reached', async () => {
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -239,9 +241,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
 
     it('should open circuit exactly at threshold', async () => {
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -261,9 +261,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should reset failure count after successful request', async () => {
       // 3 failures
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -277,17 +275,16 @@ describe('Provider Manager Circuit Breaker Tests', () => {
       }
 
       // Then a success
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockResolvedValue({
-          content: 'Success',
-        }),
+      mockSendMessage.mockResolvedValue({
+        content: 'Success',
+        inputTokens: 100,
+        outputTokens: 200,
+        stopReason: 'end_turn',
       });
       await providerManager.execute({ prompt: 'Success' });
 
       // Then 3 more failures - should not hit threshold
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
 
       for (let i = 0; i < 3; i++) {
         await providerManager.execute({ prompt: 'Test' });
@@ -301,9 +298,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
   describe('Provider Failover Scenarios', () => {
     it('should failover to Grok on Claude 429 rate limit', async () => {
       const rateLimitError = new Error('429 rate limit exceeded');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(rateLimitError),
-      });
+      mockSendMessage.mockRejectedValue(rateLimitError);
 
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok fallback response',
@@ -324,9 +319,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
 
     it('should failover to Grok on Claude 503 unavailable', async () => {
       const unavailableError = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(unavailableError),
-      });
+      mockSendMessage.mockRejectedValue(unavailableError);
 
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok fallback response',
@@ -345,9 +338,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
 
     it('should failover to Grok on Claude timeout', async () => {
       const timeoutError = new Error('Request timeout');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(timeoutError),
-      });
+      mockSendMessage.mockRejectedValue(timeoutError);
 
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok fallback response',
@@ -366,9 +357,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
 
     it('should failover to Grok on Claude overloaded error', async () => {
       const overloadedError = new Error('overloaded_error');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(overloadedError),
-      });
+      mockSendMessage.mockRejectedValue(overloadedError);
 
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok fallback response',
@@ -388,9 +377,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should return graceful error when both providers unavailable', async () => {
       // Claude fails
       const claudeError = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(claudeError),
-      });
+      mockSendMessage.mockRejectedValue(claudeError);
 
       // Grok also fails
       const grokError = new Error('Grok service unavailable');
@@ -409,9 +396,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should go directly to Grok when Claude circuit is open', async () => {
       // Open Claude circuit
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -425,23 +410,21 @@ describe('Provider Manager Circuit Breaker Tests', () => {
       }
 
       // Clear mock call count
-      mockClaudeModel.mockClear();
+      mockSendMessage.mockClear();
       mockGrokClient.createCompletion.mockClear();
 
       // Next request should go directly to Grok
       await providerManager.execute({ prompt: 'Direct to Grok' });
 
       // Claude should not have been called
-      expect(mockClaudeModel).not.toHaveBeenCalled();
+      expect(mockSendMessage).not.toHaveBeenCalled();
       expect(mockGrokClient.createCompletion).toHaveBeenCalled();
     });
 
     it('should not failover on non-retriable errors', async () => {
       // Non-retriable error (e.g., invalid API key)
       const authError = new Error('401 Unauthorized');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(authError),
-      });
+      mockSendMessage.mockRejectedValue(authError);
 
       await expect(providerManager.execute({ prompt: 'Test' })).rejects.toThrow('401 Unauthorized');
 
@@ -454,9 +437,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should not allow requests before reset timeout', async () => {
       // Open the circuit
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -479,9 +460,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should allow test request after reset timeout', async () => {
       // Open the circuit
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -504,10 +483,11 @@ describe('Provider Manager Circuit Breaker Tests', () => {
 
   describe('Health Status', () => {
     it('should report healthy status when circuits are closed', async () => {
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockResolvedValue({
-          content: 'Success',
-        }),
+      mockSendMessage.mockResolvedValue({
+        content: 'Success',
+        inputTokens: 100,
+        outputTokens: 200,
+        stopReason: 'end_turn',
       });
 
       const health = await providerManager.getHealthStatus();
@@ -520,9 +500,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
     it('should report degraded status when circuit is half-open', async () => {
       // Open then wait for half-open
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',
@@ -545,9 +523,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
 
     it('should report unavailable status when circuit is open', async () => {
       const error = new Error('503 Service Unavailable');
-      mockClaudeModel.mockReturnValue({
-        invoke: jest.fn().mockRejectedValue(error),
-      });
+      mockSendMessage.mockRejectedValue(error);
       mockGrokClient.createCompletion.mockResolvedValue({
         content: 'Grok response',
         model: 'grok-1',

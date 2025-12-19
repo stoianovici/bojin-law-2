@@ -11,7 +11,7 @@ import { ActiveCasesWidget } from './widgets/ActiveCasesWidget';
 import { TodayTasksWidget } from './widgets/TodayTasksWidget';
 import { DeadlinesWidget } from './widgets/DeadlinesWidget';
 import { RecentDocumentsWidget } from './widgets/RecentDocumentsWidget';
-import { AISuggestionWidget } from './widgets/AISuggestionWidget';
+// import { AISuggestionWidget } from './widgets/AISuggestionWidget'; // HIDDEN: may be revived later
 import { MorningBriefing } from './MorningBriefing';
 import type {
   WidgetPosition,
@@ -19,7 +19,7 @@ import type {
   TaskListWidget,
   DeadlineWidget,
   DocumentListWidget,
-  AISuggestionWidget as AISuggestionWidgetType,
+  // AISuggestionWidget as AISuggestionWidgetType, // HIDDEN
 } from '@legal-platform/types';
 
 export interface AssociateDashboardProps {
@@ -71,13 +71,14 @@ const emptyRecentDocumentsWidget: DocumentListWidget = {
   documents: [],
 };
 
-const emptyAISuggestionsWidget: AISuggestionWidgetType = {
-  id: 'ai-suggestions',
-  type: 'aiSuggestion',
-  title: 'Recomandări AI',
-  position: { i: 'ai-suggestions', x: 0, y: 8, w: 12, h: 4 },
-  suggestions: [],
-};
+// HIDDEN: AI suggestions panel removed - may be revived later
+// const emptyAISuggestionsWidget: AISuggestionWidgetType = {
+//   id: 'ai-suggestions',
+//   type: 'aiSuggestion',
+//   title: 'Recomandări AI',
+//   position: { i: 'ai-suggestions', x: 0, y: 8, w: 12, h: 4 },
+//   suggestions: [],
+// };
 
 /**
  * AssociateDashboard - Main dashboard view for Associate role
@@ -135,9 +136,11 @@ export function AssociateDashboard({ isEditing = false, onLayoutChange }: Associ
           <RecentDocumentsWidget widget={emptyRecentDocumentsWidget} />
         </div>
 
+        {/* AI Suggestions - HIDDEN (may be revived later)
         <div key="ai-suggestions">
           <AISuggestionWidget widget={emptyAISuggestionsWidget} />
         </div>
+        */}
       </DashboardGrid>
     </div>
   );

@@ -7,6 +7,43 @@
 > Work is NOT complete until verified locally in a production-identical environment.
 > If it works locally with production data + production Docker, it WILL work in production.
 
+## Browser Automation Capability
+
+The Playwright MCP is available for automated browser testing and verification.
+
+**Use Playwright MCP when you need to:**
+
+- Visually verify UI changes in the browser
+- Take screenshots for documentation or debugging
+- Interact with the application (click, type, navigate)
+- Inspect network requests, console logs, or DOM state
+- Debug UI issues that require seeing what the user sees
+
+**How to invoke:**
+
+- Say "use playwright mcp to..." to ensure the MCP tools are used
+- Example: "Use playwright mcp to open http://localhost:3000 and take a screenshot"
+- Example: "Use playwright mcp to navigate to /cases and verify the table loads"
+
+**Available Playwright MCP tools:**
+
+- `browser_navigate` - Navigate to a URL
+- `browser_screenshot` - Take a screenshot (you can view it)
+- `browser_click` - Click elements
+- `browser_type` - Type text into inputs
+- `browser_snapshot` - Get accessibility tree/DOM snapshot
+- `browser_console_messages` - View console output
+- `browser_network_requests` - Inspect network activity
+
+**When to use Playwright vs manual verification:**
+| Scenario | Use Playwright | Ask User |
+|----------|----------------|----------|
+| Check if page loads without errors | ✓ | |
+| Verify specific UI element appears | ✓ | |
+| Test requires login with real credentials | | ✓ |
+| Complex multi-step user flow | ✓ then verify | |
+| Visual design review needed | ✓ screenshot | ✓ review |
+
 ## The Verification Gate
 
 Before ANY of these actions, the Verification Gate MUST pass:

@@ -9,9 +9,11 @@
  */
 
 import { prisma } from '@legal-platform/database';
+import { CaseEventType, EventImportance } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { oneDriveService } from '../../services/onedrive.service';
 import { thumbnailService } from '../../services/thumbnail.service';
+import { caseSummaryService } from '../../services/case-summary.service';
 import logger from '../../utils/logger';
 
 // Extended Context type that includes accessToken for OneDrive operations
@@ -134,6 +136,22 @@ async function createDocumentAuditLog(
       timestamp: new Date(),
     },
   });
+}
+
+// OPS-045: Helper to safely resolve user or return placeholder for deleted users
+// This prevents GraphQL errors when a user has been deleted but their ID is still referenced
+async function getDeletedUserPlaceholder(userId: string): Promise<{
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}> {
+  return {
+    id: userId,
+    firstName: 'Utilizator',
+    lastName: 'Șters',
+    email: 'deleted@system',
+  };
 }
 
 export const documentResolvers = {
@@ -342,7 +360,8 @@ export const documentResolvers = {
 
           return {
             document: link.document,
-            linkedBy: link.linker,
+            // OPS-045: Return placeholder if linker user was deleted
+            linkedBy: link.linker || (await getDeletedUserPlaceholder(link.linkedBy)),
             linkedAt: link.linkedAt,
             isOriginal: link.isOriginal,
             sourceCase,
@@ -527,6 +546,20 @@ export const documentResolvers = {
         return newDocument;
       });
 
+      // OPS-047: Mark summary stale and create event
+      caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
+      caseSummaryService
+        .createCaseEvent({
+          caseId: args.input.caseId,
+          eventType: CaseEventType.DocumentUploaded,
+          sourceId: document.id,
+          title: `Document încărcat: ${args.input.fileName}`,
+          importance: EventImportance.Medium,
+          occurredAt: new Date(),
+          actorId: user.id,
+        })
+        .catch(() => {});
+
       // Fetch with all relations
       return prisma.document.findUnique({
         where: { id: document.id },
@@ -637,6 +670,23 @@ export const documentResolvers = {
         }
       });
 
+      // OPS-047: Mark summary stale for linked documents
+      caseSummaryService.markSummaryStale(caseId).catch(() => {});
+      for (const documentId of newDocIds) {
+        const doc = documents.find((d) => d.id === documentId);
+        caseSummaryService
+          .createCaseEvent({
+            caseId,
+            eventType: CaseEventType.DocumentUploaded,
+            sourceId: documentId,
+            title: `Document legat: ${doc?.fileName || 'Document'}`,
+            importance: EventImportance.Low,
+            occurredAt: new Date(),
+            actorId: user.id,
+          })
+          .catch(() => {});
+      }
+
       // Return linked documents
       return prisma.document.findMany({
         where: { id: { in: newDocIds } },
@@ -711,6 +761,12 @@ export const documentResolvers = {
           firmId: user.firmId,
         });
       });
+
+      // OPS-047: Mark summary stale and delete event
+      caseSummaryService.markSummaryStale(args.caseId).catch(() => {});
+      caseSummaryService
+        .deleteCaseEvent(CaseEventType.DocumentUploaded, args.documentId)
+        .catch(() => {});
 
       return true;
     },
@@ -792,6 +848,17 @@ export const documentResolvers = {
         });
       });
 
+      // OPS-047: Mark all affected cases as stale and delete events
+      for (const link of document.caseLinks) {
+        caseSummaryService.markSummaryStale(link.caseId).catch(() => {});
+      }
+      caseSummaryService
+        .deleteCaseEvent(CaseEventType.DocumentUploaded, args.documentId)
+        .catch(() => {});
+      caseSummaryService
+        .deleteCaseEvent(CaseEventType.DocumentDeleted, args.documentId)
+        .catch(() => {});
+
       return true;
     },
 
@@ -871,6 +938,9 @@ export const documentResolvers = {
         ...result,
         userId: user.id,
       });
+
+      // OPS-047: Mark case summary as stale after bulk delete
+      caseSummaryService.markSummaryStale(args.caseId).catch(() => {});
 
       return {
         ...result,
@@ -1304,9 +1374,11 @@ export const documentResolvers = {
     uploadedBy: async (parent: any) => {
       if (parent.uploader) return parent.uploader;
 
-      return prisma.user.findUnique({
+      // OPS-045: Return placeholder if user was deleted
+      const user = await prisma.user.findUnique({
         where: { id: parent.uploadedBy },
       });
+      return user || (await getDeletedUserPlaceholder(parent.uploadedBy));
     },
 
     client: async (parent: any) => {
@@ -1353,9 +1425,11 @@ export const documentResolvers = {
     createdBy: async (parent: any) => {
       if (parent.creator) return parent.creator;
 
-      return prisma.user.findUnique({
+      // OPS-045: Return placeholder if user was deleted
+      const user = await prisma.user.findUnique({
         where: { id: parent.createdBy },
       });
+      return user || (await getDeletedUserPlaceholder(parent.createdBy));
     },
   },
 
@@ -1364,9 +1438,11 @@ export const documentResolvers = {
     user: async (parent: any) => {
       if (parent.user) return parent.user;
 
-      return prisma.user.findUnique({
+      // OPS-045: Return placeholder if user was deleted
+      const user = await prisma.user.findUnique({
         where: { id: parent.userId },
       });
+      return user || (await getDeletedUserPlaceholder(parent.userId));
     },
   },
 };

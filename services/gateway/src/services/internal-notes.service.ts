@@ -8,12 +8,15 @@
 
 import { prisma } from '@legal-platform/database';
 import {
+  CaseEventType,
   CommunicationChannel,
   CommunicationDirection,
+  EventImportance,
   PrivacyLevel,
   UserRole,
 } from '@prisma/client';
 import { r2StorageService } from './r2-storage.service';
+import { caseSummaryService } from './case-summary.service';
 // Note: Using R2 storage service for attachment handling
 
 // ============================================================================
@@ -159,6 +162,21 @@ export class InternalNotesService {
       });
     }
 
+    // OPS-047: Mark summary stale and create event
+    caseSummaryService.markSummaryStale(input.caseId).catch(() => {});
+    caseSummaryService
+      .createCaseEvent({
+        caseId: input.caseId,
+        eventType: CaseEventType.NoteCreated,
+        sourceId: note.id,
+        title: `Notă internă adăugată`,
+        description: input.body.substring(0, 200),
+        importance: EventImportance.Low,
+        occurredAt: new Date(),
+        actorId: userContext.userId,
+      })
+      .catch(() => {});
+
     return {
       id: note.id,
       caseId: note.caseId,
@@ -215,6 +233,9 @@ export class InternalNotesService {
       include: { attachments: true },
     });
 
+    // OPS-047: Mark summary stale (no new event for updates)
+    caseSummaryService.markSummaryStale(updatedNote.caseId).catch(() => {});
+
     return {
       id: updatedNote.id,
       caseId: updatedNote.caseId,
@@ -263,6 +284,10 @@ export class InternalNotesService {
     await prisma.communicationEntry.delete({
       where: { id: noteId },
     });
+
+    // OPS-047: Mark summary stale and delete event
+    caseSummaryService.markSummaryStale(existingNote.caseId).catch(() => {});
+    caseSummaryService.deleteCaseEvent(CaseEventType.NoteCreated, noteId).catch(() => {});
 
     return true;
   }

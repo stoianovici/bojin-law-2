@@ -13,63 +13,26 @@ import {
 } from '../draft-refinement.service';
 import type { CaseContext } from '../email-drafting.service';
 
-// Mock invoke function that we can configure in tests
-let mockInvokeResponse: any = '';
+// Mock response that we can configure in tests
+let mockChatResponse: any = {
+  content: JSON.stringify({
+    refinedBody: 'Refined email body',
+    refinedHtmlBody: '<p>Refined email body</p>',
+    changesApplied: ['Made shorter'],
+  }),
+  inputTokens: 500,
+  outputTokens: 300,
+  stopReason: 'end_turn',
+};
 
-// Mock dependencies - use factory functions to properly handle hoisting
-jest.mock('../../lib/langchain/client', () => {
-  const mockChain = {
-    invoke: jest.fn().mockImplementation(() => Promise.resolve(mockInvokeResponse)),
-  };
-  const mockPipeResult = {
-    pipe: jest.fn().mockReturnValue(mockChain),
-  };
-  return {
-    createClaudeModel: jest.fn().mockReturnValue({
-      pipe: jest.fn().mockReturnValue(mockPipeResult),
-    }),
-    AICallbackHandler: jest.fn().mockImplementation(() => ({
-      getMetrics: jest.fn().mockReturnValue({
-        inputTokens: 500,
-        outputTokens: 300,
-        latencyMs: 800,
-      }),
-    })),
-  };
-});
-
-jest.mock('@langchain/core/prompts', () => {
-  const createMockPrompt = () => {
-    const mockChain = {
-      invoke: jest.fn().mockImplementation(() => Promise.resolve(mockInvokeResponse)),
-    };
-    const mockPipeResult = {
-      pipe: jest.fn().mockReturnValue(mockChain),
-    };
-    return {
-      pipe: jest.fn().mockReturnValue(mockPipeResult),
-    };
-  };
-  return {
-    ChatPromptTemplate: {
-      fromMessages: jest.fn().mockImplementation(createMockPrompt),
-    },
-    SystemMessagePromptTemplate: {
-      fromTemplate: jest.fn().mockReturnValue({}),
-    },
-    HumanMessagePromptTemplate: {
-      fromTemplate: jest.fn().mockReturnValue({}),
-    },
-  };
-});
-
-jest.mock('@langchain/core/output_parsers', () => ({
-  StringOutputParser: jest.fn().mockImplementation(() => ({})),
+// Mock dependencies
+jest.mock('../../lib/claude/client', () => ({
+  chat: jest.fn().mockImplementation(() => Promise.resolve(mockChatResponse)),
 }));
 
 jest.mock('../token-tracker.service', () => ({
   tokenTracker: {
-    trackUsage: jest.fn().mockResolvedValue(undefined),
+    recordUsage: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -128,34 +91,34 @@ describe('DraftRefinementService', () => {
   beforeEach(() => {
     service = new DraftRefinementService();
     jest.clearAllMocks();
+
+    // Setup mock implementations
+    mockChatResponse = {
+      content: JSON.stringify({
+        refinedBody: 'Refined email body',
+        refinedHtmlBody: '<p>Refined email body</p>',
+        changesApplied: ['Made shorter'],
+      }),
+      inputTokens: 500,
+      outputTokens: 300,
+      stopReason: 'end_turn',
+    };
+    const { chat } = require('../../lib/claude/client');
+    chat.mockImplementation(() => Promise.resolve(mockChatResponse));
   });
 
   describe('refineDraft', () => {
-    // Helper to create properly chained mock
-    const setupChainMock = (mockResponse: string) => {
-      const mockChain = {
-        invoke: jest.fn().mockResolvedValue(mockResponse),
-      };
-      // chatPrompt.pipe(model) returns { pipe: () => chain }
-      // chatPrompt.pipe(model).pipe(parser) returns chain
-      const mockModelWithPipe = {
-        pipe: jest.fn().mockReturnValue(mockChain),
-      };
-      const { ChatPromptTemplate } = require('@langchain/core/prompts');
-      ChatPromptTemplate.fromMessages.mockReturnValue({
-        pipe: jest.fn().mockReturnValue(mockModelWithPipe),
-      });
-      return mockChain;
-    };
-
     it('should refine a draft with the given instruction', async () => {
-      const mockResponse = JSON.stringify({
-        refinedBody: 'Bună ziua,\n\nVă mulțumim. Revenim curând.\n\nCu stimă',
-        refinedHtmlBody: '<p>Bună ziua,</p><p>Vă mulțumim. Revenim curând.</p><p>Cu stimă</p>',
-        changesApplied: ['Shortened greeting', 'Condensed main message'],
-      });
-
-      setupChainMock(mockResponse);
+      mockChatResponse = {
+        content: JSON.stringify({
+          refinedBody: 'Bună ziua,\n\nVă mulțumim. Revenim curând.\n\nCu stimă',
+          refinedHtmlBody: '<p>Bună ziua,</p><p>Vă mulțumim. Revenim curând.</p><p>Cu stimă</p>',
+          changesApplied: ['Shortened greeting', 'Condensed main message'],
+        }),
+        inputTokens: 500,
+        outputTokens: 300,
+        stopReason: 'end_turn',
+      };
 
       const result = await service.refineDraft(baseRefinementParams);
 
@@ -165,12 +128,15 @@ describe('DraftRefinementService', () => {
     });
 
     it('should track token usage', async () => {
-      const mockResponse = JSON.stringify({
-        refinedBody: 'Refined text',
-        changesApplied: ['Changed'],
-      });
-
-      setupChainMock(mockResponse);
+      mockChatResponse = {
+        content: JSON.stringify({
+          refinedBody: 'Refined text',
+          changesApplied: ['Changed'],
+        }),
+        inputTokens: 500,
+        outputTokens: 300,
+        stopReason: 'end_turn',
+      };
 
       const { tokenTracker } = require('../token-tracker.service');
 
@@ -187,7 +153,12 @@ describe('DraftRefinementService', () => {
     });
 
     it('should handle parsing errors gracefully', async () => {
-      setupChainMock('Invalid response without JSON');
+      mockChatResponse = {
+        content: 'Invalid response without JSON',
+        inputTokens: 500,
+        outputTokens: 300,
+        stopReason: 'end_turn',
+      };
 
       const result = await service.refineDraft(baseRefinementParams);
 
@@ -196,12 +167,15 @@ describe('DraftRefinementService', () => {
     });
 
     it('should generate HTML if not provided in response', async () => {
-      const mockResponse = JSON.stringify({
-        refinedBody: 'First paragraph.\n\nSecond paragraph.',
-        changesApplied: ['Simplified'],
-      });
-
-      setupChainMock(mockResponse);
+      mockChatResponse = {
+        content: JSON.stringify({
+          refinedBody: 'First paragraph.\n\nSecond paragraph.',
+          changesApplied: ['Simplified'],
+        }),
+        inputTokens: 500,
+        outputTokens: 300,
+        stopReason: 'end_turn',
+      };
 
       const result = await service.refineDraft(baseRefinementParams);
 
@@ -211,24 +185,6 @@ describe('DraftRefinementService', () => {
   });
 
   describe('getInlineSuggestions', () => {
-    // Helper to create properly chained mock for inline suggestions
-    const setupInlineMock = (mockResponse: string | Error) => {
-      const mockChain = {
-        invoke:
-          mockResponse instanceof Error
-            ? jest.fn().mockRejectedValue(mockResponse)
-            : jest.fn().mockResolvedValue(mockResponse),
-      };
-      const mockModelWithPipe = {
-        pipe: jest.fn().mockReturnValue(mockChain),
-      };
-      const { ChatPromptTemplate } = require('@langchain/core/prompts');
-      ChatPromptTemplate.fromMessages.mockReturnValue({
-        pipe: jest.fn().mockReturnValue(mockModelWithPipe),
-      });
-      return mockChain;
-    };
-
     it('should return null for very short text', async () => {
       const result = await service.getInlineSuggestions(
         'Hi',
@@ -241,14 +197,17 @@ describe('DraftRefinementService', () => {
     });
 
     it('should return completion suggestion', async () => {
-      const mockResponse = JSON.stringify({
-        type: 'completion',
-        suggestion: 'We will review your case and respond within 48 hours.',
-        confidence: 0.85,
-        reason: 'Completing the sentence based on context',
-      });
-
-      setupInlineMock(mockResponse);
+      mockChatResponse = {
+        content: JSON.stringify({
+          type: 'completion',
+          suggestion: 'We will review your case and respond within 48 hours.',
+          confidence: 0.85,
+          reason: 'Completing the sentence based on context',
+        }),
+        inputTokens: 100,
+        outputTokens: 50,
+        stopReason: 'end_turn',
+      };
 
       const result = await service.getInlineSuggestions(
         'Thank you for your email. We will',
@@ -264,14 +223,17 @@ describe('DraftRefinementService', () => {
     });
 
     it('should return correction suggestion', async () => {
-      const mockResponse = JSON.stringify({
-        type: 'correction',
-        suggestion: 'Thank you for your',
-        confidence: 0.9,
-        reason: 'Fixed grammatical error',
-      });
-
-      setupInlineMock(mockResponse);
+      mockChatResponse = {
+        content: JSON.stringify({
+          type: 'correction',
+          suggestion: 'Thank you for your',
+          confidence: 0.9,
+          reason: 'Fixed grammatical error',
+        }),
+        inputTokens: 100,
+        outputTokens: 50,
+        stopReason: 'end_turn',
+      };
 
       const result = await service.getInlineSuggestions(
         'Thank you for you message about the case.',
@@ -284,7 +246,8 @@ describe('DraftRefinementService', () => {
     });
 
     it('should return null on AI error', async () => {
-      setupInlineMock(new Error('AI unavailable'));
+      const { chat } = require('../../lib/claude/client');
+      chat.mockRejectedValueOnce(new Error('AI unavailable'));
 
       const result = await service.getInlineSuggestions(
         'This is a test email draft.',
@@ -297,7 +260,12 @@ describe('DraftRefinementService', () => {
     });
 
     it('should return null for invalid JSON response', async () => {
-      setupInlineMock('Not a valid JSON response');
+      mockChatResponse = {
+        content: 'Not a valid JSON response',
+        inputTokens: 100,
+        outputTokens: 50,
+        stopReason: 'end_turn',
+      };
 
       const result = await service.getInlineSuggestions(
         'This is a test email draft.',
@@ -310,13 +278,16 @@ describe('DraftRefinementService', () => {
     });
 
     it('should track token usage', async () => {
-      const mockResponse = JSON.stringify({
-        type: 'improvement',
-        suggestion: 'Consider adding a deadline',
-        confidence: 0.75,
-      });
-
-      setupInlineMock(mockResponse);
+      mockChatResponse = {
+        content: JSON.stringify({
+          type: 'improvement',
+          suggestion: 'Consider adding a deadline',
+          confidence: 0.75,
+        }),
+        inputTokens: 100,
+        outputTokens: 50,
+        stopReason: 'end_turn',
+      };
 
       const { tokenTracker } = require('../token-tracker.service');
 
@@ -402,22 +373,9 @@ describe('DraftRefinementService', () => {
   });
 
   describe('error handling', () => {
-    // Helper to setup error mock
-    const setupErrorMock = (error: Error) => {
-      const mockChain = {
-        invoke: jest.fn().mockRejectedValue(error),
-      };
-      const mockModelWithPipe = {
-        pipe: jest.fn().mockReturnValue(mockChain),
-      };
-      const { ChatPromptTemplate } = require('@langchain/core/prompts');
-      ChatPromptTemplate.fromMessages.mockReturnValue({
-        pipe: jest.fn().mockReturnValue(mockModelWithPipe),
-      });
-    };
-
     it('should log and rethrow errors during refinement', async () => {
-      setupErrorMock(new Error('AI service unavailable'));
+      const { chat } = require('../../lib/claude/client');
+      chat.mockRejectedValueOnce(new Error('AI service unavailable'));
 
       const logger = require('../../lib/logger').default;
 
@@ -428,7 +386,8 @@ describe('DraftRefinementService', () => {
     });
 
     it('should log warning and return null for inline suggestion errors', async () => {
-      setupErrorMock(new Error('Timeout'));
+      const { chat } = require('../../lib/claude/client');
+      chat.mockRejectedValueOnce(new Error('Timeout'));
 
       const logger = require('../../lib/logger').default;
 

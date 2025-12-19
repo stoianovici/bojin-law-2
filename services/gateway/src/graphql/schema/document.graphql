@@ -113,6 +113,9 @@ enum DocumentStatus {
   """Work in progress"""
   DRAFT
 
+  """Pending review or processing"""
+  PENDING
+
   """Finalized document"""
   FINAL
 

@@ -6,14 +6,8 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ClaudeModel, AIOperationType } from '@legal-platform/types';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { chat } from '../lib/claude/client';
 import { tokenTracker } from './token-tracker.service';
 import { cacheService } from './cache.service';
 import logger from '../lib/logger';
@@ -321,30 +315,39 @@ export class EmailDraftingService {
       // Build prompt variables
       const promptVars = this.buildPromptVariables(params);
 
-      // Create LangChain prompt template
-      const systemPrompt = SystemMessagePromptTemplate.fromTemplate(BASE_SYSTEM_PROMPT);
-      const humanPrompt = HumanMessagePromptTemplate.fromTemplate(HUMAN_PROMPT);
-      const chatPrompt = ChatPromptTemplate.fromMessages([systemPrompt, humanPrompt]);
+      // Build system prompt with interpolated values
+      const systemPrompt = BASE_SYSTEM_PROMPT.replace('{recipientType}', promptVars.recipientType)
+        .replace('{recipientAdaptation}', promptVars.recipientAdaptation)
+        .replace('{tone}', promptVars.tone)
+        .replace('{toneInstructions}', promptVars.toneInstructions)
+        .replace('{caseContextSummary}', promptVars.caseContextSummary)
+        .replace('{threadHistorySummary}', promptVars.threadHistorySummary)
+        .replace('{recentDocuments}', promptVars.recentDocuments)
+        .replace('{activeDeadlines}', promptVars.activeDeadlines)
+        .replace('{pendingCommitments}', promptVars.pendingCommitments)
+        .replace('{riskIndicators}', promptVars.riskIndicators);
 
-      // Create callback handler for metrics
-      const callbackHandler = new AICallbackHandler();
+      // Build user prompt with interpolated values
+      const userPrompt = HUMAN_PROMPT.replace('{originalFrom}', promptVars.originalFrom)
+        .replace('{originalTo}', promptVars.originalTo)
+        .replace('{originalSubject}', promptVars.originalSubject)
+        .replace('{originalDate}', promptVars.originalDate)
+        .replace('{originalBody}', promptVars.originalBody);
 
-      // Use Sonnet model for drafting accuracy
-      const model = createClaudeModel(ClaudeModel.Sonnet, {
+      // Generate response using direct Anthropic SDK
+      const response = await chat(systemPrompt, userPrompt, {
+        model: ClaudeModel.Sonnet,
         maxTokens: 2048,
         temperature: 0.3,
-        callbacks: [callbackHandler],
       });
 
-      // Create chain
-      const chain = chatPrompt.pipe(model).pipe(new StringOutputParser());
-
-      // Generate response
-      const response = await chain.invoke(promptVars);
-
       // Parse JSON response
-      const parsed = this.parseAIResponse(response);
-      const metrics = callbackHandler.getMetrics();
+      const parsed = this.parseAIResponse(response.content);
+      const metrics = {
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
+        latencyMs: Date.now() - startTime,
+      };
 
       // Track token usage
       await tokenTracker.recordUsage({

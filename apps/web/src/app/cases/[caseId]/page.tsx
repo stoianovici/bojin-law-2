@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useCallback, useState } from 'react';
-import { clsx } from 'clsx';
+// import { clsx } from 'clsx'; // HIDDEN: AI panel removed
 import { useCaseWorkspaceStore } from '../../../stores/case-workspace.store';
 import { CaseHeader } from '../../../components/case/CaseHeader';
 import { WorkspaceTabs } from '../../../components/case/WorkspaceTabs';
@@ -18,10 +18,10 @@ import { CommunicationsTab } from '../../../components/case/tabs/CommunicationsT
 import { TimeEntriesTab } from '../../../components/case/tabs/TimeEntriesTab';
 import { NotesTab } from '../../../components/case/tabs/NotesTab';
 import { IntelligenceTab } from '../../../components/case/tabs/IntelligenceTab';
-import { AIInsightsPanel } from '../../../components/case/AIInsightsPanel';
+// import { AIInsightsPanel } from '../../../components/case/AIInsightsPanel'; // HIDDEN: may be revived later
 import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
 import { useCase } from '../../../hooks/useCase';
-import { useSuggestions } from '../../../hooks/useSuggestions';
+// import { useSuggestions } from '../../../hooks/useSuggestions'; // HIDDEN: AI panel removed
 import { useSetAIContext } from '../../../contexts/AIAssistantContext';
 import { useAuth } from '../../../lib/hooks/useAuth';
 import { EditCaseModal } from '../../../components/case/EditCaseModal';
@@ -91,7 +91,7 @@ function LoadingSkeleton() {
  */
 export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   const { caseId } = React.use(params);
-  const { activeTab, setSelectedCase, aiPanelCollapsed } = useCaseWorkspaceStore();
+  const { activeTab, setSelectedCase } = useCaseWorkspaceStore();
 
   // Modal state
   const [editCaseModalOpen, setEditCaseModalOpen] = useState(false);
@@ -103,39 +103,38 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   // Get current user for role-based features
   const { user } = useAuth();
 
-  // Use AI suggestions hook with case context
-  const {
-    suggestions: aiSuggestions,
-    loading: suggestionsLoading,
-    acceptSuggestion,
-    dismissSuggestion,
-  } = useSuggestions({
-    currentScreen: 'case-workspace',
-    currentCaseId: caseId,
-  });
+  // HIDDEN: AI suggestions panel removed - may be revived later
+  // const {
+  //   suggestions: aiSuggestions,
+  //   loading: suggestionsLoading,
+  //   acceptSuggestion,
+  //   dismissSuggestion,
+  // } = useSuggestions({
+  //   currentScreen: 'case-workspace',
+  //   currentCaseId: caseId,
+  // });
 
-  // Handlers for AI suggestions
-  const handleDismissSuggestion = useCallback(
-    async (suggestionId: string) => {
-      try {
-        await dismissSuggestion(suggestionId);
-      } catch (err) {
-        console.error('Failed to dismiss suggestion:', err);
-      }
-    },
-    [dismissSuggestion]
-  );
+  // const handleDismissSuggestion = useCallback(
+  //   async (suggestionId: string) => {
+  //     try {
+  //       await dismissSuggestion(suggestionId);
+  //     } catch (err) {
+  //       console.error('Failed to dismiss suggestion:', err);
+  //     }
+  //   },
+  //   [dismissSuggestion]
+  // );
 
-  const handleTakeAction = useCallback(
-    async (suggestionId: string) => {
-      try {
-        await acceptSuggestion(suggestionId);
-      } catch (err) {
-        console.error('Failed to accept suggestion:', err);
-      }
-    },
-    [acceptSuggestion]
-  );
+  // const handleTakeAction = useCallback(
+  //   async (suggestionId: string) => {
+  //     try {
+  //       await acceptSuggestion(suggestionId);
+  //     } catch (err) {
+  //       console.error('Failed to accept suggestion:', err);
+  //     }
+  //   },
+  //   [acceptSuggestion]
+  // );
 
   // Handlers for header actions
   const handleEditCase = useCallback(() => {
@@ -283,18 +282,10 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
         {/* Workspace Tabs */}
         <WorkspaceTabs />
 
-        {/* Tab Content Area - Add right padding when AI panel is expanded */}
-        <div
-          className={clsx(
-            'flex-1 overflow-hidden relative pb-32 transition-all duration-300',
-            // Add right padding to avoid content being hidden behind AI panel
-            aiPanelCollapsed ? 'pr-12' : 'pr-80'
-          )}
-        >
-          {renderTabContent()}
-        </div>
+        {/* Tab Content Area */}
+        <div className="flex-1 overflow-hidden relative pb-32">{renderTabContent()}</div>
 
-        {/* AI Insights Panel - Fixed position, starts below TopBar */}
+        {/* AI Insights Panel - HIDDEN (may be revived later)
         <AIInsightsPanel
           caseName={caseData.case.title}
           suggestions={aiSuggestions}
@@ -302,6 +293,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           onDismissSuggestion={handleDismissSuggestion}
           onTakeAction={handleTakeAction}
         />
+        */}
 
         {/* Edit Case Modal */}
         <EditCaseModal

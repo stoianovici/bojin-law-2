@@ -99,44 +99,51 @@ export const proactiveSuggestionsResolvers = {
     ) => {
       const user = requireAuth(context);
 
-      // Get suggestions from database that match the context
-      const suggestions = await prisma.aISuggestion.findMany({
-        where: {
-          userId: user.id,
-          firmId: user.firmId,
-          status: 'Pending',
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-          ...(args.context.currentCaseId ? { caseId: args.context.currentCaseId } : {}),
-        },
-        orderBy: [{ priority: 'desc' }, { confidence: 'desc' }, { createdAt: 'desc' }],
-        take: 10,
-        include: {
-          case: {
-            select: {
-              id: true,
-              title: true,
-              caseNumber: true,
+      try {
+        // Get suggestions from database that match the context
+        const suggestions = await prisma.aISuggestion.findMany({
+          where: {
+            userId: user.id,
+            firmId: user.firmId,
+            status: 'Pending',
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+            ...(args.context.currentCaseId ? { caseId: args.context.currentCaseId } : {}),
+          },
+          orderBy: [{ priority: 'desc' }, { confidence: 'desc' }, { createdAt: 'desc' }],
+          take: 10,
+          include: {
+            case: {
+              select: {
+                id: true,
+                title: true,
+                caseNumber: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      return suggestions.map((s) => ({
-        id: s.id,
-        type: s.type,
-        category: s.category,
-        title: s.title,
-        description: s.description,
-        suggestedAction: s.suggestedAction,
-        actionPayload: s.actionPayload,
-        confidence: s.confidence,
-        priority: s.priority,
-        status: s.status,
-        case: s.case,
-        expiresAt: s.expiresAt,
-        createdAt: s.createdAt,
-        updatedAt: s.updatedAt,
-      }));
+        return suggestions.map((s) => ({
+          id: s.id,
+          type: s.type,
+          category: s.category,
+          title: s.title,
+          description: s.description,
+          suggestedAction: s.suggestedAction,
+          actionPayload: s.actionPayload,
+          confidence: s.confidence,
+          priority: s.priority,
+          status: s.status,
+          case: s.case,
+          expiresAt: s.expiresAt,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt,
+        }));
+      } catch (error) {
+        // Graceful degradation: return empty array if table doesn't exist yet
+        // This allows the feature to degrade gracefully during development
+        console.warn('contextualSuggestions query failed (table may not exist):', error);
+        return [];
+      }
     },
 
     /**

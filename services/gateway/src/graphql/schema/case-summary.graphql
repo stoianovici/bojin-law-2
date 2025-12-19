@@ -1,0 +1,81 @@
+# OPS-048: AI Case Summary Schema
+# Persistent AI-powered case summaries with background generation
+
+"""
+Cached AI-generated case summary with staleness detection
+"""
+type CaseSummary {
+  id: ID!
+  caseId: ID!
+
+  "AI-generated executive summary (1-2 paragraphs)"
+  executiveSummary: String!
+
+  "Current case status description"
+  currentStatus: String!
+
+  "List of key developments"
+  keyDevelopments: [String!]!
+
+  "List of open/unresolved issues"
+  openIssues: [String!]!
+
+  "When the summary was generated"
+  generatedAt: DateTime!
+
+  "Whether the summary needs regeneration due to new data"
+  isStale: Boolean!
+
+  "Number of emails included in the summary"
+  emailCount: Int!
+
+  "Number of documents included in the summary"
+  documentCount: Int!
+
+  "Number of notes included in the summary"
+  noteCount: Int!
+
+  "Number of tasks included in the summary"
+  taskCount: Int!
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Result of triggering a summary generation
+"""
+type TriggerSummaryResult {
+  success: Boolean!
+  message: String
+  summary: CaseSummary
+}
+
+extend type Query {
+  """
+  Get the cached AI summary for a case.
+  Returns null if no summary exists yet.
+  The worker will automatically generate summaries for cases without one.
+  """
+  caseSummary(caseId: ID!): CaseSummary
+
+  """
+  Check if a case summary is stale (needs regeneration)
+  """
+  isCaseSummaryStale(caseId: ID!): Boolean!
+}
+
+extend type Mutation {
+  """
+  Trigger immediate summary generation for a case.
+  This bypasses the background worker and generates the summary synchronously.
+  Use sparingly as it makes an AI call.
+  """
+  triggerCaseSummaryGeneration(caseId: ID!): TriggerSummaryResult!
+
+  """
+  Mark a case summary as stale, triggering background regeneration.
+  Use this when you know the case data has changed significantly.
+  """
+  markCaseSummaryStale(caseId: ID!): Boolean!
+}

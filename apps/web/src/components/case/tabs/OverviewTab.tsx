@@ -15,6 +15,8 @@ import { Clock, FileText, ClipboardList } from 'lucide-react';
 import { BillingInfoSection } from '../BillingInfoSection';
 import { CaseRevenueKPIWidget } from '../CaseRevenueKPIWidget';
 import { EditRatesModal } from '../EditRatesModal';
+import { CaseAISummarySection } from '../CaseAISummarySection';
+import { CaseChronology } from '../CaseChronology';
 
 interface CaseTeamMember {
   id: string;
@@ -95,7 +97,14 @@ export function OverviewTab({
 
   return (
     <div className={clsx('h-full overflow-y-auto bg-gray-50 p-6', className)}>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* AI Summary Section */}
+        <CaseAISummarySection caseId={caseData.id} />
+
+        {/* Case Chronology */}
+        <CaseChronology caseId={caseData.id} />
+
+        {/* Existing cards in grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Case Details Card */}
           <Card

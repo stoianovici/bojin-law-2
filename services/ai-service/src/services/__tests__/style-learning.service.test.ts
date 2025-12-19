@@ -16,51 +16,22 @@ import { cacheService } from '../cache.service';
 import { tokenTracker } from '../token-tracker.service';
 import { AIOperationType, ClaudeModel } from '@legal-platform/types';
 
-// Mock dependencies - paths relative to src/services (where actual files are)
-jest.mock('../../lib/langchain/client', () => ({
-  createClaudeModel: jest.fn(() => ({
-    pipe: jest.fn().mockReturnThis(),
-    invoke: jest.fn().mockResolvedValue({
-      content: JSON.stringify({
-        formalityScore: 0.8,
-        averageSentenceLength: 18,
-        vocabularyLevel: 0.7,
-        detectedTone: 'Professional',
-        newPhrases: [{ phrase: 'Cu stimă', frequency: 1, context: 'closing' }],
-        punctuationPatterns: { useOxfordComma: true },
-        confidence: 0.85,
-      }),
+// Mock dependencies
+jest.mock('../../lib/claude/client', () => ({
+  chat: jest.fn().mockResolvedValue({
+    content: JSON.stringify({
+      formalityScore: 0.8,
+      averageSentenceLength: 18,
+      vocabularyLevel: 0.7,
+      detectedTone: 'Professional',
+      newPhrases: [{ phrase: 'Cu stimă', frequency: 1, context: 'closing' }],
+      punctuationPatterns: { useOxfordComma: true },
+      confidence: 0.85,
     }),
-  })),
-  AICallbackHandler: jest.fn().mockImplementation(() => ({
-    getTokenInfo: jest.fn().mockResolvedValue({
-      inputTokens: 100,
-      outputTokens: 50,
-      totalTokens: 150,
-      cost: 0.001,
-    }),
-  })),
-}));
-
-jest.mock('@langchain/core/prompts', () => ({
-  ChatPromptTemplate: {
-    fromMessages: jest.fn().mockReturnValue({
-      pipe: jest.fn().mockReturnThis(),
-    }),
-  },
-  SystemMessagePromptTemplate: {
-    fromTemplate: jest.fn().mockReturnValue({}),
-  },
-  HumanMessagePromptTemplate: {
-    fromTemplate: jest.fn().mockReturnValue({}),
-  },
-}));
-
-jest.mock('@langchain/core/output_parsers', () => ({
-  StringOutputParser: jest.fn().mockImplementation(() => ({
-    pipe: jest.fn().mockReturnThis(),
-    invoke: jest.fn(),
-  })),
+    inputTokens: 100,
+    outputTokens: 50,
+    stopReason: 'end_turn',
+  }),
 }));
 
 jest.mock('../token-tracker.service', () => ({
@@ -132,6 +103,27 @@ describe('StyleLearningService', () => {
   beforeEach(() => {
     service = styleLearningService;
     jest.clearAllMocks();
+
+    // Re-setup mock implementations after clearAllMocks
+    const { chat } = require('../../lib/claude/client');
+    chat.mockResolvedValue({
+      content: JSON.stringify({
+        formalityScore: 0.8,
+        averageSentenceLength: 18,
+        vocabularyLevel: 0.7,
+        detectedTone: 'Professional',
+        newPhrases: [{ phrase: 'Cu stimă', frequency: 1, context: 'closing' }],
+        punctuationPatterns: { useOxfordComma: true },
+        confidence: 0.85,
+      }),
+      inputTokens: 100,
+      outputTokens: 50,
+      stopReason: 'end_turn',
+    });
+
+    (cacheService.get as jest.Mock).mockResolvedValue(null);
+    (cacheService.set as jest.Mock).mockResolvedValue(undefined);
+    (tokenTracker.recordUsage as jest.Mock).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -139,34 +131,27 @@ describe('StyleLearningService', () => {
   });
 
   describe('analyzeEdit', () => {
-    it('should return cached result if available', async () => {
-      const cachedResult: StyleAnalysisResult = {
-        formalityScore: 0.75,
-        averageSentenceLength: 16,
-        vocabularyLevel: 0.65,
-        detectedTone: 'Professional',
-        newPhrases: [],
-        punctuationPatterns: {},
-        confidence: 0.8,
-      };
-
-      (cacheService.get as jest.Mock).mockResolvedValue(cachedResult);
-
+    it('should analyze edits and return style analysis', async () => {
+      // Style learning service doesn't use cache for analysis
+      // (cacheService is for AI response caching, not style analysis)
       const result = await service.analyzeEdit(sampleEditInput);
 
-      expect(result).toEqual(cachedResult);
-      expect(cacheService.get).toHaveBeenCalled();
+      // Should return the AI mock response
+      expect(result.formalityScore).toBe(0.8);
+      expect(result.averageSentenceLength).toBe(18);
+      expect(result.vocabularyLevel).toBe(0.7);
+      expect(result.detectedTone).toBe('Professional');
+      expect(result.confidence).toBe(0.85);
     });
 
     it('should detect trivial edits and return empty analysis', async () => {
-      (cacheService.get as jest.Mock).mockResolvedValue(null);
-
+      // A trivial edit is when: wordDiff < 3 AND original.length > 100 AND similarity > 0.95
       const trivialEdit: EditAnalysisInput = {
         ...sampleEditInput,
         originalText:
-          'This is a very long sentence that contains many words and should be analyzed for style patterns.',
+          'This is a very long sentence that contains many words and should be analyzed for style patterns. This document requires careful review and attention to detail for accuracy purposes.',
         editedText:
-          'This is a very long sentence that contains many words and should be analyzed for style pattern.', // Only one letter changed
+          'This is a very long sentence that contains many words and should be analyzed for style patterns. This document requires careful review and attention to detail for accuracy purpose.', // Only 's' changed
       };
 
       const result = await service.analyzeEdit(trivialEdit);

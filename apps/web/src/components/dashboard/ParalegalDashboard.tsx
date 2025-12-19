@@ -13,13 +13,13 @@ import {
   type DocumentRequestsWidgetData,
 } from './widgets/DocumentRequestsWidget';
 import { DeadlineCalendarWidget } from './widgets/DeadlineCalendarWidget';
-import { AISuggestionWidget } from './widgets/AISuggestionWidget';
+// import { AISuggestionWidget } from './widgets/AISuggestionWidget'; // HIDDEN: may be revived later
 import { MorningBriefing } from './MorningBriefing';
 import type {
   WidgetPosition,
   KanbanWidget,
   CalendarWidget,
-  AISuggestionWidget as AISuggestionWidgetType,
+  // AISuggestionWidget as AISuggestionWidgetType, // HIDDEN
 } from '@legal-platform/types';
 
 export interface ParalegalDashboardProps {
@@ -67,13 +67,14 @@ const emptyDeadlineCalendarWidget: CalendarWidget = {
   view: 'month',
 };
 
-const emptyAISuggestionsWidget: AISuggestionWidgetType = {
-  id: 'ai-suggestions',
-  type: 'aiSuggestion',
-  title: 'Recomandări AI',
-  position: { i: 'ai-suggestions', x: 6, y: 5, w: 6, h: 4 },
-  suggestions: [],
-};
+// HIDDEN: AI suggestions panel removed - may be revived later
+// const emptyAISuggestionsWidget: AISuggestionWidgetType = {
+//   id: 'ai-suggestions',
+//   type: 'aiSuggestion',
+//   title: 'Recomandări AI',
+//   position: { i: 'ai-suggestions', x: 6, y: 5, w: 6, h: 4 },
+//   suggestions: [],
+// };
 
 /**
  * ParalegalDashboard - Main dashboard view for Paralegal role
@@ -126,9 +127,11 @@ export function ParalegalDashboard({ isEditing = false, onLayoutChange }: Parale
           <DocumentRequestsWidget widget={emptyDocumentRequestsWidget} />
         </div>
 
+        {/* AI Suggestions - HIDDEN (may be revived later)
         <div key="ai-suggestions">
           <AISuggestionWidget widget={emptyAISuggestionsWidget} />
         </div>
+        */}
       </DashboardGrid>
     </div>
   );

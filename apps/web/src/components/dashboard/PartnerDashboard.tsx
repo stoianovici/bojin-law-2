@@ -15,7 +15,7 @@ import { SupervisedCasesWidget } from './widgets/SupervisedCasesWidget';
 import { FirmCasesOverviewWidget } from './widgets/FirmCasesOverviewWidget';
 import { FirmTasksOverviewWidget } from './widgets/FirmTasksOverviewWidget';
 import { EmployeeWorkloadWidget } from './widgets/EmployeeWorkloadWidget';
-import { AISuggestionWidget } from './widgets/AISuggestionWidget';
+// import { AISuggestionWidget } from './widgets/AISuggestionWidget'; // HIDDEN: may be revived later
 import { TodayTasksWidget } from './widgets/TodayTasksWidget';
 import { MorningBriefing } from './MorningBriefing';
 import type {
@@ -24,7 +24,7 @@ import type {
   FirmCasesOverviewWidget as FirmCasesOverviewWidgetType,
   FirmTasksOverviewWidget as FirmTasksOverviewWidgetType,
   EmployeeWorkloadWidget as EmployeeWorkloadWidgetType,
-  AISuggestionWidget as AISuggestionWidgetType,
+  // AISuggestionWidget as AISuggestionWidgetType, // HIDDEN
   TaskListWidget,
 } from '@legal-platform/types';
 
@@ -79,13 +79,14 @@ const emptyMyTasksWidget: TaskListWidget = {
   tasks: [],
 };
 
-const emptyAISuggestionsWidget: AISuggestionWidgetType = {
-  id: 'ai-suggestions',
-  type: 'aiSuggestion',
-  title: 'Recomandări AI',
-  position: { i: 'ai-suggestions', x: 0, y: 16, w: 12, h: 4 },
-  suggestions: [],
-};
+// HIDDEN: AI suggestions panel removed - may be revived later
+// const emptyAISuggestionsWidget: AISuggestionWidgetType = {
+//   id: 'ai-suggestions',
+//   type: 'aiSuggestion',
+//   title: 'Recomandări AI',
+//   position: { i: 'ai-suggestions', x: 0, y: 16, w: 12, h: 4 },
+//   suggestions: [],
+// };
 
 /**
  * PartnerDashboard - Main dashboard view for Partner role
@@ -191,9 +192,11 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
           <TodayTasksWidget widget={emptyMyTasksWidget} />
         </div>
 
+        {/* AI Suggestions - HIDDEN (may be revived later)
         <div key="ai-suggestions">
           <AISuggestionWidget widget={emptyAISuggestionsWidget} />
         </div>
+        */}
 
         {/* Row 2: Firm Tasks Overview (left, tall) */}
         <div key="firm-tasks-overview">

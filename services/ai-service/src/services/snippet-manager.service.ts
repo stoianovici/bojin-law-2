@@ -7,14 +7,8 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ClaudeModel, AIOperationType } from '@legal-platform/types';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { chat } from '../lib/claude/client';
 import { tokenTracker } from './token-tracker.service';
 import { cacheService } from './cache.service';
 import logger from '../lib/logger';
@@ -91,9 +85,7 @@ Analyze the provided texts to find:
 
 Return suggestions as a JSON array.`;
 
-const SNIPPET_DETECTION_PROMPT = ChatPromptTemplate.fromMessages([
-  SystemMessagePromptTemplate.fromTemplate(SNIPPET_DETECTION_SYSTEM),
-  HumanMessagePromptTemplate.fromTemplate(`Analyze these {context_type} texts for reusable snippets:
+const SNIPPET_DETECTION_HUMAN = `Analyze these {context_type} texts for reusable snippets:
 
 {texts}
 
@@ -106,19 +98,16 @@ For each snippet, suggest:
 - occurrenceCount: how many times this pattern appeared
 - confidence: 0.0-1.0 how confident this should be a snippet
 
-Return as JSON array:`),
-]);
+Return as JSON array:`;
 
-const SHORTCUT_GENERATION_PROMPT = ChatPromptTemplate.fromMessages([
-  SystemMessagePromptTemplate.fromTemplate(
-    'Generate a concise, memorable shortcut command for a text snippet. Use lowercase, start with /, max 15 chars.'
-  ),
-  HumanMessagePromptTemplate.fromTemplate(`Content: "{content}"
+const SHORTCUT_GENERATION_SYSTEM =
+  'Generate a concise, memorable shortcut command for a text snippet. Use lowercase, start with /, max 15 chars.';
+
+const SHORTCUT_GENERATION_HUMAN = `Content: "{content}"
 Title: "{title}"
 Category: {category}
 
-Suggest shortcut:`),
-]);
+Suggest shortcut:`;
 
 // ============================================================================
 // Service Implementation
@@ -166,36 +155,28 @@ class SnippetManagerService {
         .map((t, i) => `--- Text ${i + 1} ---\n${t.substring(0, 1000)}`)
         .join('\n\n');
 
-      const callbackHandler = new AICallbackHandler({
-        userId: input.userId,
-        firmId: input.firmId,
-        operationType: AIOperationType.SnippetDetection,
-        operationId,
-      });
+      // Build user prompt with interpolated values
+      const userPrompt = SNIPPET_DETECTION_HUMAN.replace(
+        '{context_type}',
+        input.contextType
+      ).replace('{texts}', combinedTexts);
 
-      const model = createClaudeModel(ClaudeModel.Haiku, {
-        callbacks: [callbackHandler],
+      // Generate response using direct Anthropic SDK
+      const response = await chat(SNIPPET_DETECTION_SYSTEM, userPrompt, {
+        model: ClaudeModel.Haiku,
         maxTokens: 2048,
         temperature: 0.3,
       });
 
-      const chain = SNIPPET_DETECTION_PROMPT.pipe(model).pipe(new StringOutputParser());
-
-      const response = await chain.invoke({
-        context_type: input.contextType,
-        texts: combinedTexts,
-      });
-
-      const suggestions = this.parseSnippetSuggestions(response, input);
+      const suggestions = this.parseSnippetSuggestions(response.content, input);
 
       // Track token usage
-      const tokenInfo = await callbackHandler.getTokenInfo();
       await tokenTracker.recordUsage({
         userId: input.userId,
         firmId: input.firmId,
         operationType: AIOperationType.SnippetDetection,
-        inputTokens: tokenInfo.inputTokens,
-        outputTokens: tokenInfo.outputTokens,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         modelUsed: ClaudeModel.Haiku,
         latencyMs: Date.now() - startTime,
       });
@@ -228,29 +209,20 @@ class SnippetManagerService {
     firmId: string
   ): Promise<string> {
     try {
-      const callbackHandler = new AICallbackHandler({
-        userId,
-        firmId,
-        operationType: AIOperationType.SnippetShortcut,
-        operationId: uuidv4(),
-      });
+      // Build user prompt with interpolated values
+      const userPrompt = SHORTCUT_GENERATION_HUMAN.replace('{content}', content.substring(0, 200))
+        .replace('{title}', title)
+        .replace('{category}', category);
 
-      const model = createClaudeModel(ClaudeModel.Haiku, {
-        callbacks: [callbackHandler],
+      // Generate response using direct Anthropic SDK
+      const response = await chat(SHORTCUT_GENERATION_SYSTEM, userPrompt, {
+        model: ClaudeModel.Haiku,
         maxTokens: 50,
         temperature: 0.5,
       });
 
-      const chain = SHORTCUT_GENERATION_PROMPT.pipe(model).pipe(new StringOutputParser());
-
-      const response = await chain.invoke({
-        content: content.substring(0, 200),
-        title,
-        category,
-      });
-
       // Clean up shortcut
-      let shortcut = response.trim().toLowerCase();
+      let shortcut = response.content.trim().toLowerCase();
       if (!shortcut.startsWith('/')) {
         shortcut = '/' + shortcut;
       }

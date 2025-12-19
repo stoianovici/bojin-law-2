@@ -15,52 +15,23 @@ import {
 import { cacheService } from '../cache.service';
 import { tokenTracker } from '../token-tracker.service';
 
-// Mock dependencies - paths relative to src/services (where actual files are)
-jest.mock('../../lib/langchain/client', () => ({
-  createClaudeModel: jest.fn(() => ({
-    pipe: jest.fn().mockReturnThis(),
-    invoke: jest.fn().mockResolvedValue({
-      content: JSON.stringify([
-        {
-          content: 'Cu stimă,',
-          suggestedTitle: 'Formal Closing',
-          suggestedShortcut: '/close',
-          category: 'Closing',
-          occurrenceCount: 5,
-          confidence: 0.9,
-        },
-      ]),
-    }),
-  })),
-  AICallbackHandler: jest.fn().mockImplementation(() => ({
-    getTokenInfo: jest.fn().mockResolvedValue({
-      inputTokens: 100,
-      outputTokens: 50,
-      totalTokens: 150,
-      cost: 0.001,
-    }),
-  })),
-}));
-
-jest.mock('@langchain/core/prompts', () => ({
-  ChatPromptTemplate: {
-    fromMessages: jest.fn().mockReturnValue({
-      pipe: jest.fn().mockReturnThis(),
-    }),
-  },
-  SystemMessagePromptTemplate: {
-    fromTemplate: jest.fn().mockReturnValue({}),
-  },
-  HumanMessagePromptTemplate: {
-    fromTemplate: jest.fn().mockReturnValue({}),
-  },
-}));
-
-jest.mock('@langchain/core/output_parsers', () => ({
-  StringOutputParser: jest.fn().mockImplementation(() => ({
-    pipe: jest.fn().mockReturnThis(),
-    invoke: jest.fn(),
-  })),
+// Mock dependencies
+jest.mock('../../lib/claude/client', () => ({
+  chat: jest.fn().mockResolvedValue({
+    content: JSON.stringify([
+      {
+        content: 'Cu stimă,',
+        suggestedTitle: 'Formal Closing',
+        suggestedShortcut: '/close',
+        category: 'Closing',
+        occurrenceCount: 5,
+        confidence: 0.9,
+      },
+    ]),
+    inputTokens: 100,
+    outputTokens: 50,
+    stopReason: 'end_turn',
+  }),
 }));
 
 jest.mock('../token-tracker.service', () => ({

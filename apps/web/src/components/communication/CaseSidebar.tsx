@@ -20,6 +20,8 @@ import {
   ChevronRight,
   Mail,
   Paperclip,
+  MoreVertical,
+  ArrowRightLeft,
 } from 'lucide-react';
 import type {
   CaseWithThreads,
@@ -31,6 +33,13 @@ import type {
 // ============================================================================
 // Types
 // ============================================================================
+
+export interface MoveThreadInfo {
+  conversationId: string;
+  subject: string;
+  currentCaseId?: string;
+  currentCaseTitle?: string;
+}
 
 interface CaseSidebarProps {
   cases: CaseWithThreads[];
@@ -44,6 +53,7 @@ interface CaseSidebarProps {
   onSelectThread: (conversationId: string, caseId?: string) => void;
   onSelectCourtEmail: (emailId: string) => void;
   onSelectUncertainEmail: (emailId: string) => void;
+  onMoveThread?: (info: MoveThreadInfo) => void;
   className?: string;
 }
 
@@ -88,54 +98,105 @@ function ThreadItem({
   thread,
   isSelected,
   onClick,
+  onMoveClick,
 }: {
   thread: ThreadPreview;
   isSelected: boolean;
   onClick: () => void;
+  onMoveClick?: () => void;
 }) {
+  const [showMenu, setShowMenu] = useState(false);
+
   const formattedDate = new Date(thread.lastMessageDate).toLocaleDateString('ro-RO', {
     day: 'numeric',
     month: 'short',
   });
 
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(!showMenu);
+  };
+
+  const handleMoveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onMoveClick?.();
+  };
+
+  // Close menu when clicking outside
+  const handleBlur = () => {
+    // Small delay to allow click event to fire first
+    setTimeout(() => setShowMenu(false), 150);
+  };
+
   return (
-    <button
-      onClick={onClick}
-      className={clsx(
-        'w-full px-3 py-2 text-left text-sm transition-colors',
-        isSelected
-          ? 'bg-blue-50 border-l-2 border-blue-500'
-          : 'hover:bg-gray-50 border-l-2 border-transparent'
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p
-            className={clsx(
-              'truncate',
-              thread.hasUnread ? 'font-semibold text-gray-900' : 'text-gray-700'
-            )}
-          >
-            {thread.subject || '(Fără subiect)'}
-          </p>
-          {thread.latestFrom && (
-            <p className="text-xs text-gray-500 truncate mt-0.5">
-              {thread.latestFrom.name || thread.latestFrom.address}
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        className={clsx(
+          'w-full px-3 py-2 text-left text-sm transition-colors',
+          isSelected
+            ? 'bg-blue-50 border-l-2 border-blue-500'
+            : 'hover:bg-gray-50 border-l-2 border-transparent'
+        )}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p
+              className={clsx(
+                'truncate',
+                thread.hasUnread ? 'font-semibold text-gray-900' : 'text-gray-700'
+              )}
+            >
+              {thread.subject || '(Fără subiect)'}
             </p>
+            {thread.latestFrom && (
+              <p className="text-xs text-gray-500 truncate mt-0.5">
+                {thread.latestFrom.name || thread.latestFrom.address}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {thread.hasAttachments && <Paperclip className="h-3 w-3 text-gray-400" />}
+            {thread.hasUnread && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs text-gray-400">{formattedDate}</span>
+          {thread.messageCount > 1 && (
+            <span className="text-xs text-gray-400">{thread.messageCount} mesaje</span>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {thread.hasAttachments && <Paperclip className="h-3 w-3 text-gray-400" />}
-          {thread.hasUnread && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+      </button>
+
+      {/* Kebab menu button - visible on hover */}
+      {onMoveClick && (
+        <button
+          onClick={handleMenuClick}
+          onBlur={handleBlur}
+          className={clsx(
+            'absolute right-2 top-2 p-1 rounded hover:bg-gray-200 transition-opacity',
+            showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          )}
+          aria-label="Opțiuni"
+        >
+          <MoreVertical className="h-4 w-4 text-gray-500" />
+        </button>
+      )}
+
+      {/* Dropdown menu */}
+      {showMenu && (
+        <div className="absolute right-2 top-8 z-20 bg-white border border-gray-200 rounded-md shadow-lg py-1 min-w-[160px]">
+          <button
+            onClick={handleMoveClick}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+            Mută în alt dosar
+          </button>
         </div>
-      </div>
-      <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-gray-400">{formattedDate}</span>
-        {thread.messageCount > 1 && (
-          <span className="text-xs text-gray-400">{thread.messageCount} mesaje</span>
-        )}
-      </div>
-    </button>
+      )}
+    </div>
   );
 }
 
@@ -145,12 +206,14 @@ function CaseAccordionItem({
   onToggle,
   selectedThreadId,
   onSelectThread,
+  onMoveThread,
 }: {
   caseData: CaseWithThreads;
   isExpanded: boolean;
   onToggle: () => void;
   selectedThreadId: string | null;
   onSelectThread: (conversationId: string, caseId?: string) => void;
+  onMoveThread?: (info: MoveThreadInfo) => void;
 }) {
   return (
     <div className="border-b border-gray-100">
@@ -187,6 +250,17 @@ function CaseAccordionItem({
               thread={thread}
               isSelected={selectedThreadId === thread.conversationId}
               onClick={() => onSelectThread(thread.conversationId, caseData.id)}
+              onMoveClick={
+                onMoveThread
+                  ? () =>
+                      onMoveThread({
+                        conversationId: thread.conversationId,
+                        subject: thread.subject,
+                        currentCaseId: caseData.id !== 'unassigned' ? caseData.id : undefined,
+                        currentCaseTitle: caseData.id !== 'unassigned' ? caseData.title : undefined,
+                      })
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -300,6 +374,7 @@ export function CaseSidebar({
   onSelectThread,
   onSelectCourtEmail,
   onSelectUncertainEmail,
+  onMoveThread,
   className,
 }: CaseSidebarProps) {
   // Track which cases are expanded (default: expand cases with unread)
@@ -379,6 +454,7 @@ export function CaseSidebar({
                       onToggle={() => toggleCase(caseData.id)}
                       selectedThreadId={selectedThreadId}
                       onSelectThread={onSelectThread}
+                      onMoveThread={onMoveThread}
                     />
                   ))}
 
@@ -391,6 +467,7 @@ export function CaseSidebar({
                       onToggle={() => toggleCase('unassigned')}
                       selectedThreadId={selectedThreadId}
                       onSelectThread={onSelectThread}
+                      onMoveThread={onMoveThread}
                     />
                   )}
                 </>

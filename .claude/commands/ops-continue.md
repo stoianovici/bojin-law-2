@@ -118,6 +118,21 @@ Based on current status, proceed with appropriate workflow:
 - Status is about to change to "Verifying"
 - User asks about deployment
 
+**Playwright MCP Assisted Verification:**
+
+You can use Playwright MCP to perform automated UI verification for Steps 1 and 3:
+
+```
+Use playwright mcp to:
+1. Navigate to http://localhost:3000
+2. Take a screenshot
+3. Test the specific fix/feature (click, navigate, verify elements)
+4. Check console for errors
+5. Report what you see
+```
+
+This allows you to visually verify without requiring the user to manually check every time.
+
 **Show this EXACT prompt:**
 
 ```
@@ -132,6 +147,7 @@ Step 1: Test with production data
   → Open http://localhost:3000
   → Test the specific fix/feature
   → Confirm it works with real data
+  💡 I can use Playwright MCP to test this automatically
 
 Step 2: Run preflight checks
   $ pnpm preflight:full
@@ -142,14 +158,25 @@ Step 3: Test in production Docker
   → Open http://localhost:3000
   → Test the specific fix/feature again
   → This is identical to production
+  💡 I can use Playwright MCP to test this automatically
 
 Have you completed all three steps?
 - Yes, all verified ✓
 - Not yet, I need to run the tests
+- Use Playwright to verify (I'll test with browser automation)
 - Skip (NOT RECOMMENDED - may break production)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+**If user selects "Use Playwright to verify":**
+
+1. Ensure dev server or preview is running
+2. Use Playwright MCP to navigate to the app
+3. Take screenshots and verify the fix/feature works
+4. Check for console errors
+5. Report findings with screenshots
+6. Ask user to confirm the verification is acceptable
 
 **Based on response:**
 

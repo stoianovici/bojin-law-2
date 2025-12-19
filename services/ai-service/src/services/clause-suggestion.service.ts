@@ -9,12 +9,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@legal-platform/database';
 import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { StringOutputParser } from '@langchain/core/output_parsers';
-import {
   ClauseSuggestion,
   ClauseSuggestionRequest,
   ClauseSource,
@@ -22,7 +16,7 @@ import {
   ClaudeModel,
   AIOperationType,
 } from '@legal-platform/types';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { chat } from '../lib/claude/client';
 import { tokenTracker } from './token-tracker.service';
 import logger from '../lib/logger';
 import { config } from '../config';
@@ -227,38 +221,25 @@ export class ClauseSuggestionService {
     const startTime = Date.now();
 
     try {
-      // Create prompt template
-      const systemPrompt = SystemMessagePromptTemplate.fromTemplate(CLAUSE_SUGGESTION_SYSTEM);
-      const humanPrompt = HumanMessagePromptTemplate.fromTemplate(CLAUSE_SUGGESTION_HUMAN);
-      const chatPrompt = ChatPromptTemplate.fromMessages([systemPrompt, humanPrompt]);
-
-      // Create callback handler for metrics
-      const callbackHandler = new AICallbackHandler();
-
-      // Use Haiku model for fast completions
-      const model = createClaudeModel(ClaudeModel.Haiku, {
-        maxTokens: parseInt(process.env.AI_CLAUSE_SUGGESTION_MAX_TOKENS || '256', 10),
-        temperature: 0.3, // Lower temperature for more consistent completions
-        callbacks: [callbackHandler],
-      });
-
-      // Create the chain
-      const chain = chatPrompt.pipe(model).pipe(new StringOutputParser());
-
       // Get the context around cursor
       const textAroundCursor = request.currentText.slice(
         Math.max(0, request.cursorPosition - 200),
         request.cursorPosition
       );
 
-      // Generate suggestion
-      const suggestion = await chain.invoke({
-        currentText: textAroundCursor,
-        documentType: request.documentType,
-        category: this.getDocumentCategory(request.documentType),
+      // Build user prompt with interpolated values
+      const userPrompt = CLAUSE_SUGGESTION_HUMAN.replace('{currentText}', textAroundCursor)
+        .replace('{documentType}', request.documentType)
+        .replace('{category}', this.getDocumentCategory(request.documentType));
+
+      // Generate suggestion using direct Anthropic SDK
+      const response = await chat(CLAUSE_SUGGESTION_SYSTEM, userPrompt, {
+        model: ClaudeModel.Haiku,
+        maxTokens: parseInt(process.env.AI_CLAUSE_SUGGESTION_MAX_TOKENS || '256', 10),
+        temperature: 0.3,
       });
 
-      const metrics = callbackHandler.getMetrics();
+      const suggestion = response.content;
       const latencyMs = Date.now() - startTime;
 
       // Track token usage
@@ -267,8 +248,8 @@ export class ClauseSuggestionService {
         firmId: request.firmId,
         operationType: AIOperationType.TextGeneration,
         modelUsed: config.claude.models.haiku,
-        inputTokens: metrics.inputTokens,
-        outputTokens: metrics.outputTokens,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         latencyMs,
         cached: false,
       });

@@ -24,6 +24,7 @@ import {
   stopOOOReassignmentWorker,
 } from './workers/ooo-reassignment.worker';
 import { startDailyDigestWorker, stopDailyDigestWorker } from './workers/daily-digest.worker';
+import { startCaseSummaryWorker, stopCaseSummaryWorker } from './workers/case-summary.worker';
 import { redis } from '@legal-platform/database';
 
 // Create Express app
@@ -157,6 +158,9 @@ async function startServer() {
 
     // Story 4.6: Start daily digest worker
     startDailyDigestWorker();
+
+    // OPS-048: Start case summary worker
+    startCaseSummaryWorker();
   }
 }
 
@@ -172,6 +176,7 @@ function setupGracefulShutdown() {
       stopTaskReminderWorker();
       stopOOOReassignmentWorker();
       stopDailyDigestWorker();
+      stopCaseSummaryWorker();
 
       // Close HTTP server
       httpServer.close(() => {

@@ -9,12 +9,6 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { StringOutputParser } from '@langchain/core/output_parsers';
-import {
   DocumentType,
   ClaudeModel,
   AIOperationType,
@@ -22,7 +16,7 @@ import {
   DocumentGenerationInput,
 } from '@legal-platform/types';
 import { documentGenerationService } from '../services/document-generation.service';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { chat } from '../lib/claude/client';
 import { tokenTracker } from '../services/token-tracker.service';
 import logger from '../lib/logger';
 import { config } from '../config';
@@ -175,52 +169,45 @@ router.post(
         ? `Document Context:\n${body.documentContext}`
         : '';
 
-      // Create prompt template
-      const systemPrompt = SystemMessagePromptTemplate.fromTemplate(EXPLANATION_SYSTEM_PROMPT);
-      const humanPrompt = HumanMessagePromptTemplate.fromTemplate(EXPLANATION_HUMAN_PROMPT);
-      const chatPrompt = ChatPromptTemplate.fromMessages([systemPrompt, humanPrompt]);
+      // Build user prompt with interpolated values
+      const userPrompt = EXPLANATION_HUMAN_PROMPT.replace(
+        '{selectedText}',
+        body.selectedText
+      ).replace('{contextSection}', contextSection);
 
-      // Create callback handler for metrics
-      const callbackHandler = new AICallbackHandler();
-
-      // Use Haiku model for explanations (simpler task, faster response)
-      const model = createClaudeModel(ClaudeModel.Haiku, {
+      // Generate explanation using direct Anthropic SDK
+      const response = await chat(EXPLANATION_SYSTEM_PROMPT, userPrompt, {
+        model: ClaudeModel.Haiku,
         maxTokens: 1024,
-        callbacks: [callbackHandler],
       });
 
-      // Create the chain
-      const chain = chatPrompt.pipe(model).pipe(new StringOutputParser());
-
-      // Generate explanation
-      const responseText = await chain.invoke({
-        selectedText: body.selectedText,
-        contextSection,
-      });
+      const latencyMs = Date.now() - startTime;
 
       // Parse the response
       let explanation: LanguageExplanation;
       try {
         // Try to parse JSON response
-        const parsed = JSON.parse(responseText);
-        explanation = {
-          selection: body.selectedText,
-          explanation: parsed.explanation || responseText,
-          legalBasis: parsed.legalBasis || undefined,
-          alternatives: Array.isArray(parsed.alternatives) ? parsed.alternatives : [],
-        };
+        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          explanation = {
+            selection: body.selectedText,
+            explanation: parsed.explanation || response.content,
+            legalBasis: parsed.legalBasis || undefined,
+            alternatives: Array.isArray(parsed.alternatives) ? parsed.alternatives : [],
+          };
+        } else {
+          throw new Error('No JSON found');
+        }
       } catch {
         // If JSON parsing fails, use raw response
         explanation = {
           selection: body.selectedText,
-          explanation: responseText,
+          explanation: response.content,
           legalBasis: undefined,
           alternatives: [],
         };
       }
-
-      const metrics = callbackHandler.getMetrics();
-      const latencyMs = Date.now() - startTime;
 
       // Track token usage
       await tokenTracker.recordUsage({
@@ -228,8 +215,8 @@ router.post(
         firmId: body.firmId,
         operationType: AIOperationType.TextGeneration,
         modelUsed: config.claude.models.haiku,
-        inputTokens: metrics.inputTokens,
-        outputTokens: metrics.outputTokens,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         latencyMs,
         cached: false,
       });
@@ -237,14 +224,14 @@ router.post(
       logger.info('Language explanation completed', {
         requestId,
         latencyMs,
-        tokensUsed: metrics.inputTokens + metrics.outputTokens,
+        tokensUsed: response.inputTokens + response.outputTokens,
       });
 
       res.json({
         ...explanation,
         requestId,
         latencyMs,
-        tokensUsed: metrics.inputTokens + metrics.outputTokens,
+        tokensUsed: response.inputTokens + response.outputTokens,
       });
     } catch (error) {
       logger.error('Language explanation failed', {

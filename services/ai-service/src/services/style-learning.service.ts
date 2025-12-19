@@ -7,14 +7,8 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ClaudeModel, AIOperationType } from '@legal-platform/types';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { chat } from '../lib/claude/client';
 import { tokenTracker } from './token-tracker.service';
 import { cacheService } from './cache.service';
 import logger from '../lib/logger';
@@ -94,9 +88,7 @@ Focus on:
 
 Return a JSON object with your analysis.`;
 
-const STYLE_ANALYSIS_PROMPT = ChatPromptTemplate.fromMessages([
-  SystemMessagePromptTemplate.fromTemplate(STYLE_ANALYSIS_SYSTEM),
-  HumanMessagePromptTemplate.fromTemplate(`Analyze these text changes to understand the user's writing style preferences:
+const STYLE_ANALYSIS_HUMAN = `Analyze these text changes to understand the user's writing style preferences:
 
 **Original (AI-generated):**
 {original_text}
@@ -111,14 +103,13 @@ Provide a JSON response with these fields:
 - averageSentenceLength (number of words)
 - vocabularyLevel (0.0-1.0, where 1.0 is most sophisticated)
 - detectedTone (string describing tone)
-- newPhrases (array of {{phrase, frequency: 1, context}})
+- newPhrases (array of {phrase, frequency: 1, context})
 - punctuationPatterns (object with useOxfordComma, preferSemicolons, etc.)
 - confidence (0.0-1.0 how confident in the analysis)
 
-JSON response:`),
-]);
+JSON response:`;
 
-const STYLE_APPLICATION_SYSTEM = `You are an expert writing assistant. Apply the user's learned writing style to the given text while maintaining the original meaning and intent.
+const STYLE_APPLICATION_SYSTEM_TEMPLATE = `You are an expert writing assistant. Apply the user's learned writing style to the given text while maintaining the original meaning and intent.
 
 Style parameters to apply:
 - Formality level: {formality_level}/1.0
@@ -130,14 +121,11 @@ Style parameters to apply:
 
 Rewrite the text to match these style preferences while preserving the legal accuracy and meaning.`;
 
-const STYLE_APPLICATION_PROMPT = ChatPromptTemplate.fromMessages([
-  SystemMessagePromptTemplate.fromTemplate(STYLE_APPLICATION_SYSTEM),
-  HumanMessagePromptTemplate.fromTemplate(`Rewrite the following text to match the user's writing style:
+const STYLE_APPLICATION_HUMAN = `Rewrite the following text to match the user's writing style:
 
 {input_text}
 
-Styled version:`),
-]);
+Styled version:`;
 
 // ============================================================================
 // Service Implementation
@@ -180,37 +168,30 @@ class StyleLearningService {
         return this.createEmptyAnalysis();
       }
 
-      const callbackHandler = new AICallbackHandler({
-        userId: input.userId,
-        firmId: input.firmId,
-        operationType: AIOperationType.StyleAnalysis,
-        operationId,
-      });
+      // Build user prompt with interpolated values
+      const userPrompt = STYLE_ANALYSIS_HUMAN.replace(
+        '{original_text}',
+        input.originalText.substring(0, 2000)
+      )
+        .replace('{edited_text}', input.editedText.substring(0, 2000))
+        .replace('{edit_location}', input.editLocation);
 
-      const model = createClaudeModel(ClaudeModel.Sonnet, {
-        callbacks: [callbackHandler],
+      // Generate response using direct Anthropic SDK
+      const response = await chat(STYLE_ANALYSIS_SYSTEM, userPrompt, {
+        model: ClaudeModel.Sonnet,
         maxTokens: 1024,
         temperature: 0.3,
       });
 
-      const chain = STYLE_ANALYSIS_PROMPT.pipe(model).pipe(new StringOutputParser());
-
-      const response = await chain.invoke({
-        original_text: input.originalText.substring(0, 2000),
-        edited_text: input.editedText.substring(0, 2000),
-        edit_location: input.editLocation,
-      });
-
-      const result = this.parseAnalysisResponse(response);
+      const result = this.parseAnalysisResponse(response.content);
 
       // Track token usage
-      const tokenInfo = await callbackHandler.getTokenInfo();
       await tokenTracker.recordUsage({
         userId: input.userId,
         firmId: input.firmId,
         operationType: AIOperationType.StyleAnalysis,
-        inputTokens: tokenInfo.inputTokens,
-        outputTokens: tokenInfo.outputTokens,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         modelUsed: ClaudeModel.Sonnet,
         latencyMs: Date.now() - startTime,
       });
@@ -262,54 +243,41 @@ class StyleLearningService {
         return text;
       }
 
-      const callbackHandler = new AICallbackHandler({
-        userId,
-        firmId,
-        operationType: AIOperationType.StyleApplication,
-        operationId,
-      });
-
-      const model = createClaudeModel(ClaudeModel.Sonnet, {
-        callbacks: [callbackHandler],
-        maxTokens: 2048,
-        temperature: 0.4,
-      });
-
       const commonPhrasesStr = profile.commonPhrases
         .slice(0, 10)
         .map((p) => p.phrase)
         .join(', ');
 
-      const formattedPrompt = await STYLE_APPLICATION_PROMPT.format({
-        formality_level: profile.formalityLevel.toFixed(2),
-        sentence_length: Math.round(profile.averageSentenceLength),
-        vocabulary_complexity: profile.vocabularyComplexity.toFixed(2),
-        preferred_tone: profile.preferredTone,
-        common_phrases: commonPhrasesStr || 'None specified',
-        primary_language: profile.languagePatterns.primaryLanguage,
-        input_text: text,
+      // Build system prompt with interpolated values
+      const systemPrompt = STYLE_APPLICATION_SYSTEM_TEMPLATE.replace(
+        '{formality_level}',
+        profile.formalityLevel.toFixed(2)
+      )
+        .replace('{sentence_length}', String(Math.round(profile.averageSentenceLength)))
+        .replace('{vocabulary_complexity}', profile.vocabularyComplexity.toFixed(2))
+        .replace('{preferred_tone}', profile.preferredTone)
+        .replace('{common_phrases}', commonPhrasesStr || 'None specified')
+        .replace('{primary_language}', profile.languagePatterns.primaryLanguage);
+
+      // Build user prompt
+      const userPrompt = STYLE_APPLICATION_HUMAN.replace('{input_text}', text);
+
+      // Generate response using direct Anthropic SDK
+      const response = await chat(systemPrompt, userPrompt, {
+        model: ClaudeModel.Sonnet,
+        maxTokens: 2048,
+        temperature: 0.4,
       });
 
-      const chain = STYLE_APPLICATION_PROMPT.pipe(model).pipe(new StringOutputParser());
-
-      const styledText = await chain.invoke({
-        formality_level: profile.formalityLevel.toFixed(2),
-        sentence_length: Math.round(profile.averageSentenceLength),
-        vocabulary_complexity: profile.vocabularyComplexity.toFixed(2),
-        preferred_tone: profile.preferredTone,
-        common_phrases: commonPhrasesStr || 'None specified',
-        primary_language: profile.languagePatterns.primaryLanguage,
-        input_text: text,
-      });
+      const styledText = response.content;
 
       // Track token usage
-      const tokenInfo = await callbackHandler.getTokenInfo();
       await tokenTracker.recordUsage({
         userId,
         firmId,
         operationType: AIOperationType.StyleApplication,
-        inputTokens: tokenInfo.inputTokens,
-        outputTokens: tokenInfo.outputTokens,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
         modelUsed: ClaudeModel.Sonnet,
         latencyMs: Date.now() - startTime,
       });

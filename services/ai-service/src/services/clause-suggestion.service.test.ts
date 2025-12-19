@@ -18,17 +18,13 @@ jest.mock('@legal-platform/database', () => ({
     },
   },
 }));
-jest.mock('../lib/langchain/client', () => ({
-  createClaudeModel: jest.fn().mockReturnValue({
-    pipe: jest.fn().mockReturnValue({
-      pipe: jest.fn().mockReturnValue({
-        invoke: jest.fn().mockResolvedValue('AI generated suggestion text'),
-      }),
-    }),
+jest.mock('../lib/claude/client', () => ({
+  chat: jest.fn().mockResolvedValue({
+    content: 'AI generated suggestion text',
+    inputTokens: 50,
+    outputTokens: 100,
+    stopReason: 'end_turn',
   }),
-  AICallbackHandler: jest.fn().mockImplementation(() => ({
-    getMetrics: () => ({ inputTokens: 50, outputTokens: 100 }),
-  })),
 }));
 
 // Mock Redis
@@ -72,6 +68,13 @@ describe('ClauseSuggestionService', () => {
     jest.clearAllMocks();
 
     // Setup mock implementations
+    const { chat } = require('../lib/claude/client');
+    chat.mockResolvedValue({
+      content: 'AI generated suggestion text',
+      inputTokens: 50,
+      outputTokens: 100,
+      stopReason: 'end_turn',
+    });
     (prisma.documentPattern.findMany as jest.Mock).mockResolvedValue(mockPatterns);
     (tokenTracker.recordUsage as jest.Mock).mockResolvedValue(undefined);
   });

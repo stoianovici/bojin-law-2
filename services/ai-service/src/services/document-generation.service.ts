@@ -7,12 +7,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { StringOutputParser } from '@langchain/core/output_parsers';
-import {
   DocumentGenerationInput,
   GeneratedDocument,
   DocumentContext,
@@ -21,7 +15,7 @@ import {
   ClaudeModel,
   AIOperationType,
 } from '@legal-platform/types';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { chat } from '../lib/claude/client';
 import { tokenTracker } from './token-tracker.service';
 import { cacheService } from './cache.service';
 import { contextAggregatorService } from './context-aggregator.service';
@@ -137,34 +131,28 @@ export class DocumentGenerationService {
       const precedentSummary = this.formatPrecedentSummary(precedents);
       const documentTypeInstructions = DOCUMENT_TYPE_PROMPTS[input.documentType];
 
-      // Create LangChain prompt template
-      const systemPrompt = SystemMessagePromptTemplate.fromTemplate(BASE_SYSTEM_PROMPT);
-      const humanPrompt = HumanMessagePromptTemplate.fromTemplate(HUMAN_PROMPT);
-      const chatPrompt = ChatPromptTemplate.fromMessages([systemPrompt, humanPrompt]);
+      // Build system prompt with interpolated values
+      const systemPrompt = BASE_SYSTEM_PROMPT.replace('{contextSummary}', contextSummary)
+        .replace('{precedentSummary}', precedentSummary)
+        .replace('{documentTypeInstructions}', documentTypeInstructions);
 
-      // Create callback handler for metrics
-      const callbackHandler = new AICallbackHandler();
+      // Build user prompt
+      const userPrompt = HUMAN_PROMPT.replace('{documentType}', input.documentType).replace(
+        '{prompt}',
+        input.prompt
+      );
 
-      // Use Sonnet model for document generation (complex task)
-      const model = createClaudeModel(ClaudeModel.Sonnet, {
+      // Generate the document using direct Anthropic SDK
+      const response = await chat(systemPrompt, userPrompt, {
+        model: ClaudeModel.Sonnet,
         maxTokens: parseInt(process.env.AI_DOCUMENT_GENERATION_MAX_TOKENS || '4096', 10),
-        callbacks: [callbackHandler],
       });
 
-      // Create the chain
-      const chain = chatPrompt.pipe(model).pipe(new StringOutputParser());
-
-      // Generate the document
-      const content = await chain.invoke({
-        contextSummary,
-        precedentSummary,
-        documentTypeInstructions,
-        documentType: input.documentType,
-        prompt: input.prompt,
-      });
-
-      // Get metrics from callback handler
-      const metrics = callbackHandler.getMetrics();
+      const content = response.content;
+      const metrics = {
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
+      };
       const generationTimeMs = Date.now() - startTime;
 
       // Generate suggested title

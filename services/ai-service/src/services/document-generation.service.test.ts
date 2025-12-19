@@ -19,17 +19,13 @@ jest.mock('./context-aggregator.service');
 jest.mock('./precedent-finder.service');
 jest.mock('./token-tracker.service');
 jest.mock('./cache.service');
-jest.mock('../lib/langchain/client', () => ({
-  createClaudeModel: jest.fn().mockReturnValue({
-    pipe: jest.fn().mockReturnValue({
-      pipe: jest.fn().mockReturnValue({
-        invoke: jest.fn().mockResolvedValue('Generated document content'),
-      }),
-    }),
+jest.mock('../lib/claude/client', () => ({
+  chat: jest.fn().mockResolvedValue({
+    content: 'Generated document content',
+    inputTokens: 100,
+    outputTokens: 500,
+    stopReason: 'end_turn',
   }),
-  AICallbackHandler: jest.fn().mockImplementation(() => ({
-    getMetrics: () => ({ inputTokens: 100, outputTokens: 500 }),
-  })),
 }));
 
 describe('DocumentGenerationService', () => {
@@ -67,6 +63,13 @@ describe('DocumentGenerationService', () => {
     jest.clearAllMocks();
 
     // Setup mock implementations
+    const { chat } = require('../lib/claude/client');
+    chat.mockResolvedValue({
+      content: 'Generated document content',
+      inputTokens: 100,
+      outputTokens: 500,
+      stopReason: 'end_turn',
+    });
     (cacheService.get as jest.Mock).mockResolvedValue(null);
     (cacheService.set as jest.Mock).mockResolvedValue(undefined);
     (contextAggregatorService.aggregateCaseContext as jest.Mock).mockResolvedValue(mockContext);

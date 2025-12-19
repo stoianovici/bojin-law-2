@@ -130,6 +130,20 @@ curl -s http://localhost:3000/api/health
 curl -s http://localhost:4000/health
 ```
 
+**Use Playwright MCP for automated UI verification:**
+
+After health checks pass, use Playwright MCP to verify the UI:
+
+```
+Use playwright mcp to:
+1. Navigate to http://localhost:3000
+2. Take a screenshot of the homepage
+3. Check for any console errors
+4. Verify the page loaded correctly
+```
+
+This allows you to visually verify the application without requiring the user to manually check.
+
 **Report:**
 
 ```
@@ -140,6 +154,12 @@ Starting production Docker environment...
 ✓ Web: http://localhost:3000 - Healthy
 ✓ Gateway: http://localhost:4000 - Healthy
 ✓ All services started successfully
+
+### Automated UI Verification (via Playwright MCP)
+✓ Homepage loads correctly
+✓ No console errors detected
+✓ Key UI elements present
+[Screenshot captured and reviewed]
 
 To test manually:
 - Open http://localhost:3000 in browser

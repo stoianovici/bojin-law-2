@@ -13,10 +13,11 @@ import { RefreshCw, Mail, AlertCircle, Link2, ExternalLink } from 'lucide-react'
 import { clsx } from 'clsx';
 
 // Components
-import { CaseSidebar } from '../../components/communication/CaseSidebar';
+import { CaseSidebar, type MoveThreadInfo } from '../../components/communication/CaseSidebar';
 import { MessageView } from '../../components/communication/MessageView';
 import { ComposeInterface } from '../../components/communication/ComposeInterface';
 import { ClassificationModal } from '../../components/communication/ClassificationModal';
+import { MoveThreadModal } from '../../components/communication/MoveThreadModal';
 
 // Hooks
 import { useMyEmailsByCase } from '../../hooks/useMyEmailsByCase';
@@ -65,6 +66,9 @@ export default function CommunicationsPage() {
 
   // Classification modal state
   const [classificationEmailId, setClassificationEmailId] = useState<string | null>(null);
+
+  // Move thread modal state
+  const [moveThreadInfo, setMoveThreadInfo] = useState<MoveThreadInfo | null>(null);
 
   // Set user email in store
   useEffect(() => {
@@ -208,6 +212,22 @@ export default function CommunicationsPage() {
     refetch();
   }, [refetch]);
 
+  // Handle move thread request from sidebar
+  const handleMoveThread = useCallback((info: MoveThreadInfo) => {
+    setMoveThreadInfo(info);
+  }, []);
+
+  // Handle move thread modal close
+  const handleMoveThreadClose = useCallback(() => {
+    setMoveThreadInfo(null);
+  }, []);
+
+  // Handle move thread complete - refetch data
+  const handleMoveThreadComplete = useCallback(() => {
+    setMoveThreadInfo(null);
+    refetch();
+  }, [refetch]);
+
   const isLoading = syncLoading || emailsLoading;
   const needsSync = !syncStatus || syncStatus.emailCount === 0;
   const selectedThread = getSelectedThread();
@@ -332,6 +352,7 @@ export default function CommunicationsPage() {
             onSelectThread={handleSelectThread}
             onSelectCourtEmail={handleSelectCourtEmail}
             onSelectUncertainEmail={handleSelectUncertainEmail}
+            onMoveThread={handleMoveThread}
             className="h-full"
           />
         </div>
@@ -442,6 +463,18 @@ export default function CommunicationsPage() {
           emailId={classificationEmailId}
           onClose={handleClassificationClose}
           onClassified={handleClassificationComplete}
+        />
+      )}
+
+      {/* Move Thread Modal */}
+      {moveThreadInfo && (
+        <MoveThreadModal
+          conversationId={moveThreadInfo.conversationId}
+          threadSubject={moveThreadInfo.subject}
+          currentCaseId={moveThreadInfo.currentCaseId}
+          currentCaseTitle={moveThreadInfo.currentCaseTitle}
+          onClose={handleMoveThreadClose}
+          onMoved={handleMoveThreadComplete}
         />
       )}
     </main>

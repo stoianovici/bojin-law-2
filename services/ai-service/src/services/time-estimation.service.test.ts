@@ -20,40 +20,23 @@ jest.mock('@legal-platform/database', () => ({
 
 jest.mock('./token-tracker.service', () => ({
   tokenTracker: {
-    logTokenUsage: jest.fn().mockResolvedValue(undefined),
+    recordUsage: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
-// Mock LangChain components
-jest.mock('../lib/langchain/client', () => ({
-  createClaudeModel: jest.fn().mockReturnValue({
-    bind: jest.fn().mockReturnThis(),
+// Mock Claude client
+jest.mock('../lib/claude/client', () => ({
+  chat: jest.fn().mockResolvedValue({
+    content: JSON.stringify({
+      estimatedHours: 4,
+      reasoning: 'Based on similar tasks',
+      rangeMin: 2,
+      rangeMax: 6,
+    }),
+    inputTokens: 100,
+    outputTokens: 50,
+    stopReason: 'end_turn',
   }),
-  AICallbackHandler: jest.fn().mockImplementation(() => ({
-    getTokenUsage: jest.fn().mockReturnValue({
-      inputTokens: 100,
-      outputTokens: 50,
-      cost: 0.001,
-    }),
-    getDuration: jest.fn().mockReturnValue(500),
-  })),
-}));
-
-jest.mock('@langchain/core/prompts', () => ({
-  ChatPromptTemplate: {
-    fromMessages: jest.fn().mockReturnValue({
-      pipe: jest.fn().mockReturnThis(),
-      invoke: jest.fn(),
-    }),
-  },
-}));
-
-jest.mock('langchain/output_parsers', () => ({
-  StructuredOutputParser: {
-    fromZodSchema: jest.fn().mockReturnValue({
-      parse: jest.fn(),
-    }),
-  },
 }));
 
 describe('TimeEstimationService', () => {
@@ -70,6 +53,20 @@ describe('TimeEstimationService', () => {
   beforeEach(() => {
     service = new TimeEstimationService();
     jest.clearAllMocks();
+
+    // Setup mock implementations
+    const { chat } = require('../lib/claude/client');
+    chat.mockResolvedValue({
+      content: JSON.stringify({
+        estimatedHours: 4,
+        reasoning: 'Based on similar tasks',
+        rangeMin: 2,
+        rangeMax: 6,
+      }),
+      inputTokens: 100,
+      outputTokens: 50,
+      stopReason: 'end_turn',
+    });
   });
 
   describe('estimateTaskDuration', () => {
@@ -161,20 +158,17 @@ describe('TimeEstimationService', () => {
 
       it('should use AI estimation with low confidence', async () => {
         // Mock AI response
-        const mockChain = {
-          invoke: jest.fn().mockResolvedValue({
+        const { chat } = require('../lib/claude/client');
+        chat.mockResolvedValueOnce({
+          content: JSON.stringify({
             estimatedHours: 6.0,
             reasoning: 'Based on task complexity and type',
             rangeMin: 4.5,
             rangeMax: 8.0,
           }),
-        };
-
-        const { ChatPromptTemplate } = require('@langchain/core/prompts');
-        ChatPromptTemplate.fromMessages.mockReturnValue({
-          pipe: jest.fn().mockReturnValue({
-            pipe: jest.fn().mockReturnValue(mockChain),
-          }),
+          inputTokens: 100,
+          outputTokens: 50,
+          stopReason: 'end_turn',
         });
 
         const result = await service.estimateTaskDuration(mockRequest);
@@ -182,7 +176,7 @@ describe('TimeEstimationService', () => {
         expect(result).toBeDefined();
         expect(result.confidence).toBe(0.5); // Medium-low confidence with 2 tasks
         expect(result.basedOnSimilarTasks).toBe(2);
-        expect(tokenTracker.logTokenUsage).toHaveBeenCalled();
+        expect(tokenTracker.recordUsage).toHaveBeenCalled();
       });
     });
 
@@ -193,20 +187,17 @@ describe('TimeEstimationService', () => {
 
       it('should use AI estimation with very low confidence', async () => {
         // Mock AI response
-        const mockChain = {
-          invoke: jest.fn().mockResolvedValue({
+        const { chat } = require('../lib/claude/client');
+        chat.mockResolvedValueOnce({
+          content: JSON.stringify({
             estimatedHours: 6.0,
             reasoning: 'Default estimate for document drafting',
             rangeMin: 3.0,
             rangeMax: 9.0,
           }),
-        };
-
-        const { ChatPromptTemplate } = require('@langchain/core/prompts');
-        ChatPromptTemplate.fromMessages.mockReturnValue({
-          pipe: jest.fn().mockReturnValue({
-            pipe: jest.fn().mockReturnValue(mockChain),
-          }),
+          inputTokens: 100,
+          outputTokens: 50,
+          stopReason: 'end_turn',
         });
 
         const result = await service.estimateTaskDuration(mockRequest);
@@ -222,19 +213,17 @@ describe('TimeEstimationService', () => {
         (prisma.task.findMany as jest.Mock).mockResolvedValue([]);
 
         // Mock AI to avoid actual call
-        const mockChain = {
-          invoke: jest.fn().mockResolvedValue({
+        const { chat } = require('../lib/claude/client');
+        chat.mockResolvedValueOnce({
+          content: JSON.stringify({
             estimatedHours: 6.0,
             reasoning: 'Default',
             rangeMin: 3.0,
             rangeMax: 9.0,
           }),
-        };
-        const { ChatPromptTemplate } = require('@langchain/core/prompts');
-        ChatPromptTemplate.fromMessages.mockReturnValue({
-          pipe: jest.fn().mockReturnValue({
-            pipe: jest.fn().mockReturnValue(mockChain),
-          }),
+          inputTokens: 100,
+          outputTokens: 50,
+          stopReason: 'end_turn',
         });
 
         const result = await service.estimateTaskDuration(mockRequest);
@@ -252,19 +241,17 @@ describe('TimeEstimationService', () => {
         ]);
 
         // Mock AI
-        const mockChain = {
-          invoke: jest.fn().mockResolvedValue({
+        const { chat } = require('../lib/claude/client');
+        chat.mockResolvedValueOnce({
+          content: JSON.stringify({
             estimatedHours: 5.0,
             reasoning: 'Test',
             rangeMin: 4.0,
             rangeMax: 6.0,
           }),
-        };
-        const { ChatPromptTemplate } = require('@langchain/core/prompts');
-        ChatPromptTemplate.fromMessages.mockReturnValue({
-          pipe: jest.fn().mockReturnValue({
-            pipe: jest.fn().mockReturnValue(mockChain),
-          }),
+          inputTokens: 100,
+          outputTokens: 50,
+          stopReason: 'end_turn',
         });
 
         const result = await service.estimateTaskDuration(mockRequest);
@@ -294,19 +281,17 @@ describe('TimeEstimationService', () => {
         ]);
 
         // Mock AI
-        const mockChain = {
-          invoke: jest.fn().mockResolvedValue({
+        const { chat } = require('../lib/claude/client');
+        chat.mockResolvedValueOnce({
+          content: JSON.stringify({
             estimatedHours: 5.0,
             reasoning: 'Test',
             rangeMin: 4.0,
             rangeMax: 6.0,
           }),
-        };
-        const { ChatPromptTemplate } = require('@langchain/core/prompts');
-        ChatPromptTemplate.fromMessages.mockReturnValue({
-          pipe: jest.fn().mockReturnValue({
-            pipe: jest.fn().mockReturnValue(mockChain),
-          }),
+          inputTokens: 100,
+          outputTokens: 50,
+          stopReason: 'end_turn',
         });
 
         const result = await service.estimateTaskDuration(mockRequest);
@@ -344,15 +329,8 @@ describe('TimeEstimationService', () => {
         (prisma.task.findMany as jest.Mock).mockResolvedValue([]);
 
         // Mock AI to throw error
-        const mockChain = {
-          invoke: jest.fn().mockRejectedValue(new Error('AI service error')),
-        };
-        const { ChatPromptTemplate } = require('@langchain/core/prompts');
-        ChatPromptTemplate.fromMessages.mockReturnValue({
-          pipe: jest.fn().mockReturnValue({
-            pipe: jest.fn().mockReturnValue(mockChain),
-          }),
-        });
+        const { chat } = require('../lib/claude/client');
+        chat.mockRejectedValueOnce(new Error('AI service error'));
 
         const result = await service.estimateTaskDuration(mockRequest);
 

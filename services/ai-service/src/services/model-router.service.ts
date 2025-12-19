@@ -29,7 +29,7 @@ const operationComplexityMap: Record<AIOperationType, TaskComplexity> = {
   // Story 5.2: Communication Intelligence
   [AIOperationType.CommunicationIntelligence]: TaskComplexity.Standard,
   [AIOperationType.RiskAnalysis]: TaskComplexity.Complex,
-  [AIOperationType.ThreadAnalysis]: TaskComplexity.Standard,
+  [AIOperationType.ThreadAnalysis]: TaskComplexity.Standard, // Use Sonnet 4 (LangChain has issue with Opus 4.5 top_p)
   // Story 5.4: Proactive AI Suggestions
   [AIOperationType.ProactiveSuggestion]: TaskComplexity.Standard,
   [AIOperationType.MorningBriefing]: TaskComplexity.Standard,

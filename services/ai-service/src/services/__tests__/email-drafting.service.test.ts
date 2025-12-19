@@ -15,44 +15,24 @@ import {
 } from '../email-drafting.service';
 
 // Mock dependencies
-jest.mock('../../lib/langchain/client', () => ({
-  createClaudeModel: jest.fn().mockReturnValue({
-    pipe: jest.fn().mockReturnThis(),
-    invoke: jest.fn(),
+jest.mock('../../lib/claude/client', () => ({
+  chat: jest.fn().mockResolvedValue({
+    content: JSON.stringify({
+      subject: 'Re: Test Subject',
+      body: 'Test email body content',
+      htmlBody: '<p>Test email body content</p>',
+      confidence: 0.85,
+      keyPointsAddressed: ['point1', 'point2'],
+    }),
+    inputTokens: 1000,
+    outputTokens: 500,
+    stopReason: 'end_turn',
   }),
-  AICallbackHandler: jest.fn().mockImplementation(() => ({
-    getMetrics: jest.fn().mockReturnValue({
-      inputTokens: 1000,
-      outputTokens: 500,
-      latencyMs: 1500,
-    }),
-  })),
-}));
-
-jest.mock('@langchain/core/prompts', () => ({
-  ChatPromptTemplate: {
-    fromMessages: jest.fn().mockReturnValue({
-      pipe: jest.fn().mockReturnThis(),
-    }),
-  },
-  SystemMessagePromptTemplate: {
-    fromTemplate: jest.fn().mockReturnValue({}),
-  },
-  HumanMessagePromptTemplate: {
-    fromTemplate: jest.fn().mockReturnValue({}),
-  },
-}));
-
-jest.mock('@langchain/core/output_parsers', () => ({
-  StringOutputParser: jest.fn().mockImplementation(() => ({
-    pipe: jest.fn().mockReturnThis(),
-    invoke: jest.fn(),
-  })),
 }));
 
 jest.mock('../token-tracker.service', () => ({
   tokenTracker: {
-    trackUsage: jest.fn().mockResolvedValue(undefined),
+    recordUsage: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -144,27 +124,39 @@ Grefier Principal`,
   beforeEach(() => {
     service = new EmailDraftingService();
     jest.clearAllMocks();
+
+    // Setup mock implementations
+    const { chat } = require('../../lib/claude/client');
+    chat.mockResolvedValue({
+      content: JSON.stringify({
+        subject: 'Re: Test Subject',
+        body: 'Test email body content',
+        htmlBody: '<p>Test email body content</p>',
+        confidence: 0.85,
+        keyPointsAddressed: ['point1', 'point2'],
+      }),
+      inputTokens: 1000,
+      outputTokens: 500,
+      stopReason: 'end_turn',
+    });
   });
 
   describe('generateEmailDraft', () => {
     it('should generate a draft with the specified tone', async () => {
-      // Mock the chain invoke to return valid JSON
-      const mockResponse = JSON.stringify({
-        subject: 'Re: Dosarul nr. 12345/3/2025 - Citație',
-        body: 'Onorată Instanță,\n\nConfirmăm primirea citației...',
-        htmlBody: '<p>Onorată Instanță,</p><p>Confirmăm primirea citației...</p>',
-        keyPointsAddressed: ['Confirmed receipt', 'Acknowledged deadline'],
-        confidence: 0.85,
+      // Mock the chat response
+      const { chat } = require('../../lib/claude/client');
+      chat.mockResolvedValueOnce({
+        content: JSON.stringify({
+          subject: 'Re: Dosarul nr. 12345/3/2025 - Citație',
+          body: 'Onorată Instanță,\n\nConfirmăm primirea citației...',
+          htmlBody: '<p>Onorată Instanță,</p><p>Confirmăm primirea citației...</p>',
+          keyPointsAddressed: ['Confirmed receipt', 'Acknowledged deadline'],
+          confidence: 0.85,
+        }),
+        inputTokens: 1000,
+        outputTokens: 500,
+        stopReason: 'end_turn',
       });
-
-      // Mock LangChain chain
-      const mockChain = {
-        invoke: jest.fn().mockResolvedValue(mockResponse),
-      };
-      const mockPipe = jest.fn().mockReturnValue(mockChain);
-
-      const { ChatPromptTemplate } = require('@langchain/core/prompts');
-      ChatPromptTemplate.fromMessages.mockReturnValue({ pipe: mockPipe });
 
       const result = await service.generateEmailDraft(baseParams);
 
@@ -196,13 +188,13 @@ Grefier Principal`,
     });
 
     it('should handle AI response parsing errors gracefully', async () => {
-      const mockChain = {
-        invoke: jest.fn().mockResolvedValue('Invalid response without JSON'),
-      };
-      const mockPipe = jest.fn().mockReturnValue(mockChain);
-
-      const { ChatPromptTemplate } = require('@langchain/core/prompts');
-      ChatPromptTemplate.fromMessages.mockReturnValue({ pipe: mockPipe });
+      const { chat } = require('../../lib/claude/client');
+      chat.mockResolvedValueOnce({
+        content: 'Invalid response without JSON',
+        inputTokens: 1000,
+        outputTokens: 500,
+        stopReason: 'end_turn',
+      });
 
       const result = await service.generateEmailDraft(baseParams);
 
@@ -213,19 +205,17 @@ Grefier Principal`,
     });
 
     it('should track token usage', async () => {
-      const mockResponse = JSON.stringify({
-        subject: 'Test',
-        body: 'Test body',
-        confidence: 0.8,
+      const { chat } = require('../../lib/claude/client');
+      chat.mockResolvedValueOnce({
+        content: JSON.stringify({
+          subject: 'Test',
+          body: 'Test body',
+          confidence: 0.8,
+        }),
+        inputTokens: 1000,
+        outputTokens: 500,
+        stopReason: 'end_turn',
       });
-
-      const mockChain = {
-        invoke: jest.fn().mockResolvedValue(mockResponse),
-      };
-      const mockPipe = jest.fn().mockReturnValue(mockChain);
-
-      const { ChatPromptTemplate } = require('@langchain/core/prompts');
-      ChatPromptTemplate.fromMessages.mockReturnValue({ pipe: mockPipe });
 
       const { tokenTracker } = require('../token-tracker.service');
 
@@ -244,19 +234,18 @@ Grefier Principal`,
 
   describe('generateMultipleDrafts', () => {
     it('should generate drafts for Formal, Professional, and Brief tones', async () => {
-      const mockResponse = JSON.stringify({
-        subject: 'Re: Test',
-        body: 'Test body',
-        confidence: 0.8,
+      // Mock multiple chat calls (one for each tone)
+      const { chat } = require('../../lib/claude/client');
+      chat.mockResolvedValue({
+        content: JSON.stringify({
+          subject: 'Re: Test',
+          body: 'Test body',
+          confidence: 0.8,
+        }),
+        inputTokens: 1000,
+        outputTokens: 500,
+        stopReason: 'end_turn',
       });
-
-      const mockChain = {
-        invoke: jest.fn().mockResolvedValue(mockResponse),
-      };
-      const mockPipe = jest.fn().mockReturnValue(mockChain);
-
-      const { ChatPromptTemplate } = require('@langchain/core/prompts');
-      ChatPromptTemplate.fromMessages.mockReturnValue({ pipe: mockPipe });
 
       const paramsWithoutTone = { ...baseParams };
       delete (paramsWithoutTone as any).tone;
@@ -421,13 +410,8 @@ Grefier Principal`,
 
   describe('error handling', () => {
     it('should log and rethrow errors during draft generation', async () => {
-      const mockChain = {
-        invoke: jest.fn().mockRejectedValue(new Error('AI service unavailable')),
-      };
-      const mockPipe = jest.fn().mockReturnValue(mockChain);
-
-      const { ChatPromptTemplate } = require('@langchain/core/prompts');
-      ChatPromptTemplate.fromMessages.mockReturnValue({ pipe: mockPipe });
+      const { chat } = require('../../lib/claude/client');
+      chat.mockRejectedValueOnce(new Error('AI service unavailable'));
 
       const logger = require('../../lib/logger').default;
 

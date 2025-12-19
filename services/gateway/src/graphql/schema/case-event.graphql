@@ -1,0 +1,116 @@
+# ============================================================================
+# Case Event GraphQL Schema
+# OPS-049: Unified Chronology with Importance Scoring
+# ============================================================================
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+"""
+Types of events that can occur on a case timeline
+"""
+enum CaseEventType {
+  DocumentUploaded
+  DocumentSigned
+  DocumentDeleted
+  EmailReceived
+  EmailSent
+  EmailCourt
+  NoteCreated
+  NoteUpdated
+  TaskCreated
+  TaskCompleted
+  CaseStatusChanged
+  TeamMemberAdded
+  ContactAdded
+}
+
+"""
+Importance levels for event filtering
+"""
+enum EventImportance {
+  High
+  Medium
+  Low
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+A single event in the case chronology
+"""
+type CaseEvent {
+  id: ID!
+  caseId: ID!
+  eventType: CaseEventType!
+  sourceId: ID!
+  title: String!
+  description: String
+  importance: EventImportance!
+  occurredAt: DateTime!
+  actor: User
+}
+
+"""
+Edge in the case events connection
+"""
+type CaseEventEdge {
+  node: CaseEvent!
+  cursor: String!
+}
+
+"""
+Pagination info for case events
+"""
+type CaseEventPageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  endCursor: String
+}
+
+"""
+Connection type for paginated case events
+"""
+type CaseEventConnection {
+  edges: [CaseEventEdge!]!
+  pageInfo: CaseEventPageInfo!
+  totalCount: Int!
+}
+
+"""
+Result of syncing case events
+"""
+type CaseEventSyncResult {
+  created: Int!
+  skipped: Int!
+}
+
+# ============================================================================
+# Query Extensions
+# ============================================================================
+
+extend type Query {
+  """
+  Get paginated case events with importance-based filtering
+  """
+  caseEvents(
+    caseId: ID!
+    minImportance: EventImportance = Medium
+    first: Int = 20
+    after: String
+  ): CaseEventConnection!
+}
+
+# ============================================================================
+# Mutation Extensions
+# ============================================================================
+
+extend type Mutation {
+  """
+  Sync case events from existing data sources (documents, emails, notes, tasks)
+  """
+  syncCaseEvents(caseId: ID!): CaseEventSyncResult!
+}

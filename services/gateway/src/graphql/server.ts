@@ -53,6 +53,9 @@ import { emailImportResolvers } from './resolvers/email-import.resolvers';
 import { globalEmailSourcesResolvers } from './resolvers/global-email-sources.resolvers';
 import { emailClassificationResolvers } from './resolvers/email-classification.resolvers';
 import { classificationReviewResolvers } from './resolvers/classification-review.resolvers';
+import { proactiveSuggestionsResolvers } from './resolvers/proactive-suggestions.resolvers';
+import { caseEventResolvers } from './resolvers/case-event.resolvers';
+import { caseSummaryResolvers } from './resolvers/case-summary.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -101,6 +104,9 @@ const resolvers = {
     ...globalEmailSourcesResolvers.Query,
     ...emailClassificationResolvers.Query,
     ...classificationReviewResolvers.Query,
+    ...proactiveSuggestionsResolvers.Query,
+    ...caseEventResolvers.Query,
+    ...caseSummaryResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -130,6 +136,9 @@ const resolvers = {
     ...globalEmailSourcesResolvers.Mutation,
     ...emailClassificationResolvers.Mutation,
     ...classificationReviewResolvers.Mutation,
+    ...proactiveSuggestionsResolvers.Mutation,
+    ...caseEventResolvers.Mutation,
+    ...caseSummaryResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -173,6 +182,7 @@ const resolvers = {
   CaseApproval: approvalResolvers.CaseApproval,
   Notification: notificationResolvers.Notification,
   Document: documentResolvers.Document,
+  DocumentVersion: documentResolvers.DocumentVersion,
   DocumentAuditLog: documentResolvers.DocumentAuditLog,
   // Search resolvers (Story 2.10)
   SearchResult: searchResolvers.SearchResult,
@@ -258,6 +268,10 @@ const resolvers = {
   // Classification Review resolvers (OPS-031)
   PendingClassificationItem: classificationReviewResolvers.PendingClassificationItem,
   EmailClassificationLog: classificationReviewResolvers.EmailClassificationLog,
+  // Case Event resolvers (OPS-049)
+  CaseEvent: caseEventResolvers.CaseEvent,
+  // Case Summary resolvers (OPS-048)
+  CaseSummary: caseSummaryResolvers.CaseSummary,
 };
 
 /**

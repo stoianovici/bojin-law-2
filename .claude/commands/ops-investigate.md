@@ -82,6 +82,28 @@ Launch investigation agents simultaneously based on category.
 
 ### For Category A (UI not appearing):
 
+**Use Playwright MCP for live UI investigation:**
+
+Before spawning code analysis agents, use Playwright MCP to see what the user sees:
+
+```
+Use playwright mcp to:
+1. Navigate to the affected page (e.g., http://localhost:3000/cases)
+2. Take a screenshot of the current state
+3. Check the browser console for errors
+4. Check network requests for failed API calls
+5. Get a DOM snapshot of the relevant area
+```
+
+This gives you immediate visibility into:
+
+- Whether the page loads at all
+- JavaScript errors in console
+- Failed network requests (404s, 500s, GraphQL errors)
+- What elements are actually rendered
+
+**Then spawn code analysis agents:**
+
 ```
 Agent 1 - Frontend Investigation:
 "Investigate if [symptom] is caused by frontend issues.
@@ -103,6 +125,22 @@ Report: Does the data exist and is it properly linked?"
 ```
 
 ### For Category B (Works locally, fails in prod):
+
+**Use Playwright MCP to compare local vs expected behavior:**
+
+If the user reports something works locally but fails in production, use Playwright to verify local behavior first:
+
+```
+Use playwright mcp to:
+1. Navigate to the affected page locally
+2. Test the specific functionality
+3. Take screenshots of the working state
+4. Capture any network requests being made
+```
+
+This documents the "working" state to compare against production logs.
+
+**Then spawn investigation agents:**
 
 ```
 Agent 1 - Environment Variables:
@@ -163,6 +201,13 @@ Wait for all agents to complete, then summarize:
 ## Investigation Results
 
 ### Symptom Category: {A/B/C/D}
+
+### Playwright MCP Findings (if used)
+
+- **Page state**: {loaded/error/blank}
+- **Console errors**: {none/list of errors}
+- **Network issues**: {none/failed requests}
+- **Screenshot**: [captured]
 
 ### Parity Check Results (if Category B)
 

@@ -8,29 +8,18 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@legal-platform/database';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { StructuredOutputParser } from 'langchain/output_parsers';
-import { z } from 'zod';
 import {
   TimeEstimationRequest,
   TimeEstimationResponse,
   AIOperationType,
   ClaudeModel,
 } from '@legal-platform/types';
-import { createClaudeModel, AICallbackHandler } from '../lib/langchain/client';
+import { chat } from '../lib/claude/client';
 import { tokenTracker } from './token-tracker.service';
 import logger from '../lib/logger';
 
 // Minimum number of similar tasks for high confidence
 const MIN_TASKS_HIGH_CONFIDENCE = 5;
-
-// Response schema for structured output
-const timeEstimationSchema = z.object({
-  estimatedHours: z.number().describe('Estimated hours for the task'),
-  reasoning: z.string().describe('Brief explanation of the estimation'),
-  rangeMin: z.number().describe('Minimum estimated hours'),
-  rangeMax: z.number().describe('Maximum estimated hours'),
-});
 
 // System prompt for time estimation
 const TIME_ESTIMATION_SYSTEM = `You are an expert legal time estimation assistant.
@@ -62,7 +51,15 @@ Task Title: {taskTitle}
 Historical Data:
 {historicalData}
 
-Provide a time estimate in hours. Consider task complexity and similar historical tasks.`;
+Provide a time estimate in hours. Consider task complexity and similar historical tasks.
+
+Return your response as JSON:
+{
+  "estimatedHours": number,
+  "reasoning": "string",
+  "rangeMin": number,
+  "rangeMax": number
+}`;
 
 export class TimeEstimationService {
   /**
@@ -252,6 +249,8 @@ export class TimeEstimationService {
     historicalData: any,
     requestId: string
   ): Promise<Omit<TimeEstimationResponse, 'confidence' | 'basedOnSimilarTasks'>> {
+    const startTime = Date.now();
+
     // Prepare historical data summary for AI
     const historicalSummary =
       historicalData.count > 0
@@ -260,56 +259,55 @@ export class TimeEstimationService {
 - Average actual: ${historicalData.avgActual.toFixed(2)} hours`
         : 'No historical data available for this task type in your firm.';
 
-    // Build prompt template
-    const template = ChatPromptTemplate.fromMessages([
-      ['system', TIME_ESTIMATION_SYSTEM],
-      ['human', TIME_ESTIMATION_HUMAN],
-    ]);
+    // Build user prompt with interpolated values
+    const userPrompt = TIME_ESTIMATION_HUMAN.replace('{taskType}', request.taskType)
+      .replace('{taskTitle}', request.taskTitle)
+      .replace(
+        '{taskDescription}',
+        request.taskDescription ? `Task Description: ${request.taskDescription}` : ''
+      )
+      .replace('{caseType}', request.caseType ? `Case Type: ${request.caseType}` : '')
+      .replace('{historicalData}', historicalSummary);
 
-    // Create structured output parser
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const parser = StructuredOutputParser.fromZodSchema(timeEstimationSchema as any);
-
-    // Create model with callback handler for token tracking
-    const callbackHandler = new AICallbackHandler();
-
-    const model = createClaudeModel(ClaudeModel.Haiku, {
-      temperature: 0.3, // Lower temperature for consistent estimates
-      callbacks: [callbackHandler],
-    });
-
-    // Create chain
-    const chain = template.pipe(model).pipe(parser);
-
-    // Execute
-    const result = await chain.invoke({
-      taskType: request.taskType,
-      taskTitle: request.taskTitle,
-      taskDescription: request.taskDescription
-        ? `Task Description: ${request.taskDescription}`
-        : '',
-      caseType: request.caseType ? `Case Type: ${request.caseType}` : '',
-      historicalData: historicalSummary,
+    // Generate response using direct Anthropic SDK
+    const response = await chat(TIME_ESTIMATION_SYSTEM, userPrompt, {
+      model: ClaudeModel.Haiku,
+      temperature: 0.3,
     });
 
     // Track token usage
-    const metrics = callbackHandler.getMetrics();
     await tokenTracker.recordUsage({
       firmId: request.firmId,
-      operationType: AIOperationType.TaskParsing, // Using TaskParsing as closest match
-      modelUsed: 'claude-haiku-3.5',
-      inputTokens: metrics.inputTokens,
-      outputTokens: metrics.outputTokens,
-      latencyMs: metrics.latencyMs,
+      operationType: AIOperationType.TaskParsing,
+      modelUsed: ClaudeModel.Haiku,
+      inputTokens: response.inputTokens,
+      outputTokens: response.outputTokens,
+      latencyMs: Date.now() - startTime,
     });
 
-    // Cast result to expected shape
-    const parsed = result as {
+    // Parse JSON response
+    let parsed: {
       estimatedHours: number;
       reasoning: string;
       rangeMin: number;
       rangeMax: number;
     };
+
+    try {
+      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (error) {
+      logger.warn('Failed to parse time estimation response, using defaults', { requestId });
+      parsed = {
+        estimatedHours: 2.0,
+        reasoning: 'Unable to generate specific estimate',
+        rangeMin: 1.0,
+        rangeMax: 4.0,
+      };
+    }
 
     return {
       estimatedHours: parsed.estimatedHours,

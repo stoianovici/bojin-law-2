@@ -130,6 +130,9 @@ export function loadSchema(): string {
     join(schemaDir, 'classification-review.graphql'),
     'utf-8'
   );
+  // OPS-046-050: Persistent AI Case Summary
+  const caseSummarySchema = readFileSync(join(schemaDir, 'case-summary.graphql'), 'utf-8');
+  const caseEventSchema = readFileSync(join(schemaDir, 'case-event.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -174,6 +177,8 @@ export function loadSchema(): string {
     globalEmailSourcesSchema,
     emailClassificationSchema,
     classificationReviewSchema,
+    caseSummarySchema,
+    caseEventSchema,
   ].join('\n\n');
 }
 

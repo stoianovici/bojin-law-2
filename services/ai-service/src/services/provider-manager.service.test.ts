@@ -7,11 +7,13 @@ import { ProviderManagerService, ProviderError } from './provider-manager.servic
 import { CircuitState, ProviderStatus, ClaudeModel } from '@legal-platform/types';
 
 // Mock the dependencies
-jest.mock('../lib/langchain/client', () => ({
-  createClaudeModel: jest.fn(),
-  AICallbackHandler: jest.fn().mockImplementation(() => ({
-    getMetrics: () => ({ latencyMs: 100, inputTokens: 50, outputTokens: 100 }),
-  })),
+jest.mock('../lib/claude/client', () => ({
+  sendMessage: jest.fn().mockResolvedValue({
+    content: 'Test response',
+    inputTokens: 50,
+    outputTokens: 100,
+    stopReason: 'end_turn',
+  }),
 }));
 
 jest.mock('../lib/grok/client', () => ({
