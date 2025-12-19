@@ -532,18 +532,23 @@ describe('useTaskManagementStore', () => {
     });
 
     it('does not persist tasks to localStorage', () => {
-      const { result: result1 } = renderHook(() => useTaskManagementStore());
+      const { result } = renderHook(() => useTaskManagementStore());
       const mockTasks = createMockTasks(10);
 
       act(() => {
-        result1.current.setTasks(mockTasks);
+        result.current.setTasks(mockTasks);
       });
 
-      // Create new hook instance to simulate page reload
-      const { result: result2 } = renderHook(() => useTaskManagementStore());
+      // Verify tasks are in memory
+      expect(result.current.tasks).toHaveLength(10);
 
-      // Tasks should not be persisted
-      expect(result2.current.tasks).toEqual([]);
+      // Verify tasks are NOT in localStorage (only activeView should be persisted)
+      const persistedState = localStorageMock.getItem('task-management-storage');
+      if (persistedState) {
+        const parsed = JSON.parse(persistedState);
+        // Tasks should either not be in localStorage or be empty
+        expect(parsed.state?.tasks ?? []).toEqual([]);
+      }
     });
   });
 });
