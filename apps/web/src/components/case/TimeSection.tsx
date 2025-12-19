@@ -24,7 +24,7 @@ export interface TimeSectionProps {
   /** Whether section starts expanded (default: true) */
   defaultExpanded?: boolean;
   /** Event content to render inside the section */
-  children: React.ReactNode;
+  children?: React.ReactNode;
   /** Additional CSS classes */
   className?: string;
 }
@@ -49,27 +49,45 @@ export function TimeSection({
   children,
   className,
 }: TimeSectionProps) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const isEmpty = count === 0;
+  const [expanded, setExpanded] = useState(isEmpty ? false : defaultExpanded);
 
   return (
     <div className={clsx('border-b border-gray-100 last:border-b-0', className)}>
       <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-        aria-expanded={expanded}
+        onClick={() => !isEmpty && setExpanded(!expanded)}
+        className={clsx(
+          'w-full px-5 py-3 flex items-center justify-between transition-colors',
+          isEmpty ? 'cursor-default' : 'hover:bg-gray-50'
+        )}
+        aria-expanded={isEmpty ? undefined : expanded}
+        disabled={isEmpty}
       >
         <div className="flex items-center gap-2">
-          {expanded ? (
+          {isEmpty ? (
+            <ChevronRight className="h-4 w-4 text-gray-300" />
+          ) : expanded ? (
             <ChevronDown className="h-4 w-4 text-gray-400" />
           ) : (
             <ChevronRight className="h-4 w-4 text-gray-400" />
           )}
-          <span className="text-sm font-medium text-gray-700">{label}</span>
+          <span
+            className={clsx('text-sm font-medium', isEmpty ? 'text-gray-400' : 'text-gray-700')}
+          >
+            {label}
+          </span>
         </div>
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{count}</span>
+        <span
+          className={clsx(
+            'text-xs px-2 py-0.5 rounded-full',
+            isEmpty ? 'text-gray-400 bg-gray-50' : 'text-gray-500 bg-gray-100'
+          )}
+        >
+          {count}
+        </span>
       </button>
 
-      {expanded && <div className="divide-y divide-gray-100">{children}</div>}
+      {expanded && !isEmpty && <div className="divide-y divide-gray-100">{children}</div>}
     </div>
   );
 }

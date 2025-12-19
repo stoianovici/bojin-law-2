@@ -34,6 +34,18 @@ const PERIOD_LABELS: Record<TimePeriod, string> = {
 
 const PERIOD_ORDER: TimePeriod[] = ['today', 'thisWeek', 'thisMonth', 'older'];
 
+/** Export for external use */
+export { PERIOD_ORDER };
+
+// ============================================================================
+// Options
+// ============================================================================
+
+export interface GroupingOptions {
+  /** If true, includes all time periods even if they have no events (default: false) */
+  includeEmptyPeriods?: boolean;
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -65,7 +77,8 @@ function getTimePeriod(date: Date): TimePeriod {
  * Groups events by time period
  *
  * @param events - Array of events with an occurredAt string property
- * @returns Array of time groups, excluding empty groups, ordered: today → thisWeek → thisMonth → older
+ * @param options - Grouping options (includeEmptyPeriods: boolean)
+ * @returns Array of time groups, ordered: today → thisWeek → thisMonth → older
  *
  * @example
  * ```ts
@@ -75,13 +88,27 @@ function getTimePeriod(date: Date): TimePeriod {
  * ];
  * const groups = groupEventsByTimePeriod(events);
  * // Returns: [{ period: 'today', label: 'Astăzi', events: [...], count: 1 }, ...]
+ *
+ * // With includeEmptyPeriods: true, returns all 4 periods even if empty
+ * const allGroups = groupEventsByTimePeriod(events, { includeEmptyPeriods: true });
  * ```
  */
 export function groupEventsByTimePeriod<T extends { occurredAt: string }>(
-  events: T[]
+  events: T[],
+  options: GroupingOptions = {}
 ): TimeGroup<T>[] {
-  // Handle empty input
+  const { includeEmptyPeriods = false } = options;
+
+  // Handle empty input - if includeEmptyPeriods, return all empty groups
   if (!events || events.length === 0) {
+    if (includeEmptyPeriods) {
+      return PERIOD_ORDER.map((period) => ({
+        period,
+        label: PERIOD_LABELS[period],
+        events: [],
+        count: 0,
+      }));
+    }
     return [];
   }
 
@@ -109,10 +136,11 @@ export function groupEventsByTimePeriod<T extends { occurredAt: string }>(
     });
   }
 
-  // Build result array, excluding empty groups
+  // Build result array
   const result: TimeGroup<T>[] = [];
   for (const period of PERIOD_ORDER) {
-    if (buckets[period].length > 0) {
+    // Include group if it has events, or if includeEmptyPeriods is enabled
+    if (buckets[period].length > 0 || includeEmptyPeriods) {
       result.push({
         period,
         label: PERIOD_LABELS[period],

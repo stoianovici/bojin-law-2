@@ -22,23 +22,38 @@ jest.mock('next/navigation', () => ({
 
 // Mock next/link
 jest.mock('next/link', () => {
-  return ({ children, href, ...props }: any) => {
+  const MockLink = ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode;
+    href: string;
+    [key: string]: unknown;
+  }) => {
     return (
       <a href={href} {...props}>
         {children}
       </a>
     );
   };
+  MockLink.displayName = 'MockLink';
+  return MockLink;
 });
 
 // Mock the GlobalSearchBar component
-jest.mock('@/components/search/GlobalSearchBar', () => ({
-  GlobalSearchBar: React.forwardRef(({ className, placeholder }: any, ref: any) => (
+jest.mock('@/components/search/GlobalSearchBar', () => {
+  const MockGlobalSearchBar = React.forwardRef<
+    HTMLDivElement,
+    { className?: string; placeholder?: string }
+  >(({ className, placeholder }, _ref) => (
     <div className={className} data-testid="global-search-bar">
       {placeholder}
     </div>
-  )),
-}));
+  ));
+  MockGlobalSearchBar.displayName = 'MockGlobalSearchBar';
+  return { GlobalSearchBar: MockGlobalSearchBar };
+});
 
 // Mock NotificationCenter
 jest.mock('./NotificationCenter', () => ({
@@ -95,7 +110,6 @@ describe('TopBar', () => {
     });
   });
 
-
   describe('sidebar toggle', () => {
     it('should toggle sidebar when hamburger button is clicked', () => {
       render(<TopBar />);
@@ -107,7 +121,6 @@ describe('TopBar', () => {
       expect(state.isSidebarCollapsed).toBe(true);
     });
   });
-
 
   describe('user menu', () => {
     // Note: Portal-based dropdown menu tests are skipped due to jsdom limitations

@@ -228,7 +228,9 @@ describe('DraftGenerationPanel', () => {
 
       render(<DraftGenerationPanel {...defaultProps} />);
 
-      expect(screen.getByText(/Corespondența cu instanța necesită ton formal/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Corespondența cu instanța necesită ton formal/i)
+      ).toBeInTheDocument();
     });
   });
 

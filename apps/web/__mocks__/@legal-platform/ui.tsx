@@ -19,17 +19,13 @@ Button.displayName = 'Button';
 export const Input = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement> & { validationState?: string }
->(({ className, ...props }, ref) => (
-  <input ref={ref} className={className} {...props} />
-));
+>(({ className, ...props }, ref) => <input ref={ref} className={className} {...props} />);
 Input.displayName = 'Input';
 
 export const Textarea = React.forwardRef<
   HTMLTextAreaElement,
   React.TextareaHTMLAttributes<HTMLTextAreaElement> & { validationState?: string }
->(({ className, ...props }, ref) => (
-  <textarea ref={ref} className={className} {...props} />
-));
+>(({ className, ...props }, ref) => <textarea ref={ref} className={className} {...props} />);
 Textarea.displayName = 'Textarea';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {

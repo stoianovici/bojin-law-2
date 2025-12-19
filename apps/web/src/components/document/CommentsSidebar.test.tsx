@@ -253,16 +253,22 @@ describe('CommentsSidebar', () => {
       render(<CommentsSidebar isOpen={true} comments={mockComments} />);
 
       // Only active comments show line numbers, resolved comments don't
-      expect(screen.getByText((content, element) => {
-        return element?.tagName === 'SPAN' && element?.textContent === 'Linia 21';
-      })).toBeInTheDocument();
-      expect(screen.getByText((content, element) => {
-        return element?.tagName === 'SPAN' && element?.textContent === 'Linia 17';
-      })).toBeInTheDocument();
+      expect(
+        screen.getByText((content, element) => {
+          return element?.tagName === 'SPAN' && element?.textContent === 'Linia 21';
+        })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText((content, element) => {
+          return element?.tagName === 'SPAN' && element?.textContent === 'Linia 17';
+        })
+      ).toBeInTheDocument();
       // Linia 10 is a resolved comment and doesn't display line number
-      expect(screen.queryByText((content, element) => {
-        return element?.tagName === 'SPAN' && element?.textContent === 'Linia 10';
-      })).not.toBeInTheDocument();
+      expect(
+        screen.queryByText((content, element) => {
+          return element?.tagName === 'SPAN' && element?.textContent === 'Linia 10';
+        })
+      ).not.toBeInTheDocument();
     });
 
     it('generates correct initials for author avatars', () => {

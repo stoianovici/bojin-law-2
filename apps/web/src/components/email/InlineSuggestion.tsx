@@ -82,7 +82,8 @@ export function InlineSuggestion({ suggestion, onAccept, onDismiss }: InlineSugg
           </button>
           <span className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             Apasă{' '}
-            <kbd className="rounded bg-gray-200 px-1 py-0.5 font-mono dark:bg-gray-700">Tab</kbd> pentru a accepta
+            <kbd className="rounded bg-gray-200 px-1 py-0.5 font-mono dark:bg-gray-700">Tab</kbd>{' '}
+            pentru a accepta
           </span>
         </div>
       </div>

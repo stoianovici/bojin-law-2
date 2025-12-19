@@ -158,7 +158,9 @@ describe('Case Creation Flow Integration Test', () => {
 
     // Verify validation errors are displayed
     await waitFor(() => {
-      expect(screen.getByText(/titlul este obligatoriu|titlul trebuie să aibă cel puțin/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/titlul este obligatoriu|titlul trebuie să aibă cel puțin/i)
+      ).toBeInTheDocument();
     });
   });
 

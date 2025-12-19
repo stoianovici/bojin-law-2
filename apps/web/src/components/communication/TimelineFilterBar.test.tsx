@@ -371,7 +371,9 @@ describe('TimelineFilterBar', () => {
     // Expand the filter panel
     fireEvent.click(screen.getByRole('button', { name: /filtre/i }));
 
-    const privacyCheckbox = screen.getByRole('checkbox', { name: /afișează comunicările private/i });
+    const privacyCheckbox = screen.getByRole('checkbox', {
+      name: /afișează comunicările private/i,
+    });
     fireEvent.click(privacyCheckbox);
 
     expect(mockOnChange).toHaveBeenCalledWith({ includePrivate: true });

@@ -62,8 +62,12 @@ export function DraftGenerationPanel({
     return (
       <div className="flex flex-col items-center justify-center p-8" aria-busy="true">
         <Spinner size="lg" />
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">Se generează draft-uri AI...</p>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Aceasta poate dura câteva secunde</p>
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+          Se generează draft-uri AI...
+        </p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Aceasta poate dura câteva secunde
+        </p>
       </div>
     );
   }

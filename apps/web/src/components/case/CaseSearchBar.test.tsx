@@ -52,7 +52,9 @@ describe('CaseSearchBar', () => {
     const input = screen.getByPlaceholderText('Căutare dosare (min 3 caractere)...');
     fireEvent.change(input, { target: { value: 'ab' } });
 
-    expect(screen.getByText('Introduceți cel puțin 3 caractere pentru căutare')).toBeInTheDocument();
+    expect(
+      screen.getByText('Introduceți cel puțin 3 caractere pentru căutare')
+    ).toBeInTheDocument();
   });
 
   it('does not search with less than 3 characters', async () => {

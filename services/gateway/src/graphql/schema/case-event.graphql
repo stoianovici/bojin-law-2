@@ -72,12 +72,24 @@ type CaseEventPageInfo {
 }
 
 """
+Counts of events by tab category for efficient tab badge display
+OPS-055: Server-side totals instead of counting loaded events
+"""
+type CaseEventCounts {
+  all: Int!
+  documents: Int!
+  communications: Int!
+  tasks: Int!
+}
+
+"""
 Connection type for paginated case events
 """
 type CaseEventConnection {
   edges: [CaseEventEdge!]!
   pageInfo: CaseEventPageInfo!
   totalCount: Int!
+  countsByCategory: CaseEventCounts!
 }
 
 """

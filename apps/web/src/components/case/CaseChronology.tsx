@@ -32,7 +32,7 @@ import { clsx } from 'clsx';
 import { useCaseEvents, type CaseEventType, type EventImportance } from '../../hooks/useCaseEvents';
 import { ChronologyTabBar } from './ChronologyTabBar';
 import { TimeSection } from './TimeSection';
-import { filterEventsByTab, countEventsByTab, type ChronologyTab } from './chronologyTabs';
+import { filterEventsByTab, type ChronologyTab } from './chronologyTabs';
 import { groupEventsByTimePeriod, type TimePeriod } from '../../lib/timeGrouping';
 
 // ============================================================================
@@ -209,17 +209,21 @@ function EventItem({ event }: EventItemProps) {
 // ============================================================================
 
 export function CaseChronology({ caseId, className }: CaseChronologyProps) {
-  const { events, loading, loadMore, hasMore, totalCount } = useCaseEvents(caseId);
+  const { events, loading, loadMore, hasMore, totalCount, countsByCategory } =
+    useCaseEvents(caseId);
   const [activeTab, setActiveTab] = useState<ChronologyTab>('all');
 
   // Filter events by selected tab
   const filteredEvents = useMemo(() => filterEventsByTab(events, activeTab), [events, activeTab]);
 
-  // Group filtered events by time period
-  const groupedEvents = useMemo(() => groupEventsByTimePeriod(filteredEvents), [filteredEvents]);
+  // Group filtered events by time period (OPS-057: always show all 4 sections)
+  const groupedEvents = useMemo(
+    () => groupEventsByTimePeriod(filteredEvents, { includeEmptyPeriods: true }),
+    [filteredEvents]
+  );
 
-  // Calculate counts for tab badges
-  const tabCounts = useMemo(() => countEventsByTab(events), [events]);
+  // OPS-055: Use server-side counts for tab badges (not derived from loaded events)
+  const tabCounts = countsByCategory;
 
   const isEmpty = !loading && events.length === 0;
 

@@ -116,9 +116,7 @@ export function RefinementInput({
       {/* Refinement history */}
       {showHistory && refinementHistory.length > 0 && (
         <div className="space-y-2" role="list" aria-label="Istoric rafinări">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Rafinări recente:
-          </p>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Rafinări recente:</p>
           {refinementHistory.slice(0, 5).map((refinement) => (
             <div
               key={refinement.id}
@@ -129,8 +127,8 @@ export function RefinementInput({
                 &ldquo;{refinement.instruction}&rdquo;
               </p>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {new Date(refinement.createdAt).toLocaleString()} · {refinement.tokensUsed} token-uri
-                utilizați
+                {new Date(refinement.createdAt).toLocaleString()} · {refinement.tokensUsed}{' '}
+                token-uri utilizați
               </p>
             </div>
           ))}

@@ -188,9 +188,7 @@ describe('RefinementInput', () => {
     it('should disable input when loading', () => {
       render(<RefinementInput {...defaultProps} loading={true} />);
 
-      expect(
-        screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i)
-      ).toBeDisabled();
+      expect(screen.getByPlaceholderText(/Instrucțiuni de rafinare personalizate/i)).toBeDisabled();
     });
 
     it('should disable buttons when loading', () => {

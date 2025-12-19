@@ -14,6 +14,8 @@ import {
   TaskPriority,
   CommunicationChannel,
   UserRole,
+  EmailClassificationState,
+  GlobalEmailSourceCategory,
 } from '@prisma/client';
 
 // ============================================================================
@@ -48,6 +50,13 @@ interface CaseEventNode {
   } | null;
 }
 
+interface CaseEventCounts {
+  all: number;
+  documents: number;
+  communications: number;
+  tasks: number;
+}
+
 interface CaseEventConnection {
   edges: CaseEventEdge[];
   pageInfo: {
@@ -56,6 +65,7 @@ interface CaseEventConnection {
     endCursor: string | null;
   };
   totalCount: number;
+  countsByCategory: CaseEventCounts;
 }
 
 interface CreateEventInput {
@@ -68,6 +78,29 @@ interface CreateEventInput {
   occurredAt: Date;
   actorId?: string | null;
 }
+
+// ============================================================================
+// Event Category Mappings (OPS-055)
+// ============================================================================
+
+/** Event types that belong to 'documents' tab */
+const DOCUMENT_EVENT_TYPES: CaseEventType[] = [
+  CaseEventType.DocumentUploaded,
+  CaseEventType.DocumentSigned,
+  CaseEventType.DocumentDeleted,
+];
+
+/** Event types that belong to 'communications' tab */
+const COMMUNICATION_EVENT_TYPES: CaseEventType[] = [
+  CaseEventType.EmailReceived,
+  CaseEventType.EmailSent,
+  CaseEventType.EmailCourt,
+  CaseEventType.NoteCreated,
+  CaseEventType.NoteUpdated,
+];
+
+/** Event types that belong to 'tasks' tab */
+const TASK_EVENT_TYPES: CaseEventType[] = [CaseEventType.TaskCreated, CaseEventType.TaskCompleted];
 
 // Metadata types for importance calculation
 interface EmailMetadata {
@@ -347,6 +380,37 @@ export class CaseEventService {
       },
     });
 
+    // OPS-055: Get counts by event type using groupBy for efficient aggregation
+    const eventTypeCounts = await prisma.caseEvent.groupBy({
+      by: ['eventType'],
+      where: {
+        caseId,
+        importance: { in: allowedImportances },
+      },
+      _count: {
+        eventType: true,
+      },
+    });
+
+    // Build counts by category from grouped results
+    const countsByCategory: CaseEventCounts = {
+      all: totalCount,
+      documents: 0,
+      communications: 0,
+      tasks: 0,
+    };
+
+    for (const item of eventTypeCounts) {
+      const count = item._count.eventType;
+      if (DOCUMENT_EVENT_TYPES.includes(item.eventType)) {
+        countsByCategory.documents += count;
+      } else if (COMMUNICATION_EVENT_TYPES.includes(item.eventType)) {
+        countsByCategory.communications += count;
+      } else if (TASK_EVENT_TYPES.includes(item.eventType)) {
+        countsByCategory.tasks += count;
+      }
+    }
+
     const endCursor = edges.length > 0 ? edges[edges.length - 1].cursor : null;
 
     return {
@@ -357,6 +421,7 @@ export class CaseEventService {
         endCursor,
       },
       totalCount,
+      countsByCategory,
     };
   }
 
@@ -438,9 +503,13 @@ export class CaseEventService {
     let created = 0;
     let skipped = 0;
 
-    // Sync from emails
+    // Sync from emails - only classified emails (not Pending, Uncertain, etc.)
+    // OPS-056: Fixed to filter by classificationState and detect direction/court emails
     const emails = await prisma.email.findMany({
-      where: { caseId },
+      where: {
+        caseId,
+        classificationState: EmailClassificationState.Classified,
+      },
       select: {
         id: true,
         from: true,
@@ -449,13 +518,57 @@ export class CaseEventService {
         receivedDateTime: true,
         sentDateTime: true,
         userId: true,
+        firmId: true,
+        user: {
+          select: {
+            email: true,
+          },
+        },
       },
     });
 
+    // Load court domains for this case's firm (if any emails exist)
+    let courtDomains: string[] = [];
+    if (emails.length > 0) {
+      const courtSources = await prisma.globalEmailSource.findMany({
+        where: {
+          firmId: emails[0].firmId,
+          category: GlobalEmailSourceCategory.Court,
+        },
+        select: {
+          domains: true,
+          emails: true,
+        },
+      });
+      // Flatten all court domains and emails into a single list
+      courtDomains = courtSources
+        .flatMap((s) => [...s.domains, ...s.emails])
+        .map((d) => d.toLowerCase());
+    }
+
     for (const email of emails) {
-      // Determine event type based on direction (simplified - could be enhanced)
       const from = email.from as { name?: string; address?: string } | null;
-      const eventType = CaseEventType.EmailReceived; // TODO: Detect court emails
+      const fromAddress = from?.address?.toLowerCase() || '';
+      const userEmail = email.user?.email?.toLowerCase() || '';
+
+      // Determine event type based on direction and court status
+      let eventType: CaseEventType;
+
+      // Check if from court domain
+      const fromDomain = fromAddress.split('@')[1] || '';
+      const isFromCourt = courtDomains.some(
+        (d) => fromAddress === d || fromDomain === d || fromDomain.endsWith('.' + d)
+      );
+
+      if (isFromCourt) {
+        eventType = CaseEventType.EmailCourt;
+      } else if (fromAddress === userEmail) {
+        // Outbound: sender is the user who owns the email
+        eventType = CaseEventType.EmailSent;
+      } else {
+        // Inbound: sender is someone else
+        eventType = CaseEventType.EmailReceived;
+      }
 
       const exists = await prisma.caseEvent.findUnique({
         where: { eventType_sourceId: { eventType, sourceId: email.id } },
@@ -476,7 +589,10 @@ export class CaseEventService {
           subject: email.subject,
           occurredAt: email.receivedDateTime || email.sentDateTime,
         },
-        undefined,
+        {
+          isCourtEmail: isFromCourt,
+          direction: fromAddress === userEmail ? 'OUTBOUND' : 'INBOUND',
+        },
         email.userId
       );
       created++;

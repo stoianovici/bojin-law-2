@@ -311,7 +311,9 @@ describe('Story 2.11.5: Analytics Page Integration Tests', () => {
 
       // Verify access denied message
       expect(
-        screen.getByText(/Analizele financiare sunt disponibile doar pentru Parteneri și Proprietari/i)
+        screen.getByText(
+          /Analizele financiare sunt disponibile doar pentru Parteneri și Proprietari/i
+        )
       ).toBeInTheDocument();
     });
 

@@ -41,6 +41,12 @@ const GET_CASE_EVENTS = gql`
         endCursor
       }
       totalCount
+      countsByCategory {
+        all
+        documents
+        communications
+        tasks
+      }
     }
   }
 `;
@@ -105,10 +111,22 @@ interface CaseEventPageInfo {
   endCursor?: string;
 }
 
+/**
+ * Server-side counts by tab category (OPS-055)
+ * These are TOTAL counts, not counts of loaded events
+ */
+export interface CaseEventCounts {
+  all: number;
+  documents: number;
+  communications: number;
+  tasks: number;
+}
+
 interface CaseEventConnection {
   edges: CaseEventEdge[];
   pageInfo: CaseEventPageInfo;
   totalCount: number;
+  countsByCategory: CaseEventCounts;
 }
 
 interface GetCaseEventsData {
@@ -158,10 +176,19 @@ export function useCaseEvents(
   const hasMore = data?.caseEvents?.pageInfo?.hasNextPage ?? false;
   const endCursor = data?.caseEvents?.pageInfo?.endCursor;
   const totalCount = data?.caseEvents?.totalCount ?? 0;
+  // OPS-055: Server-side counts for tab badges (not derived from loaded events)
+  const countsByCategory = data?.caseEvents?.countsByCategory ?? {
+    all: 0,
+    documents: 0,
+    communications: 0,
+    tasks: 0,
+  };
 
-  // Auto-sync events on first load if empty
+  // Auto-sync events on first load
+  // OPS-056: Changed to always sync once per component mount (idempotent - skips existing)
+  // This ensures newly classified emails get synced even if documents already synced
   useEffect(() => {
-    if (autoSync && !hasSyncedRef.current && !loading && caseId && totalCount === 0) {
+    if (autoSync && !hasSyncedRef.current && !loading && caseId) {
       hasSyncedRef.current = true;
       syncEvents({ variables: { caseId } })
         .then((result) => {
@@ -174,7 +201,7 @@ export function useCaseEvents(
           console.error('Failed to sync case events:', err);
         });
     }
-  }, [autoSync, caseId, loading, totalCount, syncEvents, refetch]);
+  }, [autoSync, caseId, loading, syncEvents, refetch]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || !endCursor || loading) return;
@@ -212,6 +239,7 @@ export function useCaseEvents(
     loadMore,
     hasMore,
     totalCount,
+    countsByCategory,
     refetch,
     syncing,
   };

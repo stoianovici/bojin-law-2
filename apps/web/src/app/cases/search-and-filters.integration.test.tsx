@@ -323,7 +323,9 @@ describe('Case Search Integration Tests', () => {
 
       // Wait for filtered empty state
       await waitFor(() => {
-        expect(screen.getByText(/nu s-au găsit dosare|niciun dosar nu corespunde/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/nu s-au găsit dosare|niciun dosar nu corespunde/i)
+        ).toBeInTheDocument();
       });
 
       // Verify "Clear Filters" button is present in empty state

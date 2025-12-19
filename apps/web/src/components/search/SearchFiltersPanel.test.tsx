@@ -106,7 +106,9 @@ describe('SearchFiltersPanel', () => {
     it('should show descriptions for search modes', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Cele mai bune rezultate folosind AI + cuvinte cheie')).toBeInTheDocument();
+      expect(
+        screen.getByText('Cele mai bune rezultate folosind AI + cuvinte cheie')
+      ).toBeInTheDocument();
       expect(screen.getByText('Potrivire exactă a cuvintelor cheie')).toBeInTheDocument();
       expect(screen.getByText('Găsește conținut similar')).toBeInTheDocument();
     });

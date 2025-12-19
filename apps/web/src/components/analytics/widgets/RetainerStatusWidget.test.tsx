@@ -157,7 +157,9 @@ describe('RetainerStatusWidget', () => {
       render(<RetainerStatusWidget retainerUtilizationAverage={115} retainerCasesCount={5} />);
 
       expect(screen.getByText('Ore de abonament depășite')).toBeInTheDocument();
-      expect(screen.getByText(/Unele contracte de abonament sunt supra-utilizate/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Unele contracte de abonament sunt supra-utilizate/)
+      ).toBeInTheDocument();
     });
 
     it('does not show warning when utilization is under 100%', () => {

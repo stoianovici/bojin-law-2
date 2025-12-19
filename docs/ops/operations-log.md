@@ -61,6 +61,9 @@
 | OPS-052 | Collapsible TimeSection Component                 | Feature     | P2-Medium   | Implementing | [issues/ops-052.md](issues/ops-052.md)   |
 | OPS-053 | Chronology Tab Bar & Event Filtering              | Feature     | P2-Medium   | Implemented  | [issues/ops-053.md](issues/ops-053.md)   |
 | OPS-054 | CaseChronology Integration                        | Feature     | P2-Medium   | Implemented  | [issues/ops-054.md](issues/ops-054.md)   |
+| OPS-055 | Chronology Tab Counts - Server-Side Totals        | Bug         | P1-High     | Fixing       | [issues/ops-055.md](issues/ops-055.md)   |
+| OPS-056 | Email Events Not Syncing to Chronology            | Bug         | P0-Critical | Fixing       | [issues/ops-056.md](issues/ops-056.md)   |
+| OPS-057 | Chronology Time Sections - Show All Periods       | UX          | P3-Low      | Verifying    | [issues/ops-057.md](issues/ops-057.md)   |
 
 ---
 
@@ -135,6 +138,38 @@ THEN:
 | OPS-052 | TimeSection Component      | Collapsible section with count badge     | Parallel |
 | OPS-053 | Tab Bar & Event Filtering  | Tab UI, event type mappings, filter func | Parallel |
 | OPS-054 | CaseChronology Integration | Refactor component to use 051-053        | After    |
+
+---
+
+### [OPS-055 → OPS-057] Chronology Bug Fixes
+
+**Status:** Open | **Priority:** P0-P3 | **Type:** Bug/UX | **Created:** 2025-12-19
+
+Bugs discovered during chronology verification. Three separate issues by workload:
+
+**Priority Order:**
+
+```
+1. OPS-056: Email Events Not Syncing (P0-Critical)
+   └── Root cause: sync queries Email.caseId which doesn't exist
+   └── Emails linked via EmailClassification, not direct FK
+
+2. OPS-055: Tab Counts Server-Side (P1-High)
+   └── Root cause: counts from loaded events, not total
+   └── Need GraphQL countsByType field
+
+3. OPS-057: Time Sections UX (P3-Low)
+   └── Root cause: only non-empty sections shown
+   └── UX improvement, not functional bug
+```
+
+| Issue   | Title                            | Root Cause                                   | Priority    |
+| ------- | -------------------------------- | -------------------------------------------- | ----------- |
+| OPS-055 | Tab Counts - Server-Side Totals  | `countEventsByTab(events)` uses loaded array | P1-High     |
+| OPS-056 | Email Events Not Syncing         | Sync queries `Email.caseId` (empty)          | P0-Critical |
+| OPS-057 | Time Sections - Show All Periods | `groupEventsByTimePeriod` hides empty        | P3-Low      |
+
+**Recommended Fix Order:** OPS-056 → OPS-055 → OPS-057
 
 ---
 
