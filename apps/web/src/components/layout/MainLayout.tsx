@@ -8,11 +8,9 @@
 import React, { type ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
-import { CommandPalette } from './CommandPalette';
+import { CommandMenu } from '../command/CommandMenu';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { UserProvider, useUser } from '../../contexts/UserContext';
-import { AIAssistantProvider } from '../../contexts/AIAssistantContext';
-import { QuickActionsBar } from '../case/QuickActionsBar';
 import { useAuth } from '../../lib/hooks/useAuth';
 
 interface MainLayoutContentProps {
@@ -51,11 +49,8 @@ function MainLayoutContent({ children }: MainLayoutContentProps) {
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
 
-      {/* Command Palette Modal */}
-      <CommandPalette />
-
-      {/* Global AI Assistant */}
-      <QuickActionsBar />
+      {/* Command Menu (Cmd+K) */}
+      <CommandMenu />
     </div>
   );
 }
@@ -71,15 +66,12 @@ export interface MainLayoutProps {
  * - Sidebar with collapse/expand
  * - Top bar navigation
  * - Command palette
- * - AI assistant bar
  * - User context provider
  */
 export function MainLayout({ children }: MainLayoutProps) {
   return (
     <UserProvider>
-      <AIAssistantProvider>
-        <MainLayoutContent>{children}</MainLayoutContent>
-      </AIAssistantProvider>
+      <MainLayoutContent>{children}</MainLayoutContent>
     </UserProvider>
   );
 }

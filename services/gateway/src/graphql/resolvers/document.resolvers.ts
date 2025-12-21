@@ -9,9 +9,9 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { CaseEventType, EventImportance } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { oneDriveService } from '../../services/onedrive.service';
+import { r2StorageService } from '../../services/r2-storage.service';
 import { thumbnailService } from '../../services/thumbnail.service';
 import { caseSummaryService } from '../../services/case-summary.service';
 import logger from '../../utils/logger';
@@ -470,6 +470,84 @@ export const documentResolvers = {
       // This could be enhanced to support local storage thumbnails
       return null;
     },
+
+    // Get document preview URL (OPS-087)
+    documentPreviewUrl: async (_: any, args: { documentId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessDocument(args.documentId, user))) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const document = await prisma.document.findUnique({
+        where: { id: args.documentId },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // File types that can be previewed directly in browser (PDFs and images)
+      const browserPreviewableTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+      ];
+
+      // Try OneDrive preview first (supports Office docs + PDFs + images)
+      if (document.oneDriveId) {
+        const accessToken = context.accessToken;
+        if (!accessToken) {
+          throw new GraphQLError('Access token required for preview generation', {
+            extensions: { code: 'UNAUTHENTICATED' },
+          });
+        }
+
+        const previewInfo = await oneDriveService.getPreviewUrl(
+          accessToken,
+          document.oneDriveId,
+          document.fileType
+        );
+
+        if (previewInfo) {
+          return {
+            url: previewInfo.url,
+            source: previewInfo.source,
+            expiresAt: previewInfo.expiresAt,
+          };
+        }
+      }
+
+      // Fallback to R2 presigned URL for browser-previewable types (PDF, images)
+      if (browserPreviewableTypes.includes(document.fileType) && document.storagePath) {
+        const presignedUrl = await r2StorageService.getPresignedUrl(document.storagePath);
+        if (presignedUrl) {
+          logger.debug('Using R2 presigned URL for document preview', {
+            documentId: args.documentId,
+            fileType: document.fileType,
+          });
+          return {
+            url: presignedUrl.url,
+            source: 'r2',
+            expiresAt: presignedUrl.expiresAt,
+          };
+        }
+      }
+
+      logger.debug('Preview not available for document', {
+        documentId: args.documentId,
+        fileType: document.fileType,
+        hasOneDriveId: !!document.oneDriveId,
+        hasStoragePath: !!document.storagePath,
+      });
+      return null;
+    },
   },
 
   Mutation: {
@@ -546,19 +624,8 @@ export const documentResolvers = {
         return newDocument;
       });
 
-      // OPS-047: Mark summary stale and create event
+      // OPS-047: Mark summary stale
       caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
-      caseSummaryService
-        .createCaseEvent({
-          caseId: args.input.caseId,
-          eventType: CaseEventType.DocumentUploaded,
-          sourceId: document.id,
-          title: `Document încărcat: ${args.input.fileName}`,
-          importance: EventImportance.Medium,
-          occurredAt: new Date(),
-          actorId: user.id,
-        })
-        .catch(() => {});
 
       // Fetch with all relations
       return prisma.document.findUnique({
@@ -672,20 +739,6 @@ export const documentResolvers = {
 
       // OPS-047: Mark summary stale for linked documents
       caseSummaryService.markSummaryStale(caseId).catch(() => {});
-      for (const documentId of newDocIds) {
-        const doc = documents.find((d) => d.id === documentId);
-        caseSummaryService
-          .createCaseEvent({
-            caseId,
-            eventType: CaseEventType.DocumentUploaded,
-            sourceId: documentId,
-            title: `Document legat: ${doc?.fileName || 'Document'}`,
-            importance: EventImportance.Low,
-            occurredAt: new Date(),
-            actorId: user.id,
-          })
-          .catch(() => {});
-      }
 
       // Return linked documents
       return prisma.document.findMany({
@@ -762,11 +815,8 @@ export const documentResolvers = {
         });
       });
 
-      // OPS-047: Mark summary stale and delete event
+      // OPS-047: Mark summary stale
       caseSummaryService.markSummaryStale(args.caseId).catch(() => {});
-      caseSummaryService
-        .deleteCaseEvent(CaseEventType.DocumentUploaded, args.documentId)
-        .catch(() => {});
 
       return true;
     },
@@ -848,16 +898,10 @@ export const documentResolvers = {
         });
       });
 
-      // OPS-047: Mark all affected cases as stale and delete events
+      // OPS-047: Mark all affected cases as stale
       for (const link of document.caseLinks) {
         caseSummaryService.markSummaryStale(link.caseId).catch(() => {});
       }
-      caseSummaryService
-        .deleteCaseEvent(CaseEventType.DocumentUploaded, args.documentId)
-        .catch(() => {});
-      caseSummaryService
-        .deleteCaseEvent(CaseEventType.DocumentDeleted, args.documentId)
-        .catch(() => {});
 
       return true;
     },
@@ -885,17 +929,26 @@ export const documentResolvers = {
         });
       }
 
-      // Get all CaseDocuments for this case
+      // Get all CaseDocuments for this case with oneDriveIds for cleanup
       const caseDocuments = await prisma.caseDocument.findMany({
         where: { caseId: args.caseId },
-        select: { documentId: true },
+        select: {
+          documentId: true,
+          document: {
+            select: { oneDriveId: true },
+          },
+        },
       });
 
       const documentIds = caseDocuments.map((cd) => cd.documentId);
+      const oneDriveIds = caseDocuments
+        .map((cd) => cd.document.oneDriveId)
+        .filter((id): id is string => id !== null);
 
       logger.info('Bulk delete starting', {
         caseId: args.caseId,
         documentCount: documentIds.length,
+        oneDriveCount: oneDriveIds.length,
         userId: user.id,
       });
 
@@ -904,6 +957,7 @@ export const documentResolvers = {
           caseDocumentsDeleted: 0,
           attachmentReferencesCleared: 0,
           documentsDeleted: 0,
+          oneDriveFilesDeleted: 0,
           success: true,
         };
       }
@@ -933,9 +987,27 @@ export const documentResolvers = {
         };
       });
 
+      // Delete files from OneDrive (after DB transaction succeeds)
+      let oneDriveFilesDeleted = 0;
+      if (context.accessToken && oneDriveIds.length > 0) {
+        for (const oneDriveId of oneDriveIds) {
+          try {
+            await oneDriveService.deleteFile(context.accessToken, oneDriveId);
+            oneDriveFilesDeleted++;
+          } catch (deleteError) {
+            logger.warn('Failed to delete file from OneDrive', {
+              oneDriveId,
+              error: deleteError instanceof Error ? deleteError.message : String(deleteError),
+            });
+            // Continue deleting other files even if one fails
+          }
+        }
+      }
+
       logger.info('Bulk delete completed', {
         caseId: args.caseId,
         ...result,
+        oneDriveFilesDeleted,
         userId: user.id,
       });
 
@@ -944,6 +1016,7 @@ export const documentResolvers = {
 
       return {
         ...result,
+        oneDriveFilesDeleted,
         success: true,
       };
     },

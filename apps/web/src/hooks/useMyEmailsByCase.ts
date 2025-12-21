@@ -42,6 +42,9 @@ const EMAIL_THREAD_FRAGMENT = gql`
       id
       subject
       bodyPreview
+      bodyContent
+      bodyContentType
+      bodyContentClean
       from {
         ...EmailAddressFieldsCase
       }
@@ -49,6 +52,21 @@ const EMAIL_THREAD_FRAGMENT = gql`
       sentDateTime
       isRead
       hasAttachments
+      # OPS-062: Multi-case support
+      caseLinks {
+        id
+        caseId
+        confidence
+        matchType
+        linkedAt
+        linkedBy
+        isPrimary
+        case {
+          id
+          title
+          caseNumber
+        }
+      }
     }
   }
 `;
@@ -122,6 +140,24 @@ export interface EmailAddress {
   address: string;
 }
 
+// OPS-062: Multi-case support types
+export interface CaseReference {
+  id: string;
+  title: string;
+  caseNumber: string;
+}
+
+export interface ThreadCaseLink {
+  id: string;
+  caseId: string;
+  confidence: number | null;
+  matchType: string | null;
+  linkedAt: string;
+  linkedBy: string;
+  isPrimary: boolean;
+  case: CaseReference;
+}
+
 export interface ThreadPreview {
   id: string;
   conversationId: string;
@@ -131,6 +167,10 @@ export interface ThreadPreview {
   hasUnread: boolean;
   hasAttachments: boolean;
   latestFrom?: EmailAddress;
+  // OPS-062: Aggregated case links from all emails in thread
+  allCaseLinks?: ThreadCaseLink[];
+  // Count of unique cases this thread's emails are linked to
+  linkedCasesCount?: number;
 }
 
 export interface CaseWithThreads {
@@ -212,17 +252,70 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
         id: string;
         subject: string;
         bodyPreview: string;
+        bodyContent?: string;
+        bodyContentType?: string;
+        bodyContentClean?: string;
         from: EmailAddress;
         receivedDateTime: string;
         sentDateTime: string;
         isRead: boolean;
         hasAttachments: boolean;
+        // OPS-062: Multi-case support
+        caseLinks?: Array<{
+          id: string;
+          caseId: string;
+          confidence: number | null;
+          matchType: string | null;
+          linkedAt: string;
+          linkedBy: string;
+          isPrimary: boolean;
+          case: { id: string; title: string; caseNumber: string };
+        }>;
       }>;
     }>;
   }>(GET_EMAIL_THREADS_BY_CASE, {
     variables: { limit, offset: 0 },
     fetchPolicy: 'cache-and-network',
   });
+
+  // Helper function to aggregate case links from all emails in a thread
+  const aggregateCaseLinks = (
+    emails: Array<{
+      caseLinks?: Array<{
+        id: string;
+        caseId: string;
+        confidence: number | null;
+        matchType: string | null;
+        linkedAt: string;
+        linkedBy: string;
+        isPrimary: boolean;
+        case: { id: string; title: string; caseNumber: string };
+      }>;
+    }>
+  ): { allCaseLinks: ThreadCaseLink[]; linkedCasesCount: number } => {
+    const caseLinksMap = new Map<string, ThreadCaseLink>();
+
+    for (const email of emails) {
+      for (const link of email.caseLinks || []) {
+        // Use caseId as key to dedupe across emails in thread
+        if (!caseLinksMap.has(link.caseId)) {
+          caseLinksMap.set(link.caseId, link);
+        } else {
+          // If this link is primary and existing one isn't, prefer this one
+          const existing = caseLinksMap.get(link.caseId)!;
+          if (link.isPrimary && !existing.isPrimary) {
+            caseLinksMap.set(link.caseId, link);
+          }
+        }
+      }
+    }
+
+    const allCaseLinks = Array.from(caseLinksMap.values());
+    return {
+      allCaseLinks,
+      linkedCasesCount: allCaseLinks.length,
+    };
+  };
 
   // Fetch unassigned court emails (INSTANȚE)
   const {
@@ -261,6 +354,9 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
     const unassignedThreads: ThreadPreview[] = [];
 
     for (const thread of threads) {
+      // OPS-062: Aggregate case links from all emails in thread
+      const { allCaseLinks, linkedCasesCount } = aggregateCaseLinks(thread.emails);
+
       const threadPreview: ThreadPreview = {
         id: thread.id,
         conversationId: thread.conversationId,
@@ -270,6 +366,9 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
         hasUnread: thread.hasUnread,
         hasAttachments: thread.hasAttachments,
         latestFrom: thread.emails[thread.emails.length - 1]?.from,
+        // OPS-062: Multi-case support
+        allCaseLinks,
+        linkedCasesCount,
       };
 
       if (thread.case) {

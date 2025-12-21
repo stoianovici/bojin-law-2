@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Email Resolvers
  * Story 5.1: Email Integration and Synchronization
@@ -19,9 +19,13 @@ import {
 import { EmailWebhookService, getEmailWebhookService } from '../../services/email-webhook.service';
 import { triggerProcessing } from '../../workers/email-categorization.worker';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
+import { emailCleanerService } from '../../services/email-cleaner.service';
 import { classificationScoringService, CaseScore } from '../../services/classification-scoring';
 import { CaseStatus, EmailClassificationState } from '@prisma/client';
 import Redis from 'ioredis';
+import { oneDriveService } from '../../services/onedrive.service';
+import { r2StorageService } from '../../services/r2-storage.service';
+import logger from '../../utils/logger';
 
 // ============================================================================
 // Types
@@ -517,6 +521,98 @@ export const emailResolvers = {
       };
     },
 
+    /**
+     * Get preview URL for an email attachment (OPS-087)
+     * Returns URL for embedding attachment preview in iframe
+     */
+    attachmentPreviewUrl: async (_: any, args: { attachmentId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Get attachment with its document reference
+      const attachment = await prisma.emailAttachment.findUnique({
+        where: { id: args.attachmentId },
+        include: {
+          email: true,
+          document: true,
+        },
+      });
+
+      if (!attachment) {
+        throw new GraphQLError('Attachment not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify user has access to this attachment (via email ownership)
+      if (attachment.email.userId !== user.id && attachment.email.firmId !== user.firmId) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // File types that can be previewed directly in browser (PDFs and images)
+      const browserPreviewableTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+      ];
+
+      // Try OneDrive preview first via linked document
+      if (attachment.document?.oneDriveId && user.accessToken) {
+        const previewInfo = await oneDriveService.getPreviewUrl(
+          user.accessToken,
+          attachment.document.oneDriveId,
+          attachment.contentType
+        );
+
+        if (previewInfo) {
+          return {
+            url: previewInfo.url,
+            source: previewInfo.source,
+            expiresAt: previewInfo.expiresAt,
+          };
+        }
+      }
+
+      // Fallback to R2 presigned URL if document has storagePath (PDF, images only)
+      if (
+        attachment.document?.storagePath &&
+        browserPreviewableTypes.includes(attachment.contentType)
+      ) {
+        const presignedUrl = await r2StorageService.getPresignedUrl(
+          attachment.document.storagePath
+        );
+        if (presignedUrl) {
+          logger.debug('Using R2 presigned URL for attachment preview', {
+            attachmentId: args.attachmentId,
+            contentType: attachment.contentType,
+          });
+          return {
+            url: presignedUrl.url,
+            source: 'r2',
+            expiresAt: presignedUrl.expiresAt,
+          };
+        }
+      }
+
+      logger.debug('Preview not available for attachment', {
+        attachmentId: args.attachmentId,
+        contentType: attachment.contentType,
+        hasDocument: !!attachment.document,
+        hasOneDriveId: !!attachment.document?.oneDriveId,
+        hasStoragePath: !!attachment.document?.storagePath,
+      });
+      return null;
+    },
+
     // =========================================================================
     // INSTANȚE Queries (OPS-040: Court Email Detection)
     // =========================================================================
@@ -901,6 +997,43 @@ export const emailResolvers = {
       // Update all emails in thread
       await emailThreadService.assignThreadToCase(args.conversationId, args.caseId, user.id);
 
+      // Sync attachments to OneDrive now that emails are assigned to a case
+      // This creates Document records and enables preview functionality
+      if (user.accessToken) {
+        try {
+          const emailsWithAttachments = await prisma.email.findMany({
+            where: {
+              conversationId: args.conversationId,
+              userId: user.id,
+              hasAttachments: true,
+            },
+            select: { id: true },
+          });
+
+          const emailAttachmentService = getEmailAttachmentService(prisma);
+          for (const email of emailsWithAttachments) {
+            try {
+              await emailAttachmentService.syncAllAttachments(email.id, user.accessToken!);
+            } catch (attachmentError) {
+              logger.error('[assignThreadToCase] Failed to sync attachments for email', {
+                emailId: email.id,
+                error:
+                  attachmentError instanceof Error
+                    ? attachmentError.message
+                    : String(attachmentError),
+              });
+              // Continue with other emails even if one fails
+            }
+          }
+        } catch (syncError) {
+          logger.error('[assignThreadToCase] Failed to sync attachments', {
+            conversationId: args.conversationId,
+            error: syncError instanceof Error ? syncError.message : String(syncError),
+          });
+          // Don't fail the assignment if attachment sync fails
+        }
+      }
+
       // Sync all emails in thread to CommunicationEntry for unified timeline (Story 5.5)
       try {
         const threadEmails = await prisma.email.findMany({
@@ -1025,6 +1158,78 @@ export const emailResolvers = {
       const result = await triggerProcessing();
 
       return result.processed;
+    },
+
+    /**
+     * Backfill AI-cleaned content for existing emails (OPS-090)
+     * Processes emails that don't have bodyContentClean yet
+     */
+    backfillEmailCleanContent: async (_: any, args: { limit?: number }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only partners/admins can trigger backfill
+      if (user.role !== 'Partner' && user.role !== 'Admin' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only partners/admins can trigger backfill', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const limit = args.limit || 50;
+      let processed = 0;
+      let errors = 0;
+
+      // Find emails without clean content
+      const emails = await prisma.email.findMany({
+        where: {
+          firmId: user.firmId,
+          bodyContentClean: null,
+          bodyContent: { not: null },
+        },
+        select: {
+          id: true,
+          bodyContent: true,
+          bodyContentType: true,
+        },
+        orderBy: { receivedDateTime: 'desc' },
+        take: limit,
+      });
+
+      // Process each email
+      for (const email of emails) {
+        if (!email.bodyContent || email.bodyContent.length < 100) {
+          continue;
+        }
+
+        try {
+          const result = await emailCleanerService.extractCleanContent(
+            email.bodyContent,
+            email.bodyContentType
+          );
+
+          if (result.success && result.cleanContent) {
+            await prisma.email.update({
+              where: { id: email.id },
+              data: { bodyContentClean: result.cleanContent },
+            });
+            processed++;
+          }
+        } catch (error) {
+          console.error(`[backfillEmailCleanContent] Failed to clean email ${email.id}:`, error);
+          errors++;
+        }
+
+        // Small delay to avoid overwhelming the API
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      console.log(`[backfillEmailCleanContent] Processed ${processed} emails, ${errors} errors`);
+      return processed;
     },
 
     /**
@@ -1878,6 +2083,250 @@ export const emailResolvers = {
         wasIgnored: false,
       };
     },
+
+    // =========================================================================
+    // Multi-Case Email Mutations (OPS-060)
+    // =========================================================================
+
+    /**
+     * Link an email to an additional case
+     * Creates a new EmailCaseLink for the email-case pair
+     */
+    linkEmailToCase: async (
+      _: any,
+      args: { emailId: string; caseId: string; isPrimary?: boolean },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify email exists and user has access
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify case exists and user has access
+      const caseAccess = await prisma.caseTeam.findFirst({
+        where: { caseId: args.caseId, userId: user.id },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Check if link already exists
+      const existingLink = await prisma.emailCaseLink.findUnique({
+        where: {
+          emailId_caseId: {
+            emailId: args.emailId,
+            caseId: args.caseId,
+          },
+        },
+      });
+
+      if (existingLink) {
+        throw new GraphQLError('Email is already linked to this case', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      // If setting as primary, unset any existing primary links
+      if (args.isPrimary) {
+        await prisma.emailCaseLink.updateMany({
+          where: { emailId: args.emailId, isPrimary: true },
+          data: { isPrimary: false },
+        });
+      }
+
+      // Create the new link
+      const newLink = await prisma.emailCaseLink.create({
+        data: {
+          emailId: args.emailId,
+          caseId: args.caseId,
+          linkedBy: user.id,
+          isPrimary: args.isPrimary ?? false,
+          matchType: 'Manual', // Manual link
+          confidence: 1.0, // User-assigned = 100% confidence
+        },
+        include: {
+          email: true,
+          case: true,
+        },
+      });
+
+      // Update email classification state if it was pending/uncertain
+      if (
+        email.classificationState === EmailClassificationState.Pending ||
+        email.classificationState === EmailClassificationState.Uncertain
+      ) {
+        await prisma.email.update({
+          where: { id: args.emailId },
+          data: {
+            classificationState: EmailClassificationState.Classified,
+            classifiedAt: new Date(),
+            classifiedBy: user.id,
+          },
+        });
+      }
+
+      // Log the classification action
+      await prisma.emailClassificationLog.create({
+        data: {
+          firmId: user.firmId,
+          emailId: args.emailId,
+          action: 'MANUAL_LINK',
+          previousState: email.classificationState,
+          newState: EmailClassificationState.Classified,
+          caseId: args.caseId,
+          userId: user.id,
+          reason: `Manually linked to case via multi-case support`,
+        },
+      });
+
+      // Sync to timeline
+      try {
+        await unifiedTimelineService.syncEmailToCommunicationEntry(args.emailId);
+      } catch (syncError) {
+        console.error('[linkEmailToCase] Failed to sync to timeline:', syncError);
+      }
+
+      return newLink;
+    },
+
+    /**
+     * Remove an email from a case
+     * Deletes the EmailCaseLink for the email-case pair
+     */
+    unlinkEmailFromCase: async (
+      _: any,
+      args: { emailId: string; caseId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify email exists and user has access
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify case access
+      const caseAccess = await prisma.caseTeam.findFirst({
+        where: { caseId: args.caseId, userId: user.id },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Check if link exists
+      const existingLink = await prisma.emailCaseLink.findUnique({
+        where: {
+          emailId_caseId: {
+            emailId: args.emailId,
+            caseId: args.caseId,
+          },
+        },
+      });
+
+      if (!existingLink) {
+        throw new GraphQLError('Email is not linked to this case', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Delete the link
+      await prisma.emailCaseLink.delete({
+        where: {
+          emailId_caseId: {
+            emailId: args.emailId,
+            caseId: args.caseId,
+          },
+        },
+      });
+
+      // If this was the primary link, promote another link to primary if exists
+      if (existingLink.isPrimary) {
+        const nextLink = await prisma.emailCaseLink.findFirst({
+          where: { emailId: args.emailId },
+          orderBy: { linkedAt: 'asc' },
+        });
+        if (nextLink) {
+          await prisma.emailCaseLink.update({
+            where: { id: nextLink.id },
+            data: { isPrimary: true },
+          });
+        }
+      }
+
+      // Check if email still has any links - if not, update classification state
+      const remainingLinks = await prisma.emailCaseLink.count({
+        where: { emailId: args.emailId },
+      });
+
+      if (remainingLinks === 0 && !email.caseId) {
+        // No more links and no legacy caseId - mark as Pending
+        await prisma.email.update({
+          where: { id: args.emailId },
+          data: {
+            classificationState: EmailClassificationState.Pending,
+            classifiedAt: null,
+            classifiedBy: null,
+          },
+        });
+      }
+
+      // Log the action
+      await prisma.emailClassificationLog.create({
+        data: {
+          firmId: user.firmId,
+          emailId: args.emailId,
+          action: 'MANUAL_UNLINK',
+          previousState: email.classificationState,
+          newState:
+            remainingLinks === 0 && !email.caseId
+              ? EmailClassificationState.Pending
+              : email.classificationState,
+          caseId: args.caseId,
+          userId: user.id,
+          reason: `Manually unlinked from case via multi-case support`,
+        },
+      });
+
+      return true;
+    },
   },
 
   Subscription: {
@@ -1903,11 +2352,89 @@ export const emailResolvers = {
     classificationConfidence: (parent: any) => parent.classificationConfidence || null,
     classifiedAt: (parent: any) => parent.classifiedAt || null,
     classifiedBy: (parent: any) => parent.classifiedBy || null,
+
+    // =========================================================================
+    // Multi-Case Support (OPS-060)
+    // =========================================================================
+
+    /**
+     * Get all case links for this email with classification metadata
+     */
+    caseLinks: async (parent: any) => {
+      if (parent.caseLinks) return parent.caseLinks;
+      return await prisma.emailCaseLink.findMany({
+        where: { emailId: parent.id },
+        include: { case: true },
+        orderBy: [{ isPrimary: 'desc' }, { linkedAt: 'asc' }],
+      });
+    },
+
+    /**
+     * Get all cases this email is linked to (convenience field)
+     */
+    cases: async (parent: any) => {
+      const links = await prisma.emailCaseLink.findMany({
+        where: { emailId: parent.id },
+        include: { case: true },
+        orderBy: [{ isPrimary: 'desc' }, { linkedAt: 'asc' }],
+      });
+      return links.map((l) => l.case);
+    },
+
+    /**
+     * Get the primary case for this email (first/original assignment)
+     */
+    primaryCase: async (parent: any) => {
+      // First check caseLinks for primary
+      const primaryLink = await prisma.emailCaseLink.findFirst({
+        where: { emailId: parent.id, isPrimary: true },
+        include: { case: true },
+      });
+      if (primaryLink) return primaryLink.case;
+
+      // Fallback: get any link (first by linkedAt)
+      const anyLink = await prisma.emailCaseLink.findFirst({
+        where: { emailId: parent.id },
+        include: { case: true },
+        orderBy: { linkedAt: 'asc' },
+      });
+      if (anyLink) return anyLink.case;
+
+      // Legacy fallback: check direct caseId (during migration)
+      if (parent.caseId) {
+        if (parent.case) return parent.case;
+        return await prisma.case.findUnique({ where: { id: parent.caseId } });
+      }
+
+      return null;
+    },
+
+    /**
+     * @deprecated Use primaryCase instead. Kept for backwards compatibility.
+     * Returns the primary case or falls back to legacy caseId
+     */
     case: async (parent: any) => {
+      // Try caseLinks first (new model)
+      const primaryLink = await prisma.emailCaseLink.findFirst({
+        where: { emailId: parent.id, isPrimary: true },
+        include: { case: true },
+      });
+      if (primaryLink) return primaryLink.case;
+
+      // Fallback to any link
+      const anyLink = await prisma.emailCaseLink.findFirst({
+        where: { emailId: parent.id },
+        include: { case: true },
+        orderBy: { linkedAt: 'asc' },
+      });
+      if (anyLink) return anyLink.case;
+
+      // Legacy fallback: direct caseId (during migration period)
       if (!parent.caseId) return null;
       if (parent.case) return parent.case;
       return await prisma.case.findUnique({ where: { id: parent.caseId } });
     },
+
     attachments: async (parent: any) => {
       if (parent.attachments) return parent.attachments;
       return await prisma.emailAttachment.findMany({
@@ -1919,6 +2446,20 @@ export const emailResolvers = {
       const threadService = getEmailThreadService(prisma);
       return await threadService.getThread(parent.conversationId, context.user.id);
     },
+  },
+
+  // EmailCaseLink type resolvers (OPS-060)
+  EmailCaseLink: {
+    email: async (parent: any) => {
+      if (parent.email) return parent.email;
+      return await prisma.email.findUnique({ where: { id: parent.emailId } });
+    },
+    case: async (parent: any) => {
+      if (parent.case) return parent.case;
+      return await prisma.case.findUnique({ where: { id: parent.caseId } });
+    },
+    // Map Prisma enum to GraphQL enum (same values, just for explicit mapping)
+    matchType: (parent: any) => parent.matchType || null,
   },
 
   EmailThread: {

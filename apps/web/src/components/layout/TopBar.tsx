@@ -1,22 +1,20 @@
 /**
  * TopBar Component
- * Top navigation bar with global search, notifications, and user menu
- * Includes keyboard shortcut (Cmd+K / Ctrl+K) for search
- * Enhanced with role switcher for demo mode
- * Story 2.10: Added GlobalSearchBar for AI-powered search
+ * Top navigation bar with search button, notifications, and user menu
+ * Search button opens CommandMenu (Cmd+K / Ctrl+K)
  */
 
 'use client';
 
-import React, { useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import React from 'react';
+import { usePathname } from 'next/navigation';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useNavigationStore } from '../../stores/navigation.store';
 import { NotificationCenter } from './NotificationCenter';
 import { useCurrentTimeDisplay } from '../../lib/hooks/useTimeSimulation';
-import { GlobalSearchBar, type GlobalSearchBarRef } from '../search/GlobalSearchBar';
 import Link from 'next/link';
+import { Search } from 'lucide-react';
 
 export interface TopBarProps {
   /**
@@ -73,11 +71,9 @@ export function TopBar({
   onLogout,
   onProfile,
 }: TopBarProps) {
-  const { toggleSidebar, currentRole } = useNavigationStore();
+  const { toggleSidebar, currentRole, openCommandPalette } = useNavigationStore();
   const { currentTimeDisplay } = useCurrentTimeDisplay();
   const pathname = usePathname();
-  const router = useRouter();
-  const searchBarRef = useRef<GlobalSearchBarRef>(null);
 
   // Get page title based on current route and role
   const getPageTitle = () => {
@@ -145,20 +141,34 @@ export function TopBar({
         <h1 className="text-xl font-semibold text-gray-900 hidden sm:block">{getPageTitle()}</h1>
       </div>
 
-      {/* Center section: Global Search Bar */}
+      {/* Center section: Search Button (opens Command Menu) */}
       <div className="hidden md:flex flex-1 justify-center max-w-xl mx-4">
-        <GlobalSearchBar
-          ref={searchBarRef}
-          className="w-full"
-          placeholder="Search cases, documents, clients, tasks... (⌘K)"
-        />
+        <button
+          onClick={openCommandPalette}
+          className="
+            w-full flex items-center gap-3 px-4 py-2
+            text-sm text-gray-500
+            bg-gray-100 hover:bg-gray-200
+            border border-gray-200
+            rounded-lg
+            transition-colors
+            cursor-pointer
+          "
+          aria-label="Open search"
+        >
+          <Search className="w-4 h-4" />
+          <span className="flex-1 text-left">Caută dosare, documente, clienți...</span>
+          <kbd className="hidden lg:inline-flex px-2 py-0.5 text-xs font-medium bg-white border border-gray-300 rounded">
+            ⌘K
+          </kbd>
+        </button>
       </div>
 
       {/* Right section: Notifications, User menu */}
       <div className="flex items-center gap-2">
-        {/* Mobile search button - navigates to search page */}
+        {/* Mobile search button - opens command palette */}
         <button
-          onClick={() => router.push('/search')}
+          onClick={openCommandPalette}
           className="
             md:hidden
             p-2 rounded-lg
@@ -168,20 +178,7 @@ export function TopBar({
           "
           aria-label="Open search"
         >
-          <svg
-            className="w-5 h-5 text-gray-700"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+          <Search className="w-5 h-5 text-gray-700" />
         </button>
 
         {/* Current time indicator */}

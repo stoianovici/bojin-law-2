@@ -31,6 +31,27 @@ interface CaseReference {
   caseNumber: string;
 }
 
+// OPS-062: Multi-case email support types
+type ClassificationMatchType =
+  | 'Actor'
+  | 'ReferenceNumber'
+  | 'Keyword'
+  | 'Semantic'
+  | 'GlobalSource'
+  | 'Manual'
+  | 'ThreadContinuity';
+
+interface EmailCaseLink {
+  id: string;
+  caseId: string;
+  confidence: number | null;
+  matchType: ClassificationMatchType | null;
+  linkedAt: string;
+  linkedBy: string;
+  isPrimary: boolean;
+  case: CaseReference;
+}
+
 interface Email {
   id: string;
   graphMessageId: string;
@@ -39,6 +60,7 @@ interface Email {
   bodyPreview: string;
   bodyContent: string;
   bodyContentType: string;
+  bodyContentClean?: string; // OPS-090: AI-cleaned content
   from: EmailAddress;
   toRecipients: EmailAddress[];
   ccRecipients: EmailAddress[];
@@ -48,6 +70,10 @@ interface Email {
   importance: string;
   isRead: boolean;
   case?: CaseReference;
+  // OPS-062: Multi-case support
+  caseLinks?: EmailCaseLink[];
+  cases?: CaseReference[];
+  primaryCase?: CaseReference;
   attachments: EmailAttachment[];
 }
 
@@ -183,6 +209,15 @@ interface BulkDeleteCaseEmailsData {
   };
 }
 
+// OPS-062: Multi-Case Email Mutation Data Types
+interface LinkEmailToCaseData {
+  linkEmailToCase: EmailCaseLink;
+}
+
+interface UnlinkEmailFromCaseData {
+  unlinkEmailFromCase: boolean;
+}
+
 // Subscription Data Types
 interface EmailReceivedSubscriptionData {
   emailReceived: Email;
@@ -217,6 +252,7 @@ const EMAIL_FRAGMENT = gql`
     bodyPreview
     bodyContent
     bodyContentType
+    bodyContentClean
     from {
       ...EmailAddressFields
     }
@@ -232,6 +268,26 @@ const EMAIL_FRAGMENT = gql`
     importance
     isRead
     case {
+      id
+      title
+      caseNumber
+    }
+    # OPS-062: Multi-case support
+    caseLinks {
+      id
+      caseId
+      confidence
+      matchType
+      linkedAt
+      linkedBy
+      isPrimary
+      case {
+        id
+        title
+        caseNumber
+      }
+    }
+    primaryCase {
       id
       title
       caseNumber
@@ -456,6 +512,35 @@ const BULK_DELETE_CASE_EMAILS = gql`
       attachmentsDeleted
       success
     }
+  }
+`;
+
+// ============================================================================
+// OPS-062: Multi-Case Email Link/Unlink Mutations
+// ============================================================================
+
+const LINK_EMAIL_TO_CASE = gql`
+  mutation LinkEmailToCase($emailId: ID!, $caseId: ID!, $isPrimary: Boolean) {
+    linkEmailToCase(emailId: $emailId, caseId: $caseId, isPrimary: $isPrimary) {
+      id
+      caseId
+      confidence
+      matchType
+      linkedAt
+      linkedBy
+      isPrimary
+      case {
+        id
+        title
+        caseNumber
+      }
+    }
+  }
+`;
+
+const UNLINK_EMAIL_FROM_CASE = gql`
+  mutation UnlinkEmailFromCase($emailId: ID!, $caseId: ID!) {
+    unlinkEmailFromCase(emailId: $emailId, caseId: $caseId)
   }
 `;
 
@@ -826,3 +911,57 @@ export function useBulkDeleteCaseEmails() {
     error,
   };
 }
+
+/**
+ * Hook for linking/unlinking emails to/from cases (OPS-062: Multi-Case Support)
+ * Allows emails to be associated with multiple cases
+ */
+export function useEmailCaseLinks() {
+  const [linkMutation, { loading: linking, error: linkError }] = useMutation<LinkEmailToCaseData>(
+    LINK_EMAIL_TO_CASE,
+    {
+      refetchQueries: [{ query: GET_EMAIL_THREADS }],
+    }
+  );
+
+  const [unlinkMutation, { loading: unlinking, error: unlinkError }] =
+    useMutation<UnlinkEmailFromCaseData>(UNLINK_EMAIL_FROM_CASE, {
+      refetchQueries: [{ query: GET_EMAIL_THREADS }],
+    });
+
+  return {
+    /**
+     * Link an email to an additional case
+     * @param emailId - The email to link
+     * @param caseId - The case to link to
+     * @param isPrimary - Whether to set this as the primary case (default: false)
+     */
+    linkEmailToCase: async (emailId: string, caseId: string, isPrimary = false) => {
+      const result = await linkMutation({
+        variables: { emailId, caseId, isPrimary },
+      });
+      return result.data?.linkEmailToCase;
+    },
+
+    /**
+     * Unlink an email from a case
+     * @param emailId - The email to unlink
+     * @param caseId - The case to unlink from
+     * @returns true if successful
+     */
+    unlinkEmailFromCase: async (emailId: string, caseId: string) => {
+      const result = await unlinkMutation({
+        variables: { emailId, caseId },
+      });
+      return result.data?.unlinkEmailFromCase ?? false;
+    },
+
+    linking,
+    unlinking,
+    loading: linking || unlinking,
+    error: linkError || unlinkError,
+  };
+}
+
+// Re-export types for external use
+export type { EmailCaseLink, ClassificationMatchType };

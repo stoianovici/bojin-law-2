@@ -26,7 +26,12 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { CaseStatus, EmailClassificationState, GlobalEmailSourceCategory } from '@prisma/client';
+import {
+  CaseStatus,
+  ClassificationMatchType,
+  EmailClassificationState,
+  GlobalEmailSourceCategory,
+} from '@prisma/client';
 import logger from '../utils/logger';
 
 // ============================================================================
@@ -56,16 +61,39 @@ export interface CaseScore {
   signals: ClassificationSignal[];
 }
 
+/**
+ * OPS-059: Individual case assignment with confidence and match type
+ * Used when an email is linked to multiple cases
+ */
+export interface CaseAssignment {
+  caseId: string;
+  caseNumber: string;
+  caseTitle: string;
+  confidence: number;
+  matchType: ClassificationMatchType;
+  isPrimary: boolean;
+  signals?: ClassificationSignal[];
+}
+
+/**
+ * Helper type for internal match type before conversion to Prisma enum
+ */
+export type InternalMatchType =
+  | SignalType
+  | 'NO_MATCH'
+  | 'UNKNOWN_CONTACT'
+  | 'COURT_NO_REFERENCE'
+  | 'COURT_MULTIPLE_MATCHES';
+
 export interface ClassificationResult {
+  /** @deprecated Use caseAssignments instead for multi-case support */
   caseId: string | null;
   state: EmailClassificationState;
+  /** @deprecated Use caseAssignments[].confidence instead */
   confidence: number;
-  matchType:
-    | SignalType
-    | 'NO_MATCH'
-    | 'UNKNOWN_CONTACT'
-    | 'COURT_NO_REFERENCE'
-    | 'COURT_MULTIPLE_MATCHES';
+  matchType: InternalMatchType;
+  /** OPS-059: Array of case assignments (for multi-case support) */
+  caseAssignments: CaseAssignment[];
   suggestedCases?: CaseScore[];
   reason?: string;
   /** Reference numbers extracted from email (for court emails) */
@@ -154,18 +182,42 @@ export const REFERENCE_PATTERNS = [
  */
 const RECENT_ACTIVITY_DAYS = 7;
 
+/**
+ * Convert internal signal/match type to Prisma ClassificationMatchType enum
+ */
+function toClassificationMatchType(signalType: SignalType | string): ClassificationMatchType {
+  switch (signalType) {
+    case 'THREAD_CONTINUITY':
+      return ClassificationMatchType.ThreadContinuity;
+    case 'REFERENCE_NUMBER':
+    case 'COURT_REFERENCE':
+      return ClassificationMatchType.ReferenceNumber;
+    case 'KEYWORD_SUBJECT':
+    case 'KEYWORD_BODY':
+      return ClassificationMatchType.Keyword;
+    case 'CONTACT_MATCH':
+      return ClassificationMatchType.Actor;
+    case 'RECENT_ACTIVITY':
+      // Recent activity is supplementary, default to Actor
+      return ClassificationMatchType.Actor;
+    default:
+      return ClassificationMatchType.Actor;
+  }
+}
+
 // ============================================================================
 // Service
 // ============================================================================
 
 export class ClassificationScoringService {
   /**
-   * Classify an email to a case
+   * Classify an email to one or more cases
+   * OPS-059: Now returns multiple case assignments when appropriate
    *
    * @param email - Email to classify
    * @param firmId - Firm ID for scoping
    * @param userId - User ID for scoping
-   * @returns Classification result with case assignment or UNCERTAIN state
+   * @returns Classification result with case assignments
    */
   async classifyEmail(
     email: EmailForClassification,
@@ -188,27 +240,50 @@ export class ClassificationScoringService {
       return this.classifyCourtEmail(email, firmId, institutionCheck.category);
     }
 
-    // Step 1: Check thread continuity (deterministic)
+    // OPS-059: Collect ALL case assignments instead of returning on first match
+    const caseAssignments: CaseAssignment[] = [];
+    let threadCaseId: string | null = null;
+
+    // Step 1: Check thread continuity - add to assignments but DON'T return early
     const threadMatch = await this.checkThreadContinuity(email.conversationId, firmId);
     if (threadMatch) {
-      logger.info('[ClassificationScoring.classifyEmail] Thread continuity match', {
+      logger.info('[ClassificationScoring.classifyEmail] Thread continuity match found', {
         emailId: email.id,
         caseId: threadMatch.caseId,
       });
-      return {
-        caseId: threadMatch.caseId,
-        state: EmailClassificationState.Classified,
-        confidence: 1.0,
-        matchType: 'THREAD_CONTINUITY',
-      };
+      threadCaseId = threadMatch.caseId;
+
+      // Get case details for the thread match
+      const threadCase = await prisma.case.findUnique({
+        where: { id: threadMatch.caseId },
+        select: { id: true, caseNumber: true, title: true },
+      });
+
+      if (threadCase) {
+        caseAssignments.push({
+          caseId: threadCase.id,
+          caseNumber: threadCase.caseNumber,
+          caseTitle: threadCase.title,
+          confidence: 1.0,
+          matchType: ClassificationMatchType.ThreadContinuity,
+          isPrimary: true, // Thread continuity is always primary
+          signals: [
+            {
+              type: 'THREAD_CONTINUITY',
+              weight: WEIGHTS.THREAD_CONTINUITY,
+              matched: email.conversationId,
+            },
+          ],
+        });
+      }
     }
 
-    // Step 2: Find cases for the sender contact
+    // Step 2: Find ALL cases for the sender contact
     const senderEmail = email.from.address.toLowerCase();
     const candidateCases = await this.findCasesForContact(senderEmail, firmId, userId);
 
-    if (candidateCases.length === 0) {
-      logger.info('[ClassificationScoring.classifyEmail] Unknown contact', {
+    if (candidateCases.length === 0 && caseAssignments.length === 0) {
+      logger.info('[ClassificationScoring.classifyEmail] Unknown contact, no assignments', {
         emailId: email.id,
         senderEmail,
       });
@@ -217,31 +292,87 @@ export class ClassificationScoringService {
         state: EmailClassificationState.Uncertain,
         confidence: 0,
         matchType: 'UNKNOWN_CONTACT',
+        caseAssignments: [],
         reason: 'Sender not associated with any case',
       };
     }
 
-    // Step 3: Single case contact - auto-assign
-    if (candidateCases.length === 1) {
-      logger.info('[ClassificationScoring.classifyEmail] Single case contact', {
+    // Step 3: Score ALL candidate cases and add qualifying ones
+    for (const caseCtx of candidateCases) {
+      // Skip if already added via thread continuity
+      if (caseCtx.id === threadCaseId) {
+        continue;
+      }
+
+      const caseScore = this.scoreCase(email, caseCtx);
+
+      // OPS-059: Add ALL cases that meet the minimum score threshold
+      // This allows emails to be linked to multiple cases when contact appears in multiple
+      if (caseScore.score >= THRESHOLDS.MIN_SCORE || candidateCases.length === 1) {
+        const confidence =
+          candidateCases.length === 1
+            ? THRESHOLDS.SINGLE_CASE_CONFIDENCE
+            : Math.min(caseScore.score / 100, 1.0);
+
+        caseAssignments.push({
+          caseId: caseScore.caseId,
+          caseNumber: caseScore.caseNumber,
+          caseTitle: caseScore.caseTitle,
+          confidence,
+          matchType: toClassificationMatchType(caseScore.signals[0]?.type || 'CONTACT_MATCH'),
+          isPrimary: caseAssignments.length === 0, // First added is primary if no thread match
+          signals: caseScore.signals,
+        });
+
+        logger.info('[ClassificationScoring.classifyEmail] Case added to assignments', {
+          emailId: email.id,
+          caseId: caseScore.caseId,
+          score: caseScore.score,
+          confidence,
+          isPrimary: caseAssignments.length === 1,
+        });
+      }
+    }
+
+    // Step 4: Determine final classification state
+    if (caseAssignments.length === 0) {
+      // No qualifying cases - suggest top candidates for review
+      const scores = candidateCases.map((c) => this.scoreCase(email, c));
+      scores.sort((a, b) => b.score - a.score);
+
+      logger.info('[ClassificationScoring.classifyEmail] No qualifying cases, uncertain', {
         emailId: email.id,
-        caseId: candidateCases[0].id,
+        topScore: scores[0]?.score,
       });
+
       return {
-        caseId: candidateCases[0].id,
-        state: EmailClassificationState.Classified,
-        confidence: THRESHOLDS.SINGLE_CASE_CONFIDENCE,
-        matchType: 'CONTACT_MATCH',
+        caseId: null,
+        state: EmailClassificationState.Uncertain,
+        confidence: scores[0] ? scores[0].score / 100 : 0,
+        matchType: 'NO_MATCH',
+        caseAssignments: [],
+        suggestedCases: scores.slice(0, 3),
+        reason: 'No case met classification threshold',
       };
     }
 
-    // Step 4: Multi-case scoring
-    logger.info('[ClassificationScoring.classifyEmail] Multi-case scoring', {
+    // Determine primary case for backward compatibility
+    const primaryAssignment = caseAssignments.find((a) => a.isPrimary) || caseAssignments[0];
+
+    logger.info('[ClassificationScoring.classifyEmail] Classification complete', {
       emailId: email.id,
-      candidateCount: candidateCases.length,
+      assignmentCount: caseAssignments.length,
+      primaryCaseId: primaryAssignment.caseId,
+      caseIds: caseAssignments.map((a) => a.caseId),
     });
 
-    return this.scoreAndClassify(email, candidateCases);
+    return {
+      caseId: primaryAssignment.caseId,
+      state: EmailClassificationState.Classified,
+      confidence: primaryAssignment.confidence,
+      matchType: primaryAssignment.signals?.[0]?.type || 'CONTACT_MATCH',
+      caseAssignments,
+    };
   }
 
   // ============================================================================
@@ -312,6 +443,7 @@ export class ClassificationScoringService {
         state: EmailClassificationState.CourtUnassigned,
         confidence: 0,
         matchType: 'COURT_NO_REFERENCE',
+        caseAssignments: [],
         reason: 'No reference number found in email',
         isFromInstitution: true,
         institutionCategory,
@@ -346,12 +478,35 @@ export class ClassificationScoringService {
         state: EmailClassificationState.CourtUnassigned,
         confidence: 0,
         matchType: 'COURT_NO_REFERENCE',
+        caseAssignments: [],
         reason: 'No case found with matching reference number',
         isFromInstitution: true,
         institutionCategory,
         extractedReferences,
       };
     }
+
+    // OPS-059: Court emails can also match multiple cases - assign to all matching
+    const courtAssignments: CaseAssignment[] = matchingCases.map((c, index) => ({
+      caseId: c.id,
+      caseNumber: c.caseNumber,
+      caseTitle: c.title,
+      confidence: 1.0,
+      matchType: ClassificationMatchType.ReferenceNumber,
+      isPrimary: index === 0,
+      signals: [
+        {
+          type: 'COURT_REFERENCE' as SignalType,
+          weight: WEIGHTS.REFERENCE_NUMBER,
+          matched:
+            c.referenceNumbers.find((r) =>
+              extractedReferences.some(
+                (e) => this.normalizeReference(r) === this.normalizeReference(e)
+              )
+            ) || c.referenceNumbers[0],
+        },
+      ],
+    }));
 
     if (matchingCases.length === 1) {
       // Single match - auto-assign with high confidence
@@ -360,20 +515,21 @@ export class ClassificationScoringService {
         state: EmailClassificationState.Classified,
         confidence: 1.0,
         matchType: 'COURT_REFERENCE',
+        caseAssignments: courtAssignments,
         isFromInstitution: true,
         institutionCategory,
         extractedReferences,
       };
     }
 
-    // Multiple matches - should be rare, but handle it
-    // Goes to INSTANȚE folder with suggestions
+    // Multiple matches - assign to all matching cases
+    // OPS-059: Now assigns to all instead of going to INSTANȚE
     return {
-      caseId: null,
-      state: EmailClassificationState.CourtUnassigned,
-      confidence: 0.5,
-      matchType: 'COURT_MULTIPLE_MATCHES',
-      reason: 'Multiple cases match the reference number',
+      caseId: courtAssignments[0].caseId,
+      state: EmailClassificationState.Classified,
+      confidence: 1.0,
+      matchType: 'COURT_REFERENCE',
+      caseAssignments: courtAssignments,
       isFromInstitution: true,
       institutionCategory,
       extractedReferences,
@@ -480,6 +636,7 @@ export class ClassificationScoringService {
 
   /**
    * Score each candidate case and make classification decision
+   * @deprecated OPS-059: Replaced by inline logic in classifyEmail that returns multiple assignments
    */
   private scoreAndClassify(
     email: EmailForClassification,
@@ -509,6 +666,17 @@ export class ClassificationScoringService {
         state: EmailClassificationState.Classified,
         confidence: Math.min(top.score / 100, 1.0),
         matchType: top.signals[0]?.type || 'CONTACT_MATCH',
+        caseAssignments: [
+          {
+            caseId: top.caseId,
+            caseNumber: top.caseNumber,
+            caseTitle: top.caseTitle,
+            confidence: Math.min(top.score / 100, 1.0),
+            matchType: toClassificationMatchType(top.signals[0]?.type || 'CONTACT_MATCH'),
+            isPrimary: true,
+            signals: top.signals,
+          },
+        ],
       };
     }
 
@@ -518,6 +686,7 @@ export class ClassificationScoringService {
       state: EmailClassificationState.Uncertain,
       confidence: top.score / 100,
       matchType: 'NO_MATCH',
+      caseAssignments: [],
       suggestedCases: scores.slice(0, 3),
       reason: gap < THRESHOLDS.MIN_GAP ? 'AMBIGUOUS' : 'LOW_CONFIDENCE',
     };
@@ -713,6 +882,7 @@ export class ClassificationScoringService {
           state: EmailClassificationState.Uncertain,
           confidence: 0,
           matchType: 'NO_MATCH',
+          caseAssignments: [],
           reason: `Classification error: ${error.message}`,
         });
       }

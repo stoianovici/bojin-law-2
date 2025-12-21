@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { CaseEventType, EmailClassificationState, EventImportance } from '@prisma/client';
+import { EmailClassificationState } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { Decimal } from '@prisma/client/runtime/library';
 import { caseSummaryService } from '../../services/case-summary.service';
@@ -826,21 +826,6 @@ export const caseResolvers = {
       // OPS-047: Mark case summary as stale after update
       caseSummaryService.markSummaryStale(args.id).catch(() => {});
 
-      // Create status change event if status changed
-      if (args.input.status && args.input.status !== existingCase.status) {
-        caseSummaryService
-          .createCaseEvent({
-            caseId: args.id,
-            eventType: CaseEventType.CaseStatusChanged,
-            sourceId: `status-${args.id}-${Date.now()}`,
-            title: `Status schimbat: ${existingCase.status} → ${args.input.status}`,
-            importance: EventImportance.High,
-            occurredAt: new Date(),
-            actorId: user.id,
-          })
-          .catch(() => {});
-      }
-
       return updatedCase;
     },
 
@@ -1454,6 +1439,57 @@ export const caseResolvers = {
         include: { user: true },
       });
       return members;
+    },
+
+    // =========================================================================
+    // Multi-Case Email Support (OPS-060)
+    // =========================================================================
+
+    /**
+     * Get all email links for this case with classification metadata
+     */
+    emailLinks: async (parent: any) => {
+      return await prisma.emailCaseLink.findMany({
+        where: { caseId: parent.id },
+        include: { email: true },
+        orderBy: { linkedAt: 'desc' },
+      });
+    },
+
+    /**
+     * Get all emails linked to this case (convenience field)
+     * Fetches via EmailCaseLink junction table, with fallback to legacy Email.caseId
+     */
+    communications: async (parent: any) => {
+      // Get emails via new junction table
+      const links = await prisma.emailCaseLink.findMany({
+        where: { caseId: parent.id },
+        include: { email: true },
+        orderBy: { email: { receivedDateTime: 'desc' } },
+      });
+      const linkedEmails = links.map((l) => l.email);
+
+      // Also get emails via legacy caseId (for migration period)
+      const legacyEmails = await prisma.email.findMany({
+        where: {
+          caseId: parent.id,
+          // Exclude emails already in junction table
+          NOT: {
+            id: { in: linkedEmails.map((e) => e.id) },
+          },
+        },
+        orderBy: { receivedDateTime: 'desc' },
+      });
+
+      // Combine and sort by receivedDateTime
+      const allEmails = [...linkedEmails, ...legacyEmails];
+      allEmails.sort((a, b) => {
+        const dateA = a.receivedDateTime?.getTime() || 0;
+        const dateB = b.receivedDateTime?.getTime() || 0;
+        return dateB - dateA;
+      });
+
+      return allEmails;
     },
 
     // Story 2.8.1: Rate history resolver

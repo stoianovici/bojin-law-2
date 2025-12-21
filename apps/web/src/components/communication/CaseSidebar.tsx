@@ -22,6 +22,7 @@ import {
   Paperclip,
   MoreVertical,
   ArrowRightLeft,
+  Link2,
 } from 'lucide-react';
 import type {
   CaseWithThreads,
@@ -157,6 +158,15 @@ function ThreadItem({
             )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* OPS-062: Multi-case badge */}
+            {(thread.linkedCasesCount ?? 0) > 1 && (
+              <span
+                className="inline-flex items-center gap-0.5 px-1 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded"
+                title={`Email în ${thread.linkedCasesCount} dosare`}
+              >
+                <Link2 className="h-2.5 w-2.5" />+{(thread.linkedCasesCount ?? 0) - 1}
+              </span>
+            )}
             {thread.hasAttachments && <Paperclip className="h-3 w-3 text-gray-400" />}
             {thread.hasUnread && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
           </div>

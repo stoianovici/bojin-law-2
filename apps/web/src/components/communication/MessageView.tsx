@@ -18,11 +18,26 @@ import {
   EyeOff,
   X,
   Users,
+  Eye,
+  FileText,
+  FileCode,
 } from 'lucide-react';
 import { NotifyStakeholdersModal } from './NotifyStakeholdersModal';
+import { DocumentPreviewModal, type PreviewableDocument } from '@/components/preview';
 import { useState, useCallback } from 'react';
 import { gql } from '@apollo/client';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
+
+// GraphQL query for getting attachment preview URL
+const GET_ATTACHMENT_PREVIEW_URL = gql`
+  query GetAttachmentPreviewUrl($attachmentId: ID!) {
+    attachmentPreviewUrl(attachmentId: $attachmentId) {
+      url
+      source
+      expiresAt
+    }
+  }
+`;
 
 // GraphQL mutation for syncing attachments
 const SYNC_EMAIL_ATTACHMENTS = gql`
@@ -95,6 +110,7 @@ interface IgnoreEmailThreadResult {
 // Extended message type with hasAttachments flag
 interface ExtendedMessage extends CommunicationMessage {
   hasAttachments?: boolean;
+  bodyClean?: string; // OPS-090: AI-cleaned content
 }
 
 function Message({
@@ -121,8 +137,14 @@ function Message({
   const [syncingAttachments, setSyncingAttachments] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<PreviewableDocument | null>(null);
+  // OPS-090: Toggle between clean and original content
+  const [showOriginal, setShowOriginal] = useState(false);
   const [syncEmailAttachments] = useMutation(SYNC_EMAIL_ATTACHMENTS);
   const [fetchAttachmentContent] = useLazyQuery(GET_ATTACHMENT_CONTENT, {
+    fetchPolicy: 'network-only',
+  });
+  const [fetchPreviewUrl] = useLazyQuery(GET_ATTACHMENT_PREVIEW_URL, {
     fetchPolicy: 'network-only',
   });
 
@@ -169,6 +191,79 @@ function Message({
       }
     },
     [message.id, fetchAttachmentContent, downloadingId]
+  );
+
+  // Handle attachment preview - opens preview modal
+  const handlePreviewAttachment = useCallback(
+    (e: React.MouseEvent, attachment: any) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      setPreviewDocument({
+        id: attachment.id,
+        name: attachment.name || 'Attachment',
+        contentType: attachment.mimeType || attachment.contentType || 'application/octet-stream',
+        size: attachment.size || attachment.fileSize || 0,
+        downloadUrl: attachment.url || attachment.downloadUrl || null,
+        previewUrl: null, // Will be fetched on demand
+        // Store emailId for fallback content fetch when no OneDrive document exists
+        emailId: message.id,
+      } as PreviewableDocument & { emailId?: string });
+    },
+    [message.id]
+  );
+
+  // Fetch preview URL for the modal
+  // First tries OneDrive preview URL, then falls back to fetching content from MS Graph
+  const handleRequestPreviewUrl = useCallback(
+    async (attachmentId: string): Promise<string | null> => {
+      try {
+        // First, try to get OneDrive preview URL (for case-assigned emails)
+        const result = await fetchPreviewUrl({
+          variables: { attachmentId },
+        });
+        const data = result.data as { attachmentPreviewUrl?: { url: string } } | undefined;
+
+        if (data?.attachmentPreviewUrl?.url) {
+          return data.attachmentPreviewUrl.url;
+        }
+
+        // Fallback: Fetch content directly from MS Graph and create blob URL
+        // This works for uncategorized emails where attachments aren't in OneDrive yet
+        const emailId = (previewDocument as any)?.emailId;
+        if (!emailId) {
+          console.error('No emailId available for fallback content fetch');
+          return null;
+        }
+
+        const contentResult = await fetchAttachmentContent({
+          variables: { emailId, attachmentId },
+        });
+
+        const contentData = (contentResult.data as any)?.emailAttachmentContent;
+        if (contentData?.content) {
+          // Convert base64 to blob URL
+          const byteCharacters = atob(contentData.content);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], {
+            type: contentData.contentType || 'application/octet-stream',
+          });
+
+          const blobUrl = URL.createObjectURL(blob);
+          return blobUrl;
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Failed to fetch preview URL:', error);
+        return null;
+      }
+    },
+    [fetchPreviewUrl, fetchAttachmentContent, previewDocument]
   );
 
   const handleSyncAttachments = useCallback(
@@ -288,48 +383,98 @@ function Message({
 
       {isExpanded && (
         <div className="mt-4 pl-10">
-          {/* Render HTML content in an iframe for safety, or plain text */}
-          {message.body?.trim().startsWith('<') ? (
-            <iframe
-              srcDoc={message.body}
-              className="w-full min-h-[200px] border-0 bg-white"
-              sandbox="allow-same-origin"
-              title="Email content"
-              style={{ height: 'auto' }}
-              onLoad={(e) => {
-                // Auto-resize iframe to fit content
-                const iframe = e.target as HTMLIFrameElement;
-                if (iframe.contentDocument) {
-                  iframe.style.height = iframe.contentDocument.body.scrollHeight + 20 + 'px';
-                }
-              }}
-            />
-          ) : (
-            <div className="text-sm whitespace-pre-wrap">{message.body}</div>
+          {/* OPS-090: Toggle between clean and original content */}
+          {message.bodyClean && (
+            <div className="flex items-center gap-2 mb-2 text-xs">
+              <button
+                onClick={() => setShowOriginal(!showOriginal)}
+                className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+                title={showOriginal ? 'Arată versiunea curată' : 'Arată originalul'}
+              >
+                {showOriginal ? (
+                  <>
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>Arată versiunea curată</span>
+                  </>
+                ) : (
+                  <>
+                    <FileCode className="h-3.5 w-3.5" />
+                    <span>Arată originalul</span>
+                  </>
+                )}
+              </button>
+            </div>
           )}
+
+          {/* Render email content - use clean version by default if available */}
+          {(() => {
+            // Determine which content to show
+            const displayCleanContent = message.bodyClean && !showOriginal;
+            const contentToShow = displayCleanContent ? message.bodyClean : message.body;
+
+            // Clean content is always plain text, render as-is
+            if (displayCleanContent) {
+              return <div className="text-sm whitespace-pre-wrap">{contentToShow}</div>;
+            }
+
+            // Original content: check if HTML or plain text
+            if (contentToShow?.trim().startsWith('<')) {
+              return (
+                <iframe
+                  srcDoc={contentToShow}
+                  className="w-full min-h-[200px] border-0 bg-white"
+                  sandbox="allow-same-origin"
+                  title="Email content"
+                  style={{ height: 'auto' }}
+                  onLoad={(e) => {
+                    // Auto-resize iframe to fit content
+                    const iframe = e.target as HTMLIFrameElement;
+                    if (iframe.contentDocument) {
+                      iframe.style.height = iframe.contentDocument.body.scrollHeight + 20 + 'px';
+                    }
+                  }}
+                />
+              );
+            }
+
+            return <div className="text-sm whitespace-pre-wrap">{contentToShow}</div>;
+          })()}
           {/* Show attachments if available */}
           {message.attachments.length > 0 && (
             <div className="mt-3 space-y-1">
               {message.attachments.map((att: any) => (
-                <button
-                  key={att.id}
-                  onClick={(e) => handleDownloadAttachment(e, att.id, att.name)}
-                  disabled={downloadingId === att.id}
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 cursor-pointer disabled:opacity-50"
-                >
-                  {downloadingId === att.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Paperclip className="h-4 w-4" />
-                  )}
-                  <span>{att.name || att.filename || 'Attachment'}</span>
+                <div key={att.id} className="flex items-center gap-2">
+                  <Paperclip className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-700 truncate">
+                    {att.name || att.filename || 'Attachment'}
+                  </span>
                   <span className="text-xs text-gray-500">
                     ({Math.round((att.size || att.fileSize || 0) / 1024)} KB)
                   </span>
-                  {downloadingId === att.id && (
-                    <span className="text-xs text-gray-400">Se descarcă...</span>
-                  )}
-                </button>
+                  {/* Preview button */}
+                  <button
+                    onClick={(e) => handlePreviewAttachment(e, att)}
+                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    title="Previzualizează"
+                    aria-label="Previzualizează"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  {/* Download button */}
+                  <button
+                    onClick={(e) => handleDownloadAttachment(e, att.id, att.name)}
+                    disabled={downloadingId === att.id}
+                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                    title="Descarcă"
+                    aria-label="Descarcă"
+                  >
+                    {downloadingId === att.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -382,6 +527,14 @@ function Message({
           </div>
         </div>
       )}
+
+      {/* Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={!!previewDocument}
+        onClose={() => setPreviewDocument(null)}
+        document={previewDocument}
+        onRequestPreviewUrl={handleRequestPreviewUrl}
+      />
     </div>
   );
 }

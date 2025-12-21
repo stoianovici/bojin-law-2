@@ -18,6 +18,7 @@ import {
   type EmailForClassification,
   type ClassificationResult,
 } from '../services/classification-scoring';
+import { emailCleanerService } from '../services/email-cleaner.service';
 
 // ============================================================================
 // Types
@@ -222,9 +223,12 @@ async function processCategorizationBatch(): Promise<void> {
 }
 
 /**
- * Extended email type with firmId for worker processing
+ * Extended email type with firmId and bodyContentType for worker processing
  */
-type EmailForClassificationWithFirm = EmailForClassification & { firmId: string };
+type EmailForClassificationWithFirm = EmailForClassification & {
+  firmId: string;
+  bodyContentType: string;
+};
 
 /**
  * Get uncategorized emails grouped by user
@@ -246,6 +250,7 @@ async function getUncategorizedEmailsByUser(
       subject: true,
       bodyPreview: true,
       bodyContent: true,
+      bodyContentType: true, // OPS-090: Needed for email cleaning
       from: true,
       toRecipients: true,
       ccRecipients: true,
@@ -271,6 +276,7 @@ async function getUncategorizedEmailsByUser(
       subject: email.subject,
       bodyPreview: email.bodyPreview,
       bodyContent: email.bodyContent,
+      bodyContentType: email.bodyContentType, // OPS-090
       from: email.from as { name?: string; address: string },
       toRecipients: (email.toRecipients as Array<{ name?: string; address: string }>) || [],
       ccRecipients: (email.ccRecipients as Array<{ name?: string; address: string }>) || [],
@@ -319,21 +325,63 @@ async function processUserEmails(
       stats.processed++;
 
       // Update email based on classification result
-      if (result.state === EmailClassificationState.Classified && result.caseId) {
-        // Auto-assign with classification metadata
+      if (
+        result.state === EmailClassificationState.Classified &&
+        result.caseAssignments.length > 0
+      ) {
+        // OPS-059: Create EmailCaseLink records for all case assignments
+        const primaryAssignment =
+          result.caseAssignments.find((a) => a.isPrimary) || result.caseAssignments[0];
+
+        // Update email with primary case for backward compatibility
         await prisma.email.update({
           where: { id: email.id },
           data: {
-            caseId: result.caseId,
+            caseId: primaryAssignment.caseId,
             classificationState: EmailClassificationState.Classified,
-            classificationConfidence: result.confidence,
+            classificationConfidence: primaryAssignment.confidence,
             classifiedAt: new Date(),
             classifiedBy: 'auto',
           },
         });
+
+        // Create EmailCaseLink records for ALL assignments
+        for (const assignment of result.caseAssignments) {
+          try {
+            await prisma.emailCaseLink.upsert({
+              where: {
+                emailId_caseId: {
+                  emailId: email.id,
+                  caseId: assignment.caseId,
+                },
+              },
+              update: {
+                confidence: assignment.confidence,
+                matchType: assignment.matchType,
+                isPrimary: assignment.isPrimary,
+                linkedAt: new Date(),
+                linkedBy: 'auto',
+              },
+              create: {
+                emailId: email.id,
+                caseId: assignment.caseId,
+                confidence: assignment.confidence,
+                matchType: assignment.matchType,
+                isPrimary: assignment.isPrimary,
+                linkedBy: 'auto',
+              },
+            });
+          } catch (linkError) {
+            console.error(
+              `[Email Categorization Worker] Failed to create EmailCaseLink for email ${email.id} → case ${assignment.caseId}:`,
+              linkError
+            );
+          }
+        }
+
         stats.assigned++;
         console.log(
-          `[Email Categorization Worker] Classified email ${email.id} to case ${result.caseId} (confidence: ${result.confidence}, match: ${result.matchType})`
+          `[Email Categorization Worker] Classified email ${email.id} to ${result.caseAssignments.length} case(s): ${result.caseAssignments.map((a) => a.caseId).join(', ')} (primary: ${primaryAssignment.caseId})`
         );
       } else if (result.state === EmailClassificationState.CourtUnassigned) {
         // OPS-040: Court email without matching case - goes to INSTANȚE folder
@@ -367,6 +415,9 @@ async function processUserEmails(
         );
       }
 
+      // OPS-090: Clean email content (extract new content only, remove signatures/quotes)
+      await cleanEmailContent(email);
+
       // Small delay between classifications to avoid overwhelming the database
       await new Promise((resolve) => setTimeout(resolve, 50));
     } catch (error) {
@@ -375,6 +426,38 @@ async function processUserEmails(
   }
 
   return stats;
+}
+
+/**
+ * Clean email content using AI to extract only new message content.
+ * OPS-090: Email Content Cleaning for Readability
+ */
+async function cleanEmailContent(email: EmailForClassificationWithFirm): Promise<void> {
+  try {
+    // Skip if email is too short or already has clean content
+    if (!email.bodyContent || email.bodyContent.length < 100) {
+      return;
+    }
+
+    const result = await emailCleanerService.extractCleanContent(
+      email.bodyContent,
+      email.bodyContentType
+    );
+
+    if (result.success && result.cleanContent) {
+      await prisma.email.update({
+        where: { id: email.id },
+        data: { bodyContentClean: result.cleanContent },
+      });
+
+      console.log(
+        `[Email Categorization Worker] Cleaned email ${email.id} content (${result.tokensUsed?.input || 0} in, ${result.tokensUsed?.output || 0} out tokens)`
+      );
+    }
+  } catch (error) {
+    // Non-blocking: log error but don't fail classification
+    console.error(`[Email Categorization Worker] Failed to clean email ${email.id}:`, error);
+  }
 }
 
 // ============================================================================

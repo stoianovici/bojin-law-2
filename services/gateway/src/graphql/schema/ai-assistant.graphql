@@ -1,0 +1,323 @@
+# ============================================================================
+# AI Assistant GraphQL Schema
+# OPS-064: AI Assistant GraphQL Schema
+#
+# Types, inputs, queries, and mutations for the interactive AI assistant
+# ============================================================================
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+"""
+Conversation lifecycle status
+"""
+enum ConversationStatus {
+  Active
+  AwaitingConfirmation
+  Completed
+  Expired
+}
+
+"""
+Message author role
+"""
+enum AIMessageRole {
+  User
+  Assistant
+  System
+}
+
+"""
+Action execution status
+"""
+enum AIActionStatus {
+  Proposed
+  Confirmed
+  Executed
+  Rejected
+  Failed
+}
+
+"""
+Detected user intent categories
+"""
+enum AssistantIntent {
+  # Task & Calendar
+  CreateTask
+  UpdateTask
+  QueryTasks
+  ScheduleEvent
+
+  # Case Information
+  CaseQuery
+  CaseSummary
+
+  # Communication
+  SearchEmails
+  SummarizeThread
+  DraftEmail
+
+  # Document Operations
+  FindDocument
+  SummarizeDocument
+  GenerateDocument
+
+  # Proactive
+  MorningBriefing
+  DeadlineAlert
+
+  # General
+  AskClarification
+  GeneralChat
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+A conversation session with the AI assistant
+"""
+type AIConversation {
+  id: ID!
+  caseId: ID
+  case: Case
+  status: ConversationStatus!
+  context: JSON
+  messages: [AIMessage!]!
+  messageCount: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  closedAt: DateTime
+}
+
+"""
+A single message in a conversation
+"""
+type AIMessage {
+  id: ID!
+  role: AIMessageRole!
+  content: String!
+  intent: AssistantIntent
+  confidence: Float
+  proposedAction: ProposedAction
+  tokensUsed: Int
+  modelUsed: String
+  latencyMs: Int
+  createdAt: DateTime!
+}
+
+"""
+An action proposed by the assistant for user confirmation
+"""
+type ProposedAction {
+  type: String!
+  displayText: String!
+  payload: JSON!
+  status: AIActionStatus!
+  requiresConfirmation: Boolean!
+  confirmationPrompt: String
+  entityPreview: JSON
+}
+
+"""
+Response from sending a message to the assistant
+"""
+type AssistantResponse {
+  message: AIMessage!
+  conversation: AIConversation!
+  suggestedFollowUps: [String!]!
+}
+
+"""
+Result of executing a confirmed action
+"""
+type ActionResult {
+  success: Boolean!
+  message: String!
+  entityId: ID
+  entityType: String
+  navigationUrl: String
+  error: String
+}
+
+# ============================================================================
+# Inputs
+# ============================================================================
+
+"""
+Input for sending a message to the assistant
+"""
+input SendMessageInput {
+  """
+  Existing conversation ID (omit to start new conversation)
+  """
+  conversationId: ID
+
+  """
+  The user's message content
+  """
+  content: String!
+
+  """
+  Optional case context for case-specific queries
+  """
+  caseId: ID
+
+  """
+  Current UI context for better intent detection
+  """
+  context: AssistantContextInput
+}
+
+"""
+Current UI context to help the assistant understand user intent
+"""
+input AssistantContextInput {
+  """
+  Current screen/page the user is viewing
+  """
+  currentScreen: String
+
+  """
+  Case ID if viewing a case detail page
+  """
+  currentCaseId: ID
+
+  """
+  Document ID if viewing a document
+  """
+  currentDocumentId: ID
+
+  """
+  Email ID if viewing an email
+  """
+  selectedEmailId: ID
+
+  """
+  Selected text for context-aware operations
+  """
+  selectedText: String
+}
+
+"""
+Input for confirming or rejecting a proposed action
+"""
+input ConfirmActionInput {
+  """
+  The message ID containing the proposed action
+  """
+  messageId: ID!
+
+  """
+  Whether to confirm (true) or reject (false) the action
+  """
+  confirmed: Boolean!
+
+  """
+  Optional modifications to the action before execution
+  """
+  modifications: JSON
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+"""
+Morning briefing response with tasks, deadlines, and emails
+"""
+type MorningBriefing {
+  message: String!
+  urgentTasks: [BriefingTask!]!
+  todayTasks: [BriefingTask!]!
+  upcomingDeadlines: [BriefingDeadline!]!
+  unreadEmailsCount: Int!
+  aiSummary: String
+}
+
+"""
+A task in the briefing
+"""
+type BriefingTask {
+  id: ID!
+  title: String!
+  priority: String!
+  dueDate: DateTime
+  caseTitle: String
+  caseNumber: String
+  isOverdue: Boolean!
+}
+
+"""
+An upcoming deadline in the briefing
+"""
+type BriefingDeadline {
+  id: ID!
+  title: String!
+  dueDate: DateTime!
+  caseTitle: String
+  caseNumber: String
+  daysUntilDue: Int!
+}
+
+extend type Query {
+  """
+  Get active conversation for current context.
+  Returns the most recent active conversation, optionally filtered by case.
+  """
+  activeConversation(caseId: ID): AIConversation
+
+  """
+  Get a specific conversation by ID
+  """
+  conversation(id: ID!): AIConversation
+
+  """
+  Get recent conversation history for the current user.
+  Optionally filter by case.
+  """
+  conversationHistory(
+    """
+    Maximum number of conversations to return
+    """
+    limit: Int = 10
+
+    """
+    Filter to conversations for a specific case
+    """
+    caseId: ID
+  ): [AIConversation!]!
+
+  """
+  Get morning briefing for the current user.
+  Returns tasks, deadlines, and email summary for the day.
+  """
+  morningBriefing: MorningBriefing!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Send a message to the AI assistant.
+  If conversationId is not provided, a new conversation will be created.
+  Returns the assistant's response along with the updated conversation.
+  """
+  sendAssistantMessage(input: SendMessageInput!): AssistantResponse!
+
+  """
+  Confirm or reject a proposed action from the assistant.
+  If confirmed, the action will be executed and the result returned.
+  """
+  confirmAction(input: ConfirmActionInput!): ActionResult!
+
+  """
+  Close/end a conversation.
+  The conversation status will be set to Completed.
+  """
+  closeConversation(id: ID!): AIConversation!
+}

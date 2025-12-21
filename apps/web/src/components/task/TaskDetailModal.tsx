@@ -537,7 +537,7 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
               </label>
               <textarea
                 id="description"
-                value={formData.description}
+                value={formData.description ?? ''}
                 onChange={(e) => updateField('description', e.target.value)}
                 rows={4}
                 className={`w-full px-3 py-2 border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}

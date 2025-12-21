@@ -32,6 +32,7 @@ export interface CommunicationMessage {
   subject: string;
   body: string; // Plain text
   htmlBody?: string; // HTML formatted
+  bodyClean?: string; // OPS-090: AI-cleaned content (no signatures, quotes)
   sentDate: Date;
   attachments: Attachment[];
   isFromUser: boolean; // Is current user the sender

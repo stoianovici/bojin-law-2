@@ -7,15 +7,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  Task as PrismaTask,
-  TaskStatus,
-  TaskPriority,
-  TaskTypeEnum,
-  Prisma,
-  CaseEventType,
-  EventImportance,
-} from '@prisma/client';
+import { Task as PrismaTask, TaskStatus, TaskPriority, TaskTypeEnum, Prisma } from '@prisma/client';
 import { validateTaskByType, CreateTaskInput } from './task-validation.service';
 import * as DependencyAutomationService from './dependency-automation.service';
 import { caseSummaryService } from './case-summary.service';
@@ -109,22 +101,8 @@ export class TaskService {
       },
     });
 
-    // OPS-047: Mark summary stale and create event
+    // OPS-047: Mark summary stale
     caseSummaryService.markSummaryStale(input.caseId).catch(() => {});
-    caseSummaryService
-      .createCaseEvent({
-        caseId: input.caseId,
-        eventType: CaseEventType.TaskCreated,
-        sourceId: task.id,
-        title: `Sarcină creată: ${input.title}`,
-        importance:
-          input.priority === 'Urgent' || input.priority === 'High'
-            ? EventImportance.High
-            : EventImportance.Medium,
-        occurredAt: new Date(),
-        actorId: userId,
-      })
-      .catch(() => {});
 
     return task;
   }
@@ -311,19 +289,8 @@ export class TaskService {
       console.error(`Failed to activate successor tasks for ${taskId}:`, error);
     }
 
-    // OPS-047: Mark summary stale and create completion event
+    // OPS-047: Mark summary stale
     caseSummaryService.markSummaryStale(existingTask.caseId).catch(() => {});
-    caseSummaryService
-      .createCaseEvent({
-        caseId: existingTask.caseId,
-        eventType: CaseEventType.TaskCompleted,
-        sourceId: taskId,
-        title: `Sarcină finalizată: ${existingTask.title}`,
-        importance: EventImportance.Medium,
-        occurredAt: new Date(),
-        actorId: userId,
-      })
-      .catch(() => {});
 
     return completedTask;
   }

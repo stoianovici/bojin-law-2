@@ -5,6 +5,7 @@ import { ConditionalLayout } from '../components/layout/ConditionalLayout';
 import { ToastProvider } from '../components/ui/toast';
 import { AuthProvider } from '../contexts/AuthContext';
 import { FinancialAccessProvider } from '../contexts/FinancialAccessContext';
+import { AIAssistantProvider } from '../contexts/AIAssistantContext';
 import { ApolloProvider } from '../providers/ApolloProvider';
 import { ReactQueryProvider } from '../providers/ReactQueryProvider';
 
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ApolloProvider>
               <ReactQueryProvider>
                 <ToastProvider>
-                  <ConditionalLayout>{children}</ConditionalLayout>
+                  <AIAssistantProvider>
+                    <ConditionalLayout>{children}</ConditionalLayout>
+                  </AIAssistantProvider>
                 </ToastProvider>
               </ReactQueryProvider>
             </ApolloProvider>

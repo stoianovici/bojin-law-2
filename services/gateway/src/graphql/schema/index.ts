@@ -132,7 +132,10 @@ export function loadSchema(): string {
   );
   // OPS-046-050: Persistent AI Case Summary
   const caseSummarySchema = readFileSync(join(schemaDir, 'case-summary.graphql'), 'utf-8');
-  const caseEventSchema = readFileSync(join(schemaDir, 'case-event.graphql'), 'utf-8');
+  // OPS-063-080: Interactive AI Assistant
+  const aiAssistantSchema = readFileSync(join(schemaDir, 'ai-assistant.graphql'), 'utf-8');
+  // OPS-089: Document Folder Structure
+  const documentFolderSchema = readFileSync(join(schemaDir, 'document-folder.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -178,7 +181,8 @@ export function loadSchema(): string {
     emailClassificationSchema,
     classificationReviewSchema,
     caseSummarySchema,
-    caseEventSchema,
+    aiAssistantSchema,
+    documentFolderSchema,
   ].join('\n\n');
 }
 

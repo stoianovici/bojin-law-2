@@ -113,6 +113,12 @@ model Firm {
   classificationLogs     EmailClassificationLog[]
   pendingClassifications PendingClassification[]
 
+  // Relations (OPS-063: AI Conversation)
+  aiConversations AIConversation[]
+
+  // Relations (OPS-089: Document Folders)
+  documentFolders DocumentFolder[]
+
   @@map("firms")
 }
 
@@ -192,9 +198,6 @@ model User {
   // Custom case types created by this user
   createdCaseTypes CaseTypeConfig[]
 
-  // Relations (OPS-046: Case Events)
-  caseEventActions CaseEvent[] @relation("CaseEventActor")
-
   // Relations (Story 5.1: Email Integration)
   emails         Email[]
   emailSyncState EmailSyncState?
@@ -224,6 +227,9 @@ model User {
   // Relations (OPS-031: Classification Review)
   classificationLogs      EmailClassificationLog[]
   resolvedClassifications PendingClassification[]
+
+  // Relations (OPS-063: AI Conversation)
+  aiConversations AIConversation[]
 
   @@map("users")
 }
@@ -468,7 +474,8 @@ model Case {
   templateUsages TaskTemplateUsage[] // Story 4.4 - Template applications to this case
   activityFeed   CaseActivityEntry[] // Story 4.6 - Activity feed for this case
   subscriptions  CaseSubscription[] // Story 4.6 - User subscriptions for this case
-  emails         Email[] // Story 5.1 - Emails linked to this case
+  emails         Email[] // Story 5.1 - Emails linked to this case (legacy, use emailLinks)
+  emailLinks     EmailCaseLink[] // OPS-058: Multi-case email support
 
   // Relations (Story 5.2: Communication Intelligence)
   extractedDeadlines   ExtractedDeadline[]
@@ -495,7 +502,12 @@ model Case {
 
   // Relations (OPS-046: Persistent AI Case Summary)
   summary CaseSummary?
-  events  CaseEvent[]
+
+  // Relations (OPS-063: AI Conversation)
+  aiConversations AIConversation[]
+
+  // Relations (OPS-089: Document Folders)
+  documentFolders DocumentFolder[]
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -811,18 +823,45 @@ model CaseDocument {
   linkedAt   DateTime @default(now()) @map("linked_at") @db.Timestamptz
   isOriginal Boolean  @default(false) @map("is_original") // True if document was uploaded to this case
   firmId     String   @map("firm_id")
+  folderId   String?  @map("folder_id") // OPS-089: Optional folder for document organization
 
   // Relations
-  case     Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  linker   User     @relation("DocumentLinker", fields: [linkedBy], references: [id], onDelete: Restrict)
-  firm     Firm     @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  case     Case            @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  document Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  linker   User            @relation("DocumentLinker", fields: [linkedBy], references: [id], onDelete: Restrict)
+  firm     Firm            @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  folder   DocumentFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@unique([caseId, documentId]) // Prevent duplicate links
   @@index([caseId])
   @@index([documentId])
   @@index([firmId])
+  @@index([folderId])
   @@map("case_documents")
+}
+
+// Document folder hierarchy for organizing documents within cases (OPS-089)
+model DocumentFolder {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(255)
+  caseId    String   @map("case_id")
+  parentId  String?  @map("parent_id")
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  firmId    String   @map("firm_id")
+
+  // Relations
+  case      Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  parent    DocumentFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  DocumentFolder[] @relation("FolderHierarchy")
+  documents CaseDocument[]
+  firm      Firm             @relation(fields: [firmId], references: [id], onDelete: Restrict)
+
+  @@index([caseId])
+  @@index([parentId])
+  @@index([firmId])
+  @@map("document_folders")
 }
 
 // Document audit action types
@@ -2521,6 +2560,7 @@ model Email {
   bodyPreview       String    @map("body_preview") @db.VarChar(500)
   bodyContent       String    @map("body_content") @db.Text
   bodyContentType   String    @map("body_content_type") @db.VarChar(10) // text or html
+  bodyContentClean  String?   @map("body_content_clean") @db.Text // OPS-090: AI-cleaned content (no signatures, quotes)
   from              Json // { name?: string, address: string }
   toRecipients      Json      @map("to_recipients") // Array of { name?, address }
   ccRecipients      Json      @map("cc_recipients")
@@ -2551,6 +2591,7 @@ model Email {
   case        Case?             @relation(fields: [caseId], references: [id])
   firm        Firm              @relation(fields: [firmId], references: [id])
   attachments EmailAttachment[]
+  caseLinks   EmailCaseLink[] // OPS-058: Multi-case email support
 
   // Relations (Story 5.2: Communication Intelligence)
   extractedDeadlines   ExtractedDeadline[]
@@ -3521,6 +3562,7 @@ enum ClassificationMatchType {
   Semantic // AI semantic similarity match
   GlobalSource // Matched global email source (court, authority)
   Manual // User manually assigned
+  ThreadContinuity // Matched by conversation thread (OPS-058)
 }
 
 // Classification reason - why an email needs review
@@ -3542,32 +3584,8 @@ enum EmailClassificationState {
 }
 
 // ============================================================================
-// OPS-046: Case Summary Data Model - Persistent AI Summaries & Chronology
+// OPS-031: Email Classification Audit Log
 // ============================================================================
-
-// Event types for unified case chronology
-enum CaseEventType {
-  DocumentUploaded
-  DocumentSigned
-  DocumentDeleted
-  EmailReceived
-  EmailSent
-  EmailCourt
-  NoteCreated
-  NoteUpdated
-  TaskCreated
-  TaskCompleted
-  CaseStatusChanged
-  TeamMemberAdded
-  ContactAdded
-}
-
-// Importance levels for event filtering
-enum EventImportance {
-  High
-  Medium
-  Low
-}
 
 // Email classification audit log - tracks all classification decisions (OPS-031)
 model EmailClassificationLog {
@@ -3677,39 +3695,107 @@ model CaseSummary {
 }
 
 // ============================================================================
-// OPS-046: Unified Case Chronology
+// OPS-058: Multi-Case Email Support
 // ============================================================================
 
-// Event entry for case timeline with importance scoring
-model CaseEvent {
-  id     String @id @default(cuid())
-  caseId String @map("case_id")
+// Junction table for email-to-case many-to-many relationships (OPS-058)
+// Replaces the single Email.caseId field to allow emails to belong to multiple cases
+model EmailCaseLink {
+  id      String @id @default(uuid())
+  emailId String @map("email_id")
+  caseId  String @map("case_id")
 
-  // Event identification
-  eventType CaseEventType @map("event_type")
-  sourceId  String        @map("source_id") // ID of source record (email, document, note, task)
+  // Classification metadata (per-case assignment)
+  confidence Float?                   @default(1.0) // 0.0-1.0, confidence of this assignment
+  matchType  ClassificationMatchType? @map("match_type") // How this link was created
+  linkedAt   DateTime                 @default(now()) @map("linked_at") @db.Timestamptz
+  linkedBy   String                   @map("linked_by") // "auto" or userId
+  isPrimary  Boolean                  @default(false) @map("is_primary") // First/original assignment
 
-  // Display content
-  title       String  @db.VarChar(500)
-  description String? @db.Text
+  // Relations
+  email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  case  Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
-  // Importance scoring
-  importance EventImportance @default(Medium)
+  @@unique([emailId, caseId])
+  @@index([emailId])
+  @@index([caseId])
+  @@index([linkedAt])
+  @@map("email_case_links")
+}
 
-  // Timing
-  occurredAt DateTime @map("occurred_at") @db.Timestamptz
+// ============================================================================
+// OPS-063: AI Conversation Data Model
+// ============================================================================
 
-  // Actor (who caused this event)
-  actorId String? @map("actor_id")
+// Conversation session status
+enum ConversationStatus {
+  Active // User is actively conversing
+  AwaitingConfirmation // Waiting for user to confirm an action
+  Completed // Conversation finished normally
+  Expired // Session timed out or abandoned
+}
+
+// Message role in conversation
+enum AIMessageRole {
+  User // User input
+  Assistant // AI response
+  System // System message (context, errors)
+}
+
+// Action state machine
+enum AIActionStatus {
+  Proposed // AI proposed an action
+  Confirmed // User approved the action
+  Executed // Action completed successfully
+  Rejected // User declined the action
+  Failed // Execution failed
+}
+
+// AI Conversation session - multi-turn interaction with context
+model AIConversation {
+  id       String             @id @default(uuid())
+  firmId   String             @map("firm_id")
+  userId   String             @map("user_id")
+  caseId   String?            @map("case_id")
+  status   ConversationStatus @default(Active)
+  context  Json               @default("{}") // Contextual data for the conversation
+  closedAt DateTime?          @map("closed_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  firm     Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  case     Case?        @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  messages AIMessage[]
+
+  @@index([firmId])
+  @@index([userId, status])
+  @@index([caseId])
+  @@map("ai_conversations")
+}
+
+// AI Message - individual message in a conversation
+model AIMessage {
+  id             String          @id @default(uuid())
+  conversationId String          @map("conversation_id")
+  role           AIMessageRole
+  content        String          @db.Text
+  intent         String?         @db.VarChar(100) // Detected intent (e.g., "create_task", "query_case")
+  confidence     Float? // Confidence in intent detection
+  actionType     String?         @map("action_type") @db.VarChar(100) // Type of action if applicable
+  actionPayload  Json?           @map("action_payload") // Parameters for the action
+  actionStatus   AIActionStatus? @map("action_status") // Current action state
+  tokensUsed     Int?            @map("tokens_used") // For usage tracking
+  modelUsed      String?         @map("model_used") @db.VarChar(50) // e.g., "haiku", "sonnet"
+  latencyMs      Int?            @map("latency_ms") // Response time tracking
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
-  case  Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  actor User? @relation("CaseEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@unique([eventType, sourceId])
-  @@index([caseId, occurredAt])
-  @@index([caseId, importance])
-  @@map("case_events")
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
 }

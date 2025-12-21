@@ -8,7 +8,6 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { CaseEventType, EventImportance } from '@prisma/client';
 import { AIOperationType } from '@legal-platform/types';
 import { aiService } from './ai.service';
 import logger from '../utils/logger';
@@ -17,18 +16,6 @@ import crypto from 'crypto';
 // ============================================================================
 // Types
 // ============================================================================
-
-// OPS-047: Event creation input
-export interface CreateCaseEventInput {
-  caseId: string;
-  eventType: CaseEventType;
-  sourceId: string;
-  title: string;
-  description?: string;
-  importance: EventImportance;
-  occurredAt: Date;
-  actorId?: string;
-}
 
 interface CaseContext {
   caseData: {
@@ -204,74 +191,6 @@ export class CaseSummaryService {
         error: error.message,
       });
       // Don't throw - staleness marking is best-effort
-    }
-  }
-
-  /**
-   * OPS-047: Create or update a case event for the unified chronology.
-   * Uses upsert with eventType + sourceId as unique key to prevent duplicates.
-   */
-  async createCaseEvent(input: CreateCaseEventInput): Promise<void> {
-    try {
-      await prisma.caseEvent.upsert({
-        where: {
-          eventType_sourceId: {
-            eventType: input.eventType,
-            sourceId: input.sourceId,
-          },
-        },
-        update: {
-          title: input.title,
-          description: input.description,
-          importance: input.importance,
-          occurredAt: input.occurredAt,
-        },
-        create: {
-          caseId: input.caseId,
-          eventType: input.eventType,
-          sourceId: input.sourceId,
-          title: input.title,
-          description: input.description,
-          importance: input.importance,
-          occurredAt: input.occurredAt,
-          actorId: input.actorId,
-        },
-      });
-
-      logger.debug('Case event created/updated', {
-        caseId: input.caseId,
-        eventType: input.eventType,
-        sourceId: input.sourceId,
-      });
-    } catch (error: any) {
-      logger.error('Failed to create case event', {
-        caseId: input.caseId,
-        eventType: input.eventType,
-        error: error.message,
-      });
-      // Don't throw - event creation is best-effort
-    }
-  }
-
-  /**
-   * OPS-047: Delete a case event when the source record is deleted.
-   */
-  async deleteCaseEvent(eventType: CaseEventType, sourceId: string): Promise<void> {
-    try {
-      await prisma.caseEvent.deleteMany({
-        where: {
-          eventType,
-          sourceId,
-        },
-      });
-
-      logger.debug('Case event deleted', { eventType, sourceId });
-    } catch (error: any) {
-      logger.error('Failed to delete case event', {
-        eventType,
-        sourceId,
-        error: error.message,
-      });
     }
   }
 

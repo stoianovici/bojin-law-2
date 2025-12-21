@@ -9,9 +9,7 @@ import React from 'react';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import { CheckIcon } from '@radix-ui/react-icons';
 import type { TaskFilters } from '@legal-platform/types';
-
-// TODO: Replace with real user data from API
-const USERS: { id: string; name: string; initials: string }[] = [];
+import { useFirmUsers } from '../../hooks/useFirmUsers';
 
 /**
  * TaskFilterBar Props
@@ -26,7 +24,15 @@ interface TaskFilterBarProps {
  * TaskFilterBar Component
  */
 export function TaskFilterBar({ filters, onFiltersChange, onClearFilters }: TaskFilterBarProps) {
+  const { users: firmUsers } = useFirmUsers();
   const selectedUsers = filters.assignedTo || [];
+
+  // Map firm users to display format
+  const users = firmUsers.map((user) => ({
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`,
+    initials: `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase(),
+  }));
 
   /**
    * Handle user checkbox toggle
@@ -68,7 +74,7 @@ export function TaskFilterBar({ filters, onFiltersChange, onClearFilters }: Task
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700">Filtru utilizatori:</span>
             <div className="flex items-center gap-3">
-              {USERS.map((user) => {
+              {users.map((user) => {
                 const isChecked = selectedUsers.includes(user.id);
 
                 return (

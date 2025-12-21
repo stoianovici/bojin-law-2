@@ -128,6 +128,7 @@ export default function CommunicationsPage() {
           subject: email.subject || '(Fără subiect)',
           body: email.bodyContent || email.bodyPreview || '',
           bodyFormat: email.bodyContentType === 'html' ? 'html' : 'text',
+          bodyClean: email.bodyContentClean || undefined, // OPS-090
           sentDate:
             email.sentDateTime || email.receivedDateTime
               ? new Date(email.sentDateTime || email.receivedDateTime)

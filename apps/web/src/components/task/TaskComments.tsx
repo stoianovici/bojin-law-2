@@ -37,7 +37,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
 
   const comments = data?.taskComments || [];
 
-  const handleSubmit = async (e: React.FormEvent, parentId?: string) => {
+  const handleSubmit = async (e: React.FormEvent | React.MouseEvent, parentId?: string) => {
     e.preventDefault();
     const content = parentId ? editContent : newComment;
     if (!content.trim()) return;
@@ -180,9 +180,9 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
               </>
             )}
 
-            {/* Reply form */}
+            {/* Reply section */}
             {replyingTo === comment.id && (
-              <form onSubmit={(e) => handleSubmit(e, comment.id)} className="mt-3 space-y-2">
+              <div className="mt-3 space-y-2">
                 <MentionAutocomplete
                   value={editContent}
                   onChange={setEditContent}
@@ -191,7 +191,8 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                 />
                 <div className="flex gap-2">
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={(e) => handleSubmit(e, comment.id)}
                     disabled={creating || !editContent.trim()}
                     className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                   >
@@ -208,7 +209,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                     Anulează
                   </button>
                 </div>
-              </form>
+              </div>
             )}
 
             {/* Replies */}
@@ -243,8 +244,8 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
     <div className="space-y-4">
       <h3 className="font-semibold text-gray-900">Comentarii ({comments.length})</h3>
 
-      {/* New comment form */}
-      <form onSubmit={(e) => handleSubmit(e)} className="space-y-2">
+      {/* New comment section */}
+      <div className="space-y-2">
         <MentionAutocomplete
           value={newComment}
           onChange={setNewComment}
@@ -252,14 +253,15 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
         />
         <div className="flex justify-end">
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => handleSubmit(e)}
             disabled={creating || !newComment.trim()}
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
             {creating ? 'Se trimite...' : 'Comentează'}
           </button>
         </div>
-      </form>
+      </div>
 
       {/* Comments list */}
       <div className="divide-y divide-gray-100">

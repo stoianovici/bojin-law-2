@@ -100,6 +100,15 @@ export interface DownloadLinkInfo {
 }
 
 /**
+ * Preview URL information for document preview
+ */
+export interface PreviewUrlInfo {
+  url: string;
+  source: 'pdf' | 'office365' | 'image';
+  expiresAt: string;
+}
+
+/**
  * OneDrive Service Class
  * Handles all OneDrive-related operations for document storage
  */
@@ -484,6 +493,92 @@ export class OneDriveService {
       },
       {},
       'onedrive-delete-file'
+    );
+  }
+
+  /**
+   * Get preview URL for a document
+   * Returns a URL suitable for embedding in an iframe:
+   * - PDFs: Direct download URL (browser renders natively)
+   * - Office docs: Office Online embed URL
+   * - Images: Direct download URL
+   *
+   * @param accessToken - User's access token
+   * @param oneDriveId - OneDrive item ID
+   * @param mimeType - File MIME type for determining preview strategy
+   * @returns Preview URL info or null if preview not supported
+   */
+  async getPreviewUrl(
+    accessToken: string,
+    oneDriveId: string,
+    mimeType: string
+  ): Promise<PreviewUrlInfo | null> {
+    // Office document types that can be previewed via Office Online
+    const officeTypes = [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/msword',
+      'application/vnd.ms-excel',
+      'application/vnd.ms-powerpoint',
+    ];
+
+    // Image types that can be previewed directly
+    const imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+    // PDF preview
+    const isPdf = mimeType === 'application/pdf';
+
+    // Check if file type is previewable
+    const isOffice = officeTypes.includes(mimeType);
+    const isImage = imageTypes.includes(mimeType);
+
+    if (!isPdf && !isOffice && !isImage) {
+      logger.debug('Preview not supported for file type', { mimeType, oneDriveId });
+      return null;
+    }
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          // Get download link (used for PDF/image or as source for Office embed)
+          const downloadLink = await this.getDocumentDownloadLink(accessToken, oneDriveId);
+
+          if (isPdf || isImage) {
+            // PDF and images can be rendered directly by browser
+            return {
+              url: downloadLink.url,
+              source: isPdf ? 'pdf' : 'image',
+              expiresAt: downloadLink.expirationDateTime,
+            };
+          }
+
+          if (isOffice) {
+            // Office documents use Office Online embed
+            // Format: https://view.officeapps.live.com/op/embed.aspx?src={encodedUrl}
+            const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadLink.url)}`;
+
+            logger.info('Generated Office Online preview URL', {
+              oneDriveId,
+              mimeType,
+            });
+
+            return {
+              url: embedUrl,
+              source: 'office365',
+              expiresAt: downloadLink.expirationDateTime,
+            };
+          }
+
+          return null;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'onedrive-get-preview-url'
     );
   }
 

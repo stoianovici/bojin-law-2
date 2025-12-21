@@ -10,7 +10,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { CaseActorRole } from '@prisma/client';
+import { CaseActorRole, ClassificationMatchType } from '@prisma/client';
 import { getEmailAttachmentService } from './email-attachment.service';
 import { caseActivityService } from './case-activity.service';
 import { unifiedTimelineService } from './unified-timeline.service';
@@ -213,6 +213,41 @@ export class EmailToCaseService {
         });
 
         result.emailsLinked = linkedResult.count;
+
+        // OPS-059: Also create EmailCaseLink records for multi-case support
+        for (const email of emails) {
+          try {
+            await prisma.emailCaseLink.upsert({
+              where: {
+                emailId_caseId: {
+                  emailId: email.id,
+                  caseId,
+                },
+              },
+              update: {
+                confidence: 1.0,
+                matchType: ClassificationMatchType.Manual,
+                isPrimary: true,
+                linkedAt: new Date(),
+                linkedBy: userId,
+              },
+              create: {
+                emailId: email.id,
+                caseId,
+                confidence: 1.0,
+                matchType: ClassificationMatchType.Manual,
+                isPrimary: true,
+                linkedBy: userId,
+              },
+            });
+          } catch (linkError: any) {
+            logger.error('[EmailToCaseService.executeEmailImport] Failed to create EmailCaseLink', {
+              emailId: email.id,
+              caseId,
+              error: linkError.message,
+            });
+          }
+        }
 
         // Sync emails to CommunicationEntry for unified timeline display
         // This is critical - without this, emails won't appear in the Communications tab

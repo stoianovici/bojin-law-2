@@ -214,8 +214,9 @@ export const useFilteredTasks = (): Task[] => {
     );
   }
 
-  // Apply sorting
-  filteredTasks.sort((a, b) => {
+  // Apply sorting (create a copy since the array may be frozen/immutable from Apollo)
+  const sortedTasks = [...filteredTasks];
+  sortedTasks.sort((a, b) => {
     const aValue = a[sortConfig.field];
     const bValue = b[sortConfig.field];
 
@@ -235,5 +236,5 @@ export const useFilteredTasks = (): Task[] => {
     return 0;
   });
 
-  return filteredTasks;
+  return sortedTasks;
 };

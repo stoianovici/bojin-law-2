@@ -145,6 +145,21 @@ type Case {
   """List of external actors involved in this case"""
   actors: [CaseActor!]!
 
+  # ============================================================================
+  # Multi-Case Email Support (OPS-060)
+  # ============================================================================
+
+  """
+  All email links for this case with classification metadata
+  """
+  emailLinks: [EmailCaseLink!]!
+
+  """
+  All emails linked to this case (convenience field)
+  Equivalent to Case.emailLinks.map(link => link.email)
+  """
+  communications: [Email!]!
+
   """Timestamp when the case was created"""
   createdAt: DateTime!
 

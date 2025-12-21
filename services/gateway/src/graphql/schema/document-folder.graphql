@@ -1,0 +1,243 @@
+# Document Folder Management GraphQL Schema
+# OPS-089: /documents Section with Case Navigation and Folder Structure
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+DocumentFolder entity - hierarchical folder structure for organizing documents within cases
+Folders can be nested without depth limit and are case-specific
+"""
+type DocumentFolder {
+  """Unique identifier for the folder"""
+  id: UUID!
+
+  """Folder name"""
+  name: String!
+
+  """Case this folder belongs to"""
+  caseId: UUID!
+
+  """Case object"""
+  case: Case!
+
+  """Parent folder ID (null for root-level folders)"""
+  parentId: UUID
+
+  """Parent folder object"""
+  parent: DocumentFolder
+
+  """Child folders"""
+  children: [DocumentFolder!]!
+
+  """Documents in this folder"""
+  documents: [CaseDocumentWithContext!]!
+
+  """Number of documents directly in this folder"""
+  documentCount: Int!
+
+  """Sort order within parent"""
+  order: Int!
+
+  """When the folder was created"""
+  createdAt: DateTime!
+
+  """When the folder was last updated"""
+  updatedAt: DateTime!
+}
+
+"""
+Folder tree with nested children
+Used for sidebar display
+"""
+type FolderTree {
+  """Root-level folders for the case"""
+  folders: [DocumentFolder!]!
+
+  """Total document count across all folders (including root)"""
+  totalDocuments: Int!
+
+  """Documents not in any folder (root level)"""
+  rootDocuments: [CaseDocumentWithContext!]!
+
+  """Count of documents at root level"""
+  rootDocumentCount: Int!
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for creating a new folder
+"""
+input CreateFolderInput {
+  """Folder name"""
+  name: String!
+
+  """Case ID where folder will be created"""
+  caseId: UUID!
+
+  """Parent folder ID (null for root-level folder)"""
+  parentId: UUID
+}
+
+"""
+Input for updating folder properties
+"""
+input UpdateFolderInput {
+  """New folder name"""
+  name: String
+
+  """New parent folder ID (null to move to root)"""
+  parentId: UUID
+
+  """New sort order"""
+  order: Int
+}
+
+"""
+Input for moving a document to a folder
+"""
+input MoveDocumentToFolderInput {
+  """Document ID (CaseDocument join table ID)"""
+  caseDocumentId: UUID!
+
+  """Target folder ID (null to move to root)"""
+  folderId: UUID
+}
+
+"""
+Input for bulk moving documents
+"""
+input BulkMoveDocumentsInput {
+  """Document IDs to move"""
+  caseDocumentIds: [UUID!]!
+
+  """Target folder ID (null to move to root)"""
+  folderId: UUID
+}
+
+"""
+Input for reordering folders
+"""
+input ReorderFoldersInput {
+  """Folder ID to reorder"""
+  folderId: UUID!
+
+  """New order value"""
+  newOrder: Int!
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get folder tree for a case
+  Returns all folders with nested structure and root documents
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  caseFolderTree(
+    """Case ID"""
+    caseId: UUID!
+  ): FolderTree!
+
+  """
+  Get all folders for a case (flat list)
+  Useful for folder selection dropdowns
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  caseFolders(
+    """Case ID"""
+    caseId: UUID!
+  ): [DocumentFolder!]!
+
+  """
+  Get folder contents (documents and subfolders)
+
+  Authorization: User must have access to the folder's case
+  """
+  folderContents(
+    """Folder ID"""
+    folderId: UUID!
+  ): DocumentFolder!
+
+  """
+  Get folder by ID
+
+  Authorization: User must have access to the folder's case
+  """
+  folder(
+    """Folder ID"""
+    id: UUID!
+  ): DocumentFolder
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Create a new folder in a case
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  createFolder(input: CreateFolderInput!): DocumentFolder!
+
+  """
+  Update folder properties (name, parent, order)
+
+  Authorization: User must have access to the folder's case
+  """
+  updateFolder(
+    """Folder ID"""
+    id: UUID!
+
+    """Updated properties"""
+    input: UpdateFolderInput!
+  ): DocumentFolder!
+
+  """
+  Delete a folder
+  Documents in the folder will be moved to the parent folder (or root)
+
+  Authorization: User must have access to the folder's case
+  """
+  deleteFolder(
+    """Folder ID"""
+    id: UUID!
+
+    """If true, also delete all documents in folder. If false (default), move to parent."""
+    deleteDocuments: Boolean
+  ): Boolean!
+
+  """
+  Move a document to a folder (or root)
+
+  Authorization: User must have access to the document's case
+  """
+  moveDocumentToFolder(input: MoveDocumentToFolderInput!): CaseDocumentWithContext!
+
+  """
+  Bulk move multiple documents to a folder
+
+  Authorization: User must have access to the documents' case
+  """
+  bulkMoveDocumentsToFolder(input: BulkMoveDocumentsInput!): [CaseDocumentWithContext!]!
+
+  """
+  Reorder folders within their parent
+
+  Authorization: User must have access to the folder's case
+  """
+  reorderFolders(
+    """List of folder reorderings"""
+    input: [ReorderFoldersInput!]!
+  ): [DocumentFolder!]!
+}

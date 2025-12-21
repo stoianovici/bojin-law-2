@@ -8,10 +8,8 @@
 
 import { prisma } from '@legal-platform/database';
 import {
-  CaseEventType,
   CommunicationChannel,
   CommunicationDirection,
-  EventImportance,
   PrivacyLevel,
   UserRole,
 } from '@prisma/client';
@@ -162,20 +160,8 @@ export class InternalNotesService {
       });
     }
 
-    // OPS-047: Mark summary stale and create event
+    // OPS-047: Mark summary stale
     caseSummaryService.markSummaryStale(input.caseId).catch(() => {});
-    caseSummaryService
-      .createCaseEvent({
-        caseId: input.caseId,
-        eventType: CaseEventType.NoteCreated,
-        sourceId: note.id,
-        title: `Notă internă adăugată`,
-        description: input.body.substring(0, 200),
-        importance: EventImportance.Low,
-        occurredAt: new Date(),
-        actorId: userContext.userId,
-      })
-      .catch(() => {});
 
     return {
       id: note.id,
@@ -285,9 +271,8 @@ export class InternalNotesService {
       where: { id: noteId },
     });
 
-    // OPS-047: Mark summary stale and delete event
+    // OPS-047: Mark summary stale
     caseSummaryService.markSummaryStale(existingNote.caseId).catch(() => {});
-    caseSummaryService.deleteCaseEvent(CaseEventType.NoteCreated, noteId).catch(() => {});
 
     return true;
   }

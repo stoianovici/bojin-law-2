@@ -54,8 +54,13 @@ import { globalEmailSourcesResolvers } from './resolvers/global-email-sources.re
 import { emailClassificationResolvers } from './resolvers/email-classification.resolvers';
 import { classificationReviewResolvers } from './resolvers/classification-review.resolvers';
 import { proactiveSuggestionsResolvers } from './resolvers/proactive-suggestions.resolvers';
-import { caseEventResolvers } from './resolvers/case-event.resolvers';
 import { caseSummaryResolvers } from './resolvers/case-summary.resolvers';
+import { aiAssistantResolvers } from './resolvers/ai-assistant.resolvers';
+import {
+  documentFolderQueryResolvers,
+  documentFolderMutationResolvers,
+  documentFolderTypeResolvers,
+} from './resolvers/document-folder.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -105,8 +110,9 @@ const resolvers = {
     ...emailClassificationResolvers.Query,
     ...classificationReviewResolvers.Query,
     ...proactiveSuggestionsResolvers.Query,
-    ...caseEventResolvers.Query,
     ...caseSummaryResolvers.Query,
+    ...aiAssistantResolvers.Query,
+    ...documentFolderQueryResolvers,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -137,8 +143,9 @@ const resolvers = {
     ...emailClassificationResolvers.Mutation,
     ...classificationReviewResolvers.Mutation,
     ...proactiveSuggestionsResolvers.Mutation,
-    ...caseEventResolvers.Mutation,
     ...caseSummaryResolvers.Mutation,
+    ...aiAssistantResolvers.Mutation,
+    ...documentFolderMutationResolvers,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -268,10 +275,13 @@ const resolvers = {
   // Classification Review resolvers (OPS-031)
   PendingClassificationItem: classificationReviewResolvers.PendingClassificationItem,
   EmailClassificationLog: classificationReviewResolvers.EmailClassificationLog,
-  // Case Event resolvers (OPS-049)
-  CaseEvent: caseEventResolvers.CaseEvent,
   // Case Summary resolvers (OPS-048)
   CaseSummary: caseSummaryResolvers.CaseSummary,
+  // AI Assistant resolvers (OPS-068)
+  AIConversation: aiAssistantResolvers.AIConversation,
+  AIMessage: aiAssistantResolvers.AIMessage,
+  // Document Folder resolvers (OPS-089)
+  DocumentFolder: documentFolderTypeResolvers.DocumentFolder,
 };
 
 /**

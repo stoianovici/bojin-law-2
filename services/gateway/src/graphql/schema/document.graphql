@@ -149,6 +149,9 @@ Document in case context
 Includes document details plus case-specific linking information
 """
 type CaseDocumentWithContext {
+  """ID of the CaseDocument record (for folder operations)"""
+  id: UUID!
+
   """The document"""
   document: Document!
 
@@ -408,6 +411,20 @@ extend type Query {
     """Document ID"""
     documentId: UUID!
   ): ThumbnailResponse
+
+  """
+  Get preview URL for a document (OPS-087)
+  Returns URL for embedding document preview in iframe:
+  - PDFs: Direct OneDrive URL (browser renders natively)
+  - Office docs: Office Online embed URL
+  - Images: Direct OneDrive URL
+
+  Authorization: User must have access to the document
+  """
+  documentPreviewUrl(
+    """Document ID"""
+    documentId: UUID!
+  ): PreviewUrlResponse
 }
 
 # ============================================================================
@@ -543,6 +560,9 @@ type BulkDeleteResult {
   """Number of Document records deleted"""
   documentsDeleted: Int!
 
+  """Number of files deleted from OneDrive"""
+  oneDriveFilesDeleted: Int!
+
   """Whether the operation was successful"""
   success: Boolean!
 }
@@ -581,4 +601,18 @@ type ThumbnailResponse {
 
   """Source of the thumbnail (local, onedrive, or cache)"""
   source: String!
+}
+
+"""
+Preview URL response for document preview (OPS-087)
+"""
+type PreviewUrlResponse {
+  """Preview URL for embedding in iframe"""
+  url: String!
+
+  """Source of the preview (pdf, office365, image)"""
+  source: String!
+
+  """Expiration time for the URL"""
+  expiresAt: DateTime!
 }

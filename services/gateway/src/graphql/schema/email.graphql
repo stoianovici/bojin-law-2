@@ -1,5 +1,6 @@
 # Email Integration GraphQL Schema
 # Story 5.1: Email Integration and Synchronization
+# OPS-060: Multi-Case Email Support
 #
 # Provides types and operations for email synchronization,
 # threading, categorization, and search.
@@ -14,6 +15,48 @@ Email address with optional display name
 type EmailAddress {
   name: String
   address: String!
+}
+
+"""
+Classification match type - how an email was linked to a case (OPS-060)
+"""
+enum ClassificationMatchType {
+  """Matched by sender/recipient in CaseActor"""
+  Actor
+  """Matched court file or contract reference"""
+  ReferenceNumber
+  """Matched case keywords"""
+  Keyword
+  """AI semantic similarity match"""
+  Semantic
+  """Matched global email source (court, authority)"""
+  GlobalSource
+  """User manually assigned"""
+  Manual
+  """Matched by conversation thread"""
+  ThreadContinuity
+}
+
+"""
+Email-to-Case link with classification metadata (OPS-060)
+Represents a many-to-many relationship between emails and cases
+"""
+type EmailCaseLink {
+  id: ID!
+  email: Email!
+  case: Case!
+  """The ID of the linked case (for convenience)"""
+  caseId: ID!
+  """Confidence score for this assignment (0.0 - 1.0)"""
+  confidence: Float
+  """How this link was created"""
+  matchType: ClassificationMatchType
+  """When this link was created"""
+  linkedAt: DateTime!
+  """Who created this link - 'auto' or userId"""
+  linkedBy: String!
+  """Whether this is the primary (first) assignment"""
+  isPrimary: Boolean!
 }
 
 """
@@ -43,6 +86,8 @@ type Email {
   bodyPreview: String!
   bodyContent: String!
   bodyContentType: String!
+  """AI-cleaned content - new message only, no signatures/quotes (OPS-090)"""
+  bodyContentClean: String
   from: EmailAddress!
   toRecipients: [EmailAddress!]!
   ccRecipients: [EmailAddress!]!
@@ -59,7 +104,33 @@ type Email {
   classifiedAt: DateTime
   """Who classified the email - 'auto' or userId"""
   classifiedBy: String
+
+  # ============================================================================
+  # Multi-Case Support (OPS-060)
+  # ============================================================================
+
+  """
+  All case links for this email with classification metadata
+  Replaces direct case relationship for multi-case support
+  """
+  caseLinks: [EmailCaseLink!]!
+
+  """
+  All cases this email is linked to (convenience field)
+  """
+  cases: [Case!]!
+
+  """
+  The primary case for this email (first/original assignment)
+  Returns null if email is not linked to any case
+  """
+  primaryCase: Case
+
+  """
+  @deprecated Use primaryCase instead. Kept for backwards compatibility.
+  """
   case: Case
+
   attachments: [EmailAttachment!]!
   thread: EmailThread
 }
@@ -365,6 +436,18 @@ extend type Query {
   """
   emailAttachmentContent(emailId: ID!, attachmentId: ID!): AttachmentContent
 
+  """
+  Get preview URL for an email attachment (OPS-087)
+  Returns URL for embedding attachment preview in iframe:
+  - PDFs: Direct OneDrive URL (browser renders natively)
+  - Office docs: Office Online embed URL
+  - Images: Direct OneDrive URL
+  Returns null for attachments stored in R2 or unsupported types
+
+  Authorization: User must have access to the email
+  """
+  attachmentPreviewUrl(attachmentId: ID!): PreviewUrlResponse
+
   # ============================================================================
   # INSTANȚE Queries (OPS-040)
   # ============================================================================
@@ -442,6 +525,16 @@ extend type Mutation {
   triggerEmailCategorization: Int!
 
   """
+  Backfill AI-cleaned content for existing emails (OPS-090)
+  Processes emails without bodyContentClean, extracting new content only.
+  Authorization: Partner, Admin, or BusinessOwner role required
+  """
+  backfillEmailCleanContent(
+    """Number of emails to process (default: 50)"""
+    limit: Int
+  ): Int!
+
+  """
   Create or renew email webhook subscription
   """
   createEmailSubscription: EmailSyncStatus!
@@ -512,6 +605,30 @@ extend type Mutation {
     emailId: ID!
     action: ClassificationActionInput!
   ): ClassifyUncertainEmailResult!
+
+  # ============================================================================
+  # Multi-Case Email Mutations (OPS-060)
+  # ============================================================================
+
+  """
+  Link an email to an additional case (multi-case support)
+  Creates a new EmailCaseLink for the email-case pair
+  """
+  linkEmailToCase(
+    emailId: ID!
+    caseId: ID!
+    """Optional: Set as primary case (default: false)"""
+    isPrimary: Boolean
+  ): EmailCaseLink!
+
+  """
+  Remove an email from a case (multi-case support)
+  Deletes the EmailCaseLink for the email-case pair
+  """
+  unlinkEmailFromCase(
+    emailId: ID!
+    caseId: ID!
+  ): Boolean!
 }
 
 """

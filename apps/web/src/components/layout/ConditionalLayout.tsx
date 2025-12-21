@@ -10,6 +10,7 @@
 import React, { type ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { MainLayout } from './MainLayout';
+import { AssistantPill } from '../assistant';
 import { useAuth } from '../../lib/hooks/useAuth';
 
 interface ConditionalLayoutProps {
@@ -100,5 +101,10 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   }
 
   // Authenticated user (or skipAuth mode) on protected route - use MainLayout
-  return <MainLayout>{children}</MainLayout>;
+  return (
+    <>
+      <MainLayout>{children}</MainLayout>
+      <AssistantPill />
+    </>
+  );
 }

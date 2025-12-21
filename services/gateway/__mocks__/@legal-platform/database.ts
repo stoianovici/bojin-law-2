@@ -117,6 +117,21 @@ export const prisma = {
     delete: jest.fn(),
     count: jest.fn(),
   },
+  task: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  emailDraft: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
 };
 
 export const checkDatabaseHealth = jest.fn();

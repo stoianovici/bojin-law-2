@@ -17,6 +17,7 @@ import { TaskDetailModal } from '../../components/task/TaskDetailModal';
 import { TaskFilterBar } from '../../components/task/TaskFilterBar';
 import { useTaskManagementStore, useFilteredTasks } from '../../stores/task-management.store';
 import { useSetAIContext } from '../../contexts/AIAssistantContext';
+import { useTasks } from '../../hooks/useTasks';
 import type { Task } from '@legal-platform/types';
 
 export default function TasksPage() {
@@ -26,7 +27,7 @@ export default function TasksPage() {
     activeView,
     setActiveView,
     tasks: _tasks,
-    setTasks: _setTasks,
+    setTasks,
     filters,
     setFilters,
     clearFilters,
@@ -39,6 +40,16 @@ export default function TasksPage() {
     deleteTask,
   } = useTaskManagementStore();
 
+  // Fetch all tasks from API (not just current user's tasks)
+  const { tasks: apiTasks } = useTasks();
+
+  // Sync API tasks to store when they change
+  useEffect(() => {
+    if (apiTasks.length > 0) {
+      setTasks(apiTasks);
+    }
+  }, [apiTasks, setTasks]);
+
   // Use filtered tasks instead of raw tasks for display
   const filteredTasks = useFilteredTasks();
 
@@ -50,8 +61,6 @@ export default function TasksPage() {
   useEffect(() => {
     document.title = 'Sarcini';
   }, []);
-
-  // TODO: Load tasks from API when backend is ready
 
   /**
    * Handle task click (opens detail modal)

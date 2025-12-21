@@ -12,6 +12,7 @@ import {
   PutObjectCommand,
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'stream';
 import logger from '../utils/logger';
 
@@ -232,6 +233,46 @@ export class R2StorageService {
     };
 
     return contentTypes[extension.toLowerCase()] || 'application/octet-stream';
+  }
+
+  /**
+   * Generate a presigned URL for document preview/download
+   * This allows direct browser access to R2-stored documents without going through the API
+   *
+   * @param storagePath - The storage path/key of the document
+   * @param expiresIn - URL expiration time in seconds (default: 1 hour)
+   * @returns Presigned URL or null if R2 is not configured
+   */
+  async getPresignedUrl(
+    storagePath: string,
+    expiresIn: number = 3600
+  ): Promise<{ url: string; expiresAt: string } | null> {
+    if (!this.isConfigured()) {
+      logger.debug('R2 not configured, cannot generate presigned URL');
+      return null;
+    }
+
+    try {
+      const client = this.getClient();
+
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: storagePath,
+      });
+
+      const url = await getSignedUrl(client, command, { expiresIn });
+      const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+
+      logger.debug('Generated presigned URL for R2 document', {
+        storagePath,
+        expiresIn,
+      });
+
+      return { url, expiresAt };
+    } catch (error) {
+      logger.error('Failed to generate presigned URL', { storagePath, error });
+      return null;
+    }
   }
 }
 

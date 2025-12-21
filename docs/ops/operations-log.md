@@ -5,262 +5,109 @@
 
 ## Quick Reference
 
-| ID      | Title                                             | Type        | Priority    | Status       | File                                     |
-| ------- | ------------------------------------------------- | ----------- | ----------- | ------------ | ---------------------------------------- |
-| OPS-001 | Communications page not loading emails            | Bug         | P0-Critical | Resolved     | [archive/ops-001.md](archive/ops-001.md) |
-| OPS-002 | Legacy import stuck at 8k docs                    | Performance | P1-High     | Resolved     | [archive/ops-002.md](archive/ops-002.md) |
-| OPS-003 | Restrict partner dashboard to partners            | Feature     | P2-Medium   | Resolved     | [archive/ops-003.md](archive/ops-003.md) |
-| OPS-004 | Add categorization backup before export           | Feature     | P1-High     | Resolved     | [archive/ops-004.md](archive/ops-004.md) |
-| OPS-005 | AI extraction and drafting not working            | Bug         | P0-Critical | Resolved     | [archive/ops-005.md](archive/ops-005.md) |
-| OPS-006 | Connect AI capabilities to application UI         | Feature     | P1-High     | Resolved     | [archive/ops-006.md](archive/ops-006.md) |
-| OPS-007 | AI email drafts ignore user language pref         | Bug         | P2-Medium   | Resolved     | [archive/ops-007.md](archive/ops-007.md) |
-| OPS-008 | Communications section comprehensive overhaul     | Feature     | P1-High     | Resolved     | [archive/ops-008.md](archive/ops-008.md) |
-| OPS-009 | Multiple re-login prompts for email/attachments   | Bug         | P1-High     | Resolved     | [archive/ops-009.md](archive/ops-009.md) |
-| OPS-010 | Emails synced but not displayed (1049 emails)     | Bug         | P0-Critical | Resolved     | [archive/ops-010.md](archive/ops-010.md) |
-| OPS-011 | Refocus /communications on received emails only   | Feature     | P1-High     | Resolved     | [archive/ops-011.md](archive/ops-011.md) |
-| OPS-012 | Legacy import can't advance past first 100 docs   | Bug         | P1-High     | Resolved     | [archive/ops-012.md](archive/ops-012.md) |
-| OPS-013 | New logins don't show up in user management       | Bug         | P1-High     | Resolved     | [archive/ops-013.md](archive/ops-013.md) |
-| OPS-014 | Role-based menu visibility refinement             | Bug         | P2-Medium   | Resolved     | [archive/ops-014.md](archive/ops-014.md) |
-| OPS-015 | Translate English UI sections to Romanian         | Feature     | P2-Medium   | Resolved     | [archive/ops-015.md](archive/ops-015.md) |
-| OPS-016 | Redesign Communications Tab in Case Details       | Feature     | P1-High     | Resolved     | [archive/ops-016.md](archive/ops-016.md) |
-| OPS-017 | AI service TypeScript compilation errors          | Bug         | P1-High     | Resolved     | [archive/ops-017.md](archive/ops-017.md) |
-| OPS-018 | AI Service Deployment Failure & Render Duplicates | Bug/Infra   | P1-High     | Resolved     | [archive/ops-018.md](archive/ops-018.md) |
-| OPS-019 | Activate AI Chat Bar (QuickActionsBar)            | Feature     | P1-High     | Resolved     | [archive/ops-019.md](archive/ops-019.md) |
-| OPS-020 | Redesign AI Bar - Floating Pill Design            | Feature     | P2-Medium   | Resolved     | [archive/ops-020.md](archive/ops-020.md) |
-| OPS-021 | Ensure dev/production parity                      | Infra       | P2-Medium   | Resolved     | [archive/ops-021.md](archive/ops-021.md) |
-| OPS-022 | Email-to-Case Timeline Integration                | Feature     | P1-High     | Resolved     | [archive/ops-022.md](archive/ops-022.md) |
-| OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug         | P1-High     | Resolved     | [archive/ops-023.md](archive/ops-023.md) |
-| OPS-024 | Email Import - Attachments Not Importing          | Bug         | P1-High     | Resolved     | [archive/ops-024.md](archive/ops-024.md) |
-| OPS-025 | Email and Document Permanent Deletion             | Feature     | P1-High     | Resolved     | [archive/ops-025.md](archive/ops-025.md) |
-| OPS-026 | AI Thread Summary Agent for Communications        | Feature     | P2-Medium   | Resolved     | [archive/ops-026.md](archive/ops-026.md) |
-| OPS-027 | Classification Schema & Data Model                | Feature     | P1-High     | Merged       | [archive/ops-027.md](archive/ops-027.md) |
-| OPS-028 | Classification Metadata UI                        | Feature     | P1-High     | Merged       | [archive/ops-028.md](archive/ops-028.md) |
-| OPS-029 | AI Email Classification Service                   | Feature     | P1-High     | Merged       | [archive/ops-029.md](archive/ops-029.md) |
-| OPS-030 | Email Import with Classification                  | Feature     | P1-High     | Outdated     | [archive/ops-030.md](archive/ops-030.md) |
-| OPS-031 | Classification Review & Correction                | Feature     | P2-Medium   | Resolved     | [archive/ops-031.md](archive/ops-031.md) |
-| OPS-032 | Repurpose /communications as Pending Queue        | Feature     | P1-High     | Superseded   | [archive/ops-032.md](archive/ops-032.md) |
-| OPS-033 | Firm-wide Email Search                            | Feature     | P3-Low      | Superseded   | [archive/ops-033.md](archive/ops-033.md) |
-| OPS-034 | Fix Web App TypeScript Errors (377→38)            | Bug         | P0-Critical | Resolved     | [archive/ops-034.md](archive/ops-034.md) |
-| OPS-035 | Data Model - Classification State & Case Metadata | Feature     | P1-High     | Resolved     | [archive/ops-035.md](archive/ops-035.md) |
-| OPS-036 | Simplify /communications UI                       | Feature     | P2-Medium   | Resolved     | [archive/ops-036.md](archive/ops-036.md) |
-| OPS-037 | Case Communications Tab - Read-Only Mode          | Feature     | P2-Medium   | Resolved     | [archive/ops-037.md](archive/ops-037.md) |
-| OPS-038 | Contacts & Metadata in Case Flow                  | Feature     | P1-High     | Resolved     | [archive/ops-038.md](archive/ops-038.md) |
-| OPS-039 | Enhanced Multi-Case Classification Algorithm      | Feature     | P1-High     | Resolved     | [archive/ops-039.md](archive/ops-039.md) |
-| OPS-040 | Court Email Detection & INSTANȚE Routing          | Feature     | P1-High     | Resolved     | [archive/ops-040.md](archive/ops-040.md) |
-| OPS-041 | /communications Case-Organized Redesign           | Feature     | P1-High     | Resolved     | [archive/ops-041.md](archive/ops-041.md) |
-| OPS-042 | Classification Modal (NECLAR Queue)               | Feature     | P1-High     | Resolved     | [archive/ops-042.md](archive/ops-042.md) |
-| OPS-043 | Re-classify emails when contacts added to case    | Feature     | P2-Medium   | Resolved     | [archive/ops-043.md](archive/ops-043.md) |
-| OPS-044 | Manual email thread reassignment UI               | Feature     | P2-Medium   | Resolved     | [archive/ops-044.md](archive/ops-044.md) |
-| OPS-045 | Documents Tab Fails to Load                       | Bug         | P1-High     | Resolved     | [archive/ops-045.md](archive/ops-045.md) |
-| OPS-046 | Case Summary Data Model                           | Feature     | P1-High     | Implementing | [issues/ops-046.md](issues/ops-046.md)   |
-| OPS-047 | Event-Driven Summary Invalidation                 | Feature     | P1-High     | Open         | [issues/ops-047.md](issues/ops-047.md)   |
-| OPS-048 | AI Summary Generation Service                     | Feature     | P1-High     | Open         | [issues/ops-048.md](issues/ops-048.md)   |
-| OPS-049 | Unified Chronology with Importance Scoring        | Feature     | P1-High     | Implementing | [issues/ops-049.md](issues/ops-049.md)   |
-| OPS-050 | Overview Tab AI Summary UI                        | Feature     | P1-High     | Implementing | [issues/ops-050.md](issues/ops-050.md)   |
-| OPS-051 | Time Grouping Utility for Chronology              | Feature     | P2-Medium   | Verifying    | [issues/ops-051.md](issues/ops-051.md)   |
-| OPS-052 | Collapsible TimeSection Component                 | Feature     | P2-Medium   | Implementing | [issues/ops-052.md](issues/ops-052.md)   |
-| OPS-053 | Chronology Tab Bar & Event Filtering              | Feature     | P2-Medium   | Implemented  | [issues/ops-053.md](issues/ops-053.md)   |
-| OPS-054 | CaseChronology Integration                        | Feature     | P2-Medium   | Implemented  | [issues/ops-054.md](issues/ops-054.md)   |
-| OPS-055 | Chronology Tab Counts - Server-Side Totals        | Bug         | P1-High     | Fixing       | [issues/ops-055.md](issues/ops-055.md)   |
-| OPS-056 | Email Events Not Syncing to Chronology            | Bug         | P0-Critical | Fixing       | [issues/ops-056.md](issues/ops-056.md)   |
-| OPS-057 | Chronology Time Sections - Show All Periods       | UX          | P3-Low      | Verifying    | [issues/ops-057.md](issues/ops-057.md)   |
+| ID      | Title                                             | Type         | Priority    | Status     | File                                     |
+| ------- | ------------------------------------------------- | ------------ | ----------- | ---------- | ---------------------------------------- |
+| OPS-001 | Communications page not loading emails            | Bug          | P0-Critical | Resolved   | [archive/ops-001.md](archive/ops-001.md) |
+| OPS-002 | Legacy import stuck at 8k docs                    | Performance  | P1-High     | Resolved   | [archive/ops-002.md](archive/ops-002.md) |
+| OPS-003 | Restrict partner dashboard to partners            | Feature      | P2-Medium   | Resolved   | [archive/ops-003.md](archive/ops-003.md) |
+| OPS-004 | Add categorization backup before export           | Feature      | P1-High     | Resolved   | [archive/ops-004.md](archive/ops-004.md) |
+| OPS-005 | AI extraction and drafting not working            | Bug          | P0-Critical | Resolved   | [archive/ops-005.md](archive/ops-005.md) |
+| OPS-006 | Connect AI capabilities to application UI         | Feature      | P1-High     | Resolved   | [archive/ops-006.md](archive/ops-006.md) |
+| OPS-007 | AI email drafts ignore user language pref         | Bug          | P2-Medium   | Resolved   | [archive/ops-007.md](archive/ops-007.md) |
+| OPS-008 | Communications section comprehensive overhaul     | Feature      | P1-High     | Resolved   | [archive/ops-008.md](archive/ops-008.md) |
+| OPS-009 | Multiple re-login prompts for email/attachments   | Bug          | P1-High     | Resolved   | [archive/ops-009.md](archive/ops-009.md) |
+| OPS-010 | Emails synced but not displayed (1049 emails)     | Bug          | P0-Critical | Resolved   | [archive/ops-010.md](archive/ops-010.md) |
+| OPS-011 | Refocus /communications on received emails only   | Feature      | P1-High     | Resolved   | [archive/ops-011.md](archive/ops-011.md) |
+| OPS-012 | Legacy import can't advance past first 100 docs   | Bug          | P1-High     | Resolved   | [archive/ops-012.md](archive/ops-012.md) |
+| OPS-013 | New logins don't show up in user management       | Bug          | P1-High     | Resolved   | [archive/ops-013.md](archive/ops-013.md) |
+| OPS-014 | Role-based menu visibility refinement             | Bug          | P2-Medium   | Resolved   | [archive/ops-014.md](archive/ops-014.md) |
+| OPS-015 | Translate English UI sections to Romanian         | Feature      | P2-Medium   | Resolved   | [archive/ops-015.md](archive/ops-015.md) |
+| OPS-016 | Redesign Communications Tab in Case Details       | Feature      | P1-High     | Resolved   | [archive/ops-016.md](archive/ops-016.md) |
+| OPS-017 | AI service TypeScript compilation errors          | Bug          | P1-High     | Resolved   | [archive/ops-017.md](archive/ops-017.md) |
+| OPS-018 | AI Service Deployment Failure & Render Duplicates | Bug/Infra    | P1-High     | Resolved   | [archive/ops-018.md](archive/ops-018.md) |
+| OPS-019 | Activate AI Chat Bar (QuickActionsBar)            | Feature      | P1-High     | Resolved   | [archive/ops-019.md](archive/ops-019.md) |
+| OPS-020 | Redesign AI Bar - Floating Pill Design            | Feature      | P2-Medium   | Resolved   | [archive/ops-020.md](archive/ops-020.md) |
+| OPS-021 | Ensure dev/production parity                      | Infra        | P2-Medium   | Resolved   | [archive/ops-021.md](archive/ops-021.md) |
+| OPS-022 | Email-to-Case Timeline Integration                | Feature      | P1-High     | Resolved   | [archive/ops-022.md](archive/ops-022.md) |
+| OPS-023 | Gateway Service TypeScript Compilation Errors     | Bug          | P1-High     | Resolved   | [archive/ops-023.md](archive/ops-023.md) |
+| OPS-024 | Email Import - Attachments Not Importing          | Bug          | P1-High     | Resolved   | [archive/ops-024.md](archive/ops-024.md) |
+| OPS-025 | Email and Document Permanent Deletion             | Feature      | P1-High     | Resolved   | [archive/ops-025.md](archive/ops-025.md) |
+| OPS-026 | AI Thread Summary Agent for Communications        | Feature      | P2-Medium   | Resolved   | [archive/ops-026.md](archive/ops-026.md) |
+| OPS-027 | Classification Schema & Data Model                | Feature      | P1-High     | Merged     | [archive/ops-027.md](archive/ops-027.md) |
+| OPS-028 | Classification Metadata UI                        | Feature      | P1-High     | Merged     | [archive/ops-028.md](archive/ops-028.md) |
+| OPS-029 | AI Email Classification Service                   | Feature      | P1-High     | Merged     | [archive/ops-029.md](archive/ops-029.md) |
+| OPS-030 | Email Import with Classification                  | Feature      | P1-High     | Outdated   | [archive/ops-030.md](archive/ops-030.md) |
+| OPS-031 | Classification Review & Correction                | Feature      | P2-Medium   | Resolved   | [archive/ops-031.md](archive/ops-031.md) |
+| OPS-032 | Repurpose /communications as Pending Queue        | Feature      | P1-High     | Superseded | [archive/ops-032.md](archive/ops-032.md) |
+| OPS-033 | Firm-wide Email Search                            | Feature      | P3-Low      | Superseded | [archive/ops-033.md](archive/ops-033.md) |
+| OPS-034 | Fix Web App TypeScript Errors (377→38)            | Bug          | P0-Critical | Resolved   | [archive/ops-034.md](archive/ops-034.md) |
+| OPS-035 | Data Model - Classification State & Case Metadata | Feature      | P1-High     | Resolved   | [archive/ops-035.md](archive/ops-035.md) |
+| OPS-036 | Simplify /communications UI                       | Feature      | P2-Medium   | Resolved   | [archive/ops-036.md](archive/ops-036.md) |
+| OPS-037 | Case Communications Tab - Read-Only Mode          | Feature      | P2-Medium   | Resolved   | [archive/ops-037.md](archive/ops-037.md) |
+| OPS-038 | Contacts & Metadata in Case Flow                  | Feature      | P1-High     | Resolved   | [archive/ops-038.md](archive/ops-038.md) |
+| OPS-039 | Enhanced Multi-Case Classification Algorithm      | Feature      | P1-High     | Resolved   | [archive/ops-039.md](archive/ops-039.md) |
+| OPS-040 | Court Email Detection & INSTANȚE Routing          | Feature      | P1-High     | Resolved   | [archive/ops-040.md](archive/ops-040.md) |
+| OPS-041 | /communications Case-Organized Redesign           | Feature      | P1-High     | Resolved   | [archive/ops-041.md](archive/ops-041.md) |
+| OPS-042 | Classification Modal (NECLAR Queue)               | Feature      | P1-High     | Resolved   | [archive/ops-042.md](archive/ops-042.md) |
+| OPS-043 | Re-classify emails when contacts added to case    | Feature      | P2-Medium   | Resolved   | [archive/ops-043.md](archive/ops-043.md) |
+| OPS-044 | Manual email thread reassignment UI               | Feature      | P2-Medium   | Resolved   | [archive/ops-044.md](archive/ops-044.md) |
+| OPS-045 | Documents Tab Fails to Load                       | Bug          | P1-High     | Resolved   | [archive/ops-045.md](archive/ops-045.md) |
+| OPS-046 | Case Summary Data Model                           | Feature      | P1-High     | Resolved   | [archive/ops-046.md](archive/ops-046.md) |
+| OPS-047 | Event-Driven Summary Invalidation                 | Feature      | P1-High     | Resolved   | [archive/ops-047.md](archive/ops-047.md) |
+| OPS-048 | AI Summary Generation Service                     | Feature      | P1-High     | Resolved   | [archive/ops-048.md](archive/ops-048.md) |
+| OPS-049 | Unified Chronology with Importance Scoring        | Feature      | P1-High     | Resolved   | [archive/ops-049.md](archive/ops-049.md) |
+| OPS-050 | Overview Tab AI Summary UI                        | Feature      | P1-High     | Resolved   | [archive/ops-050.md](archive/ops-050.md) |
+| OPS-051 | Time Grouping Utility for Chronology              | Feature      | P2-Medium   | Resolved   | [archive/ops-051.md](archive/ops-051.md) |
+| OPS-052 | Collapsible TimeSection Component                 | Feature      | P2-Medium   | Resolved   | [archive/ops-052.md](archive/ops-052.md) |
+| OPS-053 | Chronology Tab Bar & Event Filtering              | Feature      | P2-Medium   | Resolved   | [archive/ops-053.md](archive/ops-053.md) |
+| OPS-054 | CaseChronology Integration                        | Feature      | P2-Medium   | Resolved   | [archive/ops-054.md](archive/ops-054.md) |
+| OPS-055 | Chronology Tab Counts - Server-Side Totals        | Bug          | P1-High     | Resolved   | [archive/ops-055.md](archive/ops-055.md) |
+| OPS-056 | Email Events Not Syncing to Chronology            | Bug          | P0-Critical | Resolved   | [archive/ops-056.md](archive/ops-056.md) |
+| OPS-057 | Chronology Time Sections - Show All Periods       | UX           | P3-Low      | Resolved   | [archive/ops-057.md](archive/ops-057.md) |
+| OPS-058 | Multi-Case Email Data Model                       | Feature      | P0-Critical | Resolved   | [archive/ops-058.md](archive/ops-058.md) |
+| OPS-059 | Multi-Case Classification Algorithm               | Feature      | P1-High     | Resolved   | [archive/ops-059.md](archive/ops-059.md) |
+| OPS-060 | GraphQL Multi-Case Email Support                  | Feature      | P1-High     | Resolved   | [archive/ops-060.md](archive/ops-060.md) |
+| OPS-061 | Multi-Case Email Data Migration                   | Feature      | P1-High     | Resolved   | [archive/ops-061.md](archive/ops-061.md) |
+| OPS-062 | UI Multi-Case Email Display                       | Feature      | P2-Medium   | Resolved   | [archive/ops-062.md](archive/ops-062.md) |
+| OPS-063 | AI Conversation Data Model                        | Feature      | P0-Critical | Resolved   | [archive/ops-063.md](archive/ops-063.md) |
+| OPS-064 | AI Assistant GraphQL Schema                       | Feature      | P0-Critical | Resolved   | [archive/ops-064.md](archive/ops-064.md) |
+| OPS-065 | Conversation Service                              | Feature      | P0-Critical | Resolved   | [archive/ops-065.md](archive/ops-065.md) |
+| OPS-066 | AI Orchestrator Service                           | Feature      | P1-High     | Resolved   | [archive/ops-066.md](archive/ops-066.md) |
+| OPS-067 | Action Executor Service                           | Feature      | P1-High     | Resolved   | [archive/ops-067.md](archive/ops-067.md) |
+| OPS-068 | AI Assistant Resolvers                            | Feature      | P1-High     | Resolved   | [archive/ops-068.md](archive/ops-068.md) |
+| OPS-069 | Assistant Store (Zustand)                         | Feature      | P1-High     | Resolved   | [archive/ops-069.md](archive/ops-069.md) |
+| OPS-070 | useAssistant Hook                                 | Feature      | P1-High     | Resolved   | [archive/ops-070.md](archive/ops-070.md) |
+| OPS-071 | AssistantPill Components                          | Feature      | P1-High     | Resolved   | [archive/ops-071.md](archive/ops-071.md) |
+| OPS-072 | Task & Calendar Intent Handler                    | Feature      | P2-Medium   | Resolved   | [archive/ops-072.md](archive/ops-072.md) |
+| OPS-073 | Case Query Intent Handler                         | Feature      | P2-Medium   | Resolved   | [archive/ops-073.md](archive/ops-073.md) |
+| OPS-074 | Email Intent Handler                              | Feature      | P2-Medium   | Resolved   | [archive/ops-074.md](archive/ops-074.md) |
+| OPS-075 | Document Intent Handler                           | Feature      | P2-Medium   | Resolved   | [archive/ops-075.md](archive/ops-075.md) |
+| OPS-076 | Proactive Briefings Integration                   | Feature      | P2-Medium   | Resolved   | [archive/ops-076.md](archive/ops-076.md) |
+| OPS-077 | Service Wrappers for AI Assistant Handlers        | Feature      | P1-High     | Resolved   | [archive/ops-077.md](archive/ops-077.md) |
+| OPS-078 | Error Handling & Fallbacks                        | Feature      | P2-Medium   | Resolved   | [archive/ops-078.md](archive/ops-078.md) |
+| OPS-079 | Integration Tests                                 | Testing      | P2-Medium   | Resolved   | [archive/ops-079.md](archive/ops-079.md) |
+| OPS-080 | E2E Tests                                         | Testing      | P3-Low      | Resolved   | [archive/ops-080.md](archive/ops-080.md) |
+| OPS-081 | AI Architecture - Direct Sonnet with Tools        | Architecture | P0-Critical | Resolved   | [archive/ops-081.md](archive/ops-081.md) |
+| OPS-082 | Define Claude Tool Schemas                        | Feature      | P0-Critical | Resolved   | [archive/ops-082.md](archive/ops-082.md) |
+| OPS-083 | Legal Assistant System Prompt                     | Feature      | P0-Critical | Resolved   | [archive/ops-083.md](archive/ops-083.md) |
+| OPS-084 | Direct Sonnet Conversation with Tool Calling      | Feature      | P0-Critical | Resolved   | [archive/ops-084.md](archive/ops-084.md) |
+| OPS-085 | Tool Execution Layer                              | Feature      | P1-High     | Resolved   | [archive/ops-085.md](archive/ops-085.md) |
+| OPS-086 | Frontend Tool Response Handling                   | Feature      | P1-High     | Resolved   | [archive/ops-086.md](archive/ops-086.md) |
+| OPS-087 | Document & Attachment Preview                     | Feature      | P2-Medium   | Open       | [issues/ops-087.md](issues/ops-087.md)   |
+| OPS-088 | Cmd+K Command Palette with cmdk Library           | Feature      | P2-Medium   | Open       | [issues/ops-088.md](issues/ops-088.md)   |
+| OPS-089 | /documents Section with Folders                   | Feature      | P1-High     | Open       | [issues/ops-089.md](issues/ops-089.md)   |
+| OPS-090 | Email Content Cleaning for Readability            | Feature      | P2-Medium   | Open       | [issues/ops-090.md](issues/ops-090.md)   |
 
 ---
 
 ## Active Issues Summary
 
-### [OPS-046 → OPS-050] Persistent AI Case Summary
-
-**Status:** Open | **Priority:** P1-High | **Type:** Feature Set | **Created:** 2025-12-19
-
-Implement persistent, auto-updating AI summaries in the case detail Overview tab.
-
-**Core Principles:**
-
-- **Persistent summaries** - Cached until new data arrives, no manual "generate" button
-- **Event-driven updates** - Summary regenerates when docs/emails/notes/tasks change
-- **Unified chronology** - All case events with importance scoring
-- **2-column layout** - Key developments + open issues side-by-side
-
-**Dependency Graph:**
-
-```
-PHASE 1 (Start Immediately):
-└── OPS-046: Data Model (Foundation) ← BLOCKS ALL
-
-PHASE 2 (After OPS-046, run in parallel):
-├── OPS-047: Event Triggers (mark stale on data changes)
-├── OPS-048: Summary Generation Service (background AI generation)
-└── OPS-049: Unified Chronology Query (importance scoring, pagination)
-
-PHASE 3 (After Phase 2):
-└── OPS-050: Frontend UI (Overview tab integration)
-```
-
-| Issue   | Title                              | Scope                                           | Phase |
-| ------- | ---------------------------------- | ----------------------------------------------- | ----- |
-| OPS-046 | Case Summary Data Model            | CaseSummary + CaseEvent Prisma models           | 1     |
-| OPS-047 | Event-Driven Summary Invalidation  | Hooks to mark stale, hourly fallback            | 2     |
-| OPS-048 | AI Summary Generation Service      | Background worker, AI prompt, store results     | 2     |
-| OPS-049 | Unified Chronology with Importance | Aggregate events, scoring, paginated query      | 2     |
-| OPS-050 | Overview Tab AI Summary UI         | CaseAISummarySection, CaseChronology components | 3     |
-
----
-
-### [OPS-051 → OPS-054] Chronology Structure Improvement
-
-**Status:** Open | **Priority:** P2-Medium | **Type:** Feature Set | **Created:** 2025-12-19
-
-Improve chronology readability with category tabs and collapsible time sections.
-
-**Core Features:**
-
-- **Category tabs** - Toate | Documente | Comunicări | Sarcini
-- **Time sections** - Astăzi, Săptămâna aceasta, Luna aceasta, Mai vechi
-- **Collapsible groups** - Recent sections expanded, older collapsed
-- **Consistent pattern** - Same time grouping applied to all tabs
-
-**Dependency Graph:**
-
-```
-PARALLEL (Start Immediately):
-├── OPS-051: Time Grouping Utility (pure function)
-├── OPS-052: TimeSection Component (collapsible UI)
-└── OPS-053: Tab Bar & Event Filtering (tab UI + filter logic)
-
-THEN:
-└── OPS-054: CaseChronology Integration (wire everything together)
-```
-
-| Issue   | Title                      | Scope                                    | Phase    |
-| ------- | -------------------------- | ---------------------------------------- | -------- |
-| OPS-051 | Time Grouping Utility      | groupEventsByTimePeriod function         | Parallel |
-| OPS-052 | TimeSection Component      | Collapsible section with count badge     | Parallel |
-| OPS-053 | Tab Bar & Event Filtering  | Tab UI, event type mappings, filter func | Parallel |
-| OPS-054 | CaseChronology Integration | Refactor component to use 051-053        | After    |
-
----
-
-### [OPS-055 → OPS-057] Chronology Bug Fixes
-
-**Status:** Open | **Priority:** P0-P3 | **Type:** Bug/UX | **Created:** 2025-12-19
-
-Bugs discovered during chronology verification. Three separate issues by workload:
-
-**Priority Order:**
-
-```
-1. OPS-056: Email Events Not Syncing (P0-Critical)
-   └── Root cause: sync queries Email.caseId which doesn't exist
-   └── Emails linked via EmailClassification, not direct FK
-
-2. OPS-055: Tab Counts Server-Side (P1-High)
-   └── Root cause: counts from loaded events, not total
-   └── Need GraphQL countsByType field
-
-3. OPS-057: Time Sections UX (P3-Low)
-   └── Root cause: only non-empty sections shown
-   └── UX improvement, not functional bug
-```
-
-| Issue   | Title                            | Root Cause                                   | Priority    |
-| ------- | -------------------------------- | -------------------------------------------- | ----------- |
-| OPS-055 | Tab Counts - Server-Side Totals  | `countEventsByTab(events)` uses loaded array | P1-High     |
-| OPS-056 | Email Events Not Syncing         | Sync queries `Email.caseId` (empty)          | P0-Critical |
-| OPS-057 | Time Sections - Show All Periods | `groupEventsByTimePeriod` hides empty        | P3-Low      |
-
-**Recommended Fix Order:** OPS-056 → OPS-055 → OPS-057
-
----
-
-**Recently Resolved (2025-12-19):**
-
-| Issue   | Title                             | Resolution                                          |
-| ------- | --------------------------------- | --------------------------------------------------- |
-| OPS-045 | Documents Tab Fails to Load       | Fixed: Added PENDING to GraphQL DocumentStatus enum |
-| OPS-043 | Re-classify emails on contact add | Closed: Feature deferred                            |
-| OPS-044 | Manual thread reassignment UI     | Closed: Feature deferred                            |
-
----
-
-### [OPS-027 → OPS-031] Multi-Case Email Classification _(Archived)_
-
-**Status:** Merged/Outdated | **Replaced by:** OPS-035 → OPS-042 | **Archived:** 2025-12-18
-
-This feature set has been superseded by the Communications Architecture Rethink:
-
-| Issue   | Original Scope             | New Status                      |
-| ------- | -------------------------- | ------------------------------- |
-| OPS-027 | Schema & Data Model        | **Merged → OPS-035** (extended) |
-| OPS-028 | Metadata UI                | **Merged → OPS-038** (expanded) |
-| OPS-029 | AI Classification Service  | **Merged → OPS-039** (enhanced) |
-| OPS-030 | Email Import with Classify | **Outdated** (no import wizard) |
-| OPS-031 | Review & Correction        | Resolved                        |
-
-**Key change:** The new architecture uses **real-time classification on sync** instead of batch import. T0 = case creation, no historical email import.
-
-Useful work from these issues (schema, algorithm foundations) is incorporated into OPS-035-042.
-
----
-
-### [OPS-032, OPS-033] _(Superseded)_
-
-- **OPS-032** (Pending Queue) → Replaced by OPS-041 (case-organized approach)
-- **OPS-033** (Firm-wide Search) → No longer needed with case-organized /communications
-
----
-
-### [OPS-035 → OPS-042] Communications Architecture Rethink ✅
-
-**Status:** Resolved | **Priority:** P1-High | **Type:** Feature Set | **Created:** 2025-12-18 | **Completed:** 2025-12-18
-
-Comprehensive redesign of how communications work across the platform.
-
-**Core Principles:**
-
-- **T0 = Case creation** - No historical email import
-- **Contacts set upfront** - Required in new case flow
-- **/communications = My Workspace** - Current user's emails, organized by case, action-oriented
-- **Case details = Read-only Record** - All firm users' emails, AI summary, no actions
-- **Court emails separate** - INSTANȚE folder for unassigned court correspondence
-- **Bulletproof classification** - Robust algorithm for multi-case clients
-
-**Dependency Graph:**
-
-```
-PHASE 1 (Parallel - Start Immediately):
-├── OPS-035: Data Model (Foundation)
-├── OPS-036: Simplify /communications UI
-└── OPS-037: Case Communications Read-Only
-
-PHASE 2 (After OPS-035):
-├── OPS-038: Contacts & Metadata in Case Flow
-├── OPS-039: Enhanced Multi-Case Classification
-└── OPS-040: Court Email Detection & INSTANȚE
-
-PHASE 3 (After Phase 2):
-├── OPS-041: /communications Case-Organized Redesign
-└── OPS-042: Classification Modal (NECLAR Queue)
-```
-
-| Issue   | Title                             | Scope                                  | Phase |
-| ------- | --------------------------------- | -------------------------------------- | ----- |
-| OPS-035 | Data Model                        | Classification state, case metadata    | 1     |
-| OPS-036 | Simplify /communications          | Remove panels, filters, improve scroll | 1     |
-| OPS-037 | Case Communications Read-Only     | Strip actions, show all firm users     | 1     |
-| OPS-038 | Contacts & Metadata in Case Flow  | New case modal step, case edit section | 2     |
-| OPS-039 | Enhanced Classification Algorithm | Multi-case scoring, thread continuity  | 2     |
-| OPS-040 | Court Email Detection & INSTANȚE  | Reference number matching, court flow  | 2     |
-| OPS-041 | /communications Redesign          | Case sidebar, thread view, NECLAR      | 3     |
-| OPS-042 | Classification Modal              | User review for uncertain emails       | 3     |
-
-**Key UI Changes:**
-
-1. `/communications` becomes case-organized workspace (not inbox)
-2. Left sidebar: Cases (expandable) → INSTANȚE → NECLAR sections
-3. Case details/Communications: Read-only, AI summary at top, all firm users' threads
-4. New case modal: Step 2 requires contacts (at least Client)
-5. Case edit: Reference numbers and keywords for classification
+| ID      | Title                                   | Priority  | Status |
+| ------- | --------------------------------------- | --------- | ------ |
+| OPS-087 | Document & Attachment Preview           | P2-Medium | Open   |
+| OPS-088 | Cmd+K Command Palette with cmdk Library | P2-Medium | Open   |
+| OPS-089 | /documents Section with Folders         | P1-High   | Open   |
+| OPS-090 | Email Content Cleaning for Readability  | P2-Medium | Open   |
 
 ---
 
@@ -276,10 +123,9 @@ PHASE 3 (After Phase 2):
 docs/ops/
 ├── operations-log.md    # This index file
 ├── deployment-flows.md  # Deployment procedures and scripts
-├── issues/              # Active issues
-│   ├── ops-046.md through ops-054.md
+├── issues/              # Active issues (currently empty)
 └── archive/             # Resolved issues
-    ├── ops-001.md through ops-045.md
+    ├── ops-001.md through ops-086.md
 ```
 
 ---

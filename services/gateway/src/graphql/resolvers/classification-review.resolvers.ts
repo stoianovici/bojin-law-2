@@ -6,7 +6,6 @@
  */
 
 import { prisma, CaseActorRole } from '@legal-platform/database';
-import { CaseEventType, EventImportance } from '@prisma/client';
 import { caseActivityService } from '../../services/case-activity.service';
 import { caseSummaryService } from '../../services/case-summary.service';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
@@ -549,19 +548,6 @@ export const classificationReviewMutationResolvers = {
     }
     caseSummaryService.markSummaryStale(toCaseId).catch(() => {});
 
-    // Create event for email received in new case
-    caseSummaryService
-      .createCaseEvent({
-        caseId: toCaseId,
-        eventType: CaseEventType.EmailReceived,
-        sourceId: emailId,
-        title: `Email primit: ${email.subject || '(fără subiect)'}`,
-        importance: EventImportance.Medium,
-        occurredAt: email.receivedDateTime,
-        actorId: userId,
-      })
-      .catch(() => {});
-
     return {
       success: true,
       email: await prisma.email.findUnique({ where: { id: emailId } }),
@@ -812,19 +798,8 @@ export const classificationReviewMutationResolvers = {
       logger.warn('[assignPendingEmailToCase] Timeline sync failed', { emailId: pending.emailId });
     }
 
-    // OPS-047: Mark case summary as stale and create event
+    // OPS-047: Mark case summary as stale
     caseSummaryService.markSummaryStale(caseId).catch(() => {});
-    caseSummaryService
-      .createCaseEvent({
-        caseId,
-        eventType: CaseEventType.EmailReceived,
-        sourceId: pending.emailId,
-        title: `Email primit: ${pending.email.subject || '(fără subiect)'}`,
-        importance: EventImportance.Medium,
-        occurredAt: pending.email.receivedDateTime,
-        actorId: userId,
-      })
-      .catch(() => {});
 
     return {
       success: true,
