@@ -27,6 +27,21 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  // Block search engine crawlers from indexing
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow',
+          },
+        ],
+      },
+    ];
+  },
+
   // Webpack config for production build
   webpack: (config, { isServer }) => {
     // Add explicit aliases for workspace packages
