@@ -26,17 +26,9 @@ import {
 import { startDailyDigestWorker, stopDailyDigestWorker } from './workers/daily-digest.worker';
 import { startCaseSummaryWorker, stopCaseSummaryWorker } from './workers/case-summary.worker';
 import {
-  startDeadlineEventsWorker,
-  stopDeadlineEventsWorker,
-} from './workers/deadline-events.worker';
-import {
   createThumbnailWorker,
   shutdownThumbnailWorker,
 } from './workers/thumbnail-generation.worker';
-import {
-  startNotificationProcessorWorker,
-  stopNotificationProcessorWorker,
-} from './workers/notification-processor.worker';
 import {
   startEmailCategorizationWorker,
   stopEmailCategorizationWorker,
@@ -182,22 +174,8 @@ async function startServer() {
     // OPS-048: Start case summary worker
     startCaseSummaryWorker();
 
-    // OPS-116: Start deadline events worker (emits activity events for due/overdue tasks)
-    const deadlineEventsIntervalMs = parseInt(
-      process.env.DEADLINE_EVENTS_INTERVAL_MS || '3600000',
-      10
-    ); // Default: 1 hour
-    startDeadlineEventsWorker(deadlineEventsIntervalMs);
-
     // OPS-114: Start thumbnail generation worker
     thumbnailWorker = createThumbnailWorker();
-
-    // OPS-120: Start notification processor worker
-    const notificationIntervalMs = parseInt(
-      process.env.NOTIFICATION_PROCESSOR_INTERVAL_MS || '300000',
-      10
-    ); // Default: 5 minutes
-    startNotificationProcessorWorker({ notificationIntervalMs });
 
     // Story 5.1: Start email categorization worker
     startEmailCategorizationWorker();
@@ -217,8 +195,6 @@ function setupGracefulShutdown() {
       stopOOOReassignmentWorker();
       stopDailyDigestWorker();
       stopCaseSummaryWorker();
-      stopDeadlineEventsWorker();
-      stopNotificationProcessorWorker();
       stopEmailCategorizationWorker();
 
       // OPS-114: Stop thumbnail worker
