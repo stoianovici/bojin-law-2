@@ -42,7 +42,7 @@ import {
   stopEmailCategorizationWorker,
 } from './workers/email-categorization.worker';
 import type { Worker } from 'bullmq';
-import { redis, prisma } from '@legal-platform/database';
+import { redis } from '@legal-platform/database';
 
 // Create Express app
 const app: Express = express();
@@ -200,7 +200,7 @@ async function startServer() {
     startNotificationProcessorWorker({ notificationIntervalMs });
 
     // Story 5.1: Start email categorization worker
-    startEmailCategorizationWorker(prisma, redis);
+    startEmailCategorizationWorker();
   }
 }
 

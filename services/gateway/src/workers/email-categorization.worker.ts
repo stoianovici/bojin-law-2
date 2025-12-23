@@ -11,8 +11,8 @@
  * - EMAIL_CATEGORIZATION_INTERVAL_MS: Worker interval (default: 300000 = 5 min)
  */
 
-import { EmailClassificationState, PrismaClient } from '@prisma/client';
-import Redis from 'ioredis';
+import { EmailClassificationState } from '@prisma/client';
+import { prisma, redis } from '@legal-platform/database';
 import {
   classificationScoringService,
   type EmailForClassification,
@@ -59,8 +59,6 @@ const LAST_RUN_KEY = 'email:categorization:lastRun';
 // Worker State
 // ============================================================================
 
-let prisma: PrismaClient;
-let redis: Redis;
 let intervalHandle: NodeJS.Timeout | null = null;
 let isRunning = false;
 let config: WorkerConfig = { ...DEFAULT_CONFIG };
@@ -72,18 +70,12 @@ let config: WorkerConfig = { ...DEFAULT_CONFIG };
 /**
  * Start the email categorization worker
  */
-export function startEmailCategorizationWorker(
-  prismaClient: PrismaClient,
-  redisClient: Redis,
-  customConfig: Partial<WorkerConfig> = {}
-): void {
+export function startEmailCategorizationWorker(customConfig: Partial<WorkerConfig> = {}): void {
   if (isRunning) {
     console.log('[Email Categorization Worker] Already running');
     return;
   }
 
-  prisma = prismaClient;
-  redis = redisClient;
   config = { ...DEFAULT_CONFIG, ...customConfig };
 
   if (!config.enabled) {
