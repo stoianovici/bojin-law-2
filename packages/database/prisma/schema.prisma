@@ -775,6 +775,15 @@ enum DocumentStatus {
   ARCHIVED
 }
 
+// OPS-114: Thumbnail generation status
+enum ThumbnailStatus {
+  PENDING // Not yet generated
+  PROCESSING // Currently being generated
+  COMPLETED // Successfully generated
+  FAILED // Generation failed
+  NOT_SUPPORTED // File type doesn't support thumbnails
+}
+
 // Document entity - owned by Client (not Case) for cross-case sharing
 // Documents are stored at the client level and can be linked to multiple cases
 // Story 2.9: Extended with OneDrive integration fields
@@ -802,6 +811,13 @@ model Document {
   sharePointItemId String? @map("share_point_item_id") @db.VarChar(255) // SharePoint item ID
   sharePointPath   String? @map("share_point_path") @db.Text // Full SharePoint path
 
+  // OPS-114: Permanent thumbnail URLs stored in R2
+  thumbnailSmallUrl  String?         @map("thumbnail_small_url") @db.Text // 48x48 R2 URL
+  thumbnailMediumUrl String?         @map("thumbnail_medium_url") @db.Text // 200x200 R2 URL
+  thumbnailLargeUrl  String?         @map("thumbnail_large_url") @db.Text // 800x800 R2 URL
+  thumbnailStatus    ThumbnailStatus @default(PENDING) @map("thumbnail_status")
+  thumbnailError     String?         @map("thumbnail_error") @db.VarChar(500)
+
   // Search fields (Story 2.10)
   metadataEmbedding Unsupported("vector(768)")? @map("metadata_embedding") // multilingual-e5-base embedding for semantic search
 
@@ -827,6 +843,7 @@ model Document {
   @@index([fileName])
   @@index([oneDriveId])
   @@index([sharePointItemId]) // OPS-107
+  @@index([thumbnailStatus]) // OPS-114
   @@map("documents")
 }
 
@@ -2641,15 +2658,21 @@ model Email {
 
 // Email attachment model - attachments from synchronized emails
 model EmailAttachment {
-  id                String   @id @default(uuid())
-  emailId           String   @map("email_id")
-  graphAttachmentId String   @map("graph_attachment_id")
-  name              String   @db.VarChar(500)
-  contentType       String   @map("content_type") @db.VarChar(200)
+  id                String    @id @default(uuid())
+  emailId           String    @map("email_id")
+  graphAttachmentId String    @map("graph_attachment_id")
+  name              String    @db.VarChar(500)
+  contentType       String    @map("content_type") @db.VarChar(200)
   size              Int
-  storageUrl        String?  @map("storage_url") @db.Text // R2/OneDrive URL after saving
-  documentId        String?  @map("document_id") // Link to Document if saved to case
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  storageUrl        String?   @map("storage_url") @db.Text // R2/OneDrive URL after saving
+  documentId        String?   @map("document_id") // Link to Document if saved to case
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  // Filter tracking (OPS-113: Rule-Based Document Filtering)
+  filterStatus  String?   @map("filter_status") @db.VarChar(20) // 'imported' | 'dismissed' | 'quarantined' | 'flagged'
+  filterRuleId  String?   @map("filter_rule_id") @db.VarChar(50) // Which rule matched
+  filterReason  String?   @map("filter_reason") @db.VarChar(200) // Human-readable reason
+  dismissedAt   DateTime? @map("dismissed_at") @db.Timestamptz // When filtered
 
   // Relations
   email    Email     @relation(fields: [emailId], references: [id], onDelete: Cascade)
@@ -2657,6 +2680,7 @@ model EmailAttachment {
 
   @@index([emailId])
   @@index([documentId])
+  @@index([filterStatus])
   @@map("email_attachments")
 }
 

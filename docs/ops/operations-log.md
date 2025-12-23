@@ -119,7 +119,8 @@
 | OPS-110 | Document Migration to SharePoint                  | Feature      | P2-Medium   | Fixing     | [issues/ops-110.md](issues/ops-110.md)   |
 | OPS-111 | Document Grid UI with Thumbnails                  | Feature      | P2-Medium   | Open       | [issues/ops-111.md](issues/ops-111.md)   |
 | OPS-112 | Apollo Client Missing x-ms-access-token Header    | Bug          | P1-High     | Fixed      | [issues/ops-112.md](issues/ops-112.md)   |
-| OPS-113 | Rule-Based Document Filtering                     | Feature      | P2-Medium   | Open       | [issues/ops-113.md](issues/ops-113.md)   |
+| OPS-113 | Rule-Based Document Filtering                     | Feature      | P2-Medium   | Fixing     | [issues/ops-113.md](issues/ops-113.md)   |
+| OPS-114 | Permanent Document Thumbnails                     | Feature      | P2-Medium   | Open       | [issues/ops-114.md](issues/ops-114.md)   |
 
 ---
 
@@ -152,7 +153,8 @@
 | OPS-112 | Apollo Client Missing x-ms-access-token Header | P1-High   | Fixed                      |
 | OPS-098 | Duration-Based Calendar Card Spanning          | P3-Low    | Phase 2                    |
 | OPS-104 | Document Preview Fails for Non-Uploader Users  | P1-High   | Superseded (by SharePoint) |
-| OPS-113 | Rule-Based Document Filtering                  | P2-Medium | Open                       |
+| OPS-113 | Rule-Based Document Filtering                  | P2-Medium | Fixing                     |
+| OPS-114 | Permanent Document Thumbnails                  | P2-Medium | Open                       |
 
 ---
 

@@ -12,6 +12,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import type { Attachment, FileAttachment } from '@microsoft/microsoft-graph-types';
 import { PrismaClient, DocumentStatus } from '@prisma/client';
 import { createGraphClient } from '../config/graph.config';
+import { documentFilterService, type FilterStatus } from '../config/document-filter.config';
 import { OneDriveService, oneDriveService } from './onedrive.service';
 import { R2StorageService, r2StorageService } from './r2-storage.service';
 import { retryWithBackoff } from '../utils/retry.util';
@@ -49,6 +50,9 @@ export interface AttachmentSyncResult {
     missingCaseDocument: number; // Document exists but no CaseDocument for this case
     linkedToCase: number; // Document exists AND CaseDocument exists for this case
     emailCaseId: string | null;
+    // OPS-113: Filter stats
+    dismissedByFilter: number;
+    dismissedByRule: Record<string, number>;
   };
 }
 
@@ -170,6 +174,8 @@ export class EmailAttachmentService {
         size: attachment.size,
         storageUrl,
         documentId,
+        // OPS-113: Mark as imported (passed filter)
+        filterStatus: 'imported' as FilterStatus,
       },
     });
 
@@ -215,6 +221,9 @@ export class EmailAttachmentService {
     let orphanedDocumentIds = 0;
     let missingCaseDocument = 0;
     let linkedToCase = 0;
+    // OPS-113: Filter counters
+    let dismissedByFilter = 0;
+    const dismissedByRule: Record<string, number> = {};
 
     // Get email (fresh fetch to get latest caseId after updateMany)
     const email = await this.prisma.email.findUnique({
@@ -251,6 +260,9 @@ export class EmailAttachmentService {
       missingCaseDocument: 0,
       linkedToCase: 0,
       emailCaseId: email.caseId,
+      // OPS-113: Filter stats
+      dismissedByFilter: 0,
+      dismissedByRule: {},
     };
 
     logger.info('Attachments from Graph API', {
@@ -280,7 +292,47 @@ export class EmailAttachmentService {
           continue;
         }
 
-        // Check if already synced
+        // OPS-113: Evaluate attachment against filter rules
+        const fileAttachment = attachment as FileAttachment;
+        const filterResult = documentFilterService.evaluate({
+          name: attachment.name || 'unknown',
+          contentType: attachment.contentType || 'application/octet-stream',
+          size: attachment.size || 0,
+          isInline: (fileAttachment as any).isInline,
+        });
+
+        if (filterResult.action === 'dismiss') {
+          // Create minimal tracking record (no content download)
+          await this.prisma.emailAttachment.create({
+            data: {
+              emailId,
+              graphAttachmentId: attachment.id!,
+              name: attachment.name || 'unknown',
+              contentType: attachment.contentType || 'application/octet-stream',
+              size: attachment.size || 0,
+              storageUrl: null,
+              documentId: null,
+              filterStatus: 'dismissed' as FilterStatus,
+              filterRuleId: filterResult.matchedRule?.id || null,
+              filterReason: filterResult.reason,
+              dismissedAt: new Date(),
+            },
+          });
+
+          logger.info('Attachment dismissed by filter', {
+            emailId,
+            attachmentName: attachment.name,
+            ruleId: filterResult.matchedRule?.id,
+            reason: filterResult.reason,
+          });
+
+          dismissedByFilter++;
+          const ruleId = filterResult.matchedRule?.id || 'unknown';
+          dismissedByRule[ruleId] = (dismissedByRule[ruleId] || 0) + 1;
+          continue;
+        }
+
+        // Check if already synced (or dismissed)
         const existing = await this.prisma.emailAttachment.findFirst({
           where: {
             emailId,
@@ -289,6 +341,21 @@ export class EmailAttachmentService {
         });
 
         if (existing) {
+          // If previously dismissed, skip (already tracked)
+          if (existing.filterStatus === 'dismissed') {
+            logger.info('Attachment already dismissed', {
+              emailId,
+              attachmentId: existing.id,
+              name: existing.name,
+              ruleId: existing.filterRuleId,
+            });
+            dismissedByFilter++;
+            if (existing.filterRuleId) {
+              dismissedByRule[existing.filterRuleId] =
+                (dismissedByRule[existing.filterRuleId] || 0) + 1;
+            }
+            continue;
+          }
           // Check if documentId points to an actual Document (could be orphaned)
           let documentExists = false;
           let caseDocumentExists = false;
@@ -463,6 +530,9 @@ export class EmailAttachmentService {
     result._diagnostics!.orphanedDocumentIds = orphanedDocumentIds;
     result._diagnostics!.missingCaseDocument = missingCaseDocument;
     result._diagnostics!.linkedToCase = linkedToCase;
+    // OPS-113: Filter stats
+    result._diagnostics!.dismissedByFilter = dismissedByFilter;
+    result._diagnostics!.dismissedByRule = dismissedByRule;
 
     logger.info('syncAllAttachments complete', {
       emailId,
@@ -471,6 +541,7 @@ export class EmailAttachmentService {
       upgradedWithDocument,
       skippedNonFile,
       skippedAlreadyExist,
+      dismissedByFilter,
       errorCount: result.errors.length,
     });
 
