@@ -1,25 +1,27 @@
 /**
  * Document Upload Hook
  * Story 2.9: Document Storage with OneDrive Integration
+ * OPS-108: Updated to use SharePoint for firm storage
  *
- * Provides mutations for uploading documents to OneDrive
+ * Provides mutations for uploading documents to SharePoint (default) or OneDrive (legacy)
  */
 
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { useCallback, useState } from 'react';
 
-// GraphQL mutation for uploading document to OneDrive
-const UPLOAD_DOCUMENT_TO_ONEDRIVE = gql`
-  mutation UploadDocumentToOneDrive($input: UploadDocumentWithFileInput!) {
-    uploadDocumentToOneDrive(input: $input) {
+// OPS-108: GraphQL mutation for uploading document to SharePoint (default for new uploads)
+const UPLOAD_DOCUMENT_TO_SHAREPOINT = gql`
+  mutation UploadDocumentToSharePoint($input: UploadDocumentWithFileInput!) {
+    uploadDocumentToSharePoint(input: $input) {
       id
       fileName
       fileType
       fileSize
       storagePath
-      oneDriveId
-      oneDrivePath
+      storageType
+      sharePointItemId
+      sharePointPath
       status
       uploadedAt
       uploadedBy {
@@ -94,8 +96,13 @@ export interface UploadedDocument {
   fileType: string;
   fileSize: number;
   storagePath: string;
-  oneDriveId: string;
-  oneDrivePath: string;
+  // OPS-108: SharePoint fields (new default)
+  storageType?: 'SHAREPOINT' | 'ONEDRIVE' | 'R2';
+  sharePointItemId?: string;
+  sharePointPath?: string;
+  // Legacy OneDrive fields
+  oneDriveId?: string;
+  oneDrivePath?: string;
   status: string;
   uploadedAt: string;
   uploadedBy: {
@@ -141,8 +148,9 @@ interface UseDocumentUploadResult {
 }
 
 // Mutation response types
+// OPS-108: Updated to use SharePoint
 interface UploadDocumentMutationData {
-  uploadDocumentToOneDrive: UploadedDocument;
+  uploadDocumentToSharePoint: UploadedDocument;
 }
 
 interface GetDownloadUrlMutationData {
@@ -165,7 +173,8 @@ export function useDocumentUpload(): UseDocumentUploadResult {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<Error | undefined>();
 
-  const [uploadMutation] = useMutation<UploadDocumentMutationData>(UPLOAD_DOCUMENT_TO_ONEDRIVE);
+  // OPS-108: Use SharePoint for new uploads
+  const [uploadMutation] = useMutation<UploadDocumentMutationData>(UPLOAD_DOCUMENT_TO_SHAREPOINT);
   const [getDownloadUrlMutation] =
     useMutation<GetDownloadUrlMutationData>(GET_DOCUMENT_DOWNLOAD_URL);
   const [syncDocumentMutation] = useMutation<SyncDocumentMutationData>(SYNC_DOCUMENT_FROM_ONEDRIVE);
@@ -195,7 +204,7 @@ export function useDocumentUpload(): UseDocumentUploadResult {
         const { data } = await uploadMutation({
           variables: { input },
         });
-        return data?.uploadDocumentToOneDrive || null;
+        return data?.uploadDocumentToSharePoint || null;
       } catch (err) {
         setError(err as Error);
         return null;
@@ -235,7 +244,7 @@ export function useDocumentUpload(): UseDocumentUploadResult {
           // Update progress
           setProgress((prev) => prev.map((p, idx) => (idx === i ? { ...p, progress: 50 } : p)));
 
-          // Upload to OneDrive
+          // OPS-108: Upload to SharePoint
           const result = await uploadDocument({
             caseId,
             fileName: file.name,

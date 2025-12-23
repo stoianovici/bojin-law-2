@@ -1,2 +1,2 @@
 -- AlterTable: Add cleaned email body content (OPS-090)
-ALTER TABLE "Email" ADD COLUMN "body_content_clean" TEXT;
+ALTER TABLE "emails" ADD COLUMN "body_content_clean" TEXT;

@@ -1,6 +1,7 @@
 /**
  * AssistantChat Component
  * OPS-071: AssistantPill Components
+ * OPS-097: Updated to pass modifications from ActionConfirmCard
  *
  * Chat interface for the AI assistant with message list, suggested follow-ups,
  * and input area.
@@ -8,7 +9,7 @@
 
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { useAssistant } from '@/hooks/useAssistant';
 import { MessageBubble } from './MessageBubble';
 import { ActionConfirmCard } from './ActionConfirmCard';
@@ -40,6 +41,18 @@ export function AssistantChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // OPS-097: Handler to pass modifications when confirming actions
+  const handleConfirm = useCallback(
+    (modifications?: Record<string, unknown>) => {
+      confirmAction(true, modifications);
+    },
+    [confirmAction]
+  );
+
+  const handleReject = useCallback(() => {
+    confirmAction(false);
+  }, [confirmAction]);
+
   return (
     <div className="flex flex-col h-[520px]">
       {/* Messages area */}
@@ -66,8 +79,8 @@ export function AssistantChat() {
         {pendingAction && (
           <ActionConfirmCard
             action={pendingAction}
-            onConfirm={() => confirmAction(true)}
-            onReject={() => confirmAction(false)}
+            onConfirm={handleConfirm}
+            onReject={handleReject}
             isLoading={isLoading}
           />
         )}

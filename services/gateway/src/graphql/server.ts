@@ -21,7 +21,7 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import type { Request, RequestHandler } from 'express';
-import { DateTimeResolver, JSONResolver, UUIDResolver } from 'graphql-scalars';
+import { DateResolver, DateTimeResolver, JSONResolver, UUIDResolver } from 'graphql-scalars';
 import http from 'http';
 import { approvalResolvers } from './resolvers/approval.resolvers';
 import { caseResolvers, type Context } from './resolvers/case.resolvers';
@@ -61,6 +61,7 @@ import {
   documentFolderMutationResolvers,
   documentFolderTypeResolvers,
 } from './resolvers/document-folder.resolvers';
+import { mapaResolvers } from './resolvers/mapa.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -76,6 +77,7 @@ function getFinancialDataScopeFromRole(role: string | undefined): FinancialDataS
 
 // Merge all resolvers
 const resolvers = {
+  Date: DateResolver,
   DateTime: DateTimeResolver,
   UUID: UUIDResolver,
   JSON: JSONResolver,
@@ -113,6 +115,7 @@ const resolvers = {
     ...caseSummaryResolvers.Query,
     ...aiAssistantResolvers.Query,
     ...documentFolderQueryResolvers,
+    ...mapaResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -146,6 +149,7 @@ const resolvers = {
     ...caseSummaryResolvers.Mutation,
     ...aiAssistantResolvers.Mutation,
     ...documentFolderMutationResolvers,
+    ...mapaResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -282,6 +286,11 @@ const resolvers = {
   AIMessage: aiAssistantResolvers.AIMessage,
   // Document Folder resolvers (OPS-089)
   DocumentFolder: documentFolderTypeResolvers.DocumentFolder,
+  // Mapa resolvers (OPS-101)
+  Mapa: mapaResolvers.Mapa,
+  MapaSlot: mapaResolvers.MapaSlot,
+  MapaTemplate: mapaResolvers.MapaTemplate,
+  MapaCompletionStatus: mapaResolvers.MapaCompletionStatus,
 };
 
 /**

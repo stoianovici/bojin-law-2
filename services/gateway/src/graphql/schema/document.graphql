@@ -65,6 +65,28 @@ type Document {
   """Full OneDrive path"""
   oneDrivePath: String
 
+  # OPS-107: SharePoint migration fields
+
+  """Storage type - where the file is physically stored (computed from IDs)"""
+  storageType: DocumentStorageType!
+
+  """SharePoint item ID (null if not stored in SharePoint)"""
+  sharePointItemId: String
+
+  """Full SharePoint path"""
+  sharePointPath: String
+
+  # OPS-107: Thumbnail fields for grid view
+
+  """Small thumbnail URL (48x48) - for list views"""
+  thumbnailSmall: String
+
+  """Medium thumbnail URL (176x176) - for compact grid"""
+  thumbnailMedium: String
+
+  """Large thumbnail URL (800x800) - for expanded grid view"""
+  thumbnailLarge: String
+
   """Document status (DRAFT, FINAL, ARCHIVED)"""
   status: DocumentStatus!
 
@@ -183,6 +205,50 @@ type DocumentsByCase {
   documentCount: Int!
 }
 
+# OPS-107: Grid view types for document display
+
+"""
+Paginated connection for document grid view
+"""
+type DocumentGridConnection {
+  """List of document edges"""
+  edges: [DocumentGridEdge!]!
+
+  """Pagination info"""
+  pageInfo: PageInfo!
+
+  """Total number of documents matching filters"""
+  totalCount: Int!
+}
+
+"""
+Edge type for document grid pagination
+"""
+type DocumentGridEdge {
+  """The document with context"""
+  node: CaseDocumentWithContext!
+
+  """Cursor for pagination"""
+  cursor: String!
+}
+
+"""
+Pagination info for connections
+"""
+type PageInfo {
+  """Whether there are more items after this page"""
+  hasNextPage: Boolean!
+
+  """Whether there are items before this page"""
+  hasPreviousPage: Boolean!
+
+  """Cursor of the first item"""
+  startCursor: String
+
+  """Cursor of the last item"""
+  endCursor: String
+}
+
 """
 Document audit log entry
 Tracks all document operations for compliance
@@ -213,6 +279,52 @@ type DocumentAuditLog {
 # ============================================================================
 # Enums
 # ============================================================================
+
+"""
+Document storage type - indicates where the file is physically stored
+OPS-107: Added for SharePoint migration
+"""
+enum DocumentStorageType {
+  """Legacy - personal OneDrive (before SharePoint migration)"""
+  ONEDRIVE
+
+  """New - firm SharePoint site (default for new uploads)"""
+  SHAREPOINT
+
+  """Fallback - Cloudflare R2 storage"""
+  R2
+}
+
+"""
+Sort fields for document grid (OPS-107)
+"""
+enum DocumentSortField {
+  """Sort by when document was linked to case"""
+  LINKED_AT
+
+  """Sort by when document was uploaded"""
+  UPLOADED_AT
+
+  """Sort by file name"""
+  FILE_NAME
+
+  """Sort by file size"""
+  FILE_SIZE
+
+  """Sort by file type"""
+  FILE_TYPE
+}
+
+"""
+Sort direction
+"""
+enum SortDirection {
+  """Ascending order"""
+  ASC
+
+  """Descending order"""
+  DESC
+}
 
 """
 Document audit action types
@@ -425,6 +537,46 @@ extend type Query {
     """Document ID"""
     documentId: UUID!
   ): PreviewUrlResponse
+
+  """
+  Get text content for a text file document (OPS-109)
+  Fetches and returns the actual content for text files (txt, csv, json, etc.)
+  This proxies through the backend to avoid CORS issues with SharePoint
+
+  Authorization: User must have access to the document
+  """
+  documentTextContent(
+    """Document ID"""
+    documentId: UUID!
+  ): TextContentResponse
+
+  # OPS-107: Grid view queries
+
+  """
+  Get case documents with thumbnails for grid view display
+  Returns paginated documents with pre-fetched thumbnail URLs
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  caseDocumentsGrid(
+    """Case ID"""
+    caseId: UUID!
+
+    """Number of documents to return (default: 20)"""
+    first: Int
+
+    """Cursor for pagination"""
+    after: String
+
+    """Filter by file types (e.g., ['application/pdf', 'image/*'])"""
+    fileTypes: [String!]
+
+    """Sort field (default: linkedAt)"""
+    sortBy: DocumentSortField
+
+    """Sort direction (default: DESC)"""
+    sortDirection: SortDirection
+  ): DocumentGridConnection!
 }
 
 # ============================================================================
@@ -541,6 +693,40 @@ extend type Mutation {
     """New status"""
     input: UpdateDocumentStatusInput!
   ): Document!
+
+  """
+  Share a document with the organization (OPS-104)
+  Creates an organization-scoped sharing link so all firm members can access the file
+  This is required for documents uploaded before organization sharing was enabled
+
+  Authorization: User must have access to the document
+  """
+  shareDocumentWithOrganization(
+    """Document ID"""
+    documentId: UUID!
+  ): ShareDocumentResult!
+
+  """
+  Batch share all documents for a case with the organization (OPS-104)
+  Useful for backfilling existing documents that were uploaded before org sharing
+
+  Authorization: Partner role required
+  """
+  batchShareCaseDocuments(
+    """Case ID to share all documents for"""
+    caseId: UUID!
+  ): BatchShareResult!
+
+  # OPS-108: SharePoint upload mutation
+
+  """
+  Upload document to SharePoint firm storage (OPS-108)
+  Creates document in firm's SharePoint site under Cases/{CaseNumber}/Documents/
+  All firm members can access documents stored in SharePoint
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  uploadDocumentToSharePoint(input: UploadDocumentWithFileInput!): Document!
 }
 
 # ============================================================================
@@ -615,4 +801,52 @@ type PreviewUrlResponse {
 
   """Expiration time for the URL"""
   expiresAt: DateTime!
+}
+
+"""
+Text content response for text file preview (OPS-109)
+"""
+type TextContentResponse {
+  """The text content of the file"""
+  content: String!
+
+  """File MIME type"""
+  mimeType: String!
+
+  """File size in bytes"""
+  size: Int!
+}
+
+"""
+Result of sharing a document with the organization (OPS-104)
+"""
+type ShareDocumentResult {
+  """Whether the sharing was successful"""
+  success: Boolean!
+
+  """The document that was shared"""
+  document: Document!
+
+  """Web URL for the sharing link (if created)"""
+  sharingLinkUrl: String
+}
+
+"""
+Result of batch sharing documents (OPS-104)
+"""
+type BatchShareResult {
+  """Total number of documents processed"""
+  total: Int!
+
+  """Number successfully shared"""
+  shared: Int!
+
+  """Number that failed to share"""
+  failed: Int!
+
+  """Number already shared (skipped)"""
+  skipped: Int!
+
+  """Whether the operation was successful"""
+  success: Boolean!
 }

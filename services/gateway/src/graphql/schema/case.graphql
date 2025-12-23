@@ -98,7 +98,7 @@ type Case {
   metadata: JSON
 
   """Billing type for this case (Hourly or Fixed) - Partners only (Story 2.8.1)"""
-  billingType: BillingType! @requiresFinancialAccess
+  billingType: BillingType @requiresFinancialAccess
 
   """Fixed fee amount in USD cents (required if billingType=FIXED) - Partners only (Story 2.8.1)"""
   fixedAmount: Float @requiresFinancialAccess

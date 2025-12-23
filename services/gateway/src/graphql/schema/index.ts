@@ -136,6 +136,8 @@ export function loadSchema(): string {
   const aiAssistantSchema = readFileSync(join(schemaDir, 'ai-assistant.graphql'), 'utf-8');
   // OPS-089: Document Folder Structure
   const documentFolderSchema = readFileSync(join(schemaDir, 'document-folder.graphql'), 'utf-8');
+  // OPS-101: Mapa (Document Binder) Management
+  const mapaSchema = readFileSync(join(schemaDir, 'mapa.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -183,6 +185,7 @@ export function loadSchema(): string {
     caseSummarySchema,
     aiAssistantSchema,
     documentFolderSchema,
+    mapaSchema,
   ].join('\n\n');
 }
 

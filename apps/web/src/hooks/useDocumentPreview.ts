@@ -13,7 +13,7 @@ import type { PreviewableDocument } from '@/components/preview';
 // ============================================================================
 
 const GET_DOCUMENT_PREVIEW_URL = gql`
-  query GetDocumentPreviewUrl($documentId: ID!) {
+  query GetDocumentPreviewUrl($documentId: UUID!) {
     documentPreviewUrl(documentId: $documentId) {
       url
       source
@@ -23,11 +23,22 @@ const GET_DOCUMENT_PREVIEW_URL = gql`
 `;
 
 const GET_ATTACHMENT_PREVIEW_URL = gql`
-  query GetAttachmentPreviewUrl($attachmentId: ID!) {
+  query GetAttachmentPreviewUrl($attachmentId: UUID!) {
     attachmentPreviewUrl(attachmentId: $attachmentId) {
       url
       source
       expiresAt
+    }
+  }
+`;
+
+// OPS-109: Query for text file content (proxied through backend to avoid CORS)
+const GET_DOCUMENT_TEXT_CONTENT = gql`
+  query GetDocumentTextContent($documentId: UUID!) {
+    documentTextContent(documentId: $documentId) {
+      content
+      mimeType
+      size
     }
   }
 `;
@@ -40,6 +51,13 @@ interface PreviewUrlResult {
   url: string;
   source: string;
   expiresAt?: string;
+}
+
+// OPS-109: Text content result from backend proxy
+interface TextContentResult {
+  content: string;
+  mimeType: string;
+  size: number;
 }
 
 interface UseDocumentPreviewOptions {
@@ -58,6 +76,8 @@ interface UseDocumentPreviewReturn {
   closePreview: () => void;
   /** Fetch preview URL for a document */
   fetchPreviewUrl: (documentId: string) => Promise<string | null>;
+  /** Fetch text content for a text file (OPS-109) */
+  fetchTextContent: (documentId: string) => Promise<string | null>;
   /** Loading state for preview URL fetch */
   loading: boolean;
   /** Error from preview URL fetch */
@@ -86,6 +106,11 @@ export function useDocumentPreview(
     GET_ATTACHMENT_PREVIEW_URL,
     { fetchPolicy: 'network-only' }
   );
+
+  // OPS-109: Text content query for text files
+  const [fetchTextContentQuery] = useLazyQuery(GET_DOCUMENT_TEXT_CONTENT, {
+    fetchPolicy: 'network-only',
+  });
 
   const loading = type === 'document' ? docLoading : attLoading;
   const error = (type === 'document' ? docError : attError) || null;
@@ -134,12 +159,33 @@ export function useDocumentPreview(
     [type, fetchDocumentPreview, fetchAttachmentPreview]
   );
 
+  /**
+   * Fetch text content for a text file (OPS-109)
+   * Used for text/plain, text/csv, application/json, etc.
+   */
+  const fetchTextContent = useCallback(
+    async (documentId: string): Promise<string | null> => {
+      try {
+        const result = await fetchTextContentQuery({
+          variables: { documentId },
+        });
+        const rawData = result.data as { documentTextContent?: TextContentResult } | undefined;
+        return rawData?.documentTextContent?.content || null;
+      } catch (err) {
+        console.error('Failed to fetch text content:', err);
+        return null;
+      }
+    },
+    [fetchTextContentQuery]
+  );
+
   return {
     selectedDocument,
     isPreviewOpen,
     openPreview,
     closePreview,
     fetchPreviewUrl,
+    fetchTextContent,
     loading,
     error,
   };

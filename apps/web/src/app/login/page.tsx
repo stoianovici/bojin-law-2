@@ -18,6 +18,7 @@ function LoginPageContent() {
   const { isAuthenticated, login, error, clearError, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isLoginClicked, setIsLoginClicked] = React.useState(false);
 
   // Get the return URL from query params (set by ConditionalLayout when redirecting)
   const returnUrl = searchParams.get('returnUrl');
@@ -61,7 +62,21 @@ function LoginPageContent() {
     };
   }, [clearError]);
 
+  // Reset login clicked state when auth error occurs
+  useEffect(() => {
+    if (error) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsLoginClicked(false);
+    }
+  }, [error]);
+
   const handleLogin = async () => {
+    // Prevent double-clicks
+    if (isLoginClicked) {
+      return;
+    }
+    setIsLoginClicked(true);
+
     // Store returnUrl before MSAL redirects away
     if (returnUrl && typeof window !== 'undefined') {
       try {
@@ -74,7 +89,13 @@ function LoginPageContent() {
         // Invalid encoding, don't store
       }
     }
-    await login();
+
+    try {
+      await login();
+    } catch {
+      // Reset on error so user can try again
+      setIsLoginClicked(false);
+    }
   };
 
   if (isLoading) {
@@ -149,24 +170,31 @@ function LoginPageContent() {
           <button
             type="button"
             onClick={handleLogin}
-            className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            disabled={isLoginClicked}
+            className={`group relative flex w-full justify-center rounded-md border border-transparent px-4 py-3 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              isLoginClicked ? 'cursor-not-allowed bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
             <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg
-                className="h-5 w-5 text-blue-500 group-hover:text-blue-400"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              {isLoginClicked ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent" />
+              ) : (
+                <svg
+                  className="h-5 w-5 text-blue-500 group-hover:text-blue-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
             </span>
-            Conectare cu Microsoft 365
+            {isLoginClicked ? 'Redirecționare...' : 'Conectare cu Microsoft 365'}
           </button>
 
           <p className="mt-2 text-center text-xs text-gray-500">

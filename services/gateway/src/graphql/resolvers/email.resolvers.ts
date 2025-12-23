@@ -48,11 +48,18 @@ interface Context {
 // PubSub for Subscriptions
 // ============================================================================
 
-const pubsub = new PubSub();
-
 const EMAIL_RECEIVED = 'EMAIL_RECEIVED';
 const EMAIL_SYNC_PROGRESS = 'EMAIL_SYNC_PROGRESS';
 const EMAIL_CATEGORIZED = 'EMAIL_CATEGORIZED';
+
+// Define PubSub event types
+type PubSubEvents = {
+  [EMAIL_RECEIVED]: { emailReceived: unknown };
+  [EMAIL_SYNC_PROGRESS]: { emailSyncProgress: unknown };
+  [EMAIL_CATEGORIZED]: { emailCategorized: unknown };
+};
+
+const pubsub = new PubSub<PubSubEvents>();
 
 // ============================================================================
 // Service Initialization
@@ -565,6 +572,16 @@ export const emailResolvers = {
         'image/webp',
       ];
 
+      // Office document types that can be previewed via Office Online
+      const officeTypes = [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+        'application/msword', // .doc
+        'application/vnd.ms-excel', // .xls
+        'application/vnd.ms-powerpoint', // .ppt
+      ];
+
       // Try OneDrive preview first via linked document
       if (attachment.document?.oneDriveId && user.accessToken) {
         const previewInfo = await oneDriveService.getPreviewUrl(
@@ -582,24 +599,38 @@ export const emailResolvers = {
         }
       }
 
-      // Fallback to R2 presigned URL if document has storagePath (PDF, images only)
-      if (
-        attachment.document?.storagePath &&
-        browserPreviewableTypes.includes(attachment.contentType)
-      ) {
+      // Fallback to R2 for attachments with linked documents
+      if (attachment.document?.storagePath) {
         const presignedUrl = await r2StorageService.getPresignedUrl(
           attachment.document.storagePath
         );
         if (presignedUrl) {
-          logger.debug('Using R2 presigned URL for attachment preview', {
-            attachmentId: args.attachmentId,
-            contentType: attachment.contentType,
-          });
-          return {
-            url: presignedUrl.url,
-            source: 'r2',
-            expiresAt: presignedUrl.expiresAt,
-          };
+          // For browser-previewable types (PDF, images), return direct URL
+          if (browserPreviewableTypes.includes(attachment.contentType)) {
+            logger.debug('Using R2 presigned URL for attachment preview', {
+              attachmentId: args.attachmentId,
+              contentType: attachment.contentType,
+            });
+            return {
+              url: presignedUrl.url,
+              source: 'r2',
+              expiresAt: presignedUrl.expiresAt,
+            };
+          }
+
+          // For Office documents, use Office Online viewer with R2 presigned URL
+          if (officeTypes.includes(attachment.contentType)) {
+            const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(presignedUrl.url)}`;
+            logger.debug('Using Office Online viewer with R2 URL for attachment preview', {
+              attachmentId: args.attachmentId,
+              contentType: attachment.contentType,
+            });
+            return {
+              url: officeViewerUrl,
+              source: 'office365-r2',
+              expiresAt: presignedUrl.expiresAt,
+            };
+          }
         }
       }
 
@@ -1916,11 +1947,9 @@ export const emailResolvers = {
           firmId: user.firmId,
           emailId: args.emailId,
           action: 'MANUAL_COURT_ASSIGN',
-          previousState: EmailClassificationState.CourtUnassigned,
-          newState: EmailClassificationState.Classified,
-          caseId: args.caseId,
-          userId: user.id,
-          reason: referenceAdded
+          toCaseId: args.caseId,
+          performedBy: user.id,
+          correctionReason: referenceAdded
             ? `Manual assignment with reference added: ${extractedReferences.join(', ')}`
             : 'Manual assignment from INSTANȚE folder',
         },
@@ -2010,10 +2039,8 @@ export const emailResolvers = {
             firmId: user.firmId,
             emailId: args.emailId,
             action: 'MANUAL_IGNORE',
-            previousState: EmailClassificationState.Uncertain,
-            newState: EmailClassificationState.Ignored,
-            userId: user.id,
-            reason: 'User marked email as not relevant',
+            performedBy: user.id,
+            correctionReason: 'User marked email as not relevant',
           },
         });
 
@@ -2062,11 +2089,9 @@ export const emailResolvers = {
           firmId: user.firmId,
           emailId: args.emailId,
           action: 'MANUAL_CLASSIFY',
-          previousState: EmailClassificationState.Uncertain,
-          newState: EmailClassificationState.Classified,
-          caseId,
-          userId: user.id,
-          reason: 'Manual assignment from NECLAR queue',
+          toCaseId: caseId,
+          performedBy: user.id,
+          correctionReason: 'Manual assignment from NECLAR queue',
         },
       });
 
@@ -2191,11 +2216,9 @@ export const emailResolvers = {
           firmId: user.firmId,
           emailId: args.emailId,
           action: 'MANUAL_LINK',
-          previousState: email.classificationState,
-          newState: EmailClassificationState.Classified,
-          caseId: args.caseId,
-          userId: user.id,
-          reason: `Manually linked to case via multi-case support`,
+          toCaseId: args.caseId,
+          performedBy: user.id,
+          correctionReason: `Manually linked to case via multi-case support`,
         },
       });
 
@@ -2314,14 +2337,9 @@ export const emailResolvers = {
           firmId: user.firmId,
           emailId: args.emailId,
           action: 'MANUAL_UNLINK',
-          previousState: email.classificationState,
-          newState:
-            remainingLinks === 0 && !email.caseId
-              ? EmailClassificationState.Pending
-              : email.classificationState,
-          caseId: args.caseId,
-          userId: user.id,
-          reason: `Manually unlinked from case via multi-case support`,
+          fromCaseId: args.caseId,
+          performedBy: user.id,
+          correctionReason: `Manually unlinked from case via multi-case support`,
         },
       });
 
@@ -2331,13 +2349,13 @@ export const emailResolvers = {
 
   Subscription: {
     emailReceived: {
-      subscribe: () => pubsub.asyncIterator([EMAIL_RECEIVED]),
+      subscribe: () => pubsub.asyncIterableIterator([EMAIL_RECEIVED]),
     },
     emailSyncProgress: {
-      subscribe: () => pubsub.asyncIterator([EMAIL_SYNC_PROGRESS]),
+      subscribe: () => pubsub.asyncIterableIterator([EMAIL_SYNC_PROGRESS]),
     },
     emailCategorized: {
-      subscribe: () => pubsub.asyncIterator([EMAIL_CATEGORIZED]),
+      subscribe: () => pubsub.asyncIterableIterator([EMAIL_CATEGORIZED]),
     },
   },
 
@@ -2347,6 +2365,8 @@ export const emailResolvers = {
     from: (parent: any) => parent.from || { address: '' },
     toRecipients: (parent: any) => parent.toRecipients || [],
     ccRecipients: (parent: any) => parent.ccRecipients || [],
+    // OPS-091: Folder type - 'inbox' or 'sent'
+    folderType: (parent: any) => parent.folderType || null,
     // OPS-035: Classification state fields - map from Prisma to GraphQL
     classificationState: (parent: any) => parent.classificationState || 'Pending',
     classificationConfidence: (parent: any) => parent.classificationConfidence || null,

@@ -237,11 +237,11 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => handleSort('type')}
+                onClick={() => handleSort('caseId')}
               >
                 <div className="flex items-center gap-2">
-                  <span>Tip</span>
-                  <SortIcon field="type" />
+                  <span>Dosar</span>
+                  <SortIcon field="caseId" />
                 </div>
               </th>
               <th
@@ -317,110 +317,127 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                 </td>
               </tr>
             ) : (
-              paginatedTasks.map((task) => (
-                <tr
-                  key={task.id}
-                  onClick={() => onTaskClick(task)}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
-                >
-                  {/* Title */}
-                  <td className="px-6 py-4 whitespace-normal">
-                    <div className="text-sm font-medium text-gray-900 line-clamp-2">
-                      {task.title}
-                    </div>
-                  </td>
-
-                  {/* Type */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold text-white"
-                      style={{ backgroundColor: TASK_TYPE_COLORS[task.type] }}
-                    >
-                      {TASK_TYPE_LABELS[task.type]}
-                    </span>
-                  </td>
-
-                  {/* Assignee */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {(() => {
-                        const user = USERS.find((u) => u.id === task.assignedTo);
-                        return (
-                          <>
-                            <div
-                              className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold"
-                              title={user?.name || task.assignedTo}
-                            >
-                              {user?.initials || 'U'}
-                            </div>
-                            <span className="text-sm text-gray-700">
-                              {user?.name || task.assignedTo}
-                            </span>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </td>
-
-                  {/* Due Date */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {format(new Date(task.dueDate), 'dd.MM.yyyy', { locale: ro })}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {format(new Date(task.dueDate), 'HH:mm', { locale: ro })}
-                    </div>
-                  </td>
-
-                  {/* Priority */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
+              paginatedTasks.map((task) => {
+                const caseName = task.case?.title || task.case?.caseNumber || '';
+                return (
+                  <tr
+                    key={task.id}
+                    onClick={() => onTaskClick(task)}
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
+                    {/* Title with type color indicator and optional duration */}
+                    <td className="py-4 whitespace-normal">
                       <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
-                      />
-                      <span className="text-sm text-gray-700">
-                        {PRIORITY_LABELS[task.priority]}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-700">{STATUS_LABELS[task.status]}</span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    {logTimeTaskId === task.id ? (
-                      <div className="min-w-[300px]">
-                        <QuickTimeLog
-                          caseId={task.caseId}
-                          taskId={task.id}
-                          taskTitle={task.title}
-                          onSubmit={(data: {
-                            hours: number;
-                            description: string;
-                            billable: boolean;
-                          }) => handleTimeLogSubmit(task.id, data)}
-                          onCancel={() => setLogTimeTaskId(null)}
-                          isLoading={loggingTime}
-                          compact={false}
-                        />
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setLogTimeTaskId(task.id)}
-                        className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium"
+                        className="pl-6 pr-4 border-l-[3px]"
+                        style={{ borderLeftColor: TASK_TYPE_COLORS[task.type] }}
+                        title={TASK_TYPE_LABELS[task.type]}
                       >
-                        <Clock className="h-4 w-4" />
-                        <span>Înregistrează</span>
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
+                        <div className="flex items-start gap-2">
+                          <span className="text-sm font-medium text-gray-900 line-clamp-2">
+                            {task.title}
+                          </span>
+                          {task.estimatedHours && task.estimatedHours > 0 && (
+                            <span
+                              className="shrink-0 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+                              title={`Durată estimată: ${task.estimatedHours} ore`}
+                            >
+                              {task.estimatedHours}h
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Case */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-700 line-clamp-1">{caseName || '—'}</span>
+                    </td>
+
+                    {/* Assignee */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const user = USERS.find((u) => u.id === task.assignedTo);
+                          return (
+                            <>
+                              <div
+                                className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold"
+                                title={user?.name || task.assignedTo}
+                              >
+                                {user?.initials || 'U'}
+                              </div>
+                              <span className="text-sm text-gray-700">
+                                {user?.name || task.assignedTo}
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </td>
+
+                    {/* Due Date */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {format(new Date(task.dueDate), 'dd.MM.yyyy', { locale: ro })}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {format(new Date(task.dueDate), 'HH:mm', { locale: ro })}
+                      </div>
+                    </td>
+
+                    {/* Priority */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
+                        />
+                        <span className="text-sm text-gray-700">
+                          {PRIORITY_LABELS[task.priority]}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-700">{STATUS_LABELS[task.status]}</span>
+                    </td>
+
+                    {/* Actions */}
+                    <td
+                      className="px-6 py-4 whitespace-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {logTimeTaskId === task.id ? (
+                        <div className="min-w-[300px]">
+                          <QuickTimeLog
+                            caseId={task.caseId}
+                            taskId={task.id}
+                            taskTitle={task.title}
+                            onSubmit={(data: {
+                              hours: number;
+                              description: string;
+                              billable: boolean;
+                            }) => handleTimeLogSubmit(task.id, data)}
+                            onCancel={() => setLogTimeTaskId(null)}
+                            isLoading={loggingTime}
+                            compact={false}
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setLogTimeTaskId(task.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium"
+                        >
+                          <Clock className="h-4 w-4" />
+                          <span>Înregistrează</span>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

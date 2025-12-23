@@ -2,6 +2,7 @@
  * CaseDocumentsList - Document list for case detail page with linking/unlinking actions
  * Story 2.8.4: Cross-Case Document Linking
  * Story 2.9: Document Storage with OneDrive Integration
+ * OPS-111: Document Grid UI with Thumbnails
  *
  * Features:
  * - Shows documents linked to the case
@@ -12,6 +13,7 @@
  * - Upload button for OneDrive uploads (Story 2.9)
  * - Download and sync actions (Story 2.9)
  * - Document status badges (Story 2.9)
+ * - Grid view with thumbnails (OPS-111)
  */
 
 'use client';
@@ -24,10 +26,21 @@ import {
   type CaseDocumentWithContext,
   type DocumentStatus,
 } from '../../hooks/useCaseDocuments';
+import {
+  useDocumentGrid,
+  type DocumentGridItem,
+  type DocumentSortField,
+  type SortDirection,
+} from '../../hooks/useDocumentGrid';
 import { useUnlinkDocument, useDeleteDocument } from '../../hooks/useDocumentActions';
 import { useDocumentUpload } from '../../hooks/useDocumentUpload';
+import { useDocumentPreview } from '../../hooks/useDocumentPreview';
 import { DocumentBrowserModal } from './DocumentBrowserModal';
 import { DocumentUploadModal } from './DocumentUploadModal';
+import { DocumentGrid } from '../documents/DocumentGrid';
+import { DocumentPreviewModal } from '../preview/DocumentPreviewModal';
+import { AssignToMapaModal, type DocumentInfo } from '../mapa/AssignToMapaModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 export interface CaseDocumentsListProps {
   caseId: string;
@@ -36,6 +49,9 @@ export interface CaseDocumentsListProps {
   userRole: 'Partner' | 'Associate' | 'Paralegal';
   className?: string;
 }
+
+// OPS-111: View mode type
+type ViewMode = 'list' | 'grid';
 
 /**
  * Format file size for display
@@ -168,16 +184,17 @@ const STATUS_COLORS: Record<DocumentStatus, string> = {
 };
 
 /**
- * Document Card Component
+ * List Document Card Component (for list view)
  * Story 2.9: Extended with OneDrive actions
  */
-function DocumentCard({
+function ListDocumentCard({
   docContext,
   userRole,
   onUnlink,
   onDelete,
   onDownload,
   onSync,
+  onAddToMapa,
   isDownloading,
   isSyncing,
 }: {
@@ -187,6 +204,7 @@ function DocumentCard({
   onDelete: () => void;
   onDownload: () => void;
   onSync: () => void;
+  onAddToMapa: () => void;
   isDownloading: boolean;
   isSyncing: boolean;
 }) {
@@ -252,6 +270,22 @@ function DocumentCard({
 
         {/* Actions - Story 2.9: Added download and sync */}
         <div className="flex items-center gap-2">
+          {/* Add to Mapa button */}
+          <button
+            onClick={onAddToMapa}
+            title="Adaugă în mapă"
+            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+              />
+            </svg>
+          </button>
+
           {/* Download button */}
           {hasOneDrive && (
             <button
@@ -384,9 +418,38 @@ export function CaseDocumentsList({
   );
   const [downloadingId, setDownloadingId] = useState<string | null>(null); // Story 2.9
   const [syncingId, setSyncingId] = useState<string | null>(null); // Story 2.9
+  const [mapaAssignDoc, setMapaAssignDoc] = useState<DocumentInfo | null>(null);
 
-  // Fetch case documents
+  // OPS-111: View mode and grid state
+  const [viewMode, setViewMode] = useState<ViewMode>('grid'); // Default to grid
+  const [sortBy, setSortBy] = useState<DocumentSortField>('LINKED_AT');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('DESC');
+
+  // Fetch case documents (list view)
   const { documents, loading, error, refetch } = useCaseDocuments(caseId);
+
+  // OPS-111: Fetch grid documents with thumbnails
+  const {
+    documents: gridDocuments,
+    loading: gridLoading,
+    totalCount: gridTotalCount,
+    hasMore: gridHasMore,
+    loadMore: gridLoadMore,
+    refetch: gridRefetch,
+  } = useDocumentGrid(caseId, { sortBy, sortDirection });
+
+  // OPS-111: Document preview
+  const {
+    selectedDocument: previewDocument,
+    isPreviewOpen,
+    openPreview,
+    closePreview,
+    fetchPreviewUrl,
+    fetchTextContent,
+  } = useDocumentPreview();
+
+  // OPS-109: Auth context for Microsoft account status
+  const { hasMsalAccount, reconnectMicrosoft } = useAuth();
 
   // Mutations
   const { unlinkDocument, loading: unlinking } = useUnlinkDocument();
@@ -445,6 +508,7 @@ export function CaseDocumentsList({
         const result = await syncDocument(docId);
         if (result?.updated) {
           refetch();
+          gridRefetch();
         }
       } catch (err) {
         console.error('Failed to sync document:', err);
@@ -452,21 +516,119 @@ export function CaseDocumentsList({
         setSyncingId(null);
       }
     },
-    [syncDocument, refetch]
+    [syncDocument, refetch, gridRefetch]
   );
+
+  // OPS-111: Handle grid preview
+  const handleGridPreview = useCallback(
+    (doc: DocumentGridItem) => {
+      openPreview({
+        id: doc.document.id,
+        name: doc.document.fileName,
+        contentType: doc.document.fileType,
+        size: doc.document.fileSize,
+      });
+    },
+    [openPreview]
+  );
+
+  // OPS-111: Handle grid download
+  const handleGridDownload = useCallback(
+    async (doc: DocumentGridItem) => {
+      setDownloadingId(doc.document.id);
+      try {
+        const result = await getDownloadUrl(doc.document.id);
+        if (result?.url) {
+          window.open(result.url, '_blank');
+        }
+      } catch (err) {
+        console.error('Failed to get download URL:', err);
+      } finally {
+        setDownloadingId(null);
+      }
+    },
+    [getDownloadUrl]
+  );
+
+  // OPS-111: Handle grid add to mapa
+  const handleGridAddToMapa = useCallback((doc: DocumentGridItem) => {
+    setMapaAssignDoc({
+      id: doc.document.id,
+      fileName: doc.document.fileName,
+      fileType: doc.document.fileType,
+      fileSize: doc.document.fileSize,
+    });
+  }, []);
+
+  // OPS-111: Handle sort change
+  const handleSortChange = useCallback((field: DocumentSortField, direction: SortDirection) => {
+    setSortBy(field);
+    setSortDirection(direction);
+  }, []);
+
+  // OPS-111: Combined refetch for both views
+  const handleRefetch = useCallback(() => {
+    refetch();
+    gridRefetch();
+  }, [refetch, gridRefetch]);
 
   return (
     <div className={clsx('bg-white rounded-lg border border-gray-200', className)}>
-      {/* Header - Story 2.9: Added upload button */}
+      {/* Header - Story 2.9: Added upload button, OPS-111: Added view toggle */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Documents</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Documente</h3>
           <p className="text-sm text-gray-500">
-            {documents.length} {documents.length === 1 ? 'document' : 'documents'} linked to this
-            case
+            {viewMode === 'grid' ? gridTotalCount : documents.length}{' '}
+            {(viewMode === 'grid' ? gridTotalCount : documents.length) === 1
+              ? 'document'
+              : 'documente'}{' '}
+            asociate acestui dosar
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* OPS-111: View mode toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={clsx(
+                'p-2 rounded-md transition-colors',
+                viewMode === 'list'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              )}
+              title="Vizualizare listă"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={clsx(
+                'p-2 rounded-md transition-colors',
+                viewMode === 'grid'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              )}
+              title="Vizualizare grilă"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
+              </svg>
+            </button>
+          </div>
+
           {/* Story 2.9: Upload button */}
           <button
             onClick={() => setIsUploadOpen(true)}
@@ -480,7 +642,7 @@ export function CaseDocumentsList({
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
               />
             </svg>
-            Upload to OneDrive
+            Încarcă
           </button>
           <button
             onClick={() => setIsBrowserOpen(true)}
@@ -494,14 +656,31 @@ export function CaseDocumentsList({
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
               />
             </svg>
-            Import Documents
+            Importă
           </button>
         </div>
       </div>
 
       {/* Content */}
       <div className="p-6">
-        {loading ? (
+        {/* OPS-111: Grid View */}
+        {viewMode === 'grid' ? (
+          <DocumentGrid
+            documents={gridDocuments}
+            loading={gridLoading}
+            totalCount={gridTotalCount}
+            hasMore={gridHasMore}
+            onLoadMore={gridLoadMore}
+            onPreview={handleGridPreview}
+            onDownload={handleGridDownload}
+            onAddToMapa={handleGridAddToMapa}
+            downloadingId={downloadingId}
+            sortBy={sortBy}
+            sortDirection={sortDirection}
+            onSortChange={handleSortChange}
+          />
+        ) : /* List View (original) */
+        loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
           </div>
@@ -515,12 +694,12 @@ export function CaseDocumentsList({
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
               />
             </svg>
-            <p className="font-medium">Failed to load documents</p>
+            <p className="font-medium">Eroare la încărcarea documentelor</p>
             <button
               onClick={() => refetch()}
               className="mt-2 text-sm text-blue-600 hover:underline"
             >
-              Try again
+              Încearcă din nou
             </button>
           </div>
         ) : documents.length === 0 ? (
@@ -538,8 +717,10 @@ export function CaseDocumentsList({
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <p className="font-medium mb-1">No documents yet</p>
-            <p className="text-sm mb-4">Import documents from other cases or upload new ones</p>
+            <p className="font-medium mb-1">Niciun document</p>
+            <p className="text-sm mb-4">
+              Importați documente din alte dosare sau încărcați documente noi
+            </p>
             <button
               onClick={() => setIsBrowserOpen(true)}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
@@ -552,13 +733,13 @@ export function CaseDocumentsList({
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                 />
               </svg>
-              Import Documents
+              Importă Documente
             </button>
           </div>
         ) : (
           <div className="space-y-3">
             {documents.map((docContext) => (
-              <DocumentCard
+              <ListDocumentCard
                 key={docContext.document.id}
                 docContext={docContext}
                 userRole={userRole}
@@ -576,6 +757,14 @@ export function CaseDocumentsList({
                 }
                 onDownload={() => handleDownload(docContext.document.id)}
                 onSync={() => handleSync(docContext.document.id)}
+                onAddToMapa={() =>
+                  setMapaAssignDoc({
+                    id: docContext.document.id,
+                    fileName: docContext.document.fileName,
+                    fileType: docContext.document.fileType,
+                    fileSize: docContext.document.fileSize,
+                  })
+                }
                 isDownloading={downloadingId === docContext.document.id}
                 isSyncing={syncingId === docContext.document.id}
               />
@@ -591,7 +780,7 @@ export function CaseDocumentsList({
         clientId={clientId}
         caseId={caseId}
         caseName={caseName}
-        onImportComplete={refetch}
+        onImportComplete={handleRefetch}
       />
 
       {/* Story 2.9: Upload Modal */}
@@ -600,7 +789,18 @@ export function CaseDocumentsList({
         onClose={() => setIsUploadOpen(false)}
         caseId={caseId}
         caseName={caseName}
-        onUploadComplete={refetch}
+        onUploadComplete={handleRefetch}
+      />
+
+      {/* OPS-111: Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={closePreview}
+        document={previewDocument}
+        onRequestPreviewUrl={fetchPreviewUrl}
+        onRequestTextContent={fetchTextContent}
+        hasMsalAccount={hasMsalAccount}
+        onReconnectMicrosoft={reconnectMicrosoft}
       />
 
       {/* Unlink Confirmation */}
@@ -626,6 +826,19 @@ export function CaseDocumentsList({
         onCancel={() => setDeleteConfirm(null)}
         isLoading={deleting}
       />
+
+      {/* Assign to Mapa Modal */}
+      {mapaAssignDoc && (
+        <AssignToMapaModal
+          isOpen={!!mapaAssignDoc}
+          onClose={() => setMapaAssignDoc(null)}
+          caseId={caseId}
+          document={mapaAssignDoc}
+          onAssigned={() => {
+            setMapaAssignDoc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

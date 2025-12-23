@@ -11,6 +11,7 @@
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
 import { oneDriveService } from '../../services/onedrive.service';
+import { sharePointService } from '../../services/sharepoint.service';
 import { r2StorageService } from '../../services/r2-storage.service';
 import { thumbnailService } from '../../services/thumbnail.service';
 import { caseSummaryService } from '../../services/case-summary.service';
@@ -23,8 +24,9 @@ export interface Context {
     firmId: string;
     role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     email: string;
+    accessToken?: string; // Story 5.1: MS access token for email/OneDrive operations
   };
-  accessToken?: string; // OAuth access token for Microsoft Graph API
+  accessToken?: string; // Deprecated: use context.user.accessToken instead
 }
 
 // Helper function to check authorization
@@ -419,7 +421,7 @@ export const documentResolvers = {
       });
     },
 
-    // Get document thumbnail (Story 2.9 AC5)
+    // Get document thumbnail (Story 2.9 AC5, OPS-109)
     getDocumentThumbnail: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
@@ -444,15 +446,42 @@ export const documentResolvers = {
         return null;
       }
 
+      const accessToken = context.accessToken || context.user?.accessToken;
+      if (!accessToken) {
+        throw new GraphQLError('Access token required for thumbnail generation', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // OPS-109: Try SharePoint first (all firm users can access)
+      if (document.sharePointItemId) {
+        try {
+          const thumbnails = await sharePointService.getThumbnails(
+            accessToken,
+            document.sharePointItemId
+          );
+
+          // Prefer large thumbnail, fall back to medium or small
+          const url = thumbnails.large || thumbnails.medium || thumbnails.small;
+          if (url) {
+            logger.debug('Using SharePoint thumbnail', {
+              documentId: args.documentId,
+              sharePointItemId: document.sharePointItemId,
+            });
+            return { url, source: 'sharepoint' };
+          }
+        } catch (error) {
+          logger.warn('SharePoint thumbnail failed, trying OneDrive fallback', {
+            documentId: args.documentId,
+            sharePointItemId: document.sharePointItemId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+          // Fall through to OneDrive
+        }
+      }
+
       // For OneDrive documents, use OneDrive thumbnail endpoint
       if (document.oneDriveId) {
-        const accessToken = context.accessToken;
-        if (!accessToken) {
-          throw new GraphQLError('Access token required for thumbnail generation', {
-            extensions: { code: 'UNAUTHENTICATED' },
-          });
-        }
-
         const result = await thumbnailService.generateThumbnail(
           args.documentId,
           document.fileType,
@@ -465,13 +494,13 @@ export const documentResolvers = {
         return result ? { url: result.url, source: result.source } : null;
       }
 
-      // For local files without OneDrive ID, thumbnail generation would
+      // For local files without cloud storage, thumbnail generation would
       // require fetching the file from storage - return null for now
       // This could be enhanced to support local storage thumbnails
       return null;
     },
 
-    // Get document preview URL (OPS-087)
+    // Get document preview URL (OPS-087, OPS-109)
     documentPreviewUrl: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
@@ -491,62 +520,453 @@ export const documentResolvers = {
         });
       }
 
-      // File types that can be previewed directly in browser (PDFs and images)
+      // File types that can be previewed directly in browser (PDFs, images, and text)
       const browserPreviewableTypes = [
         'application/pdf',
         'image/jpeg',
         'image/png',
         'image/gif',
         'image/webp',
+        'text/plain',
+        'text/csv',
+        'text/html',
+        'text/css',
+        'text/javascript',
+        'application/json',
       ];
 
-      // Try OneDrive preview first (supports Office docs + PDFs + images)
-      if (document.oneDriveId) {
-        const accessToken = context.accessToken;
-        if (!accessToken) {
-          throw new GraphQLError('Access token required for preview generation', {
-            extensions: { code: 'UNAUTHENTICATED' },
+      // Office document types that can be previewed via Office Online
+      const officeTypes = [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+        'application/msword', // .doc
+        'application/vnd.ms-excel', // .xls
+        'application/vnd.ms-powerpoint', // .ppt
+      ];
+
+      // OPS-109: Try SharePoint first (all firm users can access)
+      if (document.sharePointItemId && context.user?.accessToken) {
+        try {
+          const previewInfo = await sharePointService.getPreviewUrl(
+            context.user.accessToken,
+            document.sharePointItemId,
+            document.fileType
+          );
+
+          if (previewInfo) {
+            logger.debug('Using SharePoint preview URL', {
+              documentId: args.documentId,
+              sharePointItemId: document.sharePointItemId,
+              source: previewInfo.source,
+            });
+            return {
+              url: previewInfo.url,
+              source: previewInfo.source,
+              expiresAt: previewInfo.expiresAt,
+            };
+          }
+        } catch (error) {
+          logger.warn('SharePoint preview failed, trying OneDrive fallback', {
+            documentId: args.documentId,
+            sharePointItemId: document.sharePointItemId,
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
-        }
-
-        const previewInfo = await oneDriveService.getPreviewUrl(
-          accessToken,
-          document.oneDriveId,
-          document.fileType
-        );
-
-        if (previewInfo) {
-          return {
-            url: previewInfo.url,
-            source: previewInfo.source,
-            expiresAt: previewInfo.expiresAt,
-          };
+          // Fall through to OneDrive fallback
         }
       }
 
-      // Fallback to R2 presigned URL for browser-previewable types (PDF, images)
-      if (browserPreviewableTypes.includes(document.fileType) && document.storagePath) {
+      // Try OneDrive preview (legacy documents - only works for uploader)
+      // OPS-092: Use context.user?.accessToken - the MS access token is stored in user context
+      // OPS-104: Pass oneDriveUserId for cross-user document access
+      if (document.oneDriveId && context.user?.accessToken) {
+        try {
+          const previewInfo = await oneDriveService.getPreviewUrl(
+            context.user.accessToken,
+            document.oneDriveId,
+            document.fileType,
+            document.oneDriveUserId ?? undefined // OPS-104: Cross-user access
+          );
+
+          if (previewInfo) {
+            return {
+              url: previewInfo.url,
+              source: previewInfo.source,
+              expiresAt: previewInfo.expiresAt,
+            };
+          }
+        } catch (error) {
+          // OPS-092: Log and fall through to R2 fallback instead of propagating error
+          logger.warn('OneDrive preview failed, falling back to R2', {
+            documentId: args.documentId,
+            oneDriveId: document.oneDriveId,
+            oneDriveUserId: document.oneDriveUserId, // OPS-104: Log owner ID for debugging
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+          // Fall through to R2 fallback below
+        }
+      }
+
+      // Fallback to R2 for documents without cloud storage
+      if (document.storagePath) {
         const presignedUrl = await r2StorageService.getPresignedUrl(document.storagePath);
         if (presignedUrl) {
-          logger.debug('Using R2 presigned URL for document preview', {
-            documentId: args.documentId,
-            fileType: document.fileType,
-          });
-          return {
-            url: presignedUrl.url,
-            source: 'r2',
-            expiresAt: presignedUrl.expiresAt,
-          };
+          // For browser-previewable types (PDF, images), return direct URL
+          if (browserPreviewableTypes.includes(document.fileType)) {
+            logger.debug('Using R2 presigned URL for document preview', {
+              documentId: args.documentId,
+              fileType: document.fileType,
+            });
+            return {
+              url: presignedUrl.url,
+              source: 'r2',
+              expiresAt: presignedUrl.expiresAt,
+            };
+          }
+
+          // For Office documents, use Office Online viewer with R2 presigned URL
+          if (officeTypes.includes(document.fileType)) {
+            const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(presignedUrl.url)}`;
+            logger.debug('Using Office Online viewer with R2 URL for document preview', {
+              documentId: args.documentId,
+              fileType: document.fileType,
+            });
+            return {
+              url: officeViewerUrl,
+              source: 'office365-r2',
+              expiresAt: presignedUrl.expiresAt,
+            };
+          }
         }
       }
 
-      logger.debug('Preview not available for document', {
+      // OPS-109: Enhanced debug logging for preview troubleshooting
+      logger.warn('Preview not available for document', {
         documentId: args.documentId,
         fileType: document.fileType,
+        hasSharePointItemId: !!document.sharePointItemId,
+        sharePointItemId: document.sharePointItemId,
         hasOneDriveId: !!document.oneDriveId,
+        oneDriveId: document.oneDriveId,
         hasStoragePath: !!document.storagePath,
+        storagePath: document.storagePath,
+        hasAccessToken: !!context.user?.accessToken,
       });
       return null;
+    },
+
+    // OPS-109: Get text content for text file preview (proxied to avoid CORS)
+    documentTextContent: async (_: any, args: { documentId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessDocument(args.documentId, user))) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const document = await prisma.document.findUnique({
+        where: { id: args.documentId },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Only allow text file types
+      const textTypes = [
+        'text/plain',
+        'text/csv',
+        'text/html',
+        'text/css',
+        'text/javascript',
+        'application/json',
+      ];
+
+      if (!textTypes.includes(document.fileType)) {
+        throw new GraphQLError('Document is not a text file', {
+          extensions: { code: 'BAD_REQUEST' },
+        });
+      }
+
+      // Try SharePoint first
+      if (document.sharePointItemId && context.user?.accessToken) {
+        try {
+          const downloadUrl = await sharePointService.getDownloadUrl(
+            context.user.accessToken,
+            document.sharePointItemId
+          );
+
+          if (downloadUrl) {
+            // Fetch the content from SharePoint
+            const response = await fetch(downloadUrl);
+            if (response.ok) {
+              const content = await response.text();
+              logger.debug('Fetched text content from SharePoint', {
+                documentId: args.documentId,
+                size: content.length,
+              });
+              return {
+                content,
+                mimeType: document.fileType,
+                size: content.length,
+              };
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to fetch text content from SharePoint', {
+            documentId: args.documentId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Try OneDrive fallback
+      if (document.oneDriveId && context.user?.accessToken) {
+        try {
+          const downloadLink = await oneDriveService.getDocumentDownloadLink(
+            context.user.accessToken,
+            document.oneDriveId,
+            document.oneDriveUserId ?? undefined
+          );
+
+          if (downloadLink?.url) {
+            const downloadUrl = downloadLink.url;
+            const response = await fetch(downloadUrl);
+            if (response.ok) {
+              const content = await response.text();
+              logger.debug('Fetched text content from OneDrive', {
+                documentId: args.documentId,
+                size: content.length,
+              });
+              return {
+                content,
+                mimeType: document.fileType,
+                size: content.length,
+              };
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to fetch text content from OneDrive', {
+            documentId: args.documentId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // R2 fallback
+      if (document.storagePath) {
+        try {
+          const presignedUrl = await r2StorageService.getPresignedUrl(document.storagePath);
+          if (presignedUrl) {
+            const response = await fetch(presignedUrl.url);
+            if (response.ok) {
+              const content = await response.text();
+              logger.debug('Fetched text content from R2', {
+                documentId: args.documentId,
+                size: content.length,
+              });
+              return {
+                content,
+                mimeType: document.fileType,
+                size: content.length,
+              };
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to fetch text content from R2', {
+            documentId: args.documentId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      throw new GraphQLError('Could not retrieve text content', {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' },
+      });
+    },
+
+    // OPS-107: Grid view query with pagination
+    caseDocumentsGrid: async (
+      _: any,
+      args: {
+        caseId: string;
+        first?: number;
+        after?: string;
+        fileTypes?: string[];
+        sortBy?: 'LINKED_AT' | 'UPLOADED_AT' | 'FILE_NAME' | 'FILE_SIZE' | 'FILE_TYPE';
+        sortDirection?: 'ASC' | 'DESC';
+      },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessCase(args.caseId, user))) {
+        throw new GraphQLError('Not authorized to access this case', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const limit = Math.min(args.first || 20, 100); // Cap at 100
+      const sortDirection = args.sortDirection === 'ASC' ? 'asc' : 'desc';
+
+      // Build sort order based on sortBy
+      let orderBy: any = { linkedAt: sortDirection };
+      switch (args.sortBy) {
+        case 'UPLOADED_AT':
+          orderBy = { document: { uploadedAt: sortDirection } };
+          break;
+        case 'FILE_NAME':
+          orderBy = { document: { fileName: sortDirection } };
+          break;
+        case 'FILE_SIZE':
+          orderBy = { document: { fileSize: sortDirection } };
+          break;
+        case 'FILE_TYPE':
+          orderBy = { document: { fileType: sortDirection } };
+          break;
+        case 'LINKED_AT':
+        default:
+          orderBy = { linkedAt: sortDirection };
+      }
+
+      // Build where clause
+      const where: any = { caseId: args.caseId };
+
+      // File type filter with wildcard support (e.g., 'image/*')
+      if (args.fileTypes && args.fileTypes.length > 0) {
+        const exactTypes: string[] = [];
+        const wildcardPrefixes: string[] = [];
+
+        for (const type of args.fileTypes) {
+          if (type.endsWith('/*')) {
+            wildcardPrefixes.push(type.replace('/*', '/'));
+          } else {
+            exactTypes.push(type);
+          }
+        }
+
+        const typeConditions: any[] = [];
+        if (exactTypes.length > 0) {
+          typeConditions.push({ document: { fileType: { in: exactTypes } } });
+        }
+        for (const prefix of wildcardPrefixes) {
+          typeConditions.push({ document: { fileType: { startsWith: prefix } } });
+        }
+
+        if (typeConditions.length > 0) {
+          where.OR = typeConditions;
+        }
+      }
+
+      // Cursor-based pagination
+      let cursor: { caseId_documentId: { caseId: string; documentId: string } } | undefined;
+      if (args.after) {
+        try {
+          const decoded = Buffer.from(args.after, 'base64').toString('utf-8');
+          const [caseId, documentId] = decoded.split(':');
+          cursor = { caseId_documentId: { caseId, documentId } };
+        } catch {
+          // Invalid cursor, ignore
+        }
+      }
+
+      // Get total count
+      const totalCount = await prisma.caseDocument.count({ where });
+
+      // Fetch documents with pagination
+      const caseLinks = await prisma.caseDocument.findMany({
+        where,
+        include: {
+          document: {
+            include: {
+              uploader: true,
+              client: true,
+            },
+          },
+          linker: true,
+        },
+        orderBy,
+        take: limit + 1, // Get one extra to check for next page
+        cursor,
+        skip: cursor ? 1 : 0, // Skip the cursor item itself
+      });
+
+      const hasNextPage = caseLinks.length > limit;
+      const edges = caseLinks.slice(0, limit);
+
+      // OPS-111: Fetch thumbnails for SharePoint documents
+      const accessToken = context.user?.accessToken;
+
+      // Build edges with cursors
+      const resultEdges = await Promise.all(
+        edges.map(async (link) => {
+          let sourceCase = null;
+
+          if (!link.isOriginal) {
+            const originalLink = await prisma.caseDocument.findFirst({
+              where: {
+                documentId: link.documentId,
+                isOriginal: true,
+              },
+              include: {
+                case: true,
+              },
+            });
+            sourceCase = originalLink?.case || null;
+          }
+
+          // OPS-111: Fetch thumbnails from SharePoint if available
+          let thumbnails: { small?: string; medium?: string; large?: string } = {};
+          if (accessToken && link.document.sharePointItemId) {
+            try {
+              thumbnails = await sharePointService.getThumbnails(
+                accessToken,
+                link.document.sharePointItemId
+              );
+            } catch (err) {
+              // Log but don't fail - thumbnails are optional
+              logger.debug('Failed to fetch thumbnails for document', {
+                documentId: link.documentId,
+                error: err,
+              });
+            }
+          }
+
+          const cursorValue = Buffer.from(`${link.caseId}:${link.documentId}`).toString('base64');
+
+          return {
+            cursor: cursorValue,
+            node: {
+              id: link.id,
+              document: {
+                ...link.document,
+                // OPS-111: Add thumbnail URLs to document
+                thumbnailSmall: thumbnails.small || null,
+                thumbnailMedium: thumbnails.medium || null,
+                thumbnailLarge: thumbnails.large || null,
+              },
+              linkedBy: link.linker || (await getDeletedUserPlaceholder(link.linkedBy)),
+              linkedAt: link.linkedAt,
+              isOriginal: link.isOriginal,
+              sourceCase,
+            },
+          };
+        })
+      );
+
+      return {
+        edges: resultEdges,
+        pageInfo: {
+          hasNextPage,
+          hasPreviousPage: !!args.after,
+          startCursor: resultEdges[0]?.cursor || null,
+          endCursor: resultEdges[resultEdges.length - 1]?.cursor || null,
+        },
+        totalCount,
+      };
     },
   },
 
@@ -1149,6 +1569,16 @@ export const documentResolvers = {
         description: args.input.description,
       });
 
+      // OPS-104: Share the file with the organization so other firm members can access it
+      // This creates a view-only sharing link scoped to the organization
+      await oneDriveService.shareWithOrganization(accessToken, oneDriveFile.id);
+
+      // OPS-104: Get uploader's Azure AD ID for cross-user document access
+      const uploader = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { azureAdId: true },
+      });
+
       // Create document in database
       const document = await prisma.$transaction(async (tx) => {
         // Create the document (owned by client)
@@ -1164,6 +1594,7 @@ export const documentResolvers = {
             uploadedAt: new Date(),
             oneDriveId: oneDriveFile.id,
             oneDrivePath: oneDriveFile.parentPath + '/' + oneDriveFile.name,
+            oneDriveUserId: uploader?.azureAdId || null, // OPS-104: Store owner's MS Graph user ID
             status: 'DRAFT',
             metadata: {
               title: args.input.title || args.input.fileName,
@@ -1234,7 +1665,165 @@ export const documentResolvers = {
       });
     },
 
-    // Get temporary download URL for a document
+    // OPS-108: Upload document to SharePoint firm storage
+    uploadDocumentToSharePoint: async (
+      _: any,
+      args: {
+        input: {
+          caseId: string;
+          fileName: string;
+          fileType: string;
+          fileContent: string;
+          title?: string;
+          description?: string;
+        };
+      },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Verify user has access to the case
+      if (!(await canAccessCase(args.input.caseId, user))) {
+        throw new GraphQLError('Not authorized to upload to this case', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get case to extract client and case number
+      const caseData = await prisma.case.findUnique({
+        where: { id: args.input.caseId },
+        select: { clientId: true, firmId: true, caseNumber: true },
+      });
+
+      if (!caseData) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Decode base64 file content
+      const fileBuffer = Buffer.from(args.input.fileContent, 'base64');
+      const fileSize = fileBuffer.length;
+
+      // Get user's access token from context
+      const accessToken = context.accessToken || context.user?.accessToken;
+      if (!accessToken) {
+        throw new GraphQLError('Access token required for SharePoint upload', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Upload to SharePoint
+      const spItem = await sharePointService.uploadDocument(
+        accessToken,
+        caseData.caseNumber,
+        args.input.fileName,
+        fileBuffer,
+        args.input.fileType
+      );
+
+      logger.info('Document uploaded to SharePoint', {
+        caseId: args.input.caseId,
+        caseNumber: caseData.caseNumber,
+        fileName: args.input.fileName,
+        sharePointId: spItem.id,
+        webUrl: spItem.webUrl,
+      });
+
+      // Create document in database
+      const document = await prisma.$transaction(async (tx) => {
+        // Create the document (owned by client)
+        const newDocument = await tx.document.create({
+          data: {
+            clientId: caseData.clientId,
+            firmId: user.firmId,
+            fileName: args.input.fileName,
+            fileType: args.input.fileType,
+            fileSize: fileSize,
+            storagePath: spItem.parentPath + '/' + spItem.name,
+            uploadedBy: user.id,
+            uploadedAt: new Date(),
+            // OPS-108: SharePoint fields
+            sharePointItemId: spItem.id,
+            sharePointPath: spItem.webUrl,
+            // Don't set OneDrive fields for SharePoint uploads
+            oneDriveId: null,
+            oneDrivePath: null,
+            oneDriveUserId: null,
+            status: 'DRAFT',
+            metadata: {
+              title: args.input.title || args.input.fileName,
+              description: args.input.description || '',
+              sharePointWebUrl: spItem.webUrl,
+            },
+          },
+        });
+
+        // Create case-document link
+        await tx.caseDocument.create({
+          data: {
+            caseId: args.input.caseId,
+            documentId: newDocument.id,
+            linkedBy: user.id,
+            linkedAt: new Date(),
+            isOriginal: true,
+            firmId: user.firmId,
+          },
+        });
+
+        // Create initial version
+        await tx.documentVersion.create({
+          data: {
+            documentId: newDocument.id,
+            versionNumber: 1,
+            oneDriveVersionId: null, // SharePoint doesn't use this field
+            changesSummary: 'Initial upload to SharePoint',
+            createdBy: user.id,
+          },
+        });
+
+        // Create audit log
+        await createDocumentAuditLog(tx, {
+          documentId: newDocument.id,
+          userId: user.id,
+          action: 'Uploaded',
+          caseId: args.input.caseId,
+          details: {
+            fileName: newDocument.fileName,
+            fileType: newDocument.fileType,
+            fileSize: newDocument.fileSize,
+            sharePointItemId: spItem.id,
+            uploadMethod: 'SharePoint',
+          },
+          firmId: user.firmId,
+        });
+
+        return newDocument;
+      });
+
+      // OPS-047: Mark summary stale
+      caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
+
+      // Fetch with all relations
+      return prisma.document.findUnique({
+        where: { id: document.id },
+        include: {
+          uploader: true,
+          client: true,
+          caseLinks: {
+            include: {
+              case: true,
+              linker: true,
+            },
+          },
+          versions: {
+            orderBy: { versionNumber: 'desc' },
+          },
+        },
+      });
+    },
+
+    // Get temporary download URL for a document (OPS-109: SharePoint support)
     getDocumentDownloadUrl: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
@@ -1254,16 +1843,44 @@ export const documentResolvers = {
         });
       }
 
-      if (!document.oneDriveId) {
-        throw new GraphQLError('Document is not stored in OneDrive', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
-      }
-
-      const accessToken = context.accessToken;
+      const accessToken = context.accessToken || context.user?.accessToken;
       if (!accessToken) {
         throw new GraphQLError('Access token required', {
           extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // OPS-109: Try SharePoint first (all firm users can access)
+      if (document.sharePointItemId) {
+        try {
+          const downloadUrl = await sharePointService.getDownloadUrl(
+            accessToken,
+            document.sharePointItemId
+          );
+
+          logger.debug('Using SharePoint download URL', {
+            documentId: args.documentId,
+            sharePointItemId: document.sharePointItemId,
+          });
+
+          return {
+            url: downloadUrl,
+            expirationDateTime: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour
+          };
+        } catch (error) {
+          logger.warn('SharePoint download failed, trying OneDrive fallback', {
+            documentId: args.documentId,
+            sharePointItemId: document.sharePointItemId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+          // Fall through to OneDrive
+        }
+      }
+
+      // Fall back to OneDrive (legacy documents)
+      if (!document.oneDriveId) {
+        throw new GraphQLError('Document is not stored in cloud storage', {
+          extensions: { code: 'BAD_USER_INPUT' },
         });
       }
 
@@ -1339,6 +1956,147 @@ export const documentResolvers = {
         updated: syncResult.updated,
         newVersionNumber: syncResult.newVersionNumber,
         document: updatedDocument,
+      };
+    },
+
+    // OPS-104: Share a single document with the organization
+    shareDocumentWithOrganization: async (
+      _: any,
+      args: { documentId: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessDocument(args.documentId, user))) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const document = await prisma.document.findUnique({
+        where: { id: args.documentId },
+        include: {
+          uploader: true,
+          client: true,
+          caseLinks: {
+            include: {
+              case: true,
+              linker: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      if (!document.oneDriveId) {
+        throw new GraphQLError('Document is not stored in OneDrive', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      const accessToken = context.accessToken || context.user?.accessToken;
+      if (!accessToken) {
+        throw new GraphQLError('Access token required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const sharingResult = await oneDriveService.shareWithOrganization(
+        accessToken,
+        document.oneDriveId
+      );
+
+      return {
+        success: !!sharingResult,
+        document,
+        sharingLinkUrl: sharingResult?.webUrl || null,
+      };
+    },
+
+    // OPS-104: Batch share all documents for a case with the organization
+    batchShareCaseDocuments: async (_: any, args: { caseId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only Partners and BusinessOwners can batch share
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners and BusinessOwners can batch share documents', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify case exists and belongs to user's firm
+      const caseData = await prisma.case.findUnique({
+        where: { id: args.caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== user.firmId) {
+        throw new GraphQLError('Case not found or not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const accessToken = context.accessToken || context.user?.accessToken;
+      if (!accessToken) {
+        throw new GraphQLError('Access token required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Get all documents for this case that have OneDrive IDs
+      const caseDocuments = await prisma.caseDocument.findMany({
+        where: { caseId: args.caseId },
+        include: {
+          document: true,
+        },
+      });
+
+      const oneDriveDocuments = caseDocuments
+        .filter((cd) => cd.document.oneDriveId)
+        .map((cd) => cd.document);
+
+      let shared = 0;
+      let failed = 0;
+      const skipped = caseDocuments.length - oneDriveDocuments.length;
+
+      for (const doc of oneDriveDocuments) {
+        try {
+          const result = await oneDriveService.shareWithOrganization(accessToken, doc.oneDriveId!);
+          if (result) {
+            shared++;
+          } else {
+            failed++;
+          }
+        } catch (error) {
+          logger.warn('Failed to share document with organization', {
+            documentId: doc.id,
+            oneDriveId: doc.oneDriveId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          failed++;
+        }
+      }
+
+      logger.info('Batch share completed', {
+        caseId: args.caseId,
+        total: caseDocuments.length,
+        shared,
+        failed,
+        skipped,
+        userId: user.id,
+      });
+
+      return {
+        total: caseDocuments.length,
+        shared,
+        failed,
+        skipped,
+        success: failed === 0,
       };
     },
 
@@ -1491,6 +2249,32 @@ export const documentResolvers = {
       // Use getDocumentThumbnail query instead if needed
       return null;
     },
+
+    // OPS-107: Storage type computed from which IDs are present
+    storageType: (parent: any) => {
+      if (parent.sharePointItemId) {
+        return 'SHAREPOINT';
+      }
+      if (parent.oneDriveId) {
+        return 'ONEDRIVE';
+      }
+      if (parent.storagePath) {
+        return 'R2';
+      }
+      // Default to R2 if no storage identifiers
+      return 'R2';
+    },
+
+    // OPS-107: SharePoint fields (direct passthrough from DB)
+    sharePointItemId: (parent: any) => parent.sharePointItemId || null,
+    sharePointPath: (parent: any) => parent.sharePointPath || null,
+
+    // OPS-107: Thumbnail fields - computed from storage
+    // These require context (access token) so return null from field resolver
+    // Clients should use batch query or separate thumbnail endpoint
+    thumbnailSmall: () => null,
+    thumbnailMedium: () => null,
+    thumbnailLarge: () => null,
   },
 
   // Field resolvers for DocumentVersion type

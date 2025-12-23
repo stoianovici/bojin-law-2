@@ -97,17 +97,143 @@
 | OPS-088 | Cmd+K Command Palette with cmdk Library           | Feature      | P2-Medium   | Open       | [issues/ops-088.md](issues/ops-088.md)   |
 | OPS-089 | /documents Section with Folders                   | Feature      | P1-High     | Open       | [issues/ops-089.md](issues/ops-089.md)   |
 | OPS-090 | Email Content Cleaning for Readability            | Feature      | P2-Medium   | Open       | [issues/ops-090.md](issues/ops-090.md)   |
+| OPS-091 | Include Sent Emails in Thread Display             | Feature      | P1-High     | Open       | [issues/ops-091.md](issues/ops-091.md)   |
+| OPS-092 | Document Preview Fails with 400 Error             | Bug          | P1-High     | Open       | [issues/ops-092.md](issues/ops-092.md)   |
+| OPS-093 | AI-Created Events Not Appearing in Calendar       | Bug          | P1-High     | Fixed      | [issues/ops-093.md](issues/ops-093.md)   |
+| OPS-094 | AI Assistant Wrong Date and Time for Events       | Bug          | P1-High     | Fixed      | [issues/ops-094.md](issues/ops-094.md)   |
+| OPS-095 | Task Date/Time Simplification                     | Feature      | P2-Medium   | Fixed      | [issues/ops-095.md](issues/ops-095.md)   |
+| OPS-096 | Task Card Display Redesign                        | Feature      | P2-Medium   | Open       | [issues/ops-096.md](issues/ops-096.md)   |
+| OPS-097 | AI Task Creation with Editable Duration Card      | Feature      | P1-High     | Open       | [issues/ops-097.md](issues/ops-097.md)   |
+| OPS-098 | Duration-Based Calendar Card Spanning             | Feature      | P3-Low      | Phase 2 ✓  | [issues/ops-098.md](issues/ops-098.md)   |
+| OPS-099 | Mapa Data Model                                   | Feature      | P1-High     | Fixed      | [issues/ops-099.md](issues/ops-099.md)   |
+| OPS-100 | Mapa Service Layer                                | Feature      | P1-High     | Fixed      | [issues/ops-100.md](issues/ops-100.md)   |
+| OPS-101 | Mapa GraphQL Schema & Resolvers                   | Feature      | P1-High     | Fixed      | [issues/ops-101.md](issues/ops-101.md)   |
+| OPS-102 | Mapa UI Components                                | Feature      | P1-High     | Fixed      | [issues/ops-102.md](issues/ops-102.md)   |
+| OPS-103 | Mapa Print/Export Functionality                   | Feature      | P2-Medium   | Fixed      | [issues/ops-103.md](issues/ops-103.md)   |
+| OPS-104 | Document Preview Fails for Non-Uploader Users     | Bug          | P1-High     | Superseded | [issues/ops-104.md](issues/ops-104.md)   |
+| OPS-105 | SharePoint Site Configuration                     | Infra        | P0-Critical | Fixed      | [issues/ops-105.md](issues/ops-105.md)   |
+| OPS-106 | SharePoint Service Layer                          | Feature      | P1-High     | Fixed      | [issues/ops-106.md](issues/ops-106.md)   |
+| OPS-107 | SharePoint GraphQL Schema Updates                 | Feature      | P1-High     | Fixed      | [issues/ops-107.md](issues/ops-107.md)   |
+| OPS-108 | Document Upload to SharePoint                     | Feature      | P1-High     | Open       | [issues/ops-108.md](issues/ops-108.md)   |
+| OPS-109 | Document Preview/Download from SharePoint         | Feature      | P1-High     | Fixing     | [issues/ops-109.md](issues/ops-109.md)   |
+| OPS-110 | Document Migration to SharePoint                  | Feature      | P2-Medium   | Fixing     | [issues/ops-110.md](issues/ops-110.md)   |
+| OPS-111 | Document Grid UI with Thumbnails                  | Feature      | P2-Medium   | Open       | [issues/ops-111.md](issues/ops-111.md)   |
+| OPS-112 | Apollo Client Missing x-ms-access-token Header    | Bug          | P1-High     | Fixed      | [issues/ops-112.md](issues/ops-112.md)   |
+| OPS-113 | Rule-Based Document Filtering                     | Feature      | P2-Medium   | Open       | [issues/ops-113.md](issues/ops-113.md)   |
 
 ---
 
 ## Active Issues Summary
 
-| ID      | Title                                   | Priority  | Status |
-| ------- | --------------------------------------- | --------- | ------ |
-| OPS-087 | Document & Attachment Preview           | P2-Medium | Open   |
-| OPS-088 | Cmd+K Command Palette with cmdk Library | P2-Medium | Open   |
-| OPS-089 | /documents Section with Folders         | P1-High   | Open   |
-| OPS-090 | Email Content Cleaning for Readability  | P2-Medium | Open   |
+### SharePoint Migration Epic (OPS-105 → OPS-111)
+
+| ID      | Title                                     | Priority    | Status           | Blocked By  |
+| ------- | ----------------------------------------- | ----------- | ---------------- | ----------- |
+| OPS-105 | SharePoint Site Configuration             | P0-Critical | Fixed            | -           |
+| OPS-106 | SharePoint Service Layer                  | P1-High     | Fixed            | -           |
+| OPS-107 | SharePoint GraphQL Schema Updates         | P1-High     | Fixed            | -           |
+| OPS-108 | Document Upload to SharePoint             | P1-High     | Open             | -           |
+| OPS-109 | Document Preview/Download from SharePoint | P1-High     | Root Cause Found | -           |
+| OPS-110 | Document Migration to SharePoint          | P2-Medium   | Fixing           | OPS-108,109 |
+| OPS-111 | Document Grid UI with Thumbnails          | P2-Medium   | Open             | -           |
+
+### Other Active Issues
+
+| ID      | Title                                          | Priority  | Status                     |
+| ------- | ---------------------------------------------- | --------- | -------------------------- |
+| OPS-087 | Document & Attachment Preview                  | P2-Medium | Superseded (by OPS-109)    |
+| OPS-088 | Cmd+K Command Palette with cmdk Library        | P2-Medium | Open                       |
+| OPS-089 | /documents Section with Folders                | P1-High   | Open                       |
+| OPS-090 | Email Content Cleaning for Readability         | P2-Medium | Open                       |
+| OPS-091 | Include Sent Emails in Thread Display          | P1-High   | Open                       |
+| OPS-092 | Document Preview Fails with 400 Error          | P1-High   | Superseded (by OPS-109)    |
+| OPS-096 | Task Card Display Redesign                     | P2-Medium | Open                       |
+| OPS-097 | AI Task Creation with Editable Duration Card   | P1-High   | Open                       |
+| OPS-112 | Apollo Client Missing x-ms-access-token Header | P1-High   | Fixed                      |
+| OPS-098 | Duration-Based Calendar Card Spanning          | P3-Low    | Phase 2                    |
+| OPS-104 | Document Preview Fails for Non-Uploader Users  | P1-High   | Superseded (by SharePoint) |
+| OPS-113 | Rule-Based Document Filtering                  | P2-Medium | Open                       |
+
+---
+
+## SharePoint Migration (OPS-105 → OPS-111) Dependency Graph
+
+```
+                    ┌─────────────────┐
+                    │   OPS-105       │
+                    │  Site Config    │ ◄── YOU ARE HERE
+                    │  (Admin Portal) │
+                    └────────┬────────┘
+                             │
+              ┌──────────────┼──────────────┐
+              │              │              │
+              ▼              ▼              │
+    ┌─────────────────┐ ┌─────────────────┐ │
+    │   OPS-106       │ │   OPS-107       │ │
+    │  Service Layer  │ │  GraphQL Schema │ │
+    │  (can parallel) │ │  (can parallel) │ │
+    └────────┬────────┘ └────────┬────────┘ │
+              │                   │          │
+              └─────────┬─────────┘          │
+                        │                    │
+         ┌──────────────┼──────────────┐     │
+         │              │              │     │
+         ▼              ▼              ▼     │
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│   OPS-108       │ │   OPS-109       │ │   OPS-111       │
+│  Upload Flow    │ │  Preview/DL     │ │  Grid UI        │
+└────────┬────────┘ └────────┬────────┘ └─────────────────┘
+         │                   │
+         └─────────┬─────────┘
+                   │
+                   ▼
+         ┌─────────────────┐
+         │   OPS-110       │
+         │  Migration      │
+         └─────────────────┘
+
+Parallelization:
+- OPS-106 and OPS-107 can run concurrently after OPS-105
+- OPS-108, OPS-109, OPS-111 can run concurrently after OPS-106+107
+- OPS-110 runs last (needs upload+preview working)
+```
+
+---
+
+## Mapa Feature (OPS-099 → OPS-103) Dependency Graph
+
+```
+                    ┌─────────────────┐
+                    │   OPS-099       │
+                    │  Data Model     │
+                    │   (Prisma)      │
+                    └────────┬────────┘
+                             │
+              ┌──────────────┼──────────────┐
+              │              │              │
+              ▼              ▼              │
+    ┌─────────────────┐ ┌─────────────────┐ │
+    │   OPS-100       │ │   OPS-101       │ │
+    │  Service Layer  │ │  GraphQL Schema │ │
+    │  (can parallel) │ │  (can parallel) │ │
+    └────────┬────────┘ └────────┬────────┘ │
+              │                   │          │
+              └─────────┬─────────┘          │
+                        │                    │
+                        ▼                    │
+              ┌─────────────────┐            │
+              │   OPS-102       │            │
+              │  UI Components  │            │
+              └────────┬────────┘            │
+                       │                     │
+                       ▼                     │
+              ┌─────────────────┐            │
+              │   OPS-103       │◄───────────┘
+              │  Print/Export   │
+              └─────────────────┘
+
+Parallelization: OPS-100 and OPS-101 can run concurrently after OPS-099
+```
 
 ---
 

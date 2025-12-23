@@ -23,6 +23,7 @@ import {
   File,
   FileImage,
   FileSpreadsheet,
+  FolderInput,
 } from 'lucide-react';
 import type { CaseWithRelations } from '../../hooks/useCases';
 import type { FolderTree, FolderInfo, CaseDocumentContext } from '../../hooks/useDocumentFolders';
@@ -31,6 +32,8 @@ import { useDocumentFoldersStore } from '../../stores/document-folders.store';
 import { useDocumentPreview } from '../../hooks/useDocumentPreview';
 import { DocumentPreviewModal, type PreviewableDocument } from '../preview';
 import { CreateFolderModal } from './CreateFolderModal';
+import { AssignToMapaModal, type DocumentInfo } from '../mapa/AssignToMapaModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ============================================================================
 // Types
@@ -123,12 +126,14 @@ function DocumentCard({
   isSelected,
   onSelect,
   onPreview,
+  onAddToMapa,
 }: {
   doc: CaseDocumentContext;
   viewMode: 'grid' | 'list';
   isSelected: boolean;
   onSelect: () => void;
   onPreview: () => void;
+  onAddToMapa: () => void;
 }) {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -178,6 +183,16 @@ function DocumentCard({
             title="Previzualizare"
           >
             <Eye className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToMapa();
+            }}
+            className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-purple-600"
+            title="Adaugă în mapă"
+          >
+            <FolderInput className="h-4 w-4" />
           </button>
           <button
             onClick={(e) => e.stopPropagation()}
@@ -240,6 +255,17 @@ function DocumentCard({
           <Eye className="h-3.5 w-3.5" />
           Previzualizare
         </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToMapa();
+          }}
+          className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+          title="Adaugă în mapă"
+        >
+          <FolderInput className="h-3.5 w-3.5" />
+          Mapă
+        </button>
       </div>
     </div>
   );
@@ -288,6 +314,7 @@ export function DocumentsContentPanel({
   const { viewMode, setViewMode, selectedDocumentId, setSelectedDocument } =
     useDocumentFoldersStore();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [mapaAssignDoc, setMapaAssignDoc] = useState<DocumentInfo | null>(null);
 
   // Get folder contents if a folder is selected
   const { folder: selectedFolder, loading: folderLoading } = useFolderContents(folderId);
@@ -299,7 +326,11 @@ export function DocumentsContentPanel({
     openPreview,
     closePreview,
     fetchPreviewUrl,
+    fetchTextContent,
   } = useDocumentPreview({ type: 'document' });
+
+  // OPS-109: Auth context for Microsoft account status
+  const { hasMsalAccount, reconnectMicrosoft } = useAuth();
 
   // Find current case
   const currentCase = useMemo(() => cases.find((c) => c.id === caseId), [cases, caseId]);
@@ -360,6 +391,18 @@ export function DocumentsContentPanel({
     },
     [openPreview]
   );
+
+  /**
+   * Open assign to mapa modal
+   */
+  const handleAddToMapa = useCallback((doc: CaseDocumentContext) => {
+    setMapaAssignDoc({
+      id: doc.document.id,
+      fileName: doc.document.fileName,
+      fileType: doc.document.fileType,
+      fileSize: doc.document.fileSize,
+    });
+  }, []);
 
   // No case selected
   if (!caseId || !currentCase) {
@@ -456,6 +499,7 @@ export function DocumentsContentPanel({
                   isSelected={selectedDocumentId === doc.document.id}
                   onSelect={() => setSelectedDocument(doc.document.id)}
                   onPreview={() => handlePreview(doc)}
+                  onAddToMapa={() => handleAddToMapa(doc)}
                 />
               ))}
             </div>
@@ -469,6 +513,7 @@ export function DocumentsContentPanel({
                   isSelected={selectedDocumentId === doc.document.id}
                   onSelect={() => setSelectedDocument(doc.document.id)}
                   onPreview={() => handlePreview(doc)}
+                  onAddToMapa={() => handleAddToMapa(doc)}
                 />
               ))}
             </div>
@@ -493,7 +538,23 @@ export function DocumentsContentPanel({
         onClose={closePreview}
         document={previewDocument}
         onRequestPreviewUrl={fetchPreviewUrl}
+        onRequestTextContent={fetchTextContent}
+        hasMsalAccount={hasMsalAccount}
+        onReconnectMicrosoft={reconnectMicrosoft}
       />
+
+      {/* Assign to Mapa Modal */}
+      {mapaAssignDoc && caseId && (
+        <AssignToMapaModal
+          isOpen={!!mapaAssignDoc}
+          onClose={() => setMapaAssignDoc(null)}
+          caseId={caseId}
+          document={mapaAssignDoc}
+          onAssigned={() => {
+            setMapaAssignDoc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

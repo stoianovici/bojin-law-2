@@ -284,8 +284,8 @@ export const caseResolvers = {
         where.clientId = args.clientId;
       }
 
-      // Filter by assigned cases for non-Partners
-      if (args.assignedToMe || user.role !== 'Partner') {
+      // Filter by assigned cases for non-Partners/BusinessOwners
+      if (args.assignedToMe || (user.role !== 'Partner' && user.role !== 'BusinessOwner')) {
         const assignments = await prisma.caseTeam.findMany({
           where: { userId: user.id },
           select: { caseId: true },
@@ -350,8 +350,8 @@ export const caseResolvers = {
 
       let results: Array<{ id: string }>;
 
-      if (user.role === 'Partner') {
-        // Partners can search all cases in their firm
+      if (user.role === 'Partner' || user.role === 'BusinessOwner') {
+        // Partners and BusinessOwners can search all cases in their firm
         results = await prisma.$queryRaw<Array<{ id: string }>>`
           SELECT c.id
           FROM cases c
@@ -370,7 +370,7 @@ export const caseResolvers = {
           LIMIT ${limit}
         `;
       } else {
-        // Non-Partners can only search their assigned cases
+        // Associates/Paralegals can only search their assigned cases
         results = await prisma.$queryRaw<Array<{ id: string }>>`
           SELECT c.id
           FROM cases c

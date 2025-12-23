@@ -13,12 +13,23 @@ import { onError } from '@apollo/client/link/error';
 // Function to get MS access token - will be set by AuthProvider
 let getMsAccessToken: (() => Promise<string | null>) | null = null;
 
+// Promise that resolves when the token getter is available
+let tokenGetterReadyResolve: (() => void) | null = null;
+const tokenGetterReady = new Promise<void>((resolve) => {
+  tokenGetterReadyResolve = resolve;
+});
+
 /**
  * Set the function to retrieve MS access token from auth context
  * Called by AuthProvider during initialization
  */
 export function setMsAccessTokenGetter(getter: () => Promise<string | null>) {
   getMsAccessToken = getter;
+  // Signal that getter is ready
+  if (tokenGetterReadyResolve) {
+    tokenGetterReadyResolve();
+    tokenGetterReadyResolve = null;
+  }
 }
 
 // GraphQL endpoint - use local proxy to avoid CORS/cookie issues in development
@@ -70,10 +81,32 @@ const httpLink = new HttpLink({
   },
 });
 
+// Maximum time to wait for token getter to be initialized (ms)
+const TOKEN_GETTER_TIMEOUT = 3000;
+
+/**
+ * Wait for the token getter to be available with timeout
+ */
+async function waitForTokenGetter(): Promise<boolean> {
+  if (getMsAccessToken) return true;
+
+  // Race between getter ready and timeout
+  const timeoutPromise = new Promise<boolean>((resolve) => {
+    setTimeout(() => resolve(false), TOKEN_GETTER_TIMEOUT);
+  });
+
+  const readyPromise = tokenGetterReady.then(() => true);
+
+  return Promise.race([readyPromise, timeoutPromise]);
+}
+
 // Auth link to add MS access token for email operations
 const authLink = setContext(async (_operation, { headers }) => {
-  // Only fetch token if getter is available
-  if (!getMsAccessToken) {
+  // Wait for token getter to be available (handles race condition with AuthProvider init)
+  const getterReady = await waitForTokenGetter();
+  if (!getterReady || !getMsAccessToken) {
+    // Token getter not available - proceed without MS token
+    // This is fine for operations that don't require MS Graph access
     return { headers };
   }
 

@@ -50,6 +50,11 @@ const STATUS_OPTIONS: Array<{ value: Task['status']; label: string }> = [
 ];
 
 /**
+ * Task types that require specific time (Meeting, CourtDate)
+ */
+const TIME_SPECIFIC_TASK_TYPES: TaskType[] = ['Meeting', 'CourtDate'];
+
+/**
  * Task form data interface
  */
 interface TaskFormData {
@@ -57,7 +62,8 @@ interface TaskFormData {
   title: string;
   description: string;
   assignedTo: string;
-  dueDate: string; // ISO date string
+  dueDate: string; // yyyy-MM-dd format (date only)
+  dueTime: string; // HH:mm format (time only, optional)
   priority: Task['priority'];
   status: Task['status'];
   metadata: Record<string, unknown>;
@@ -86,7 +92,8 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
     title: '',
     description: '',
     assignedTo: 'user-1', // Mock user ID
-    dueDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    dueDate: format(new Date(), 'yyyy-MM-dd'),
+    dueTime: '',
     priority: 'Medium',
     status: 'Pending',
     metadata: {},
@@ -108,26 +115,34 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
    */
   useEffect(() => {
     if (task) {
+      const taskDate = new Date(task.dueDate);
+      // Only extract time for time-specific task types (Meeting, CourtDate)
+      const isTimeSpecific = TIME_SPECIFIC_TASK_TYPES.includes(task.type);
+      const hasTime =
+        isTimeSpecific && (taskDate.getUTCHours() !== 0 || taskDate.getUTCMinutes() !== 0);
+      const timeValue = hasTime ? format(taskDate, 'HH:mm') : '';
+
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         type: task.type,
         title: task.title,
         description: task.description,
         assignedTo: task.assignedTo,
-        dueDate: format(new Date(task.dueDate), "yyyy-MM-dd'T'HH:mm"),
+        dueDate: format(taskDate, 'yyyy-MM-dd'),
+        dueTime: timeValue,
         priority: task.priority,
         status: task.status,
         metadata: task.metadata || {},
       });
     } else {
       // Reset form for new task
-
       setFormData({
         type: 'Research',
         title: '',
         description: '',
         assignedTo: 'user-1',
-        dueDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        dueDate: format(new Date(), 'yyyy-MM-dd'),
+        dueTime: '',
         priority: 'Medium',
         status: 'Pending',
         metadata: {},
@@ -135,7 +150,6 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
     }
 
     setErrors({});
-
     setShowDeleteConfirm(false);
     setShowQuickLog(false);
   }, [task, isOpen]);
@@ -219,14 +233,32 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
   };
 
   /**
+   * Check if current task type requires time
+   */
+  const requiresTime = TIME_SPECIFIC_TASK_TYPES.includes(formData.type);
+
+  /**
    * Handle save
    */
   const handleSave = () => {
     if (!validateForm()) return;
 
+    // Combine date and time into a single Date object
+    let dueDateTime: Date;
+    if (formData.dueTime && requiresTime) {
+      // Time-specific task: combine date and time
+      const [hours, minutes] = formData.dueTime.split(':').map(Number);
+      dueDateTime = new Date(formData.dueDate);
+      dueDateTime.setHours(hours, minutes, 0, 0);
+    } else {
+      // Date-only task: set to midnight
+      dueDateTime = new Date(formData.dueDate);
+      dueDateTime.setHours(0, 0, 0, 0);
+    }
+
     const taskData: Partial<Task> = {
       ...formData,
-      dueDate: new Date(formData.dueDate),
+      dueDate: dueDateTime,
     };
 
     if (task) {
@@ -548,19 +580,39 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
               )}
             </div>
 
-            {/* Due Date */}
+            {/* Due Date and Time */}
             <div>
               <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-1">
-                Data Scadenței <span className="text-red-500">*</span>
+                {requiresTime ? 'Data și Ora' : 'Data Scadenței'}{' '}
+                <span className="text-red-500">*</span>
               </label>
-              <input
-                id="dueDate"
-                type="datetime-local"
-                value={formData.dueDate}
-                onChange={(e) => updateField('dueDate', e.target.value)}
-                className={`w-full px-3 py-2 border ${errors.dueDate ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-              />
+              <div className={`flex gap-3 ${requiresTime ? '' : ''}`}>
+                {/* Date input - always shown */}
+                <input
+                  id="dueDate"
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => updateField('dueDate', e.target.value)}
+                  className={`${requiresTime ? 'flex-1' : 'w-full'} px-3 py-2 border ${errors.dueDate ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+                {/* Time input - only for Meeting and CourtDate */}
+                {requiresTime && (
+                  <input
+                    id="dueTime"
+                    type="time"
+                    value={formData.dueTime}
+                    onChange={(e) => updateField('dueTime', e.target.value)}
+                    className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="HH:mm"
+                  />
+                )}
+              </div>
               {errors.dueDate && <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>}
+              {!requiresTime && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Sarcinile de tip cercetare, documente și deplasări nu necesită oră specifică.
+                </p>
+              )}
             </div>
 
             {/* Priority */}

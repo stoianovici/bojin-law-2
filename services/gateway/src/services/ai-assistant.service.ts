@@ -71,6 +71,24 @@ interface ToolPreview {
 }
 
 // ============================================================================
+// Timezone Helpers
+// ============================================================================
+
+/**
+ * Get the timezone offset in minutes for a specific timezone at a specific date
+ * This handles DST correctly by checking the offset at the given date
+ * @param timezone - IANA timezone name (e.g., 'Europe/Bucharest')
+ * @param date - The date to check the offset for
+ * @returns Offset in minutes (positive for timezones behind UTC, negative for ahead)
+ */
+function getTimezoneOffset(timezone: string, date: Date): number {
+  // Format the date in the target timezone and in UTC
+  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+  return (utcDate.getTime() - tzDate.getTime()) / 60000;
+}
+
+// ============================================================================
 // Service
 // ============================================================================
 
@@ -295,8 +313,13 @@ export class AIAssistantService {
 
   /**
    * Confirm and execute a pending action.
+   * OPS-097: Accepts optional modifications to merge into action payload.
    */
-  async confirmAction(messageId: string, context: AssistantContext): Promise<AssistantResponse> {
+  async confirmAction(
+    messageId: string,
+    context: AssistantContext,
+    modifications?: Record<string, unknown>
+  ): Promise<AssistantResponse> {
     // Get the message with pending action
     const message = await prisma.aIMessage.findUnique({
       where: { id: messageId },
@@ -320,18 +343,21 @@ export class AIAssistantService {
       };
     }
 
-    console.log('[AIAssistant] confirmAction executing tool:', message.actionType);
-    console.log(
-      '[AIAssistant] confirmAction actionPayload.input:',
-      JSON.stringify(actionPayload.input)
-    );
+    // OPS-097: Merge user modifications into the action input
+    // This allows users to add/modify fields like estimatedHours before execution
+    const mergedInput = modifications
+      ? { ...actionPayload.input, ...modifications }
+      : actionPayload.input;
 
-    // Execute the tool
-    const result = await this.executeTool(
-      message.actionType as AIToolName,
-      actionPayload.input,
-      context
-    );
+    console.log('[AIAssistant] confirmAction executing tool:', message.actionType);
+    console.log('[AIAssistant] confirmAction original input:', JSON.stringify(actionPayload.input));
+    if (modifications) {
+      console.log('[AIAssistant] confirmAction modifications:', JSON.stringify(modifications));
+      console.log('[AIAssistant] confirmAction merged input:', JSON.stringify(mergedInput));
+    }
+
+    // Execute the tool with merged input
+    const result = await this.executeTool(message.actionType as AIToolName, mergedInput, context);
 
     // Update action status
     await conversationService.updateMessageActionStatus(
@@ -859,6 +885,18 @@ export class AIAssistantService {
     const title = input.title as string;
     const description = input.description as string | undefined;
 
+    // OPS-097: Parse estimatedHours from input (may come as string from quick options)
+    let estimatedHours: number | undefined;
+    if (input.estimatedHours !== undefined && input.estimatedHours !== null) {
+      estimatedHours =
+        typeof input.estimatedHours === 'string'
+          ? parseFloat(input.estimatedHours)
+          : (input.estimatedHours as number);
+      if (isNaN(estimatedHours)) {
+        estimatedHours = undefined;
+      }
+    }
+
     const taskInput: TaskServiceInput = {
       title,
       description,
@@ -868,7 +906,10 @@ export class AIAssistantService {
       priority: this.mapPriorityEnum(input.priority as string),
       type: taskType,
       typeMetadata: this.getDefaultTypeMetadata(taskType, title, description),
+      estimatedHours,
     };
+
+    console.log('[AIAssistant] executeCreateTask taskInput.estimatedHours:', estimatedHours);
 
     const task = await taskService.createTask(taskInput, context.userId);
 
@@ -1717,11 +1758,14 @@ export class AIAssistantService {
     input: Record<string, unknown>,
     context: AssistantContext
   ): Promise<ToolExecutionResult> {
-    const { createCalendarSuggestionService } = await import('./calendar-suggestion.service');
-    const calendarService = createCalendarSuggestionService(prisma);
+    const { TaskService } = await import('./task.service');
+    const taskService = new TaskService();
 
     const title = input.title as string;
     const startTime = input.startTime as string;
+
+    console.log('[AIAssistant] executeCreateCalendarEvent input:', JSON.stringify(input));
+    console.log('[AIAssistant] startTime raw:', startTime);
 
     if (!title || !startTime) {
       return {
@@ -1730,36 +1774,138 @@ export class AIAssistantService {
       };
     }
 
-    const result = await calendarService.createCalendarEvent({
-      suggestion: {
-        id: `ai-${Date.now()}`,
-        title,
-        startDateTime: new Date(startTime),
-        endDateTime: input.endTime ? new Date(input.endTime as string) : undefined,
-        isAllDay: (input.isAllDay as boolean) || false,
-        description: '',
-        caseId: (input.caseId as string) || context.caseId || null,
-        sourceExtractionId: 'ai-assistant',
-        sourceType: 'meeting',
-        reminderMinutes: [60],
-        priority: 'Medium',
-      },
-      userId: context.userId,
-    });
+    // Parse the start time - treat as Romania local time (Europe/Bucharest)
+    // Claude sends ISO format without timezone, which should be interpreted as Bucharest time
+    let startDateTime: Date;
 
-    if (!result.success) {
-      return {
-        success: false,
-        message: `Nu s-a putut programa evenimentul: ${result.error}`,
-      };
+    console.log('[AIAssistant] startTime raw from Claude:', startTime);
+
+    if (startTime.includes('T') && !startTime.includes('+') && !startTime.endsWith('Z')) {
+      // ISO format without timezone - interpret as Bucharest local time
+      // Parse components and create proper Date
+      const [datePart, timePart] = startTime.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hour, minute, second = 0] = (timePart || '00:00:00')
+        .split(':')
+        .map((s) => parseInt(s, 10));
+
+      console.log('[AIAssistant] Parsed components:', { year, month, day, hour, minute, second });
+
+      // Get the current offset for Bucharest at this specific date (handles DST)
+      const testDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0)); // Use noon to avoid DST edge cases
+      const bucharestOffset = -getTimezoneOffset('Europe/Bucharest', testDate);
+
+      console.log('[AIAssistant] Bucharest offset (minutes):', bucharestOffset);
+
+      // Create UTC timestamp by subtracting the Bucharest offset
+      const utcMs =
+        Date.UTC(year, month - 1, day, hour, minute, second) - bucharestOffset * 60 * 1000;
+      startDateTime = new Date(utcMs);
+    } else {
+      startDateTime = new Date(startTime);
     }
 
-    return {
-      success: true,
-      message: `Evenimentul "${title}" a fost programat.`,
-      entityId: result.eventId,
-      entityType: 'CalendarEvent',
-    };
+    console.log('[AIAssistant] startDateTime parsed (UTC):', startDateTime.toISOString());
+    console.log(
+      '[AIAssistant] startDateTime (Bucharest):',
+      startDateTime.toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest' })
+    );
+
+    // Determine task type based on event nature (default to Meeting)
+    const eventType = (input.eventType as string)?.toLowerCase() || 'meeting';
+    let taskType: 'Meeting' | 'BusinessTrip' | 'CourtDate' = 'Meeting';
+    if (
+      eventType.includes('deplasare') ||
+      eventType.includes('trip') ||
+      eventType.includes('travel')
+    ) {
+      taskType = 'BusinessTrip';
+    } else if (
+      eventType.includes('instanță') ||
+      eventType.includes('court') ||
+      eventType.includes('termen')
+    ) {
+      taskType = 'CourtDate';
+    }
+
+    // Get caseId - use context or find a default case
+    let caseId = (input.caseId as string) || context.caseId;
+    if (!caseId) {
+      // Get user's firmId from database (same as TaskService validation)
+      const user = await prisma.user.findUnique({
+        where: { id: context.userId },
+        select: { firmId: true },
+      });
+
+      if (!user?.firmId) {
+        return {
+          success: false,
+          message: 'Utilizatorul nu aparține unei firme.',
+        };
+      }
+
+      // Find a default case for the user's firm (first active case)
+      const defaultCase = await prisma.case.findFirst({
+        where: { firmId: user.firmId, status: 'Active' },
+        select: { id: true },
+      });
+      if (!defaultCase) {
+        return {
+          success: false,
+          message: 'Nu există un dosar activ în care să adaug evenimentul. Specificați un dosar.',
+        };
+      }
+      caseId = defaultCase.id;
+    }
+
+    try {
+      const description = (input.description as string) || '';
+      // Extract time in HH:MM format for Romania timezone
+      const dueTime = startDateTime.toLocaleTimeString('ro-RO', {
+        timeZone: 'Europe/Bucharest',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+
+      console.log('[AIAssistant] dueTime extracted:', dueTime);
+
+      const taskInput: TaskServiceInput = {
+        title,
+        description,
+        caseId,
+        assignedTo: context.userId,
+        dueDate: startDateTime,
+        dueTime,
+        priority: 'Medium',
+        type: taskType,
+        typeMetadata: this.getDefaultTypeMetadata(taskType, title, description),
+      };
+
+      const task = await taskService.createTask(taskInput, context.userId);
+
+      const formattedDate = startDateTime.toLocaleDateString('ro-RO', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      return {
+        success: true,
+        message: `Evenimentul "${title}" a fost programat pentru ${formattedDate}.`,
+        entityId: task.id,
+        entityType: 'Task',
+        navigationUrl: `/tasks`,
+      };
+    } catch (error) {
+      console.error('[AIAssistant] Error creating calendar event as task:', error);
+      return {
+        success: false,
+        message: `Nu s-a putut programa evenimentul: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`,
+      };
+    }
   }
 
   private async executeGetMorningBriefing(context: AssistantContext): Promise<ToolExecutionResult> {

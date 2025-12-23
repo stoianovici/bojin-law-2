@@ -123,6 +123,7 @@ function Message({
   onAttachmentsSynced,
   hasMsalAccount,
   onReconnectMicrosoft,
+  isSentByUser, // OPS-091: Visual distinction for sent emails
 }: {
   message: ExtendedMessage;
   threadId: string;
@@ -133,6 +134,7 @@ function Message({
   onAttachmentsSynced?: (messageId: string, attachments: any[]) => void;
   hasMsalAccount?: boolean;
   onReconnectMicrosoft?: () => void;
+  isSentByUser?: boolean; // OPS-091
 }) {
   const [syncingAttachments, setSyncingAttachments] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -360,16 +362,32 @@ function Message({
   // Check if we need to show "sync attachments" button
   const needsAttachmentSync = message.hasAttachments && message.attachments.length === 0;
 
+  // OPS-091: Visual distinction for sent emails
   return (
-    <div className="border-b p-4">
+    <div
+      className={`border-b ${
+        isSentByUser ? 'ml-8 border-l-4 border-l-blue-400 bg-blue-50/50 p-3' : 'p-4'
+      }`}
+    >
       <div className="flex items-start justify-between cursor-pointer" onClick={onToggle}>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm">
+            {isSentByUser && (
+              <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+                Dvs.
+              </span>
+            )}
+            <div
+              className={`rounded-full flex items-center justify-center text-sm ${
+                isSentByUser ? 'w-6 h-6 bg-blue-400 text-white' : 'w-8 h-8 bg-blue-500 text-white'
+              }`}
+            >
               {message.senderName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <div className="font-semibold text-sm">{message.senderName}</div>
+              <div className={`font-semibold ${isSentByUser ? 'text-xs' : 'text-sm'}`}>
+                {message.senderName}
+              </div>
               <div className="text-xs text-gray-500">{message.senderEmail}</div>
             </div>
           </div>
@@ -659,14 +677,12 @@ export function MessageView() {
     );
   }
 
-  // Filter out user's own messages (the /communications page is for processing received emails only)
-  // User's sent messages (including replies) are filtered out to keep the view focused on incoming mail
-  const receivedMessages = userEmail
-    ? thread.messages.filter((m) => m.senderEmail?.toLowerCase() !== userEmail.toLowerCase())
-    : thread.messages;
+  // OPS-091: Show ALL messages including sent emails (user's own replies)
+  // Previously filtered out sent emails, now we show them with visual distinction
+  const allMessages = thread.messages;
 
   // Sort messages based on user preference
-  const sortedMessages = [...receivedMessages].sort((a, b) => {
+  const sortedMessages = [...allMessages].sort((a, b) => {
     const dateA =
       a.sentDate instanceof Date ? a.sentDate.getTime() : new Date(a.sentDate).getTime() || 0;
     const dateB =
@@ -674,10 +690,12 @@ export function MessageView() {
     return messageOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
-  // Count how many messages were hidden (user's own messages)
-  const hiddenMessageCount = thread.messages.length - receivedMessages.length;
+  // OPS-091: Count sent messages for display (not hidden, just marked differently)
+  const sentMessageCount = userEmail
+    ? allMessages.filter((m) => m.senderEmail?.toLowerCase() === userEmail.toLowerCase()).length
+    : 0;
 
-  const allExpanded = receivedMessages.every((m) => expandedMessageIds.has(m.id));
+  const allExpanded = allMessages.every((m) => expandedMessageIds.has(m.id));
   const isUnassigned = !thread.caseId;
 
   const handleReply = (threadId: string) => {
@@ -722,12 +740,10 @@ export function MessageView() {
         <div>
           <h2 className="font-semibold text-lg mb-1">{thread.subject}</h2>
           <div className="text-sm text-gray-600">
-            {thread.caseName} • {receivedMessages.length} mesaje primite
-            {hiddenMessageCount > 0 && (
-              <span className="text-gray-400 ml-1">
-                ({hiddenMessageCount}{' '}
-                {hiddenMessageCount === 1 ? 'răspuns propriu ascuns' : 'răspunsuri proprii ascunse'}
-                )
+            {thread.caseName} • {allMessages.length} mesaje
+            {sentMessageCount > 0 && (
+              <span className="text-blue-500 ml-1">
+                ({sentMessageCount} {sentMessageCount === 1 ? 'trimis' : 'trimise'})
               </span>
             )}
           </div>
@@ -827,6 +843,9 @@ export function MessageView() {
             isCollapsed={!expandedMessageIds.has(message.id) && index > 0}
             hasMsalAccount={hasMsalAccount}
             onReconnectMicrosoft={reconnectMicrosoft}
+            isSentByUser={
+              userEmail ? message.senderEmail?.toLowerCase() === userEmail.toLowerCase() : false
+            }
           />
         ))}
       </div>

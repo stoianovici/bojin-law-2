@@ -6,6 +6,7 @@
  * Displays full email thread with messages in chronological order (AC: 3)
  */
 
+/* eslint-disable react-compiler/react-compiler */
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -49,6 +50,7 @@ interface Email {
   bodyPreview: string;
   bodyContent: string;
   bodyContentType: string;
+  folderType?: string | null; // OPS-091: 'inbox' or 'sent'
   from: { name?: string; address: string };
   toRecipients: Array<{ name?: string; address: string }>;
   ccRecipients: Array<{ name?: string; address: string }>;
@@ -114,11 +116,16 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
     }
   }, [thread?.hasUnread, markRead]);
 
-  // Expand latest email by default
+  // Expand latest email by default (skip if it's a sent email - OPS-091)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when emails load, not when expandedEmails changes
   useEffect(() => {
     if (thread?.emails?.length && expandedEmails.size === 0) {
-      const latestEmail = thread.emails[thread.emails.length - 1];
-      setExpandedEmails(new Set([latestEmail.id]));
+      // Find the latest non-sent email, or fall back to latest email
+      const latestNonSentEmail = [...thread.emails]
+        .reverse()
+        .find((e: Email) => e.folderType !== 'sent');
+      const emailToExpand = latestNonSentEmail || thread.emails[thread.emails.length - 1];
+      setExpandedEmails(new Set([emailToExpand.id])); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [thread?.emails]);
 
@@ -149,7 +156,7 @@ export function EmailThreadView({ conversationId, onClose }: EmailThreadViewProp
       setShowComposer(false);
       setActiveDraft(null);
     },
-    [thread?.emails]
+    [thread]
   );
 
   const handleDraftSelect = useCallback((draft: EmailDraft) => {
@@ -451,19 +458,40 @@ function EmailMessage({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  // OPS-091: Visual distinction for sent vs received emails
+  const isSent = email.folderType === 'sent';
+
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700">
+    <div
+      className={`rounded-lg border ${
+        isSent
+          ? 'ml-8 border-l-4 border-l-blue-400 border-gray-200 bg-blue-50/30 dark:border-gray-700 dark:border-l-blue-500 dark:bg-blue-900/10'
+          : 'border-gray-200 dark:border-gray-700'
+      }`}
+    >
       {/* Email header - always visible */}
       <button
         onClick={onToggle}
         aria-expanded={expanded}
         aria-controls={`email-content-${email.id}`}
-        className="flex w-full items-start justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+        className={`flex w-full items-start justify-between text-left ${
+          isSent ? 'p-3' : 'p-4'
+        } hover:bg-gray-50 dark:hover:bg-gray-800`}
       >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-900 dark:text-white">
-              {email.from.name || email.from.address}
+            {isSent && (
+              <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                <SentIcon className="mr-1 h-3 w-3" />
+                Dvs.
+              </span>
+            )}
+            <span
+              className={`font-medium text-gray-900 dark:text-white ${isSent ? 'text-sm' : ''}`}
+            >
+              {isSent
+                ? `Către: ${email.toRecipients.map((r) => r.name || r.address).join(', ')}`
+                : email.from.name || email.from.address}
             </span>
             {!expanded && email.hasAttachments && (
               <AttachmentIcon className="h-4 w-4 text-gray-400" aria-label="Has attachments" />
@@ -473,7 +501,9 @@ function EmailMessage({
             {format(new Date(email.receivedDateTime), 'MMM d, yyyy h:mm a')}
           </div>
           {!expanded && (
-            <div className="mt-1 truncate text-sm text-gray-600 dark:text-gray-300">
+            <div
+              className={`mt-1 truncate text-gray-600 dark:text-gray-300 ${isSent ? 'text-xs' : 'text-sm'}`}
+            >
               {email.bodyPreview}
             </div>
           )}
@@ -625,6 +655,20 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
       stroke="currentColor"
     >
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
+// OPS-091: Icon for sent emails
+function SentIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+      />
     </svg>
   );
 }

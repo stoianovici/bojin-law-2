@@ -45,6 +45,7 @@ export interface SyncedEmail {
   hasAttachments: boolean;
   importance: string;
   isRead: boolean;
+  folderType: 'inbox' | 'sent'; // OPS-091: Track email source folder
 }
 
 export interface EmailAddress {
@@ -157,40 +158,48 @@ export class EmailSyncService {
 
       const client = this.graphService.getAuthenticatedClient(accessToken);
       let emailsSynced = 0;
-      let nextLink: string | undefined;
-      let deltaLink: string | undefined;
 
-      // Use regular messages endpoint (delta query not supported for all mailbox types)
-      // Delta sync (/me/messages/delta) only works with organizational accounts with specific configs
-      console.log('[EmailSyncService.syncUserEmails] Fetching first page from Graph API...');
-      let response = await this.fetchEmailsPage(client, pageSize, false);
-      console.log(
-        '[EmailSyncService.syncUserEmails] First page response - messages:',
-        response?.value?.length,
-        'hasNextLink:',
-        !!response?.['@odata.nextLink']
-      );
+      // OPS-091: Sync both inbox and sent folders
+      const foldersToSync: Array<'inbox' | 'sent'> = ['inbox', 'sent'];
 
-      do {
-        const messages = response.value as Message[];
+      for (const folderType of foldersToSync) {
+        let nextLink: string | undefined;
 
-        if (messages.length > 0) {
-          const syncedEmails = this.transformMessages(messages);
-          await this.storeEmails(syncedEmails, userId, user.firmId);
-          emailsSynced += messages.length;
-        }
+        console.log(`[EmailSyncService.syncUserEmails] Fetching ${folderType} emails...`);
+        let response = await this.fetchEmailsPage(client, pageSize, folderType, false);
+        console.log(
+          `[EmailSyncService.syncUserEmails] ${folderType} first page - messages:`,
+          response?.value?.length,
+          'hasNextLink:',
+          !!response?.['@odata.nextLink']
+        );
 
-        // Check for next page or delta link
-        nextLink = response['@odata.nextLink'];
-        deltaLink = response['@odata.deltaLink'];
+        do {
+          const messages = response.value as Message[];
 
-        if (nextLink && emailsSynced < maxEmails) {
-          response = await this.fetchNextPage(client, nextLink);
-        }
-      } while (nextLink && emailsSynced < maxEmails);
+          if (messages.length > 0) {
+            const syncedEmails = this.transformMessages(messages, folderType);
+            await this.storeEmails(syncedEmails, userId, user.firmId);
+            emailsSynced += messages.length;
+          }
 
-      // Extract delta token from delta link
-      const deltaToken = deltaLink ? this.extractDeltaToken(deltaLink) : undefined;
+          // Check for next page
+          nextLink = response['@odata.nextLink'];
+
+          if (nextLink && emailsSynced < maxEmails) {
+            response = await this.fetchNextPage(client, nextLink);
+          }
+        } while (nextLink && emailsSynced < maxEmails);
+
+        console.log(
+          `[EmailSyncService.syncUserEmails] ${folderType} sync complete:`,
+          emailsSynced,
+          'total emails'
+        );
+      }
+
+      // Note: Delta token not supported for multi-folder sync, will rely on full sync
+      const deltaToken = undefined;
 
       // Update sync state with delta token
       await this.updateSyncState(userId, {
@@ -234,109 +243,13 @@ export class EmailSyncService {
    * @returns Sync result with count and new delta token
    */
   async syncIncrementalEmails(userId: string, accessToken: string): Promise<EmailSyncResult> {
-    try {
-      // Get current sync state
-      const syncState = await this.prisma.emailSyncState.findUnique({
-        where: { userId },
-      });
-
-      if (!syncState?.deltaToken) {
-        // No delta token, perform full sync
-        return this.syncUserEmails(userId, accessToken);
-      }
-
-      // Get user's firm ID
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { firmId: true },
-      });
-
-      if (!user?.firmId) {
-        return { success: false, emailsSynced: 0, error: 'User not found or has no firm' };
-      }
-
-      // Update sync state to 'syncing'
-      await this.updateSyncState(userId, { syncStatus: 'syncing' });
-
-      const client = this.graphService.getAuthenticatedClient(accessToken);
-      let emailsSynced = 0;
-      let nextLink: string | undefined;
-      let deltaLink: string | undefined;
-
-      // Start with delta query using stored token
-      let response = await this.fetchDeltaPage(client, syncState.deltaToken);
-
-      do {
-        const messages = response.value as Message[];
-
-        if (messages.length > 0) {
-          const syncedEmails = this.transformMessages(messages);
-          await this.upsertEmails(syncedEmails, userId, user.firmId);
-          emailsSynced += messages.length;
-        }
-
-        // Handle deleted messages
-        const deletedMessages = response.value?.filter((m: any) => m['@removed']) as Message[];
-        if (deletedMessages?.length > 0) {
-          await this.handleDeletedEmails(
-            deletedMessages.map((m) => m.id!),
-            userId
-          );
-        }
-
-        // Check for next page or delta link
-        nextLink = response['@odata.nextLink'];
-        deltaLink = response['@odata.deltaLink'];
-
-        if (nextLink) {
-          response = await this.fetchNextPage(client, nextLink);
-        }
-      } while (nextLink);
-
-      // Extract new delta token
-      const newDeltaToken = deltaLink ? this.extractDeltaToken(deltaLink) : syncState.deltaToken;
-
-      // Update sync state
-      await this.updateSyncState(userId, {
-        syncStatus: 'synced',
-        deltaToken: newDeltaToken,
-        lastSyncAt: new Date(),
-        errorMessage: null,
-      });
-
-      return {
-        success: true,
-        emailsSynced,
-        deltaToken: newDeltaToken,
-      };
-    } catch (error: any) {
-      const parsedError = parseGraphError(error);
-      logGraphError(parsedError);
-
-      // Check if delta token is expired or delta sync not supported (requires full resync)
-      // 410 = resyncRequired, 400 = BadRequest (delta not supported for this mailbox type)
-      if (
-        parsedError.errorCode === 'resyncRequired' ||
-        parsedError.statusCode === 410 ||
-        (parsedError.statusCode === 400 && parsedError.message?.includes('Change tracking'))
-      ) {
-        // Clear delta token and perform full sync
-        await this.updateSyncState(userId, { deltaToken: null });
-        return this.syncUserEmails(userId, accessToken);
-      }
-
-      // Update sync state with error
-      await this.updateSyncState(userId, {
-        syncStatus: 'error',
-        errorMessage: parsedError.message,
-      });
-
-      return {
-        success: false,
-        emailsSynced: 0,
-        error: parsedError.message,
-      };
-    }
+    // OPS-091: With multi-folder sync (inbox + sent), delta sync is complex
+    // For simplicity, always do a full sync which will skip duplicates
+    // This is still efficient due to skipDuplicates in createMany
+    console.log(
+      '[EmailSyncService.syncIncrementalEmails] Performing full sync (multi-folder mode)'
+    );
+    return this.syncUserEmails(userId, accessToken);
   }
 
   /**
@@ -367,20 +280,28 @@ export class EmailSyncService {
   // ============================================================================
 
   /**
-   * Fetch initial page of emails using delta query
+   * Fetch initial page of emails from a specific folder
+   * @param client - Graph API client
+   * @param pageSize - Number of emails per page
+   * @param folderType - Which folder to fetch from ('inbox' or 'sent') - OPS-091
+   * @param useDelta - Whether to use delta sync
    */
   private async fetchEmailsPage(
     client: Client,
     pageSize: number,
+    folderType: 'inbox' | 'sent' = 'inbox',
     useDelta: boolean = false
   ): Promise<any> {
     return retryWithBackoff(
       async () => {
         try {
-          // Use inbox-only endpoint to avoid syncing sent items
+          // OPS-091: Support both inbox and sent folders
+          const folderEndpoint =
+            folderType === 'sent' ? graphEndpoints.sentMessages : graphEndpoints.inboxMessages;
+
           const endpoint = useDelta
-            ? '/me/mailFolders/Inbox/messages/delta'
-            : graphEndpoints.inboxMessages;
+            ? `/me/mailFolders/${folderType === 'sent' ? 'SentItems' : 'Inbox'}/messages/delta`
+            : folderEndpoint;
 
           const request = client
             .api(endpoint)
@@ -396,7 +317,7 @@ export class EmailSyncService {
         }
       },
       {},
-      'email-sync-fetch-page'
+      `email-sync-fetch-page-${folderType}`
     );
   }
 
@@ -447,8 +368,13 @@ export class EmailSyncService {
 
   /**
    * Transform Graph API messages to our format
+   * @param messages - Messages from Graph API
+   * @param folderType - Source folder type ('inbox' or 'sent') - OPS-091
    */
-  private transformMessages(messages: Message[]): SyncedEmail[] {
+  private transformMessages(
+    messages: Message[],
+    folderType: 'inbox' | 'sent' = 'inbox'
+  ): SyncedEmail[] {
     return messages
       .filter((m) => m.id && !('removed' in m))
       .map((message) => ({
@@ -481,6 +407,7 @@ export class EmailSyncService {
         hasAttachments: message.hasAttachments || false,
         importance: message.importance || 'normal',
         isRead: message.isRead || false,
+        folderType, // OPS-091: Track source folder
       }));
   }
 
@@ -507,6 +434,7 @@ export class EmailSyncService {
         hasAttachments: email.hasAttachments,
         importance: email.importance,
         isRead: email.isRead,
+        folderType: email.folderType, // OPS-091
         userId,
         firmId,
       })),
@@ -540,6 +468,7 @@ export class EmailSyncService {
             hasAttachments: email.hasAttachments,
             importance: email.importance,
             isRead: email.isRead,
+            folderType: email.folderType, // OPS-091
             userId,
             firmId,
           },

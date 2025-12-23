@@ -41,14 +41,15 @@ export default function TasksPage() {
   } = useTaskManagementStore();
 
   // Fetch all tasks from API (not just current user's tasks)
-  const { tasks: apiTasks } = useTasks();
+  const { tasks: apiTasks, loading: tasksLoading } = useTasks();
 
   // Sync API tasks to store when they change
+  // Always sync, even when empty, to ensure stale data is cleared
   useEffect(() => {
-    if (apiTasks.length > 0) {
+    if (!tasksLoading) {
       setTasks(apiTasks);
     }
-  }, [apiTasks, setTasks]);
+  }, [apiTasks, tasksLoading, setTasks]);
 
   // Use filtered tasks instead of raw tasks for display
   const filteredTasks = useFilteredTasks();

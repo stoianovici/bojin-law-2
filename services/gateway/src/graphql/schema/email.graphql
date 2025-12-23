@@ -88,6 +88,8 @@ type Email {
   bodyContentType: String!
   """AI-cleaned content - new message only, no signatures/quotes (OPS-090)"""
   bodyContentClean: String
+  """Source folder: 'inbox' for received emails, 'sent' for sent emails (OPS-091)"""
+  folderType: String
   from: EmailAddress!
   toRecipients: [EmailAddress!]!
   ccRecipients: [EmailAddress!]!

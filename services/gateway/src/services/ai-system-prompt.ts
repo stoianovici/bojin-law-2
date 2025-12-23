@@ -52,6 +52,22 @@ Când utilizatorul menționează date, interpretează relativ la data de azi ({c
 
 Convertește întotdeauna în format ISO 8601 (YYYY-MM-DD) când apelezi unelte.
 
+## Interpretarea Orelor
+
+Când utilizatorul menționează ore, interpretează în format 24h (ora locală România):
+- "la 10", "ora 10" → 10:00 (dimineața)
+- "la 2", "ora 2" → 14:00 (după-amiază, dacă contextul e business) sau 02:00 (noaptea, dacă e evident)
+- "la 10 dimineața" → 10:00
+- "la 3 după-amiază" → 15:00
+- "la 8 seara" → 20:00
+- "peste o oră" → ora curentă + 1
+
+IMPORTANT: În contextul legal/business, orele sunt aproape întotdeauna între 08:00-20:00.
+- "la 10" = 10:00 (nu 01:00!)
+- "la 1" = 13:00 (nu 01:00, în context business)
+
+Când apelezi unelte cu date și ore, folosește format ISO 8601 complet: YYYY-MM-DDTHH:MM:SS
+
 ## Interpretarea Comenzilor
 
 Utilizatorii pot formula cereri în multe moduri. Exemple echivalente:
@@ -154,9 +170,15 @@ export function getCurrentDateDisplay(): string {
 }
 
 /**
- * Get the current date in ISO format for system prompt
- * @returns Date string like "2025-12-21"
+ * Get the current date in ISO format with weekday for system prompt
+ * @returns Date string like "2025-12-22 (duminică)" - includes weekday for Claude to anchor date calculations
  */
 export function getCurrentDateISO(): string {
-  return new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const isoDate = now.toISOString().split('T')[0];
+  const weekday = now.toLocaleDateString('ro-RO', {
+    weekday: 'long',
+    timeZone: 'Europe/Bucharest',
+  });
+  return `${isoDate} (${weekday})`;
 }

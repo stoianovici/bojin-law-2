@@ -232,6 +232,7 @@ export const aiAssistantResolvers = {
     /**
      * Confirm or reject a proposed action.
      * OPS-084: Uses AI Assistant Service for confirmation.
+     * OPS-097: Passes user modifications (e.g., estimatedHours) to the service.
      */
     confirmAction: async (
       _: unknown,
@@ -284,7 +285,12 @@ export const aiAssistantResolvers = {
         }
 
         // User confirmed action - execute via AI Assistant Service
-        const result = await aiAssistantService.confirmAction(input.messageId, assistantContext);
+        // OPS-097: Pass modifications to merge into action payload
+        const result = await aiAssistantService.confirmAction(
+          input.messageId,
+          assistantContext,
+          input.modifications
+        );
 
         // Update conversation status back to Active
         await conversationService.updateStatus(
@@ -359,6 +365,7 @@ export const aiAssistantResolvers = {
     /**
      * Build proposed action from message fields.
      * OPS-086: Updated to use stored preview info from actionPayload
+     * OPS-097: Added editableFields for create_task
      */
     proposedAction: (message: AIMessage) => {
       if (!message.actionType) return null;
@@ -376,6 +383,9 @@ export const aiAssistantResolvers = {
         ? buildEntityPreview(message.actionType, payload.input)
         : undefined;
 
+      // Build editable fields for actions that support them
+      const editableFields = getEditableFields(message.actionType, payload?.input);
+
       return {
         type: message.actionType,
         displayText: getActionDisplayText(message.actionType),
@@ -387,6 +397,8 @@ export const aiAssistantResolvers = {
           payload?.confirmationPrompt || getConfirmationPrompt(message.actionType),
         // Provide entity preview for UI display
         entityPreview,
+        // OPS-097: Include editable fields for supported actions
+        editableFields,
       };
     },
   },
@@ -648,4 +660,72 @@ function translateDocType(docType: string): string {
     Other: 'Document',
   };
   return map[docType] || docType;
+}
+
+// ============================================================================
+// Editable Fields (OPS-097)
+// ============================================================================
+
+interface EditableField {
+  key: string;
+  label: string;
+  type: 'number' | 'text' | 'select';
+  required: boolean;
+  placeholder?: string;
+  suggestion?: string;
+  defaultValue?: unknown;
+  quickOptions?: { value: string; label: string }[];
+}
+
+/**
+ * Duration suggestions by task type (in hours).
+ */
+const DURATION_SUGGESTIONS: Record<string, string> = {
+  Research: '~4 ore pentru sarcini de cercetare',
+  DocumentCreation: '~2 ore pentru crearea documentelor',
+  DocumentRetrieval: '~1 oră pentru obținerea documentelor',
+  CourtDate: 'durata ședinței de judecată',
+  Meeting: '~1 oră pentru întâlniri',
+  BusinessTrip: 'durata deplasării',
+  Drafting: '~2 ore pentru redactare',
+  Review: '~2 ore pentru revizuire',
+  Filing: '~1 oră pentru depunere',
+  Communication: '~1 oră pentru comunicare',
+  Other: '~2 ore în medie',
+};
+
+/**
+ * Get editable fields for an action type.
+ * OPS-097: Currently only create_task has editable fields.
+ */
+function getEditableFields(
+  actionType: string,
+  input?: Record<string, unknown>
+): EditableField[] | undefined {
+  // Only create_task and CreateTask have editable fields for now
+  if (actionType !== 'create_task' && actionType !== 'CreateTask') {
+    return undefined;
+  }
+
+  // Get task type from input to provide appropriate suggestion
+  const taskType = (input?.taskType as string) || 'Other';
+  const suggestion = DURATION_SUGGESTIONS[taskType] || DURATION_SUGGESTIONS.Other;
+
+  return [
+    {
+      key: 'estimatedHours',
+      label: 'Durată estimată',
+      type: 'number',
+      required: true,
+      placeholder: 'ore',
+      suggestion,
+      defaultValue: undefined,
+      quickOptions: [
+        { value: '1', label: '1h' },
+        { value: '2', label: '2h' },
+        { value: '4', label: '4h' },
+        { value: '8', label: '8h' },
+      ],
+    },
+  ];
 }

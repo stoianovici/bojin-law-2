@@ -15,7 +15,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import type { AccountInfo } from '@azure/msal-browser';
-import { InteractionRequiredAuthError } from '@azure/msal-browser';
+import { InteractionRequiredAuthError, BrowserAuthError } from '@azure/msal-browser';
 import { loginRequest, getMsalInstance, handleMsalRedirect } from '@/lib/msal-config';
 import { setMsAccessTokenGetter } from '@/lib/apollo-client';
 import type { User } from '@legal-platform/types';
@@ -57,6 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const [msalInitialized, setMsalInitialized] = useState(false);
   const [hasMsalAccountState, setHasMsalAccountState] = useState(false);
+  const loginInProgressRef = useRef(false);
 
   /**
    * Update hasMsalAccount state based on current MSAL accounts
@@ -281,6 +282,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Login via Azure AD redirect
    */
   const login = useCallback(async () => {
+    // Prevent multiple concurrent login attempts
+    if (loginInProgressRef.current) {
+      return;
+    }
+
     const msalInstance = getMsalInstance();
 
     if (!msalInstance || !msalInitialized) {
@@ -292,14 +298,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
+      loginInProgressRef.current = true;
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      // Wait for any pending redirect to complete first
-      await msalInstance.handleRedirectPromise();
+      // Use singleton handleMsalRedirect to ensure redirect promise is processed
+      // This prevents race conditions with the initialization flow
+      await handleMsalRedirect();
 
       await msalInstance.loginRedirect(loginRequest);
     } catch (error: unknown) {
+      loginInProgressRef.current = false;
       console.error('Login error:', error);
+
+      // Handle "interaction_in_progress" error silently - another login is in progress
+      if (error instanceof BrowserAuthError && error.errorCode === 'interaction_in_progress') {
+        // Don't show error, just reset loading state - the other login will complete
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return;
+      }
+
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -420,6 +437,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Used when user is authenticated via session cookie but needs MS Graph access
    */
   const reconnectMicrosoft = useCallback(async () => {
+    // Prevent multiple concurrent login attempts
+    if (loginInProgressRef.current) {
+      return;
+    }
+
     const msalInstance = getMsalInstance();
 
     if (!msalInstance) {
@@ -451,9 +473,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // SSO failed, use redirect login
     try {
+      loginInProgressRef.current = true;
+      await handleMsalRedirect();
       await msalInstance.loginRedirect(loginRequest);
     } catch (error: unknown) {
+      loginInProgressRef.current = false;
       console.error('Microsoft reconnect error:', error);
+
+      // Handle "interaction_in_progress" error silently
+      if (error instanceof BrowserAuthError && error.errorCode === 'interaction_in_progress') {
+        return;
+      }
+
       setState((prev) => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Failed to connect Microsoft account.',

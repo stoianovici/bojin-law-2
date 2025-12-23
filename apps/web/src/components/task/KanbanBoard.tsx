@@ -24,9 +24,6 @@ import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import type { Task, TaskType } from '@legal-platform/types';
 
-// TODO: Replace with real user data from API
-const USERS: { id: string; name: string; initials: string }[] = [];
-
 /**
  * Task type color mapping (same as CalendarView)
  */
@@ -93,6 +90,7 @@ const COLUMNS: KanbanColumn[] = [
 
 /**
  * Task Card Component with drag functionality
+ * Redesigned to show case name prominently with type indicated by left border color
  */
 interface TaskCardProps {
   task: Task;
@@ -113,33 +111,37 @@ function TaskCard({ task, onClick, isDragging = false }: TaskCardProps) {
 
   const typeColor = TASK_TYPE_COLORS[task.type];
   const priorityColor = PRIORITY_COLORS[task.priority];
+  const caseName = task.case?.title || task.case?.caseNumber || '';
+  const hasDuration = task.estimatedHours && task.estimatedHours > 0;
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        borderLeftColor: typeColor,
+      }}
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className="bg-white border border-gray-200 rounded-lg p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
+      title={TASK_TYPE_LABELS[task.type]}
+      className="bg-white border border-gray-200 border-l-[3px] rounded-lg p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
     >
-      {/* Task header with type badge and priority */}
-      <div className="flex items-center justify-between mb-2">
-        <span
-          className="text-xs font-semibold px-2 py-1 rounded text-white"
-          style={{ backgroundColor: typeColor }}
-        >
-          {TASK_TYPE_LABELS[task.type]}
-        </span>
-        <div
-          className="w-3 h-3 rounded-full"
-          style={{ backgroundColor: priorityColor }}
-          title={`Prioritate: ${task.priority}`}
-        />
+      {/* Task title with optional duration badge */}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{task.title}</h3>
+        {hasDuration && (
+          <span
+            className="shrink-0 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+            title={`Durată estimată: ${task.estimatedHours} ore`}
+          >
+            {task.estimatedHours}h
+          </span>
+        )}
       </div>
 
-      {/* Task title */}
-      <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">{task.title}</h3>
+      {/* Case name */}
+      {caseName && <p className="text-xs text-gray-500 mb-2 line-clamp-1">{caseName}</p>}
 
       {/* Task metadata */}
       <div className="flex items-center justify-between text-xs text-gray-500">
@@ -156,13 +158,12 @@ function TaskCard({ task, onClick, isDragging = false }: TaskCardProps) {
           <span>{format(new Date(task.dueDate), 'd MMM', { locale: ro })}</span>
         </div>
 
-        {/* Assignee avatar placeholder */}
+        {/* Priority indicator */}
         <div
-          className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-[10px] font-semibold"
-          title={USERS.find((u) => u.id === task.assignedTo)?.name || task.assignedTo}
-        >
-          {USERS.find((u) => u.id === task.assignedTo)?.initials || 'U'}
-        </div>
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: priorityColor }}
+          title={`Prioritate: ${task.priority}`}
+        />
       </div>
 
       {/* Drag handle indicator */}
@@ -180,20 +181,23 @@ function TaskCard({ task, onClick, isDragging = false }: TaskCardProps) {
  */
 function TaskCardOverlay({ task }: { task: Task }) {
   const typeColor = TASK_TYPE_COLORS[task.type];
-  const priorityColor = PRIORITY_COLORS[task.priority];
+  const caseName = task.case?.title || task.case?.caseNumber || '';
+  const hasDuration = task.estimatedHours && task.estimatedHours > 0;
 
   return (
-    <div className="bg-white border-2 border-blue-500 rounded-lg p-3 shadow-2xl w-72">
-      <div className="flex items-center justify-between mb-2">
-        <span
-          className="text-xs font-semibold px-2 py-1 rounded text-white"
-          style={{ backgroundColor: typeColor }}
-        >
-          {TASK_TYPE_LABELS[task.type]}
-        </span>
-        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: priorityColor }} />
+    <div
+      className="bg-white border-2 border-blue-500 border-l-[4px] rounded-lg p-3 shadow-2xl w-72"
+      style={{ borderLeftColor: typeColor }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{task.title}</h3>
+        {hasDuration && (
+          <span className="shrink-0 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+            {task.estimatedHours}h
+          </span>
+        )}
       </div>
-      <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{task.title}</h3>
+      {caseName && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{caseName}</p>}
     </div>
   );
 }

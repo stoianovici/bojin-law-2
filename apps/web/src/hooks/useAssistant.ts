@@ -37,6 +37,19 @@ const AI_MESSAGE_FRAGMENT = gql`
       requiresConfirmation
       confirmationPrompt
       entityPreview
+      editableFields {
+        key
+        label
+        type
+        required
+        placeholder
+        suggestion
+        defaultValue
+        quickOptions {
+          value
+          label
+        }
+      }
     }
     createdAt
   }
@@ -333,7 +346,22 @@ export function useAssistant(): UseAssistantReturn {
   const { context: aiContext } = useAIAssistant();
 
   const [sendMessageMutation] = useMutation<SendMessageData>(SEND_MESSAGE);
-  const [confirmActionMutation] = useMutation<ConfirmActionData>(CONFIRM_ACTION);
+  const [confirmActionMutation] = useMutation<ConfirmActionData>(CONFIRM_ACTION, {
+    // Invalidate cache entries so fresh data is fetched when navigating to those pages
+    update: (cache, { data }) => {
+      if (data?.confirmAction.success) {
+        // Evict all task-related cache entries
+        cache.evict({ fieldName: 'tasks' });
+        cache.evict({ fieldName: 'myTasks' });
+        cache.evict({ fieldName: 'tasksByCase' });
+        // Also evict case-related entries for case updates
+        cache.evict({ fieldName: 'cases' });
+        cache.evict({ fieldName: 'caseTimeline' });
+        // Trigger garbage collection to clean up orphaned references
+        cache.gc();
+      }
+    },
+  });
   const [loadConversation] = useLazyQuery<ActiveConversationData>(GET_ACTIVE_CONVERSATION);
   const [loadBriefing] = useLazyQuery<MorningBriefingResponse>(GET_MORNING_BRIEFING);
 

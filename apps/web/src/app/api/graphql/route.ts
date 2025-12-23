@@ -51,10 +51,10 @@ export async function POST(request: NextRequest) {
       // Fallback to mock user only in development when no session exists
       console.log('[GraphQL Proxy] No session, using mock user');
       headers['x-mock-user'] = JSON.stringify({
-        userId: 'aa3992a2-4bb0-45e2-9bc5-15e75f6a5793', // Partner user from seed
-        firmId: '99d685ee-1723-4d21-9634-ea414ceaba9b', // Demo firm from seed
+        userId: 'b2592964-a904-4432-8b39-07bb209a7624', // Lucian Bojin - Partner
+        firmId: 'f8f501d6-4444-4d5c-bc4b-a5c8ab0ec7fb', // Bojin-law Law Firm
         role: 'Partner',
-        email: 'partner@demo.lawfirm.ro',
+        email: 'lucian.bojin@bojin-law.com',
       });
     } else {
       console.log('[GraphQL Proxy] No session and not in development');

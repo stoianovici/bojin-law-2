@@ -7,6 +7,7 @@
 
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useMyCases, type MyCaseWithRelations } from '../../../hooks/useMyCases';
 import Link from 'next/link';
 import type { ApprovalStatus } from '@legal-platform/types';
@@ -96,7 +97,12 @@ function formatDate(date: Date | string): string {
 }
 
 export default function MyCasesPage() {
+  const router = useRouter();
   const { cases, loading, error } = useMyCases();
+
+  const handleRowClick = (caseId: string) => {
+    router.push(`/cases/${caseId}`);
+  };
 
   if (loading) {
     return (
@@ -159,7 +165,7 @@ export default function MyCasesPage() {
             />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">No cases found</h3>
-          <p className="mt-1 text-sm text-gray-500">You haven't created any cases yet.</p>
+          <p className="mt-1 text-sm text-gray-500">You have not created any cases yet.</p>
         </div>
       ) : (
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -200,7 +206,18 @@ export default function MyCasesPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {cases.map((caseItem: MyCaseWithRelations) => (
-                <tr key={caseItem.id} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={caseItem.id}
+                  onClick={() => handleRowClick(caseItem.id)}
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleRowClick(caseItem.id);
+                    }
+                  }}
+                >
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <div className="text-sm font-medium text-gray-900">{caseItem.title}</div>
@@ -237,9 +254,10 @@ export default function MyCasesPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link
                       href={`/cases/${caseItem.id}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="text-blue-600 hover:text-blue-900 hover:underline"
                     >
-                      View Details
+                      Vezi detalii
                     </Link>
                   </td>
                 </tr>

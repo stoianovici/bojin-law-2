@@ -61,6 +61,7 @@ interface Email {
   bodyContent: string;
   bodyContentType: string;
   bodyContentClean?: string; // OPS-090: AI-cleaned content
+  folderType?: string | null; // OPS-091: 'inbox' or 'sent'
   from: EmailAddress;
   toRecipients: EmailAddress[];
   ccRecipients: EmailAddress[];
@@ -253,6 +254,7 @@ const EMAIL_FRAGMENT = gql`
     bodyContent
     bodyContentType
     bodyContentClean
+    folderType
     from {
       ...EmailAddressFields
     }

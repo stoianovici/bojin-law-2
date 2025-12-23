@@ -394,6 +394,10 @@ export interface Task {
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date; // Story 4.2
+  // Extended properties from GraphQL joins
+  case?: { id: string; title: string; caseNumber?: string };
+  assignee?: { id: string; firstName: string; lastName: string; email?: string };
+  createdBy?: string; // UUID (User ID who created the task)
 }
 
 // ============================================================================

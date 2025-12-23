@@ -37,6 +37,7 @@ export interface ThreadEmail {
   bodyContent: string;
   bodyContentType: string;
   bodyContentClean?: string | null; // OPS-090: AI-cleaned content
+  folderType?: string | null; // OPS-091: 'inbox' or 'sent'
   from: EmailAddress;
   toRecipients: EmailAddress[];
   ccRecipients: EmailAddress[];
@@ -489,6 +490,7 @@ export class EmailThreadService {
       bodyContent: email.bodyContent,
       bodyContentType: email.bodyContentType,
       bodyContentClean: email.bodyContentClean, // OPS-090: AI-cleaned content
+      folderType: email.folderType, // OPS-091: 'inbox' or 'sent'
       from: email.from as unknown as EmailAddress,
       toRecipients: (email.toRecipients || []) as unknown as EmailAddress[],
       ccRecipients: (email.ccRecipients || []) as unknown as EmailAddress[],

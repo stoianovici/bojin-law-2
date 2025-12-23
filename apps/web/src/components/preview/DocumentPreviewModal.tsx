@@ -32,8 +32,14 @@ export interface DocumentPreviewModalProps {
   document: PreviewableDocument | null;
   /** Optional callback to fetch preview URL on demand */
   onRequestPreviewUrl?: (documentId: string) => Promise<string | null>;
+  /** Optional callback to fetch text content for text files (OPS-109) */
+  onRequestTextContent?: (documentId: string) => Promise<string | null>;
   /** Optional callback when download is clicked */
   onDownload?: (document: PreviewableDocument) => void;
+  /** Whether Microsoft account is connected (for SharePoint/OneDrive access) */
+  hasMsalAccount?: boolean;
+  /** Callback to reconnect Microsoft account */
+  onReconnectMicrosoft?: () => Promise<void>;
 }
 
 // ============================================================================
@@ -59,6 +65,16 @@ const BROWSER_NATIVE_TYPES = [
   'image/webp',
   'text/plain',
   'text/html',
+];
+
+/** Text file types that need special handling (fetch content instead of iframe) */
+const TEXT_TYPES = [
+  'text/plain',
+  'text/csv',
+  'text/html',
+  'text/css',
+  'text/javascript',
+  'application/json',
 ];
 
 // ============================================================================
@@ -121,12 +137,16 @@ export function DocumentPreviewModal({
   onClose,
   document,
   onRequestPreviewUrl,
+  onRequestTextContent,
   onDownload,
+  hasMsalAccount = true,
+  onReconnectMicrosoft,
 }: DocumentPreviewModalProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [textContent, setTextContent] = useState<string | null>(null);
   const prevDocIdRef = useRef<string | null>(null);
 
   // Check viewport size on mount and resize
@@ -151,7 +171,27 @@ export function DocumentPreviewModal({
 
     // Async function to handle preview loading
     const loadPreview = async () => {
-      // If document already has preview URL, use it
+      const isTextFile = TEXT_TYPES.includes(document.contentType);
+
+      // OPS-109: For text files, use dedicated text content endpoint (backend proxy)
+      // This avoids CORS issues with SharePoint download URLs
+      if (isTextFile && onRequestTextContent) {
+        try {
+          const content = await onRequestTextContent(document.id);
+          if (content !== null) {
+            setTextContent(content);
+          } else {
+            setError('Nu s-a putut încărca conținutul fișierului');
+          }
+        } catch {
+          setError('Eroare la încărcarea conținutului');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      // If document already has preview URL, use it (non-text files)
       if (document.previewUrl) {
         setPreviewUrl(document.previewUrl);
         setLoading(false);
@@ -190,9 +230,10 @@ export function DocumentPreviewModal({
       setLoading(true);
       setError(null);
       setPreviewUrl(null);
+      setTextContent(null);
       loadPreview();
     }
-  }, [isOpen, document, onRequestPreviewUrl]);
+  }, [isOpen, document, onRequestPreviewUrl, onRequestTextContent]);
 
   // Handle iframe load
   const handleIframeLoad = useCallback(() => {
@@ -306,17 +347,32 @@ export function DocumentPreviewModal({
                     <h3 className="font-semibold text-gray-900 mb-1">
                       Previzualizare indisponibilă
                     </h3>
-                    <p className="text-sm text-gray-600">{error}</p>
+                    <p className="text-sm text-gray-600">
+                      {!hasMsalAccount
+                        ? 'Conectați-vă contul Microsoft pentru a previzualiza documentele din SharePoint/OneDrive.'
+                        : error}
+                    </p>
                   </div>
-                  {document.downloadUrl && (
-                    <button
-                      onClick={handleDownload}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <Download className="h-4 w-4" />
-                      Descarcă fișierul
-                    </button>
-                  )}
+                  <div className="flex flex-col gap-2">
+                    {!hasMsalAccount && onReconnectMicrosoft && (
+                      <button
+                        onClick={onReconnectMicrosoft}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Conectare Microsoft
+                      </button>
+                    )}
+                    {document.downloadUrl && (
+                      <button
+                        onClick={handleDownload}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        Descarcă fișierul
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -345,11 +401,45 @@ export function DocumentPreviewModal({
               </div>
             )}
 
-            {/* Desktop: Preview iframe */}
+            {/* Desktop: Preview - blob URLs for Office docs can't be rendered */}
             {!isMobile &&
               previewUrl &&
               !error &&
-              // Use object tag for blob URLs (PDF), iframe for OneDrive/external URLs
+              previewUrl.startsWith('blob:') &&
+              OFFICE_TYPES.includes(document.contentType) && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-4 text-center p-8 max-w-md">
+                    <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                      <FileText className="h-8 w-8 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        Previzualizare indisponibilă
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Fișierele Office pot fi previzualizate doar dacă sunt salvate în dosar.
+                        Descărcați fișierul sau salvați atașamentul în dosar pentru previzualizare.
+                      </p>
+                    </div>
+                    {document.downloadUrl && (
+                      <button
+                        onClick={handleDownload}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        Descarcă fișierul
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {/* Desktop: Preview iframe for external URLs or blob URLs for non-Office types */}
+            {!isMobile &&
+              previewUrl &&
+              !error &&
+              // Use object tag for blob URLs (PDF/images only), iframe for OneDrive/external URLs
+              !(previewUrl.startsWith('blob:') && OFFICE_TYPES.includes(document.contentType)) &&
               (previewUrl.startsWith('blob:') ? (
                 <object
                   data={previewUrl}
@@ -377,6 +467,15 @@ export function DocumentPreviewModal({
                   sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
                 />
               ))}
+
+            {/* Desktop: Text content display */}
+            {!isMobile && textContent !== null && !error && (
+              <div className="absolute inset-0 overflow-auto bg-white p-6">
+                <pre className="font-mono text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
+                  {textContent}
+                </pre>
+              </div>
+            )}
 
             {/* Cannot preview - show download option */}
             {!canPreviewFile && !error && !loading && (

@@ -7,6 +7,7 @@
 export type WorkspaceTab =
   | 'overview'
   | 'documents'
+  | 'mape'
   | 'tasks'
   | 'communications'
   | 'time-entries'

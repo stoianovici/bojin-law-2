@@ -22,6 +22,28 @@ export type MessageRole = 'User' | 'Assistant' | 'System';
 export type ActionStatus = 'Proposed' | 'Confirmed' | 'Executed' | 'Rejected' | 'Failed';
 
 /**
+ * Quick selection option for editable fields
+ */
+export interface QuickOption {
+  value: number | string;
+  label: string;
+}
+
+/**
+ * An editable field in the confirmation card
+ */
+export interface EditableField {
+  key: string;
+  label: string;
+  type: 'number' | 'text' | 'select';
+  required: boolean;
+  placeholder?: string;
+  suggestion?: string;
+  defaultValue?: unknown;
+  quickOptions?: QuickOption[];
+}
+
+/**
  * A proposed action from the AI assistant
  */
 export interface ProposedAction {
@@ -32,6 +54,7 @@ export interface ProposedAction {
   requiresConfirmation: boolean;
   confirmationPrompt?: string;
   entityPreview?: Record<string, unknown>;
+  editableFields?: EditableField[];
 }
 
 /**

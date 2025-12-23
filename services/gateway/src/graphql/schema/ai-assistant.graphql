@@ -109,6 +109,28 @@ type AIMessage {
 }
 
 """
+Quick selection option for editable fields
+"""
+type QuickOption {
+  value: String!
+  label: String!
+}
+
+"""
+An editable field in the confirmation card
+"""
+type EditableField {
+  key: String!
+  label: String!
+  type: String!
+  required: Boolean!
+  placeholder: String
+  suggestion: String
+  defaultValue: JSON
+  quickOptions: [QuickOption!]
+}
+
+"""
 An action proposed by the assistant for user confirmation
 """
 type ProposedAction {
@@ -119,6 +141,7 @@ type ProposedAction {
   requiresConfirmation: Boolean!
   confirmationPrompt: String
   entityPreview: JSON
+  editableFields: [EditableField!]
 }
 
 """

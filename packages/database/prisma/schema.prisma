@@ -119,6 +119,9 @@ model Firm {
   // Relations (OPS-089: Document Folders)
   documentFolders DocumentFolder[]
 
+  // Relations (OPS-099: Mapa)
+  mapaTemplates MapaTemplate[]
+
   @@map("firms")
 }
 
@@ -230,6 +233,11 @@ model User {
 
   // Relations (OPS-063: AI Conversation)
   aiConversations AIConversation[]
+
+  // Relations (OPS-099: Mapa)
+  createdMape          Mapa[]         @relation("MapaCreator")
+  createdMapaTemplates MapaTemplate[] @relation("MapaTemplateCreator")
+  assignedSlots        MapaSlot[]     @relation("SlotAssigner")
 
   @@map("users")
 }
@@ -509,6 +517,9 @@ model Case {
   // Relations (OPS-089: Document Folders)
   documentFolders DocumentFolder[]
 
+  // Relations (OPS-099: Mapa)
+  mape Mapa[]
+
   @@unique([firmId, caseNumber])
   @@index([firmId])
   @@index([clientId])
@@ -782,9 +793,14 @@ model Document {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Story 2.9: OneDrive integration fields
-  oneDriveId   String?        @map("one_drive_id") @db.VarChar(255) // OneDrive item ID
-  oneDrivePath String?        @map("one_drive_path") @db.Text // Full OneDrive path
-  status       DocumentStatus @default(DRAFT) // Document status
+  oneDriveId     String?        @map("one_drive_id") @db.VarChar(255) // OneDrive item ID
+  oneDrivePath   String?        @map("one_drive_path") @db.Text // Full OneDrive path
+  oneDriveUserId String?        @map("one_drive_user_id") @db.VarChar(255) // OPS-104: MS Graph user ID of the OneDrive owner (for cross-user access)
+  status         DocumentStatus @default(DRAFT) // Document status
+
+  // OPS-107: SharePoint migration fields
+  sharePointItemId String? @map("share_point_item_id") @db.VarChar(255) // SharePoint item ID
+  sharePointPath   String? @map("share_point_path") @db.Text // Full SharePoint path
 
   // Search fields (Story 2.10)
   metadataEmbedding Unsupported("vector(768)")? @map("metadata_embedding") // multilingual-e5-base embedding for semantic search
@@ -810,6 +826,7 @@ model Document {
   @@index([uploadedAt])
   @@index([fileName])
   @@index([oneDriveId])
+  @@index([sharePointItemId]) // OPS-107
   @@map("documents")
 }
 
@@ -831,6 +848,9 @@ model CaseDocument {
   linker   User            @relation("DocumentLinker", fields: [linkedBy], references: [id], onDelete: Restrict)
   firm     Firm            @relation(fields: [firmId], references: [id], onDelete: Restrict)
   folder   DocumentFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  // Relations (OPS-099: Mapa)
+  mapaSlots MapaSlot[] // Document can be assigned to multiple mapa slots
 
   @@unique([caseId, documentId]) // Prevent duplicate links
   @@index([caseId])
@@ -2572,6 +2592,7 @@ model Email {
   isRead            Boolean   @map("is_read")
   isIgnored         Boolean   @default(false) @map("is_ignored") // Marked as not case-related
   ignoredAt         DateTime? @map("ignored_at") @db.Timestamptz // When the email was ignored
+  folderType        String?   @map("folder_type") @db.VarChar(10) // OPS-091: 'inbox' | 'sent'
 
   // Classification state machine (OPS-035)
   classificationState      EmailClassificationState @default(Pending) @map("classification_state")
@@ -2614,6 +2635,7 @@ model Email {
   @@index([firmId])
   @@index([isIgnored])
   @@index([classificationState])
+  @@index([folderType])
   @@map("emails")
 }
 
@@ -3552,6 +3574,11 @@ enum ClassificationAction {
   Moved // Moved between cases
   Ignored // Marked as not case-related
   Unassigned // Removed from case without reassigning
+  MANUAL_COURT_ASSIGN // User assigned court email to case
+  MANUAL_IGNORE // User marked email as not case-related
+  MANUAL_CLASSIFY // User manually classified email
+  MANUAL_LINK // User linked email to additional case
+  MANUAL_UNLINK // User removed email from case
 }
 
 // Classification match type - how the email was matched to a case
@@ -3798,4 +3825,95 @@ model AIMessage {
 
   @@index([conversationId, createdAt])
   @@map("ai_messages")
+}
+
+// ============================================================================
+// OPS-099: Mapa (Document Binder/Dossier)
+// ============================================================================
+
+// Mapa - document binder for organizing case documents with defined slots
+model Mapa {
+  id          String  @id @default(uuid())
+  caseId      String  @map("case_id")
+  name        String  @db.VarChar(255) // e.g., "Mapa pentru Tribunal"
+  description String? @db.Text
+
+  // Template reference (optional - for pre-defined structures)
+  templateId String? @map("template_id")
+
+  // Metadata
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  createdById String   @map("created_by_id")
+
+  // Relations
+  case      Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  template  MapaTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy User          @relation("MapaCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  slots     MapaSlot[]
+
+  @@index([caseId])
+  @@index([templateId])
+  @@map("mape")
+}
+
+// MapaSlot - individual slot within a mapa (can be filled or empty)
+model MapaSlot {
+  id     String @id @default(uuid())
+  mapaId String @map("mapa_id")
+
+  // Slot definition
+  name        String  @db.VarChar(255) // e.g., "Cerere de chemare în judecată"
+  description String? @db.Text // Optional guidance text
+  category    String? @db.VarChar(100) // e.g., "Acte procedurale", "Dovezi"
+  required    Boolean @default(true)
+  order       Int // Position in TOC
+
+  // Assigned document (null = slot is empty/missing)
+  caseDocumentId String? @map("case_document_id")
+
+  // Timestamps
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  assignedAt   DateTime? @map("assigned_at") @db.Timestamptz // When document was assigned
+  assignedById String?   @map("assigned_by_id")
+
+  // Relations
+  mapa         Mapa          @relation(fields: [mapaId], references: [id], onDelete: Cascade)
+  caseDocument CaseDocument? @relation(fields: [caseDocumentId], references: [id], onDelete: SetNull)
+  assignedBy   User?         @relation("SlotAssigner", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([mapaId, order]) // Ensure unique ordering within mapa
+  @@index([mapaId])
+  @@index([caseDocumentId])
+  @@map("mapa_slots")
+}
+
+// MapaTemplate - firm-level reusable mapa structures
+model MapaTemplate {
+  id     String @id @default(uuid())
+  firmId String @map("firm_id")
+
+  name        String  @db.VarChar(255) // e.g., "Mapa Standard Civilă"
+  description String? @db.Text
+  caseType    String? @map("case_type") @db.VarChar(50) // Optional: associate with case types
+
+  // Template slot definitions (JSON for flexibility)
+  // Array of: { name, description?, category?, required, order }
+  slotDefinitions Json @default("[]") @map("slot_definitions")
+
+  // Metadata
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  createdById String   @map("created_by_id")
+
+  // Relations
+  firm      Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("MapaTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  mape      Mapa[] // Mape created from this template
+
+  @@index([firmId])
+  @@index([caseType])
+  @@map("mapa_templates")
 }

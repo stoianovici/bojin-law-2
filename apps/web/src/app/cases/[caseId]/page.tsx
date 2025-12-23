@@ -18,6 +18,7 @@ import { CommunicationsTab } from '../../../components/case/tabs/CommunicationsT
 import { TimeEntriesTab } from '../../../components/case/tabs/TimeEntriesTab';
 import { NotesTab } from '../../../components/case/tabs/NotesTab';
 import { IntelligenceTab } from '../../../components/case/tabs/IntelligenceTab';
+import { MapaList } from '../../../components/mapa';
 // import { AIInsightsPanel } from '../../../components/case/AIInsightsPanel'; // HIDDEN: may be revived later
 import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
 import { useCase } from '../../../hooks/useCase';
@@ -249,6 +250,14 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
             clientId={realCaseData?.client?.id || ''}
             userRole={(user?.role as 'Partner' | 'Associate' | 'Paralegal') || 'Associate'}
             className="p-6"
+          />
+        );
+      case 'mape':
+        return (
+          <MapaList
+            caseId={caseId}
+            caseName={caseData.case.title}
+            caseNumber={caseData.case.caseNumber}
           />
         );
       case 'tasks':

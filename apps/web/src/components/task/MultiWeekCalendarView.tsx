@@ -80,6 +80,13 @@ import React, { useMemo, useState } from 'react';
 import { format, addDays, addWeeks, startOfWeek, isSameDay, isWeekend, endOfWeek } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import type { Task, TaskType } from '@legal-platform/types';
+import { SpanningTaskLayer } from './calendar';
+import {
+  getTotalRowsHeight,
+  buildSpanningTasksInfo,
+  assignRowsToSpanningTasks,
+  isTimeSpecificTask,
+} from '@/utils/workloadDistribution';
 
 /**
  * Task type color mapping
@@ -91,16 +98,6 @@ const TASK_TYPE_COLORS: Record<TaskType, string> = {
   CourtDate: '#EF4444',
   Meeting: '#F59E0B',
   BusinessTrip: '#6366F1',
-};
-
-/**
- * Priority border width mapping
- */
-const PRIORITY_STYLES: Record<Task['priority'], string> = {
-  Low: 'border-l-2',
-  Medium: 'border-l-2',
-  High: 'border-l-[3px]',
-  Urgent: 'border-l-[4px]',
 };
 
 /**
@@ -203,96 +200,15 @@ interface MultiWeekCalendarViewProps {
 }
 
 /**
- * Task Card Component
- */
-const TaskCard: React.FC<{
-  task: Task;
-  onClick: () => void;
-  isDragging?: boolean;
-}> = ({ task, onClick, isDragging = false }) => {
-  const backgroundColor = TASK_TYPE_COLORS[task.type];
-  const hasTime = task.dueDate && new Date(task.dueDate).getHours() !== 0;
-  const priorityBorder = PRIORITY_STYLES[task.priority];
-
-  // Build accessible label
-  const timeLabel = hasTime ? `${format(new Date(task.dueDate), 'HH:mm')}, ` : '';
-  const ariaLabel = `${timeLabel}${task.title}, Tip: ${task.type}, Prioritate: ${task.priority}`;
-
-  return (
-    <div
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      aria-label={ariaLabel}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      className={`
-        rounded-md p-2 mb-2 cursor-pointer transition-all
-        hover:shadow-md hover:scale-[1.02]
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
-        ${priorityBorder}
-        ${isDragging ? 'opacity-50 rotate-2' : 'opacity-100'}
-      `}
-      style={{
-        backgroundColor: `${backgroundColor}15`,
-        borderLeftColor: backgroundColor,
-      }}
-    >
-      {/* Title with optional time */}
-      <div className="flex items-start gap-2">
-        {hasTime && (
-          <span className="text-xs font-bold text-gray-900 shrink-0">
-            {format(new Date(task.dueDate), 'HH:mm')}
-          </span>
-        )}
-        <span className="text-sm font-medium text-gray-800 line-clamp-2">{task.title}</span>
-      </div>
-
-      {/* Task type badge */}
-      <div className="flex items-center gap-1 mt-1">
-        <div className="w-2 h-2 rounded-full" style={{ backgroundColor }} />
-        <span className="text-[10px] text-gray-600">{task.type}</span>
-      </div>
-    </div>
-  );
-};
-
-/**
- * Draggable Task Card Wrapper
- */
-const DraggableTaskCard: React.FC<{
-  task: Task;
-  onClick: () => void;
-}> = ({ task, onClick }) => {
-  return (
-    <div
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('taskId', task.id);
-      }}
-      aria-grabbed="false"
-      className="cursor-move"
-    >
-      <TaskCard task={task} onClick={onClick} />
-    </div>
-  );
-};
-
-/**
  * Day Column Component
+ * Now only renders headers and acts as drop zone - tasks are rendered in SpanningTaskLayer
  */
 const DayColumn: React.FC<{
   date: Date;
   tasks: Task[];
   isWeekend: boolean;
-  onTaskClick: (task: Task) => void;
-  onDrop: (date: Date) => void;
-}> = ({ date, tasks, isWeekend, onTaskClick, onDrop }) => {
+  onDrop: (date: Date, taskId: string) => void;
+}> = ({ date, tasks, isWeekend, onDrop }) => {
   const [isDropTarget, setIsDropTarget] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -307,7 +223,10 @@ const DayColumn: React.FC<{
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDropTarget(false);
-    onDrop(date);
+    const taskId = e.dataTransfer.getData('taskId');
+    if (taskId) {
+      onDrop(date, taskId);
+    }
   };
 
   const isToday = isSameDay(date, new Date());
@@ -322,13 +241,9 @@ const DayColumn: React.FC<{
       className={`
         flex flex-col border-r border-gray-200 last:border-r-0
         ${isWeekend ? 'bg-gray-50' : 'bg-white'}
-        ${isDropTarget ? 'bg-blue-50 ring-2 ring-blue-400' : ''}
+        ${isDropTarget ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' : ''}
         transition-all
       `}
-      style={{
-        minWidth: isWeekend ? '50px' : '140px',
-        flex: isWeekend ? '0 0 50px' : '1 1 140px',
-      }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -336,7 +251,7 @@ const DayColumn: React.FC<{
       {/* Day header */}
       <div
         className={`
-          sticky top-0 z-10 px-2 py-1.5 border-b border-gray-200 text-center
+          sticky top-0 z-20 px-2 py-1.5 border-b border-gray-200 text-center
           ${isWeekend ? 'bg-gray-100' : 'bg-gray-50'}
           ${isToday ? 'bg-blue-100 border-blue-300' : ''}
         `}
@@ -357,22 +272,12 @@ const DayColumn: React.FC<{
         )}
       </div>
 
-      {/* Tasks container */}
-      <div className="p-2 flex-1 overflow-y-auto">
-        {tasks.length === 0 ? (
-          <div className="text-xs text-gray-400 text-center mt-4">
-            {isWeekend ? '' : 'Fără sarcini'}
-          </div>
-        ) : (
-          tasks.map((task) => (
-            <DraggableTaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
-          ))
-        )}
-      </div>
+      {/* Empty area (tasks now rendered in overlay) */}
+      <div className="flex-1" />
 
       {/* Task count badge */}
       {tasks.length > 0 && (
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-2 relative z-20">
           <div className="text-[10px] text-gray-500 text-center">
             {tasks.length} {tasks.length === 1 ? 'sarcină' : 'sarcini'}
           </div>
@@ -384,20 +289,31 @@ const DayColumn: React.FC<{
 
 /**
  * Single Week Row Component
+ * Uses CSS Grid for proper spanning support
  */
 const WeekRow: React.FC<{
   weekStartDate: Date;
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onDrop: (date: Date, taskId: string) => void;
-  draggedTaskId: string | null;
-}> = ({ weekStartDate, tasks, onTaskClick, onDrop, draggedTaskId }) => {
+}> = ({ weekStartDate, tasks, onTaskClick, onDrop }) => {
   const dates = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
   }, [weekStartDate]);
 
   /**
-   * Group tasks by date for this week
+   * Calculate minimum height based on spanning cards
+   */
+  const minHeight = useMemo(() => {
+    const spanningInfo = buildSpanningTasksInfo(tasks);
+    const assignments = assignRowsToSpanningTasks(spanningInfo, weekStartDate);
+    const totalHeight = getTotalRowsHeight(assignments);
+    // Add header height (60px) + padding
+    return Math.max(200, totalHeight + 80);
+  }, [tasks, weekStartDate]);
+
+  /**
+   * Group tasks by date for this week (for counting only now, rendering moved to overlay)
    */
   const tasksByDate = useMemo(() => {
     const grouped = new Map<string, Task[]>();
@@ -417,8 +333,9 @@ const WeekRow: React.FC<{
     // Sort tasks within each day
     grouped.forEach((dayTasks) => {
       dayTasks.sort((a, b) => {
-        const aHasTime = new Date(a.dueDate).getHours() !== 0;
-        const bHasTime = new Date(b.dueDate).getHours() !== 0;
+        // Only Meeting and CourtDate tasks can have specific times
+        const aHasTime = isTimeSpecificTask(a.type) && new Date(a.dueDate).getUTCHours() !== 0;
+        const bHasTime = isTimeSpecificTask(b.type) && new Date(b.dueDate).getUTCHours() !== 0;
 
         if (aHasTime && !bHasTime) return -1;
         if (!aHasTime && bHasTime) return 1;
@@ -436,7 +353,15 @@ const WeekRow: React.FC<{
   }, [tasks, dates]);
 
   return (
-    <div className="flex h-auto min-h-[200px]">
+    <div
+      className="relative"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 50px 50px', // Mon-Fri (1fr), Sat-Sun (50px)
+        minHeight: `${minHeight}px`,
+      }}
+    >
+      {/* Day columns (headers + drop zones) */}
       {dates.map((date) => {
         const dateKey = format(date, 'yyyy-MM-dd');
         const dayTasks = tasksByDate.get(dateKey) || [];
@@ -448,15 +373,15 @@ const WeekRow: React.FC<{
             date={date}
             tasks={dayTasks}
             isWeekend={weekend}
-            onTaskClick={onTaskClick}
-            onDrop={(targetDate) => {
-              if (draggedTaskId) {
-                onDrop(targetDate, draggedTaskId);
-              }
+            onDrop={(targetDate, taskId) => {
+              onDrop(targetDate, taskId);
             }}
           />
         );
       })}
+
+      {/* Spanning task overlay */}
+      <SpanningTaskLayer tasks={tasks} weekStartDate={weekStartDate} onTaskClick={onTaskClick} />
     </div>
   );
 };
@@ -473,7 +398,6 @@ export function MultiWeekCalendarView({
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
-  const [draggedTaskId, _setDraggedTaskId] = useState<string | null>(null);
 
   /**
    * Generate array of week start dates
@@ -633,7 +557,6 @@ export function MultiWeekCalendarView({
                       onTaskDrop(taskId, date);
                     }
                   }}
-                  draggedTaskId={draggedTaskId}
                 />
               </div>
             );

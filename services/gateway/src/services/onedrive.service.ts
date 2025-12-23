@@ -100,6 +100,15 @@ export interface DownloadLinkInfo {
 }
 
 /**
+ * Organization sharing link information
+ * OPS-104: Used to share documents with all organization members
+ */
+export interface OrganizationSharingLink {
+  id: string;
+  webUrl: string;
+}
+
+/**
  * Preview URL information for document preview
  */
 export interface PreviewUrlInfo {
@@ -276,21 +285,32 @@ export class OneDriveService {
    * Get temporary download link for a document
    * Creates a sharing link that expires in 1 hour
    *
+   * OPS-104: Now supports cross-user access via oneDriveUserId parameter.
+   * When oneDriveUserId is provided, uses /users/{userId}/drive/... endpoint
+   * to access another user's OneDrive (requires Files.Read.All permission).
+   *
    * @param accessToken - User's access token
    * @param oneDriveId - OneDrive item ID
+   * @param oneDriveUserId - Optional: MS Graph user ID of the OneDrive owner (for cross-user access)
    * @returns Download link info with URL and expiration
    */
   async getDocumentDownloadLink(
     accessToken: string,
-    oneDriveId: string
+    oneDriveId: string,
+    oneDriveUserId?: string
   ): Promise<DownloadLinkInfo> {
     return retryWithBackoff(
       async () => {
         try {
           const client = createGraphClient(accessToken);
 
+          // OPS-104: Use owner-aware endpoint if oneDriveUserId is provided
+          const itemEndpoint = oneDriveUserId
+            ? graphEndpoints.driveItemByOwner(oneDriveUserId, oneDriveId)
+            : graphEndpoints.driveItem(oneDriveId);
+
           // First, try to get direct download URL from item metadata
-          const item = await client.api(graphEndpoints.driveItem(oneDriveId)).get();
+          const item = await client.api(itemEndpoint).get();
 
           // Check if direct download URL is available (expires in ~1 hour)
           const directUrl = item['@microsoft.graph.downloadUrl'];
@@ -302,7 +322,11 @@ export class OneDriveService {
           }
 
           // If no direct URL, create a sharing link
-          const link = await client.api(`/me/drive/items/${oneDriveId}/createLink`).post({
+          const createLinkEndpoint = oneDriveUserId
+            ? `/users/${oneDriveUserId}/drive/items/${oneDriveId}/createLink`
+            : `/me/drive/items/${oneDriveId}/createLink`;
+
+          const link = await client.api(createLinkEndpoint).post({
             type: 'view',
             scope: 'anonymous',
             expirationDateTime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
@@ -310,6 +334,7 @@ export class OneDriveService {
 
           logger.info('Download link created for document', {
             oneDriveId,
+            oneDriveUserId,
             expirationDateTime: link.expirationDateTime,
           });
 
@@ -503,15 +528,21 @@ export class OneDriveService {
    * - Office docs: Office Online embed URL
    * - Images: Direct download URL
    *
+   * OPS-104: Now supports cross-user access via oneDriveUserId parameter.
+   * When oneDriveUserId is provided, uses /users/{userId}/drive/... endpoint
+   * to access another user's OneDrive (requires Files.Read.All permission).
+   *
    * @param accessToken - User's access token
    * @param oneDriveId - OneDrive item ID
    * @param mimeType - File MIME type for determining preview strategy
+   * @param oneDriveUserId - Optional: MS Graph user ID of the OneDrive owner (for cross-user access)
    * @returns Preview URL info or null if preview not supported
    */
   async getPreviewUrl(
     accessToken: string,
     oneDriveId: string,
-    mimeType: string
+    mimeType: string,
+    oneDriveUserId?: string
   ): Promise<PreviewUrlInfo | null> {
     // Office document types that can be previewed via Office Online
     const officeTypes = [
@@ -541,31 +572,80 @@ export class OneDriveService {
     return retryWithBackoff(
       async () => {
         try {
-          // Get download link (used for PDF/image or as source for Office embed)
-          const downloadLink = await this.getDocumentDownloadLink(accessToken, oneDriveId);
+          const client = createGraphClient(accessToken);
 
-          if (isPdf || isImage) {
-            // PDF and images can be rendered directly by browser
-            return {
-              url: downloadLink.url,
-              source: isPdf ? 'pdf' : 'image',
-              expiresAt: downloadLink.expirationDateTime,
-            };
+          // OPS-104: Use owner-aware endpoint if oneDriveUserId is provided
+          const previewEndpoint = oneDriveUserId
+            ? `/users/${oneDriveUserId}/drive/items/${oneDriveId}/preview`
+            : `/me/drive/items/${oneDriveId}/preview`;
+
+          if (isPdf || isOffice) {
+            // Use MS Graph preview API for PDFs and Office docs
+            // This returns an embeddable URL that works in iframes
+            try {
+              const previewResponse = await client.api(previewEndpoint).post({});
+
+              if (previewResponse.getUrl) {
+                logger.info('Generated MS Graph preview URL', {
+                  oneDriveId,
+                  oneDriveUserId,
+                  mimeType,
+                  source: isPdf ? 'pdf' : 'office365',
+                });
+
+                return {
+                  url: previewResponse.getUrl,
+                  source: isPdf ? 'pdf' : 'office365',
+                  expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+                };
+              }
+            } catch (previewError: any) {
+              // If preview API fails, fall through to download link for Office docs
+              logger.warn('MS Graph preview API failed, falling back', {
+                oneDriveId,
+                oneDriveUserId,
+                error: previewError.message,
+              });
+            }
+
+            // Fallback for Office docs: use Office Online viewer
+            if (isOffice) {
+              // OPS-104: Pass oneDriveUserId to download link method
+              const downloadLink = await this.getDocumentDownloadLink(
+                accessToken,
+                oneDriveId,
+                oneDriveUserId
+              );
+              const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadLink.url)}`;
+
+              logger.info('Generated Office Online preview URL (fallback)', {
+                oneDriveId,
+                oneDriveUserId,
+                mimeType,
+              });
+
+              return {
+                url: embedUrl,
+                source: 'office365',
+                expiresAt: downloadLink.expirationDateTime,
+              };
+            }
+
+            // PDF preview API failed, no fallback
+            return null;
           }
 
-          if (isOffice) {
-            // Office documents use Office Online embed
-            // Format: https://view.officeapps.live.com/op/embed.aspx?src={encodedUrl}
-            const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadLink.url)}`;
-
-            logger.info('Generated Office Online preview URL', {
+          if (isImage) {
+            // Images can use download link directly
+            // OPS-104: Pass oneDriveUserId to download link method
+            const downloadLink = await this.getDocumentDownloadLink(
+              accessToken,
               oneDriveId,
-              mimeType,
-            });
-
+              oneDriveUserId
+            );
             return {
-              url: embedUrl,
-              source: 'office365',
+              url: downloadLink.url,
+              source: 'image',
               expiresAt: downloadLink.expirationDateTime,
             };
           }
@@ -586,22 +666,31 @@ export class OneDriveService {
    * Get thumbnails for a file from OneDrive
    * OneDrive auto-generates thumbnails for PDFs, Office docs, and images
    *
+   * OPS-104: Now supports cross-user access via oneDriveUserId parameter.
+   *
    * @param accessToken - User's access token
    * @param oneDriveId - OneDrive item ID
    * @param size - Thumbnail size ('small', 'medium', 'large')
+   * @param oneDriveUserId - Optional: MS Graph user ID of the OneDrive owner (for cross-user access)
    * @returns Thumbnail URL or null if not available
    */
   async getFileThumbnail(
     accessToken: string,
     oneDriveId: string,
-    size: 'small' | 'medium' | 'large' = 'medium'
+    size: 'small' | 'medium' | 'large' = 'medium',
+    oneDriveUserId?: string
   ): Promise<string | null> {
     return retryWithBackoff(
       async () => {
         try {
           const client = createGraphClient(accessToken);
 
-          const thumbnails = await client.api(`/me/drive/items/${oneDriveId}/thumbnails`).get();
+          // OPS-104: Use owner-aware endpoint if oneDriveUserId is provided
+          const thumbnailEndpoint = oneDriveUserId
+            ? `/users/${oneDriveUserId}/drive/items/${oneDriveId}/thumbnails`
+            : `/me/drive/items/${oneDriveId}/thumbnails`;
+
+          const thumbnails = await client.api(thumbnailEndpoint).get();
 
           if (thumbnails.value && thumbnails.value.length > 0) {
             const thumbnail = thumbnails.value[0];
@@ -622,6 +711,57 @@ export class OneDriveService {
       },
       {},
       'onedrive-get-thumbnail'
+    );
+  }
+
+  /**
+   * Share a file with the organization
+   * OPS-104: Creates an organization-scoped sharing link so all firm members can access the file
+   * This is required because files in personal OneDrives are not accessible to other users
+   * even with Files.Read.All delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param oneDriveId - OneDrive item ID
+   * @returns Organization sharing link info
+   */
+  async shareWithOrganization(
+    accessToken: string,
+    oneDriveId: string
+  ): Promise<OrganizationSharingLink | null> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+
+          // Create an organization-wide sharing link
+          // type: 'view' - read-only access
+          // scope: 'organization' - anyone in the organization can access
+          const shareResponse = await client.api(`/me/drive/items/${oneDriveId}/createLink`).post({
+            type: 'view',
+            scope: 'organization',
+          });
+
+          logger.info('Created organization sharing link for document', {
+            oneDriveId,
+            linkId: shareResponse.id,
+          });
+
+          return {
+            id: shareResponse.id,
+            webUrl: shareResponse.link?.webUrl || shareResponse.webUrl,
+          };
+        } catch (error: any) {
+          // If sharing fails (e.g., already shared or sharing disabled), log and return null
+          // This should not block the upload process
+          logger.warn('Failed to create organization sharing link', {
+            oneDriveId,
+            error: error.message,
+          });
+          return null;
+        }
+      },
+      { maxAttempts: 2 }, // Only retry once for sharing
+      'onedrive-share-organization'
     );
   }
 
