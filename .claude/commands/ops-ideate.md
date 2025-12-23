@@ -1,100 +1,76 @@
 # Explore Ideas and Concepts
 
-Brainstorm and explore conceptual questions, design challenges, and platform ideas without immediately committing to an implementation.
+Brainstorm and explore without committing to implementation.
 
 ## Input
 
-The user's input is: $ARGUMENTS
+$ARGUMENTS - A question, challenge, or exploration:
 
-This can be:
-
-- A conceptual question ("how should we handle X?")
-- A design challenge ("what's the best way to organize Y?")
-- A feature exploration ("what if we added Z?")
-- An architectural concern ("should we refactor A to B?")
-- An open-ended exploration ("ideas for improving W")
+- "how should we handle X?"
+- "what's the best way to organize Y?"
+- "ideas for improving Z"
 
 ## 1. Load Context
 
-Read in parallel to understand the platform:
+Read in parallel:
 
-- `docs/project-conventions.md` - Current patterns and architecture
-- `docs/ops/operations-log.md` - Recent issues and ongoing work
+- `docs/project-conventions.md` - Current patterns
+- `docs/ops/operations-log.md` - Recent work
 - `CLAUDE.md` - Project overview
 
-## 2. Understand the Idea Space
+## 2. Clarify Scope (if needed)
 
-Before diving into solutions, clarify the scope:
+Ask only if unclear:
 
-**Ask (if needed):**
+- What problem prompted this?
+- Any constraints?
+- Exploratory or leaning toward implementation?
 
-- What problem or opportunity prompted this?
-- Are there constraints we should work within?
-- What's the ideal outcome?
-- Is this exploratory or are you leaning toward implementation?
+## 3. Gather Relevant Code
 
-**If the input is clear enough, proceed without asking.**
+Use Explore agent to understand:
 
-## 3. Gather Relevant Context
+- How does the platform handle this today?
+- What existing patterns are relevant?
+- Any prior art in the codebase?
 
-Use the Explore agent (Task tool with subagent_type=Explore) to investigate:
-
-1. **Current state**: How does the platform handle this today?
-2. **Related code**: What existing patterns or components are relevant?
-3. **Similar solutions**: Any prior art in the codebase?
-
-Focus on understanding, not judging.
-
-## 4. Explore Multiple Angles
-
-Present ideas in this format:
+## 4. Present Multiple Angles
 
 ```markdown
 ## Exploring: {topic}
 
 ### Current State
 
-{What exists today, if anything}
+{what exists today}
 
-### The Question/Challenge
+### The Challenge
 
-{Restate what we're exploring}
+{restate what we're exploring}
 
 ---
 
-### Angle 1: {approach name}
+### Angle 1: {name}
 
 **Idea**: {brief description}
 
-**How it would work**:
+**How it works**:
 
 - {key point}
 - {key point}
 
-**Strengths**:
-
-- {benefit}
-- {benefit}
-
-**Trade-offs**:
-
-- {consideration}
-- {consideration}
-
-**Affected areas**:
-
-- {file or component}
-- {file or component}
+**Strengths**: {benefits}
+**Trade-offs**: {considerations}
+**Touches**: {affected files/areas}
 
 ---
 
-### Angle 2: {approach name}
+### Angle 2: {name}
 
 {same structure}
 
 ---
 
-### Angle 3: {approach name}
+### Angle 3: {name}
 
 {same structure}
 
@@ -102,86 +78,66 @@ Present ideas in this format:
 
 ### Synthesis
 
-**Key tensions**: {what trade-offs exist between approaches}
-
-**Questions to resolve**: {what would inform the decision}
-
-**My take**: {your honest assessment, if helpful}
+**Key tensions**: {trade-offs between approaches}
+**Open questions**: {what would inform the decision}
+**My take**: {honest assessment}
 ```
 
-## 5. Interactive Exploration
+## 5. Next Steps
 
-After presenting angles, offer to:
+After presenting angles:
 
 ```
-## What would you like to explore further?
-
-1. **Dig deeper** into one of these angles
-2. **Prototype** a quick sketch of an approach
-3. **Compare** specific aspects across approaches
-4. **Challenge** - play devil's advocate on an approach
-5. **Scope** - break down an approach into phases
-6. **Create issue** - turn this into a tracked OPS issue
+What next?
+- Dig deeper into an angle
+- Draft an issue → /ops-draft
+- Keep exploring
+- Park it for now
 ```
 
-## 6. If Creating an Issue
+## 6. Draft Summary (when user chooses to draft)
 
-Only create an OPS issue if the user explicitly asks. When they do:
+When the user wants to proceed to `/ops-draft`, generate a structured summary block that captures the exploration outcome. This becomes the input for the drafting agent.
 
-1. Ask which angle/approach to pursue
-2. Use `/ops-new` pattern to create the issue
-3. Reference this ideation session in the issue description
+```markdown
+## Draft Summary
+
+**Title**: {concise issue title}
+
+**Type**: {Bug | Feature | Performance | Refactor | Infra}
+
+**Priority**: {P0-Critical | P1-High | P2-Medium | P3-Low}
+
+**Problem**:
+{1-2 sentences on what's wrong or missing}
+
+**Solution**:
+{Chosen approach from exploration, 2-3 sentences}
+
+**Implementation**:
+
+1. {Specific change with file path}
+2. {Specific change with file path}
+3. {Specific change with file path}
+
+**Files to modify**:
+
+- `path/to/file1.ts` - {what changes}
+- `path/to/file2.tsx` - {what changes}
+
+**Expected impact**: {measurable outcome}
+
+**Dependencies**: {other issues or "None"}
+```
+
+After presenting this summary, tell the user:
+
+```
+Ready for /ops-draft - copy the summary above, or I can pass it directly.
+```
 
 ## Guidelines
 
-**DO:**
+**DO**: Present multiple perspectives, acknowledge trade-offs, reference codebase, consider user impact
 
-- Present multiple perspectives, even if one seems obvious
-- Acknowledge uncertainty and trade-offs honestly
-- Reference relevant parts of the codebase
-- Think about user impact, not just technical elegance
-- Consider maintenance burden and complexity cost
-- Build on existing patterns when sensible
-
-**DON'T:**
-
-- Rush to a single "correct" answer
-- Create issues unless asked
-- Start implementing without explicit request
-- Dismiss ideas without explaining why
-- Over-engineer or suggest unnecessary complexity
-
-## Example Sessions
-
-**Example 1: Design question**
-
-```
-User: /ops-ideate how should we structure notifications?
-
-Claude: [Explores push vs pull, real-time vs batch, UI patterns,
-        presents 3 approaches with trade-offs, asks what to explore further]
-```
-
-**Example 2: Architectural concern**
-
-```
-User: /ops-ideate should we move email processing to a queue?
-
-Claude: [Analyzes current synchronous flow, explores queue options,
-        discusses when queues help vs add complexity, presents angles]
-```
-
-**Example 3: Feature exploration**
-
-```
-User: /ops-ideate ideas for improving the case timeline
-
-Claude: [Reviews current timeline, explores visualization options,
-        considers data sources, presents multiple enhancement angles]
-```
-
-## Note
-
-This command is for thinking and exploring. It's okay to not reach a conclusion. Sometimes the value is in mapping out the problem space, not solving it.
-
-When ready to act, use `/ops-new` to create a tracked issue.
+**DON'T**: Rush to single answer, create issues without asking, start implementing, over-engineer

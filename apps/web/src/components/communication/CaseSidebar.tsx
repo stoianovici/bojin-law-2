@@ -55,6 +55,10 @@ interface CaseSidebarProps {
   onSelectCourtEmail: (emailId: string) => void;
   onSelectUncertainEmail: (emailId: string) => void;
   onMoveThread?: (info: MoveThreadInfo) => void;
+  // OPS-132: Load more support
+  hasMoreThreads?: boolean;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
   className?: string;
 }
 
@@ -385,6 +389,10 @@ export function CaseSidebar({
   onSelectCourtEmail,
   onSelectUncertainEmail,
   onMoveThread,
+  // OPS-132: Load more support
+  hasMoreThreads,
+  onLoadMore,
+  loadingMore,
   className,
 }: CaseSidebarProps) {
   // Track which cases are expanded (default: expand cases with unread)
@@ -479,6 +487,19 @@ export function CaseSidebar({
                       onSelectThread={onSelectThread}
                       onMoveThread={onMoveThread}
                     />
+                  )}
+
+                  {/* OPS-132: Load more button */}
+                  {hasMoreThreads && onLoadMore && (
+                    <div className="p-3 border-t border-gray-100">
+                      <button
+                        onClick={onLoadMore}
+                        disabled={loadingMore}
+                        className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loadingMore ? 'Se încarcă...' : 'Încarcă mai multe conversații'}
+                      </button>
+                    </div>
                   )}
                 </>
               )}

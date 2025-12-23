@@ -1,6 +1,7 @@
 /**
  * Email Thread Grouping Service
  * Story 5.1: Email Integration and Synchronization
+ * OPS-125: Auto-Add Sender as Case Contact on Assignment
  *
  * Groups emails into conversation threads using Graph API conversationId
  * and SMTP headers as fallback. Provides thread-level operations.
@@ -8,7 +9,7 @@
  * [Source: packages/shared/types/src/communication.ts - CommunicationThread type]
  */
 
-import { PrismaClient, Email } from '@prisma/client';
+import { PrismaClient, Email, CaseActorRole } from '@prisma/client';
 
 // ============================================================================
 // Types
@@ -29,6 +30,17 @@ export interface EmailThread {
   firstMessageDate: Date;
 }
 
+// OPS-127: Attachment type for thread emails
+export interface ThreadEmailAttachment {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+  documentId?: string | null;
+  storageUrl?: string | null;
+  filterStatus?: string | null;
+}
+
 export interface ThreadEmail {
   id: string;
   graphMessageId: string;
@@ -44,6 +56,7 @@ export interface ThreadEmail {
   receivedDateTime: Date;
   sentDateTime: Date;
   hasAttachments: boolean;
+  attachments?: ThreadEmailAttachment[]; // OPS-127: Actual attachment data
   importance: string;
   isRead: boolean;
   caseId: string | null;
@@ -77,6 +90,24 @@ export interface PaginationOptions {
   offset?: number;
 }
 
+// OPS-125: Result type for assignThreadToCase with contact auto-add info
+export interface AssignThreadResult {
+  /** Number of emails updated */
+  emailCount: number;
+  /** Whether a new contact was auto-added to the case */
+  newContactAdded: boolean;
+  /** Name of the added contact (if any) */
+  contactName?: string;
+  /** Email of the added contact (if any) */
+  contactEmail?: string;
+}
+
+// OPS-125: Context needed for auto-adding contacts
+export interface UserContext {
+  userId: string;
+  firmId: string;
+}
+
 // ============================================================================
 // Email Thread Service
 // ============================================================================
@@ -94,11 +125,40 @@ export class EmailThreadService {
    * Uses Graph API conversationId as primary grouping key.
    * Sorts messages chronologically within each thread.
    *
-   * @param emails - Array of emails to group
+   * @param emails - Array of emails to group (may include attachments from Prisma include)
    * @returns Array of email threads
    */
-  groupEmailsIntoThreads(emails: Email[]): EmailThread[] {
-    const threadMap = new Map<string, Email[]>();
+  groupEmailsIntoThreads(
+    emails: Array<
+      Email & {
+        attachments?: Array<{
+          id: string;
+          name: string;
+          contentType: string;
+          size: number;
+          documentId: string | null;
+          storageUrl: string | null;
+          filterStatus: string | null;
+        }>;
+      }
+    >
+  ): EmailThread[] {
+    const threadMap = new Map<
+      string,
+      Array<
+        Email & {
+          attachments?: Array<{
+            id: string;
+            name: string;
+            contentType: string;
+            size: number;
+            documentId: string | null;
+            storageUrl: string | null;
+            filterStatus: string | null;
+          }>;
+        }
+      >
+    >();
 
     // Group by conversationId, fallback to graphMessageId for emails without conversationId
     for (const email of emails) {
@@ -215,12 +275,20 @@ export class EmailThreadService {
     const paginatedConversations = conversationGroups.slice(offset, offset + limit);
 
     // Fetch all emails for paginated conversations
+    // OPS-127: Include attachments when fetching thread emails
     const emails = await this.prisma.email.findMany({
       where: {
         userId,
         conversationId: { in: paginatedConversations.map((g) => g.conversationId) },
       },
       orderBy: { receivedDateTime: 'asc' },
+      include: {
+        attachments: {
+          where: {
+            OR: [{ filterStatus: null }, { filterStatus: { not: 'dismissed' } }],
+          },
+        },
+      },
     });
 
     // Filter for unread if needed (post-fetch filter)
@@ -241,9 +309,17 @@ export class EmailThreadService {
    * @returns Email thread or null
    */
   async getThread(conversationId: string, userId: string): Promise<EmailThread | null> {
+    // OPS-127: Include attachments when fetching thread emails
     const emails = await this.prisma.email.findMany({
       where: { conversationId, userId },
       orderBy: { receivedDateTime: 'asc' },
+      include: {
+        attachments: {
+          where: {
+            OR: [{ filterStatus: null }, { filterStatus: { not: 'dismissed' } }],
+          },
+        },
+      },
     });
 
     if (emails.length === 0) {
@@ -275,23 +351,139 @@ export class EmailThreadService {
 
   /**
    * Assign all emails in a thread to a case (AC: 6)
+   * OPS-125: Now auto-adds sender as case contact if not already present
    *
    * @param conversationId - Graph API conversation ID
    * @param caseId - Case ID to assign
    * @param userId - User ID for access control
-   * @returns Updated email count
+   * @param userContext - Optional context for auto-adding contacts (firmId needed)
+   * @returns Result with email count and contact info
    */
   async assignThreadToCase(
     conversationId: string,
     caseId: string,
-    userId: string
-  ): Promise<number> {
+    userId: string,
+    userContext?: UserContext
+  ): Promise<AssignThreadResult> {
+    // Update all emails in the thread
     const result = await this.prisma.email.updateMany({
       where: { conversationId, userId },
       data: { caseId },
     });
 
-    return result.count;
+    // OPS-125: Auto-add sender as case contact if firmId is provided
+    if (!userContext?.firmId) {
+      return {
+        emailCount: result.count,
+        newContactAdded: false,
+      };
+    }
+
+    // Get the first email in the thread to extract sender info
+    const firstEmail = await this.prisma.email.findFirst({
+      where: { conversationId, userId },
+      orderBy: { receivedDateTime: 'asc' },
+      select: {
+        from: true,
+      },
+    });
+
+    if (!firstEmail?.from) {
+      return {
+        emailCount: result.count,
+        newContactAdded: false,
+      };
+    }
+
+    const fromData = firstEmail.from as { name?: string; address: string };
+    const senderEmail = fromData.address?.toLowerCase();
+    const senderName = fromData.name || senderEmail;
+
+    if (!senderEmail) {
+      return {
+        emailCount: result.count,
+        newContactAdded: false,
+      };
+    }
+
+    // Check if sender is from a court/institution domain (skip auto-add)
+    const isInstitution = await this.checkInstitutionDomain(senderEmail, userContext.firmId);
+    if (isInstitution) {
+      return {
+        emailCount: result.count,
+        newContactAdded: false,
+      };
+    }
+
+    // Check if sender is already a contact on this case
+    const existingActor = await this.prisma.caseActor.findFirst({
+      where: {
+        caseId,
+        email: { equals: senderEmail, mode: 'insensitive' },
+      },
+    });
+
+    if (existingActor) {
+      return {
+        emailCount: result.count,
+        newContactAdded: false,
+      };
+    }
+
+    // Check if sender is the client on this case
+    const caseWithClient = await this.prisma.case.findUnique({
+      where: { id: caseId },
+      include: {
+        client: {
+          select: { contactInfo: true },
+        },
+      },
+    });
+
+    const clientEmail = (caseWithClient?.client?.contactInfo as { email?: string })?.email;
+    if (clientEmail && clientEmail.toLowerCase() === senderEmail) {
+      return {
+        emailCount: result.count,
+        newContactAdded: false,
+      };
+    }
+
+    // Auto-add sender as case contact with "Other" role
+    await this.prisma.caseActor.create({
+      data: {
+        caseId,
+        email: senderEmail,
+        name: senderName,
+        role: CaseActorRole.Other,
+        createdBy: userId,
+        notes: 'Adăugat automat din atribuire email',
+      },
+    });
+
+    return {
+      emailCount: result.count,
+      newContactAdded: true,
+      contactName: senderName,
+      contactEmail: senderEmail,
+    };
+  }
+
+  /**
+   * OPS-125: Check if email domain is from a court/institution
+   * Uses GlobalEmailSource table for domain matching
+   */
+  private async checkInstitutionDomain(email: string, firmId: string): Promise<boolean> {
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (!domain) return false;
+
+    const source = await this.prisma.globalEmailSource.findFirst({
+      where: {
+        firmId,
+        domains: { has: domain },
+      },
+    });
+
+    return !!source;
   }
 
   /**
@@ -480,8 +672,21 @@ export class EmailThreadService {
 
   /**
    * Transform Prisma Email to ThreadEmail
+   * OPS-127: Now handles attachments when included in query
    */
-  private transformToThreadEmail(email: Email): ThreadEmail {
+  private transformToThreadEmail(
+    email: Email & {
+      attachments?: Array<{
+        id: string;
+        name: string;
+        contentType: string;
+        size: number;
+        documentId: string | null;
+        storageUrl: string | null;
+        filterStatus: string | null;
+      }>;
+    }
+  ): ThreadEmail {
     return {
       id: email.id,
       graphMessageId: email.graphMessageId,
@@ -497,6 +702,16 @@ export class EmailThreadService {
       receivedDateTime: email.receivedDateTime,
       sentDateTime: email.sentDateTime,
       hasAttachments: email.hasAttachments,
+      // OPS-127: Map attachments with all fields needed for GraphQL resolvers
+      attachments: email.attachments?.map((a) => ({
+        id: a.id,
+        name: a.name,
+        contentType: a.contentType,
+        size: a.size,
+        documentId: a.documentId,
+        storageUrl: a.storageUrl,
+        filterStatus: a.filterStatus,
+      })),
       importance: email.importance,
       isRead: email.isRead,
       caseId: email.caseId,

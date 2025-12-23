@@ -8,7 +8,7 @@
 
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 
 // ============================================================================
 // GraphQL Fragments
@@ -21,6 +21,9 @@ const EMAIL_ADDRESS_FRAGMENT = gql`
   }
 `;
 
+// OPS-130: Lightweight fragment for list view - excludes heavy body content fields
+// Full content (bodyContent, bodyContentClean) is fetched separately via useEmailThread
+// when a thread is selected for viewing
 const EMAIL_THREAD_FRAGMENT = gql`
   ${EMAIL_ADDRESS_FRAGMENT}
   fragment EmailThreadFieldsCase on EmailThread {
@@ -42,9 +45,7 @@ const EMAIL_THREAD_FRAGMENT = gql`
       id
       subject
       bodyPreview
-      bodyContent
-      bodyContentType
-      bodyContentClean
+      folderType
       from {
         ...EmailAddressFieldsCase
       }
@@ -227,8 +228,12 @@ export interface MyEmailsByCase {
 // ============================================================================
 
 export function useMyEmailsByCase(options?: { limit?: number }) {
-  // Load all threads by default (no practical limit)
-  const { limit = 10000 } = options || {};
+  // OPS-129: Limit initial load to 50 threads for performance
+  const { limit = 50 } = options || {};
+
+  // OPS-132: Track whether more threads exist beyond current loaded set
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Fetch all email threads
   const {
@@ -236,6 +241,8 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
     loading: threadsLoading,
     error: threadsError,
     refetch: refetchThreads,
+    fetchMore,
+    // OPS-130: Type reflects lightweight list fragment - no bodyContent/bodyContentClean
   } = useQuery<{
     emailThreads: Array<{
       id: string;
@@ -252,9 +259,7 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
         id: string;
         subject: string;
         bodyPreview: string;
-        bodyContent?: string;
-        bodyContentType?: string;
-        bodyContentClean?: string;
+        folderType?: string | null; // OPS-126: 'inbox' or 'sent'
         from: EmailAddress;
         receivedDateTime: string;
         sentDateTime: string;
@@ -277,6 +282,17 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
     variables: { limit, offset: 0 },
     fetchPolicy: 'cache-and-network',
   });
+
+  // OPS-132: Track if more threads exist based on initial fetch
+  useEffect(() => {
+    if (threadsData?.emailThreads && !threadsLoading) {
+      // If we got fewer threads than the limit, there are no more to load
+      // This handles the initial load case
+      if (threadsData.emailThreads.length < limit && threadsData.emailThreads.length > 0) {
+        setHasMore(false);
+      }
+    }
+  }, [threadsData?.emailThreads?.length, threadsLoading, limit]);
 
   // Helper function to aggregate case links from all emails in a thread
   const aggregateCaseLinks = (
@@ -344,6 +360,36 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
     variables: { limit: 50, offset: 0 },
     fetchPolicy: 'cache-and-network',
   });
+
+  // OPS-132: Load more threads callback
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore || threadsLoading) return;
+
+    const currentCount = threadsData?.emailThreads.length || 0;
+    setLoadingMore(true);
+
+    try {
+      await fetchMore({
+        variables: { offset: currentCount, limit },
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return prev;
+
+          // Check if we got fewer than limit - means no more to load
+          if (fetchMoreResult.emailThreads.length < limit) {
+            setHasMore(false);
+          }
+
+          // Merge new threads with existing ones
+          return {
+            ...prev,
+            emailThreads: [...prev.emailThreads, ...fetchMoreResult.emailThreads],
+          };
+        },
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loadingMore, threadsLoading, threadsData, fetchMore, limit]);
 
   // Transform data into case-organized structure
   const organizedData = useMemo<MyEmailsByCase>(() => {
@@ -445,6 +491,10 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
     loading: threadsLoading || courtLoading || uncertainLoading,
     error: threadsError || courtError || uncertainError,
     refetch,
+    // OPS-132: Load more support
+    loadMore,
+    hasMore,
+    loadingMore,
   };
 }
 

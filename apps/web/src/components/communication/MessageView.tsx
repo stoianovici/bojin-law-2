@@ -64,16 +64,21 @@ const GET_ATTACHMENT_CONTENT = gql`
   }
 `;
 
-// GraphQL mutation for assigning thread to case
+// GraphQL mutation for assigning thread to case (OPS-125: returns AssignThreadResult)
 const ASSIGN_THREAD_TO_CASE = gql`
   mutation AssignThreadToCase($conversationId: String!, $caseId: ID!) {
     assignThreadToCase(conversationId: $conversationId, caseId: $caseId) {
-      id
-      conversationId
-      case {
+      thread {
         id
-        title
+        conversationId
+        case {
+          id
+          title
+        }
       }
+      newContactAdded
+      contactName
+      contactEmail
     }
   }
 `;
@@ -88,15 +93,20 @@ const IGNORE_EMAIL_THREAD = gql`
   }
 `;
 
-// Type definitions for GraphQL mutation results
+// Type definitions for GraphQL mutation results (OPS-125: updated for AssignThreadResult)
 interface AssignThreadToCaseResult {
   assignThreadToCase: {
-    id: string;
-    conversationId: string;
-    case: {
+    thread: {
       id: string;
-      title: string;
-    } | null;
+      conversationId: string;
+      case: {
+        id: string;
+        title: string;
+      } | null;
+    };
+    newContactAdded: boolean;
+    contactName?: string;
+    contactEmail?: string;
   };
 }
 
@@ -124,6 +134,7 @@ function Message({
   hasMsalAccount,
   onReconnectMicrosoft,
   isSentByUser, // OPS-091: Visual distinction for sent emails
+  onPreviewAttachment, // OPS-122: Panel-based preview
 }: {
   message: ExtendedMessage;
   threadId: string;
@@ -135,6 +146,7 @@ function Message({
   hasMsalAccount?: boolean;
   onReconnectMicrosoft?: () => void;
   isSentByUser?: boolean; // OPS-091
+  onPreviewAttachment?: (attachmentId: string, messageId: string) => void; // OPS-122
 }) {
   const [syncingAttachments, setSyncingAttachments] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -195,12 +207,19 @@ function Message({
     [message.id, fetchAttachmentContent, downloadingId]
   );
 
-  // Handle attachment preview - opens preview modal
+  // Handle attachment preview - opens preview panel (OPS-122) or modal (fallback)
   const handlePreviewAttachment = useCallback(
     (e: React.MouseEvent, attachment: any) => {
       e.preventDefault();
       e.stopPropagation();
 
+      // OPS-122: Use side panel if callback provided
+      if (onPreviewAttachment) {
+        onPreviewAttachment(attachment.id, message.id);
+        return;
+      }
+
+      // Fallback to modal for standalone usage
       setPreviewDocument({
         id: attachment.id,
         name: attachment.name || 'Attachment',
@@ -212,7 +231,7 @@ function Message({
         emailId: message.id,
       } as PreviewableDocument & { emailId?: string });
     },
-    [message.id]
+    [message.id, onPreviewAttachment]
   );
 
   // Fetch preview URL for the modal
@@ -569,6 +588,8 @@ export function MessageView() {
     setThreads,
     selectThread,
     userEmail,
+    // OPS-122: Attachment preview panel
+    openPreviewPanel,
   } = useCommunicationStore();
   const { addNotification } = useNotificationStore();
   const { hasMsalAccount, reconnectMicrosoft } = useAuth();
@@ -615,7 +636,15 @@ export function MessageView() {
     [threads, getSelectedThread, setThreads]
   );
 
-  // Handle assigning thread to case
+  // OPS-122: Handle attachment preview (opens side panel)
+  const handlePreviewAttachment = useCallback(
+    (attachmentId: string, messageId: string) => {
+      openPreviewPanel(attachmentId, messageId);
+    },
+    [openPreviewPanel]
+  );
+
+  // Handle assigning thread to case (OPS-125: updated for AssignThreadResult)
   const handleAssignToCase = async () => {
     const currentThread = getSelectedThread();
     if (!currentThread || !selectedCaseId) return;
@@ -628,8 +657,8 @@ export function MessageView() {
         },
       });
 
-      // Update local state with the assigned case
-      const assignedCase = result.data?.assignThreadToCase?.case;
+      // Update local state with the assigned case (OPS-125: access via .thread)
+      const assignedCase = result.data?.assignThreadToCase?.thread?.case;
       if (assignedCase) {
         const updatedThreads = threads.map((t) =>
           t.id === currentThread.id
@@ -843,9 +872,8 @@ export function MessageView() {
             isCollapsed={!expandedMessageIds.has(message.id) && index > 0}
             hasMsalAccount={hasMsalAccount}
             onReconnectMicrosoft={reconnectMicrosoft}
-            isSentByUser={
-              userEmail ? message.senderEmail?.toLowerCase() === userEmail.toLowerCase() : false
-            }
+            isSentByUser={(message as any).folderType === 'sent'}
+            onPreviewAttachment={handlePreviewAttachment}
           />
         ))}
       </div>

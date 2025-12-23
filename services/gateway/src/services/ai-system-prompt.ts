@@ -16,6 +16,8 @@ export interface SystemPromptContext {
   userRole: string;
   caseId?: string;
   caseName?: string;
+  userDailyContext?: string; // OPS-117: Pre-computed user context
+  caseBriefing?: string; // OPS-118: Pre-computed case briefing (when in case context)
 }
 
 // ============================================================================
@@ -36,6 +38,8 @@ export const LEGAL_ASSISTANT_SYSTEM_PROMPT = `Ești un asistent AI pentru o firm
 Data de azi: {currentDate}
 Utilizator: {userName} ({userRole})
 {caseContext}
+{userDailyContext}
+{caseBriefing}
 
 ## Interpretarea Datelor
 
@@ -151,10 +155,18 @@ export function buildSystemPrompt(context: SystemPromptContext): string {
     caseContext = `Dosar curent: ${context.caseName} (ID: ${context.caseId})`;
   }
 
+  // OPS-117: Include pre-computed user daily context if available
+  const userDailyContext = context.userDailyContext || '';
+
+  // OPS-118/119: Include pre-computed case briefing if available and in case context
+  const caseBriefing = context.caseBriefing || '';
+
   return LEGAL_ASSISTANT_SYSTEM_PROMPT.replace(/{currentDate}/g, context.currentDate)
     .replace('{userName}', context.userName)
     .replace('{userRole}', context.userRole)
-    .replace('{caseContext}', caseContext);
+    .replace('{caseContext}', caseContext)
+    .replace('{userDailyContext}', userDailyContext)
+    .replace('{caseBriefing}', caseBriefing);
 }
 
 /**

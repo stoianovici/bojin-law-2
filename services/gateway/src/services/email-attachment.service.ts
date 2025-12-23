@@ -15,6 +15,7 @@ import { createGraphClient } from '../config/graph.config';
 import { documentFilterService, type FilterStatus } from '../config/document-filter.config';
 import { OneDriveService, oneDriveService } from './onedrive.service';
 import { R2StorageService, r2StorageService } from './r2-storage.service';
+import { caseBriefingService } from './case-briefing.service';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
 import logger from '../utils/logger';
@@ -53,6 +54,8 @@ export interface AttachmentSyncResult {
     // OPS-113: Filter stats
     dismissedByFilter: number;
     dismissedByRule: Record<string, number>;
+    // Duplicate detection stats
+    dismissedAsDuplicate: number;
   };
 }
 
@@ -224,6 +227,8 @@ export class EmailAttachmentService {
     // OPS-113: Filter counters
     let dismissedByFilter = 0;
     const dismissedByRule: Record<string, number> = {};
+    // Duplicate detection counters
+    let dismissedAsDuplicate = 0;
 
     // Get email (fresh fetch to get latest caseId after updateMany)
     const email = await this.prisma.email.findUnique({
@@ -263,6 +268,8 @@ export class EmailAttachmentService {
       // OPS-113: Filter stats
       dismissedByFilter: 0,
       dismissedByRule: {},
+      // Duplicate detection stats
+      dismissedAsDuplicate: 0,
     };
 
     logger.info('Attachments from Graph API', {
@@ -502,6 +509,54 @@ export class EmailAttachmentService {
           continue;
         }
 
+        // Check for same-case duplicates (same name + size in the same case)
+        if (email.caseId) {
+          const duplicateInCase = await this.prisma.emailAttachment.findFirst({
+            where: {
+              name: attachment.name || 'unknown',
+              size: attachment.size || 0,
+              filterStatus: { not: 'dismissed' }, // Don't compare against dismissed attachments
+              email: {
+                caseId: email.caseId,
+                id: { not: emailId }, // Exclude attachments from the same email
+              },
+            },
+            select: { id: true, emailId: true },
+          });
+
+          if (duplicateInCase) {
+            // Create minimal tracking record for the duplicate
+            await this.prisma.emailAttachment.create({
+              data: {
+                emailId,
+                graphAttachmentId: attachment.id!,
+                name: attachment.name || 'unknown',
+                contentType: attachment.contentType || 'application/octet-stream',
+                size: attachment.size || 0,
+                storageUrl: null,
+                documentId: null,
+                filterStatus: 'dismissed' as FilterStatus,
+                filterRuleId: 'same-case-duplicate',
+                filterReason: `Duplicate: same name and size exists in case (attachment ${duplicateInCase.id})`,
+                dismissedAt: new Date(),
+              },
+            });
+
+            logger.info('Attachment dismissed as same-case duplicate', {
+              emailId,
+              attachmentName: attachment.name,
+              duplicateAttachmentId: duplicateInCase.id,
+              caseId: email.caseId,
+            });
+
+            dismissedAsDuplicate++;
+            dismissedByFilter++;
+            dismissedByRule['same-case-duplicate'] =
+              (dismissedByRule['same-case-duplicate'] || 0) + 1;
+            continue;
+          }
+        }
+
         // Sync new attachment
         logger.info('Syncing new attachment', {
           emailId,
@@ -533,6 +588,7 @@ export class EmailAttachmentService {
     // OPS-113: Filter stats
     result._diagnostics!.dismissedByFilter = dismissedByFilter;
     result._diagnostics!.dismissedByRule = dismissedByRule;
+    result._diagnostics!.dismissedAsDuplicate = dismissedAsDuplicate;
 
     logger.info('syncAllAttachments complete', {
       emailId,
@@ -542,8 +598,14 @@ export class EmailAttachmentService {
       skippedNonFile,
       skippedAlreadyExist,
       dismissedByFilter,
+      dismissedAsDuplicate,
       errorCount: result.errors.length,
     });
+
+    // OPS-118: Invalidate case briefing cache when documents are linked
+    if (email.caseId && result.attachmentsSynced > 0) {
+      caseBriefingService.invalidate(email.caseId).catch(() => {});
+    }
 
     return result;
   }

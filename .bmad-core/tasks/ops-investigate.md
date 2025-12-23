@@ -1,149 +1,90 @@
 # Operations Investigation Task
 
-Deep investigation workflow for operations issues. Use this for systematic debugging.
+Guided investigation workflow for operations issues. Evidence-driven with user checkpoints.
 
-## Prerequisites
+## Overview
 
-- Active issue in ops log
-- Issue status should be "Investigating" or earlier
+This task uses a 3-phase approach:
 
-## Investigation Workflow
+1. **Quick Triage** - Autonomous evidence gathering (60 seconds)
+2. **Focused Investigation** - Deep dive based on user direction
+3. **Documentation** - Only after root cause confirmed
 
-### Phase 1: Understand the Problem
+## Phase 1: Quick Triage
 
-1. **Review Issue Details**
-   - Read the issue description and reproduction steps
-   - Understand what "working" looks like
-   - Understand what "broken" looks like
+### Gather Evidence
 
-2. **Reproduce the Issue**
-   - Follow reproduction steps
-   - Document exact error messages
-   - Note any variations in behavior
+```bash
+# Search for symptoms/errors
+Grep: "{symptom keywords}"
 
-### Phase 2: Gather Evidence
+# Find related files
+Glob: "**/*{feature}*"
 
-Use these tools in parallel where possible:
-
-1. **Search for Error Messages**
-
-   ```
-   Use Grep to search for error text in codebase
-   Use Grep to search in log files if available
-   ```
-
-2. **Find Related Code**
-
-   ```
-   Use Task tool with subagent_type=Explore
-   Prompt: "Find all code related to {feature/component}"
-   Thoroughness: "very thorough"
-   ```
-
-3. **Check Recent Changes**
-
-   ```
-   git log --oneline -20 -- {relevant paths}
-   git diff {last known working commit}..HEAD -- {relevant paths}
-   ```
-
-4. **Review Dependencies**
-   ```
-   Check package.json for version changes
-   Check for deprecated APIs
-   ```
-
-### Phase 3: Form Hypotheses
-
-Based on evidence, form testable hypotheses:
-
-```markdown
-## Hypotheses
-
-### H1: {First hypothesis}
-
-- **Evidence for**: {what supports this}
-- **Evidence against**: {what contradicts this}
-- **Test**: {how to verify}
-- **Status**: Untested / Confirmed / Rejected
-
-### H2: {Second hypothesis}
-
-...
+# Recent changes
+git log --oneline -10 -- {paths}
 ```
 
-### Phase 4: Test Hypotheses
+### Read Key Files
 
-For each hypothesis:
+Read 2-3 most relevant files. Look for:
 
-1. Design a minimal test
-2. Execute the test
-3. Document results
-4. Update hypothesis status
+- Obvious bugs
+- Recent changes
+- TODO/FIXME comments
 
-### Phase 5: Root Cause Identification
+### Form Hypothesis
 
-When a hypothesis is confirmed:
+Identify:
 
-1. **Document Root Cause**
+- Most likely cause (with evidence)
+- Alternative possibility
+- Unknown areas needing exploration
 
-   ```markdown
-   #### Root Cause
+## Checkpoint 1: Get Direction
 
-   {Clear explanation of why the issue occurs}
+Present findings to user with AskUserQuestion:
 
-   **Technical Details**:
+- Option 1: Most likely cause
+- Option 2: Alternative
+- Option 3: Explore unknown area
 
-   - File: {path}
-   - Function/Component: {name}
-   - Issue: {specific problem}
+Include concrete evidence in each option.
 
-   **Why it worked before / Why it broke**:
-   {explanation}
-   ```
+## Phase 2: Focused Investigation
 
-2. **Update Issue Status**
-   - Change status to "Root Cause Found"
-   - Log the finding in Session Log
+Based on user's choice:
 
-### Phase 6: Plan Fix
+**For specific hypothesis**: Read all related files, trace data flow, find exact line.
 
-Before implementing:
+**For broader exploration**: Use ONE Task agent with `subagent_type=Explore`.
 
-1. **Identify Fix Approach**
-   - What needs to change?
-   - Are there multiple approaches?
-   - What are the trade-offs?
+**For UI issues**: Use Playwright MCP to check console/network errors.
 
-2. **Assess Risk**
-   - What could this fix break?
-   - What tests need to pass?
-   - Is this a hotfix or can it wait?
+## Checkpoint 2: Confirm Root Cause
 
-3. **Document Plan**
+Present finding:
 
-   ```markdown
-   #### Fix Plan
+```markdown
+**Root Cause**: {one sentence}
+**File**: {path}:{line}
+**Why**: {explanation}
+**Fix**: {description}
+```
 
-   - Approach: {description}
-   - Files to modify: {list}
-   - Tests to add/update: {list}
-   - Rollback plan: {if fix causes issues}
-   ```
+Ask user to confirm before documenting.
 
-## Output
+## Phase 3: Document
 
-Update the ops log issue with:
+Only after confirmation:
 
-- [ ] Findings documented in Session Log
-- [ ] Root Cause filled in (or current hypotheses if not yet found)
-- [ ] Files Involved updated
-- [ ] Status updated appropriately
+1. Update `docs/ops/operations-log.md`
+2. Create/update `.ai/ops-{id}-handoff.md`
+3. Report final summary
 
-## Tips
+## Guidelines
 
-- **Work incrementally** - Don't try to solve everything at once
-- **Document as you go** - Write findings immediately, not at the end
-- **Trust the evidence** - Don't assume, verify
-- **Take breaks** - Fresh eyes often see solutions
-- **Ask for help** - If stuck after 3 hypotheses, consider if you need more info
+- Stay evidence-driven
+- Exit early if root cause found in Phase 1
+- Be specific (file:line, not "frontend issue")
+- One agent first, parallelize only if needed

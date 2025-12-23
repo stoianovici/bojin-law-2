@@ -304,11 +304,12 @@ export class UnifiedTimelineService {
       return this.mapToTimelineEntry(existing);
     }
 
-    // Determine direction based on email sender
-    const fromAddress = (email.from as any)?.address?.toLowerCase() || '';
-    const userEmail = email.user?.email?.toLowerCase() || '';
+    // OPS-126: Determine direction based on folderType (authoritative source)
+    // 'sent' folder means user sent it, anything else means received
     const direction =
-      fromAddress === userEmail ? CommunicationDirection.Outbound : CommunicationDirection.Inbound;
+      email.folderType === 'sent'
+        ? CommunicationDirection.Outbound
+        : CommunicationDirection.Inbound;
 
     // Map recipients
     const recipients: RecipientInfo[] = [];

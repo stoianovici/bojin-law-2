@@ -11,6 +11,8 @@ import { Task as PrismaTask, TaskStatus, TaskPriority, TaskTypeEnum, Prisma } fr
 import { validateTaskByType, CreateTaskInput } from './task-validation.service';
 import * as DependencyAutomationService from './dependency-automation.service';
 import { caseSummaryService } from './case-summary.service';
+import { caseBriefingService } from './case-briefing.service';
+import { activityEventService } from './activity-event.service';
 
 export interface UpdateTaskInput {
   title?: string;
@@ -104,6 +106,29 @@ export class TaskService {
     // OPS-047: Mark summary stale
     caseSummaryService.markSummaryStale(input.caseId).catch(() => {});
 
+    // OPS-118: Invalidate case briefing cache
+    caseBriefingService.invalidate(input.caseId).catch(() => {});
+
+    // OPS-116: Emit task assigned event (only if assigned to someone other than creator)
+    if (input.assignedTo && input.assignedTo !== userId) {
+      activityEventService
+        .emit({
+          userId: input.assignedTo,
+          firmId: user.firmId,
+          eventType: 'TASK_ASSIGNED',
+          entityType: 'TASK',
+          entityId: task.id,
+          entityTitle: task.title,
+          metadata: {
+            assignedBy: userId,
+            caseId: input.caseId,
+            dueDate: input.dueDate?.toISOString(),
+            priority: input.priority,
+          },
+        })
+        .catch((err) => console.error('[TaskService] Failed to emit task assigned event:', err));
+    }
+
     return task;
   }
 
@@ -162,6 +187,60 @@ export class TaskService {
         typeMetadata: (input.typeMetadata ?? undefined) as Prisma.InputJsonValue | undefined,
       },
     });
+
+    // OPS-047 & OPS-118: Invalidate case context caches
+    if (existingTask.caseId) {
+      caseSummaryService.markSummaryStale(existingTask.caseId).catch(() => {});
+      caseBriefingService.invalidate(existingTask.caseId).catch(() => {});
+    }
+
+    // OPS-116: Emit events for significant changes
+    // Task reassigned to different person
+    if (
+      input.assignedTo &&
+      input.assignedTo !== existingTask.assignedTo &&
+      input.assignedTo !== userId
+    ) {
+      activityEventService
+        .emit({
+          userId: input.assignedTo,
+          firmId: user.firmId,
+          eventType: 'TASK_ASSIGNED',
+          entityType: 'TASK',
+          entityId: updatedTask.id,
+          entityTitle: updatedTask.title,
+          metadata: {
+            assignedBy: userId,
+            caseId: updatedTask.caseId,
+            dueDate: updatedTask.dueDate?.toISOString(),
+            priority: updatedTask.priority,
+            wasReassigned: true,
+          },
+        })
+        .catch((err) => console.error('[TaskService] Failed to emit task reassigned event:', err));
+    }
+
+    // Task completed
+    if (
+      input.status === 'Completed' &&
+      existingTask.status !== 'Completed' &&
+      existingTask.assignedTo
+    ) {
+      activityEventService
+        .emit({
+          userId: existingTask.assignedTo,
+          firmId: user.firmId,
+          eventType: 'TASK_COMPLETED',
+          entityType: 'TASK',
+          entityId: updatedTask.id,
+          entityTitle: updatedTask.title,
+          metadata: {
+            completedBy: userId,
+            caseId: updatedTask.caseId,
+          },
+        })
+        .catch((err) => console.error('[TaskService] Failed to emit task completed event:', err));
+    }
 
     return updatedTask;
   }

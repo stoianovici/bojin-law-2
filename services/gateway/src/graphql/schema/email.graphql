@@ -354,6 +354,19 @@ type ClassifyUncertainEmailResult {
   wasIgnored: Boolean!
 }
 
+"""
+Result of assigning a thread to a case (OPS-125)
+"""
+type AssignThreadResult {
+  thread: EmailThread!
+  """Whether a new contact was auto-added to the case"""
+  newContactAdded: Boolean!
+  """Name of the added contact (if any)"""
+  contactName: String
+  """Email of the added contact (if any)"""
+  contactEmail: String
+}
+
 # ============================================================================
 # Inputs
 # ============================================================================
@@ -502,9 +515,9 @@ extend type Mutation {
   assignEmailToCase(emailId: ID!, caseId: ID!): Email!
 
   """
-  Assign all emails in thread to a case
+  Assign all emails in thread to a case (OPS-125: auto-adds sender as contact)
   """
-  assignThreadToCase(conversationId: String!, caseId: ID!): EmailThread!
+  assignThreadToCase(conversationId: String!, caseId: ID!): AssignThreadResult!
 
   """
   Mark email as read/unread

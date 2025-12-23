@@ -350,7 +350,9 @@ export class SharePointService {
 
           if (isPdf || isOffice) {
             try {
-              const previewResponse = await client.api(previewEndpoint).post({});
+              // OPS-125: Request 100% zoom for Office files (zoom: 1 = 100%)
+              // Note: zoom param works for Office files but is ignored for PDFs (MS limitation)
+              const previewResponse = await client.api(previewEndpoint).post({ zoom: 1 });
 
               if (previewResponse.getUrl) {
                 logger.info('Generated SharePoint preview URL', {
@@ -375,7 +377,9 @@ export class SharePointService {
             // Fallback for Office docs: use Office Online viewer
             if (isOffice) {
               const downloadUrl = await this.getDownloadUrl(accessToken, itemId);
-              const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadUrl)}`;
+              // OPS-125: Attempt to set 100% zoom - these params are not officially documented
+              // but some may work empirically
+              const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadUrl)}&wdStartOn=1&wdZoom=100`;
 
               return {
                 url: embedUrl,

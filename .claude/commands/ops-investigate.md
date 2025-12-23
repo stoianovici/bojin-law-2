@@ -1,481 +1,223 @@
 # Parallel Investigation
 
-Run parallel hypothesis exploration to quickly identify root cause, then create/update an issue with findings.
-
-**IMPORTANT**: This command creates issues with Local Verification Status. See `ops-protocol.md` for details.
+Guided investigation workflow that finds root causes efficiently through evidence-driven exploration with user checkpoints.
 
 ## Input
 
 The user's input is: $ARGUMENTS
 
-This should be either:
+This can be:
 
-- An OPS issue ID (e.g., "OPS-024") - will update existing issue
-- A symptom description (e.g., "documents not appearing") - will create new issue
+- A symptom description (e.g., "documents not appearing")
+- An OPS issue ID (e.g., "OPS-024")
 
-## 1. Load Context
+---
 
+## Phase 1: Quick Triage (60 seconds max)
+
+**Goal**: Gather initial evidence autonomously before asking user for direction.
+
+### Step 1.1: Load Existing Context (if issue ID provided)
+
+```
 Read in parallel:
-
-- `docs/ops/operations-log.md` - Current issues
-- `docs/ops/root-cause-patterns.md` - Known patterns
-- `docs/ops/deployment-flows.md` - Parity information
-- `.claude/commands/ops-protocol.md` - Verification gate protocol
-- If issue ID provided: `.ai/ops-{id}-handoff.md`
-
-## 2. Classify Symptom Type
-
-Determine the symptom category to select the right hypotheses:
-
-**Category A: "X not appearing in UI"**
-
-- Data exists but not displayed
-- Usually frontend/API issue
-
-**Category B: "X works locally, fails in production"**
-
-- Environment parity issue
-- Usually env vars, build, or runtime
-
-**Category C: "X fails everywhere"**
-
-- Core logic bug
-- Usually backend/service issue
-
-**Category D: "X is slow/timeout"**
-
-- Performance issue
-- Usually database/network/algorithm
-
-## 3. Generate Hypotheses
-
-Based on the symptom category, generate the appropriate hypotheses:
-
-### For Category A: "X Not Appearing"
-
-1. **Frontend**: Component not fetching/rendering data
-2. **API**: Resolver not returning data / field mismatch
-3. **Backend**: Data missing from DB / link table empty
-
-### For Category B: "Works Locally, Fails in Prod" (MOST COMMON)
-
-1. **Env Vars**: Missing or different environment variable in production
-2. **Build/Compile**: TypeScript compiles locally but fails in Docker
-3. **Runtime Parity**: Different Node version, dependencies in devDeps, etc.
-4. **Database**: Migration not applied, schema drift
-
-### For Category C: "Fails Everywhere"
-
-1. **Logic Bug**: Code has incorrect logic
-2. **Data Issue**: Unexpected data shape or null values
-3. **External Service**: Third-party API changed or down
-
-### For Category D: "Slow/Timeout"
-
-1. **Database**: Missing index, N+1 queries
-2. **Network**: External API latency
-3. **Algorithm**: Inefficient code path
-
-## 4. Spawn Parallel Agents
-
-Launch investigation agents simultaneously based on category.
-
-### For Category A (UI not appearing):
-
-**Use Playwright MCP for live UI investigation:**
-
-Before spawning code analysis agents, use Playwright MCP to see what the user sees:
-
-```
-Use playwright mcp to:
-1. Navigate to the affected page (e.g., http://localhost:3000/cases)
-2. Take a screenshot of the current state
-3. Check the browser console for errors
-4. Check network requests for failed API calls
-5. Get a DOM snapshot of the relevant area
+- docs/ops/operations-log.md (find the issue)
+- .ai/ops-{id}-handoff.md (if exists)
 ```
 
-This gives you immediate visibility into:
+### Step 1.2: Search for Evidence
 
-- Whether the page loads at all
-- JavaScript errors in console
-- Failed network requests (404s, 500s, GraphQL errors)
-- What elements are actually rendered
-
-**Then spawn code analysis agents:**
+Use Grep and Glob to find relevant code. Be specific:
 
 ```
-Agent 1 - Frontend Investigation:
-"Investigate if [symptom] is caused by frontend issues.
-Check: component fetches data, no hardcoded arrays, state updates correctly.
-Files to check: apps/web/src/app/[relevant-path], components, hooks.
-Report: Does frontend properly request and render the data?"
+# Search for error messages or symptoms
+Grep: "{error text or symptom keywords}"
 
-Agent 2 - API Investigation:
-"Investigate if [symptom] is caused by API layer issues.
-Check: resolver registered, schema matches, field names correct.
-Files to check: services/gateway/src/graphql/resolvers, schema files.
-Report: Does GraphQL return the expected data?"
+# Find related files
+Glob: "**/*{feature-name}*"
 
-Agent 3 - Backend Investigation:
-"Investigate if [symptom] is caused by backend/data issues.
-Check: data exists in DB, link tables populated, migrations applied.
-Files to check: services/gateway/src/services, Prisma schema.
-Report: Does the data exist and is it properly linked?"
+# Check recent changes if relevant
+git log --oneline -10 -- {suspected paths}
 ```
 
-### For Category B (Works locally, fails in prod):
+### Step 1.3: Read Key Files
 
-**Use Playwright MCP to compare local vs expected behavior:**
+Read the 2-3 most relevant files identified. Look for:
 
-If the user reports something works locally but fails in production, use Playwright to verify local behavior first:
+- Obvious bugs (typos, wrong variable names, missing imports)
+- Recent changes that could have broken things
+- TODO/FIXME comments in the area
+
+### Step 1.4: Form Initial Hypothesis
+
+Based on evidence, identify:
+
+- **Most likely cause** (what the evidence points to)
+- **Alternative possibility** (what else it could be)
+- **Unknown area** (where you'd need to dig deeper)
+
+---
+
+## Checkpoint 1: Present Findings
+
+Use AskUserQuestion to present what you found and get direction:
 
 ```
-Use playwright mcp to:
-1. Navigate to the affected page locally
-2. Test the specific functionality
-3. Take screenshots of the working state
-4. Capture any network requests being made
+Question: "Based on my triage, where should I focus?"
+
+Options:
+1. {Most likely cause} - "Evidence: {one-line summary}"
+2. {Alternative possibility} - "Evidence: {one-line summary}"
+3. {Unknown area} - "Need to explore {what}"
+4. (User can provide custom direction)
 ```
 
-This documents the "working" state to compare against production logs.
+**Important**: Include concrete evidence in each option description. Don't just say "Frontend issue" - say "EmailList.tsx line 45 has empty array fallback".
 
-**Then spawn investigation agents:**
+---
+
+## Phase 2: Focused Investigation
+
+**Goal**: Deep dive into the direction user chose.
+
+### If user chose a specific hypothesis:
+
+1. Read all related files thoroughly
+2. Trace the data/control flow
+3. Identify the exact line(s) causing the issue
+4. Verify by checking if fix would make sense
+
+### If user wants broader exploration:
+
+Use ONE Task agent with `subagent_type=Explore`:
 
 ```
-Agent 1 - Environment Variables:
-"Investigate if [symptom] is caused by environment variable differences.
-Check: Compare .env.prod to render.yaml envVars.
-Check: Any new env vars added recently that might be missing in production?
-Check: Any env var parsing differences (URLs, booleans, numbers)?
-Files to check: .env.prod, .env.example, render.yaml, services/*/src/config.
-Report: Are all required env vars set identically in both environments?"
-
-Agent 2 - Build/Compile Parity:
-"Investigate if [symptom] is caused by build differences.
-Check: Does 'pnpm preflight:full' pass?
-Check: Any TypeScript errors that might be masked locally?
-Check: Dependencies in devDependencies that should be in dependencies?
-Files to check: package.json files, tsconfig files, Dockerfiles.
-Report: Does the code compile identically in both environments?"
-
-Agent 3 - Runtime Parity:
-"Investigate if [symptom] is caused by runtime differences.
-Check: Node version matches (run 'pnpm check-parity').
-Check: Docker vs native Node behavior differences.
-Check: Any platform-specific code (macOS vs Linux)?
-Files to check: infrastructure/docker/*, .github/workflows/*.
-Report: Are runtime environments identical?"
-
-Agent 4 - Database Parity:
-"Investigate if [symptom] is caused by database differences.
-Check: Are all migrations applied to production?
-Check: Any new columns or tables missing?
-Check: Any data-specific edge cases in production not in local?
-Files to check: packages/database/prisma/schema.prisma, migrations/.
-Report: Is database schema identical and migrations applied?"
+"Investigate {user's direction} in this codebase.
+Specific symptom: {symptom}
+Already checked: {files from Phase 1}
+Find: The exact cause and which file/line to fix."
 ```
 
-Use the Task tool with `subagent_type=Explore` for each agent.
-Run all agents in a **single message** (parallel execution).
+Only spawn multiple agents if the problem genuinely spans multiple layers (frontend + backend + database).
 
-## 5. Quick Parity Check
+### If using Playwright MCP (for UI issues):
 
-For Category B issues, also run these commands:
-
-```bash
-# Check dev/prod alignment
-pnpm check-parity
-
-# Check if code compiles like production
-pnpm preflight:full
+```
+1. Navigate to affected page
+2. Check console for errors
+3. Check network tab for failed requests
+4. Take screenshot of current state
 ```
 
-If either fails, that's likely the root cause.
+---
 
-## 6. Synthesize Results
+## Checkpoint 2: Confirm Root Cause
 
-Wait for all agents to complete, then summarize:
+Use AskUserQuestion to confirm before documenting:
+
+```
+Question: "I believe I found the root cause. Confirm?"
+
+Options:
+1. "Yes, create/update issue" - Proceed to documentation
+2. "Not quite, investigate {specific area}" - Back to Phase 2
+3. "Need more evidence" - What specific evidence would help?
+```
+
+Present your finding clearly:
 
 ```markdown
-## Investigation Results
-
-### Symptom Category: {A/B/C/D}
-
-### Playwright MCP Findings (if used)
-
-- **Page state**: {loaded/error/blank}
-- **Console errors**: {none/list of errors}
-- **Network issues**: {none/failed requests}
-- **Screenshot**: [captured]
-
-### Parity Check Results (if Category B)
-
-- `pnpm check-parity`: {PASS/FAIL}
-- `pnpm preflight:full`: {PASS/FAIL}
-
-### Hypothesis 1: {name}
-
-**Verdict**: ✅ Clear / ⚠️ Suspicious / ❌ Root cause found
-**Findings**: [agent summary]
-**Key files**: [files examined]
-
-### Hypothesis 2: {name}
-
-**Verdict**: ✅ Clear / ⚠️ Suspicious / ❌ Root cause found
-**Findings**: [agent summary]
-**Key files**: [files examined]
-
-### Hypothesis 3: {name}
-
-**Verdict**: ✅ Clear / ⚠️ Suspicious / ❌ Root cause found
-**Findings**: [agent summary]
-**Key files**: [files examined]
-
-{Additional hypotheses if Category B}
-
-## Root Cause Identification
-
-**Most likely root cause**: [hypothesis with ❌]
-**Confidence**: High / Medium / Low
-**Evidence**: [specific findings]
-
-## Recommended Fix
-
-{Specific steps to fix the issue}
-
-## Environment for Fixing
-
-- Quick iteration: `source .env.prod && pnpm dev`
-- Pre-deploy check: `pnpm preflight:full`
-- Production-like test: `pnpm preview`
+**Root Cause**: {one sentence}
+**File**: {path}:{line}
+**Why it breaks**: {explanation}
+**Suggested fix**: {brief description}
 ```
 
-## 7. Create or Update Issue
+---
 
-### If NEW symptom (no existing issue ID):
+## Phase 3: Document (only after confirmation)
 
-**Ask user:**
+### For NEW issues:
 
-```
-## Investigation Complete
-
-Root cause identified: {root cause summary}
-
-Would you like me to create an OPS issue to track this?
-- Yes, create issue (recommended)
-- No, just show findings
-```
-
-**If yes, create issue in `docs/ops/operations-log.md`:**
+Add to `docs/ops/operations-log.md`:
 
 ```markdown
 ### [OPS-XXX] {symptom as title}
 
-| Field           | Value                   |
-| --------------- | ----------------------- |
-| **Status**      | Root Cause Found        |
-| **Type**        | Bug                     |
-| **Priority**    | {infer from severity}   |
-| **Created**     | {today's date}          |
-| **Sessions**    | 1                       |
-| **Last Active** | {today's date and time} |
+| Field        | Value            |
+| ------------ | ---------------- |
+| **Status**   | Root Cause Found |
+| **Priority** | {P1/P2/P3}       |
+| **Created**  | {date}           |
 
-#### Description
+**Symptom**: {what user reported}
 
-{original symptom description}
+**Root Cause**: {what you found}
 
-#### Symptom Category
+- File: `{path}:{line}`
+- Issue: {specific problem}
 
-**Category {A/B/C/D}**: {category name}
+**Fix**: {what needs to change}
 
-#### Investigation Summary
+**Verification**:
 
-| Hypothesis | Verdict  | Key Finding        |
-| ---------- | -------- | ------------------ |
-| {name 1}   | ✅/⚠️/❌ | {one-line finding} |
-| {name 2}   | ✅/⚠️/❌ | {one-line finding} |
-| {name 3}   | ✅/⚠️/❌ | {one-line finding} |
-
-#### Root Cause
-
-{detailed root cause from investigation}
-
-#### Recommended Fix
-
-{specific fix steps}
-
-#### Fix Applied
-
-TBD
-
-#### Environment Strategy
-
-| Mode                   | Command                        | Use When                     |
-| ---------------------- | ------------------------------ | ---------------------------- |
-| Local dev (default)    | `pnpm dev`                     | Feature development          |
-| Production data        | `source .env.prod && pnpm dev` | Bug investigation, real data |
-| Production-like Docker | `pnpm preview`                 | Pre-deploy verification      |
-| Full parity check      | `pnpm preflight:full`          | Before any deployment        |
-
-**Recommended for this issue**: Production data (for verification)
-
-#### Local Verification Status
-
-| Step           | Status     | Date | Notes |
-| -------------- | ---------- | ---- | ----- |
-| Prod data test | ⬜ Pending |      |       |
-| Preflight      | ⬜ Pending |      |       |
-| Docker test    | ⬜ Pending |      |       |
-
-**Verified**: No
-
-> ⚠️ Issue cannot be closed until all three steps are ✅
-
-#### Session Log
-
-- [{timestamp}] Issue created via /ops-investigate. Category: {A/B/C/D}. Root cause: {brief}
-
-#### Files Involved
-
-{list from investigation}
-
----
+- [ ] Test with `pnpm dev`
+- [ ] Run `pnpm preflight`
+- [ ] Test with `pnpm preview` (if deployment-related)
 ```
 
-**Also update Quick Reference table** at top of ops log.
+Update the Quick Reference table at top of ops log.
 
-**Also create handoff file** `.ai/ops-{issue-id}-handoff.md`:
+### For EXISTING issues:
+
+Update the issue with:
+
+- Status → "Root Cause Found"
+- Add Root Cause section
+- Add to Session Log
+
+### Create/Update Handoff File
+
+`.ai/ops-{id}-handoff.md`:
 
 ```markdown
-# Handoff: [OPS-XXX] {title}
+# OPS-XXX: {title}
 
-**Session**: 1
-**Date**: {timestamp}
-**Status**: Root Cause Found
-**Created via**: /ops-investigate
+**Root Cause**: {summary}
+**File**: `{path}:{line}`
+**Fix**: {what to do}
 
-## Investigation Summary
+## Evidence
 
-**Symptom**: {original symptom}
-**Category**: {A/B/C/D} - {category name}
-**Root Cause**: {identified root cause}
-
-## Hypotheses Tested
-
-| Hypothesis | Verdict  | Key Finding |
-| ---------- | -------- | ----------- |
-| {name 1}   | ✅/⚠️/❌ | {finding}   |
-| {name 2}   | ✅/⚠️/❌ | {finding}   |
-| {name 3}   | ✅/⚠️/❌ | {finding}   |
-
-## Root Cause Details
-
-{full details from investigation}
-
-## Recommended Fix
-
-{specific steps}
-
-## Environment Strategy
-
-- For fixing: `source .env.prod && pnpm dev`
-- For testing: `pnpm preview`
-
-## Local Verification Status
-
-| Step           | Status     | Notes |
-| -------------- | ---------- | ----- |
-| Prod data test | ⬜ Pending |       |
-| Preflight      | ⬜ Pending |       |
-| Docker test    | ⬜ Pending |       |
-
-**Verified**: No
+{key findings from investigation}
 
 ## Next Steps
 
-1. Implement the fix
+1. {specific first step}
 2. Test with production data
-3. Run preflight checks
-4. Test in production Docker
-5. Close issue
-
-## Key Files
-
-{files identified during investigation}
+3. Run preflight
 ```
 
-### If EXISTING issue ID provided:
+---
 
-Update the existing issue with investigation results:
+## Final Report
 
-1. Update status to "Root Cause Found"
-2. Fill in "Root Cause" section
-3. Add "Investigation Summary" section
-4. Add "Recommended Fix" section
-5. Update Session Log with investigation results
-6. Update Files Involved
-7. Update handoff file
-
-## 8. Report to User
-
-```
+```markdown
 ## Investigation Complete
 
-### Issue: [OPS-XXX] {title}
-**Status**: Root Cause Found
-**Category**: {A/B/C/D}
+**Issue**: OPS-XXX
+**Root Cause**: {one line}
+**File**: `{path}:{line}`
 
-### Root Cause
-{identified root cause}
-
-### Recommended Fix
-{specific steps}
-
-### Local Verification Required
-Before this issue can be closed, you must verify:
-1. ⬜ Test with production data (`source .env.prod && pnpm dev`)
-2. ⬜ Run preflight checks (`pnpm preflight:full`)
-3. ⬜ Test in production Docker (`pnpm preview`)
-
-### Next Steps
-To implement the fix: `/ops-continue OPS-XXX`
-
-### Files to Modify
-{key files from investigation}
+**Next**: Run `/ops-continue OPS-XXX` to implement the fix.
 ```
 
-## Common Root Causes Reference
+---
 
-From historical issues (OPS-001 through OPS-024):
+## Guidelines
 
-| Rank | Root Cause                              | How to Detect                                     |
-| ---- | --------------------------------------- | ------------------------------------------------- |
-| 1    | TypeScript compiles locally, not Docker | `pnpm preflight:full` fails                       |
-| 2    | Missing env var in production           | Compare `.env.prod` to Render dashboard           |
-| 3    | Database migration not applied          | Check Prisma migrations vs prod DB                |
-| 4    | Dependencies in devDeps                 | Check package.json for @prisma/client etc.        |
-| 5    | Hardcoded data in component             | Search for `= []` or `useState([])` in components |
-| 6    | Resolver not registered                 | Check GraphQL server.ts for resolver imports      |
-| 7    | Field name mismatch                     | Compare Prisma schema to GraphQL schema           |
-
-## Example Usage
-
-```
-/ops-investigate documents not appearing after import
-→ Creates OPS-025 with full investigation
-
-/ops-investigate OPS-024
-→ Updates OPS-024 with investigation results
-
-/ops-investigate login works locally but 401 in production
-→ Creates issue with Category B investigation
-```
-
-## Important Rules
-
-- **Always create/update an issue** - Investigations should be documented
-- **Include verification checklist** - Required for closing
-- **Set status to "Root Cause Found"** - Ready for fixing
-- **Document all hypotheses** - Even cleared ones, for future reference
-- **Recommend environment strategy** - Help next session start fast
+- **Stay evidence-driven** - Don't guess, search and read
+- **Exit early** - If Phase 1 finds the root cause, skip to documentation
+- **Be specific** - "line 45 has bug" not "frontend issue"
+- **Ask when stuck** - Use checkpoints to get user guidance
+- **One agent first** - Only parallelize if truly needed

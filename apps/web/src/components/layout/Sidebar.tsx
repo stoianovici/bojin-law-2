@@ -24,14 +24,10 @@ import {
   CheckSquare,
   Mail,
   Clock,
-  BarChart3,
   Users,
   Briefcase,
-  Brain,
-  Settings,
   type LucideIcon,
 } from 'lucide-react';
-import { useSnippetSuggestions } from '@/hooks/usePersonalSnippets';
 
 /**
  * Icon mapping for navigation items
@@ -39,17 +35,13 @@ import { useSnippetSuggestions } from '@/hooks/usePersonalSnippets';
 const iconMap: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
   analytics: TrendingUp,
-  'platform-intelligence': BarChart3,
   cases: Scale,
   'my-cases': Briefcase,
   documents: FileText,
   tasks: CheckSquare,
   communications: Mail,
   'time-tracking': Clock,
-  reports: BarChart3,
   'user-management': Users,
-  'ai-personalization': Brain,
-  settings: Settings,
 };
 
 /**
@@ -71,14 +63,6 @@ const navigationItems: NavigationItem[] = [
     href: '/analytics',
     section: 'analytics',
     roles: ['Partner', 'BusinessOwner'], // Partners and BusinessOwners - Story 2.11.4
-  },
-  {
-    id: 'platform-intelligence',
-    label: 'Inteligență Platformă',
-    icon: 'platform-intelligence',
-    href: '/analytics/platform-intelligence',
-    section: 'analytics',
-    roles: ['Partner', 'BusinessOwner'], // Story 5.7 - Platform Intelligence Dashboard
   },
   {
     id: 'cases',
@@ -128,30 +112,6 @@ const navigationItems: NavigationItem[] = [
     section: 'time-tracking',
     roles: ['Partner', 'Associate', 'Paralegal'],
   },
-  {
-    id: 'reports',
-    label: 'Rapoarte',
-    icon: 'reports',
-    href: '/reports',
-    section: 'reports',
-    roles: ['Partner'],
-  },
-  {
-    id: 'ai-personalization',
-    label: 'AI Personalizare',
-    icon: 'ai-personalization',
-    href: '/settings/personalization',
-    section: 'settings',
-    roles: ['Partner'], // OPS-014: Partner-only feature
-  },
-  {
-    id: 'firm-settings',
-    label: 'Setări Firmă',
-    icon: 'settings',
-    href: '/settings/firm',
-    section: 'settings',
-    roles: ['Partner', 'BusinessOwner'], // OPS-028: Firm-level settings
-  },
 ];
 
 export interface SidebarProps {
@@ -184,9 +144,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
   const skipPendingQuery = userRole !== 'Partner';
   const { cases: pendingCases = [] } = usePendingCases(skipPendingQuery);
   const pendingCount = pendingCases.length;
-
-  // Story 5.6 Task 39: Fetch snippet suggestions count for AI Personalization badge
-  const { count: snippetSuggestionsCount = 0 } = useSnippetSuggestions();
 
   // Filter navigation items by authenticated user's role (OPS-014)
   const visibleItems = navigationItems.filter((item) => item.roles.includes(userRole));
@@ -270,14 +227,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
                           !isSidebarCollapsed && (
                             <span className="ml-auto bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                               {pendingCount}
-                            </span>
-                          )}
-                        {/* Story 5.6: Show badge count for snippet suggestions on AI Personalization */}
-                        {item.id === 'ai-personalization' &&
-                          snippetSuggestionsCount > 0 &&
-                          !isSidebarCollapsed && (
-                            <span className="ml-auto bg-purple-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                              {snippetSuggestionsCount}
                             </span>
                           )}
                       </Link>

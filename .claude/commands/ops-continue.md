@@ -1,271 +1,102 @@
 # Continue Operations Issue
 
-You are resuming work on an operations issue. This is a cross-session workflow - restore context and continue methodically.
+Resume work on an operations issue.
 
-**IMPORTANT**: This command enforces the Local Verification Gate. See `ops-protocol.md` for details.
+## 1. Load Context
 
-## 1. Restore Context
+Read in parallel:
 
-Read these files in parallel:
+- `docs/ops/operations-log.md` - source of truth for status
+- `docs/ops/root-cause-patterns.md` - quick sanity checks
+- `.ai/ops-*-handoff.md` - find relevant handoff file(s)
 
-- `docs/ops/operations-log.md` - Source of truth for all issues
-- `docs/ops/root-cause-patterns.md` - Common root causes and quick checks
-- `docs/project-conventions.md` - Code patterns and implementation standards
-- `.claude/commands/ops-protocol.md` - Verification gate protocol
-- `.ai/ops-*-handoff.md` - Find the most recent handoff file(s)
+## 2. Identify Issue
 
-## 2. Identify Target Issue
+Input: $ARGUMENTS
 
-The user's input is: $ARGUMENTS
+**If issue ID provided** (e.g., "OPS-128"):
 
-**If issue ID provided** (e.g., "OPS-003"):
+- Find in ops-log, load handoff if exists
 
-- Find that specific issue in the ops log
-- Load its handoff file if exists: `.ai/ops-{issue-id}-handoff.md`
+**If no issue ID**:
 
-**If no issue ID provided**:
+- Show open issues from ops-log, ask which one
 
-- Find the most recently active issue (by "Last Active" field)
-- Or show active issues and ask user to select
-
-## 3. Display Session Briefing
-
-Show the user:
+## 3. Show Briefing
 
 ```
 ## Resuming: [OPS-XXX] {title}
 
-**Status**: {current status}
-**Priority**: {priority}
-**Sessions**: {count} (this is session {count + 1})
-**Last Active**: {date}
+**Status**: {from ops-log}
+**Priority**: {from ops-log}
 
-### Local Verification Status
-{from issue - show current verification state}
+### Previous State
+{from handoff file - what was done, where it left off}
 
-### Previous Session Summary
-{last entry from Session Log}
+### Next Steps
+{from handoff or infer from status}
 
-### Last Known State
-{from handoff file if exists}
-
-### Environment Strategy
-{from issue's Environment Strategy section, or determine based on type}
-
-### Suggested Next Steps
-{from handoff file or infer from status}
-
-### Files Previously Involved
-{list from issue}
+### Key Files
+{from handoff}
 ```
 
-## 4. Update Issue Tracking
+## 4. Work Based on Status
 
-Update the ops log:
+**IMPORTANT**: Proceed directly with implementation. Do NOT ask permission to start working unless:
 
-- Increment session count
-- Update "Last Active" to now
-- Add session start entry to Session Log:
-  ```
-  - [{timestamp}] Session {n} started. Continuing from: {status}
-  ```
+- Missing critical dependencies or configuration
+- Requirements are ambiguous and need clarification
+- The change has significant risk (data deletion, auth changes, etc.)
 
-## 5. Begin Investigation/Work
+**New/Triaging**:
 
-**Important**: Before writing any code, review `docs/project-conventions.md` to ensure your implementation follows established patterns.
-
-Based on current status, proceed with appropriate workflow:
-
-**If Status = New or Triaging**:
-
-- Run **Quick Sanity Checks** from `root-cause-patterns.md`
-- Check if symptom matches known patterns
-- If multiple hypotheses, suggest running `/ops-investigate`
+- Run quick sanity checks from root-cause-patterns.md
 - Update status to "Investigating"
 
-**If Status = Investigating**:
+**Investigating**:
 
-- Review previous findings in Session Log
-- Continue exploration with Grep/Glob/Explore
-- Document new findings
-- Ask: "Ready to form a hypothesis about root cause?"
+- Continue exploration
+- Document findings
+- When root cause found, update status
 
-**If Status = Root Cause Found**:
+**Fixing**:
 
-- Review the documented root cause
-- Plan the fix approach
-- Ask: "Ready to implement the fix?"
+- Implement the fix immediately
+- When done, prompt for verification (see ops-protocol.md)
 
-**If Status = Fixing**:
+**Verifying**:
 
-- Review what's been done
-- Continue implementation
-- Run tests
-- **When implementation is complete, IMMEDIATELY show the Verification Gate prompt** (see Section 6)
+- Run verification checklist
+- When all pass, ready to close
 
-**If Status = Verifying**:
+## 5. Pausing Work
 
-- Check Local Verification Status in issue
-- If not all verified, show Verification Gate prompt
-- If all verified, ask: "Ready to close this issue?"
+When stopping (user says done, or before `/clear`):
 
-## 6. MANDATORY: Local Verification Gate
+1. Update ops-log status if changed
+2. Write/update handoff `.ai/ops-{id}-handoff.md`:
 
-**Trigger this prompt when ANY of these occur:**
+```markdown
+# [OPS-XXX] {title}
 
-- User says "done", "finished", "complete", "ready to deploy"
-- You've finished implementing a fix or feature
-- Status is about to change to "Verifying"
-- User asks about deployment
+## State
 
-**Playwright MCP Assisted Verification:**
+{exactly where things stand - what's working, what's not}
 
-You can use Playwright MCP to perform automated UI verification for Steps 1 and 3:
+## Done This Session
 
-```
-Use playwright mcp to:
-1. Navigate to http://localhost:3000
-2. Take a screenshot
-3. Test the specific fix/feature (click, navigate, verify elements)
-4. Check console for errors
-5. Report what you see
+{what was accomplished}
+
+## Next Steps
+
+1. {specific action}
+2. {specific action}
+
+## Key Files
+
+- `path/to/file.ts` - {why it matters}
 ```
 
-This allows you to visually verify without requiring the user to manually check every time.
+3. If code was written, remind about verification before deploy
 
-**Show this EXACT prompt:**
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔒 LOCAL VERIFICATION GATE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Before proceeding, you must verify locally:
-
-Step 1: Test with production data
-  $ source .env.prod && pnpm dev
-  → Open http://localhost:3000
-  → Test the specific fix/feature
-  → Confirm it works with real data
-  💡 I can use Playwright MCP to test this automatically
-
-Step 2: Run preflight checks
-  $ pnpm preflight:full
-  → Must pass with no errors
-
-Step 3: Test in production Docker
-  $ pnpm preview
-  → Open http://localhost:3000
-  → Test the specific fix/feature again
-  → This is identical to production
-  💡 I can use Playwright MCP to test this automatically
-
-Have you completed all three steps?
-- Yes, all verified ✓
-- Not yet, I need to run the tests
-- Use Playwright to verify (I'll test with browser automation)
-- Skip (NOT RECOMMENDED - may break production)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**If user selects "Use Playwright to verify":**
-
-1. Ensure dev server or preview is running
-2. Use Playwright MCP to navigate to the app
-3. Take screenshots and verify the fix/feature works
-4. Check for console errors
-5. Report findings with screenshots
-6. Ask user to confirm the verification is acceptable
-
-**Based on response:**
-
-- **"Yes, all verified"**: Update issue's Local Verification Status to all ✅, proceed
-- **"Not yet"**: Wait for user to complete testing, ask for results
-- **"Skip"**: Show warning (see below), log skip in issue
-
-**If user skips:**
-
-```
-⚠️ WARNING: Skipping local verification
-
-You are proceeding without verifying locally. This means:
-- The fix/feature MAY break in production
-- You'll need to debug in production (slow, risky)
-- Other accumulated changes may also be affected
-
-Are you absolutely sure? (yes/no)
-```
-
-Log in issue: `- [{timestamp}] ⚠️ LOCAL VERIFICATION SKIPPED by user request`
-
-## 7. During Work
-
-As you work:
-
-1. **Log everything** - Add entries to Session Log with timestamps
-2. **Track files** - Update "Files Involved" as you touch new files
-3. **Use TodoWrite** - Track current session tasks
-4. **Update status** - Change status as you progress
-5. **ALWAYS prompt for verification** - When work is complete
-
-## 8. Session End Protocol
-
-When user says they're done, or before any `/clear`:
-
-**FIRST: Show Local Verification Gate if any code was written this session**
-
-Then:
-
-1. Update Session Log with summary of work done
-2. Update Local Verification Status in issue
-3. Write handoff file `.ai/ops-{issue-id}-handoff.md`:
-
-   ```markdown
-   # Handoff: [OPS-XXX] {title}
-
-   **Session**: {n}
-   **Date**: {timestamp}
-   **Status**: {current}
-
-   ## Work Completed This Session
-
-   {summary}
-
-   ## Current State
-
-   {where things stand}
-
-   ## Local Verification Status
-
-   | Step           | Status   | Notes   |
-   | -------------- | -------- | ------- |
-   | Prod data test | ✅/⬜/❌ | {notes} |
-   | Preflight      | ✅/⬜/❌ | {notes} |
-   | Docker test    | ✅/⬜/❌ | {notes} |
-
-   **Verified**: {Yes/No}
-
-   ## Blockers/Questions
-
-   {any blockers}
-
-   ## Next Steps
-
-   {specific actions for next session}
-
-   ## Key Files
-
-   {files that need attention}
-   ```
-
-4. Update ops log with session summary
-5. Remind user: "Context saved. Use `/ops-continue OPS-XXX` to resume."
-
-## Important Rules
-
-- **ALWAYS show Verification Gate when work is complete** - No exceptions
-- **ALWAYS restore context first** - Read ops log and handoff before doing anything
-- **ALWAYS save context at end** - Never let work be lost
-- **Track verification status** - Update issue with verification results
-- **If it passes local verification, it WILL work in production** - This is the guarantee
+That's it. Use `/ops-continue OPS-XXX` to resume.

@@ -14,6 +14,9 @@ import type { CommunicationThread, CommunicationFilters, Task } from '@legal-pla
 // Email view mode - 'sent' is deprecated since /communications now shows received only
 type EmailViewMode = 'all' | 'received';
 
+// OPS-121: Thread display mode - 'conversation' for chat-style, 'cards' for classic expand/collapse
+type ThreadViewMode = 'conversation' | 'cards';
+
 // Draft data structure for persistence
 interface ComposeDraft {
   to: string;
@@ -46,6 +49,14 @@ interface CommunicationState {
   // User email for determining sent vs received
   userEmail: string | null;
 
+  // OPS-121: Thread display mode - 'conversation' for chat-style, 'cards' for classic
+  threadViewMode: ThreadViewMode;
+
+  // OPS-122: Attachment preview panel state
+  previewPanelOpen: boolean;
+  selectedAttachmentId: string | null;
+  selectedAttachmentMessageId: string | null;
+
   // Actions
   setThreads: (threads: CommunicationThread[]) => void;
   selectThread: (threadId: string) => void;
@@ -57,6 +68,8 @@ interface CommunicationState {
   setShowProcessed: (show: boolean) => void;
   setEmailViewMode: (mode: EmailViewMode) => void;
   setUserEmail: (email: string | null) => void;
+  // OPS-121: Thread view mode toggle
+  setThreadViewMode: (mode: ThreadViewMode) => void;
   openCompose: (mode: 'new' | 'reply' | 'forward', threadId?: string) => void;
   closeCompose: () => void;
   updateDraft: (draft: string) => void;
@@ -83,6 +96,11 @@ interface CommunicationState {
     dismissReason?: string
   ) => void;
   markThreadAsProcessed: (threadId: string) => void;
+
+  // OPS-122: Attachment preview panel actions
+  openPreviewPanel: (attachmentId: string, messageId: string) => void;
+  closePreviewPanel: () => void;
+  selectAttachment: (attachmentId: string, messageId: string) => void;
 
   // Computed / Helper
   getFilteredThreads: () => CommunicationThread[];
@@ -119,6 +137,14 @@ export const useCommunicationStore = create<CommunicationState>()(
       savedDraft: null,
       emailViewMode: 'all' as EmailViewMode, // Default to all emails - users can filter if needed
       userEmail: null,
+
+      // OPS-121: Default to conversation view for chat-style experience
+      threadViewMode: 'conversation' as ThreadViewMode,
+
+      // OPS-122: Attachment preview panel initial state
+      previewPanelOpen: false,
+      selectedAttachmentId: null,
+      selectedAttachmentMessageId: null,
 
       // Actions
       setThreads: (threads: CommunicationThread[]) => {
@@ -270,6 +296,11 @@ export const useCommunicationStore = create<CommunicationState>()(
         set({ userEmail: email });
       },
 
+      // OPS-121: Thread view mode toggle
+      setThreadViewMode: (mode: ThreadViewMode) => {
+        set({ threadViewMode: mode });
+      },
+
       createTaskFromExtractedItem: (
         threadId: string,
         extractedItemId: string,
@@ -373,6 +404,30 @@ export const useCommunicationStore = create<CommunicationState>()(
             : thread
         );
         set({ threads: updatedThreads });
+      },
+
+      // OPS-122: Attachment preview panel actions
+      openPreviewPanel: (attachmentId: string, messageId: string) => {
+        set({
+          previewPanelOpen: true,
+          selectedAttachmentId: attachmentId,
+          selectedAttachmentMessageId: messageId,
+        });
+      },
+
+      closePreviewPanel: () => {
+        set({
+          previewPanelOpen: false,
+          selectedAttachmentId: null,
+          selectedAttachmentMessageId: null,
+        });
+      },
+
+      selectAttachment: (attachmentId: string, messageId: string) => {
+        set({
+          selectedAttachmentId: attachmentId,
+          selectedAttachmentMessageId: messageId,
+        });
       },
 
       // Computed
@@ -480,6 +535,7 @@ export const useCommunicationStore = create<CommunicationState>()(
         // Only persist filters and draft data, not the full thread data or UI state
         filters: state.filters,
         emailViewMode: state.emailViewMode,
+        threadViewMode: state.threadViewMode, // OPS-121: Persist thread view mode preference
         savedDraft: state.savedDraft, // Persist drafts
       }),
     }

@@ -90,3 +90,6 @@ export * from './ai-learning';
 
 // Platform Intelligence Types (Story 5.7)
 export * from './platform-intelligence';
+
+// AI Context Files Types (OPS-115)
+export * from './ai-context';

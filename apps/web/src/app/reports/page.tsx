@@ -5,6 +5,7 @@ import { ReportCategoriesSidebar } from '../../components/reports/ReportCategori
 import { ReportViewer } from '../../components/reports/ReportViewer';
 import { DateRangeFilter } from '../../components/reports/DateRangeFilter';
 import { DrillDownModal } from '../../components/reports/DrillDownModal';
+import { AnalyticsTabBar } from '../../components/analytics/AnalyticsTabBar';
 import { useReportsStore } from '../../stores/reports.store';
 
 export default function ReportsPage() {
@@ -13,6 +14,9 @@ export default function ReportsPage() {
 
   return (
     <div className="flex h-full w-full flex-col bg-gray-50">
+      {/* Shared analytics tab navigation */}
+      <AnalyticsTabBar activeTab="reports" />
+
       {/* Mobile Header - Shows dropdown button on tablet/mobile */}
       <div className="block border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
         <button

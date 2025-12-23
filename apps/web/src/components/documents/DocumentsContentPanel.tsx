@@ -3,9 +3,13 @@
 /**
  * DocumentsContentPanel Component
  * OPS-089: /documents Section with Case Navigation and Folder Structure
+ * OPS-133: Documents - Add Pagination / Load More UI
  *
  * Right panel showing documents in selected case/folder with grid/list view.
  * Integrates with OPS-087 preview modal for document preview.
+ *
+ * Uses paginated caseDocumentsGrid query for root-level documents (20 per page).
+ * Folder-level documents use folder query (no pagination - folders typically smaller).
  */
 
 import React, { useMemo, useState, useCallback } from 'react';
@@ -24,6 +28,7 @@ import {
   FileImage,
   FileSpreadsheet,
   FolderInput,
+  Loader2,
 } from 'lucide-react';
 import type { CaseWithRelations } from '../../hooks/useCases';
 import type { FolderTree, FolderInfo, CaseDocumentContext } from '../../hooks/useDocumentFolders';
@@ -34,6 +39,7 @@ import { DocumentPreviewModal, type PreviewableDocument } from '../preview';
 import { CreateFolderModal } from './CreateFolderModal';
 import { AssignToMapaModal, type DocumentInfo } from '../mapa/AssignToMapaModal';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDocumentGrid, type DocumentGridItem } from '../../hooks/useDocumentGrid';
 
 // ============================================================================
 // Types
@@ -315,9 +321,20 @@ export function DocumentsContentPanel({
     useDocumentFoldersStore();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [mapaAssignDoc, setMapaAssignDoc] = useState<DocumentInfo | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Get folder contents if a folder is selected
   const { folder: selectedFolder, loading: folderLoading } = useFolderContents(folderId);
+
+  // OPS-133: Use paginated document grid for root-level documents
+  // Only fetch when no folder is selected (root level)
+  const {
+    documents: gridDocuments,
+    loading: gridLoading,
+    totalCount: gridTotalCount,
+    hasMore: gridHasMore,
+    loadMore: gridLoadMore,
+  } = useDocumentGrid(caseId && !folderId ? caseId : '', { first: 20 });
 
   // Document preview hook (OPS-087)
   const {
@@ -335,16 +352,57 @@ export function DocumentsContentPanel({
   // Find current case
   const currentCase = useMemo(() => cases.find((c) => c.id === caseId), [cases, caseId]);
 
-  // Get documents to display
-  const documents = useMemo(() => {
+  // OPS-133: Get documents to display - use paginated grid for root, folder query for folders
+  const documents = useMemo((): CaseDocumentContext[] => {
     if (folderId && selectedFolder) {
+      // Folder selected: use folder query (not paginated)
       return selectedFolder.documents ?? [];
     }
-    if (folderTree) {
-      return folderTree.rootDocuments;
+    if (caseId && !folderId && gridDocuments.length > 0) {
+      // Root level: use paginated grid documents, convert to CaseDocumentContext format
+      return gridDocuments.map(
+        (item: DocumentGridItem): CaseDocumentContext => ({
+          id: item.id,
+          document: {
+            id: item.document.id,
+            fileName: item.document.fileName,
+            fileType: item.document.fileType,
+            fileSize: item.document.fileSize,
+            storagePath: item.document.storagePath,
+            uploadedAt: item.document.uploadedAt,
+            status: item.document.status,
+            thumbnailUrl:
+              item.document.thumbnailMedium ?? item.document.thumbnailSmall ?? undefined,
+            downloadUrl: undefined,
+          },
+          linkedBy: {
+            id: item.linkedBy.id,
+            firstName: item.linkedBy.firstName,
+            lastName: item.linkedBy.lastName,
+          },
+          linkedAt: item.linkedAt,
+          isOriginal: item.isOriginal,
+        })
+      );
     }
     return [];
-  }, [folderId, selectedFolder, folderTree]);
+  }, [folderId, selectedFolder, caseId, gridDocuments]);
+
+  // OPS-133: Pagination state - only for root level
+  const hasMore = !folderId && gridHasMore;
+  const totalCount = !folderId ? gridTotalCount : (selectedFolder?.documentCount ?? 0);
+  const remainingCount = totalCount - documents.length;
+
+  // OPS-133: Load more handler with loading state
+  const handleLoadMore = useCallback(async () => {
+    if (!hasMore || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      await gridLoadMore();
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [hasMore, isLoadingMore, gridLoadMore]);
 
   // Build breadcrumb path
   const breadcrumbPath = useMemo(() => {
@@ -417,7 +475,8 @@ export function DocumentsContentPanel({
     );
   }
 
-  const isLoading = loading || folderLoading;
+  // OPS-133: Loading state - grid loading for root, folder loading for folders
+  const isLoading = loading || (folderId ? folderLoading : gridLoading);
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -469,11 +528,15 @@ export function DocumentsContentPanel({
           </div>
         </div>
 
-        {/* Current folder info */}
+        {/* Current folder info - OPS-133: Show loaded/total count for root */}
         <div className="text-sm text-gray-500">
           {folderId && selectedFolder
             ? `${selectedFolder.documentCount} documente în "${selectedFolder.name}"`
-            : `${folderTree?.totalDocuments ?? 0} documente`}
+            : totalCount > 0
+              ? hasMore
+                ? `${documents.length} din ${totalCount} documente`
+                : `${totalCount} documente`
+              : 'Niciun document'}
         </div>
       </div>
 
@@ -516,6 +579,36 @@ export function DocumentsContentPanel({
                   onAddToMapa={() => handleAddToMapa(doc)}
                 />
               ))}
+            </div>
+          )}
+
+          {/* OPS-133: Load More button for pagination */}
+          {hasMore && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className={clsx(
+                  'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-lg transition-colors',
+                  isLoadingMore
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                )}
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Se încarcă...
+                  </>
+                ) : (
+                  <>
+                    Încarcă mai multe
+                    {remainingCount > 0 && (
+                      <span className="text-blue-400">({remainingCount} rămase)</span>
+                    )}
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>

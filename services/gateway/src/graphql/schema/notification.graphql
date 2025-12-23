@@ -79,4 +79,86 @@ extend type Mutation {
   Returns count of notifications marked as read
   """
   markAllNotificationsAsRead: Int!
+
+  # ==========================================================================
+  # OPS-120: In-App Notifications (Activity Event-based)
+  # ==========================================================================
+
+  """
+  Mark an in-app notification as read
+  Returns success status
+  """
+  markInAppNotificationRead(id: ID!): Boolean!
+
+  """
+  Mark all in-app notifications as read for current user
+  Returns count of notifications marked as read
+  """
+  markAllInAppNotificationsRead: Int!
+
+  """
+  Subscribe to push notifications
+  Returns the subscription ID
+  """
+  subscribeToPush(input: PushSubscriptionInput!): ID!
+
+  """
+  Unsubscribe from push notifications
+  """
+  unsubscribeFromPush(subscriptionId: ID!): Boolean!
+}
+
+# ==========================================================================
+# OPS-120: In-App Notifications (Activity Event-based)
+# ==========================================================================
+
+"""
+In-app notification created from user activity events
+Part of the Notification Engine (OPS-120)
+"""
+type InAppNotification {
+  id: ID!
+  title: String!
+  body: String!
+  icon: String
+  read: Boolean!
+  action: NotificationAction
+  createdAt: DateTime!
+}
+
+"""
+Action to perform when notification is clicked
+"""
+type NotificationAction {
+  type: String!
+  entityId: ID
+  caseId: ID
+}
+
+"""
+Input for push notification subscription
+"""
+input PushSubscriptionInput {
+  endpoint: String!
+  p256dhKey: String!
+  authKey: String!
+  userAgent: String
+}
+
+extend type Query {
+  # ==========================================================================
+  # OPS-120: In-App Notifications (Activity Event-based)
+  # ==========================================================================
+
+  """
+  Get in-app notifications for current user
+  Returns unread notifications by default, newest first
+  """
+  inAppNotifications(includeRead: Boolean, limit: Int): [InAppNotification!]!
+
+  """
+  Get count of unread in-app notifications
+  Used for notification badge in UI
+  """
+  inAppNotificationCount: Int!
 }

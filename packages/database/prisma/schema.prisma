@@ -122,6 +122,9 @@ model Firm {
   // Relations (OPS-099: Mapa)
   mapaTemplates MapaTemplate[]
 
+  // Relations (OPS-115: AI Context Files)
+  activityEvents UserActivityEvent[]
+
   @@map("firms")
 }
 
@@ -238,6 +241,14 @@ model User {
   createdMape          Mapa[]         @relation("MapaCreator")
   createdMapaTemplates MapaTemplate[] @relation("MapaTemplateCreator")
   assignedSlots        MapaSlot[]     @relation("SlotAssigner")
+
+  // Relations (OPS-115: AI Context Files)
+  activityEvents UserActivityEvent[]
+  dailyContext   UserDailyContext?
+
+  // Relations (OPS-120: Notifications)
+  inAppNotifications InAppNotification[]
+  pushSubscriptions  PushSubscription[]
 
   @@map("users")
 }
@@ -360,6 +371,7 @@ enum CaseActorRole {
   OpposingCounsel
   Witness
   Expert
+  Other // OPS-125: Generic contact role for auto-added senders
 }
 
 // Global email source categories (OPS-027: Multi-Case Classification)
@@ -519,6 +531,9 @@ model Case {
 
   // Relations (OPS-099: Mapa)
   mape Mapa[]
+
+  // Relations (OPS-115: AI Context Files)
+  briefing CaseBriefing?
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -2658,21 +2673,21 @@ model Email {
 
 // Email attachment model - attachments from synchronized emails
 model EmailAttachment {
-  id                String    @id @default(uuid())
-  emailId           String    @map("email_id")
-  graphAttachmentId String    @map("graph_attachment_id")
-  name              String    @db.VarChar(500)
-  contentType       String    @map("content_type") @db.VarChar(200)
+  id                String   @id @default(uuid())
+  emailId           String   @map("email_id")
+  graphAttachmentId String   @map("graph_attachment_id")
+  name              String   @db.VarChar(500)
+  contentType       String   @map("content_type") @db.VarChar(200)
   size              Int
-  storageUrl        String?   @map("storage_url") @db.Text // R2/OneDrive URL after saving
-  documentId        String?   @map("document_id") // Link to Document if saved to case
-  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  storageUrl        String?  @map("storage_url") @db.Text // R2/OneDrive URL after saving
+  documentId        String?  @map("document_id") // Link to Document if saved to case
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Filter tracking (OPS-113: Rule-Based Document Filtering)
-  filterStatus  String?   @map("filter_status") @db.VarChar(20) // 'imported' | 'dismissed' | 'quarantined' | 'flagged'
-  filterRuleId  String?   @map("filter_rule_id") @db.VarChar(50) // Which rule matched
-  filterReason  String?   @map("filter_reason") @db.VarChar(200) // Human-readable reason
-  dismissedAt   DateTime? @map("dismissed_at") @db.Timestamptz // When filtered
+  filterStatus String?   @map("filter_status") @db.VarChar(20) // 'imported' | 'dismissed' | 'quarantined' | 'flagged'
+  filterRuleId String?   @map("filter_rule_id") @db.VarChar(50) // Which rule matched
+  filterReason String?   @map("filter_reason") @db.VarChar(200) // Human-readable reason
+  dismissedAt  DateTime? @map("dismissed_at") @db.Timestamptz // When filtered
 
   // Relations
   email    Email     @relation(fields: [emailId], references: [id], onDelete: Cascade)
@@ -3816,9 +3831,9 @@ model AIConversation {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
-  firm     Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  case     Case?        @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  firm     Firm        @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  case     Case?       @relation(fields: [caseId], references: [id], onDelete: SetNull)
   messages AIMessage[]
 
   @@index([firmId])
@@ -3940,4 +3955,225 @@ model MapaTemplate {
   @@index([firmId])
   @@index([caseType])
   @@map("mapa_templates")
+}
+
+// ============================================================================
+// OPS-115: AI Context Files - Data Model
+// ============================================================================
+
+// Event types for user activity tracking
+enum ActivityEventType {
+  // Email events
+  EMAIL_RECEIVED
+  EMAIL_CLASSIFIED
+  EMAIL_FROM_COURT // High importance
+
+  // Document events
+  DOCUMENT_UPLOADED
+  DOCUMENT_SHARED
+
+  // Task events
+  TASK_ASSIGNED
+  TASK_DUE_TODAY
+  TASK_OVERDUE
+  TASK_COMPLETED
+
+  // Case events
+  CASE_DEADLINE_APPROACHING
+  CASE_HEARING_TODAY
+  CASE_STATUS_CHANGED
+
+  // Calendar events
+  CALENDAR_EVENT_TODAY
+  CALENDAR_EVENT_REMINDER
+}
+
+// Entity types for activity events
+enum ActivityEntityType {
+  EMAIL
+  DOCUMENT
+  TASK
+  CASE
+  CALENDAR_EVENT
+}
+
+// Importance levels for events
+enum EventImportance {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// UserActivityEvent - tracks all events relevant to a user
+// Used for notifications and "what's new" queries
+model UserActivityEvent {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  firmId String @map("firm_id")
+
+  // Event details
+  eventType   ActivityEventType  @map("event_type")
+  entityType  ActivityEntityType @map("entity_type")
+  entityId    String             @map("entity_id")
+  entityTitle String?            @map("entity_title") @db.VarChar(500) // Denormalized for quick display
+
+  // Metadata
+  metadata   Json? // Event-specific data
+  importance EventImportance @default(NORMAL)
+
+  // State tracking
+  notified Boolean   @default(false)
+  seenAt   DateTime? @map("seen_at") @db.Timestamptz
+
+  // Timestamps
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([userId, notified, occurredAt])
+  @@index([userId, eventType, occurredAt])
+  @@index([firmId, occurredAt])
+  @@map("user_activity_events")
+}
+
+// UserDailyContext - pre-computed daily snapshot for fast AI access
+model UserDailyContext {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+  firmId String @map("firm_id")
+
+  // Computed state (JSON for flexibility)
+  contextData Json @map("context_data") // See UserContextData type
+
+  // Tracking
+  lastComputedAt  DateTime  @map("last_computed_at") @db.Timestamptz
+  lastBriefingAt  DateTime? @map("last_briefing_at") @db.Timestamptz // When user last got morning briefing
+  lastSeenEventId String?   @map("last_seen_event_id") // Watermark for "what's new"
+
+  // Cache control
+  validUntil DateTime @map("valid_until") @db.Timestamptz // Soft expiry
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([validUntil])
+  @@map("user_daily_contexts")
+}
+
+// CaseBriefing - per-case context for case-specific conversations
+model CaseBriefing {
+  id     String @id @default(uuid())
+  caseId String @unique @map("case_id")
+  firmId String @map("firm_id")
+
+  // Computed briefing (markdown/text for direct injection)
+  briefingText String @map("briefing_text") @db.Text
+  briefingData Json   @map("briefing_data") // Structured data
+
+  // Tracking
+  lastComputedAt DateTime @map("last_computed_at") @db.Timestamptz
+  validUntil     DateTime @map("valid_until") @db.Timestamptz // Soft expiry
+
+  // Invalidation tracking
+  lastEmailAt    DateTime? @map("last_email_at") @db.Timestamptz
+  lastDocumentAt DateTime? @map("last_document_at") @db.Timestamptz
+  lastTaskAt     DateTime? @map("last_task_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([validUntil])
+  @@map("case_briefings")
+}
+
+// ============================================================================
+// OPS-120: Notification Engine
+// ============================================================================
+
+// InAppNotification - in-app notifications for users
+model InAppNotification {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+
+  // Notification content
+  title String @db.VarChar(255)
+  body  String @db.Text
+  icon  String? @db.VarChar(50) // Icon identifier: court, email, task, warning, calendar, document
+
+  // State
+  read Boolean @default(false)
+
+  // Action (what happens when notification is clicked)
+  actionType String? @map("action_type") @db.VarChar(50) // open_email, open_task, open_case, open_document, open_inbox
+  actionData Json?   @map("action_data") // { entityId: string, caseId?: string }
+
+  // Source event (optional, for tracing)
+  sourceEventId String? @map("source_event_id")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+  @@index([userId, createdAt])
+  @@map("in_app_notifications")
+}
+
+// PushSubscription - web push notification subscriptions
+model PushSubscription {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+
+  // Push subscription details (from browser's PushSubscription)
+  endpoint     String @db.Text // The push service URL
+  p256dhKey    String @map("p256dh_key") @db.VarChar(255) // Public key
+  authKey      String @map("auth_key") @db.VarChar(255) // Auth secret
+
+  // Metadata
+  userAgent    String? @map("user_agent") @db.VarChar(500) // Browser/device info
+  active       Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+  @@map("push_subscriptions")
+}
+
+// DigestQueue - queued items for daily digest emails
+model DigestQueue {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+
+  // Event reference
+  eventId    String  @map("event_id")
+  eventType  String  @map("event_type") @db.VarChar(50)
+  eventTitle String? @map("event_title") @db.VarChar(500)
+  eventData  Json?   @map("event_data")
+
+  // Scheduling
+  scheduledFor DateTime @map("scheduled_for") @db.Timestamptz
+  sent         Boolean  @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId, scheduledFor, sent])
+  @@index([scheduledFor, sent])
+  @@map("digest_queue")
 }

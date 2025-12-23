@@ -37,6 +37,7 @@ export interface CommunicationMessage {
   attachments: Attachment[];
   isFromUser: boolean; // Is current user the sender
   isRead: boolean;
+  folderType?: 'inbox' | 'sent' | null; // OPS-126: Source folder (authoritative direction)
 }
 
 export interface CommunicationParticipant {

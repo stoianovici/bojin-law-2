@@ -9,15 +9,25 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Mail, AlertCircle, Link2, ExternalLink } from 'lucide-react';
+import {
+  RefreshCw,
+  Mail,
+  AlertCircle,
+  Link2,
+  ExternalLink,
+  MessageSquare,
+  LayoutList,
+} from 'lucide-react';
 import { clsx } from 'clsx';
 
 // Components
 import { CaseSidebar, type MoveThreadInfo } from '../../components/communication/CaseSidebar';
 import { MessageView } from '../../components/communication/MessageView';
+import { ConversationView } from '../../components/communication/ConversationView';
 import { ComposeInterface } from '../../components/communication/ComposeInterface';
 import { ClassificationModal } from '../../components/communication/ClassificationModal';
 import { MoveThreadModal } from '../../components/communication/MoveThreadModal';
+import { AttachmentPreviewPanel } from '../../components/communication/AttachmentPreviewPanel';
 
 // Hooks
 import { useMyEmailsByCase } from '../../hooks/useMyEmailsByCase';
@@ -25,6 +35,36 @@ import { useEmailSync, useEmailThread } from '../../hooks/useEmailSync';
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSetAIContext } from '../../contexts/AIAssistantContext';
+import { useThreadAttachments, findAttachmentById } from '../../hooks/useThreadAttachments';
+import { useLazyQuery } from '@apollo/client/react';
+import { gql } from '@apollo/client';
+
+// ============================================================================
+// GraphQL Queries
+// ============================================================================
+
+// OPS-122: Query for getting attachment preview URL
+const GET_ATTACHMENT_PREVIEW_URL = gql`
+  query GetAttachmentPreviewUrl($attachmentId: ID!) {
+    attachmentPreviewUrl(attachmentId: $attachmentId) {
+      url
+      source
+      expiresAt
+    }
+  }
+`;
+
+// OPS-122: Query for downloading attachment content directly from MS Graph
+const GET_ATTACHMENT_CONTENT = gql`
+  query GetAttachmentContent($emailId: ID!, $attachmentId: ID!) {
+    emailAttachmentContent(emailId: $emailId, attachmentId: $attachmentId) {
+      content
+      name
+      contentType
+      size
+    }
+  }
+`;
 
 // ============================================================================
 // Types
@@ -51,7 +91,20 @@ export default function CommunicationsPage() {
   const { hasMsalAccount, reconnectMicrosoft, user } = useAuth();
 
   // Communication store for compose and thread selection
-  const { setThreads, setUserEmail, selectThread, getSelectedThread } = useCommunicationStore();
+  const {
+    setThreads,
+    setUserEmail,
+    selectThread,
+    getSelectedThread,
+    // OPS-121: Thread view mode (conversation vs cards)
+    threadViewMode,
+    setThreadViewMode,
+    // OPS-122: Attachment preview panel state
+    previewPanelOpen,
+    selectedAttachmentId,
+    closePreviewPanel,
+    selectAttachment,
+  } = useCommunicationStore();
 
   // State for MS token required error
   const [showMsReconnectPrompt, setShowMsReconnectPrompt] = useState(false);
@@ -96,6 +149,10 @@ export default function CommunicationsPage() {
     loading: emailsLoading,
     error: emailsError,
     refetch,
+    // OPS-132: Load more support
+    loadMore,
+    hasMore,
+    loadingMore,
   } = useMyEmailsByCase();
 
   // Fetch selected thread if viewing a thread
@@ -129,6 +186,7 @@ export default function CommunicationsPage() {
           body: email.bodyContent || email.bodyPreview || '',
           bodyFormat: email.bodyContentType === 'html' ? 'html' : 'text',
           bodyClean: email.bodyContentClean || undefined, // OPS-090
+          folderType: email.folderType || null, // OPS-126: Source folder for direction
           sentDate:
             email.sentDateTime || email.receivedDateTime
               ? new Date(email.sentDateTime || email.receivedDateTime)
@@ -233,6 +291,78 @@ export default function CommunicationsPage() {
   const needsSync = !syncStatus || syncStatus.emailCount === 0;
   const selectedThread = getSelectedThread();
 
+  // OPS-122: Thread attachments for preview panel
+  const threadAttachments = useThreadAttachments(selectedThread);
+  const selectedAttachment = selectedAttachmentId
+    ? findAttachmentById(threadAttachments, selectedAttachmentId)
+    : null;
+
+  // OPS-122: GraphQL queries for attachment preview
+  const [fetchPreviewUrl] = useLazyQuery(GET_ATTACHMENT_PREVIEW_URL, {
+    fetchPolicy: 'network-only',
+  });
+  const [fetchAttachmentContent] = useLazyQuery(GET_ATTACHMENT_CONTENT, {
+    fetchPolicy: 'network-only',
+  });
+
+  // OPS-122: Handle attachment preview URL request
+  const handleRequestPreviewUrl = useCallback(
+    async (attachmentId: string): Promise<string | null> => {
+      try {
+        // First, try to get OneDrive preview URL
+        const result = await fetchPreviewUrl({
+          variables: { attachmentId },
+        });
+        const data = result.data as { attachmentPreviewUrl?: { url: string } } | undefined;
+
+        if (data?.attachmentPreviewUrl?.url) {
+          return data.attachmentPreviewUrl.url;
+        }
+
+        // Fallback: Fetch content directly from MS Graph and create blob URL
+        const attachment = findAttachmentById(threadAttachments, attachmentId);
+        if (!attachment) {
+          console.error('Attachment not found for fallback content fetch');
+          return null;
+        }
+
+        const contentResult = await fetchAttachmentContent({
+          variables: { emailId: attachment.messageId, attachmentId },
+        });
+
+        const contentData = (contentResult.data as any)?.emailAttachmentContent;
+        if (contentData?.content) {
+          // Convert base64 to blob URL
+          const byteCharacters = atob(contentData.content);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], {
+            type: contentData.contentType || 'application/octet-stream',
+          });
+
+          return URL.createObjectURL(blob);
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Failed to fetch preview URL:', error);
+        return null;
+      }
+    },
+    [fetchPreviewUrl, fetchAttachmentContent, threadAttachments]
+  );
+
+  // OPS-122: Handle attachment selection
+  const handleSelectAttachment = useCallback(
+    (attachmentId: string, messageId: string) => {
+      selectAttachment(attachmentId, messageId);
+    },
+    [selectAttachment]
+  );
+
   // Find selected court email for display
   const selectedCourtEmail =
     viewState.mode === 'court-email'
@@ -275,18 +405,50 @@ export default function CommunicationsPage() {
           )}
         </div>
 
-        {/* Right: Open Outlook */}
-        <a
-          href="https://outlook.office.com/mail/0/deeplink/compose"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-2"
-          title="Deschide Outlook pentru mesaje noi"
-        >
-          <Mail className="h-4 w-4" />
-          Outlook
-          <ExternalLink className="h-3 w-3" />
-        </a>
+        {/* Right: View mode toggle + Open Outlook */}
+        <div className="flex items-center gap-3">
+          {/* OPS-121: View mode toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setThreadViewMode('conversation')}
+              className={clsx(
+                'px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5',
+                threadViewMode === 'conversation'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              )}
+              title="Vizualizare conversație"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Conversație</span>
+            </button>
+            <button
+              onClick={() => setThreadViewMode('cards')}
+              className={clsx(
+                'px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5',
+                threadViewMode === 'cards'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              )}
+              title="Vizualizare carduri"
+            >
+              <LayoutList className="h-4 w-4" />
+              <span className="hidden sm:inline">Carduri</span>
+            </button>
+          </div>
+
+          <a
+            href="https://outlook.office.com/mail/0/deeplink/compose"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-2"
+            title="Deschide Outlook pentru mesaje noi"
+          >
+            <Mail className="h-4 w-4" />
+            Outlook
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
       </div>
 
       {/* MS Reconnect Prompt */}
@@ -354,103 +516,130 @@ export default function CommunicationsPage() {
             onSelectCourtEmail={handleSelectCourtEmail}
             onSelectUncertainEmail={handleSelectUncertainEmail}
             onMoveThread={handleMoveThread}
+            // OPS-132: Load more support
+            hasMoreThreads={hasMore}
+            onLoadMore={loadMore}
+            loadingMore={loadingMore}
             className="h-full"
           />
         </div>
 
-        {/* Right Column: Content View */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {viewState.mode === 'thread' && selectedThread ? (
-            <MessageView />
-          ) : viewState.mode === 'court-email' && selectedCourtEmail ? (
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="max-w-3xl mx-auto">
-                <div className="bg-white rounded-lg shadow-sm border p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        {selectedCourtEmail.subject || '(Fără subiect)'}
-                      </h2>
-                      <p className="text-sm text-gray-600 mt-1">
-                        De la: {selectedCourtEmail.from.name || selectedCourtEmail.from.address}
-                        {selectedCourtEmail.from.name && (
-                          <span className="text-gray-400 ml-1">
-                            &lt;{selectedCourtEmail.from.address}&gt;
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(selectedCourtEmail.receivedDateTime).toLocaleDateString('ro-RO', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
+        {/* Right Column: Content View + Attachment Preview Panel */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Content View */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {viewState.mode === 'thread' && selectedThread ? (
+              // OPS-121: Conditionally render conversation or card view
+              threadViewMode === 'conversation' ? (
+                <ConversationView />
+              ) : (
+                <MessageView />
+              )
+            ) : viewState.mode === 'court-email' && selectedCourtEmail ? (
+              <div className="flex-1 p-6 overflow-y-auto">
+                <div className="max-w-3xl mx-auto">
+                  <div className="bg-white rounded-lg shadow-sm border p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          {selectedCourtEmail.subject || '(Fără subiect)'}
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-1">
+                          De la: {selectedCourtEmail.from.name || selectedCourtEmail.from.address}
+                          {selectedCourtEmail.from.name && (
+                            <span className="text-gray-400 ml-1">
+                              &lt;{selectedCourtEmail.from.address}&gt;
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(selectedCourtEmail.receivedDateTime).toLocaleDateString(
+                            'ro-RO',
+                            {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }
+                          )}
+                        </p>
+                      </div>
+                      {selectedCourtEmail.institutionCategory && (
+                        <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">
+                          {selectedCourtEmail.institutionCategory}
+                        </span>
+                      )}
                     </div>
-                    {selectedCourtEmail.institutionCategory && (
-                      <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">
-                        {selectedCourtEmail.institutionCategory}
-                      </span>
+
+                    {selectedCourtEmail.extractedReferences.length > 0 && (
+                      <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+                        <p className="text-sm font-medium text-purple-900 mb-2">
+                          Numere de referință extrase:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCourtEmail.extractedReferences.map((ref, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-1 bg-white text-purple-700 text-sm rounded border border-purple-200"
+                            >
+                              {ref}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="prose prose-sm max-w-none text-gray-700">
+                      {selectedCourtEmail.bodyPreview}
+                    </div>
+
+                    {selectedCourtEmail.suggestedCases.length > 0 && (
+                      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <p className="text-sm font-medium text-gray-700 mb-3">
+                          Dosare sugerate pentru atribuire:
+                        </p>
+                        <div className="space-y-2">
+                          {selectedCourtEmail.suggestedCases.map((c) => (
+                            <div
+                              key={c.id}
+                              className="flex items-center justify-between p-2 bg-white rounded border"
+                            >
+                              <div>
+                                <span className="font-medium text-gray-900">{c.title}</span>
+                                <span className="text-sm text-gray-500 ml-2">{c.caseNumber}</span>
+                              </div>
+                              <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                Atribuie
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-
-                  {selectedCourtEmail.extractedReferences.length > 0 && (
-                    <div className="mb-4 p-3 bg-purple-50 rounded-lg">
-                      <p className="text-sm font-medium text-purple-900 mb-2">
-                        Numere de referință extrase:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCourtEmail.extractedReferences.map((ref, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 bg-white text-purple-700 text-sm rounded border border-purple-200"
-                          >
-                            {ref}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="prose prose-sm max-w-none text-gray-700">
-                    {selectedCourtEmail.bodyPreview}
-                  </div>
-
-                  {selectedCourtEmail.suggestedCases.length > 0 && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 mb-3">
-                        Dosare sugerate pentru atribuire:
-                      </p>
-                      <div className="space-y-2">
-                        {selectedCourtEmail.suggestedCases.map((c) => (
-                          <div
-                            key={c.id}
-                            className="flex items-center justify-between p-2 bg-white rounded border"
-                          >
-                            <div>
-                              <span className="font-medium text-gray-900">{c.title}</span>
-                              <span className="text-sm text-gray-500 ml-2">{c.caseNumber}</span>
-                            </div>
-                            <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                              Atribuie
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <Mail className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p>Selectați o conversație din stânga</p>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <Mail className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p>Selectați o conversație din stânga</p>
+                </div>
               </div>
-            </div>
+            )}
+          </div>
+
+          {/* OPS-122: Attachment Preview Panel */}
+          {previewPanelOpen && threadAttachments.length > 0 && (
+            <AttachmentPreviewPanel
+              isOpen={previewPanelOpen}
+              onClose={closePreviewPanel}
+              selectedAttachment={selectedAttachment || null}
+              threadAttachments={threadAttachments}
+              onSelectAttachment={handleSelectAttachment}
+              onRequestPreviewUrl={handleRequestPreviewUrl}
+            />
           )}
         </div>
       </div>

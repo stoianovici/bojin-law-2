@@ -15,6 +15,9 @@ import { sharePointService } from '../../services/sharepoint.service';
 import { r2StorageService } from '../../services/r2-storage.service';
 import { thumbnailService } from '../../services/thumbnail.service';
 import { caseSummaryService } from '../../services/case-summary.service';
+import { activityEventService } from '../../services/activity-event.service';
+import { queueThumbnailJob } from '../../workers/thumbnail-generation.worker';
+import { createSourceCaseDataLoader } from '../dataloaders/document.dataloaders';
 import logger from '../../utils/logger';
 
 // Extended Context type that includes accessToken for OneDrive operations
@@ -897,44 +900,17 @@ export const documentResolvers = {
       const hasNextPage = caseLinks.length > limit;
       const edges = caseLinks.slice(0, limit);
 
-      // OPS-111: Fetch thumbnails for SharePoint documents
-      const accessToken = context.user?.accessToken;
+      // OPS-131: Use DataLoader to batch source case lookups (eliminates N+1)
+      const sourceCaseLoader = createSourceCaseDataLoader();
 
       // Build edges with cursors
       const resultEdges = await Promise.all(
         edges.map(async (link) => {
-          let sourceCase = null;
+          // OPS-131: DataLoader batches all source case lookups into a single query
+          const sourceCase = !link.isOriginal ? await sourceCaseLoader.load(link.documentId) : null;
 
-          if (!link.isOriginal) {
-            const originalLink = await prisma.caseDocument.findFirst({
-              where: {
-                documentId: link.documentId,
-                isOriginal: true,
-              },
-              include: {
-                case: true,
-              },
-            });
-            sourceCase = originalLink?.case || null;
-          }
-
-          // OPS-111: Fetch thumbnails from SharePoint if available
-          let thumbnails: { small?: string; medium?: string; large?: string } = {};
-          if (accessToken && link.document.sharePointItemId) {
-            try {
-              thumbnails = await sharePointService.getThumbnails(
-                accessToken,
-                link.document.sharePointItemId
-              );
-            } catch (err) {
-              // Log but don't fail - thumbnails are optional
-              logger.debug('Failed to fetch thumbnails for document', {
-                documentId: link.documentId,
-                error: err,
-              });
-            }
-          }
-
+          // OPS-114: Use permanent thumbnail URLs from database (no API call needed)
+          // Thumbnails are pre-generated and stored in R2 with CDN access
           const cursorValue = Buffer.from(`${link.caseId}:${link.documentId}`).toString('base64');
 
           return {
@@ -943,10 +919,11 @@ export const documentResolvers = {
               id: link.id,
               document: {
                 ...link.document,
-                // OPS-111: Add thumbnail URLs to document
-                thumbnailSmall: thumbnails.small || null,
-                thumbnailMedium: thumbnails.medium || null,
-                thumbnailLarge: thumbnails.large || null,
+                // OPS-114: Return permanent R2 URLs from database
+                thumbnailSmall: link.document.thumbnailSmallUrl || null,
+                thumbnailMedium: link.document.thumbnailMediumUrl || null,
+                thumbnailLarge: link.document.thumbnailLargeUrl || null,
+                thumbnailStatus: link.document.thumbnailStatus,
               },
               linkedBy: link.linker || (await getDeletedUserPlaceholder(link.linkedBy)),
               linkedAt: link.linkedAt,
@@ -1046,6 +1023,23 @@ export const documentResolvers = {
 
       // OPS-047: Mark summary stale
       caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
+
+      // OPS-116: Emit document uploaded event
+      activityEventService
+        .emit({
+          userId: user.id,
+          firmId: user.firmId,
+          eventType: 'DOCUMENT_UPLOADED',
+          entityType: 'DOCUMENT',
+          entityId: document.id,
+          entityTitle: document.fileName,
+          metadata: {
+            caseId: args.input.caseId,
+            fileType: document.fileType,
+            fileSize: document.fileSize,
+          },
+        })
+        .catch((err) => logger.error('Failed to emit document uploaded event:', err));
 
       // Fetch with all relations
       return prisma.document.findUnique({
@@ -1646,6 +1640,36 @@ export const documentResolvers = {
         return newDocument;
       });
 
+      // OPS-114: Queue thumbnail generation for OneDrive upload
+      queueThumbnailJob({
+        documentId: document.id,
+        accessToken,
+        triggeredBy: 'upload',
+      }).catch((err) => {
+        logger.warn('Failed to queue thumbnail job', {
+          documentId: document.id,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
+      // OPS-116: Emit document uploaded event
+      activityEventService
+        .emit({
+          userId: user.id,
+          firmId: user.firmId,
+          eventType: 'DOCUMENT_UPLOADED',
+          entityType: 'DOCUMENT',
+          entityId: document.id,
+          entityTitle: document.fileName,
+          metadata: {
+            caseId: args.input.caseId,
+            fileType: document.fileType,
+            fileSize: document.fileSize,
+            uploadMethod: 'OneDrive',
+          },
+        })
+        .catch((err) => logger.error('Failed to emit document uploaded event:', err));
+
       // Fetch with all relations
       return prisma.document.findUnique({
         where: { id: document.id },
@@ -1803,6 +1827,36 @@ export const documentResolvers = {
 
       // OPS-047: Mark summary stale
       caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
+
+      // OPS-114: Queue thumbnail generation for SharePoint upload
+      queueThumbnailJob({
+        documentId: document.id,
+        accessToken,
+        triggeredBy: 'upload',
+      }).catch((err) => {
+        logger.warn('Failed to queue thumbnail job', {
+          documentId: document.id,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
+      // OPS-116: Emit document uploaded event
+      activityEventService
+        .emit({
+          userId: user.id,
+          firmId: user.firmId,
+          eventType: 'DOCUMENT_UPLOADED',
+          entityType: 'DOCUMENT',
+          entityId: document.id,
+          entityTitle: document.fileName,
+          metadata: {
+            caseId: args.input.caseId,
+            fileType: document.fileType,
+            fileSize: document.fileSize,
+            uploadMethod: 'SharePoint',
+          },
+        })
+        .catch((err) => logger.error('Failed to emit document uploaded event:', err));
 
       // Fetch with all relations
       return prisma.document.findUnique({
@@ -2269,12 +2323,14 @@ export const documentResolvers = {
     sharePointItemId: (parent: any) => parent.sharePointItemId || null,
     sharePointPath: (parent: any) => parent.sharePointPath || null,
 
-    // OPS-107: Thumbnail fields - computed from storage
-    // These require context (access token) so return null from field resolver
-    // Clients should use batch query or separate thumbnail endpoint
-    thumbnailSmall: () => null,
-    thumbnailMedium: () => null,
-    thumbnailLarge: () => null,
+    // OPS-114: Permanent thumbnail URLs from R2 (no auth required)
+    // These are stored in the database after background generation
+    thumbnailSmall: (parent: any) => parent.thumbnailSmallUrl || null,
+    thumbnailMedium: (parent: any) => parent.thumbnailMediumUrl || null,
+    thumbnailLarge: (parent: any) => parent.thumbnailLargeUrl || null,
+
+    // OPS-114: Thumbnail generation status
+    thumbnailStatus: (parent: any) => parent.thumbnailStatus || 'PENDING',
   },
 
   // Field resolvers for DocumentVersion type

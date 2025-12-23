@@ -87,6 +87,9 @@ type Document {
   """Large thumbnail URL (800x800) - for expanded grid view"""
   thumbnailLarge: String
 
+  """Thumbnail generation status (OPS-114)"""
+  thumbnailStatus: ThumbnailStatus
+
   """Document status (DRAFT, FINAL, ARCHIVED)"""
   status: DocumentStatus!
 
@@ -143,6 +146,26 @@ enum DocumentStatus {
 
   """Archived (deleted from OneDrive or manually archived)"""
   ARCHIVED
+}
+
+"""
+OPS-114: Thumbnail generation status
+"""
+enum ThumbnailStatus {
+  """Thumbnail not yet generated"""
+  PENDING
+
+  """Thumbnail currently being generated"""
+  PROCESSING
+
+  """Thumbnail successfully generated and stored"""
+  COMPLETED
+
+  """Thumbnail generation failed"""
+  FAILED
+
+  """File type doesn't support thumbnails"""
+  NOT_SUPPORTED
 }
 
 """

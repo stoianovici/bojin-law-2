@@ -2020,10 +2020,14 @@ export class AIAssistantService {
   // ============================================================================
 
   private async buildContextualSystemPrompt(context: AssistantContext): Promise<string> {
+    // Import context services
+    const { userContextService } = await import('./user-context.service');
+    const { caseBriefingService } = await import('./case-briefing.service');
+
     // Get user info
     const user = await prisma.user.findUnique({
       where: { id: context.userId },
-      select: { firstName: true, lastName: true, role: true },
+      select: { firstName: true, lastName: true, role: true, firmId: true },
     });
 
     const userName = user ? `${user.firstName} ${user.lastName}` : 'Utilizator';
@@ -2039,12 +2043,37 @@ export class AIAssistantService {
       caseName = caseData?.title;
     }
 
+    // OPS-117: Get pre-computed user daily context
+    let userDailyContext: string | undefined;
+    try {
+      userDailyContext = await userContextService.getContextForPrompt(
+        context.userId,
+        context.firmId
+      );
+    } catch (err) {
+      console.error('[AIAssistant] Failed to load user daily context:', err);
+      // Continue without context - non-blocking
+    }
+
+    // OPS-118/119: Get pre-computed case briefing when in case context
+    let caseBriefing: string | undefined;
+    if (context.caseId) {
+      try {
+        caseBriefing = await caseBriefingService.getBriefingText(context.caseId);
+      } catch (err) {
+        console.error('[AIAssistant] Failed to load case briefing:', err);
+        // Continue without briefing - non-blocking
+      }
+    }
+
     return buildSystemPrompt({
       currentDate: getCurrentDateISO(),
       userName,
       userRole,
       caseId: context.caseId,
       caseName: caseName || context.caseName,
+      userDailyContext,
+      caseBriefing,
     });
   }
 

@@ -37,6 +37,7 @@ import {
 
 // Components
 import { FinancialData } from '../../../components/auth/FinancialData';
+import { AnalyticsTabBar } from '../../../components/analytics/AnalyticsTabBar';
 import { DateRangePicker } from '../../../components/analytics/DateRangePicker';
 import { PlatformHealthScoreCard } from '../../../components/analytics/PlatformHealthScoreCard';
 import { KeyMetricsSummaryRow } from '../../../components/analytics/KeyMetricsSummaryRow';
@@ -342,18 +343,14 @@ function PlatformIntelligenceDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Shared analytics tab navigation */}
+      <AnalyticsTabBar activeTab="intelligence" />
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <nav className="text-sm text-gray-500 mb-1" aria-label="Breadcrumb">
-                <a href="/analytics" className="hover:text-gray-700">
-                  Analize
-                </a>
-                <span className="mx-2">/</span>
-                <span className="text-gray-900">Inteligență Platformă</span>
-              </nav>
               <h1 className="text-2xl font-bold text-gray-900">Inteligență Platformă</h1>
               <p className="text-sm text-gray-500 mt-1">
                 Analiză comprehensivă a eficienței și ROI-ului platformei
@@ -394,7 +391,7 @@ function PlatformIntelligenceDashboard() {
           </div>
         </div>
 
-        {/* Tab navigation */}
+        {/* Sub-tab navigation for Platform Intelligence sections */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav
             className="flex space-x-1 overflow-x-auto pb-px -mb-px"

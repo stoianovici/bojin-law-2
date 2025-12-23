@@ -16,6 +16,7 @@ import { graphEndpoints } from '../config/graph.config';
 import { GraphService } from './graph.service';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
+import { activityEventService } from './activity-event.service';
 
 // ============================================================================
 // Types
@@ -413,11 +414,27 @@ export class EmailSyncService {
 
   /**
    * Store emails in database (for initial sync)
+   * OPS-116: Emits activity events for new emails
    */
   private async storeEmails(emails: SyncedEmail[], userId: string, firmId: string): Promise<void> {
-    // Use createMany for efficiency, skip duplicates
+    if (emails.length === 0) return;
+
+    // Check which emails already exist (for event emission)
+    const graphMessageIds = emails.map((e) => e.graphMessageId);
+    const existingEmails = await this.prisma.email.findMany({
+      where: { graphMessageId: { in: graphMessageIds } },
+      select: { graphMessageId: true },
+    });
+    const existingIds = new Set(existingEmails.map((e) => e.graphMessageId));
+
+    // Filter to only new emails
+    const newEmails = emails.filter((e) => !existingIds.has(e.graphMessageId));
+
+    if (newEmails.length === 0) return;
+
+    // Use createMany for efficiency
     await this.prisma.email.createMany({
-      data: emails.map((email) => ({
+      data: newEmails.map((email) => ({
         graphMessageId: email.graphMessageId,
         conversationId: email.conversationId,
         internetMessageId: email.internetMessageId,
@@ -438,8 +455,47 @@ export class EmailSyncService {
         userId,
         firmId,
       })),
-      skipDuplicates: true,
     });
+
+    // OPS-116: Emit activity events for new emails (only inbox emails, not sent)
+    const inboxEmails = newEmails.filter((e) => e.folderType === 'inbox');
+    if (inboxEmails.length > 0) {
+      // Get the created email IDs for event metadata
+      const createdEmails = await this.prisma.email.findMany({
+        where: { graphMessageId: { in: inboxEmails.map((e) => e.graphMessageId) } },
+        select: { id: true, graphMessageId: true, subject: true, from: true },
+      });
+
+      const emailMap = new Map(createdEmails.map((e) => [e.graphMessageId, e]));
+
+      const events = inboxEmails
+        .map((email) => {
+          const dbEmail = emailMap.get(email.graphMessageId);
+          if (!dbEmail) return null;
+
+          const fromAddress = email.from?.address || '';
+          const isCourtEmail = activityEventService.isCourtEmail(fromAddress);
+
+          return {
+            userId,
+            firmId,
+            eventType: isCourtEmail ? ('EMAIL_FROM_COURT' as const) : ('EMAIL_RECEIVED' as const),
+            entityType: 'EMAIL' as const,
+            entityId: dbEmail.id,
+            entityTitle: email.subject,
+            metadata: {
+              from: email.from,
+              hasAttachments: email.hasAttachments,
+            },
+            occurredAt: email.receivedDateTime,
+          };
+        })
+        .filter((e): e is NonNullable<typeof e> => e !== null);
+
+      if (events.length > 0) {
+        await activityEventService.emitBatch(events);
+      }
+    }
   }
 
   /**
@@ -478,6 +534,7 @@ export class EmailSyncService {
             bodyContent: email.bodyContent,
             isRead: email.isRead,
             importance: email.importance,
+            folderType: email.folderType, // OPS-126: Update folderType for existing emails
           },
         })
       )

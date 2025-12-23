@@ -583,7 +583,9 @@ export class OneDriveService {
             // Use MS Graph preview API for PDFs and Office docs
             // This returns an embeddable URL that works in iframes
             try {
-              const previewResponse = await client.api(previewEndpoint).post({});
+              // OPS-125: Request 100% zoom for Office files (zoom: 1 = 100%)
+              // Note: zoom param works for Office files but is ignored for PDFs (MS limitation)
+              const previewResponse = await client.api(previewEndpoint).post({ zoom: 1 });
 
               if (previewResponse.getUrl) {
                 logger.info('Generated MS Graph preview URL', {
@@ -616,7 +618,9 @@ export class OneDriveService {
                 oneDriveId,
                 oneDriveUserId
               );
-              const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadLink.url)}`;
+              // OPS-125: Attempt to set 100% zoom - these params are not officially documented
+              // but some may work empirically
+              const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadLink.url)}&wdStartOn=1&wdZoom=100`;
 
               logger.info('Generated Office Online preview URL (fallback)', {
                 oneDriveId,

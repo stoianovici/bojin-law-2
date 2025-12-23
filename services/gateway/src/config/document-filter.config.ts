@@ -244,6 +244,20 @@ export const DEFAULT_FILTER_RULES: FilterRule[] = [
       },
     ],
   },
+  {
+    id: 'all-png',
+    name: 'All PNG Files',
+    description: 'All PNG images (typically email graphics, not legal documents)',
+    action: 'dismiss',
+    enabled: true,
+    priority: 800,
+    conditions: [
+      {
+        type: 'extension',
+        value: ['png'],
+      },
+    ],
+  },
 ];
 
 // ============================================================================

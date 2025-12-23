@@ -1000,6 +1000,7 @@ export const emailResolvers = {
 
     /**
      * Assign entire thread to case
+     * OPS-125: Now auto-adds sender as case contact and returns AssignThreadResult
      */
     assignThreadToCase: async (
       _: any,
@@ -1025,8 +1026,13 @@ export const emailResolvers = {
         });
       }
 
-      // Update all emails in thread
-      await emailThreadService.assignThreadToCase(args.conversationId, args.caseId, user.id);
+      // Update all emails in thread and auto-add contact (OPS-125)
+      const assignResult = await emailThreadService.assignThreadToCase(
+        args.conversationId,
+        args.caseId,
+        user.id,
+        { userId: user.id, firmId: user.firmId }
+      );
 
       // Sync attachments to OneDrive now that emails are assigned to a case
       // This creates Document records and enables preview functionality
@@ -1079,8 +1085,16 @@ export const emailResolvers = {
         // Don't fail the assignment if sync fails
       }
 
-      // Return updated thread
-      return await emailThreadService.getThread(args.conversationId, user.id);
+      // Get updated thread for response
+      const thread = await emailThreadService.getThread(args.conversationId, user.id);
+
+      // OPS-125: Return AssignThreadResult with contact info
+      return {
+        thread,
+        newContactAdded: assignResult.newContactAdded,
+        contactName: assignResult.contactName,
+        contactEmail: assignResult.contactEmail,
+      };
     },
 
     /**
@@ -2455,7 +2469,34 @@ export const emailResolvers = {
       return await prisma.case.findUnique({ where: { id: parent.caseId } });
     },
 
-    attachments: async (parent: any) => {
+    attachments: async (parent: any, _args: any, context: Context) => {
+      // OPS-128: Auto-sync attachments on case assignment
+      // If email is assigned to a case, has attachments flag, but no EmailAttachment records,
+      // trigger sync using user's access token. This implements "auto-sync on case assignment"
+      // because sync happens automatically when viewing attachments for case-assigned emails.
+      if (parent.hasAttachments && parent.caseId && context.user?.accessToken) {
+        const existingAttachment = await prisma.emailAttachment.findFirst({
+          where: { emailId: parent.id },
+        });
+
+        if (!existingAttachment) {
+          try {
+            logger.info('[Email.attachments] Auto-syncing attachments for case-assigned email', {
+              emailId: parent.id,
+              caseId: parent.caseId,
+            });
+            const attachmentService = getEmailAttachmentService(prisma);
+            await attachmentService.syncAllAttachments(parent.id, context.user.accessToken);
+          } catch (error) {
+            logger.error('[Email.attachments] Auto-sync failed', {
+              emailId: parent.id,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            // Don't fail the request - just return empty attachments
+          }
+        }
+      }
+
       // OPS-113: Filter out dismissed attachments
       if (parent.attachments) {
         return parent.attachments.filter((a: any) => a.filterStatus !== 'dismissed');

@@ -13,6 +13,7 @@ import { prisma } from '@legal-platform/database';
 import { CaseActorRole, ClassificationMatchType } from '@prisma/client';
 import { getEmailAttachmentService } from './email-attachment.service';
 import { caseActivityService } from './case-activity.service';
+import { caseBriefingService } from './case-briefing.service';
 import { unifiedTimelineService } from './unified-timeline.service';
 import logger from '../utils/logger';
 
@@ -313,6 +314,9 @@ export class EmailToCaseService {
           `Emailuri importate de la: ${normalizedAddresses.join(', ')}`,
           { emailAddresses: normalizedAddresses, emailCount: result.emailsLinked }
         );
+
+        // OPS-118: Invalidate case briefing cache
+        caseBriefingService.invalidate(caseId).catch(() => {});
       }
 
       // 3. Create case actors for assigned contacts

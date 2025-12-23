@@ -22,13 +22,18 @@ import { useNotificationStore } from '../../stores/notificationStore';
 const ASSIGN_THREAD_TO_CASE = gql`
   mutation AssignThreadToCase($conversationId: String!, $caseId: ID!) {
     assignThreadToCase(conversationId: $conversationId, caseId: $caseId) {
-      id
-      conversationId
-      case {
+      thread {
         id
-        title
-        caseNumber
+        conversationId
+        case {
+          id
+          title
+          caseNumber
+        }
       }
+      newContactAdded
+      contactName
+      contactEmail
     }
   }
 `;
@@ -88,12 +93,17 @@ export function MoveThreadModal({
     fetchPolicy: 'cache-and-network',
   });
 
-  // Assign mutation
+  // Assign mutation (OPS-125: updated for AssignThreadResult)
   const [assignThread, { loading: assigning }] = useMutation<{
     assignThreadToCase: {
-      id: string;
-      conversationId: string;
-      case: { id: string; title: string; caseNumber: string } | null;
+      thread: {
+        id: string;
+        conversationId: string;
+        case: { id: string; title: string; caseNumber: string } | null;
+      };
+      newContactAdded: boolean;
+      contactName?: string;
+      contactEmail?: string;
     };
   }>(ASSIGN_THREAD_TO_CASE, {
     refetchQueries: ['GetEmailThreadsByCase'],
@@ -139,13 +149,23 @@ export function MoveThreadModal({
         },
       });
 
-      const caseName = result.data?.assignThreadToCase?.case?.title || 'dosarul selectat';
+      const assignResult = result.data?.assignThreadToCase;
+      const caseName = assignResult?.thread?.case?.title || 'dosarul selectat';
 
-      addNotification({
-        type: 'success',
-        title: 'Conversație mutată',
-        message: `Conversația a fost mutată în ${caseName}`,
-      });
+      // OPS-125: Show contact added message if applicable
+      if (assignResult?.newContactAdded && assignResult?.contactEmail) {
+        addNotification({
+          type: 'success',
+          title: 'Conversație mutată',
+          message: `Conversația a fost mutată în ${caseName}. Contactul ${assignResult.contactName || assignResult.contactEmail} a fost adăugat automat.`,
+        });
+      } else {
+        addNotification({
+          type: 'success',
+          title: 'Conversație mutată',
+          message: `Conversația a fost mutată în ${caseName}`,
+        });
+      }
 
       onMoved?.();
       onClose();
