@@ -2456,9 +2456,15 @@ export const emailResolvers = {
     },
 
     attachments: async (parent: any) => {
-      if (parent.attachments) return parent.attachments;
+      // OPS-113: Filter out dismissed attachments
+      if (parent.attachments) {
+        return parent.attachments.filter((a: any) => a.filterStatus !== 'dismissed');
+      }
       return await prisma.emailAttachment.findMany({
-        where: { emailId: parent.id },
+        where: {
+          emailId: parent.id,
+          OR: [{ filterStatus: null }, { filterStatus: { not: 'dismissed' } }],
+        },
       });
     },
     thread: async (parent: any, _args: any, context: Context) => {
