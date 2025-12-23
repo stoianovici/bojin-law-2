@@ -26,23 +26,15 @@ import {
 import { startDailyDigestWorker, stopDailyDigestWorker } from './workers/daily-digest.worker';
 import { startCaseSummaryWorker, stopCaseSummaryWorker } from './workers/case-summary.worker';
 import {
-  createThumbnailWorker,
-  shutdownThumbnailWorker,
-} from './workers/thumbnail-generation.worker';
-import {
   startEmailCategorizationWorker,
   stopEmailCategorizationWorker,
 } from './workers/email-categorization.worker';
-import type { Worker } from 'bullmq';
 import { redis } from '@legal-platform/database';
 
 // Create Express app
 const app: Express = express();
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3001;
-
-// OPS-114: Reference to thumbnail worker for graceful shutdown
-let thumbnailWorker: Worker | null = null;
 
 // Security middleware - configure helmet to allow GraphQL
 app.use(
@@ -174,9 +166,6 @@ async function startServer() {
     // OPS-048: Start case summary worker
     startCaseSummaryWorker();
 
-    // OPS-114: Start thumbnail generation worker
-    thumbnailWorker = createThumbnailWorker();
-
     // Story 5.1: Start email categorization worker
     startEmailCategorizationWorker();
   }
@@ -196,13 +185,6 @@ function setupGracefulShutdown() {
       stopDailyDigestWorker();
       stopCaseSummaryWorker();
       stopEmailCategorizationWorker();
-
-      // OPS-114: Stop thumbnail worker
-      if (thumbnailWorker) {
-        shutdownThumbnailWorker(thumbnailWorker).catch((err) => {
-          console.error('Error shutting down thumbnail worker:', err);
-        });
-      }
 
       // Close HTTP server
       httpServer.close(() => {
