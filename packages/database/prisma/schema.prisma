@@ -2689,6 +2689,9 @@ model EmailAttachment {
   filterReason String?   @map("filter_reason") @db.VarChar(200) // Human-readable reason
   dismissedAt  DateTime? @map("dismissed_at") @db.Timestamptz // When filtered
 
+  // OPS-136: User-marked as not useful (signatures, logos, etc.)
+  irrelevant Boolean @default(false)
+
   // Relations
   email    Email     @relation(fields: [emailId], references: [id], onDelete: Cascade)
   document Document? @relation(fields: [documentId], references: [id])

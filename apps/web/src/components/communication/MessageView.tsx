@@ -6,7 +6,7 @@ import { useNotificationStore } from '../../stores/notificationStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMyCases } from '../../hooks/useMyCases';
 import { format } from 'date-fns';
-import type { CommunicationMessage } from '@legal-platform/types';
+import type { CommunicationMessage, UserRole } from '@legal-platform/types';
 import {
   Paperclip,
   Reply,
@@ -27,6 +27,8 @@ import { DocumentPreviewModal, type PreviewableDocument } from '@/components/pre
 import { useState, useCallback } from 'react';
 import { gql } from '@apollo/client';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
+import { usePreviewActions } from '@/hooks/usePreviewActions';
+import { useNotificationStore as useMessageViewNotifications } from '../../stores/notificationStore';
 
 // GraphQL query for getting attachment preview URL
 const GET_ATTACHMENT_PREVIEW_URL = gql`
@@ -93,6 +95,28 @@ const IGNORE_EMAIL_THREAD = gql`
   }
 `;
 
+// OPS-141: GraphQL mutations for attachment actions
+const SAVE_ATTACHMENT_AS_DOCUMENT = gql`
+  mutation SaveEmailAttachmentAsDocument($emailId: ID!, $attachmentId: ID!, $caseId: ID!) {
+    saveEmailAttachmentAsDocument(emailId: $emailId, attachmentId: $attachmentId, caseId: $caseId) {
+      document {
+        id
+        fileName
+      }
+      isNew
+    }
+  }
+`;
+
+const MARK_ATTACHMENT_IRRELEVANT = gql`
+  mutation MarkAttachmentIrrelevant($attachmentId: ID!, $irrelevant: Boolean!) {
+    markAttachmentIrrelevant(attachmentId: $attachmentId, irrelevant: $irrelevant) {
+      id
+      irrelevant
+    }
+  }
+`;
+
 // Type definitions for GraphQL mutation results (OPS-125: updated for AssignThreadResult)
 interface AssignThreadToCaseResult {
   assignThreadToCase: {
@@ -135,6 +159,8 @@ function Message({
   onReconnectMicrosoft,
   isSentByUser, // OPS-091: Visual distinction for sent emails
   onPreviewAttachment, // OPS-122: Panel-based preview
+  caseId, // OPS-141: Case ID for saving attachments
+  userRole, // OPS-141: User role for action filtering
 }: {
   message: ExtendedMessage;
   threadId: string;
@@ -147,6 +173,8 @@ function Message({
   onReconnectMicrosoft?: () => void;
   isSentByUser?: boolean; // OPS-091
   onPreviewAttachment?: (attachmentId: string, messageId: string) => void; // OPS-122
+  caseId?: string; // OPS-141: Case ID for saving attachments
+  userRole?: UserRole; // OPS-141
 }) {
   const [syncingAttachments, setSyncingAttachments] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -160,6 +188,16 @@ function Message({
   });
   const [fetchPreviewUrl] = useLazyQuery(GET_ATTACHMENT_PREVIEW_URL, {
     fetchPolicy: 'network-only',
+  });
+
+  // OPS-141: Notification store and action mutations for fallback modal
+  const { addNotification } = useMessageViewNotifications();
+  const [saveAttachmentMutation] = useMutation(SAVE_ATTACHMENT_AS_DOCUMENT);
+  const [markIrrelevantMutation] = useMutation(MARK_ATTACHMENT_IRRELEVANT);
+
+  // OPS-141: Get actions filtered by user role for the email-attachment context
+  const { actions: previewActions } = usePreviewActions({
+    context: caseId ? 'email-attachment' : undefined,
   });
 
   // Handle attachment download - fetches from MS Graph and triggers browser download
@@ -285,6 +323,97 @@ function Message({
       }
     },
     [fetchPreviewUrl, fetchAttachmentContent, previewDocument]
+  );
+
+  // OPS-141: Handle action toolbar clicks from the fallback modal
+  const handlePreviewAction = useCallback(
+    async (actionId: string, doc: PreviewableDocument) => {
+      // Download is handled internally by the modal
+      if (actionId === 'download') return;
+
+      // Get the attachment ID from the document
+      const attachmentId = doc.id;
+
+      switch (actionId) {
+        case 'save-to-documents':
+          if (!caseId) {
+            addNotification({
+              type: 'warning',
+              title: 'Atenție',
+              message: 'Atribuiți conversația la un dosar pentru a salva atașamentul',
+            });
+            return;
+          }
+          try {
+            const result = await saveAttachmentMutation({
+              variables: {
+                emailId: message.id,
+                attachmentId,
+                caseId,
+              },
+            });
+            const saveResult = result.data as
+              | {
+                  saveEmailAttachmentAsDocument?: {
+                    document: { id: string; fileName: string };
+                    isNew: boolean;
+                  };
+                }
+              | undefined;
+            const { isNew } = saveResult?.saveEmailAttachmentAsDocument || {};
+            addNotification({
+              type: 'success',
+              title: isNew ? 'Atașament salvat' : 'Atașament existent',
+              message: isNew
+                ? `${doc.name} a fost salvat în documente`
+                : 'Acest atașament a fost salvat anterior',
+            });
+          } catch (error) {
+            addNotification({
+              type: 'error',
+              title: 'Eroare la salvare',
+              message: 'Nu s-a putut salva atașamentul',
+            });
+          }
+          break;
+
+        case 'mark-irrelevant':
+          try {
+            await markIrrelevantMutation({
+              variables: {
+                attachmentId,
+                irrelevant: true,
+              },
+            });
+            addNotification({
+              type: 'success',
+              title: 'Atașament marcat',
+              message: 'Atașamentul a fost marcat ca irelevant',
+            });
+            setPreviewDocument(null); // Close modal after marking
+          } catch (error) {
+            addNotification({
+              type: 'error',
+              title: 'Eroare',
+              message: 'Nu s-a putut marca atașamentul',
+            });
+          }
+          break;
+
+        case 'add-to-mapa':
+          // TODO: Implement when mapa integration is available
+          addNotification({
+            type: 'info',
+            title: 'În dezvoltare',
+            message: 'Adăugarea în mapă va fi disponibilă în curând',
+          });
+          break;
+
+        default:
+          console.warn(`[MessageView] Unhandled action: ${actionId}`);
+      }
+    },
+    [caseId, message.id, saveAttachmentMutation, markIrrelevantMutation, addNotification]
   );
 
   const handleSyncAttachments = useCallback(
@@ -565,12 +694,16 @@ function Message({
         </div>
       )}
 
-      {/* Document Preview Modal */}
+      {/* Document Preview Modal - OPS-141: Added context and action support */}
       <DocumentPreviewModal
         isOpen={!!previewDocument}
         onClose={() => setPreviewDocument(null)}
         document={previewDocument}
         onRequestPreviewUrl={handleRequestPreviewUrl}
+        context={caseId ? 'email-attachment' : undefined}
+        actions={previewActions}
+        userRole={userRole}
+        onAction={handlePreviewAction}
       />
     </div>
   );
@@ -592,8 +725,11 @@ export function MessageView() {
     openPreviewPanel,
   } = useCommunicationStore();
   const { addNotification } = useNotificationStore();
-  const { hasMsalAccount, reconnectMicrosoft } = useAuth();
+  const { hasMsalAccount, reconnectMicrosoft, user } = useAuth();
   const thread = getSelectedThread();
+
+  // OPS-141: User role for action filtering
+  const currentUserRole = user?.role as UserRole | undefined;
 
   // Fetch user's cases for the assign modal
   const { cases: userCases, loading: casesLoading } = useMyCases();
@@ -874,6 +1010,8 @@ export function MessageView() {
             onReconnectMicrosoft={reconnectMicrosoft}
             isSentByUser={(message as any).folderType === 'sent'}
             onPreviewAttachment={handlePreviewAttachment}
+            caseId={thread.caseId}
+            userRole={currentUserRole}
           />
         ))}
       </div>

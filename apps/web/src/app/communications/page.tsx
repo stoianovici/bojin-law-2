@@ -631,6 +631,7 @@ export default function CommunicationsPage() {
           </div>
 
           {/* OPS-122: Attachment Preview Panel */}
+          {/* OPS-140: Added caseId for action toolbar */}
           {previewPanelOpen && threadAttachments.length > 0 && (
             <AttachmentPreviewPanel
               isOpen={previewPanelOpen}
@@ -639,6 +640,7 @@ export default function CommunicationsPage() {
               threadAttachments={threadAttachments}
               onSelectAttachment={handleSelectAttachment}
               onRequestPreviewUrl={handleRequestPreviewUrl}
+              caseId={selectedThread?.caseId}
             />
           )}
         </div>

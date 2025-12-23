@@ -140,12 +140,39 @@
 | OPS-131 | Documents - DataLoader for Source Case Lookups        | Performance  | P1-High     | Closed     | [archive/ops-131.md](archive/ops-131.md) |
 | OPS-132 | Communications - Add Load More UI                     | UI           | P2-Medium   | Closed     | [archive/ops-132.md](archive/ops-132.md) |
 | OPS-133 | Documents - Add Pagination UI                         | UI           | P2-Medium   | Closed     | [archive/ops-133.md](archive/ops-133.md) |
+| OPS-134 | Document Preview Action Types & Interfaces            | Feature      | P2-Medium   | Closed     | [archive/ops-134.md](archive/ops-134.md) |
+| OPS-135 | Save Email Attachment to Documents Mutation           | Feature      | P2-Medium   | Resolved   | [archive/ops-135.md](archive/ops-135.md) |
+| OPS-136 | Mark Attachment as Irrelevant Mutation                | Feature      | P2-Medium   | Closed     | [archive/ops-136.md](archive/ops-136.md) |
+| OPS-137 | DocumentPreviewModal Action Toolbar Component         | Feature      | P2-Medium   | Closed     | [archive/ops-137.md](archive/ops-137.md) |
+| OPS-138 | Role-Based Action Filtering System                    | Feature      | P2-Medium   | Closed     | [archive/ops-138.md](archive/ops-138.md) |
+| OPS-139 | DocumentsContentPanel Context Integration             | Feature      | P2-Medium   | Closed     | [archive/ops-139.md](archive/ops-139.md) |
+| OPS-140 | AttachmentPreviewPanel Context Integration            | Feature      | P2-Medium   | Closed     | [archive/ops-140.md](archive/ops-140.md) |
+| OPS-141 | MessageView Preview Actions                           | Feature      | P3-Low      | Closed     | [archive/ops-141.md](archive/ops-141.md) |
 
 ---
 
 ## Active Issues Summary
 
-_No active issues_
+### Context-Aware Document Preview Actions (Epic) - COMPLETED ✅
+
+**Goal**: Add contextual action toolbar to document preview modal so users can act on documents without closing the preview.
+
+**Phase 1 - Foundation** (completed):
+
+- ~~OPS-134: Action types & interfaces~~ ✅
+- ~~OPS-135: Save attachment to documents mutation~~ ✅
+- ~~OPS-136: Mark attachment irrelevant mutation~~ ✅
+
+**Phase 2 - UI Components** (completed):
+
+- ~~OPS-137: Action toolbar component~~ ✅
+- ~~OPS-138: Role-based filtering~~ ✅
+
+**Phase 3 - Integration** (completed):
+
+- ~~OPS-139: Documents panel integration~~ ✅
+- ~~OPS-140: Attachment panel integration~~ ✅
+- ~~OPS-141: MessageView integration~~ ✅
 
 ---
 

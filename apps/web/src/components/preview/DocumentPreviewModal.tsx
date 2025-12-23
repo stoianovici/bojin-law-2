@@ -1,15 +1,37 @@
 /**
  * DocumentPreviewModal Component
  * Full-screen modal for previewing documents and email attachments
- * Uses Office Online for Word/Excel/PPT, native browser for PDFs
+ * Uses Office Online for Word/Excel/PPT, custom react-pdf viewer for PDFs
  */
 
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Download, ExternalLink, Loader2, FileText, AlertCircle } from 'lucide-react';
+import * as Tooltip from '@radix-ui/react-tooltip';
+import {
+  X,
+  Download,
+  ExternalLink,
+  Loader2,
+  FileText,
+  AlertCircle,
+  Save,
+  FolderPlus,
+  FolderMinus,
+  FolderInput,
+  Pencil,
+  Trash2,
+  Link,
+  RefreshCw,
+  EyeOff,
+} from 'lucide-react';
 import { clsx } from 'clsx';
+import type { PreviewContext, PreviewAction, UserRole } from '@legal-platform/types';
+import { getActionsForContext, groupActions } from '@legal-platform/types';
+
+// Lazy load PDFViewer to avoid loading react-pdf bundle until needed
+const PDFViewer = lazy(() => import('./PDFViewer'));
 
 // ============================================================================
 // Types
@@ -32,6 +54,8 @@ export interface DocumentPreviewModalProps {
   document: PreviewableDocument | null;
   /** Optional callback to fetch preview URL on demand */
   onRequestPreviewUrl?: (documentId: string) => Promise<string | null>;
+  /** Optional callback to fetch download URL for PDFs (OPS-125) */
+  onRequestDownloadUrl?: (documentId: string) => Promise<string | null>;
   /** Optional callback to fetch text content for text files (OPS-109) */
   onRequestTextContent?: (documentId: string) => Promise<string | null>;
   /** Optional callback when download is clicked */
@@ -40,6 +64,16 @@ export interface DocumentPreviewModalProps {
   hasMsalAccount?: boolean;
   /** Callback to reconnect Microsoft account */
   onReconnectMicrosoft?: () => Promise<void>;
+
+  // Action toolbar props (OPS-137)
+  /** Context in which the preview is opened - determines default actions */
+  context?: PreviewContext;
+  /** Custom actions to override defaults (if not provided, uses context defaults) */
+  actions?: PreviewAction[];
+  /** User role for filtering role-restricted actions */
+  userRole?: UserRole;
+  /** Callback when an action is clicked */
+  onAction?: (actionId: string, document: PreviewableDocument) => void | Promise<void>;
 }
 
 // ============================================================================
@@ -129,6 +163,128 @@ function isMobileViewport(): boolean {
 }
 
 // ============================================================================
+// Icon Mapping
+// ============================================================================
+
+/**
+ * Map icon name strings to Lucide React components
+ */
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Download,
+  Save,
+  FolderPlus,
+  FolderMinus,
+  FolderInput,
+  Pencil,
+  Trash2,
+  Link,
+  RefreshCw,
+  EyeOff,
+  FileText,
+  ExternalLink,
+};
+
+// ============================================================================
+// ActionToolbar Component
+// ============================================================================
+
+interface ActionToolbarProps {
+  actions: PreviewAction[];
+  onAction: (actionId: string) => void;
+  loading?: Record<string, boolean>;
+}
+
+function ActionToolbar({ actions, onAction, loading }: ActionToolbarProps) {
+  const { primary, secondary } = groupActions(actions);
+
+  if (actions.length === 0) return null;
+
+  return (
+    <Tooltip.Provider delayDuration={300}>
+      <div className="flex items-center justify-between border-t bg-gray-50 px-4 py-3">
+        {/* Primary actions - full buttons */}
+        <div className="flex flex-wrap gap-2">
+          {primary.map((action) => {
+            const IconComponent = ICON_MAP[action.icon];
+            const isLoading = loading?.[action.id];
+            const isDanger = action.variant === 'danger';
+
+            return (
+              <button
+                key={action.id}
+                onClick={() => onAction(action.id)}
+                disabled={isLoading}
+                className={clsx(
+                  'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  isDanger
+                    ? 'text-red-700 bg-red-50 border border-red-200 hover:bg-red-100'
+                    : action.variant === 'primary'
+                      ? 'text-white bg-blue-600 hover:bg-blue-700'
+                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                )}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : IconComponent ? (
+                  <IconComponent className="h-4 w-4" />
+                ) : null}
+                <span className="hidden sm:inline">{action.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Secondary actions - icon buttons with tooltips */}
+        {secondary.length > 0 && (
+          <div className="flex gap-1">
+            {secondary.map((action) => {
+              const IconComponent = ICON_MAP[action.icon];
+              const isLoading = loading?.[action.id];
+              const isDanger = action.variant === 'danger';
+
+              return (
+                <Tooltip.Root key={action.id}>
+                  <Tooltip.Trigger asChild>
+                    <button
+                      onClick={() => onAction(action.id)}
+                      disabled={isLoading}
+                      className={clsx(
+                        'p-2 rounded-lg transition-colors',
+                        'disabled:opacity-50 disabled:cursor-not-allowed',
+                        isDanger
+                          ? 'text-red-600 hover:bg-red-50'
+                          : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                      )}
+                      aria-label={action.label}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : IconComponent ? (
+                        <IconComponent className="h-4 w-4" />
+                      ) : null}
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content
+                      className="rounded-md bg-gray-900 px-2 py-1 text-xs text-white shadow-md"
+                      sideOffset={5}
+                    >
+                      {action.label}
+                      <Tooltip.Arrow className="fill-gray-900" />
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Tooltip.Provider>
+  );
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -137,14 +293,22 @@ export function DocumentPreviewModal({
   onClose,
   document,
   onRequestPreviewUrl,
+  onRequestDownloadUrl,
   onRequestTextContent,
   onDownload,
   hasMsalAccount = true,
   onReconnectMicrosoft,
+  // Action toolbar props
+  context,
+  actions: customActions,
+  userRole,
+  onAction,
 }: DocumentPreviewModalProps) {
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [textContent, setTextContent] = useState<string | null>(null);
   const prevDocIdRef = useRef<string | null>(null);
@@ -172,6 +336,7 @@ export function DocumentPreviewModal({
     // Async function to handle preview loading
     const loadPreview = async () => {
       const isTextFile = TEXT_TYPES.includes(document.contentType);
+      const isPdf = document.contentType === 'application/pdf';
 
       // OPS-109: For text files, use dedicated text content endpoint (backend proxy)
       // This avoids CORS issues with SharePoint download URLs
@@ -185,6 +350,23 @@ export function DocumentPreviewModal({
           }
         } catch {
           setError('Eroare la încărcarea conținutului');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      // OPS-125: For PDFs, fetch download URL for react-pdf viewer
+      if (isPdf && onRequestDownloadUrl) {
+        try {
+          const url = await onRequestDownloadUrl(document.id);
+          if (url) {
+            setPdfDownloadUrl(url);
+          } else {
+            setError('Nu s-a putut genera link-ul de descărcare PDF');
+          }
+        } catch {
+          setError('Eroare la încărcarea PDF-ului');
         } finally {
           setLoading(false);
         }
@@ -230,10 +412,11 @@ export function DocumentPreviewModal({
       setLoading(true);
       setError(null);
       setPreviewUrl(null);
+      setPdfDownloadUrl(null);
       setTextContent(null);
       loadPreview();
     }
-  }, [isOpen, document, onRequestPreviewUrl, onRequestTextContent]);
+  }, [isOpen, document, onRequestPreviewUrl, onRequestDownloadUrl, onRequestTextContent]);
 
   // Handle iframe load
   const handleIframeLoad = useCallback(() => {
@@ -263,6 +446,47 @@ export function DocumentPreviewModal({
       window.open(document.downloadUrl, '_blank');
     }
   }, [document]);
+
+  // ============================================================================
+  // Action Toolbar Logic (OPS-137)
+  // ============================================================================
+
+  // Resolve which actions to display based on context, custom actions, and user role
+  const resolvedActions = useMemo(() => {
+    // If custom actions provided, use those directly
+    if (customActions) return customActions;
+
+    // If context provided, get defaults filtered by user role
+    if (context) {
+      return getActionsForContext(context, userRole);
+    }
+
+    // No actions
+    return [];
+  }, [customActions, context, userRole]);
+
+  // Handle action clicks with loading state management
+  const handleAction = useCallback(
+    async (actionId: string) => {
+      if (!document || !onAction) return;
+
+      // Handle 'download' action directly without external handler
+      if (actionId === 'download') {
+        handleDownload();
+        return;
+      }
+
+      // Set loading state for this action
+      setActionLoading((prev) => ({ ...prev, [actionId]: true }));
+
+      try {
+        await onAction(actionId, document);
+      } finally {
+        setActionLoading((prev) => ({ ...prev, [actionId]: false }));
+      }
+    },
+    [document, onAction, handleDownload]
+  );
 
   if (!document) return null;
 
@@ -434,11 +658,37 @@ export function DocumentPreviewModal({
                 </div>
               )}
 
-            {/* Desktop: Preview iframe for external URLs or blob URLs for non-Office types */}
+            {/* Desktop: PDF Preview using custom react-pdf viewer for 100% zoom control */}
+            {!isMobile &&
+              document.contentType === 'application/pdf' &&
+              pdfDownloadUrl &&
+              !error && (
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    </div>
+                  }
+                >
+                  <PDFViewer
+                    url={pdfDownloadUrl}
+                    initialScale={1}
+                    onLoadSuccess={() => setLoading(false)}
+                    onError={() => {
+                      setLoading(false);
+                      setError('Nu s-a putut încărca documentul PDF');
+                    }}
+                    className="h-full"
+                  />
+                </Suspense>
+              )}
+
+            {/* Desktop: Preview iframe for external URLs or blob URLs for non-Office/non-PDF types */}
             {!isMobile &&
               previewUrl &&
               !error &&
-              // Use object tag for blob URLs (PDF/images only), iframe for OneDrive/external URLs
+              document.contentType !== 'application/pdf' &&
+              // Use object tag for blob URLs (images only), iframe for OneDrive/external URLs
               !(previewUrl.startsWith('blob:') && OFFICE_TYPES.includes(document.contentType)) &&
               (previewUrl.startsWith('blob:') ? (
                 <object
@@ -505,6 +755,15 @@ export function DocumentPreviewModal({
               </div>
             )}
           </div>
+
+          {/* Action Toolbar Footer (OPS-137) */}
+          {resolvedActions.length > 0 && (
+            <ActionToolbar
+              actions={resolvedActions}
+              onAction={handleAction}
+              loading={actionLoading}
+            />
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

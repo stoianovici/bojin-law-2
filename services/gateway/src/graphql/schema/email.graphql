@@ -147,6 +147,16 @@ type EmailAttachment {
   size: Int!
   downloadUrl: String
   document: Document
+  """
+  If attachment was saved as document, reference to that document.
+  Alias for 'document' field for semantic clarity.
+  """
+  savedAsDocument: Document
+  """
+  Whether user marked this attachment as irrelevant (signature, logo, etc.)
+  OPS-136: Allows filtering out non-useful attachments
+  """
+  irrelevant: Boolean!
 }
 
 """
@@ -644,6 +654,46 @@ extend type Mutation {
     emailId: ID!
     caseId: ID!
   ): Boolean!
+
+  # ============================================================================
+  # Attachment Actions (OPS-135)
+  # ============================================================================
+
+  """
+  Save an email attachment as a case document (OPS-135).
+  Creates Document record, uploads to SharePoint, links to case.
+  Returns existing document if attachment was already saved.
+
+  Authorization: User must be assigned to the case (via CaseTeam)
+  """
+  saveEmailAttachmentAsDocument(
+    """Email ID containing the attachment"""
+    emailId: ID!
+    """Attachment ID to save"""
+    attachmentId: ID!
+    """Case ID to link the document to"""
+    caseId: ID!
+    """Optional folder ID to place document in specific folder"""
+    folderId: ID
+  ): SaveAttachmentAsDocumentResult!
+
+  # ============================================================================
+  # Attachment Filtering (OPS-136)
+  # ============================================================================
+
+  """
+  Mark an email attachment as irrelevant (or restore it).
+  Used for filtering out signatures, logos, and other non-useful attachments.
+  Irrelevant attachments are hidden by default but can be shown with includeIrrelevant flag.
+
+  Authorization: User must have access to the email's case
+  """
+  markAttachmentIrrelevant(
+    """Attachment ID to mark"""
+    attachmentId: ID!
+    """Whether to mark as irrelevant (true) or restore (false)"""
+    irrelevant: Boolean!
+  ): EmailAttachment!
 }
 
 """
@@ -672,6 +722,16 @@ type BulkDeleteEmailsResult {
   emailsDeleted: Int!
   attachmentsDeleted: Int!
   success: Boolean!
+}
+
+"""
+Result of saving an email attachment as a document (OPS-135)
+"""
+type SaveAttachmentAsDocumentResult {
+  """The created or existing document"""
+  document: Document!
+  """Whether this was a new document (false if already saved)"""
+  isNew: Boolean!
 }
 
 # ============================================================================

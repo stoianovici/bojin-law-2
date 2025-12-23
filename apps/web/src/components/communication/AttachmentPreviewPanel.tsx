@@ -1,9 +1,11 @@
 /**
  * AttachmentPreviewPanel Component
  * OPS-122: Inline Attachment Preview Panel
+ * OPS-140: AttachmentPreviewPanel Context Integration
  *
  * Side panel for previewing email attachments without blocking the email view.
  * Aggregates all attachments from a thread and allows quick navigation.
+ * Includes action footer for saving to documents and marking as irrelevant.
  */
 
 'use client';
@@ -23,9 +25,42 @@ import {
   AlertCircle,
   ExternalLink,
   GripVertical,
+  Save,
+  EyeOff,
+  Check,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import type { ThreadAttachment } from '../../hooks/useThreadAttachments';
+import { useNotificationStore } from '../../stores/notificationStore';
+
+// ============================================================================
+// GraphQL Mutations (OPS-140)
+// ============================================================================
+
+const SAVE_ATTACHMENT_AS_DOCUMENT = gql`
+  mutation SaveEmailAttachmentAsDocument($emailId: ID!, $attachmentId: ID!, $caseId: ID!) {
+    saveEmailAttachmentAsDocument(emailId: $emailId, attachmentId: $attachmentId, caseId: $caseId) {
+      document {
+        id
+        fileName
+        fileType
+        fileSize
+      }
+      isNew
+    }
+  }
+`;
+
+const MARK_ATTACHMENT_IRRELEVANT = gql`
+  mutation MarkAttachmentIrrelevant($attachmentId: ID!, $irrelevant: Boolean!) {
+    markAttachmentIrrelevant(attachmentId: $attachmentId, irrelevant: $irrelevant) {
+      id
+      irrelevant
+    }
+  }
+`;
 
 // ============================================================================
 // Types
@@ -39,6 +74,12 @@ export interface AttachmentPreviewPanelProps {
   onSelectAttachment: (attachmentId: string, messageId: string) => void;
   onRequestPreviewUrl: (attachmentId: string) => Promise<string | null>;
   onDownload?: (attachment: ThreadAttachment) => void;
+  /** Case ID for saving attachments - required for action buttons to work */
+  caseId?: string;
+  /** Callback when attachment is saved as document */
+  onAttachmentSaved?: (attachmentId: string, documentId: string) => void;
+  /** Callback when attachment is marked as irrelevant */
+  onAttachmentMarkedIrrelevant?: (attachmentId: string) => void;
 }
 
 // ============================================================================
@@ -114,6 +155,9 @@ export function AttachmentPreviewPanel({
   onSelectAttachment,
   onRequestPreviewUrl,
   onDownload,
+  caseId,
+  onAttachmentSaved,
+  onAttachmentMarkedIrrelevant,
 }: AttachmentPreviewPanelProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -122,6 +166,100 @@ export function AttachmentPreviewPanel({
   const [isResizing, setIsResizing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const prevAttachmentIdRef = useRef<string | null>(null);
+
+  // OPS-140: Mutation hooks and state
+  const { addNotification } = useNotificationStore();
+  const [savedAttachmentIds, setSavedAttachmentIds] = useState<Set<string>>(new Set());
+
+  const [saveAttachmentMutation, { loading: savingAttachment }] = useMutation(
+    SAVE_ATTACHMENT_AS_DOCUMENT,
+    {
+      onCompleted: (data) => {
+        const result = data as {
+          saveEmailAttachmentAsDocument: {
+            document: { id: string; fileName: string };
+            isNew: boolean;
+          };
+        };
+        const { document, isNew } = result.saveEmailAttachmentAsDocument;
+        if (selectedAttachment) {
+          setSavedAttachmentIds((prev) => new Set([...prev, selectedAttachment.id]));
+          onAttachmentSaved?.(selectedAttachment.id, document.id);
+        }
+        addNotification({
+          type: 'success',
+          title: isNew ? 'Atașament salvat' : 'Atașament existent',
+          message: isNew
+            ? `${document.fileName} a fost salvat în documente`
+            : 'Acest atașament a fost salvat anterior',
+        });
+      },
+      onError: (error) => {
+        addNotification({
+          type: 'error',
+          title: 'Eroare la salvare',
+          message: error.message || 'Nu s-a putut salva atașamentul',
+        });
+      },
+    }
+  );
+
+  const [markIrrelevantMutation, { loading: markingIrrelevant }] = useMutation(
+    MARK_ATTACHMENT_IRRELEVANT,
+    {
+      onCompleted: () => {
+        if (selectedAttachment) {
+          onAttachmentMarkedIrrelevant?.(selectedAttachment.id);
+        }
+        addNotification({
+          type: 'success',
+          title: 'Atașament marcat',
+          message: 'Atașamentul a fost marcat ca irelevant',
+        });
+        // Close panel after marking irrelevant
+        onClose();
+      },
+      onError: (error) => {
+        addNotification({
+          type: 'error',
+          title: 'Eroare',
+          message: error.message || 'Nu s-a putut marca atașamentul',
+        });
+      },
+    }
+  );
+
+  // OPS-140: Action handlers
+  const handleSaveToDocuments = useCallback(async () => {
+    if (!selectedAttachment || !caseId) return;
+
+    await saveAttachmentMutation({
+      variables: {
+        emailId: selectedAttachment.messageId,
+        attachmentId: selectedAttachment.id,
+        caseId,
+      },
+    });
+  }, [selectedAttachment, caseId, saveAttachmentMutation]);
+
+  const handleMarkIrrelevant = useCallback(async () => {
+    if (!selectedAttachment) return;
+
+    await markIrrelevantMutation({
+      variables: {
+        attachmentId: selectedAttachment.id,
+        irrelevant: true,
+      },
+    });
+  }, [selectedAttachment, markIrrelevantMutation]);
+
+  // Check if current attachment is already saved
+  const isAttachmentSaved = selectedAttachment
+    ? savedAttachmentIds.has(selectedAttachment.id)
+    : false;
+
+  // Check if we can show actions (need caseId)
+  const canShowActions = Boolean(caseId);
 
   // Load preview when attachment changes
   useEffect(() => {
@@ -407,6 +545,70 @@ export function AttachmentPreviewPanel({
         )}
       </div>
 
+      {/* OPS-140: Action Footer */}
+      {canShowActions && (
+        <div className="flex items-center justify-between p-3 border-t bg-gray-50 flex-shrink-0">
+          {/* Primary actions - left side */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSaveToDocuments}
+              disabled={savingAttachment || isAttachmentSaved}
+              className={clsx(
+                'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors',
+                isAttachmentSaved
+                  ? 'bg-green-100 text-green-700 cursor-default'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+              title={isAttachmentSaved ? 'Salvat în documente' : 'Salvează în documente'}
+            >
+              {savingAttachment ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isAttachmentSaved ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">{isAttachmentSaved ? 'Salvat' : 'Salvează'}</span>
+            </button>
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              title="Descarcă"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Descarcă</span>
+            </button>
+          </div>
+
+          {/* Secondary actions - right side */}
+          <div className="flex items-center gap-1">
+            {previewUrl && !isBlobUrl && (
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                title="Deschide în fereastră nouă"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+            <button
+              onClick={handleMarkIrrelevant}
+              disabled={markingIrrelevant}
+              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Marchează ca irelevant"
+            >
+              {markingIrrelevant ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <EyeOff className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Navigation Actions */}
       <div className="flex items-center justify-between p-3 border-t bg-white flex-shrink-0">
         <div className="flex items-center gap-1">
@@ -432,27 +634,7 @@ export function AttachmentPreviewPanel({
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex items-center gap-2">
-          {previewUrl && !isBlobUrl && (
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-              title="Deschide în fereastră nouă"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          )}
-          <button
-            onClick={handleDownload}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-            title="Descarcă"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Descarcă</span>
-          </button>
-        </div>
+        <span className="text-xs text-gray-400">← → pentru navigare</span>
       </div>
 
       {/* All Attachments List */}

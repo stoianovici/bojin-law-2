@@ -8,3 +8,6 @@ export type { DocumentPreviewModalProps, PreviewableDocument } from './DocumentP
 
 export { PreviewButton } from './PreviewButton';
 export type { PreviewButtonProps } from './PreviewButton';
+
+export { PDFViewer } from './PDFViewer';
+export type { PDFViewerProps } from './PDFViewer';

@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { gql } from '@apollo/client';
-import { useLazyQuery } from '@apollo/client/react';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
 import type { PreviewableDocument } from '@/components/preview';
 
 // ============================================================================
@@ -43,6 +43,16 @@ const GET_DOCUMENT_TEXT_CONTENT = gql`
   }
 `;
 
+// Mutation to get download URL for PDFs (OPS-125)
+const GET_DOCUMENT_DOWNLOAD_URL = gql`
+  mutation GetDocumentDownloadUrl($documentId: UUID!) {
+    getDocumentDownloadUrl(documentId: $documentId) {
+      url
+      expirationDateTime
+    }
+  }
+`;
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -58,6 +68,12 @@ interface TextContentResult {
   content: string;
   mimeType: string;
   size: number;
+}
+
+// OPS-125: Download URL result for PDF preview
+interface DownloadUrlResult {
+  url: string;
+  expirationDateTime: string;
 }
 
 interface UseDocumentPreviewOptions {
@@ -76,6 +92,8 @@ interface UseDocumentPreviewReturn {
   closePreview: () => void;
   /** Fetch preview URL for a document */
   fetchPreviewUrl: (documentId: string) => Promise<string | null>;
+  /** Fetch download URL for a document (OPS-125: for PDF preview) */
+  fetchDownloadUrl: (documentId: string) => Promise<string | null>;
   /** Fetch text content for a text file (OPS-109) */
   fetchTextContent: (documentId: string) => Promise<string | null>;
   /** Loading state for preview URL fetch */
@@ -111,6 +129,9 @@ export function useDocumentPreview(
   const [fetchTextContentQuery] = useLazyQuery(GET_DOCUMENT_TEXT_CONTENT, {
     fetchPolicy: 'network-only',
   });
+
+  // OPS-125: Download URL mutation for PDF preview
+  const [getDownloadUrlMutation] = useMutation(GET_DOCUMENT_DOWNLOAD_URL);
 
   const loading = type === 'document' ? docLoading : attLoading;
   const error = (type === 'document' ? docError : attError) || null;
@@ -160,6 +181,26 @@ export function useDocumentPreview(
   );
 
   /**
+   * Fetch download URL for a document (OPS-125)
+   * Used for PDF preview with react-pdf
+   */
+  const fetchDownloadUrl = useCallback(
+    async (documentId: string): Promise<string | null> => {
+      try {
+        const result = await getDownloadUrlMutation({
+          variables: { documentId },
+        });
+        const rawData = result.data as { getDocumentDownloadUrl?: DownloadUrlResult } | undefined;
+        return rawData?.getDocumentDownloadUrl?.url || null;
+      } catch (err) {
+        console.error('Failed to fetch download URL:', err);
+        return null;
+      }
+    },
+    [getDownloadUrlMutation]
+  );
+
+  /**
    * Fetch text content for a text file (OPS-109)
    * Used for text/plain, text/csv, application/json, etc.
    */
@@ -185,6 +226,7 @@ export function useDocumentPreview(
     openPreview,
     closePreview,
     fetchPreviewUrl,
+    fetchDownloadUrl,
     fetchTextContent,
     loading,
     error,

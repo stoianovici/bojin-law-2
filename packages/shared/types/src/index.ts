@@ -93,3 +93,6 @@ export * from './platform-intelligence';
 
 // AI Context Files Types (OPS-115)
 export * from './ai-context';
+
+// Document Preview Actions Types (OPS-134)
+export * from './document-preview-actions';

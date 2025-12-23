@@ -45,6 +45,8 @@ const DOCUMENT_GRID_FIELDS = gql`
     thumbnailLarge
     # Status
     status
+    # Download URL for PDF preview
+    downloadUrl
   }
 `;
 
@@ -157,6 +159,8 @@ export interface DocumentGridData {
   thumbnailLarge: string | null;
   // Status
   status: DocumentStatus;
+  // Download URL for PDF preview
+  downloadUrl: string | null;
 }
 
 export interface DocumentGridItem {

@@ -21,10 +21,11 @@ import { triggerProcessing } from '../../workers/email-categorization.worker';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
 import { emailCleanerService } from '../../services/email-cleaner.service';
 import { classificationScoringService, CaseScore } from '../../services/classification-scoring';
-import { CaseStatus, EmailClassificationState } from '@prisma/client';
+import { CaseStatus, EmailClassificationState, DocumentStatus } from '@prisma/client';
 import Redis from 'ioredis';
 import { oneDriveService } from '../../services/onedrive.service';
 import { r2StorageService } from '../../services/r2-storage.service';
+import { sharePointService } from '../../services/sharepoint.service';
 import logger from '../../utils/logger';
 
 // ============================================================================
@@ -2359,6 +2360,255 @@ export const emailResolvers = {
 
       return true;
     },
+
+    // =========================================================================
+    // Attachment Actions (OPS-135)
+    // =========================================================================
+
+    /**
+     * Save an email attachment as a case document
+     * Creates Document record, uploads to SharePoint, links to case.
+     * Returns existing document if attachment was already saved.
+     */
+    saveEmailAttachmentAsDocument: async (
+      _: any,
+      args: { emailId: string; attachmentId: string; caseId: string; folderId?: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required to save attachment', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
+        });
+      }
+
+      // Verify email exists and user has access (via firm membership)
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify case access
+      const caseAccess = await prisma.caseTeam.findFirst({
+        where: { caseId: args.caseId, userId: user.id },
+        include: {
+          case: {
+            select: { id: true, caseNumber: true, clientId: true, firmId: true },
+          },
+        },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get attachment
+      const attachment = await prisma.emailAttachment.findUnique({
+        where: { id: args.attachmentId },
+        include: { document: true },
+      });
+
+      if (!attachment || attachment.emailId !== args.emailId) {
+        throw new GraphQLError('Attachment not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Check if already saved as document
+      if (attachment.documentId && attachment.document) {
+        logger.info('[saveEmailAttachmentAsDocument] Attachment already saved as document', {
+          attachmentId: args.attachmentId,
+          documentId: attachment.documentId,
+        });
+        return {
+          document: attachment.document,
+          isNew: false,
+        };
+      }
+
+      // Fetch attachment content from MS Graph
+      logger.info('[saveEmailAttachmentAsDocument] Fetching attachment from MS Graph', {
+        emailId: args.emailId,
+        attachmentId: args.attachmentId,
+        graphAttachmentId: attachment.graphAttachmentId,
+      });
+
+      const content = await emailAttachmentService.getAttachmentContentFromGraph(
+        email.graphMessageId,
+        attachment.graphAttachmentId,
+        user.accessToken
+      );
+
+      // Upload to SharePoint
+      logger.info('[saveEmailAttachmentAsDocument] Uploading to SharePoint', {
+        caseNumber: caseAccess.case.caseNumber,
+        fileName: attachment.name,
+        fileSize: attachment.size,
+      });
+
+      const sharePointItem = await sharePointService.uploadDocument(
+        user.accessToken,
+        caseAccess.case.caseNumber,
+        attachment.name,
+        content,
+        attachment.contentType
+      );
+
+      // Create Document record
+      const document = await prisma.document.create({
+        data: {
+          clientId: caseAccess.case.clientId,
+          firmId: caseAccess.case.firmId,
+          fileName: attachment.name,
+          fileType: attachment.contentType,
+          fileSize: attachment.size,
+          storagePath: sharePointItem.parentPath + '/' + attachment.name,
+          uploadedBy: user.id,
+          sharePointItemId: sharePointItem.id,
+          sharePointPath: sharePointItem.parentPath + '/' + attachment.name,
+          status: DocumentStatus.FINAL,
+          metadata: {
+            source: 'email_attachment',
+            category: 'Email Attachment',
+            emailId: args.emailId,
+            originalAttachmentId: args.attachmentId,
+          },
+        },
+      });
+
+      // Link document to case via CaseDocument junction table
+      await prisma.caseDocument.create({
+        data: {
+          caseId: args.caseId,
+          documentId: document.id,
+          linkedBy: user.id,
+          firmId: caseAccess.case.firmId,
+          isOriginal: true,
+          ...(args.folderId && { folderId: args.folderId }),
+        },
+      });
+
+      // Update EmailAttachment with document reference
+      await prisma.emailAttachment.update({
+        where: { id: args.attachmentId },
+        data: { documentId: document.id },
+      });
+
+      logger.info('[saveEmailAttachmentAsDocument] Successfully saved attachment as document', {
+        attachmentId: args.attachmentId,
+        documentId: document.id,
+        caseId: args.caseId,
+        sharePointId: sharePointItem.id,
+      });
+
+      return {
+        document,
+        isNew: true,
+      };
+    },
+
+    // =========================================================================
+    // Attachment Filtering (OPS-136)
+    // =========================================================================
+
+    /**
+     * Mark an email attachment as irrelevant (or restore it)
+     * OPS-136: Used for filtering out signatures, logos, etc.
+     */
+    markAttachmentIrrelevant: async (
+      _: any,
+      args: { attachmentId: string; irrelevant: boolean },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Get attachment with email to verify access
+      const attachment = await prisma.emailAttachment.findUnique({
+        where: { id: args.attachmentId },
+        include: {
+          email: {
+            select: {
+              id: true,
+              firmId: true,
+              caseId: true,
+              caseLinks: { select: { caseId: true } },
+            },
+          },
+        },
+      });
+
+      if (!attachment) {
+        throw new GraphQLError('Attachment not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify user has access (via firm membership)
+      if (attachment.email.firmId !== user.firmId) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // If attachment is linked to a case, verify case access
+      const caseIds = [
+        attachment.email.caseId,
+        ...attachment.email.caseLinks.map((link) => link.caseId),
+      ].filter(Boolean) as string[];
+
+      if (caseIds.length > 0) {
+        const hasAccess = await prisma.caseTeam.findFirst({
+          where: {
+            userId: user.id,
+            caseId: { in: caseIds },
+          },
+        });
+
+        if (!hasAccess) {
+          throw new GraphQLError('Not authorized to modify this attachment', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+      }
+
+      // Update the irrelevant flag
+      const updatedAttachment = await prisma.emailAttachment.update({
+        where: { id: args.attachmentId },
+        data: { irrelevant: args.irrelevant },
+        include: { document: true },
+      });
+
+      logger.info('[markAttachmentIrrelevant] Attachment marked', {
+        attachmentId: args.attachmentId,
+        irrelevant: args.irrelevant,
+        userId: user.id,
+      });
+
+      return updatedAttachment;
+    },
   },
 
   Subscription: {
@@ -2498,12 +2748,16 @@ export const emailResolvers = {
       }
 
       // OPS-113: Filter out dismissed attachments
+      // OPS-136: Filter out irrelevant attachments by default
       if (parent.attachments) {
-        return parent.attachments.filter((a: any) => a.filterStatus !== 'dismissed');
+        return parent.attachments.filter(
+          (a: any) => a.filterStatus !== 'dismissed' && !a.irrelevant
+        );
       }
       return await prisma.emailAttachment.findMany({
         where: {
           emailId: parent.id,
+          irrelevant: false,
           OR: [{ filterStatus: null }, { filterStatus: { not: 'dismissed' } }],
         },
       });
@@ -2541,6 +2795,18 @@ export const emailResolvers = {
       if (!parent.documentId) return null;
       return await prisma.document.findUnique({ where: { id: parent.documentId } });
     },
+    /**
+     * Alias for 'document' field - returns the saved document if this attachment
+     * was saved as a case document via saveEmailAttachmentAsDocument mutation
+     */
+    savedAsDocument: async (parent: any) => {
+      if (!parent.documentId) return null;
+      return await prisma.document.findUnique({ where: { id: parent.documentId } });
+    },
+    /**
+     * Whether user marked this attachment as irrelevant (OPS-136)
+     */
+    irrelevant: (parent: any) => parent.irrelevant ?? false,
     downloadUrl: async (parent: any, _args: any, context: Context) => {
       if (!context.user?.accessToken || !parent.storageUrl) return null;
       try {

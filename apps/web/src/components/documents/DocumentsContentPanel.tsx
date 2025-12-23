@@ -40,6 +40,7 @@ import { CreateFolderModal } from './CreateFolderModal';
 import { AssignToMapaModal, type DocumentInfo } from '../mapa/AssignToMapaModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentGrid, type DocumentGridItem } from '../../hooks/useDocumentGrid';
+import { usePreviewActions } from '../../hooks/usePreviewActions';
 
 // ============================================================================
 // Types
@@ -343,11 +344,17 @@ export function DocumentsContentPanel({
     openPreview,
     closePreview,
     fetchPreviewUrl,
+    fetchDownloadUrl,
     fetchTextContent,
   } = useDocumentPreview({ type: 'document' });
 
   // OPS-109: Auth context for Microsoft account status
   const { hasMsalAccount, reconnectMicrosoft } = useAuth();
+
+  // OPS-139: Get filtered preview actions for case-documents context
+  const { actions: previewActions, userRole } = usePreviewActions({
+    context: 'case-documents',
+  });
 
   // Find current case
   const currentCase = useMemo(() => cases.find((c) => c.id === caseId), [cases, caseId]);
@@ -373,7 +380,7 @@ export function DocumentsContentPanel({
             status: item.document.status,
             thumbnailUrl:
               item.document.thumbnailMedium ?? item.document.thumbnailSmall ?? undefined,
-            downloadUrl: undefined,
+            downloadUrl: item.document.downloadUrl ?? undefined,
           },
           linkedBy: {
             id: item.linkedBy.id,
@@ -461,6 +468,53 @@ export function DocumentsContentPanel({
       fileSize: doc.document.fileSize,
     });
   }, []);
+
+  /**
+   * OPS-139: Handle preview action toolbar clicks
+   * Maps action IDs to specific handlers
+   */
+  const handlePreviewAction = useCallback(
+    async (actionId: string, doc: PreviewableDocument) => {
+      // Find the original CaseDocumentContext for this preview document
+      const caseDoc = documents.find((d) => d.document.id === doc.id);
+
+      switch (actionId) {
+        case 'add-to-mapa':
+          if (caseDoc) {
+            handleAddToMapa(caseDoc);
+          }
+          break;
+
+        case 'download':
+          // Download is handled by the modal directly
+          break;
+
+        case 'rename':
+          // TODO: Implement rename modal
+          console.log('Rename action for:', doc.name);
+          break;
+
+        case 'move':
+          // TODO: Implement move to folder modal
+          console.log('Move action for:', doc.name);
+          break;
+
+        case 'link-to-case':
+          // TODO: Implement link to another case modal
+          console.log('Link to case action for:', doc.name);
+          break;
+
+        case 'delete':
+          // TODO: Implement delete confirmation dialog
+          console.log('Delete action for:', doc.name);
+          break;
+
+        default:
+          console.warn('Unknown action:', actionId);
+      }
+    },
+    [documents, handleAddToMapa]
+  );
 
   // No case selected
   if (!caseId || !currentCase) {
@@ -625,15 +679,21 @@ export function DocumentsContentPanel({
         />
       )}
 
-      {/* Document Preview Modal (OPS-087) */}
+      {/* Document Preview Modal (OPS-087, OPS-139) */}
       <DocumentPreviewModal
         isOpen={isPreviewOpen}
         onClose={closePreview}
         document={previewDocument}
         onRequestPreviewUrl={fetchPreviewUrl}
+        onRequestDownloadUrl={fetchDownloadUrl}
         onRequestTextContent={fetchTextContent}
         hasMsalAccount={hasMsalAccount}
         onReconnectMicrosoft={reconnectMicrosoft}
+        // OPS-139: Context-aware action toolbar
+        context="case-documents"
+        actions={previewActions}
+        userRole={userRole ?? undefined}
+        onAction={handlePreviewAction}
       />
 
       {/* Assign to Mapa Modal */}

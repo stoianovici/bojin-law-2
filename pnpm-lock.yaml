@@ -351,6 +351,9 @@ importers:
       react-hook-form:
         specifier: ^7.66.1
         version: 7.66.1(react@19.2.0)
+      react-pdf:
+        specifier: ^9.2.1
+        version: 9.2.1(@types/react@18.3.26)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       recharts:
         specifier: ^3.4.1
         version: 3.4.1(@types/react@18.3.26)(react-dom@19.2.0(react@19.2.0))(react-is@18.3.1)(react@19.2.0)(redux@5.0.1)
@@ -21676,6 +21679,21 @@ snapshots:
       pdfjs-dist: 4.8.69
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+      tiny-invariant: 1.3.3
+      warning: 4.0.3
+    optionalDependencies:
+      '@types/react': 18.3.26
+
+  react-pdf@9.2.1(@types/react@18.3.26)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+    dependencies:
+      clsx: 2.1.1
+      dequal: 2.0.3
+      make-cancellable-promise: 1.3.2
+      make-event-props: 1.6.2
+      merge-refs: 1.3.0(@types/react@18.3.26)
+      pdfjs-dist: 4.8.69
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
       tiny-invariant: 1.3.3
       warning: 4.0.3
     optionalDependencies:
