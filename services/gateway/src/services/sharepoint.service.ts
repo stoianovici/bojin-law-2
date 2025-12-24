@@ -117,6 +117,18 @@ export interface ThumbnailSet {
   large?: string;
 }
 
+/**
+ * Result of checking if a SharePoint document has changed
+ */
+export interface ChangeDetectionResult {
+  /** Whether the document has been modified since the known timestamp */
+  changed: boolean;
+  /** Current metadata (null if document was deleted) */
+  currentMetadata: SharePointItem | null;
+  /** Current eTag for future comparisons */
+  currentETag?: string;
+}
+
 // ============================================================================
 // Service
 // ============================================================================
@@ -350,9 +362,9 @@ export class SharePointService {
 
           if (isPdf || isOffice) {
             try {
-              // OPS-125: Request 100% zoom for Office files (zoom: 1 = 100%)
+              // OPS-125: Request 150% zoom for Office files (zoom: 1.5 = 150%)
               // Note: zoom param works for Office files but is ignored for PDFs (MS limitation)
-              const previewResponse = await client.api(previewEndpoint).post({ zoom: 1 });
+              const previewResponse = await client.api(previewEndpoint).post({ zoom: 1.5 });
 
               if (previewResponse.getUrl) {
                 logger.info('Generated SharePoint preview URL', {
@@ -671,6 +683,116 @@ export class SharePointService {
   }
 
   /**
+   * Copy a file within SharePoint to a new location
+   * OPS-175: Used for promoting email attachments to working documents
+   *
+   * @param accessToken - User's access token
+   * @param sourceItemId - SharePoint item ID of the source file
+   * @param destinationPath - Destination folder path (e.g., "Cases/ABC-001/Documents/Working")
+   * @param newFileName - Optional new file name (uses source name if not provided)
+   * @returns SharePoint item metadata for the copied file
+   */
+  async copyFile(
+    accessToken: string,
+    sourceItemId: string,
+    destinationPath: string,
+    newFileName?: string
+  ): Promise<SharePointItem> {
+    this.ensureConfigured();
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+          const siteId = process.env.SHAREPOINT_SITE_ID;
+
+          // Get source file metadata to preserve file name if not specified
+          const sourceItem = await this.getFileMetadata(accessToken, sourceItemId);
+          const targetFileName = newFileName || sourceItem.name;
+
+          // Ensure destination folder exists (create if necessary)
+          // Parse the path to create folders recursively
+          const pathParts = destinationPath.split('/').filter(Boolean);
+          let currentParentId = 'root';
+
+          for (const folderName of pathParts) {
+            const folder = await this.createOrGetFolder(client, currentParentId, folderName);
+            currentParentId = folder.id!;
+          }
+
+          // Copy the file to the destination folder
+          const sourceEndpoint = `/sites/${siteId}/drive/items/${sourceItemId}`;
+          const copyResponse = await client.api(`${sourceEndpoint}/copy`).post({
+            parentReference: {
+              driveId: process.env.SHAREPOINT_DRIVE_ID,
+              id: currentParentId,
+            },
+            name: targetFileName,
+          });
+
+          // The copy operation is asynchronous in SharePoint
+          // For small files, it's usually instant, but we may get a 202 with a Location header
+          // For now, we'll wait a moment and fetch the new item
+          // The copyResponse contains a Location header with the monitor URL
+
+          // Wait for copy to complete (poll if needed)
+          let copiedItem: DriveItem | null = null;
+          const maxAttempts = 10;
+          const pollInterval = 500; // ms
+
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+              // Try to find the copied file in the destination folder
+              const children = await client
+                .api(`/sites/${siteId}/drive/items/${currentParentId}/children`)
+                .filter(`name eq '${targetFileName}'`)
+                .get();
+
+              if (children.value && children.value.length > 0) {
+                copiedItem = children.value[0];
+                break;
+              }
+            } catch {
+              // File not found yet, continue polling
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, pollInterval));
+          }
+
+          if (!copiedItem) {
+            throw new Error('Copy operation did not complete in time');
+          }
+
+          logger.info('File copied in SharePoint', {
+            sourceItemId,
+            destinationPath,
+            newItemId: copiedItem.id,
+            fileName: targetFileName,
+          });
+
+          return {
+            id: copiedItem.id!,
+            name: copiedItem.name!,
+            size: copiedItem.size!,
+            mimeType: copiedItem.file?.mimeType || sourceItem.mimeType,
+            webUrl: copiedItem.webUrl!,
+            downloadUrl: (copiedItem as any)['@microsoft.graph.downloadUrl'],
+            parentPath: destinationPath,
+            createdDateTime: copiedItem.createdDateTime!,
+            lastModifiedDateTime: copiedItem.lastModifiedDateTime!,
+          };
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'sharepoint-copy-file'
+    );
+  }
+
+  /**
    * Get file metadata from SharePoint
    *
    * @param accessToken - User's access token
@@ -707,6 +829,168 @@ export class SharePointService {
       },
       {},
       'sharepoint-get-file-metadata'
+    );
+  }
+
+  /**
+   * Check if a SharePoint document has been modified since a known timestamp
+   * OPS-179: SharePoint Change Detection Methods
+   *
+   * Used for lazy version detection when users return from editing in Word.
+   * Compares the current lastModifiedDateTime against the known baseline.
+   *
+   * @param accessToken - User's access token
+   * @param itemId - SharePoint item ID
+   * @param knownLastModified - ISO timestamp of last known modification
+   * @returns Whether document changed and current metadata
+   */
+  async checkForChanges(
+    accessToken: string,
+    itemId: string,
+    knownLastModified: string
+  ): Promise<ChangeDetectionResult> {
+    this.ensureConfigured();
+
+    try {
+      const metadata = await this.getFileMetadata(accessToken, itemId);
+
+      // Compare timestamps - document is changed if lastModifiedDateTime differs
+      const knownDate = new Date(knownLastModified).getTime();
+      const currentDate = new Date(metadata.lastModifiedDateTime).getTime();
+      const changed = currentDate !== knownDate;
+
+      if (changed) {
+        logger.info('SharePoint document change detected', {
+          itemId,
+          knownLastModified,
+          currentLastModified: metadata.lastModifiedDateTime,
+        });
+      }
+
+      return {
+        changed,
+        currentMetadata: metadata,
+      };
+    } catch (error: any) {
+      // Handle 404 - document was deleted
+      if (error.statusCode === 404 || error.code === 'itemNotFound') {
+        logger.warn('SharePoint document deleted during change detection', { itemId });
+        return {
+          changed: true,
+          currentMetadata: null,
+        };
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a SharePoint document has changed using eTag (faster)
+   * OPS-179: SharePoint Change Detection Methods
+   *
+   * Uses the MS Graph API to check eTag without fetching full metadata.
+   * ETags change on any modification, making this a reliable change detector.
+   *
+   * @param accessToken - User's access token
+   * @param itemId - SharePoint item ID
+   * @param knownETag - Known eTag to compare against
+   * @returns Whether document changed and current eTag
+   */
+  async checkForChangesByETag(
+    accessToken: string,
+    itemId: string,
+    knownETag: string
+  ): Promise<{ changed: boolean; currentETag: string | null }> {
+    this.ensureConfigured();
+
+    try {
+      const client = createGraphClient(accessToken);
+      const itemEndpoint = graphEndpoints.sharepoint.driveItem(itemId);
+
+      // Request only eTag field for efficiency
+      const item = await client.api(itemEndpoint).select('id,eTag').get();
+
+      const currentETag = item.eTag;
+      const changed = currentETag !== knownETag;
+
+      if (changed) {
+        logger.info('SharePoint document eTag change detected', {
+          itemId,
+          knownETag,
+          currentETag,
+        });
+      }
+
+      return {
+        changed,
+        currentETag,
+      };
+    } catch (error: any) {
+      // Handle 404 - document was deleted
+      if (error.statusCode === 404 || error.code === 'itemNotFound') {
+        logger.warn('SharePoint document deleted during eTag check', { itemId });
+        return {
+          changed: true,
+          currentETag: null,
+        };
+      }
+
+      const parsedError = parseGraphError(error);
+      logGraphError(parsedError);
+      throw parsedError;
+    }
+  }
+
+  /**
+   * Download document content from SharePoint
+   * OPS-180: Downloads file content as Buffer for R2 backup sync and version creation
+   *
+   * @param accessToken - User's access token
+   * @param itemId - SharePoint item ID
+   * @returns Buffer containing file content
+   */
+  async downloadDocument(accessToken: string, itemId: string): Promise<Buffer> {
+    this.ensureConfigured();
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+          const itemEndpoint = graphEndpoints.sharepoint.driveItem(itemId);
+
+          // Get the item metadata which includes the download URL
+          const item = await client.api(itemEndpoint).get();
+          const downloadUrl = item['@microsoft.graph.downloadUrl'];
+
+          if (!downloadUrl) {
+            throw new Error('No download URL available for document');
+          }
+
+          // Fetch the content using the pre-authenticated download URL
+          const response = await fetch(downloadUrl);
+
+          if (!response.ok) {
+            throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          logger.info('Document downloaded from SharePoint', {
+            itemId,
+            fileName: item.name,
+            size: buffer.length,
+          });
+
+          return buffer;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'sharepoint-download-document'
     );
   }
 

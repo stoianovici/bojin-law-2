@@ -12,6 +12,7 @@
 
 import { useState, useCallback } from 'react';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Folder,
   Building2,
@@ -30,6 +31,24 @@ import type {
   UnassignedCourtEmail,
   UncertainEmail,
 } from '../../hooks/useMyEmailsByCase';
+
+// ============================================================================
+// Animation Variants
+// ============================================================================
+
+const listItemVariants = {
+  hidden: { opacity: 0, x: -8 },
+  visible: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -8 },
+};
+
+const listContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.03 },
+  },
+};
 
 // ============================================================================
 // Types
@@ -256,29 +275,39 @@ function CaseAccordionItem({
       </button>
 
       {/* Thread List (when expanded) */}
-      {isExpanded && (
-        <div className="bg-gray-50/50">
-          {caseData.threads.map((thread) => (
-            <ThreadItem
-              key={thread.id}
-              thread={thread}
-              isSelected={selectedThreadId === thread.conversationId}
-              onClick={() => onSelectThread(thread.conversationId, caseData.id)}
-              onMoveClick={
-                onMoveThread
-                  ? () =>
-                      onMoveThread({
-                        conversationId: thread.conversationId,
-                        subject: thread.subject,
-                        currentCaseId: caseData.id !== 'unassigned' ? caseData.id : undefined,
-                        currentCaseTitle: caseData.id !== 'unassigned' ? caseData.title : undefined,
-                      })
-                  : undefined
-              }
-            />
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            className="bg-gray-50/50"
+            variants={listContainerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+          >
+            {caseData.threads.map((thread) => (
+              <motion.div key={thread.id} variants={listItemVariants}>
+                <ThreadItem
+                  thread={thread}
+                  isSelected={selectedThreadId === thread.conversationId}
+                  onClick={() => onSelectThread(thread.conversationId, caseData.id)}
+                  onMoveClick={
+                    onMoveThread
+                      ? () =>
+                          onMoveThread({
+                            conversationId: thread.conversationId,
+                            subject: thread.subject,
+                            currentCaseId: caseData.id !== 'unassigned' ? caseData.id : undefined,
+                            currentCaseTitle:
+                              caseData.id !== 'unassigned' ? caseData.title : undefined,
+                          })
+                      : undefined
+                  }
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -514,18 +543,26 @@ export function CaseSidebar({
               <SectionHeader icon={Building2} title="INSTANȚE" count={courtUnassignedCount} />
             </button>
 
-            {!collapsedSections.has('instante') && (
-              <>
-                {courtUnassigned.map((email) => (
-                  <CourtEmailItem
-                    key={email.id}
-                    email={email}
-                    isSelected={selectedEmailId === email.id}
-                    onClick={() => onSelectCourtEmail(email.id)}
-                  />
-                ))}
-              </>
-            )}
+            <AnimatePresence>
+              {!collapsedSections.has('instante') && (
+                <motion.div
+                  variants={listContainerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                >
+                  {courtUnassigned.map((email) => (
+                    <motion.div key={email.id} variants={listItemVariants}>
+                      <CourtEmailItem
+                        email={email}
+                        isSelected={selectedEmailId === email.id}
+                        onClick={() => onSelectCourtEmail(email.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -536,18 +573,26 @@ export function CaseSidebar({
               <SectionHeader icon={AlertCircle} title="NECLAR" count={uncertainCount} isWarning />
             </button>
 
-            {!collapsedSections.has('neclar') && (
-              <>
-                {uncertain.map((email) => (
-                  <UncertainEmailItem
-                    key={email.id}
-                    email={email}
-                    isSelected={selectedEmailId === email.id}
-                    onClick={() => onSelectUncertainEmail(email.id)}
-                  />
-                ))}
-              </>
-            )}
+            <AnimatePresence>
+              {!collapsedSections.has('neclar') && (
+                <motion.div
+                  variants={listContainerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                >
+                  {uncertain.map((email) => (
+                    <motion.div key={email.id} variants={listItemVariants}>
+                      <UncertainEmailItem
+                        email={email}
+                        isSelected={selectedEmailId === email.id}
+                        onClick={() => onSelectUncertainEmail(email.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>

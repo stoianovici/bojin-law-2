@@ -60,14 +60,18 @@ Word edit session returned when opening a document in Word
 type WordEditSession {
   """Document ID"""
   documentId: UUID!
-  """Word protocol URL (ms-word:ofe|u|...)"""
+  """Word protocol URL (ms-word:ofe|u|...) for desktop Word"""
   wordUrl: String!
+  """Word Online URL (fallback if desktop Word not installed)"""
+  webUrl: String
   """Lock token for this session"""
   lockToken: String!
   """When the session/lock expires"""
   expiresAt: DateTime!
-  """OneDrive item ID"""
-  oneDriveId: String!
+  """OneDrive item ID (for legacy documents, null for SharePoint-first)"""
+  oneDriveId: String
+  """SharePoint item ID (for SharePoint-first flow, null for legacy OneDrive)"""
+  sharePointItemId: String
 }
 
 # =============================================================================
@@ -228,6 +232,18 @@ type WordSyncResult {
   trackChanges: [TrackChange!]
   """Comments synced"""
   commentsCount: Int
+  """Whether document was migrated from OneDrive to SharePoint (OPS-184)"""
+  migrated: Boolean
+}
+
+"""
+Result of explicit SharePoint sync (OPS-182)
+"""
+type SharePointSyncResult {
+  """Whether changes were found and synced"""
+  updated: Boolean!
+  """New version number if a version was created"""
+  newVersionNumber: Int
 }
 
 # =============================================================================
@@ -304,6 +320,13 @@ extend type Mutation {
   Upload a document to OneDrive for Word editing.
   """
   uploadToOneDrive(documentId: UUID!): String!
+
+  """
+  Sync a document from SharePoint if changes were made (OPS-182).
+  Checks if the document was modified in SharePoint since last sync,
+  downloads updates, creates a new version, and updates R2 backup.
+  """
+  syncDocumentFromSharePoint(documentId: UUID!): SharePointSyncResult!
 }
 
 # =============================================================================

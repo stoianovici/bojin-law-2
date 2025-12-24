@@ -70,6 +70,8 @@ export interface RiskDetectionResult {
 const RISK_DETECTION_SYSTEM_PROMPT = `You are an AI risk analyst for a Romanian law firm.
 Your task is to identify potential risks in email communications from clients and other parties.
 
+IMPORTANT: Răspunde în limba română. Toate descrierile riscurilor, dovezile și acțiunile sugerate trebuie să fie în română.
+
 Analyze the email content for these risk categories:
 
 1. CLIENT DISSATISFACTION

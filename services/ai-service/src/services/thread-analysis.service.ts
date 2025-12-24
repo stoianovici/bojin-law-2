@@ -74,6 +74,8 @@ export interface ThreadSummaryResult {
 const THREAD_ANALYSIS_SYSTEM_PROMPT = `You are an AI legal assistant analyzing email threads for a Romanian law firm.
 Your task is to extract key insights from multi-party legal correspondence.
 
+IMPORTANT: Răspunde ÎNTOTDEAUNA în limba română. Toate rezumatele, argumentele și sugestiile trebuie să fie în română.
+
 Analyze the email thread to identify:
 
 1. OPPOSING COUNSEL POSITION: Summarize the opposing party's current stance

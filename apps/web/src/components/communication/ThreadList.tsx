@@ -2,6 +2,8 @@
 
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useCommunicationStore } from '../../stores/communication.store';
+import { AnimatedListItem } from '../motion';
+import { AnimatePresence } from 'framer-motion';
 import type { CommunicationThread } from '@legal-platform/types';
 import { format } from 'date-fns';
 import { Paperclip } from 'lucide-react';
@@ -117,16 +119,17 @@ export function ThreadList({ className = '' }: ThreadListProps) {
       </div>
 
       {/* Thread list */}
-      <div>
+      <AnimatePresence mode="popLayout">
         {threads.map((thread) => (
-          <ThreadItem
-            key={thread.id}
-            thread={thread}
-            isSelected={selectedThreadId === thread.id}
-            onClick={() => selectThread(thread.id)}
-          />
+          <AnimatedListItem key={thread.id} layoutId={thread.id}>
+            <ThreadItem
+              thread={thread}
+              isSelected={selectedThreadId === thread.id}
+              onClick={() => selectThread(thread.id)}
+            />
+          </AnimatedListItem>
         ))}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

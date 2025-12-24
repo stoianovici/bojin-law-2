@@ -24,6 +24,7 @@ const DOCUMENT_FIELDS_FRAGMENT = gql`
     status
     thumbnailUrl
     downloadUrl
+    versionCount
   }
 `;
 
@@ -126,6 +127,8 @@ export interface DocumentInfo {
   status: string;
   thumbnailUrl?: string;
   downloadUrl?: string;
+  // OPS-176: Version count for version history badge
+  versionCount?: number;
 }
 
 export interface UserInfo {

@@ -25,6 +25,10 @@ import {
   Link,
   RefreshCw,
   EyeOff,
+  FileEdit,
+  Send,
+  FileCheck,
+  Undo2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { PreviewContext, PreviewAction, UserRole } from '@legal-platform/types';
@@ -46,6 +50,8 @@ export interface PreviewableDocument {
   downloadUrl?: string | null;
   /** Source of preview: 'onedrive' | 'office365' | 'r2' | null */
   previewSource?: string | null;
+  /** Document status for filtering review-related actions (OPS-177) */
+  status?: string;
 }
 
 export interface DocumentPreviewModalProps {
@@ -182,6 +188,10 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   EyeOff,
   FileText,
   ExternalLink,
+  FileEdit, // OPS-175: Promote attachment to working document
+  Send, // OPS-177: Submit for review
+  FileCheck, // OPS-177: Review document
+  Undo2, // OPS-177: Withdraw from review
 };
 
 // ============================================================================
@@ -453,17 +463,56 @@ export function DocumentPreviewModal({
 
   // Resolve which actions to display based on context, custom actions, and user role
   const resolvedActions = useMemo(() => {
-    // If custom actions provided, use those directly
-    if (customActions) return customActions;
+    let actions: PreviewAction[];
 
-    // If context provided, get defaults filtered by user role
-    if (context) {
-      return getActionsForContext(context, userRole);
+    // If custom actions provided (non-empty), use those directly
+    if (customActions && customActions.length > 0) {
+      actions = customActions;
+    } else if (context) {
+      // If context provided, get defaults filtered by user role
+      actions = getActionsForContext(context, userRole);
+    } else {
+      // No actions
+      return [];
     }
 
-    // No actions
-    return [];
-  }, [customActions, context, userRole]);
+    // OPS-164: Filter 'open-in-word' action to only show for Word documents
+    const contentType = document?.contentType;
+    const isWordDocument =
+      contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      contentType === 'application/msword';
+
+    actions = actions.filter((action) => {
+      if (action.id === 'open-in-word') {
+        return isWordDocument;
+      }
+      return true;
+    });
+
+    // OPS-177: Filter review-related actions based on document status
+    // This ensures users only see actions valid for the document's current state
+    const docStatus = document?.status;
+    if (docStatus) {
+      actions = actions.filter((action) => {
+        switch (action.id) {
+          case 'submit-for-review':
+            // Only show "Submit for review" for DRAFT documents
+            return docStatus === 'DRAFT';
+          case 'review-document':
+            // Only show "Review" for IN_REVIEW documents
+            return docStatus === 'IN_REVIEW';
+          case 'withdraw-from-review':
+            // Only show "Withdraw" for IN_REVIEW documents
+            return docStatus === 'IN_REVIEW';
+          default:
+            // All other actions are not status-dependent
+            return true;
+        }
+      });
+    }
+
+    return actions;
+  }, [customActions, context, userRole, document?.status, document?.contentType]);
 
   // Handle action clicks with loading state management
   const handleAction = useCallback(
@@ -552,7 +601,7 @@ export function DocumentPreviewModal({
           <div className="flex-1 relative bg-gray-100 overflow-hidden">
             {/* Loading State */}
             {loading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+              <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 animate-fadeIn">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                   <span className="text-sm text-gray-600">Se încarcă previzualizarea...</span>
@@ -672,7 +721,7 @@ export function DocumentPreviewModal({
                 >
                   <PDFViewer
                     url={pdfDownloadUrl}
-                    initialScale={1}
+                    initialScale={1.5}
                     onLoadSuccess={() => setLoading(false)}
                     onError={() => {
                       setLoading(false);

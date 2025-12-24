@@ -10,7 +10,7 @@
 import { prisma } from '@legal-platform/database';
 import { DeadlineWarning, SuggestedAction } from '@legal-platform/types';
 import { Logger } from 'winston';
-import logger from '../lib/logger';
+import logger from '../utils/logger';
 
 // Warning threshold days
 const CRITICAL_THRESHOLD_DAYS = 3;

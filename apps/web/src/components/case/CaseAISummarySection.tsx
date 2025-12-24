@@ -22,6 +22,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
 import { useCaseSummary } from '../../hooks/useCaseSummary';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ============================================================================
 // Types
@@ -38,38 +39,38 @@ interface CaseAISummarySectionProps {
 
 function SummarySkeleton() {
   return (
-    <div className="space-y-4 animate-pulse">
+    <div className="space-y-4">
       {/* Executive Summary Card Skeleton */}
       <div className="bg-white rounded-lg border border-gray-200 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <div className="h-5 w-5 bg-gray-200 rounded" />
-          <div className="h-4 w-24 bg-gray-200 rounded" />
+          <Skeleton className="h-5 w-5" />
+          <Skeleton className="h-4 w-24" />
         </div>
         <div className="space-y-2 mb-4">
-          <div className="h-4 w-full bg-gray-200 rounded" />
-          <div className="h-4 w-3/4 bg-gray-200 rounded" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
         </div>
         <div className="bg-gray-50 rounded-lg p-3">
-          <div className="h-3 w-20 bg-gray-200 rounded mb-2" />
-          <div className="h-4 w-full bg-gray-200 rounded" />
+          <Skeleton className="h-3 w-20 mb-2" />
+          <Skeleton className="h-4 w-full" />
         </div>
       </div>
 
       {/* 2-Column Skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <div className="h-4 w-32 bg-gray-200 rounded mb-3" />
+          <Skeleton className="h-4 w-32 mb-3" />
           <div className="space-y-2">
-            <div className="h-3 w-full bg-gray-200 rounded" />
-            <div className="h-3 w-4/5 bg-gray-200 rounded" />
-            <div className="h-3 w-3/4 bg-gray-200 rounded" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-4/5" />
+            <Skeleton className="h-3 w-3/4" />
           </div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <div className="h-4 w-36 bg-gray-200 rounded mb-3" />
+          <Skeleton className="h-4 w-36 mb-3" />
           <div className="space-y-2">
-            <div className="h-3 w-full bg-gray-200 rounded" />
-            <div className="h-3 w-4/5 bg-gray-200 rounded" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-4/5" />
           </div>
         </div>
       </div>

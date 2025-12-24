@@ -92,7 +92,7 @@ export class ProactiveSuggestionService {
       // Call AI to generate suggestions
       const request: ProviderRequest = {
         systemPrompt:
-          'You are an AI assistant for a Romanian law firm platform. Generate helpful, actionable suggestions based on the user context. Always respond with valid JSON.',
+          'Ești un asistent AI pentru o platformă de firmă de avocatură din România. Generează sugestii utile și acționabile bazate pe contextul utilizatorului. Răspunde ÎNTOTDEAUNA în limba română. Returnează doar JSON valid.',
         prompt,
         model: ClaudeModel.Haiku, // Use Haiku for fast suggestions (< 500ms target)
         maxTokens: 1000,

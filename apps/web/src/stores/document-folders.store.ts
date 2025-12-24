@@ -19,6 +19,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export type DocumentViewMode = 'grid' | 'list';
 
 /**
+ * OPS-173: Document category tabs
+ * - working: Documents being actively edited (UPLOAD, AI_GENERATED, TEMPLATE, or promoted attachments)
+ * - correspondence: Email attachments (EMAIL_ATTACHMENT source type, not promoted)
+ * OPS-174: Supervisor review queue tab
+ * - review: Documents pending supervisor review (status IN_REVIEW, current user is reviewer)
+ */
+export type DocumentTab = 'working' | 'correspondence' | 'review';
+
+/**
  * Sort options for documents
  */
 export type DocumentSortBy = 'name' | 'date' | 'type' | 'size';
@@ -32,6 +41,9 @@ interface DocumentFoldersState {
   selectedCaseId: string | null;
   selectedFolderId: string | null;
   selectedDocumentId: string | null;
+
+  // OPS-173: Active document category tab
+  activeTab: DocumentTab;
 
   // View preferences
   viewMode: DocumentViewMode;
@@ -55,6 +67,9 @@ interface DocumentFoldersState {
   setSelectedFolder: (folderId: string | null) => void;
   setSelectedDocument: (documentId: string | null) => void;
   selectCaseAndFolder: (caseId: string, folderId: string | null) => void;
+
+  // OPS-173: Tab actions
+  setActiveTab: (tab: DocumentTab) => void;
 
   setViewMode: (mode: DocumentViewMode) => void;
   setSortBy: (sortBy: DocumentSortBy) => void;
@@ -84,6 +99,8 @@ const initialState = {
   selectedCaseId: null as string | null,
   selectedFolderId: null as string | null,
   selectedDocumentId: null as string | null,
+  // OPS-173: Default to working documents tab
+  activeTab: 'working' as DocumentTab,
   viewMode: 'grid' as DocumentViewMode,
   sortBy: 'date' as DocumentSortBy,
   sortDirection: 'desc' as SortDirection,
@@ -130,6 +147,9 @@ export const useDocumentFoldersStore = create<DocumentFoldersState>()(
           selectedDocumentIds: [],
           expandedCases: { ...state.expandedCases, [caseId]: true },
         })),
+
+      // OPS-173: Tab action
+      setActiveTab: (tab) => set({ activeTab: tab }),
 
       // View preference actions
       setViewMode: (mode) => set({ viewMode: mode }),
@@ -198,6 +218,8 @@ export const useDocumentFoldersStore = create<DocumentFoldersState>()(
         // Persist navigation state for returning to last viewed location
         selectedCaseId: state.selectedCaseId,
         selectedFolderId: state.selectedFolderId,
+        // OPS-173: Persist active tab
+        activeTab: state.activeTab,
         // Persist view preferences
         viewMode: state.viewMode,
         sortBy: state.sortBy,

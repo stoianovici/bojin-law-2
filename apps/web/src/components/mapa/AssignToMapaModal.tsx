@@ -7,7 +7,8 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 import {
   useCaseMape,
@@ -28,7 +29,7 @@ export interface AssignToMapaModalProps {
   isOpen: boolean;
   onClose: () => void;
   caseId: string;
-  document: DocumentInfo;
+  document: DocumentInfo | null;
   onAssigned: (mapaId: string, slotId: string) => void;
 }
 
@@ -72,6 +73,15 @@ export function AssignToMapaModal({
   const [slotsText, setSlotsText] = useState('');
 
   const parsedSlots = parseQuickListSlots(slotsText);
+
+  // Store portal container for SSR-safe rendering
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    // Only set after component is mounted on client
+    if (typeof window !== 'undefined') {
+      setPortalContainer(window.document.body);
+    }
+  }, []);
 
   const handleClose = useCallback(() => {
     setStep('select-mapa');
@@ -125,11 +135,12 @@ export function AssignToMapaModal({
     }
   }, [newMapaName, newMapaDescription, parsedSlots, createMapaWithSlots]);
 
-  if (!isOpen) return null;
+  // Don't render until portal container is available (client-side only) and document is set
+  if (!isOpen || !portalContainer || !document) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col relative z-[10000]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -372,6 +383,8 @@ export function AssignToMapaModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, portalContainer);
 }
 
 /**

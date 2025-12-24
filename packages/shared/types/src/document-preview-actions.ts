@@ -99,12 +99,44 @@ const COMMON_ACTIONS = {
     variant: 'primary' as ActionVariant,
     group: 'primary' as ActionGroup,
   },
+  // OPS-164: Open in Word desktop app
+  openInWord: {
+    id: 'open-in-word',
+    label: 'Editare Word',
+    icon: 'FileEdit',
+    variant: 'primary' as ActionVariant,
+    group: 'primary' as ActionGroup,
+  },
   openInDocuments: {
     id: 'open-in-documents',
     label: 'Deschide în documente',
     icon: 'FileText',
     variant: 'primary' as ActionVariant,
     group: 'primary' as ActionGroup,
+  },
+  // OPS-177: Review workflow actions
+  submitForReview: {
+    id: 'submit-for-review',
+    label: 'Trimite la revizuire',
+    icon: 'Send',
+    variant: 'primary' as ActionVariant,
+    group: 'primary' as ActionGroup,
+    roles: ['Partner', 'Associate', 'Paralegal'] as UserRole[],
+  },
+  reviewDocument: {
+    id: 'review-document',
+    label: 'Revizuiește',
+    icon: 'FileCheck',
+    variant: 'primary' as ActionVariant,
+    group: 'primary' as ActionGroup,
+    roles: ['Partner', 'Associate'] as UserRole[],
+  },
+  withdrawFromReview: {
+    id: 'withdraw-from-review',
+    label: 'Retrage de la revizuire',
+    icon: 'Undo2',
+    variant: 'secondary' as ActionVariant,
+    group: 'secondary' as ActionGroup,
   },
 } as const;
 
@@ -116,11 +148,18 @@ export const DEFAULT_PREVIEW_ACTIONS: Record<PreviewContext, PreviewAction[]> = 
   /**
    * Case Documents Tab (/cases/[id]/documents)
    * Full document management capabilities
+   * OPS-177: Added review workflow actions (submit-for-review, review-document, withdraw-from-review)
+   * Note: Actual visibility controlled dynamically based on document status in usePreviewActions
    */
   'case-documents': [
     // Primary actions
     { ...COMMON_ACTIONS.addToMapa },
     { ...COMMON_ACTIONS.download },
+    // OPS-164: Open in Word desktop app (shown for Word documents only)
+    { ...COMMON_ACTIONS.openInWord },
+    // OPS-177: Review actions (shown conditionally based on document status)
+    { ...COMMON_ACTIONS.submitForReview },
+    { ...COMMON_ACTIONS.reviewDocument },
     // Secondary actions
     {
       id: 'rename',
@@ -144,6 +183,7 @@ export const DEFAULT_PREVIEW_ACTIONS: Record<PreviewContext, PreviewAction[]> = 
       group: 'secondary',
       roles: ['Partner', 'Associate'],
     },
+    { ...COMMON_ACTIONS.withdrawFromReview },
     {
       id: 'delete',
       label: 'Șterge',
@@ -166,6 +206,15 @@ export const DEFAULT_PREVIEW_ACTIONS: Record<PreviewContext, PreviewAction[]> = 
       icon: 'Save',
       variant: 'primary',
       group: 'primary',
+    },
+    // OPS-175: Promote attachment to working document for editing
+    {
+      id: 'promote-to-working',
+      label: 'Editează ca document de lucru',
+      icon: 'FileEdit',
+      variant: 'primary',
+      group: 'primary',
+      roles: ['Partner', 'Associate', 'Paralegal'],
     },
     { ...COMMON_ACTIONS.addToMapa },
     { ...COMMON_ACTIONS.download },

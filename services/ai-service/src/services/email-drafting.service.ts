@@ -233,7 +233,8 @@ CRITICAL RULES:
 4. Address all points from the original email
 5. Maintain appropriate legal formality
 6. Ensure the response is ready to send with minimal editing
-7. IMPORTANT: Reply in the SAME LANGUAGE as the original email. If the original email is in Romanian, reply in Romanian. If it's in English, reply in English.
+7. IMPORTANT: Default to Romanian (limba română) for all responses. Only use English if the original email is explicitly in English.
+8. Use proper Romanian legal terminology and formulations (e.g., "Cu stimă", "Vă rugăm", "Cu respect").
 
 RECIPIENT TYPE: {recipientType}
 {recipientAdaptation}

@@ -25,6 +25,7 @@ import {
 } from '@legal-platform/types';
 import { OneDriveService, oneDriveService } from './onedrive.service';
 import { R2StorageService, r2StorageService } from './r2-storage.service';
+import { SharePointService, sharePointService } from './sharepoint.service';
 import { createGraphClient, graphEndpoints } from '../config/graph.config';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
@@ -43,21 +44,33 @@ const LOCK_TTL_SECONDS = parseInt(
 export class WordIntegrationService {
   private oneDriveService: OneDriveService;
   private r2Storage: R2StorageService;
+  private sharePoint: SharePointService;
 
-  constructor(oneDriveSvc?: OneDriveService, r2Svc?: R2StorageService) {
+  constructor(
+    oneDriveSvc?: OneDriveService,
+    r2Svc?: R2StorageService,
+    sharePointSvc?: SharePointService
+  ) {
     this.oneDriveService = oneDriveSvc || oneDriveService;
     this.r2Storage = r2Svc || r2StorageService;
+    this.sharePoint = sharePointSvc || sharePointService;
   }
 
   /**
    * Open a document in Word desktop application
    *
-   * Flow:
+   * Flow (SharePoint-first for speed, OneDrive fallback for legacy):
    * 1. Verify document exists and user has access
    * 2. Check/acquire document lock
-   * 3. Ensure document is in OneDrive (upload if needed)
-   * 4. Generate ms-word: protocol URL
-   * 5. Return session with lock token
+   * 3. If document has sharePointItemId:
+   *    a. Get metadata from SharePoint (sub-second)
+   *    b. Store baseline in DocumentEditSession for version detection
+   *    c. Return SharePoint webUrl
+   * 4. Otherwise (legacy OneDrive path):
+   *    a. Ensure document is in OneDrive (upload if needed - 3-8 seconds)
+   *    b. Return OneDrive webUrl
+   * 5. Generate ms-word: protocol URL
+   * 6. Return session with lock token
    *
    * @param documentId - Document UUID
    * @param userId - User UUID
@@ -79,30 +92,118 @@ export class WordIntegrationService {
     const lock = await this.acquireDocumentLock(documentId, userId, 'word_desktop');
 
     try {
-      // 3. Ensure document is in OneDrive
-      let oneDriveId = document.oneDriveId;
+      // 3. SharePoint-first path (fast!) - OPS-181
+      if (document.sharePointItemId) {
+        logger.info('Using SharePoint-first path', {
+          documentId,
+          sharePointItemId: document.sharePointItemId,
+        });
 
-      if (!oneDriveId) {
-        // Upload document to OneDrive
-        oneDriveId = await this.ensureDocumentInOneDrive(document, accessToken);
+        const spMetadata = await this.sharePoint.getFileMetadata(
+          accessToken,
+          document.sharePointItemId
+        );
+
+        // Store baseline for version detection (OPS-182 will use this)
+        await prisma.documentEditSession.upsert({
+          where: { documentId },
+          update: {
+            userId,
+            startedAt: new Date(),
+            sharePointLastModified: new Date(spMetadata.lastModifiedDateTime),
+            lockToken: lock.lockToken,
+          },
+          create: {
+            documentId,
+            userId,
+            sharePointLastModified: new Date(spMetadata.lastModifiedDateTime),
+            lockToken: lock.lockToken,
+          },
+        });
+
+        const wordUrl = `ms-word:ofe|u|${spMetadata.webUrl}`;
+
+        logger.info('Document opened in Word via SharePoint', {
+          documentId,
+          userId,
+          sharePointItemId: document.sharePointItemId,
+          lockToken: lock.lockToken.substring(0, 8) + '...',
+        });
+
+        return {
+          documentId,
+          wordUrl,
+          webUrl: spMetadata.webUrl,
+          lockToken: lock.lockToken,
+          expiresAt: lock.expiresAt,
+          oneDriveId: null,
+          sharePointItemId: document.sharePointItemId,
+        };
       }
 
-      // 4. Generate Word protocol URL
-      const wordUrl = this.generateWordProtocolUrl(oneDriveId!);
+      // 4. FALLBACK: Legacy OneDrive path for old documents
+      logger.info('Using legacy OneDrive path (no sharePointItemId)', { documentId });
 
-      logger.info('Document opened in Word', {
+      let oneDriveId = document.oneDriveId;
+      let webUrl: string | null = null;
+
+      if (oneDriveId) {
+        // Document has oneDriveId - try to fetch the webUrl using OneDrive endpoint
+        // Pass isLegacyOneDrive=true since we're in the legacy code path
+        webUrl = await this.getWordOnlineUrl(
+          oneDriveId,
+          accessToken,
+          document.oneDriveUserId,
+          true
+        );
+      }
+
+      // If no oneDriveId or webUrl fetch failed (stale/wrong user's drive), upload fresh
+      if (!webUrl) {
+        logger.info('Uploading document to OneDrive (no valid webUrl)', { documentId });
+        try {
+          const uploadResult = await this.ensureDocumentInOneDrive(document, accessToken);
+          oneDriveId = uploadResult.id;
+          webUrl = uploadResult.webUrl;
+        } catch (uploadError) {
+          // Check if this is a legacy orphaned document (has oneDriveId but can't access it)
+          const isOrphanedLegacyDoc = !!document.oneDriveId && !document.oneDriveUserId;
+          if (isOrphanedLegacyDoc) {
+            logger.error('Cannot open legacy orphaned document', {
+              documentId,
+              oneDriveId: document.oneDriveId,
+              fileName: document.fileName,
+              error: uploadError,
+            });
+            throw new Error(
+              `Acest document a fost încărcat anterior de alt utilizator și nu mai este accesibil. ` +
+                `Documentul trebuie reîncărcat pentru a putea fi editat în Word. ` +
+                `(ID OneDrive vechi: ${document.oneDriveId?.substring(0, 8)}...)`
+            );
+          }
+          throw uploadError;
+        }
+      }
+
+      // 5. Generate Word protocol URL (for desktop Word)
+      const wordUrl = webUrl ? `ms-word:ofe|u|${webUrl}` : null;
+
+      logger.info('Document opened in Word via OneDrive', {
         documentId,
         userId,
         oneDriveId,
         lockToken: lock.lockToken.substring(0, 8) + '...',
+        hasWebUrl: !!webUrl,
       });
 
       return {
         documentId,
         wordUrl,
+        webUrl,
         lockToken: lock.lockToken,
         expiresAt: lock.expiresAt,
         oneDriveId: oneDriveId!,
+        sharePointItemId: null,
       };
     } catch (error) {
       // Release lock if we fail after acquiring it
@@ -178,9 +279,18 @@ export class WordIntegrationService {
 
     await redis.setex(redisKey, LOCK_TTL_SECONDS, JSON.stringify(lockData));
 
-    // Create lock in database for persistence and audit
-    const dbLock = await prisma.documentLock.create({
-      data: {
+    // Create or update lock in database for persistence and audit
+    // Use upsert to handle stale DB locks (Redis expired but DB record remained)
+    const dbLock = await prisma.documentLock.upsert({
+      where: { documentId },
+      update: {
+        userId,
+        lockToken,
+        lockedAt: now,
+        expiresAt,
+        sessionType,
+      },
+      create: {
         documentId,
         userId,
         lockToken,
@@ -362,6 +472,271 @@ export class WordIntegrationService {
   }
 
   // ============================================================================
+  // SharePoint Sync Methods (OPS-182)
+  // ============================================================================
+
+  /**
+   * Check if document changed in SharePoint and sync if needed.
+   * Creates a new DocumentVersion if changes are detected.
+   * OPS-182: Lazy Version Sync on Document Access
+   *
+   * @param documentId - Document UUID
+   * @param accessToken - Microsoft Graph API access token
+   * @param userId - User UUID performing the sync
+   * @returns Whether sync occurred and new version number if created
+   */
+  async syncFromSharePointIfChanged(
+    documentId: string,
+    accessToken: string,
+    userId: string
+  ): Promise<{ synced: boolean; newVersion?: number }> {
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        sharePointItemId: true,
+        sharePointLastModified: true,
+        storagePath: true,
+        fileName: true,
+        fileType: true,
+      },
+    });
+
+    if (!document?.sharePointItemId) {
+      logger.debug('Document not in SharePoint, skipping sync', { documentId });
+      return { synced: false };
+    }
+
+    // Check for changes using timestamp comparison
+    const knownLastModified = document.sharePointLastModified?.toISOString() || '';
+    const { changed, currentMetadata } = await this.sharePoint.checkForChanges(
+      accessToken,
+      document.sharePointItemId,
+      knownLastModified
+    );
+
+    if (!changed || !currentMetadata) {
+      logger.debug('No changes detected in SharePoint', { documentId });
+      return { synced: false };
+    }
+
+    logger.info('SharePoint changes detected, syncing document', {
+      documentId,
+      oldLastModified: knownLastModified,
+      newLastModified: currentMetadata.lastModifiedDateTime,
+    });
+
+    // Download updated content from SharePoint
+    const content = await this.sharePoint.downloadDocument(accessToken, document.sharePointItemId);
+
+    // Update R2 backup
+    if (this.r2Storage.isConfigured()) {
+      await this.r2Storage.uploadDocument(document.storagePath, content, document.fileType);
+      logger.debug('R2 backup updated', { documentId, storagePath: document.storagePath });
+    }
+
+    // Get latest version number
+    const latestVersion = await prisma.documentVersion.findFirst({
+      where: { documentId },
+      orderBy: { versionNumber: 'desc' },
+    });
+
+    const newVersionNumber = (latestVersion?.versionNumber || 0) + 1;
+
+    // Create new version record
+    const newVersion = await prisma.documentVersion.create({
+      data: {
+        documentId,
+        versionNumber: newVersionNumber,
+        createdBy: userId,
+        changesSummary: 'Editat în Microsoft Word',
+      },
+    });
+
+    // Update document with new SharePoint timestamp
+    await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        sharePointLastModified: new Date(currentMetadata.lastModifiedDateTime),
+        fileSize: content.length,
+        updatedAt: new Date(),
+      },
+    });
+
+    // Clean up any active edit session for this document
+    await prisma.documentEditSession.deleteMany({
+      where: { documentId },
+    });
+
+    logger.info('Document synced from SharePoint', {
+      documentId,
+      newVersionNumber: newVersion.versionNumber,
+      fileSize: content.length,
+    });
+
+    return { synced: true, newVersion: newVersion.versionNumber };
+  }
+
+  /**
+   * Close a Word editing session with sync.
+   * OPS-182: Syncs from SharePoint before releasing the lock.
+   * OPS-184: Migrates legacy OneDrive docs to SharePoint after session.
+   *
+   * @param documentId - Document UUID
+   * @param lockToken - Lock token to validate ownership
+   * @param accessToken - Microsoft Graph API access token
+   * @param userId - User UUID
+   * @returns Sync result with update status and migration info
+   */
+  async closeWordSession(
+    documentId: string,
+    lockToken: string,
+    accessToken: string,
+    userId: string
+  ): Promise<{ updated: boolean; newVersionNumber?: number; migrated?: boolean }> {
+    // Verify lock ownership
+    const redisKey = DOCUMENT_LOCK_REDIS_KEY(documentId);
+    const existingLockData = await redis.get(redisKey);
+
+    if (existingLockData) {
+      const existingLock: DocumentLockRedisData = JSON.parse(existingLockData);
+      if (existingLock.lockToken !== lockToken) {
+        throw new Error('Invalid lock token');
+      }
+    }
+
+    // Sync from SharePoint before releasing lock
+    const syncResult = await this.syncFromSharePointIfChanged(documentId, accessToken, userId);
+
+    // OPS-184: Lazy migration - if document is OneDrive-only, migrate to SharePoint
+    // This runs after sync so we capture any edits the user made
+    const migrationResult = await this.migrateOneDriveToSharePoint(documentId, accessToken, userId);
+
+    // Release the lock
+    await this.releaseDocumentLock(documentId, userId);
+
+    logger.info('Word session closed', {
+      documentId,
+      userId,
+      synced: syncResult.synced,
+      newVersion: syncResult.newVersion,
+      migrated: migrationResult.migrated,
+    });
+
+    return {
+      updated: syncResult.synced,
+      newVersionNumber: syncResult.newVersion,
+      migrated: migrationResult.migrated,
+    };
+  }
+
+  // ============================================================================
+  // OneDrive to SharePoint Migration (OPS-184)
+  // ============================================================================
+
+  /**
+   * Migrate a document from OneDrive to SharePoint.
+   * OPS-184: Lazy migration - called when user finishes editing a legacy document.
+   *
+   * This enables future edits to use the fast SharePoint-first path.
+   * Migration is best-effort: if it fails, the document still works via OneDrive.
+   *
+   * @param documentId - Document UUID
+   * @param accessToken - Microsoft Graph API access token
+   * @param userId - User UUID performing the migration
+   * @returns Whether migration succeeded
+   */
+  async migrateOneDriveToSharePoint(
+    documentId: string,
+    accessToken: string,
+    userId: string
+  ): Promise<{ migrated: boolean; sharePointItemId?: string }> {
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      include: {
+        caseLinks: {
+          include: { case: { select: { caseNumber: true } } },
+          take: 1,
+        },
+      },
+    });
+
+    if (!document) {
+      logger.warn('Document not found for migration', { documentId });
+      return { migrated: false };
+    }
+
+    // Already in SharePoint - no migration needed
+    if (document.sharePointItemId) {
+      logger.debug('Document already in SharePoint, skipping migration', { documentId });
+      return { migrated: false };
+    }
+
+    // No OneDrive ID - can't migrate
+    if (!document.oneDriveId) {
+      logger.debug('Document has no OneDrive ID, cannot migrate', { documentId });
+      return { migrated: false };
+    }
+
+    // Need case number for SharePoint folder structure
+    const caseNumber = document.caseLinks[0]?.case.caseNumber;
+    if (!caseNumber) {
+      logger.warn('Cannot migrate document without case link', { documentId });
+      return { migrated: false };
+    }
+
+    try {
+      logger.info('Starting OneDrive to SharePoint migration', {
+        documentId,
+        oneDriveId: document.oneDriveId,
+        caseNumber,
+      });
+
+      // Download current content from OneDrive
+      const content = await this.oneDriveService.downloadDocument(accessToken, document.oneDriveId);
+
+      // Upload to SharePoint
+      const spResult = await this.sharePoint.uploadDocument(
+        accessToken,
+        caseNumber,
+        document.fileName,
+        content,
+        document.fileType
+      );
+
+      // Update document record with SharePoint info
+      await prisma.document.update({
+        where: { id: documentId },
+        data: {
+          sharePointItemId: spResult.id,
+          sharePointPath: spResult.parentPath + '/' + spResult.name,
+          sharePointLastModified: new Date(spResult.lastModifiedDateTime),
+          // Keep oneDriveId for reference but SharePoint is now primary
+        },
+      });
+
+      logger.info('Document migrated from OneDrive to SharePoint', {
+        documentId,
+        oneDriveId: document.oneDriveId,
+        sharePointItemId: spResult.id,
+        sharePointPath: spResult.parentPath + '/' + spResult.name,
+        migratedBy: userId,
+      });
+
+      return { migrated: true, sharePointItemId: spResult.id };
+    } catch (error) {
+      // Log but don't fail - document still works via OneDrive
+      logger.error('Failed to migrate document to SharePoint', {
+        documentId,
+        oneDriveId: document.oneDriveId,
+        caseNumber,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { migrated: false };
+    }
+  }
+
+  // ============================================================================
   // Private Helper Methods
   // ============================================================================
 
@@ -380,6 +755,8 @@ export class WordIntegrationService {
     storagePath: string;
     oneDriveId: string | null;
     oneDrivePath: string | null;
+    oneDriveUserId: string | null;
+    sharePointItemId: string | null;
   }> {
     // Get document
     const document = await prisma.document.findUnique({
@@ -393,6 +770,8 @@ export class WordIntegrationService {
         storagePath: true,
         oneDriveId: true,
         oneDrivePath: true,
+        oneDriveUserId: true,
+        sharePointItemId: true,
       },
     });
 
@@ -429,7 +808,7 @@ export class WordIntegrationService {
    *
    * @param document - Document metadata
    * @param accessToken - Microsoft Graph API access token
-   * @returns OneDrive item ID
+   * @returns OneDrive item ID and webUrl
    */
   private async ensureDocumentInOneDrive(
     document: {
@@ -441,7 +820,7 @@ export class WordIntegrationService {
       storagePath: string;
     },
     accessToken: string
-  ): Promise<string> {
+  ): Promise<{ id: string; webUrl: string }> {
     logger.info('Ensuring document is in OneDrive', { documentId: document.id });
 
     // Get case linked to this document for folder structure
@@ -520,19 +899,84 @@ export class WordIntegrationService {
       documentId: document.id,
       oneDriveId: oneDriveResult.id,
       oneDrivePath: oneDriveResult.parentPath + '/' + oneDriveResult.name,
+      webUrl: oneDriveResult.webUrl,
     });
 
-    return oneDriveResult.id;
+    return { id: oneDriveResult.id, webUrl: oneDriveResult.webUrl };
   }
 
   /**
-   * Generate Word protocol URL for opening document in desktop Word
+   * Get Word Online URL for a document.
+   * For legacy documents with oneDriveUserId, uses OneDrive endpoint.
+   * For SharePoint documents, uses SharePoint endpoint.
    *
-   * Format: ms-word:ofe|u|https://graph.microsoft.com/v1.0/me/drive/items/{item-id}
+   * @param itemId - OneDrive or SharePoint item ID
+   * @param accessToken - Microsoft Graph API access token
+   * @param oneDriveUserId - Optional: MS Graph user ID of OneDrive owner (for legacy docs)
+   * @param isLegacyOneDrive - Whether this is a legacy OneDrive document (has oneDriveId, no sharePointItemId)
    */
-  private generateWordProtocolUrl(oneDriveId: string): string {
-    const graphUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${oneDriveId}`;
-    return `ms-word:ofe|u|${graphUrl}`;
+  async getWordOnlineUrl(
+    itemId: string,
+    accessToken: string,
+    oneDriveUserId?: string | null,
+    isLegacyOneDrive: boolean = false
+  ): Promise<string | null> {
+    try {
+      const graphClient = createGraphClient(accessToken);
+
+      // Choose endpoint based on document type
+      let endpoint: string;
+      if (oneDriveUserId) {
+        // Known owner - use their OneDrive
+        endpoint = graphEndpoints.driveItemByOwner(oneDriveUserId, itemId);
+      } else if (isLegacyOneDrive) {
+        // Legacy doc without owner ID - try current user's OneDrive
+        endpoint = graphEndpoints.driveItem(itemId);
+      } else {
+        // SharePoint document
+        endpoint = graphEndpoints.sharepoint.driveItem(itemId);
+      }
+
+      logger.debug('Getting Word Online URL', {
+        itemId,
+        oneDriveUserId,
+        endpoint,
+        isLegacyOneDrive,
+      });
+
+      // Get the webUrl directly from the drive item
+      try {
+        const driveItem = await retryWithBackoff(() =>
+          graphClient.api(endpoint).select('webUrl').get()
+        );
+        if (driveItem?.webUrl) {
+          logger.debug('Got webUrl', { itemId, webUrl: driveItem.webUrl });
+          return driveItem.webUrl;
+        }
+      } catch (getError) {
+        logger.debug('Failed to get webUrl, trying createLink', { itemId, error: getError });
+      }
+
+      // Fallback: Create an edit link
+      const createLinkEndpoint = `${endpoint}/createLink`;
+
+      const linkResponse = await retryWithBackoff(() =>
+        graphClient.api(createLinkEndpoint).post({
+          type: 'edit',
+          scope: 'organization',
+        })
+      );
+
+      if (linkResponse?.link?.webUrl) {
+        logger.debug('Created edit link', { itemId, webUrl: linkResponse.link.webUrl });
+        return linkResponse.link.webUrl;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Failed to get Word Online URL', { itemId, oneDriveUserId, error });
+      return null;
+    }
   }
 
   /**
@@ -559,31 +1003,24 @@ export class WordIntegrationService {
 
     await redis.setex(redisKey, LOCK_TTL_SECONDS, JSON.stringify(lockData));
 
-    // Update database
-    const dbLock = await prisma.documentLock.updateMany({
-      where: {
+    // Update or create database record
+    await prisma.documentLock.upsert({
+      where: { documentId },
+      update: {
+        userId,
+        lockToken,
+        expiresAt,
+        sessionType,
+      },
+      create: {
         documentId,
         userId,
-      },
-      data: {
+        lockToken,
+        lockedAt: now,
         expiresAt,
         sessionType,
       },
     });
-
-    // If no record exists (edge case), create one
-    if (dbLock.count === 0) {
-      await prisma.documentLock.create({
-        data: {
-          documentId,
-          userId,
-          lockToken,
-          lockedAt: now,
-          expiresAt,
-          sessionType,
-        },
-      });
-    }
 
     logger.debug('Document lock refreshed', {
       documentId,

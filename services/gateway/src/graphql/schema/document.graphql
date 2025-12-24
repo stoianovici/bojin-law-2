@@ -101,6 +101,20 @@ type Document {
 
   """Version history for the document"""
   versions: [DocumentVersion!]!
+
+  """Number of versions (computed, for UI display)"""
+  versionCount: Int!
+
+  # OPS-171: Document source type and review fields
+
+  """Source type indicating origin of document (UPLOAD, EMAIL_ATTACHMENT, AI_GENERATED, TEMPLATE)"""
+  sourceType: DocumentSourceType!
+
+  """User assigned to review this document (null if not assigned for review)"""
+  reviewer: User
+
+  """When the document was submitted for review (null if not submitted)"""
+  submittedAt: DateTime
 }
 
 """
@@ -128,23 +142,33 @@ type DocumentVersion {
 
   """Timestamp when version was created"""
   createdAt: DateTime!
+
+  """File size of this version in bytes"""
+  fileSize: Int
 }
 
 """
 Document status enum
 Story 2.9: Document lifecycle status
+OPS-172: Extended with review workflow states
 """
 enum DocumentStatus {
   """Work in progress"""
   DRAFT
 
-  """Pending review or processing"""
+  """Submitted for supervisor review"""
+  IN_REVIEW
+
+  """Supervisor requested modifications"""
+  CHANGES_REQUESTED
+
+  """Legacy - awaiting processing"""
   PENDING
 
-  """Finalized document"""
+  """Approved, locked"""
   FINAL
 
-  """Archived (deleted from OneDrive or manually archived)"""
+  """Historical, not active"""
   ARCHIVED
 }
 
@@ -187,6 +211,11 @@ type CaseDocumentLink {
 
   """True if document was originally uploaded to this case, false if imported"""
   isOriginal: Boolean!
+
+  # OPS-171: Promotion tracking
+
+  """True if this was promoted from an email attachment"""
+  promotedFromAttachment: Boolean!
 }
 
 """
@@ -211,6 +240,14 @@ type CaseDocumentWithContext {
 
   """Source case if document was imported (null if original upload)"""
   sourceCase: Case
+
+  # OPS-171: Promotion tracking
+
+  """True if this was promoted from an email attachment"""
+  promotedFromAttachment: Boolean!
+
+  """ID of the original email attachment if promoted"""
+  originalAttachmentId: UUID
 }
 
 """
@@ -537,6 +574,17 @@ extend type Query {
   ): [DocumentAuditLog!]!
 
   """
+  Get version history for a document (OPS-176)
+  Returns all versions ordered by version number (newest first)
+
+  Authorization: User must have access to the document
+  """
+  documentVersions(
+    """Document ID"""
+    documentId: UUID!
+  ): [DocumentVersion!]!
+
+  """
   Get document thumbnail (Story 2.9 AC5)
   Returns thumbnail URL for document preview
 
@@ -594,12 +642,73 @@ extend type Query {
     """Filter by file types (e.g., ['application/pdf', 'image/*'])"""
     fileTypes: [String!]
 
+    """OPS-173: Filter by document source types (e.g., [UPLOAD, AI_GENERATED])"""
+    sourceTypes: [DocumentSourceType!]
+
+    """OPS-173: Include promoted attachments in working documents tab"""
+    includePromotedAttachments: Boolean
+
     """Sort field (default: linkedAt)"""
     sortBy: DocumentSortField
 
     """Sort direction (default: DESC)"""
     sortDirection: SortDirection
   ): DocumentGridConnection!
+
+  # OPS-174: Supervisor Review Queue
+
+  """
+  Get documents pending review by the current user (OPS-174)
+  Returns all documents where:
+  - Current user is assigned as reviewer (reviewerId = current user)
+  - Document status is IN_REVIEW
+
+  Only accessible by supervisors (PARTNER, SENIOR_ASSOCIATE roles).
+  Documents are grouped by case for better organization.
+
+  Authorization: PARTNER or SENIOR_ASSOCIATE role required
+  """
+  documentsForReview: [DocumentForReview!]!
+
+  """
+  Get count of documents pending review by the current user (OPS-174)
+  Used to display badge on the review tab.
+
+  Authorization: PARTNER or SENIOR_ASSOCIATE role required
+  """
+  documentsForReviewCount: Int!
+
+  """
+  Get list of supervisors for the review workflow picker (OPS-177)
+  Returns users with PARTNER or SENIOR_ASSOCIATE roles in the firm.
+
+  Authorization: User must be authenticated
+  """
+  supervisors: [Supervisor!]!
+}
+
+# ============================================================================
+# OPS-174: Supervisor Review Queue Types
+# ============================================================================
+
+"""
+Document pending review with case context (OPS-174)
+"""
+type DocumentForReview {
+  """Unique identifier (same as document ID for simplicity)"""
+  id: ID!
+
+  """The document pending review"""
+  document: Document!
+
+  """The case this document belongs to"""
+  case: Case!
+
+  """User who submitted the document for review"""
+  submittedBy: User!
+
+  """When the document was submitted for review"""
+  submittedAt: DateTime!
 }
 
 # ============================================================================
@@ -670,6 +779,20 @@ extend type Mutation {
 
     """Updated metadata"""
     input: UpdateDocumentMetadataInput!
+  ): Document!
+
+  """
+  Rename a document (OPS-162)
+  Updates the fileName in database. Does NOT rename in SharePoint/OneDrive storage.
+
+  Authorization: User must have access to the document
+  """
+  renameDocument(
+    """Document ID"""
+    documentId: UUID!
+
+    """New file name (including extension)"""
+    newFileName: String!
   ): Document!
 
   # Story 2.9: OneDrive integration mutations
@@ -750,6 +873,60 @@ extend type Mutation {
   Authorization: User must be assigned to case OR be a Partner
   """
   uploadDocumentToSharePoint(input: UploadDocumentWithFileInput!): Document!
+
+  """
+  Promote an email attachment to a working document (OPS-175)
+  Creates an editable copy of an email attachment in the working documents folder,
+  enabling version tracking and editing workflow.
+
+  The original attachment remains in the correspondence tab for reference.
+  A link is maintained between the promoted document and original attachment.
+
+  Authorization: User must be assigned to case OR be a Partner
+  Roles: Partner, Associate, Paralegal
+  """
+  promoteAttachmentToDocument(input: PromoteAttachmentInput!): PromoteAttachmentResult!
+
+  # ==========================================================================
+  # OPS-177: Review Workflow Mutations
+  # ==========================================================================
+
+  """
+  Submit a document for supervisor review (OPS-177)
+  Sets document status to IN_REVIEW and assigns the specified reviewer.
+
+  Conditions:
+  - Document must be in DRAFT or CHANGES_REQUESTED status
+  - Reviewer must have PARTNER or SENIOR_ASSOCIATE role
+
+  Authorization: User must have access to the document
+  """
+  submitForReview(input: SubmitForReviewInput!): ReviewResult!
+
+  """
+  Make a review decision on a document (OPS-177)
+  Approves the document (status → FINAL) or requests changes (status → CHANGES_REQUESTED).
+
+  Conditions:
+  - Document must be in IN_REVIEW status
+  - Current user must be the assigned reviewer
+  - Comment is required when requesting changes
+
+  Authorization: Current user must be the assigned reviewer
+  """
+  reviewDocument(input: ReviewDecisionInput!): ReviewResult!
+
+  """
+  Withdraw a document from review (OPS-177)
+  Sets document status back to DRAFT and clears reviewer assignment.
+
+  Conditions:
+  - Document must be in IN_REVIEW status
+  - Only the original submitter can withdraw
+
+  Authorization: User who submitted the document for review
+  """
+  withdrawFromReview(documentId: ID!): ReviewResult!
 }
 
 # ============================================================================
@@ -814,6 +991,7 @@ type ThumbnailResponse {
 
 """
 Preview URL response for document preview (OPS-087)
+OPS-183: Added syncResult for auto-sync integration
 """
 type PreviewUrlResponse {
   """Preview URL for embedding in iframe"""
@@ -824,6 +1002,21 @@ type PreviewUrlResponse {
 
   """Expiration time for the URL"""
   expiresAt: DateTime!
+
+  """OPS-183: Sync result if document was synced from SharePoint before preview"""
+  syncResult: PreviewSyncResult
+}
+
+"""
+OPS-183: Sync result included in preview URL response
+Indicates if a new version was synced from SharePoint during preview access
+"""
+type PreviewSyncResult {
+  """Whether a new version was synced from SharePoint"""
+  synced: Boolean!
+
+  """New version number if sync occurred"""
+  newVersionNumber: Int
 }
 
 """
@@ -872,4 +1065,185 @@ type BatchShareResult {
 
   """Whether the operation was successful"""
   success: Boolean!
+}
+
+# ============================================================================
+# OPS-175: Promote Attachment to Working Document
+# ============================================================================
+
+"""
+Input for promoting an email attachment to a working document
+"""
+input PromoteAttachmentInput {
+  """ID of the CaseDocument record linking the attachment to the case"""
+  caseDocumentId: UUID!
+
+  """Optional folder ID in the working documents section to place the new document"""
+  targetFolderId: UUID
+}
+
+"""
+Result of promoting an attachment to a working document
+"""
+type PromoteAttachmentResult {
+  """Whether the promotion was successful"""
+  success: Boolean!
+
+  """The newly created working document (null if failed)"""
+  document: Document
+
+  """The new CaseDocument link for the working document (null if failed)"""
+  caseDocument: CaseDocumentWithContext
+
+  """Error message if the promotion failed"""
+  error: String
+}
+
+# ============================================================================
+# OPS-177: Review Workflow Types
+# ============================================================================
+
+"""
+Input for submitting a document for supervisor review
+"""
+input SubmitForReviewInput {
+  """ID of the document to submit for review"""
+  documentId: ID!
+
+  """ID of the supervisor to assign as reviewer"""
+  reviewerId: ID!
+
+  """Optional message to include for the reviewer"""
+  message: String
+}
+
+"""
+Decision options for document review
+"""
+enum ReviewDecision {
+  """Approve the document - sets status to FINAL"""
+  APPROVE
+
+  """Request modifications - sets status to CHANGES_REQUESTED"""
+  REQUEST_CHANGES
+}
+
+"""
+Input for a supervisor's review decision
+"""
+input ReviewDecisionInput {
+  """ID of the document being reviewed"""
+  documentId: ID!
+
+  """The review decision"""
+  decision: ReviewDecision!
+
+  """Comment explaining the decision (required for REQUEST_CHANGES)"""
+  comment: String
+
+  """Optional: Assign to a different user when requesting changes (instead of original submitter)"""
+  assignToUserId: ID
+}
+
+"""
+Result of a review workflow operation
+"""
+type ReviewResult {
+  """Whether the operation was successful"""
+  success: Boolean!
+
+  """The updated document (null if failed)"""
+  document: Document
+
+  """Error message if the operation failed"""
+  error: String
+}
+
+"""
+Supervisor user info for the reviewer picker
+"""
+type Supervisor {
+  """User ID"""
+  id: ID!
+
+  """Full display name"""
+  name: String!
+
+  """Email address"""
+  email: String!
+
+  """Role (PARTNER or SENIOR_ASSOCIATE)"""
+  role: String!
+
+  """Initials for avatar fallback"""
+  initials: String!
+}
+
+# ============================================================================
+# OPS-177: Review Feedback Email
+# ============================================================================
+
+"""
+Input for sending a review feedback email
+"""
+input SendReviewFeedbackEmailInput {
+  """ID of the document that was reviewed"""
+  documentId: ID!
+
+  """Email address of the recipient"""
+  recipientEmail: String!
+
+  """Name of the recipient"""
+  recipientName: String!
+
+  """Feedback message from the reviewer"""
+  feedback: String!
+}
+
+"""
+Preview of the review feedback email before sending
+"""
+type ReviewFeedbackEmailPreview {
+  """Email subject line"""
+  subject: String!
+
+  """Plain text email body for preview"""
+  body: String!
+
+  """Recipient email address"""
+  to: String!
+
+  """Recipient name"""
+  toName: String!
+}
+
+"""
+Result of sending a review feedback email
+"""
+type SendReviewFeedbackEmailResult {
+  """Whether the email was sent successfully"""
+  success: Boolean!
+
+  """Error message if sending failed"""
+  error: String
+}
+
+extend type Query {
+  """
+  Preview the review feedback email before sending (OPS-177)
+  Generates a preview of the email that will be sent to the document author.
+
+  Authorization: User must have access to the document
+  """
+  previewReviewFeedbackEmail(input: SendReviewFeedbackEmailInput!): ReviewFeedbackEmailPreview!
+}
+
+extend type Mutation {
+  """
+  Send a review feedback email to the document author (OPS-177)
+  Sends an email notification when a reviewer requests changes.
+
+  Authorization: User must be the assigned reviewer for the document
+  """
+  sendReviewFeedbackEmail(input: SendReviewFeedbackEmailInput!): SendReviewFeedbackEmailResult!
 }

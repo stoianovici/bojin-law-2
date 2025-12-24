@@ -583,9 +583,9 @@ export class OneDriveService {
             // Use MS Graph preview API for PDFs and Office docs
             // This returns an embeddable URL that works in iframes
             try {
-              // OPS-125: Request 100% zoom for Office files (zoom: 1 = 100%)
+              // OPS-125: Request 150% zoom for Office files (zoom: 1.5 = 150%)
               // Note: zoom param works for Office files but is ignored for PDFs (MS limitation)
-              const previewResponse = await client.api(previewEndpoint).post({ zoom: 1 });
+              const previewResponse = await client.api(previewEndpoint).post({ zoom: 1.5 });
 
               if (previewResponse.getUrl) {
                 logger.info('Generated MS Graph preview URL', {
@@ -769,19 +769,77 @@ export class OneDriveService {
     );
   }
 
+  /**
+   * Download document content from OneDrive
+   * OPS-184: Downloads file content as Buffer for migration to SharePoint
+   *
+   * @param accessToken - User's access token
+   * @param oneDriveId - OneDrive item ID
+   * @returns Buffer containing file content
+   */
+  async downloadDocument(accessToken: string, oneDriveId: string): Promise<Buffer> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+
+          // Get the item metadata which includes the download URL
+          const item = await client.api(graphEndpoints.driveItem(oneDriveId)).get();
+          const downloadUrl = item['@microsoft.graph.downloadUrl'];
+
+          if (!downloadUrl) {
+            throw new Error('No download URL available for OneDrive document');
+          }
+
+          // Fetch the content using the pre-authenticated download URL
+          const response = await fetch(downloadUrl);
+
+          if (!response.ok) {
+            throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          logger.info('Document downloaded from OneDrive', {
+            oneDriveId,
+            fileName: item.name,
+            size: buffer.length,
+          });
+
+          return buffer;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'onedrive-download-document'
+    );
+  }
+
   // Private helper methods
 
   /**
-   * Create or get existing folder
+   * Create or get existing folder in SharePoint (firm-wide storage)
    */
   private async createOrGetFolder(
     client: Client,
     parentId: string,
     folderName: string
   ): Promise<DriveItem> {
+    const siteId = process.env.SHAREPOINT_SITE_ID;
+    if (!siteId) {
+      throw new Error('SHAREPOINT_SITE_ID not configured');
+    }
+
     try {
-      // Try to create folder - will return existing if already exists
-      const parentPath = parentId === 'root' ? '/me/drive/root' : `/me/drive/items/${parentId}`;
+      // Use SharePoint site drive for firm-wide access
+      const parentPath =
+        parentId === 'root'
+          ? `/sites/${siteId}/drive/root`
+          : `/sites/${siteId}/drive/items/${parentId}`;
 
       const folder = await client.api(`${parentPath}/children`).post({
         name: folderName,
@@ -793,7 +851,10 @@ export class OneDriveService {
     } catch (error: any) {
       // If folder already exists, get it
       if (error.statusCode === 409 || error.code === 'nameAlreadyExists') {
-        const parentPath = parentId === 'root' ? '/me/drive/root' : `/me/drive/items/${parentId}`;
+        const parentPath =
+          parentId === 'root'
+            ? `/sites/${siteId}/drive/root`
+            : `/sites/${siteId}/drive/items/${parentId}`;
 
         const children = await client
           .api(`${parentPath}/children`)
@@ -810,7 +871,7 @@ export class OneDriveService {
   }
 
   /**
-   * Simple upload for small files (<4MB)
+   * Simple upload for small files (<4MB) to SharePoint
    */
   private async simpleUpload(
     client: Client,
@@ -819,8 +880,13 @@ export class OneDriveService {
     content: Buffer,
     contentType: string
   ): Promise<DriveItem> {
+    const siteId = process.env.SHAREPOINT_SITE_ID;
+    if (!siteId) {
+      throw new Error('SHAREPOINT_SITE_ID not configured');
+    }
+
     const response = await client
-      .api(`/me/drive/items/${parentFolderId}:/${fileName}:/content`)
+      .api(`/sites/${siteId}/drive/items/${parentFolderId}:/${fileName}:/content`)
       .header('Content-Type', contentType)
       .put(content);
 
@@ -828,7 +894,7 @@ export class OneDriveService {
   }
 
   /**
-   * Resumable upload for large files (>4MB)
+   * Resumable upload for large files (>4MB) to SharePoint
    * Uses upload session for chunked upload
    */
   private async resumableUpload(
@@ -838,9 +904,14 @@ export class OneDriveService {
     content: Buffer,
     contentType: string
   ): Promise<DriveItem> {
-    // Create upload session
+    const siteId = process.env.SHAREPOINT_SITE_ID;
+    if (!siteId) {
+      throw new Error('SHAREPOINT_SITE_ID not configured');
+    }
+
+    // Create upload session on SharePoint
     const session = await client
-      .api(`/me/drive/items/${parentFolderId}:/${fileName}:/createUploadSession`)
+      .api(`/sites/${siteId}/drive/items/${parentFolderId}:/${fileName}:/createUploadSession`)
       .post({
         item: {
           '@microsoft.graph.conflictBehavior': 'replace',

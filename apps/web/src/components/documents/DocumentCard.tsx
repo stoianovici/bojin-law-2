@@ -25,14 +25,14 @@ import type {
 export interface DocumentCardProps {
   /** Document with context from grid query */
   document: DocumentGridItem;
-  /** Handler for preview action */
+  /** Handler for preview action - OPS-163: Card click triggers preview */
   onPreview: () => void;
-  /** Handler for download action */
-  onDownload: () => void;
   /** Handler for add to mapa action */
   onAddToMapa?: () => void;
-  /** Whether download is in progress */
-  isDownloading?: boolean;
+  /** Handler for open in Word action (DOCX files only) */
+  onOpenInWord?: () => void;
+  /** OPS-176: Handler for viewing version history (only called if versionCount > 1) */
+  onViewVersions?: () => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -105,6 +105,18 @@ function getStorageLabel(storageType: DocumentStorageType): string {
   }
 }
 
+/**
+ * OPS-163: Check if file is a Word document
+ */
+function isWordDocument(fileType: string): boolean {
+  const type = fileType.toLowerCase();
+  return (
+    type.includes('doc') ||
+    type.includes('word') ||
+    type.includes('application/vnd.openxmlformats-officedocument.wordprocessingml')
+  );
+}
+
 // ============================================================================
 // Sub-components
 // ============================================================================
@@ -145,13 +157,14 @@ function ThumbnailSkeleton() {
 
 /**
  * DocumentCard - Displays document as card with thumbnail
+ * OPS-163: Click anywhere on card opens preview, file-type specific actions
  */
 export function DocumentCard({
   document: docContext,
   onPreview,
-  onDownload,
   onAddToMapa,
-  isDownloading = false,
+  onOpenInWord,
+  onViewVersions,
   className,
 }: DocumentCardProps) {
   const { document, isOriginal, sourceCase } = docContext;
@@ -161,11 +174,14 @@ export function DocumentCard({
   const thumbnailUrl =
     document.thumbnailLarge || document.thumbnailMedium || document.thumbnailSmall;
   const uploaderName = `${document.uploadedBy.firstName} ${document.uploadedBy.lastName}`;
+  const isWord = isWordDocument(document.fileType);
+  const hasMultipleVersions = (document.versionCount ?? 0) > 1;
 
   return (
     <div
+      onClick={onPreview}
       className={clsx(
-        'bg-white border border-gray-200 rounded-lg overflow-hidden',
+        'bg-white border border-gray-200 rounded-lg overflow-hidden cursor-pointer',
         'hover:shadow-lg hover:border-gray-300 transition-all duration-200',
         'group',
         className
@@ -196,81 +212,6 @@ export function DocumentCard({
           </div>
         )}
 
-        {/* Overlay actions on hover */}
-        <div
-          className={clsx(
-            'absolute inset-0 bg-black/50 flex items-center justify-center gap-3',
-            'opacity-0 group-hover:opacity-100 transition-opacity duration-200'
-          )}
-        >
-          <button
-            onClick={onPreview}
-            className="p-3 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
-            title="Previzualizare"
-          >
-            <svg
-              className="w-5 h-5 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={onDownload}
-            disabled={isDownloading}
-            className={clsx(
-              'p-3 bg-white rounded-full shadow-lg transition-colors',
-              isDownloading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
-            )}
-            title="Descarcă"
-          >
-            {isDownloading ? (
-              <svg className="w-5 h-5 text-gray-700 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-5 h-5 text-gray-700"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-            )}
-          </button>
-        </div>
-
         {/* Status badges */}
         <div className="absolute top-2 left-2 flex flex-wrap gap-1">
           {!isOriginal && (
@@ -288,9 +229,9 @@ export function DocumentCard({
           </span>
         </div>
 
-        {/* Storage indicator */}
-        {document.storageType && (
-          <div className="absolute top-2 right-2">
+        {/* Storage indicator and version badge */}
+        <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+          {document.storageType && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/90 text-gray-600 shadow-sm">
               {document.storageType === 'SHAREPOINT' && (
                 <svg className="w-3 h-3 mr-1 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
@@ -299,8 +240,29 @@ export function DocumentCard({
               )}
               {getStorageLabel(document.storageType)}
             </span>
-          </div>
-        )}
+          )}
+          {/* OPS-176: Version badge - only show for documents with multiple versions */}
+          {hasMultipleVersions && onViewVersions && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewVersions();
+              }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-white/90 text-gray-600 shadow-sm hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              title="Vezi istoricul versiunilor"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              v{document.versionCount}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Document Info */}
@@ -332,81 +294,18 @@ export function DocumentCard({
           </p>
         )}
 
-        {/* Actions - visible below card */}
+        {/* OPS-163: File-type specific actions */}
         <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
-          <button
-            onClick={onPreview}
-            className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-              />
-            </svg>
-            Previzualizare
-          </button>
-          <button
-            onClick={onDownload}
-            disabled={isDownloading}
-            className={clsx(
-              'flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg transition-colors',
-              isDownloading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
-            )}
-          >
-            {isDownloading ? (
-              <>
-                <svg className="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Se descarcă...
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-4 h-4 mr-1.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Descarcă
-              </>
-            )}
-          </button>
           {onAddToMapa && (
             <button
-              onClick={onAddToMapa}
-              className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToMapa();
+              }}
+              className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-purple-50 hover:text-purple-600 transition-colors"
               title="Adaugă în mapă"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -414,6 +313,27 @@ export function DocumentCard({
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
                 />
               </svg>
+              Mapă
+            </button>
+          )}
+          {isWord && onOpenInWord && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenInWord();
+              }}
+              className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              title="Deschide în Word"
+            >
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+              Word
             </button>
           )}
         </div>

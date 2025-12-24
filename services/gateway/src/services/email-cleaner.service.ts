@@ -38,8 +38,12 @@ const EXTRACTION_PROMPT = `Extract only the new message content from this email.
 Return ONLY the actual new message text in plain text format (no HTML tags).
 Preserve paragraph breaks and formatting structure.
 
+IMPORTANT: Răspunde DOAR în limba română. NU include explicații, raționamente sau comentarii în engleză.
+Returnează DOAR textul extras, fără meta-comentarii.
+
 If the email is entirely quoted/forwarded with no new content, return "[Mesaj redirecționat fără conținut nou]".
 If the email contains only an attachment notice with no text, return "[Doar atașament]".
+If the email is a newsletter or informative bulletin with no personal message, return "[Newsletter informativ]".
 If you cannot extract meaningful content, return the original text cleaned of HTML.`;
 
 // ============================================================================

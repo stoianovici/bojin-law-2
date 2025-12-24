@@ -3,20 +3,21 @@
  * Story 2.11.4: Financial Dashboard UI
  *
  * Skeleton components for widget loading states.
- * Uses Tailwind animate-pulse for visual feedback.
+ * Uses shimmer gradient animation for polished loading effect.
  */
 
 'use client';
 
 import React from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /**
- * Chart skeleton - pulsing gradient for chart areas
+ * Chart skeleton - shimmer gradient for chart areas
  */
 export function ChartSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`animate-pulse ${className}`}>
-      <div className="h-[200px] bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg" />
+    <div className={className}>
+      <Skeleton className="h-[200px]" />
     </div>
   );
 }
@@ -26,9 +27,9 @@ export function ChartSkeleton({ className = '' }: { className?: string }) {
  */
 export function NumberSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`animate-pulse ${className}`}>
-      <div className="h-10 w-32 bg-gray-200 rounded-md mb-2" />
-      <div className="h-4 w-20 bg-gray-100 rounded" />
+    <div className={`space-y-2 ${className}`}>
+      <Skeleton className="h-10 w-32" />
+      <Skeleton className="h-4 w-20" />
     </div>
   );
 }
@@ -38,15 +39,15 @@ export function NumberSkeleton({ className = '' }: { className?: string }) {
  */
 export function ListSkeleton({ rows = 3, className = '' }: { rows?: number; className?: string }) {
   return (
-    <div className={`animate-pulse space-y-3 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-gray-200 rounded-full flex-shrink-0" />
+          <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-3/4" />
-            <div className="h-3 bg-gray-100 rounded w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
           </div>
-          <div className="h-6 w-16 bg-gray-100 rounded" />
+          <Skeleton className="h-6 w-16" />
         </div>
       ))}
     </div>
@@ -58,8 +59,8 @@ export function ListSkeleton({ rows = 3, className = '' }: { rows?: number; clas
  */
 export function GaugeSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`animate-pulse flex justify-center ${className}`}>
-      <div className="h-32 w-32 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-full" />
+    <div className={`flex justify-center ${className}`}>
+      <Skeleton className="h-32 w-32 rounded-full" />
     </div>
   );
 }
@@ -69,12 +70,12 @@ export function GaugeSkeleton({ className = '' }: { className?: string }) {
  */
 export function KPISkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`animate-pulse ${className}`}>
-      <div className="h-5 w-24 bg-gray-100 rounded mb-3" />
-      <div className="h-8 w-28 bg-gray-200 rounded mb-2" />
+    <div className={`space-y-2 ${className}`}>
+      <Skeleton className="h-5 w-24" />
+      <Skeleton className="h-8 w-28" />
       <div className="flex items-center gap-2">
-        <div className="h-4 w-4 bg-gray-100 rounded" />
-        <div className="h-4 w-20 bg-gray-100 rounded" />
+        <Skeleton className="h-4 w-4" />
+        <Skeleton className="h-4 w-20" />
       </div>
     </div>
   );
@@ -85,17 +86,17 @@ export function KPISkeleton({ className = '' }: { className?: string }) {
  */
 export function WidgetSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`animate-pulse space-y-4 ${className}`}>
+    <div className={`space-y-4 ${className}`}>
       {/* Header skeleton */}
-      <div className="h-5 w-32 bg-gray-100 rounded" />
+      <Skeleton className="h-5 w-32" />
 
       {/* Main content area */}
-      <div className="h-[160px] bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-lg" />
+      <Skeleton className="h-[160px]" />
 
       {/* Footer stats */}
       <div className="flex justify-between">
-        <div className="h-4 w-24 bg-gray-100 rounded" />
-        <div className="h-4 w-20 bg-gray-100 rounded" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-20" />
       </div>
     </div>
   );

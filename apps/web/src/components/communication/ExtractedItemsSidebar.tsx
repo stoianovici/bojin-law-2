@@ -4,6 +4,8 @@ import { useState } from 'react';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useNotificationStore } from '../../stores/notificationStore';
+import { AnimatedListItem } from '../motion';
+import { AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import {
   Clock,
@@ -129,75 +131,79 @@ export function ExtractedItemsSidebar() {
             {extractedItems.deadlines.length === 0 ? (
               <p className="text-sm text-gray-500">Nu s-au detectat termene</p>
             ) : (
-              extractedItems.deadlines
-                .filter((d) => !dismissedItems.has(d.id))
-                .map((deadline) => {
-                  const isCreating = creatingItemId === deadline.id;
-                  const taskId = createdTasks.get(deadline.id);
-                  const isConverted = !!taskId;
+              <AnimatePresence mode="popLayout">
+                {extractedItems.deadlines
+                  .filter((d) => !dismissedItems.has(d.id))
+                  .map((deadline) => {
+                    const isCreating = creatingItemId === deadline.id;
+                    const taskId = createdTasks.get(deadline.id);
+                    const isConverted = !!taskId;
 
-                  if (isCreating) {
+                    if (isCreating) {
+                      return (
+                        <AnimatedListItem key={deadline.id}>
+                          <QuickTaskCreator
+                            extractedItemType="deadline"
+                            extractedItemId={deadline.id}
+                            threadId={thread.id}
+                            messageId={deadline.sourceMessageId}
+                            caseId={thread.caseId}
+                            prefillTitle={deadline.description}
+                            prefillDescription={`Termen extras din email: ${deadline.description}`}
+                            prefillDueDate={deadline.dueDate}
+                            prefillPriority="High"
+                            onSave={(taskData) => handleCreateTask(taskData, deadline.id)}
+                            onCancel={() => setCreatingItemId(null)}
+                          />
+                        </AnimatedListItem>
+                      );
+                    }
+
                     return (
-                      <QuickTaskCreator
-                        key={deadline.id}
-                        extractedItemType="deadline"
-                        extractedItemId={deadline.id}
-                        threadId={thread.id}
-                        messageId={deadline.sourceMessageId}
-                        caseId={thread.caseId}
-                        prefillTitle={deadline.description}
-                        prefillDescription={`Termen extras din email: ${deadline.description}`}
-                        prefillDueDate={deadline.dueDate}
-                        prefillPriority="High"
-                        onSave={(taskData) => handleCreateTask(taskData, deadline.id)}
-                        onCancel={() => setCreatingItemId(null)}
-                      />
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={deadline.id}
-                      className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-yellow-50'} relative group`}
-                    >
-                      <button
-                        onClick={() => showDismissPrompt(deadline.id)}
-                        className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Respinge"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                      <div className="flex items-start justify-between gap-2 pr-6">
-                        <div className="flex-1">
-                          <div className="font-semibold">{deadline.description}</div>
-                          <div className="text-xs text-gray-600 mt-1">
-                            {format(deadline.dueDate, 'dd.MM.yyyy')}
+                      <AnimatedListItem key={deadline.id}>
+                        <div
+                          className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-yellow-50'} relative group`}
+                        >
+                          <button
+                            onClick={() => showDismissPrompt(deadline.id)}
+                            className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Respinge"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          <div className="flex items-start justify-between gap-2 pr-6">
+                            <div className="flex-1">
+                              <div className="font-semibold">{deadline.description}</div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                {format(deadline.dueDate, 'dd.MM.yyyy')}
+                              </div>
+                            </div>
+                            {isConverted ? (
+                              <div className="flex items-center gap-1 text-xs">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <a
+                                  href={`/tasks?id=${taskId}`}
+                                  className="text-green-600 hover:underline flex items-center gap-1"
+                                >
+                                  Task creat
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setCreatingItemId(deadline.id)}
+                                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                              >
+                                <Plus className="h-3 w-3" />
+                                Creează Task
+                              </button>
+                            )}
                           </div>
                         </div>
-                        {isConverted ? (
-                          <div className="flex items-center gap-1 text-xs">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <a
-                              href={`/tasks?id=${taskId}`}
-                              className="text-green-600 hover:underline flex items-center gap-1"
-                            >
-                              Task creat
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setCreatingItemId(deadline.id)}
-                            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                          >
-                            <Plus className="h-3 w-3" />
-                            Creează Task
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
+                      </AnimatedListItem>
+                    );
+                  })}
+              </AnimatePresence>
             )}
           </div>
         )}
@@ -224,73 +230,77 @@ export function ExtractedItemsSidebar() {
             {extractedItems.commitments.length === 0 ? (
               <p className="text-sm text-gray-500">Nu s-au detectat angajamente</p>
             ) : (
-              extractedItems.commitments
-                .filter((c) => !dismissedItems.has(c.id))
-                .map((commitment) => {
-                  const isCreating = creatingItemId === commitment.id;
-                  const taskId = createdTasks.get(commitment.id);
-                  const isConverted = !!taskId;
+              <AnimatePresence mode="popLayout">
+                {extractedItems.commitments
+                  .filter((c) => !dismissedItems.has(c.id))
+                  .map((commitment) => {
+                    const isCreating = creatingItemId === commitment.id;
+                    const taskId = createdTasks.get(commitment.id);
+                    const isConverted = !!taskId;
 
-                  if (isCreating) {
+                    if (isCreating) {
+                      return (
+                        <AnimatedListItem key={commitment.id}>
+                          <QuickTaskCreator
+                            extractedItemType="commitment"
+                            extractedItemId={commitment.id}
+                            threadId={thread.id}
+                            messageId={commitment.sourceMessageId}
+                            caseId={thread.caseId}
+                            prefillTitle={`Angajament: ${commitment.party}`}
+                            prefillDescription={commitment.commitmentText}
+                            prefillDueDate={commitment.date}
+                            prefillPriority="Medium"
+                            onSave={(taskData) => handleCreateTask(taskData, commitment.id)}
+                            onCancel={() => setCreatingItemId(null)}
+                          />
+                        </AnimatedListItem>
+                      );
+                    }
+
                     return (
-                      <QuickTaskCreator
-                        key={commitment.id}
-                        extractedItemType="commitment"
-                        extractedItemId={commitment.id}
-                        threadId={thread.id}
-                        messageId={commitment.sourceMessageId}
-                        caseId={thread.caseId}
-                        prefillTitle={`Angajament: ${commitment.party}`}
-                        prefillDescription={commitment.commitmentText}
-                        prefillDueDate={commitment.date}
-                        prefillPriority="Medium"
-                        onSave={(taskData) => handleCreateTask(taskData, commitment.id)}
-                        onCancel={() => setCreatingItemId(null)}
-                      />
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={commitment.id}
-                      className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-blue-50'} relative group`}
-                    >
-                      <button
-                        onClick={() => showDismissPrompt(commitment.id)}
-                        className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Respinge"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                      <div className="flex items-start justify-between gap-2 pr-6">
-                        <div className="flex-1">
-                          <div className="font-semibold">{commitment.party}</div>
-                          <div className="text-xs mt-1">{commitment.commitmentText}</div>
-                        </div>
-                        {isConverted ? (
-                          <div className="flex items-center gap-1 text-xs">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <a
-                              href={`/tasks?id=${taskId}`}
-                              className="text-green-600 hover:underline flex items-center gap-1"
-                            >
-                              Task creat
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
-                        ) : (
+                      <AnimatedListItem key={commitment.id}>
+                        <div
+                          className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-blue-50'} relative group`}
+                        >
                           <button
-                            onClick={() => setCreatingItemId(commitment.id)}
-                            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            onClick={() => showDismissPrompt(commitment.id)}
+                            className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Respinge"
                           >
-                            <Plus className="h-3 w-3" />
-                            Creează Task
+                            <X className="h-3 w-3" />
                           </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
+                          <div className="flex items-start justify-between gap-2 pr-6">
+                            <div className="flex-1">
+                              <div className="font-semibold">{commitment.party}</div>
+                              <div className="text-xs mt-1">{commitment.commitmentText}</div>
+                            </div>
+                            {isConverted ? (
+                              <div className="flex items-center gap-1 text-xs">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <a
+                                  href={`/tasks?id=${taskId}`}
+                                  className="text-green-600 hover:underline flex items-center gap-1"
+                                >
+                                  Task creat
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setCreatingItemId(commitment.id)}
+                                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                              >
+                                <Plus className="h-3 w-3" />
+                                Creează Task
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </AnimatedListItem>
+                    );
+                  })}
+              </AnimatePresence>
             )}
           </div>
         )}
@@ -317,75 +327,79 @@ export function ExtractedItemsSidebar() {
             {extractedItems.actionItems.length === 0 ? (
               <p className="text-sm text-gray-500">Nu s-au detectat acțiuni</p>
             ) : (
-              extractedItems.actionItems
-                .filter((a) => !dismissedItems.has(a.id))
-                .map((action) => {
-                  const isCreating = creatingItemId === action.id;
-                  const taskId = createdTasks.get(action.id);
-                  const isConverted = !!taskId;
+              <AnimatePresence mode="popLayout">
+                {extractedItems.actionItems
+                  .filter((a) => !dismissedItems.has(a.id))
+                  .map((action) => {
+                    const isCreating = creatingItemId === action.id;
+                    const taskId = createdTasks.get(action.id);
+                    const isConverted = !!taskId;
 
-                  if (isCreating) {
+                    if (isCreating) {
+                      return (
+                        <AnimatedListItem key={action.id}>
+                          <QuickTaskCreator
+                            extractedItemType="actionItem"
+                            extractedItemId={action.id}
+                            threadId={thread.id}
+                            messageId={action.sourceMessageId}
+                            caseId={thread.caseId}
+                            prefillTitle={action.description}
+                            prefillDescription={`Acțiune extrasă din email: ${action.description}`}
+                            prefillPriority={action.priority}
+                            prefillAssignedTo={action.suggestedAssignee}
+                            onSave={(taskData) => handleCreateTask(taskData, action.id)}
+                            onCancel={() => setCreatingItemId(null)}
+                          />
+                        </AnimatedListItem>
+                      );
+                    }
+
                     return (
-                      <QuickTaskCreator
-                        key={action.id}
-                        extractedItemType="actionItem"
-                        extractedItemId={action.id}
-                        threadId={thread.id}
-                        messageId={action.sourceMessageId}
-                        caseId={thread.caseId}
-                        prefillTitle={action.description}
-                        prefillDescription={`Acțiune extrasă din email: ${action.description}`}
-                        prefillPriority={action.priority}
-                        prefillAssignedTo={action.suggestedAssignee}
-                        onSave={(taskData) => handleCreateTask(taskData, action.id)}
-                        onCancel={() => setCreatingItemId(null)}
-                      />
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={action.id}
-                      className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-green-50'} relative group`}
-                    >
-                      <button
-                        onClick={() => showDismissPrompt(action.id)}
-                        className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Respinge"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                      <div className="flex items-start justify-between gap-2 pr-6">
-                        <div className="flex-1">
-                          <div className="font-semibold">{action.description}</div>
-                          <div className="text-xs text-gray-600 mt-1">
-                            Prioritate: {action.priority}
+                      <AnimatedListItem key={action.id}>
+                        <div
+                          className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-green-50'} relative group`}
+                        >
+                          <button
+                            onClick={() => showDismissPrompt(action.id)}
+                            className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Respinge"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          <div className="flex items-start justify-between gap-2 pr-6">
+                            <div className="flex-1">
+                              <div className="font-semibold">{action.description}</div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                Prioritate: {action.priority}
+                              </div>
+                            </div>
+                            {isConverted ? (
+                              <div className="flex items-center gap-1 text-xs">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <a
+                                  href={`/tasks?id=${taskId}`}
+                                  className="text-green-600 hover:underline flex items-center gap-1"
+                                >
+                                  Task creat
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setCreatingItemId(action.id)}
+                                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                              >
+                                <Plus className="h-3 w-3" />
+                                Creează Task
+                              </button>
+                            )}
                           </div>
                         </div>
-                        {isConverted ? (
-                          <div className="flex items-center gap-1 text-xs">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <a
-                              href={`/tasks?id=${taskId}`}
-                              className="text-green-600 hover:underline flex items-center gap-1"
-                            >
-                              Task creat
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setCreatingItemId(action.id)}
-                            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                          >
-                            <Plus className="h-3 w-3" />
-                            Creează Task
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
+                      </AnimatedListItem>
+                    );
+                  })}
+              </AnimatePresence>
             )}
           </div>
         )}

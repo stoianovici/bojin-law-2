@@ -56,13 +56,16 @@ export interface DocumentLockWithUser extends DocumentLock {
 
 /**
  * Word edit session returned when opening a document in Word
+ * OPS-181: Updated to support SharePoint-first flow
  */
 export interface WordEditSession {
   documentId: string;
-  wordUrl: string; // ms-word:ofe|u| protocol URL
+  wordUrl: string | null; // ms-word:ofe|u| protocol URL for desktop Word
+  webUrl?: string | null; // Word Online URL (fallback if desktop Word not installed)
   lockToken: string;
   expiresAt: Date;
-  oneDriveId: string;
+  oneDriveId: string | null; // For legacy documents, null for SharePoint-first
+  sharePointItemId: string | null; // For SharePoint-first flow, null for legacy OneDrive
 }
 
 /**

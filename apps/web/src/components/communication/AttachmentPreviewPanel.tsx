@@ -28,6 +28,7 @@ import {
   Save,
   EyeOff,
   Check,
+  FileEdit,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { gql } from '@apollo/client';
@@ -49,6 +50,7 @@ const SAVE_ATTACHMENT_AS_DOCUMENT = gql`
         fileSize
       }
       isNew
+      caseDocumentId
     }
   }
 `;
@@ -58,6 +60,21 @@ const MARK_ATTACHMENT_IRRELEVANT = gql`
     markAttachmentIrrelevant(attachmentId: $attachmentId, irrelevant: $irrelevant) {
       id
       irrelevant
+    }
+  }
+`;
+
+// OPS-175: Promote email attachment to working document
+const PROMOTE_ATTACHMENT_TO_DOCUMENT = gql`
+  mutation PromoteAttachmentToDocument($input: PromoteAttachmentInput!) {
+    promoteAttachmentToDocument(input: $input) {
+      success
+      document {
+        id
+        fileName
+        status
+      }
+      error
     }
   }
 `;
@@ -80,6 +97,8 @@ export interface AttachmentPreviewPanelProps {
   onAttachmentSaved?: (attachmentId: string, documentId: string) => void;
   /** Callback when attachment is marked as irrelevant */
   onAttachmentMarkedIrrelevant?: (attachmentId: string) => void;
+  /** OPS-175: Callback when attachment is promoted to working document */
+  onAttachmentPromoted?: (attachmentId: string, newDocumentId: string) => void;
 }
 
 // ============================================================================
@@ -158,6 +177,7 @@ export function AttachmentPreviewPanel({
   caseId,
   onAttachmentSaved,
   onAttachmentMarkedIrrelevant,
+  onAttachmentPromoted,
 }: AttachmentPreviewPanelProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -229,6 +249,11 @@ export function AttachmentPreviewPanel({
     }
   );
 
+  // OPS-175: Promote attachment mutation
+  const [promoteAttachmentMutation, { loading: promotingAttachment }] = useMutation(
+    PROMOTE_ATTACHMENT_TO_DOCUMENT
+  );
+
   // OPS-140: Action handlers
   const handleSaveToDocuments = useCallback(async () => {
     if (!selectedAttachment || !caseId) return;
@@ -252,6 +277,91 @@ export function AttachmentPreviewPanel({
       },
     });
   }, [selectedAttachment, markIrrelevantMutation]);
+
+  // OPS-175: Handle promote to working document
+  const handlePromoteToWorking = useCallback(async () => {
+    if (!selectedAttachment || !caseId) return;
+
+    try {
+      // First save to get the caseDocumentId
+      const saveResult = await saveAttachmentMutation({
+        variables: {
+          emailId: selectedAttachment.messageId,
+          attachmentId: selectedAttachment.id,
+          caseId,
+        },
+      });
+
+      const savedData = saveResult.data as
+        | {
+            saveEmailAttachmentAsDocument?: {
+              document: { id: string; fileName: string };
+              isNew: boolean;
+              caseDocumentId: string;
+            };
+          }
+        | undefined;
+
+      const caseDocumentId = savedData?.saveEmailAttachmentAsDocument?.caseDocumentId;
+      if (!caseDocumentId) {
+        addNotification({
+          type: 'error',
+          title: 'Eroare',
+          message: 'Nu s-a putut salva atașamentul pentru promovare',
+        });
+        return;
+      }
+
+      // Promote the saved document
+      const promoteResult = await promoteAttachmentMutation({
+        variables: {
+          input: { caseDocumentId },
+        },
+      });
+
+      const promoteData = promoteResult.data as
+        | {
+            promoteAttachmentToDocument?: {
+              success: boolean;
+              document?: { id: string; fileName: string };
+              error?: string;
+            };
+          }
+        | undefined;
+
+      if (promoteData?.promoteAttachmentToDocument?.success) {
+        const newDocId = promoteData.promoteAttachmentToDocument.document?.id;
+        if (newDocId) {
+          onAttachmentPromoted?.(selectedAttachment.id, newDocId);
+        }
+        addNotification({
+          type: 'success',
+          title: 'Document promovat',
+          message: `${selectedAttachment.name} este acum un document de lucru editabil`,
+        });
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Eroare',
+          message:
+            promoteData?.promoteAttachmentToDocument?.error || 'Nu s-a putut promova documentul',
+        });
+      }
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        title: 'Eroare',
+        message: 'Nu s-a putut promova atașamentul la document de lucru',
+      });
+    }
+  }, [
+    selectedAttachment,
+    caseId,
+    saveAttachmentMutation,
+    promoteAttachmentMutation,
+    addNotification,
+    onAttachmentPromoted,
+  ]);
 
   // Check if current attachment is already saved
   const isAttachmentSaved = selectedAttachment
@@ -407,9 +517,18 @@ export function AttachmentPreviewPanel({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
         <div className="min-w-0 flex-1 mr-3">
-          <h3 className="font-semibold text-gray-900 truncate text-sm">
-            {selectedAttachment?.name || 'Atașament'}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 truncate text-sm">
+              {selectedAttachment?.name || 'Atașament'}
+            </h3>
+            {/* OPS-175: Show "Editat" badge for promoted attachments */}
+            {selectedAttachment?.isPromoted && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded flex-shrink-0">
+                <FileEdit className="h-3 w-3" />
+                Editat
+              </span>
+            )}
+          </div>
           {selectedAttachment && (
             <p className="text-xs text-gray-500 mt-0.5">
               De la {selectedAttachment.messageSender} •{' '}
@@ -570,6 +689,22 @@ export function AttachmentPreviewPanel({
               )}
               <span className="hidden sm:inline">{isAttachmentSaved ? 'Salvat' : 'Salvează'}</span>
             </button>
+            {/* OPS-175: Promote to working document button - hidden if already promoted */}
+            {!selectedAttachment?.isPromoted && (
+              <button
+                onClick={handlePromoteToWorking}
+                disabled={promotingAttachment || savingAttachment}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Editează ca document de lucru"
+              >
+                {promotingAttachment ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileEdit className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">Editează</span>
+              </button>
+            )}
             <button
               onClick={handleDownload}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"

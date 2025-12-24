@@ -15,6 +15,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import * as Dialog from '@radix-ui/react-dialog';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { BillingType } from '@legal-platform/types';
 import { useCaseCreate } from '../../hooks/useCaseCreate';
 import { useDefaultRates } from '../../hooks/useDefaultRates';
@@ -113,9 +114,26 @@ function StepIndicator({ currentStep, totalSteps }: { currentStep: number; total
   );
 }
 
+// OPS-149: Step transition animation variants
+const stepVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 20 : -20,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction < 0 ? 20 : -20,
+    opacity: 0,
+  }),
+};
+
 export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
   const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [stepDirection, setStepDirection] = useState(0); // OPS-149: Track direction for animation
   const [showAddType, setShowAddType] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
   const [newTypeCode, setNewTypeCode] = useState('');
@@ -240,6 +258,7 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
   };
 
   // OPS-038: Handle step navigation
+  // OPS-149: Added direction tracking for animations
   const handleNextStep = () => {
     if (currentStep === 2) {
       if (validateContactsStep()) {
@@ -247,11 +266,13 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
         handleSubmit(onSubmit)();
       }
     } else {
+      setStepDirection(1);
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrevStep = () => {
+    setStepDirection(-1);
     setCurrentStep(Math.max(1, currentStep - 1));
   };
 
@@ -454,131 +475,49 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
               </div>
             )}
 
-            {/* Step 2: Contacts */}
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <ContactsStep
-                  data={contactsData}
-                  onChange={setContactsData}
-                  errors={contactsErrors}
-                />
-
-                {/* Step 2 Navigation Buttons */}
-                <div className="flex justify-between gap-3 pt-4 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={handlePrevStep}
-                    disabled={loading || actorLoading || metadataLoading}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
-                  >
-                    Înapoi
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    disabled={loading || actorLoading || metadataLoading}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {(loading || actorLoading || metadataLoading) && (
-                      <svg
-                        className="animate-spin h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                    )}
-                    {loading || actorLoading || metadataLoading ? 'Se creează...' : 'Creează dosar'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 1: Form */}
-            {currentStep === 1 && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleNextStep();
-                }}
-                className="space-y-6"
-              >
-                {/* Title */}
-                <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                    Titlu <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="title"
-                    type="text"
-                    {...register('title')}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.title ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="Introduceți titlul dosarului"
+            {/* OPS-149: AnimatePresence wrapper for step transitions */}
+            <AnimatePresence mode="wait" custom={stepDirection}>
+              {/* Step 2: Contacts */}
+              {currentStep === 2 && (
+                <motion.div
+                  key="step-2"
+                  custom={stepDirection}
+                  variants={stepVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  className="space-y-6"
+                >
+                  <ContactsStep
+                    data={contactsData}
+                    onChange={setContactsData}
+                    errors={contactsErrors}
                   />
-                  {errors.title && (
-                    <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
-                  )}
-                </div>
 
-                {/* Client Name with Autocomplete */}
-                <div className="relative">
-                  <label
-                    htmlFor="clientName"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Nume client <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    {(() => {
-                      const { ref: registerRef, ...registerRest } = register('clientName');
-                      return (
-                        <input
-                          id="clientName"
-                          type="text"
-                          ref={(e) => {
-                            registerRef(e);
-                            clientInputRef.current = e;
-                          }}
-                          {...registerRest}
-                          onChange={(e) => {
-                            registerRest.onChange(e);
-                            const value = e.target.value;
-                            searchClients(value);
-                            setShowClientDropdown(value.length >= 1);
-                            setSelectedClientId(null);
-                          }}
-                          onFocus={(e) => {
-                            if (e.target.value.length >= 1) {
-                              searchClients(e.target.value);
-                              setShowClientDropdown(true);
-                            }
-                          }}
-                          autoComplete="off"
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors.clientName ? 'border-red-300' : 'border-gray-300'
-                          } ${selectedClientId ? 'bg-blue-50' : ''}`}
-                          placeholder="Căutați sau introduceți un client nou"
-                        />
-                      );
-                    })()}
-                    {clientsLoading && (
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+                  {/* Step 2 Navigation Buttons */}
+                  <div className="flex justify-between gap-3 pt-4 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={handlePrevStep}
+                      disabled={loading || actorLoading || metadataLoading}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                    >
+                      Înapoi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextStep}
+                      disabled={loading || actorLoading || metadataLoading}
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {(loading || actorLoading || metadataLoading) && (
+                        <svg
+                          className="animate-spin h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
                           <circle
                             className="opacity-25"
                             cx="12"
@@ -586,20 +525,167 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                             r="10"
                             stroke="currentColor"
                             strokeWidth="4"
-                            fill="none"
-                          />
+                          ></circle>
                           <path
                             className="opacity-75"
                             fill="currentColor"
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
+                          ></path>
                         </svg>
+                      )}
+                      {loading || actorLoading || metadataLoading
+                        ? 'Se creează...'
+                        : 'Creează dosar'}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 1: Form */}
+              {currentStep === 1 && (
+                <motion.form
+                  key="step-1"
+                  custom={stepDirection}
+                  variants={stepVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleNextStep();
+                  }}
+                  className="space-y-6"
+                >
+                  {/* Title */}
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                      Titlu <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="title"
+                      type="text"
+                      {...register('title')}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.title ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="Introduceți titlul dosarului"
+                    />
+                    {errors.title && (
+                      <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+                    )}
+                  </div>
+
+                  {/* Client Name with Autocomplete */}
+                  <div className="relative">
+                    <label
+                      htmlFor="clientName"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Nume client <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      {(() => {
+                        const { ref: registerRef, ...registerRest } = register('clientName');
+                        return (
+                          <input
+                            id="clientName"
+                            type="text"
+                            ref={(e) => {
+                              registerRef(e);
+                              clientInputRef.current = e;
+                            }}
+                            {...registerRest}
+                            onChange={(e) => {
+                              registerRest.onChange(e);
+                              const value = e.target.value;
+                              searchClients(value);
+                              setShowClientDropdown(value.length >= 1);
+                              setSelectedClientId(null);
+                            }}
+                            onFocus={(e) => {
+                              if (e.target.value.length >= 1) {
+                                searchClients(e.target.value);
+                                setShowClientDropdown(true);
+                              }
+                            }}
+                            autoComplete="off"
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              errors.clientName ? 'border-red-300' : 'border-gray-300'
+                            } ${selectedClientId ? 'bg-blue-50' : ''}`}
+                            placeholder="Căutați sau introduceți un client nou"
+                          />
+                        );
+                      })()}
+                      {clientsLoading && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                          <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                      {selectedClientId && !clientsLoading && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                          <svg
+                            className="h-4 w-4 text-blue-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Client Autocomplete Dropdown */}
+                    {showClientDropdown && clients.length > 0 && (
+                      <div
+                        ref={clientDropdownRef}
+                        className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
+                      >
+                        {clients.map((client) => (
+                          <button
+                            key={client.id}
+                            type="button"
+                            className="w-full px-3 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors border-b border-gray-100 last:border-b-0"
+                            onClick={() => {
+                              setValue('clientName', client.name, { shouldValidate: true });
+                              setSelectedClientId(client.id);
+                              setShowClientDropdown(false);
+                            }}
+                          >
+                            <div className="font-medium text-gray-900">{client.name}</div>
+                            {client.address && (
+                              <div className="text-sm text-gray-500 truncate">{client.address}</div>
+                            )}
+                          </button>
+                        ))}
                       </div>
                     )}
-                    {selectedClientId && !clientsLoading && (
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+
+                    {selectedClientId && (
+                      <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
                         <svg
-                          className="h-4 w-4 text-blue-600"
+                          className="h-3 w-3"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -608,43 +694,406 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M5 13l4 4L19 7"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
+                        Client existent selectat
+                      </p>
+                    )}
+                    {errors.clientName && (
+                      <p className="mt-1 text-sm text-red-600">{errors.clientName.message}</p>
+                    )}
+                  </div>
+
+                  {/* Case Type */}
+                  <div>
+                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                      Tip dosar <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        id="type"
+                        {...register('type')}
+                        disabled={caseTypesLoading}
+                        className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.type ? 'border-red-300' : 'border-gray-300'
+                        } ${caseTypesLoading ? 'bg-gray-100' : ''}`}
+                      >
+                        <option value="">Selectați tipul dosarului</option>
+                        {caseTypes.map((ct) => (
+                          <option key={ct.id} value={ct.code}>
+                            {ct.name}
+                          </option>
+                        ))}
+                      </select>
+                      {isPartner && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddType(!showAddType)}
+                          className="px-3 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                          title="Adaugă tip nou"
+                        >
+                          + Tip nou
+                        </button>
+                      )}
+                    </div>
+                    {errors.type && (
+                      <p className="mt-1 text-sm text-red-600">{errors.type.message}</p>
+                    )}
+
+                    {/* Add New Type Form (Partners only) */}
+                    {showAddType && isPartner && (
+                      <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md space-y-3">
+                        <div>
+                          <label
+                            htmlFor="newTypeName"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                          >
+                            Nume tip nou
+                          </label>
+                          <input
+                            id="newTypeName"
+                            type="text"
+                            value={newTypeName}
+                            onChange={(e) => setNewTypeName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="ex: Insolvență"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="newTypeCode"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                          >
+                            Cod (generat automat)
+                          </label>
+                          <input
+                            id="newTypeCode"
+                            type="text"
+                            value={newTypeCode}
+                            onChange={(e) =>
+                              setNewTypeCode(
+                                e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '')
+                              )
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                            placeholder="INSOLVENTA"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddType(false);
+                              setNewTypeName('');
+                              setNewTypeCode('');
+                            }}
+                            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                          >
+                            Anulează
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!newTypeName || !newTypeCode || createLoading}
+                            onClick={async () => {
+                              const result = await createCaseType(newTypeName, newTypeCode);
+                              if (result.success) {
+                                addNotification({
+                                  type: 'success',
+                                  title: 'Tip dosar creat',
+                                  message: `Tipul "${newTypeName}" a fost adăugat cu succes.`,
+                                });
+                                setShowAddType(false);
+                                setNewTypeName('');
+                                setNewTypeCode('');
+                              } else {
+                                addNotification({
+                                  type: 'error',
+                                  title: 'Eroare',
+                                  message: result.error || 'Nu s-a putut crea tipul de dosar.',
+                                });
+                              }
+                            }}
+                            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                          >
+                            {createLoading && (
+                              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="none"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                            )}
+                            Salvează
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Client Autocomplete Dropdown */}
-                  {showClientDropdown && clients.length > 0 && (
-                    <div
-                      ref={clientDropdownRef}
-                      className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
+                  {/* Description */}
+                  <div>
+                    <label
+                      htmlFor="description"
+                      className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      {clients.map((client) => (
-                        <button
-                          key={client.id}
-                          type="button"
-                          className="w-full px-3 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors border-b border-gray-100 last:border-b-0"
-                          onClick={() => {
-                            setValue('clientName', client.name, { shouldValidate: true });
-                            setSelectedClientId(client.id);
-                            setShowClientDropdown(false);
-                          }}
-                        >
-                          <div className="font-medium text-gray-900">{client.name}</div>
-                          {client.address && (
-                            <div className="text-sm text-gray-500 truncate">{client.address}</div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                      Descriere <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      id="description"
+                      {...register('description')}
+                      rows={4}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.description ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="Introduceți descrierea dosarului (minim 10 caractere)"
+                    />
+                    {errors.description && (
+                      <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+                    )}
+                  </div>
 
-                  {selectedClientId && (
-                    <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
+                  {/* Value (Partners only - Story 2.8.3) */}
+                  <FinancialData>
+                    <div>
+                      <label
+                        htmlFor="value"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Valoare dosar (Opțional)
+                      </label>
+                      <input
+                        id="value"
+                        type="number"
+                        step="0.01"
+                        {...register('value', { valueAsNumber: true })}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.value ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Introduceți valoarea"
+                      />
+                      {errors.value && (
+                        <p className="mt-1 text-sm text-red-600">{errors.value.message}</p>
+                      )}
+                    </div>
+                  </FinancialData>
+
+                  {/* Billing Section (Partners only - Story 2.8.1) */}
+                  <FinancialData>
+                    <div className="border-t border-gray-200 pt-6 space-y-4">
+                      <h3 className="text-lg font-medium text-gray-900">Informații facturare</h3>
+
+                      {/* Billing Type */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Tip facturare <span className="text-red-500">*</span>
+                        </label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              value="Hourly"
+                              {...register('billingType')}
+                              className="mr-2"
+                            />
+                            <span className="text-sm">Facturare pe oră</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              value="Fixed"
+                              {...register('billingType')}
+                              className="mr-2"
+                            />
+                            <span className="text-sm">Sumă fixă</span>
+                          </label>
+                        </div>
+                        {errors.billingType && (
+                          <p className="mt-1 text-sm text-red-600">{errors.billingType.message}</p>
+                        )}
+                      </div>
+
+                      {/* Fixed Amount (shown when Fixed billing type selected) */}
+                      {billingType === 'Fixed' && (
+                        <div>
+                          <label
+                            htmlFor="fixedAmount"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                          >
+                            Sumă fixă <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative mt-1">
+                            <input
+                              type="number"
+                              id="fixedAmount"
+                              step="0.01"
+                              min="0"
+                              {...register('fixedAmount', { valueAsNumber: true })}
+                              className={`block w-full rounded-md border-gray-300 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                                errors.fixedAmount ? 'border-red-300' : ''
+                              }`}
+                              placeholder="0.00"
+                            />
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                              <span className="text-gray-500 sm:text-sm">RON</span>
+                            </div>
+                          </div>
+                          {errors.fixedAmount && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {errors.fixedAmount.message}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Default Rates Preview (shown when Hourly billing type selected) */}
+                      {billingType === 'Hourly' && !useCustomRates && defaultRates && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                          <p className="text-sm font-medium text-blue-900 mb-2">
+                            Tarife orare implicite:
+                          </p>
+                          <div className="text-sm text-blue-800 space-y-1">
+                            <div>
+                              Partener: {centsToLei(defaultRates.partnerRate).toFixed(2)} RON/oră
+                            </div>
+                            <div>
+                              Avocat: {centsToLei(defaultRates.associateRate).toFixed(2)} RON/oră
+                            </div>
+                            <div>
+                              Paralegal: {centsToLei(defaultRates.paralegalRate).toFixed(2)} RON/oră
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Custom Rates Toggle */}
+                      {billingType === 'Hourly' && (
+                        <div>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              {...register('useCustomRates')}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700">
+                              Utilizează tarife personalizate pentru acest dosar
+                            </span>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Custom Rates Inputs */}
+                      {billingType === 'Hourly' && useCustomRates && (
+                        <div className="space-y-3 pl-4 border-l-2 border-gray-200">
+                          <div>
+                            <label
+                              htmlFor="customPartnerRate"
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                              Tarif Partener
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                id="customPartnerRate"
+                                step="0.01"
+                                min="0"
+                                {...register('customPartnerRate', { valueAsNumber: true })}
+                                className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                placeholder={
+                                  defaultRates
+                                    ? centsToLei(defaultRates.partnerRate).toFixed(2)
+                                    : '0.00'
+                                }
+                              />
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                <span className="text-gray-500 sm:text-sm">RON/oră</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="customAssociateRate"
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                              Tarif Avocat
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                id="customAssociateRate"
+                                step="0.01"
+                                min="0"
+                                {...register('customAssociateRate', { valueAsNumber: true })}
+                                className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                placeholder={
+                                  defaultRates
+                                    ? centsToLei(defaultRates.associateRate).toFixed(2)
+                                    : '0.00'
+                                }
+                              />
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                <span className="text-gray-500 sm:text-sm">RON/oră</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="customParalegalRate"
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                              Tarif Paralegal
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                id="customParalegalRate"
+                                step="0.01"
+                                min="0"
+                                {...register('customParalegalRate', { valueAsNumber: true })}
+                                className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                placeholder={
+                                  defaultRates
+                                    ? centsToLei(defaultRates.paralegalRate).toFixed(2)
+                                    : '0.00'
+                                }
+                              />
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                <span className="text-gray-500 sm:text-sm">RON/oră</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </FinancialData>
+
+                  {/* Form Actions - Step 1 */}
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    >
+                      Anulează
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2"
+                    >
+                      Continuă
                       <svg
-                        className="h-3 w-3"
+                        className="h-4 w-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -653,405 +1102,14 @@ export function CreateCaseModal({ trigger, onSuccess }: CreateCaseModalProps) {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          d="M9 5l7 7-7 7"
                         />
                       </svg>
-                      Client existent selectat
-                    </p>
-                  )}
-                  {errors.clientName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.clientName.message}</p>
-                  )}
-                </div>
-
-                {/* Case Type */}
-                <div>
-                  <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                    Tip dosar <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <select
-                      id="type"
-                      {...register('type')}
-                      disabled={caseTypesLoading}
-                      className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.type ? 'border-red-300' : 'border-gray-300'
-                      } ${caseTypesLoading ? 'bg-gray-100' : ''}`}
-                    >
-                      <option value="">Selectați tipul dosarului</option>
-                      {caseTypes.map((ct) => (
-                        <option key={ct.id} value={ct.code}>
-                          {ct.name}
-                        </option>
-                      ))}
-                    </select>
-                    {isPartner && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAddType(!showAddType)}
-                        className="px-3 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                        title="Adaugă tip nou"
-                      >
-                        + Tip nou
-                      </button>
-                    )}
+                    </button>
                   </div>
-                  {errors.type && (
-                    <p className="mt-1 text-sm text-red-600">{errors.type.message}</p>
-                  )}
-
-                  {/* Add New Type Form (Partners only) */}
-                  {showAddType && isPartner && (
-                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md space-y-3">
-                      <div>
-                        <label
-                          htmlFor="newTypeName"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Nume tip nou
-                        </label>
-                        <input
-                          id="newTypeName"
-                          type="text"
-                          value={newTypeName}
-                          onChange={(e) => setNewTypeName(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="ex: Insolvență"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="newTypeCode"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Cod (generat automat)
-                        </label>
-                        <input
-                          id="newTypeCode"
-                          type="text"
-                          value={newTypeCode}
-                          onChange={(e) =>
-                            setNewTypeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
-                          placeholder="INSOLVENTA"
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowAddType(false);
-                            setNewTypeName('');
-                            setNewTypeCode('');
-                          }}
-                          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
-                        >
-                          Anulează
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!newTypeName || !newTypeCode || createLoading}
-                          onClick={async () => {
-                            const result = await createCaseType(newTypeName, newTypeCode);
-                            if (result.success) {
-                              addNotification({
-                                type: 'success',
-                                title: 'Tip dosar creat',
-                                message: `Tipul "${newTypeName}" a fost adăugat cu succes.`,
-                              });
-                              setShowAddType(false);
-                              setNewTypeName('');
-                              setNewTypeCode('');
-                            } else {
-                              addNotification({
-                                type: 'error',
-                                title: 'Eroare',
-                                message: result.error || 'Nu s-a putut crea tipul de dosar.',
-                              });
-                            }
-                          }}
-                          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                        >
-                          {createLoading && (
-                            <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                                fill="none"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              />
-                            </svg>
-                          )}
-                          Salvează
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label
-                    htmlFor="description"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Descriere <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    id="description"
-                    {...register('description')}
-                    rows={4}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.description ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="Introduceți descrierea dosarului (minim 10 caractere)"
-                  />
-                  {errors.description && (
-                    <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-                  )}
-                </div>
-
-                {/* Value (Partners only - Story 2.8.3) */}
-                <FinancialData>
-                  <div>
-                    <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">
-                      Valoare dosar (Opțional)
-                    </label>
-                    <input
-                      id="value"
-                      type="number"
-                      step="0.01"
-                      {...register('value', { valueAsNumber: true })}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.value ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                      placeholder="Introduceți valoarea"
-                    />
-                    {errors.value && (
-                      <p className="mt-1 text-sm text-red-600">{errors.value.message}</p>
-                    )}
-                  </div>
-                </FinancialData>
-
-                {/* Billing Section (Partners only - Story 2.8.1) */}
-                <FinancialData>
-                  <div className="border-t border-gray-200 pt-6 space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Informații facturare</h3>
-
-                    {/* Billing Type */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tip facturare <span className="text-red-500">*</span>
-                      </label>
-                      <div className="flex gap-4">
-                        <label className="flex items-center">
-                          <input
-                            type="radio"
-                            value="Hourly"
-                            {...register('billingType')}
-                            className="mr-2"
-                          />
-                          <span className="text-sm">Facturare pe oră</span>
-                        </label>
-                        <label className="flex items-center">
-                          <input
-                            type="radio"
-                            value="Fixed"
-                            {...register('billingType')}
-                            className="mr-2"
-                          />
-                          <span className="text-sm">Sumă fixă</span>
-                        </label>
-                      </div>
-                      {errors.billingType && (
-                        <p className="mt-1 text-sm text-red-600">{errors.billingType.message}</p>
-                      )}
-                    </div>
-
-                    {/* Fixed Amount (shown when Fixed billing type selected) */}
-                    {billingType === 'Fixed' && (
-                      <div>
-                        <label
-                          htmlFor="fixedAmount"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Sumă fixă <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative mt-1">
-                          <input
-                            type="number"
-                            id="fixedAmount"
-                            step="0.01"
-                            min="0"
-                            {...register('fixedAmount', { valueAsNumber: true })}
-                            className={`block w-full rounded-md border-gray-300 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-                              errors.fixedAmount ? 'border-red-300' : ''
-                            }`}
-                            placeholder="0.00"
-                          />
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                            <span className="text-gray-500 sm:text-sm">RON</span>
-                          </div>
-                        </div>
-                        {errors.fixedAmount && (
-                          <p className="mt-1 text-sm text-red-600">{errors.fixedAmount.message}</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Default Rates Preview (shown when Hourly billing type selected) */}
-                    {billingType === 'Hourly' && !useCustomRates && defaultRates && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                        <p className="text-sm font-medium text-blue-900 mb-2">
-                          Tarife orare implicite:
-                        </p>
-                        <div className="text-sm text-blue-800 space-y-1">
-                          <div>
-                            Partener: {centsToLei(defaultRates.partnerRate).toFixed(2)} RON/oră
-                          </div>
-                          <div>
-                            Avocat: {centsToLei(defaultRates.associateRate).toFixed(2)} RON/oră
-                          </div>
-                          <div>
-                            Paralegal: {centsToLei(defaultRates.paralegalRate).toFixed(2)} RON/oră
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Custom Rates Toggle */}
-                    {billingType === 'Hourly' && (
-                      <div>
-                        <label className="flex items-center">
-                          <input type="checkbox" {...register('useCustomRates')} className="mr-2" />
-                          <span className="text-sm text-gray-700">
-                            Utilizează tarife personalizate pentru acest dosar
-                          </span>
-                        </label>
-                      </div>
-                    )}
-
-                    {/* Custom Rates Inputs */}
-                    {billingType === 'Hourly' && useCustomRates && (
-                      <div className="space-y-3 pl-4 border-l-2 border-gray-200">
-                        <div>
-                          <label
-                            htmlFor="customPartnerRate"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                          >
-                            Tarif Partener
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              id="customPartnerRate"
-                              step="0.01"
-                              min="0"
-                              {...register('customPartnerRate', { valueAsNumber: true })}
-                              className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                              placeholder={
-                                defaultRates
-                                  ? centsToLei(defaultRates.partnerRate).toFixed(2)
-                                  : '0.00'
-                              }
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                              <span className="text-gray-500 sm:text-sm">RON/oră</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="customAssociateRate"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                          >
-                            Tarif Avocat
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              id="customAssociateRate"
-                              step="0.01"
-                              min="0"
-                              {...register('customAssociateRate', { valueAsNumber: true })}
-                              className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                              placeholder={
-                                defaultRates
-                                  ? centsToLei(defaultRates.associateRate).toFixed(2)
-                                  : '0.00'
-                              }
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                              <span className="text-gray-500 sm:text-sm">RON/oră</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="customParalegalRate"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                          >
-                            Tarif Paralegal
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              id="customParalegalRate"
-                              step="0.01"
-                              min="0"
-                              {...register('customParalegalRate', { valueAsNumber: true })}
-                              className="block w-full rounded-md border-gray-300 pr-16 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                              placeholder={
-                                defaultRates
-                                  ? centsToLei(defaultRates.paralegalRate).toFixed(2)
-                                  : '0.00'
-                              }
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                              <span className="text-gray-500 sm:text-sm">RON/oră</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </FinancialData>
-
-                {/* Form Actions - Step 1 */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                  >
-                    Anulează
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2"
-                  >
-                    Continuă
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </form>
-            )}
+                </motion.form>
+              )}
+            </AnimatePresence>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

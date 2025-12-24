@@ -88,7 +88,7 @@ export default function CommunicationsPage() {
   useSetAIContext('communications');
 
   // Auth context for Microsoft account status
-  const { hasMsalAccount, reconnectMicrosoft, user } = useAuth();
+  const { hasMsalAccount, reconnectMicrosoft, user, getAccessToken } = useAuth();
 
   // Communication store for compose and thread selection
   const {
@@ -139,6 +139,21 @@ export default function CommunicationsPage() {
     window.addEventListener('ms-token-required', handleMsTokenRequired);
     return () => window.removeEventListener('ms-token-required', handleMsTokenRequired);
   }, []);
+
+  // OPS-176: Proactively check if MS token is available
+  // This helps show the reconnect prompt earlier if the token is expired
+  useEffect(() => {
+    // Only check if user thinks they have an MSAL account but haven't been prompted yet
+    if (hasMsalAccount && !showMsReconnectPrompt) {
+      getAccessToken().then((token) => {
+        if (!token) {
+          // Token couldn't be obtained - show reconnect prompt
+          console.log('[Communications] MS token check failed - showing reconnect prompt');
+          setShowMsReconnectPrompt(true);
+        }
+      });
+    }
+  }, [hasMsalAccount, showMsReconnectPrompt, getAccessToken]);
 
   // Email sync hook
   const { syncStatus, syncing, startSync, loading: syncLoading } = useEmailSync();

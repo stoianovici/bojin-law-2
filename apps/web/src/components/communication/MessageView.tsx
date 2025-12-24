@@ -21,6 +21,7 @@ import {
   Eye,
   FileText,
   FileCode,
+  FileEdit,
 } from 'lucide-react';
 import { NotifyStakeholdersModal } from './NotifyStakeholdersModal';
 import { DocumentPreviewModal, type PreviewableDocument } from '@/components/preview';
@@ -104,6 +105,7 @@ const SAVE_ATTACHMENT_AS_DOCUMENT = gql`
         fileName
       }
       isNew
+      caseDocumentId
     }
   }
 `;
@@ -113,6 +115,21 @@ const MARK_ATTACHMENT_IRRELEVANT = gql`
     markAttachmentIrrelevant(attachmentId: $attachmentId, irrelevant: $irrelevant) {
       id
       irrelevant
+    }
+  }
+`;
+
+// OPS-175: Promote email attachment to working document
+const PROMOTE_ATTACHMENT_TO_DOCUMENT = gql`
+  mutation PromoteAttachmentToDocument($input: PromoteAttachmentInput!) {
+    promoteAttachmentToDocument(input: $input) {
+      success
+      document {
+        id
+        fileName
+        status
+      }
+      error
     }
   }
 `;
@@ -194,6 +211,8 @@ function Message({
   const { addNotification } = useMessageViewNotifications();
   const [saveAttachmentMutation] = useMutation(SAVE_ATTACHMENT_AS_DOCUMENT);
   const [markIrrelevantMutation] = useMutation(MARK_ATTACHMENT_IRRELEVANT);
+  // OPS-175: Promote attachment to working document
+  const [promoteAttachmentMutation] = useMutation(PROMOTE_ATTACHMENT_TO_DOCUMENT);
 
   // OPS-141: Get actions filtered by user role for the email-attachment context
   const { actions: previewActions } = usePreviewActions({
@@ -409,11 +428,98 @@ function Message({
           });
           break;
 
+        // OPS-175: Promote attachment to working document
+        case 'promote-to-working':
+          if (!caseId) {
+            addNotification({
+              type: 'warning',
+              title: 'Atenție',
+              message: 'Atribuiți conversația la un dosar pentru a promova atașamentul',
+            });
+            return;
+          }
+          try {
+            // First, save the attachment to get the caseDocumentId
+            const saveResult = await saveAttachmentMutation({
+              variables: {
+                emailId: message.id,
+                attachmentId,
+                caseId,
+              },
+            });
+            const savedData = saveResult.data as
+              | {
+                  saveEmailAttachmentAsDocument?: {
+                    document: { id: string; fileName: string };
+                    isNew: boolean;
+                    caseDocumentId: string;
+                  };
+                }
+              | undefined;
+
+            const caseDocumentId = savedData?.saveEmailAttachmentAsDocument?.caseDocumentId;
+            if (!caseDocumentId) {
+              addNotification({
+                type: 'error',
+                title: 'Eroare',
+                message: 'Nu s-a putut salva atașamentul pentru promovare',
+              });
+              return;
+            }
+
+            // Now promote the saved document
+            const promoteResult = await promoteAttachmentMutation({
+              variables: {
+                input: { caseDocumentId },
+              },
+            });
+            const promoteData = promoteResult.data as
+              | {
+                  promoteAttachmentToDocument?: {
+                    success: boolean;
+                    document?: { id: string; fileName: string };
+                    error?: string;
+                  };
+                }
+              | undefined;
+
+            if (promoteData?.promoteAttachmentToDocument?.success) {
+              addNotification({
+                type: 'success',
+                title: 'Document promovat',
+                message: `${doc.name} este acum un document de lucru editabil`,
+              });
+              setPreviewDocument(null); // Close modal
+            } else {
+              addNotification({
+                type: 'error',
+                title: 'Eroare',
+                message:
+                  promoteData?.promoteAttachmentToDocument?.error ||
+                  'Nu s-a putut promova documentul',
+              });
+            }
+          } catch (error) {
+            addNotification({
+              type: 'error',
+              title: 'Eroare',
+              message: 'Nu s-a putut promova atașamentul la document de lucru',
+            });
+          }
+          break;
+
         default:
           console.warn(`[MessageView] Unhandled action: ${actionId}`);
       }
     },
-    [caseId, message.id, saveAttachmentMutation, markIrrelevantMutation, addNotification]
+    [
+      caseId,
+      message.id,
+      saveAttachmentMutation,
+      markIrrelevantMutation,
+      promoteAttachmentMutation,
+      addNotification,
+    ]
   );
 
   const handleSyncAttachments = useCallback(
@@ -617,6 +723,13 @@ function Message({
                   <span className="text-xs text-gray-500">
                     ({Math.round((att.size || att.fileSize || 0) / 1024)} KB)
                   </span>
+                  {/* OPS-175: Show "Editat" badge for promoted attachments */}
+                  {att.isPromoted && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                      <FileEdit className="h-3 w-3" />
+                      Editat
+                    </span>
+                  )}
                   {/* Preview button */}
                   <button
                     onClick={(e) => handlePreviewAttachment(e, att)}

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PrioritizedTaskCard } from './PrioritizedTaskCard';
 import { useMorningBriefing } from '@/hooks/useMorningBriefing';
 import type { DeadlineInfo, RiskAlert, ProactiveAISuggestion } from '@legal-platform/types';
@@ -233,9 +234,9 @@ export function MorningBriefing({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
-            <div className="h-4 bg-muted animate-pulse rounded w-1/2" />
-            <div className="h-20 bg-muted animate-pulse rounded" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-20" />
           </div>
         </CardContent>
       </Card>

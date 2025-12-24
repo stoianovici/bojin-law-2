@@ -23,6 +23,9 @@ interface EmailAttachment {
   contentType: string;
   size: number;
   downloadUrl?: string;
+  // OPS-175: Promotion tracking
+  isPromoted?: boolean;
+  promotedDocumentId?: string;
 }
 
 interface CaseReference {
@@ -300,6 +303,8 @@ const EMAIL_FRAGMENT = gql`
       contentType
       size
       downloadUrl
+      isPromoted
+      promotedDocumentId
     }
   }
 `;

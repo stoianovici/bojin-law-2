@@ -10,6 +10,8 @@
  */
 
 import { PrismaClient, Email, CaseActorRole } from '@prisma/client';
+import { getEmailAttachmentService } from './email-attachment.service';
+import logger from '../utils/logger';
 
 // ============================================================================
 // Types
@@ -239,8 +241,14 @@ export class EmailThreadService {
       where.isIgnored = false;
     }
 
+    // OPS-186: Filter by EmailCaseLink table, not legacy Email.caseId
+    // This ensures we use the newer multi-case link system introduced in OPS-058
     if (caseId) {
-      where.caseId = caseId;
+      where.caseLinks = {
+        some: {
+          caseId: caseId,
+        },
+      };
     }
 
     if (hasAttachments !== undefined) {
@@ -306,9 +314,14 @@ export class EmailThreadService {
    *
    * @param conversationId - Graph API conversation ID
    * @param userId - User ID for access control
+   * @param accessToken - Optional MS Graph access token for auto-syncing attachments (OPS-176)
    * @returns Email thread or null
    */
-  async getThread(conversationId: string, userId: string): Promise<EmailThread | null> {
+  async getThread(
+    conversationId: string,
+    userId: string,
+    accessToken?: string
+  ): Promise<EmailThread | null> {
     // OPS-127: Include attachments when fetching thread emails
     const emails = await this.prisma.email.findMany({
       where: { conversationId, userId },
@@ -324,6 +337,44 @@ export class EmailThreadService {
 
     if (emails.length === 0) {
       return null;
+    }
+
+    // OPS-176: Auto-sync attachments for emails that have hasAttachments but no EmailAttachment records
+    if (accessToken) {
+      const attachmentService = getEmailAttachmentService(this.prisma);
+      for (const email of emails) {
+        if (email.hasAttachments && email.attachments.length === 0) {
+          try {
+            logger.info('[EmailThread.getThread] Auto-syncing attachments', {
+              emailId: email.id,
+              conversationId,
+            });
+            await attachmentService.syncAllAttachments(email.id, accessToken);
+          } catch (error) {
+            logger.error('[EmailThread.getThread] Auto-sync failed', {
+              emailId: email.id,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            // Continue with other emails - don't fail the whole request
+          }
+        }
+      }
+
+      // Re-fetch emails with newly synced attachments
+      const syncedEmails = await this.prisma.email.findMany({
+        where: { conversationId, userId },
+        orderBy: { receivedDateTime: 'asc' },
+        include: {
+          attachments: {
+            where: {
+              OR: [{ filterStatus: null }, { filterStatus: { not: 'dismissed' } }],
+            },
+          },
+        },
+      });
+
+      const threads = this.groupEmailsIntoThreads(syncedEmails);
+      return threads[0] || null;
     }
 
     const threads = this.groupEmailsIntoThreads(emails);
@@ -365,7 +416,39 @@ export class EmailThreadService {
     userId: string,
     userContext?: UserContext
   ): Promise<AssignThreadResult> {
-    // Update all emails in the thread
+    // OPS-186: Get all emails in the thread first
+    const emails = await this.prisma.email.findMany({
+      where: { conversationId, userId },
+      select: { id: true },
+    });
+
+    // OPS-186: Create EmailCaseLink records for each email (upsert to handle existing links)
+    // This is the new primary way to link emails to cases (OPS-058)
+    const linkPromises = emails.map((email) =>
+      this.prisma.emailCaseLink.upsert({
+        where: {
+          emailId_caseId: {
+            emailId: email.id,
+            caseId: caseId,
+          },
+        },
+        create: {
+          emailId: email.id,
+          caseId: caseId,
+          confidence: 1.0,
+          matchType: 'Manual',
+          linkedBy: userId,
+          isPrimary: true,
+        },
+        update: {
+          // If link exists, mark it as primary
+          isPrimary: true,
+        },
+      })
+    );
+    await Promise.all(linkPromises);
+
+    // Also update legacy caseId for backwards compatibility
     const result = await this.prisma.email.updateMany({
       where: { conversationId, userId },
       data: { caseId },

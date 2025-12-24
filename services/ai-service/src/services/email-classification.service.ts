@@ -134,6 +134,8 @@ const DEFAULT_THRESHOLDS: ClassificationThresholds = {
 const SEMANTIC_CLASSIFICATION_PROMPT = `You are classifying an email for a Romanian law firm.
 The client has multiple active cases and we need to determine which case this email belongs to.
 
+IMPORTANT: Răspunde în limba română. Toate explicațiile (reasoning) trebuie să fie în română.
+
 EMAIL:
 - From: {from}
 - Subject: {subject}

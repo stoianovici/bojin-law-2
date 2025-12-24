@@ -1,6 +1,6 @@
 /**
- * Reports Data
- * CLEANED: Mock data removed - use real API calls instead
+ * Reports Data (OPS-151)
+ * Returns predefined report templates
  */
 
 import type {
@@ -10,10 +10,11 @@ import type {
   DateRange,
   ChartDataPoint,
 } from '@legal-platform/types';
+import { PREDEFINED_REPORT_TEMPLATES } from './report-templates';
 
 export function getReportMetadata(): ReportMetadata[] {
-  // Return empty array - report metadata should come from API
-  return [];
+  // Return predefined templates as metadata
+  return PREDEFINED_REPORT_TEMPLATES;
 }
 
 export function getReportData(
@@ -21,7 +22,7 @@ export function getReportData(
   dateRange: DateRange,
   _category: ReportCategory
 ): ReportData {
-  // Return empty report data - should come from API
+  // Return empty report data - actual data should come from API (OPS-153)
   return {
     reportId,
     dateRange,

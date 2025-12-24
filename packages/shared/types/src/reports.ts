@@ -90,3 +90,60 @@ export interface ColumnDefinition {
   labelRo: string;
   type: 'text' | 'number' | 'date' | 'currency';
 }
+
+// ============================================================
+// AI Report Types (OPS-150)
+// ============================================================
+
+export interface ReportAIInsight {
+  summary: string;
+  keyFindings: string[];
+  recommendations: string[];
+  generatedAt: Date;
+  confidence: number; // 0-1 scale
+}
+
+export interface CaseReportFilters {
+  status?: string[];
+  assignedTo?: string[];
+  clientId?: string;
+  dateRange?: DateRange;
+}
+
+export interface TimeReportFilters {
+  userId?: string[];
+  caseId?: string;
+  billable?: boolean;
+  dateRange?: DateRange;
+}
+
+export interface FinancialReportFilters {
+  status?: string[];
+  clientId?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  dateRange?: DateRange;
+}
+
+export interface ClientReportFilters {
+  activeOnly?: boolean;
+  hasOpenCases?: boolean;
+}
+
+export interface DocumentReportFilters {
+  caseId?: string;
+  documentType?: string[];
+  dateRange?: DateRange;
+}
+
+export type ReportDataQuery =
+  | { type: 'cases'; filters?: CaseReportFilters }
+  | { type: 'timeEntries'; filters?: TimeReportFilters }
+  | { type: 'invoices'; filters?: FinancialReportFilters }
+  | { type: 'clients'; filters?: ClientReportFilters }
+  | { type: 'documents'; filters?: DocumentReportFilters };
+
+export interface PredefinedReportTemplate extends ReportMetadata {
+  dataQuery: ReportDataQuery;
+  aiPromptTemplate: string;
+}

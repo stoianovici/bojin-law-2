@@ -505,3 +505,112 @@ function getTaskUpdateIcon(updateType: string): string {
       return '📝';
   }
 }
+
+// ============================================================================
+// OPS-177: Review Feedback Email
+// ============================================================================
+
+export interface ReviewFeedbackEmailPayload {
+  to: string;
+  toName: string;
+  documentName: string;
+  caseName: string;
+  reviewerName: string;
+  feedback: string;
+  documentUrl: string;
+}
+
+/**
+ * Sends a review feedback email when a supervisor requests changes
+ */
+export async function sendReviewFeedbackEmail(
+  payload: ReviewFeedbackEmailPayload,
+  accessToken: string,
+  config: Partial<EmailConfig> = {}
+): Promise<boolean> {
+  const finalConfig = { ...defaultConfig, ...config };
+
+  const emailContent = generateReviewFeedbackEmailHTML(payload);
+
+  const message = {
+    message: {
+      subject: `Modificări solicitate: ${payload.documentName}`,
+      body: {
+        contentType: 'HTML',
+        content: emailContent,
+      },
+      toRecipients: [
+        {
+          emailAddress: {
+            address: payload.to,
+            name: payload.toName,
+          },
+        },
+      ],
+      importance: 'high',
+    },
+    saveToSentItems: true,
+  };
+
+  return sendEmailWithRetry(message, accessToken, finalConfig);
+}
+
+/**
+ * Generates HTML content for review feedback email
+ */
+function generateReviewFeedbackEmailHTML(payload: ReviewFeedbackEmailPayload): string {
+  return `
+    <html>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #f59e0b;">📝 Modificări solicitate</h2>
+        <p>Bună ${payload.toName},</p>
+        <p>${payload.reviewerName} a revizuit documentul și solicită modificări:</p>
+
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Document:</strong> ${payload.documentName}</p>
+          <p><strong>Dosar:</strong> ${payload.caseName}</p>
+        </div>
+
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0; font-weight: bold; color: #92400e;">Feedback:</p>
+          <p style="margin: 10px 0 0 0; color: #78350f; white-space: pre-wrap;">${payload.feedback}</p>
+        </div>
+
+        <p>
+          <a href="${payload.documentUrl}" style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Deschide documentul
+          </a>
+        </p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+        <p style="color: #6b7280; font-size: 12px;">
+          Acest email a fost trimis automat din platforma Legal.
+        </p>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Generates plain text preview of review feedback email (for modal display)
+ */
+export function generateReviewFeedbackEmailPreview(payload: ReviewFeedbackEmailPayload): {
+  subject: string;
+  body: string;
+} {
+  return {
+    subject: `Modificări solicitate: ${payload.documentName}`,
+    body: `Bună ${payload.toName},
+
+${payload.reviewerName} a revizuit documentul și solicită modificări:
+
+Document: ${payload.documentName}
+Dosar: ${payload.caseName}
+
+Feedback:
+${payload.feedback}
+
+---
+Acest email a fost trimis automat din platforma Legal.`,
+  };
+}

@@ -1,0 +1,135 @@
+# OPS-154: Reports GraphQL Schema
+# Predefined reports with AI-generated insights
+
+"""
+Report category types
+"""
+enum ReportCategory {
+  cases
+  time
+  financial
+  team
+  clients
+  documents
+}
+
+"""
+Chart types for report visualization
+"""
+enum ChartType {
+  bar
+  pie
+  line
+  gauge
+}
+
+"""
+Trend direction for report summaries
+"""
+enum ReportTrendDirection {
+  up
+  down
+  stable
+}
+
+"""
+Date range preset options
+"""
+enum DateRangePreset {
+  thisWeek
+  thisMonth
+  thisQuarter
+  thisYear
+}
+
+"""
+Date range input for filtering reports
+"""
+input DateRangeInput {
+  start: DateTime!
+  end: DateTime!
+  preset: DateRangePreset
+}
+
+"""
+Single data point for chart visualization
+"""
+type ChartDataPoint {
+  label: String!
+  value: Float!
+  color: String
+  metadata: JSON
+}
+
+"""
+Summary statistics for report data
+"""
+type ReportSummary {
+  totalValue: Float!
+  averageValue: Float!
+  changeFromPrevious: Float
+  trendDirection: ReportTrendDirection
+}
+
+"""
+Full report data with chart points and summary
+"""
+type ReportData {
+  reportId: ID!
+  data: [ChartDataPoint!]!
+  summary: ReportSummary
+}
+
+"""
+AI-generated insights for a report
+"""
+type ReportAIInsight {
+  "AI-generated summary paragraph"
+  summary: String!
+
+  "Key findings extracted from the data"
+  keyFindings: [String!]!
+
+  "Actionable recommendations"
+  recommendations: [String!]!
+
+  "When the insight was generated"
+  generatedAt: DateTime!
+
+  "Confidence score (0-1)"
+  confidence: Float!
+}
+
+"""
+Predefined report template metadata
+"""
+type PredefinedReport {
+  id: ID!
+  categoryId: ReportCategory!
+  name: String!
+  nameRo: String!
+  description: String!
+  chartType: ChartType!
+  requiresDateRange: Boolean!
+  allowedRoles: [UserRole!]!
+}
+
+extend type Query {
+  """
+  Get all predefined report templates.
+  Optionally filter by category.
+  """
+  predefinedReports(categoryId: ReportCategory): [PredefinedReport!]!
+
+  """
+  Get report data for a specific report.
+  Returns chart data points and summary statistics.
+  """
+  reportData(reportId: ID!, dateRange: DateRangeInput): ReportData
+
+  """
+  Get AI-generated insights for a report.
+  Cached for 5 minutes. Generates in Romanian.
+  """
+  reportAIInsight(reportId: ID!, dateRange: DateRangeInput): ReportAIInsight
+}

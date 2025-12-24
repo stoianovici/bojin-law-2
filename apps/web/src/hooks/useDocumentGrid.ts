@@ -1,6 +1,7 @@
 /**
  * Document Grid Query Hook
  * OPS-111: Document Grid UI with Thumbnails
+ * OPS-173: Added sourceTypes filter for document separation tabs
  *
  * Fetches documents with thumbnails for grid view display
  * Uses caseDocumentsGrid query with pagination support
@@ -45,8 +46,12 @@ const DOCUMENT_GRID_FIELDS = gql`
     thumbnailLarge
     # Status
     status
+    # OPS-173: Source type for tab filtering
+    sourceType
     # Download URL for PDF preview
     downloadUrl
+    # OPS-176: Version count for version history badge
+    versionCount
   }
 `;
 
@@ -61,6 +66,8 @@ const GET_CASE_DOCUMENTS_GRID = gql`
     $first: Int
     $after: String
     $fileTypes: [String!]
+    $sourceTypes: [DocumentSourceType!]
+    $includePromotedAttachments: Boolean
     $sortBy: DocumentSortField
     $sortDirection: SortDirection
   ) {
@@ -69,6 +76,8 @@ const GET_CASE_DOCUMENTS_GRID = gql`
       first: $first
       after: $after
       fileTypes: $fileTypes
+      sourceTypes: $sourceTypes
+      includePromotedAttachments: $includePromotedAttachments
       sortBy: $sortBy
       sortDirection: $sortDirection
     ) {
@@ -129,6 +138,8 @@ export interface DocumentSource {
 
 export type DocumentStatus = 'DRAFT' | 'PENDING' | 'FINAL' | 'ARCHIVED';
 export type DocumentStorageType = 'ONEDRIVE' | 'SHAREPOINT' | 'R2';
+// OPS-173: Document source type for tab filtering
+export type DocumentSourceType = 'UPLOAD' | 'EMAIL_ATTACHMENT' | 'AI_GENERATED' | 'TEMPLATE';
 export type DocumentSortField =
   | 'LINKED_AT'
   | 'UPLOADED_AT'
@@ -159,8 +170,12 @@ export interface DocumentGridData {
   thumbnailLarge: string | null;
   // Status
   status: DocumentStatus;
+  // OPS-173: Source type for tab filtering
+  sourceType: DocumentSourceType;
   // Download URL for PDF preview
   downloadUrl: string | null;
+  // OPS-176: Version count for version history badge
+  versionCount: number;
 }
 
 export interface DocumentGridItem {
@@ -191,6 +206,10 @@ interface DocumentGridConnection {
 interface UseDocumentGridOptions {
   first?: number;
   fileTypes?: string[];
+  // OPS-173: Source types filter for document separation tabs
+  sourceTypes?: DocumentSourceType[];
+  // OPS-173: Include promoted attachments (for working docs tab)
+  includePromotedAttachments?: boolean;
   sortBy?: DocumentSortField;
   sortDirection?: SortDirection;
 }
@@ -219,7 +238,15 @@ export function useDocumentGrid(
   caseId: string,
   options: UseDocumentGridOptions = {}
 ): UseDocumentGridResult {
-  const { first = 20, fileTypes, sortBy = 'LINKED_AT', sortDirection = 'DESC' } = options;
+  const {
+    first = 20,
+    fileTypes,
+    // OPS-173: Source types for document tab filtering
+    sourceTypes,
+    includePromotedAttachments,
+    sortBy = 'LINKED_AT',
+    sortDirection = 'DESC',
+  } = options;
 
   const { data, loading, error, fetchMore, refetch } = useQuery<{
     caseDocumentsGrid: DocumentGridConnection;
@@ -228,6 +255,8 @@ export function useDocumentGrid(
       caseId,
       first,
       fileTypes,
+      sourceTypes,
+      includePromotedAttachments,
       sortBy,
       sortDirection,
     },

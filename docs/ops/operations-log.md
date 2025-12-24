@@ -148,10 +148,127 @@
 | OPS-139 | DocumentsContentPanel Context Integration             | Feature      | P2-Medium   | Closed     | [archive/ops-139.md](archive/ops-139.md) |
 | OPS-140 | AttachmentPreviewPanel Context Integration            | Feature      | P2-Medium   | Closed     | [archive/ops-140.md](archive/ops-140.md) |
 | OPS-141 | MessageView Preview Actions                           | Feature      | P3-Low      | Closed     | [archive/ops-141.md](archive/ops-141.md) |
+| OPS-142 | AI Prompts Romanian Localization                      | Feature      | P2-Medium   | Closed     | [archive/ops-142.md](archive/ops-142.md) |
+| OPS-143 | Tailwind Animation Config Enhancement                 | Feature      | P2-Medium   | Closed     | [archive/ops-143.md](archive/ops-143.md) |
+| OPS-144 | Framer Motion Setup & Motion Components               | Feature      | P2-Medium   | Closed     | [archive/ops-144.md](archive/ops-144.md) |
+| OPS-145 | Collapsible Height Animation Pattern                  | Feature      | P2-Medium   | Closed     | [archive/ops-145.md](archive/ops-145.md) |
+| OPS-146 | List Animation Integration                            | Feature      | P2-Medium   | Closed     | [archive/ops-146.md](archive/ops-146.md) |
+| OPS-147 | Card Hover & Loading State Polish                     | Feature      | P2-Medium   | Closed     | [archive/ops-147.md](archive/ops-147.md) |
+| OPS-148 | Skeleton Shimmer Loading Pattern                      | Feature      | P2-Medium   | Closed     | [archive/ops-148.md](archive/ops-148.md) |
+| OPS-149 | Tab & Panel Transition Animations                     | Feature      | P3-Low      | Closed     | [archive/ops-149.md](archive/ops-149.md) |
+| OPS-150 | AI Report Types Definition                            | Task         | P2-Medium   | Closed     | [archive/ops-150.md](archive/ops-150.md) |
+| OPS-151 | Predefined Report Templates + Metadata Integration    | Feature      | P2-Medium   | Resolved   | [archive/ops-151.md](archive/ops-151.md) |
+| OPS-152 | Report AI Insight Service                             | Feature      | P2-Medium   | Closed     | [archive/ops-152.md](archive/ops-152.md) |
+| OPS-153 | Report Data Aggregation Service                       | Feature      | P2-Medium   | Closed     | [archive/ops-153.md](archive/ops-153.md) |
+| OPS-154 | Reports GraphQL Schema & Resolvers                    | Feature      | P2-Medium   | Resolved   | [archive/ops-154.md](archive/ops-154.md) |
+| OPS-155 | useReportData Hook + ReportViewer Integration         | Feature      | P2-Medium   | Resolved   | [archive/ops-155.md](archive/ops-155.md) |
+| OPS-156 | Fix cases-status-overview date filtering              | Bug          | P2-Medium   | Closed     | [archive/ops-156.md](archive/ops-156.md) |
+| OPS-157 | Fix team-workload-distribution aggregation            | Bug          | P2-Medium   | Closed     | [archive/ops-157.md](archive/ops-157.md) |
+| OPS-158 | Fix financial-realization-rate calculation            | Bug          | P2-Medium   | Closed     | [archive/ops-158.md](archive/ops-158.md) |
+| OPS-159 | Implement cases-deadline-tracker                      | Feature      | P2-Medium   | Closed     | [archive/ops-159.md](archive/ops-159.md) |
+| OPS-160 | Implement documents-template-usage                    | Feature      | P2-Medium   | Closed     | [archive/ops-160.md](archive/ops-160.md) |
+| OPS-161 | Enhance clients-top-clients with revenue              | Feature      | P3-Low      | Closed     | [archive/ops-161.md](archive/ops-161.md) |
+| OPS-162 | Document Preview - 4 Secondary Action Buttons         | Feature      | P2-Medium   | Closed     | [archive/ops-162.md](archive/ops-162.md) |
+| OPS-163 | Click-to-Preview Documents with File-Type Actions     | Feature      | P2-Medium   | Closed     | [archive/ops-163.md](archive/ops-163.md) |
+| OPS-164 | UI Transitions Not Applied to Current Components      | Bug          | P2-Medium   | Resolved   | [archive/ops-164.md](archive/ops-164.md) |
+| OPS-171 | Document Source Type & Review Fields                  | Feature      | P1-High     | Closed     | [archive/ops-171.md](archive/ops-171.md) |
+| OPS-172 | Document Status Enum Extension                        | Feature      | P1-High     | Closed     | [archive/ops-172.md](archive/ops-172.md) |
+| OPS-173 | Documents Tab Separation UI                           | Feature      | P1-High     | Closed     | [archive/ops-173.md](archive/ops-173.md) |
+| OPS-174 | Supervisor Review Queue Tab                           | Feature      | P2-Medium   | Closed     | [archive/ops-174.md](archive/ops-174.md) |
+| OPS-175 | Promote Attachment to Working Document                | Feature      | P2-Medium   | Closed     | [archive/ops-175.md](archive/ops-175.md) |
+| OPS-176 | Document Version History Drawer                       | Feature      | P2-Medium   | Closed     | [archive/ops-176.md](archive/ops-176.md) |
+| OPS-177 | Review Workflow Actions                               | Feature      | P2-Medium   | Closed     | [archive/ops-177.md](archive/ops-177.md) |
+| OPS-178 | SharePoint Edit Session Schema                        | Feature      | P1-High     | Closed     | [archive/ops-178.md](archive/ops-178.md) |
+| OPS-179 | SharePoint Change Detection Methods                   | Feature      | P1-High     | Closed     | [archive/ops-179.md](archive/ops-179.md) |
+| OPS-180 | SharePoint Document Download Method                   | Feature      | P1-High     | Closed     | [archive/ops-180.md](archive/ops-180.md) |
+| OPS-181 | SharePoint-First openInWord Flow                      | Feature      | P1-High     | Closed     | [archive/ops-181.md](archive/ops-181.md) |
+| OPS-182 | Lazy Version Sync on Document Access                  | Feature      | P1-High     | Closed     | [archive/ops-182.md](archive/ops-182.md) |
+| OPS-183 | Frontend Auto-Sync Integration                        | Feature      | P2-Medium   | Closed     | [archive/ops-183.md](archive/ops-183.md) |
+| OPS-184 | OneDrive to SharePoint Lazy Migration                 | Feature      | P3-Low      | Closed     | [archive/ops-184.md](archive/ops-184.md) |
+| OPS-185 | Unify Case Communications with Thread View            | Feature      | P2-Medium   | Closed     | [archive/ops-185.md](archive/ops-185.md) |
+| OPS-186 | Case Communications Shows Unrelated Emails            | Bug          | P1-High     | Closed     | [archive/ops-186.md](archive/ops-186.md) |
 
 ---
 
 ## Active Issues Summary
+
+### Fluid UI Transitions (Epic) - OPS-143 to OPS-149 - COMPLETED ✅
+
+**Goal**: Make the UI more fluid with transitions on state changes using a hybrid Tailwind + Framer Motion approach.
+
+**Status**: ✅ Complete - animations now visible in main UI components
+
+**Phase 1 - Foundation** (completed):
+
+- ~~OPS-143: Tailwind Animation Config Enhancement~~ ✅
+- ~~OPS-144: Framer Motion Setup & Motion Components~~ ✅
+- ~~OPS-145: Collapsible Height Animation Pattern~~ ✅
+
+**Phase 2 - Apply Patterns** (completed):
+
+- ~~OPS-146: List Animation Integration~~ ✅
+- ~~OPS-147: Card Hover & Loading State Polish~~ ✅
+- ~~OPS-148: Skeleton Shimmer Loading Pattern~~ ✅
+
+**Phase 3 - Refinement** (completed):
+
+- ~~OPS-149: Tab & Panel Transition Animations~~ ✅
+
+**Phase 4 - Fix Integration** (completed):
+
+- ~~OPS-164: Apply animations to current active components~~ ✅
+  - CaseSidebar: Thread/email list stagger animations
+  - ConversationView: Message bubble entrance animations
+  - Collapsible/Skeleton: Already working
+
+---
+
+### Predefined Reports with AI-Generated Insights (Epic) - COMPLETED ✅
+
+**Goal**: Populate the empty Reports section with predefined templates that show real data and AI-generated narrative insights in Romanian.
+
+**Phase 1 - Foundation** (completed):
+
+- ~~OPS-150: AI Report Types Definition~~ ✅
+
+**Phase 2 - Backend** (completed):
+
+- ~~OPS-151: Predefined Report Templates + Metadata Integration~~ ✅
+- ~~OPS-152: Report AI Insight Service~~ ✅
+- ~~OPS-153: Report Data Aggregation Service~~ ✅
+
+**Phase 3 - API Layer** (completed):
+
+- ~~OPS-154: Reports GraphQL Schema & Resolvers~~ ✅
+
+**Phase 4 - Frontend** (completed):
+
+- ~~OPS-155: useReportData Hook + ReportViewer Integration~~ ✅
+
+---
+
+### Reports Data Accuracy (Epic) - OPS-156 to OPS-161 - COMPLETED ✅
+
+**Goal**: Fix reports that show incorrect or no data due to wrong field names, date filtering, or missing specialized aggregation methods.
+
+**Context**: Investigation found that `getCasesByType()` was using non-existent `caseType` enum field instead of dynamic `type` field. Similar issues exist in other reports.
+
+**Phase 1 - Quick Fixes** (parallel) - COMPLETED ✅:
+
+- ~~OPS-156: Fix cases-status-overview date filtering (should show all cases, not filtered by openedDate)~~ ✅
+- ~~OPS-157: Fix team-workload-distribution (should show cases per team member, not task status)~~ ✅
+- ~~OPS-158: Fix financial-realization-rate (needs billable/total hours ratio, not revenue by client)~~ ✅
+
+**Phase 2 - New Implementations** (parallel) - COMPLETED ✅:
+
+- ~~OPS-159: Implement cases-deadline-tracker (query tasks with due dates, group by urgency)~~ ✅
+- ~~OPS-160: Implement documents-template-usage (track template usage frequency)~~ ✅
+
+**Phase 3 - Enhancements** - COMPLETED ✅:
+
+- ~~OPS-161: Enhance clients-top-clients with revenue data~~ ✅
+
+---
 
 ### Context-Aware Document Preview Actions (Epic) - COMPLETED ✅
 
@@ -173,6 +290,82 @@
 - ~~OPS-139: Documents panel integration~~ ✅
 - ~~OPS-140: Attachment panel integration~~ ✅
 - ~~OPS-141: MessageView integration~~ ✅
+
+---
+
+### Documents Separation & Review Workflow (Epic) - OPS-171 to OPS-177
+
+**Goal**: Separate working documents from email attachments, enable attachment-to-document promotion, add version history UI, and create supervisor review queue.
+
+**Parallelization Map**:
+
+```
+Wave 1 (parallel):     OPS-171 + OPS-172 + OPS-176
+                           │         │
+Wave 2 (parallel):    OPS-173 + OPS-175
+                           │
+Wave 3:               OPS-174
+                           │
+Wave 4:               OPS-177
+```
+
+**Phase 1 - Foundation** (parallel):
+
+- OPS-171: Document Source Type & Review Fields (schema)
+- OPS-172: Document Status Enum Extension (IN_REVIEW, CHANGES_REQUESTED)
+- OPS-176: Document Version History Drawer (independent)
+
+**Phase 2 - Tab Separation** (after Phase 1):
+
+- OPS-173: Documents Tab Separation UI ("Documente de lucru" | "Corespondență")
+- OPS-175: Promote Attachment to Working Document
+
+**Phase 3 - Supervisor Queue** (after OPS-173):
+
+- OPS-174: Supervisor Review Queue Tab ("De revizuit")
+
+**Phase 4 - Review Workflow** (after OPS-174):
+
+- OPS-177: Review Workflow Actions (submit, approve, request changes)
+
+---
+
+### Frictionless SharePoint-First Document Editing (Epic) - OPS-178 to OPS-184
+
+**Goal**: Eliminate friction when opening documents in Word. Currently takes 3-8 seconds (R2 download → OneDrive upload). New flow uses SharePoint directly (<1 second) and auto-detects Word edits to create versions.
+
+**Key Insight**: SharePoint documents already have a `webUrl` that works with `ms-word:` protocol. No need to copy to OneDrive.
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):     OPS-178 + OPS-179 + OPS-180
+                             │         │         │
+Phase 2 (parallel):     OPS-181  +  OPS-182
+                             │         │
+Phase 3:                OPS-183 [blocked by: 182]
+                             │
+Phase 4 (optional):     OPS-184 [blocked by: 181]
+```
+
+**Phase 1 - Foundation** (parallel) - COMPLETE ✅:
+
+- ~~OPS-178: SharePoint Edit Session Schema (add lastModified tracking)~~ ✅
+- ~~OPS-179: SharePoint Change Detection Methods (checkForChanges)~~ ✅
+- ~~OPS-180: SharePoint Document Download Method (for R2 backup sync)~~ ✅
+
+**Phase 2 - Core Flow** (after Phase 1):
+
+- OPS-181: SharePoint-First openInWord Flow (skip OneDrive copy)
+- OPS-182: Lazy Version Sync on Document Access (auto-detect edits)
+
+**Phase 3 - Frontend** (after OPS-182):
+
+- OPS-183: Frontend Auto-Sync Integration (toast, version badge)
+
+**Phase 4 - Migration** (optional, after OPS-181):
+
+- OPS-184: OneDrive to SharePoint Lazy Migration
 
 ---
 

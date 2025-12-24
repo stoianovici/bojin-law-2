@@ -62,6 +62,8 @@ import {
   documentFolderTypeResolvers,
 } from './resolvers/document-folder.resolvers';
 import { mapaResolvers } from './resolvers/mapa.resolvers';
+import { reportsResolvers } from './resolvers/reports.resolvers';
+import { wordIntegrationResolvers } from './resolvers/word-integration.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -116,6 +118,8 @@ const resolvers = {
     ...aiAssistantResolvers.Query,
     ...documentFolderQueryResolvers,
     ...mapaResolvers.Query,
+    ...reportsResolvers.Query,
+    ...wordIntegrationResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -150,6 +154,7 @@ const resolvers = {
     ...aiAssistantResolvers.Mutation,
     ...documentFolderMutationResolvers,
     ...mapaResolvers.Mutation,
+    ...wordIntegrationResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,

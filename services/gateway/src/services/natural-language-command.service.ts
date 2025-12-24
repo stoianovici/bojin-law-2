@@ -80,6 +80,8 @@ export interface UserContext {
 
 const INTENT_DETECTION_SYSTEM_PROMPT = `You are a legal assistant AI that processes natural language commands in Romanian for a law firm case management system.
 
+IMPORTANT: Răspunde în limba română. Toate explicațiile (reasoning) trebuie să fie în română.
+
 Your task is to analyze user input and extract:
 1. Intent - what action the user wants to perform
 2. Parameters - specific details from the command

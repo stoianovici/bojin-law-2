@@ -64,6 +64,8 @@ export interface BatchCategorizationResult {
 const EMAIL_CATEGORIZATION_SYSTEM_PROMPT = `You are an AI assistant for a Romanian law firm email management system.
 Your task is to analyze an email and determine which case it belongs to based on the provided case list.
 
+IMPORTANT: Răspunde în limba română. Toate explicațiile (reasoning) trebuie să fie în română.
+
 Analyze the following signals to match the email to a case:
 1. Email participants (from, to, cc) vs. case actors (clients, opposing counsel, etc.)
 2. Subject line keywords vs. case title/description

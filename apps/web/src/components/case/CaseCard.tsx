@@ -57,7 +57,7 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
 
   return (
     <div
-      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow relative group"
+      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-200 relative group"
       onMouseEnter={() => setShowHoverStats(true)}
       onMouseLeave={() => setShowHoverStats(false)}
     >

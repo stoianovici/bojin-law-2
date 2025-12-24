@@ -24,6 +24,9 @@ export interface ThreadAttachment {
   messageDate: Date;
   downloadUrl?: string;
   previewUrl?: string;
+  // OPS-175: Promotion tracking
+  isPromoted?: boolean;
+  promotedDocumentId?: string;
 }
 
 // ============================================================================
@@ -59,6 +62,9 @@ export function useThreadAttachments(thread: CommunicationThread | null): Thread
             message.sentDate instanceof Date ? message.sentDate : new Date(message.sentDate),
           downloadUrl: attAny.url || att.downloadUrl,
           previewUrl: attAny.previewUrl,
+          // OPS-175: Promotion tracking
+          isPromoted: attAny.isPromoted ?? false,
+          promotedDocumentId: attAny.promotedDocumentId,
         });
       }
     }

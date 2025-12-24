@@ -38,9 +38,12 @@ import { useDocumentPreview } from '../../hooks/useDocumentPreview';
 import { DocumentBrowserModal } from './DocumentBrowserModal';
 import { DocumentUploadModal } from './DocumentUploadModal';
 import { DocumentGrid } from '../documents/DocumentGrid';
-import { DocumentPreviewModal } from '../preview/DocumentPreviewModal';
+import { DocumentPreviewModal, type PreviewableDocument } from '../preview/DocumentPreviewModal';
 import { AssignToMapaModal, type DocumentInfo } from '../mapa/AssignToMapaModal';
+import { SubmitForReviewModal } from '../documents/SubmitForReviewModal';
+import { ReviewActionsModal, type ReviewDocument } from '../documents/ReviewActionsModal';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePreviewActions } from '../../hooks/usePreviewActions';
 
 export interface CaseDocumentsListProps {
   caseId: string;
@@ -420,6 +423,13 @@ export function CaseDocumentsList({
   const [syncingId, setSyncingId] = useState<string | null>(null); // Story 2.9
   const [mapaAssignDoc, setMapaAssignDoc] = useState<DocumentInfo | null>(null);
 
+  // OPS-177: Review workflow modals state
+  const [submitForReviewDoc, setSubmitForReviewDoc] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [reviewDoc, setReviewDoc] = useState<ReviewDocument | null>(null);
+
   // OPS-111: View mode and grid state
   const [viewMode, setViewMode] = useState<ViewMode>('grid'); // Default to grid
   const [sortBy, setSortBy] = useState<DocumentSortField>('LINKED_AT');
@@ -446,10 +456,16 @@ export function CaseDocumentsList({
     closePreview,
     fetchPreviewUrl,
     fetchTextContent,
+    openInWord,
   } = useDocumentPreview();
 
   // OPS-109: Auth context for Microsoft account status
   const { hasMsalAccount, reconnectMicrosoft } = useAuth();
+
+  // OPS-177: Get preview actions for case-documents context
+  const { actions: previewActions, userRole: authUserRole } = usePreviewActions({
+    context: 'case-documents',
+  });
 
   // Mutations
   const { unlinkDocument, loading: unlinking } = useUnlinkDocument();
@@ -527,33 +543,17 @@ export function CaseDocumentsList({
         name: doc.document.fileName,
         contentType: doc.document.fileType,
         size: doc.document.fileSize,
+        // OPS-177: Include status for action toolbar filtering
+        status: doc.document.status,
       });
     },
     [openPreview]
   );
 
-  // OPS-111: Handle grid download
-  const handleGridDownload = useCallback(
-    async (doc: DocumentGridItem) => {
-      setDownloadingId(doc.document.id);
-      try {
-        const result = await getDownloadUrl(doc.document.id);
-        if (result?.url) {
-          window.open(result.url, '_blank');
-        }
-      } catch (err) {
-        console.error('Failed to get download URL:', err);
-      } finally {
-        setDownloadingId(null);
-      }
-    },
-    [getDownloadUrl]
-  );
-
   // OPS-111: Handle grid add to mapa
   const handleGridAddToMapa = useCallback((doc: DocumentGridItem) => {
     setMapaAssignDoc({
-      id: doc.document.id,
+      id: doc.id, // CaseDocument ID (join table), not Document ID
       fileName: doc.document.fileName,
       fileType: doc.document.fileType,
       fileSize: doc.document.fileSize,
@@ -571,6 +571,71 @@ export function CaseDocumentsList({
     refetch();
     gridRefetch();
   }, [refetch, gridRefetch]);
+
+  // OPS-177: Handle preview modal actions
+  const handlePreviewAction = useCallback(
+    async (actionId: string, doc: PreviewableDocument) => {
+      // Find the grid document for this preview
+      const gridDoc = gridDocuments.find((d) => d.document.id === doc.id);
+
+      switch (actionId) {
+        case 'add-to-mapa':
+          if (gridDoc) {
+            closePreview();
+            handleGridAddToMapa(gridDoc);
+          }
+          break;
+
+        case 'download':
+          // Download is handled by the modal directly
+          break;
+
+        // OPS-164: Open document in Word Online
+        case 'open-in-word':
+          if (gridDoc) {
+            closePreview();
+            // Call openInWord mutation and open Word Online directly
+            try {
+              const result = await openInWord(doc.id);
+              if (result?.webUrl) {
+                // Open Word Online directly (works in any browser)
+                window.open(result.webUrl, '_blank');
+              } else {
+                alert('Nu s-a putut deschide documentul în Word.');
+              }
+            } catch (error) {
+              console.error('Failed to open in Word:', error);
+              alert('Eroare la deschiderea documentului în Word.');
+            }
+          }
+          break;
+
+        case 'submit-for-review':
+          closePreview();
+          setSubmitForReviewDoc({
+            id: doc.id,
+            name: doc.name,
+          });
+          break;
+
+        case 'review-document':
+          if (gridDoc) {
+            closePreview();
+            setReviewDoc({
+              id: gridDoc.document.id,
+              fileName: gridDoc.document.fileName,
+              metadata: gridDoc.document.metadata,
+            });
+          }
+          break;
+
+        default:
+          console.log('[CaseDocumentsList] Unhandled preview action:', actionId);
+          break;
+      }
+    },
+    [gridDocuments, closePreview, handleGridAddToMapa, openInWord]
+  );
 
   return (
     <div className={clsx('bg-white rounded-lg border border-gray-200', className)}>
@@ -663,7 +728,7 @@ export function CaseDocumentsList({
 
       {/* Content */}
       <div className="p-6">
-        {/* OPS-111: Grid View */}
+        {/* OPS-111: Grid View - OPS-163: Removed download actions, now in preview modal */}
         {viewMode === 'grid' ? (
           <DocumentGrid
             documents={gridDocuments}
@@ -672,9 +737,7 @@ export function CaseDocumentsList({
             hasMore={gridHasMore}
             onLoadMore={gridLoadMore}
             onPreview={handleGridPreview}
-            onDownload={handleGridDownload}
             onAddToMapa={handleGridAddToMapa}
-            downloadingId={downloadingId}
             sortBy={sortBy}
             sortDirection={sortDirection}
             onSortChange={handleSortChange}
@@ -759,7 +822,7 @@ export function CaseDocumentsList({
                 onSync={() => handleSync(docContext.document.id)}
                 onAddToMapa={() =>
                   setMapaAssignDoc({
-                    id: docContext.document.id,
+                    id: docContext.id, // CaseDocument ID (join table), not Document ID
                     fileName: docContext.document.fileName,
                     fileType: docContext.document.fileType,
                     fileSize: docContext.document.fileSize,
@@ -792,7 +855,7 @@ export function CaseDocumentsList({
         onUploadComplete={handleRefetch}
       />
 
-      {/* OPS-111: Document Preview Modal */}
+      {/* OPS-111: Document Preview Modal, OPS-177: Added action toolbar */}
       <DocumentPreviewModal
         isOpen={isPreviewOpen}
         onClose={closePreview}
@@ -800,6 +863,11 @@ export function CaseDocumentsList({
         onRequestPreviewUrl={fetchPreviewUrl}
         onRequestTextContent={fetchTextContent}
         hasMsalAccount={hasMsalAccount}
+        // OPS-177: Context-aware action toolbar
+        context="case-documents"
+        actions={previewActions}
+        userRole={authUserRole ?? undefined}
+        onAction={handlePreviewAction}
         onReconnectMicrosoft={reconnectMicrosoft}
       />
 
@@ -836,6 +904,33 @@ export function CaseDocumentsList({
           document={mapaAssignDoc}
           onAssigned={() => {
             setMapaAssignDoc(null);
+          }}
+        />
+      )}
+
+      {/* OPS-177: Submit for Review Modal */}
+      {submitForReviewDoc && (
+        <SubmitForReviewModal
+          documentId={submitForReviewDoc.id}
+          documentName={submitForReviewDoc.name}
+          open={!!submitForReviewDoc}
+          onOpenChange={(open) => !open && setSubmitForReviewDoc(null)}
+          onSuccess={() => {
+            setSubmitForReviewDoc(null);
+            handleRefetch();
+          }}
+        />
+      )}
+
+      {/* OPS-177: Review Actions Modal */}
+      {reviewDoc && (
+        <ReviewActionsModal
+          document={reviewDoc}
+          open={!!reviewDoc}
+          onOpenChange={(open) => !open && setReviewDoc(null)}
+          onSuccess={() => {
+            setReviewDoc(null);
+            handleRefetch();
           }}
         />
       )}

@@ -365,6 +365,7 @@ export const emailResolvers = {
 
     /**
      * Get single email thread
+     * OPS-176: Pass access token for auto-sync of attachments
      */
     emailThread: async (_: any, args: { conversationId: string }, context: Context) => {
       const { user } = context;
@@ -375,7 +376,11 @@ export const emailResolvers = {
         });
       }
 
-      return await emailThreadService.getThread(args.conversationId, user.id);
+      return await emailThreadService.getThread(
+        args.conversationId,
+        user.id,
+        user.accessToken // OPS-176: Pass access token for attachment sync
+      );
     },
 
     /**
@@ -2433,13 +2438,23 @@ export const emailResolvers = {
 
       // Check if already saved as document
       if (attachment.documentId && attachment.document) {
+        // OPS-175: Find the caseDocumentId for the existing document
+        const existingCaseDoc = await prisma.caseDocument.findFirst({
+          where: {
+            documentId: attachment.documentId,
+            caseId: args.caseId,
+          },
+        });
+
         logger.info('[saveEmailAttachmentAsDocument] Attachment already saved as document', {
           attachmentId: args.attachmentId,
           documentId: attachment.documentId,
+          caseDocumentId: existingCaseDoc?.id,
         });
         return {
           document: attachment.document,
           isNew: false,
+          caseDocumentId: existingCaseDoc?.id || null,
         };
       }
 
@@ -2494,7 +2509,8 @@ export const emailResolvers = {
       });
 
       // Link document to case via CaseDocument junction table
-      await prisma.caseDocument.create({
+      // OPS-175: Capture caseDocument.id for return
+      const caseDocument = await prisma.caseDocument.create({
         data: {
           caseId: args.caseId,
           documentId: document.id,
@@ -2514,6 +2530,7 @@ export const emailResolvers = {
       logger.info('[saveEmailAttachmentAsDocument] Successfully saved attachment as document', {
         attachmentId: args.attachmentId,
         documentId: document.id,
+        caseDocumentId: caseDocument.id,
         caseId: args.caseId,
         sharePointId: sharePointItem.id,
       });
@@ -2521,6 +2538,7 @@ export const emailResolvers = {
       return {
         document,
         isNew: true,
+        caseDocumentId: caseDocument.id,
       };
     },
 
@@ -2720,20 +2738,20 @@ export const emailResolvers = {
     },
 
     attachments: async (parent: any, _args: any, context: Context) => {
-      // OPS-128: Auto-sync attachments on case assignment
-      // If email is assigned to a case, has attachments flag, but no EmailAttachment records,
-      // trigger sync using user's access token. This implements "auto-sync on case assignment"
-      // because sync happens automatically when viewing attachments for case-assigned emails.
-      if (parent.hasAttachments && parent.caseId && context.user?.accessToken) {
+      // OPS-128: Auto-sync attachments when viewing emails
+      // OPS-176: Extended to auto-sync ALL emails with hasAttachments=true, not just case-assigned
+      // Note: Primary auto-sync now happens in EmailThreadService.getThread() for efficiency
+      // This resolver handles edge cases where emails are queried directly (not via thread)
+      if (parent.hasAttachments && context.user?.accessToken) {
         const existingAttachment = await prisma.emailAttachment.findFirst({
           where: { emailId: parent.id },
         });
 
         if (!existingAttachment) {
           try {
-            logger.info('[Email.attachments] Auto-syncing attachments for case-assigned email', {
+            logger.info('[Email.attachments] Auto-syncing attachments for email', {
               emailId: parent.id,
-              caseId: parent.caseId,
+              caseId: parent.caseId || 'unassigned',
             });
             const attachmentService = getEmailAttachmentService(prisma);
             await attachmentService.syncAllAttachments(parent.id, context.user.accessToken);
@@ -2807,6 +2825,35 @@ export const emailResolvers = {
      * Whether user marked this attachment as irrelevant (OPS-136)
      */
     irrelevant: (parent: any) => parent.irrelevant ?? false,
+
+    /**
+     * OPS-175: Whether this attachment has been promoted to a working document
+     */
+    isPromoted: async (parent: any) => {
+      if (!parent.documentId) return false;
+      const document = await prisma.document.findUnique({
+        where: { id: parent.documentId },
+        select: { metadata: true },
+      });
+      if (!document) return false;
+      const metadata = document.metadata as Record<string, any> | null;
+      return Boolean(metadata?.promotedToDocumentId);
+    },
+
+    /**
+     * OPS-175: ID of the promoted working document (if isPromoted is true)
+     */
+    promotedDocumentId: async (parent: any) => {
+      if (!parent.documentId) return null;
+      const document = await prisma.document.findUnique({
+        where: { id: parent.documentId },
+        select: { metadata: true },
+      });
+      if (!document) return null;
+      const metadata = document.metadata as Record<string, any> | null;
+      return metadata?.promotedToDocumentId || null;
+    },
+
     downloadUrl: async (parent: any, _args: any, context: Context) => {
       if (!context.user?.accessToken || !parent.storageUrl) return null;
       try {

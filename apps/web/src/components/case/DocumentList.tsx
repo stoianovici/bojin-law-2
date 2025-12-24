@@ -9,6 +9,7 @@ import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
+import { motion } from 'framer-motion';
 import type { Document, DocumentStatus, DocumentType } from '@legal-platform/types';
 
 export interface DocumentListProps {
@@ -177,15 +178,27 @@ export function DocumentList({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <motion.tbody
+            className="divide-y divide-gray-200"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.03 } },
+            }}
+          >
             {filteredDocuments.map((document) => (
-              <tr
+              <motion.tr
                 key={document.id}
                 onClick={() => onSelectDocument?.(document)}
                 className={clsx(
                   'cursor-pointer transition-colors',
                   selectedDocumentId === document.id ? 'bg-blue-50' : 'hover:bg-gray-50'
                 )}
+                variants={{
+                  hidden: { opacity: 0, y: 10 },
+                  show: { opacity: 1, y: 0 },
+                }}
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -222,9 +235,9 @@ export function DocumentList({
                 <td className="px-4 py-3 text-gray-600">
                   {format(document.updatedAt, 'dd MMM yyyy', { locale: ro })}
                 </td>
-              </tr>
+              </motion.tr>
             ))}
-          </tbody>
+          </motion.tbody>
         </table>
 
         {/* Empty State */}

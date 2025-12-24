@@ -54,11 +54,13 @@ User roles within the law firm
 - Partner: Firm partner with full access
 - Associate: Associate lawyer with limited access
 - Paralegal: Paralegal with task-specific access
+- BusinessOwner: Firm owner with firm-wide financial data access (Story 2.11.1)
 """
 enum UserRole {
   Partner
   Associate
   Paralegal
+  BusinessOwner
 }
 
 """
@@ -131,4 +133,18 @@ enum DocumentType {
   Agreement
   Pleading
   Other
+}
+
+"""
+Document source type - distinguishes origin of document (OPS-171)
+- UPLOAD: Directly uploaded by user
+- EMAIL_ATTACHMENT: Saved from email attachment
+- AI_GENERATED: Created by AI drafting service
+- TEMPLATE: Generated from template
+"""
+enum DocumentSourceType {
+  UPLOAD
+  EMAIL_ATTACHMENT
+  AI_GENERATED
+  TEMPLATE
 }

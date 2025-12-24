@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import type { ReportCategory, ReportMetadata } from '@legal-platform/types';
-import { getReportMetadata } from '../../lib/mock-reports-data';
+import { useState, useMemo } from 'react';
+import type { ReportCategory } from '@legal-platform/types';
+import { usePredefinedReports, type PredefinedReport } from '../../hooks/useReportData';
 import { useReportsStore } from '../../stores/reports.store';
-import { useNavigationStore } from '../../stores/navigation.store';
 import { ReportBuilder } from './ReportBuilder';
+import { Skeleton } from '../ui/skeleton';
 
 const CATEGORY_INFO: Record<ReportCategory, { nameRo: string; icon: string; color: string }> = {
   cases: {
@@ -50,44 +50,42 @@ export function ReportCategoriesSidebar({ className = '' }: ReportCategoriesSide
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   const { selectedReportId, selectReport } = useReportsStore();
-  const { currentRole } = useNavigationStore();
 
-  // Get all available reports
-  const allReports = getReportMetadata();
-
-  // Filter reports by role
-  const accessibleReports = allReports.filter((report) =>
-    report.allowedRoles.includes(currentRole)
-  );
+  // Fetch all available reports from API (already filtered by role on backend)
+  const { reports: allReports, loading } = usePredefinedReports();
 
   // Group reports by category
-  const reportsByCategory = accessibleReports.reduce(
-    (acc, report) => {
-      if (!acc[report.categoryId]) {
-        acc[report.categoryId] = [];
-      }
-      acc[report.categoryId].push(report);
-      return acc;
-    },
-    {} as Record<ReportCategory, ReportMetadata[]>
-  );
+  const reportsByCategory = useMemo(() => {
+    return allReports.reduce<Record<ReportCategory, PredefinedReport[]>>(
+      (acc, report) => {
+        if (!acc[report.categoryId]) {
+          acc[report.categoryId] = [];
+        }
+        acc[report.categoryId].push(report);
+        return acc;
+      },
+      {} as Record<ReportCategory, PredefinedReport[]>
+    );
+  }, [allReports]);
 
   // Filter reports by search query
-  const filteredReportsByCategory = Object.entries(reportsByCategory).reduce(
-    (acc, [categoryId, reports]) => {
-      const filteredReports = reports.filter(
-        (report) =>
-          report.nameRo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          report.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          report.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      if (filteredReports.length > 0) {
-        acc[categoryId as ReportCategory] = filteredReports;
-      }
-      return acc;
-    },
-    {} as Record<ReportCategory, ReportMetadata[]>
-  );
+  const filteredReportsByCategory = useMemo(() => {
+    return Object.entries(reportsByCategory).reduce<Record<ReportCategory, PredefinedReport[]>>(
+      (acc, [categoryId, reports]) => {
+        const filteredReports = (reports as PredefinedReport[]).filter(
+          (report) =>
+            report.nameRo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            report.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            report.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        if (filteredReports.length > 0) {
+          acc[categoryId as ReportCategory] = filteredReports;
+        }
+        return acc;
+      },
+      {} as Record<ReportCategory, PredefinedReport[]>
+    );
+  }, [reportsByCategory, searchQuery]);
 
   const toggleCategory = (categoryId: ReportCategory) => {
     setExpandedCategories((prev) =>
@@ -99,9 +97,25 @@ export function ReportCategoriesSidebar({ className = '' }: ReportCategoriesSide
     selectReport(categoryId, reportId);
   };
 
-  const isReportRestricted = (report: ReportMetadata) => {
-    return !report.allowedRoles.includes(currentRole);
-  };
+  // Loading state
+  if (loading) {
+    return (
+      <div className={`flex h-full flex-col ${className}`}>
+        <div className="border-b border-gray-200 p-4">
+          <Skeleton className="h-9 w-full" />
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-8 w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex h-full flex-col ${className}`}>
@@ -137,9 +151,15 @@ export function ReportCategoriesSidebar({ className = '' }: ReportCategoriesSide
           const category = categoryId as ReportCategory;
           const reports = filteredReportsByCategory[category] || [];
           const isExpanded = expandedCategories.includes(category);
+          const totalReportsInCategory = reportsByCategory[category]?.length || 0;
 
           // Hide empty categories when searching
           if (searchQuery && reports.length === 0) {
+            return null;
+          }
+
+          // Hide categories with no reports for this user's role
+          if (!searchQuery && totalReportsInCategory === 0) {
             return null;
           }
 
@@ -156,7 +176,7 @@ export function ReportCategoriesSidebar({ className = '' }: ReportCategoriesSide
                     <h3 className={`text-sm font-semibold ${categoryInfo.color}`}>
                       {categoryInfo.nameRo}
                     </h3>
-                    <span className="text-xs text-gray-500">{reports.length} rapoarte</span>
+                    <span className="text-xs text-gray-500">{totalReportsInCategory} rapoarte</span>
                   </div>
                 </div>
                 <svg
@@ -182,40 +202,19 @@ export function ReportCategoriesSidebar({ className = '' }: ReportCategoriesSide
                   {reports.length > 0 ? (
                     reports.map((report) => {
                       const isSelected = selectedReportId === report.id;
-                      const isRestricted = isReportRestricted(report);
 
                       return (
                         <button
                           key={report.id}
-                          onClick={() => !isRestricted && handleReportSelect(category, report.id)}
-                          disabled={isRestricted}
+                          onClick={() => handleReportSelect(category, report.id)}
                           className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors ${
-                            isSelected
-                              ? 'bg-blue-100 text-blue-900'
-                              : isRestricted
-                                ? 'cursor-not-allowed opacity-50'
-                                : 'hover:bg-gray-100'
+                            isSelected ? 'bg-blue-100 text-blue-900' : 'hover:bg-gray-100'
                           }`}
                         >
                           <div className="flex-1">
                             <div className="font-medium">{report.nameRo}</div>
                             <div className="text-xs text-gray-600">{report.description}</div>
                           </div>
-                          {isRestricted && (
-                            <svg
-                              className="h-4 w-4 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                              />
-                            </svg>
-                          )}
                         </button>
                       );
                     })

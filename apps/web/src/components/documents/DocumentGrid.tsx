@@ -9,8 +9,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { DocumentCard } from './DocumentCard';
+import { Skeleton } from '@/components/ui/skeleton';
 import type {
   DocumentGridItem,
   DocumentSortField,
@@ -32,14 +34,12 @@ export interface DocumentGridProps {
   hasMore: boolean;
   /** Handler to load more documents */
   onLoadMore: () => void;
-  /** Handler for document preview */
+  /** Handler for document preview - OPS-163: Card click triggers preview */
   onPreview: (doc: DocumentGridItem) => void;
-  /** Handler for document download */
-  onDownload: (doc: DocumentGridItem) => void;
   /** Handler for add to mapa */
   onAddToMapa?: (doc: DocumentGridItem) => void;
-  /** Currently downloading document ID */
-  downloadingId?: string | null;
+  /** OPS-163: Handler for open in Word (DOCX files) */
+  onOpenInWord?: (doc: DocumentGridItem) => void;
   /** Current sort field */
   sortBy?: DocumentSortField;
   /** Current sort direction */
@@ -59,17 +59,17 @@ export interface DocumentGridProps {
  */
 function DocumentCardSkeleton() {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden animate-pulse">
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       {/* Thumbnail skeleton */}
-      <div className="aspect-[4/3] bg-gray-100" />
+      <Skeleton className="aspect-[4/3] rounded-none" />
       {/* Content skeleton */}
       <div className="p-4 space-y-3">
-        <div className="h-5 bg-gray-200 rounded w-3/4" />
-        <div className="h-4 bg-gray-100 rounded w-1/2" />
-        <div className="h-4 bg-gray-100 rounded w-2/3" />
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-4 w-2/3" />
         <div className="flex gap-2 pt-3 border-t border-gray-100">
-          <div className="flex-1 h-9 bg-gray-100 rounded-lg" />
-          <div className="flex-1 h-9 bg-gray-100 rounded-lg" />
+          <Skeleton className="flex-1 h-9" />
+          <Skeleton className="flex-1 h-9" />
         </div>
       </div>
     </div>
@@ -228,9 +228,8 @@ export function DocumentGrid({
   hasMore,
   onLoadMore,
   onPreview,
-  onDownload,
   onAddToMapa,
-  downloadingId,
+  onOpenInWord,
   sortBy = 'LINKED_AT',
   sortDirection = 'DESC',
   onSortChange,
@@ -286,17 +285,31 @@ export function DocumentGrid({
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Documents */}
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+        }}
+      >
+        {/* Documents - OPS-163: Click anywhere opens preview */}
         {documents.map((doc) => (
-          <DocumentCard
+          <motion.div
             key={doc.id}
-            document={doc}
-            onPreview={() => onPreview(doc)}
-            onDownload={() => onDownload(doc)}
-            onAddToMapa={onAddToMapa ? () => onAddToMapa(doc) : undefined}
-            isDownloading={downloadingId === doc.document.id}
-          />
+            variants={{
+              hidden: { opacity: 0, scale: 0.95 },
+              visible: { opacity: 1, scale: 1 },
+            }}
+          >
+            <DocumentCard
+              document={doc}
+              onPreview={() => onPreview(doc)}
+              onAddToMapa={onAddToMapa ? () => onAddToMapa(doc) : undefined}
+              onOpenInWord={onOpenInWord ? () => onOpenInWord(doc) : undefined}
+            />
+          </motion.div>
         ))}
 
         {/* Loading skeletons */}
@@ -305,7 +318,7 @@ export function DocumentGrid({
 
         {/* Empty state */}
         {showEmptyState && <EmptyState />}
-      </div>
+      </motion.div>
 
       {/* Load more trigger */}
       {hasMore && (

@@ -159,8 +159,8 @@ input AddCommentInput {
   suggestionText: String
 }
 
-# Input: Make review decision
-input ReviewDecisionInput {
+# Input: Make review decision (full review workflow)
+input FullReviewDecisionInput {
   reviewId: UUID!
   decision: ReviewStatus!
   feedback: String!
@@ -224,7 +224,7 @@ extend type Mutation {
   resolveComment(commentId: UUID!): ReviewComment!
 
   # Make review decision (AC: 4)
-  makeReviewDecision(input: ReviewDecisionInput!): DocumentReview!
+  makeReviewDecision(input: FullReviewDecisionInput!): DocumentReview!
 
   # Resubmit after revision (AC: 5)
   resubmitForReview(reviewId: UUID!, message: String): DocumentReview!

@@ -4,6 +4,8 @@
  * DocumentsContentPanel Component
  * OPS-089: /documents Section with Case Navigation and Folder Structure
  * OPS-133: Documents - Add Pagination / Load More UI
+ * OPS-173: Documents Tab Separation UI ("Documente de lucru" | "Corespondență")
+ * OPS-174: Supervisor Review Queue Tab ("De revizuit")
  *
  * Right panel showing documents in selected case/folder with grid/list view.
  * Integrates with OPS-087 preview modal for document preview.
@@ -16,31 +18,51 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { clsx } from 'clsx';
 import {
   FileText,
+  FileEdit,
+  Mail,
   Grid,
   List,
   Upload,
   FolderPlus,
   ChevronRight,
   Home,
-  Download,
-  Eye,
   File,
   FileImage,
   FileSpreadsheet,
   FolderInput,
   Loader2,
+  ExternalLink,
+  Clock,
+  ClipboardCheck,
 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CaseWithRelations } from '../../hooks/useCases';
 import type { FolderTree, FolderInfo, CaseDocumentContext } from '../../hooks/useDocumentFolders';
 import { useFolderContents } from '../../hooks/useDocumentFolders';
-import { useDocumentFoldersStore } from '../../stores/document-folders.store';
+import { useDocumentFoldersStore, type DocumentTab } from '../../stores/document-folders.store';
 import { useDocumentPreview } from '../../hooks/useDocumentPreview';
 import { DocumentPreviewModal, type PreviewableDocument } from '../preview';
 import { CreateFolderModal } from './CreateFolderModal';
 import { AssignToMapaModal, type DocumentInfo } from '../mapa/AssignToMapaModal';
+import { DeleteDocumentDialog } from './DeleteDocumentDialog';
+import { RenameDocumentDialog } from './RenameDocumentDialog';
+import { MoveDocumentDialog } from './MoveDocumentDialog';
+import { LinkToCaseDialog } from './LinkToCaseDialog';
+import { DocumentVersionDrawer } from './DocumentVersionDrawer';
+import { SubmitForReviewModal } from './SubmitForReviewModal';
+import { ReviewActionsModal, type ReviewDocument } from './ReviewActionsModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { useDocumentGrid, type DocumentGridItem } from '../../hooks/useDocumentGrid';
+import {
+  useDocumentGrid,
+  type DocumentGridItem,
+  type DocumentSourceType,
+} from '../../hooks/useDocumentGrid';
 import { usePreviewActions } from '../../hooks/usePreviewActions';
+import {
+  useDocumentsForReviewCount,
+  type DocumentForReview,
+} from '../../hooks/useDocumentsForReview';
+import { ReviewQueueList } from './ReviewQueueList';
 
 // ============================================================================
 // Types
@@ -127,25 +149,40 @@ function Breadcrumb({
   );
 }
 
+/**
+ * OPS-163: Helper to check if file is a Word document
+ */
+function isWordDocument(fileType: string): boolean {
+  const type = fileType.toLowerCase();
+  return (
+    type.includes('doc') ||
+    type.includes('word') ||
+    type.includes('application/vnd.openxmlformats-officedocument.wordprocessingml')
+  );
+}
+
 function DocumentCard({
   doc,
   viewMode,
-  isSelected,
-  onSelect,
   onPreview,
   onAddToMapa,
+  onOpenInWord,
+  onViewVersions,
 }: {
   doc: CaseDocumentContext;
   viewMode: 'grid' | 'list';
-  isSelected: boolean;
-  onSelect: () => void;
   onPreview: () => void;
   onAddToMapa: () => void;
+  onOpenInWord?: () => void;
+  // OPS-176: Handler for viewing version history
+  onViewVersions?: () => void;
 }) {
   const [isDragging, setIsDragging] = useState(false);
 
-  // Get file type for icon selection
+  // Get file type for icon selection and conditional actions
   const fileType = doc.document.fileType;
+  const isWord = isWordDocument(fileType);
+  const hasMultipleVersions = (doc.document.versionCount ?? 0) > 1;
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/x-case-document-id', doc.id);
@@ -158,16 +195,17 @@ function DocumentCard({
     setIsDragging(false);
   };
 
+  // OPS-163: Click anywhere on card/row opens preview
   if (viewMode === 'list') {
     return (
       <div
         draggable
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onClick={onSelect}
+        onClick={onPreview}
         className={clsx(
           'flex items-center gap-4 px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors',
-          isSelected ? 'bg-blue-50' : 'hover:bg-gray-50',
+          'hover:bg-gray-50',
           isDragging && 'opacity-50 bg-blue-100'
         )}
       >
@@ -180,17 +218,21 @@ function DocumentCard({
             {formatFileSize(doc.document.fileSize)} • {formatDate(doc.linkedAt)}
           </div>
         </div>
+        {/* OPS-163/OPS-176: File-type specific actions and version badge */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onPreview();
-            }}
-            className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-            title="Previzualizare"
-          >
-            <Eye className="h-4 w-4" />
-          </button>
+          {/* OPS-176: Version badge */}
+          {hasMultipleVersions && onViewVersions && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewVersions();
+              }}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              title="Vezi istoricul versiunilor"
+            >
+              <Clock className="h-3.5 w-3.5" />v{doc.document.versionCount}
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -201,35 +243,38 @@ function DocumentCard({
           >
             <FolderInput className="h-4 w-4" />
           </button>
-          <button
-            onClick={(e) => e.stopPropagation()}
-            className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-            title="Descarcă"
-          >
-            <Download className="h-4 w-4" />
-          </button>
+          {isWord && onOpenInWord && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenInWord();
+              }}
+              className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-blue-600"
+              title="Deschide în Word"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
-  // Grid view
+  // Grid view - OPS-163: Click anywhere opens preview
   return (
     <div
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onClick={onSelect}
+      onClick={onPreview}
       className={clsx(
         'flex flex-col p-4 rounded-lg border cursor-pointer transition-all',
-        isSelected
-          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm',
+        'border-gray-200 hover:border-gray-300 hover:shadow-sm',
         isDragging && 'opacity-50 ring-2 ring-blue-300'
       )}
     >
       {/* Thumbnail or Icon */}
-      <div className="aspect-[4/3] bg-gray-100 rounded-md flex items-center justify-center mb-3">
+      <div className="aspect-[4/3] bg-gray-100 rounded-md flex items-center justify-center mb-3 relative">
         {doc.document.thumbnailUrl ? (
           <img
             src={doc.document.thumbnailUrl}
@@ -238,6 +283,19 @@ function DocumentCard({
           />
         ) : (
           React.createElement(getFileIcon(fileType), { className: 'h-12 w-12 text-gray-400' })
+        )}
+        {/* OPS-176: Version badge overlay */}
+        {hasMultipleVersions && onViewVersions && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewVersions();
+            }}
+            className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-white/90 text-gray-600 shadow-sm hover:bg-blue-50 hover:text-blue-600 transition-colors"
+            title="Vezi istoricul versiunilor"
+          >
+            <Clock className="h-3 w-3" />v{doc.document.versionCount}
+          </button>
         )}
       </div>
 
@@ -250,18 +308,8 @@ function DocumentCard({
         <div className="text-xs text-gray-400 mt-0.5">{formatDate(doc.linkedAt)}</div>
       </div>
 
-      {/* Actions */}
+      {/* OPS-163: File-type specific actions */}
       <div className="flex items-center gap-1 mt-3 pt-2 border-t border-gray-100">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onPreview();
-          }}
-          className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-        >
-          <Eye className="h-3.5 w-3.5" />
-          Previzualizare
-        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -273,6 +321,19 @@ function DocumentCard({
           <FolderInput className="h-3.5 w-3.5" />
           Mapă
         </button>
+        {isWord && onOpenInWord && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenInWord();
+            }}
+            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            title="Deschide în Word"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Word
+          </button>
+        )}
       </div>
     </div>
   );
@@ -311,6 +372,18 @@ function EmptyState({
   );
 }
 
+// OPS-162: Type for document being acted upon
+interface ActionDocument {
+  id: string; // Document ID
+  caseDocumentId: string; // CaseDocument join table ID (for move)
+  name: string;
+  folderId: string | null;
+}
+
+// OPS-173: Source types for each tab
+const WORKING_DOC_SOURCE_TYPES: DocumentSourceType[] = ['UPLOAD', 'AI_GENERATED', 'TEMPLATE'];
+const CORRESPONDENCE_SOURCE_TYPES: DocumentSourceType[] = ['EMAIL_ATTACHMENT'];
+
 export function DocumentsContentPanel({
   caseId,
   folderId,
@@ -318,16 +391,42 @@ export function DocumentsContentPanel({
   cases,
   loading,
 }: DocumentsContentPanelProps) {
-  const { viewMode, setViewMode, selectedDocumentId, setSelectedDocument } =
-    useDocumentFoldersStore();
+  const { viewMode, setViewMode, activeTab, setActiveTab } = useDocumentFoldersStore();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [mapaAssignDoc, setMapaAssignDoc] = useState<DocumentInfo | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  // OPS-162: Dialog states for secondary actions
+  const [deleteDoc, setDeleteDoc] = useState<ActionDocument | null>(null);
+  const [renameDoc, setRenameDoc] = useState<ActionDocument | null>(null);
+  const [moveDoc, setMoveDoc] = useState<ActionDocument | null>(null);
+  const [linkDoc, setLinkDoc] = useState<ActionDocument | null>(null);
+
+  // OPS-176: Version drawer state
+  const [versionDrawerDoc, setVersionDrawerDoc] = useState<{ id: string; name: string } | null>(
+    null
+  );
+
+  // OPS-177: Review workflow modal states
+  const [submitForReviewDoc, setSubmitForReviewDoc] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [reviewDoc, setReviewDoc] = useState<ReviewDocument | null>(null);
+
   // Get folder contents if a folder is selected
   const { folder: selectedFolder, loading: folderLoading } = useFolderContents(folderId);
 
+  // OPS-173: Compute source types filter based on active tab
+  const sourceTypesFilter = useMemo(() => {
+    return activeTab === 'working' ? WORKING_DOC_SOURCE_TYPES : CORRESPONDENCE_SOURCE_TYPES;
+  }, [activeTab]);
+
+  // OPS-173: For working tab, include promoted attachments
+  const includePromotedAttachments = activeTab === 'working';
+
   // OPS-133: Use paginated document grid for root-level documents
+  // OPS-173: Pass sourceTypes filter for tab separation
   // Only fetch when no folder is selected (root level)
   const {
     documents: gridDocuments,
@@ -335,9 +434,19 @@ export function DocumentsContentPanel({
     totalCount: gridTotalCount,
     hasMore: gridHasMore,
     loadMore: gridLoadMore,
-  } = useDocumentGrid(caseId && !folderId ? caseId : '', { first: 20 });
+    refetch: refetchGrid, // OPS-183: Refetch for version sync
+  } = useDocumentGrid(caseId && !folderId ? caseId : '', {
+    first: 20,
+    sourceTypes: sourceTypesFilter,
+    includePromotedAttachments,
+  });
 
-  // Document preview hook (OPS-087)
+  // OPS-183: Callback to refresh document grid when a new version is synced from SharePoint
+  const handleVersionSynced = useCallback(() => {
+    refetchGrid();
+  }, [refetchGrid]);
+
+  // Document preview hook (OPS-087, OPS-183)
   const {
     selectedDocument: previewDocument,
     isPreviewOpen,
@@ -346,10 +455,21 @@ export function DocumentsContentPanel({
     fetchPreviewUrl,
     fetchDownloadUrl,
     fetchTextContent,
-  } = useDocumentPreview({ type: 'document' });
+    openInWord: openInWordMutation,
+  } = useDocumentPreview({
+    type: 'document',
+    onVersionSynced: handleVersionSynced, // OPS-183: Refresh grid on sync
+  });
 
   // OPS-109: Auth context for Microsoft account status
-  const { hasMsalAccount, reconnectMicrosoft } = useAuth();
+  // OPS-174: Also get user for role-based tab visibility
+  const { hasMsalAccount, reconnectMicrosoft, user } = useAuth();
+
+  // OPS-174: Check if user is a supervisor (can see review queue)
+  const isSupervisor = user?.role === 'Partner' || user?.role === 'Associate';
+
+  // OPS-174: Get count of documents pending review (for badge)
+  const { count: reviewCount } = useDocumentsForReviewCount();
 
   // OPS-139: Get filtered preview actions for case-documents context
   const { actions: previewActions, userRole } = usePreviewActions({
@@ -451,6 +571,8 @@ export function DocumentsContentPanel({
         size: doc.document.fileSize,
         previewUrl: null, // Will be fetched on demand
         downloadUrl: doc.document.downloadUrl ?? null,
+        // OPS-177: Include status for action toolbar filtering
+        status: doc.document.status,
       };
       openPreview(previewable);
     },
@@ -462,7 +584,7 @@ export function DocumentsContentPanel({
    */
   const handleAddToMapa = useCallback((doc: CaseDocumentContext) => {
     setMapaAssignDoc({
-      id: doc.document.id,
+      id: doc.id, // CaseDocument ID (join table), not Document ID
       fileName: doc.document.fileName,
       fileType: doc.document.fileType,
       fileSize: doc.document.fileSize,
@@ -470,7 +592,42 @@ export function DocumentsContentPanel({
   }, []);
 
   /**
+   * OPS-163/OPS-164: Open document in Word Online
+   * Opens the SharePoint document directly in Word Online (browser-based).
+   * This is more reliable than ms-word: protocol which requires Word desktop.
+   */
+  const handleOpenInWord = useCallback(
+    async (doc: CaseDocumentContext) => {
+      try {
+        const result = await openInWordMutation(doc.document.id);
+        if (!result) {
+          alert('Nu s-a putut deschide documentul în Word. Verificați consola pentru detalii.');
+          return;
+        }
+
+        const { webUrl } = result;
+
+        // Open Word Online directly (works in any browser)
+        if (webUrl) {
+          window.open(webUrl, '_blank');
+          return;
+        }
+
+        // URL not available
+        alert(
+          'Nu s-a putut obține URL-ul documentului. Documentul poate necesita re-sincronizare cu OneDrive.'
+        );
+      } catch (error) {
+        console.error('Failed to open document in Word:', error);
+        alert('Eroare la deschiderea documentului în Word. Verificați consola pentru detalii.');
+      }
+    },
+    [openInWordMutation]
+  );
+
+  /**
    * OPS-139: Handle preview action toolbar clicks
+   * OPS-162: Implement secondary action dialogs
    * Maps action IDs to specific handlers
    */
   const handlePreviewAction = useCallback(
@@ -478,9 +635,22 @@ export function DocumentsContentPanel({
       // Find the original CaseDocumentContext for this preview document
       const caseDoc = documents.find((d) => d.document.id === doc.id);
 
+      // Helper to create action document from preview doc and case doc
+      const createActionDoc = (): ActionDocument | null => {
+        if (!caseDoc) return null;
+        return {
+          id: doc.id,
+          caseDocumentId: caseDoc.id, // The CaseDocument join table ID
+          name: doc.name,
+          folderId: folderId, // Current folder context
+        };
+      };
+
       switch (actionId) {
         case 'add-to-mapa':
           if (caseDoc) {
+            // Close preview first to avoid modal layering issues
+            closePreview();
             handleAddToMapa(caseDoc);
           }
           break;
@@ -489,31 +659,116 @@ export function DocumentsContentPanel({
           // Download is handled by the modal directly
           break;
 
-        case 'rename':
-          // TODO: Implement rename modal
-          console.log('Rename action for:', doc.name);
+        // OPS-164: Open document in Word desktop app
+        case 'open-in-word':
+          if (caseDoc) {
+            closePreview();
+            handleOpenInWord(caseDoc);
+          }
           break;
 
-        case 'move':
-          // TODO: Implement move to folder modal
-          console.log('Move action for:', doc.name);
+        case 'rename': {
+          const actionDoc = createActionDoc();
+          if (actionDoc) {
+            closePreview();
+            setRenameDoc(actionDoc);
+          }
           break;
+        }
 
-        case 'link-to-case':
-          // TODO: Implement link to another case modal
-          console.log('Link to case action for:', doc.name);
+        case 'move': {
+          const actionDoc = createActionDoc();
+          if (actionDoc) {
+            closePreview();
+            setMoveDoc(actionDoc);
+          }
           break;
+        }
 
-        case 'delete':
-          // TODO: Implement delete confirmation dialog
-          console.log('Delete action for:', doc.name);
+        case 'link-to-case': {
+          const actionDoc = createActionDoc();
+          if (actionDoc) {
+            closePreview();
+            setLinkDoc(actionDoc);
+          }
           break;
+        }
+
+        case 'delete': {
+          const actionDoc = createActionDoc();
+          if (actionDoc) {
+            closePreview();
+            setDeleteDoc(actionDoc);
+          }
+          break;
+        }
+
+        // OPS-177: Review workflow actions
+        case 'submit-for-review': {
+          closePreview();
+          setSubmitForReviewDoc({
+            id: doc.id,
+            name: doc.name,
+          });
+          break;
+        }
+
+        case 'review-document': {
+          // Get document metadata for review modal
+          const gridDoc = gridDocuments.find((d) => d.document.id === doc.id);
+          closePreview();
+          setReviewDoc({
+            id: doc.id,
+            fileName: doc.name,
+            metadata: gridDoc?.document?.metadata as ReviewDocument['metadata'],
+          });
+          break;
+        }
+
+        case 'withdraw-from-review': {
+          // TODO: Call withdraw mutation directly (simple confirmation)
+          console.log('Withdraw from review:', doc.id);
+          break;
+        }
 
         default:
           console.warn('Unknown action:', actionId);
       }
     },
-    [documents, handleAddToMapa]
+    [documents, handleAddToMapa, handleOpenInWord, closePreview, folderId, gridDocuments]
+  );
+
+  /**
+   * OPS-174: Handle preview from review queue
+   * Opens document preview modal for a document in the review queue
+   */
+  const handleReviewPreview = useCallback(
+    (item: DocumentForReview) => {
+      const previewable: PreviewableDocument = {
+        id: item.document.id,
+        name: item.document.fileName,
+        contentType: item.document.fileType,
+        size: item.document.fileSize,
+        previewUrl: null,
+        downloadUrl: null,
+        // OPS-177: Include status for action toolbar filtering
+        status: item.document.status,
+      };
+      openPreview(previewable);
+    },
+    [openPreview]
+  );
+
+  /**
+   * OPS-174: Handle review action from review queue
+   * For now, opens the document for preview - OPS-177 will implement actual review actions
+   */
+  const handleReviewAction = useCallback(
+    (item: DocumentForReview) => {
+      // For now, just open preview - OPS-177 will add approve/reject functionality
+      handleReviewPreview(item);
+    },
+    [handleReviewPreview]
   );
 
   // No case selected
@@ -582,20 +837,66 @@ export function DocumentsContentPanel({
           </div>
         </div>
 
-        {/* Current folder info - OPS-133: Show loaded/total count for root */}
-        <div className="text-sm text-gray-500">
-          {folderId && selectedFolder
-            ? `${selectedFolder.documentCount} documente în "${selectedFolder.name}"`
-            : totalCount > 0
-              ? hasMore
-                ? `${documents.length} din ${totalCount} documente`
-                : `${totalCount} documente`
-              : 'Niciun document'}
+        {/* OPS-173: Document separation tabs */}
+        {/* OPS-174: Added supervisor review queue tab */}
+        <div className="mb-3">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as DocumentTab)}
+            className="w-full"
+          >
+            <TabsList
+              className={clsx(
+                'grid w-full',
+                isSupervisor ? 'max-w-xl grid-cols-3' : 'max-w-md grid-cols-2'
+              )}
+            >
+              <TabsTrigger value="working" className="flex items-center gap-2">
+                <FileEdit className="h-4 w-4" />
+                Documente de lucru
+              </TabsTrigger>
+              {/* OPS-174: Review queue tab - only visible to supervisors */}
+              {isSupervisor && (
+                <TabsTrigger value="review" className="flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4" />
+                  De revizuit
+                  {reviewCount > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                      {reviewCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="correspondence" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Corespondență
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
+
+        {/* Current folder info - OPS-133: Show loaded/total count for root */}
+        {/* OPS-174: Hide count when review tab is active */}
+        {activeTab !== 'review' && (
+          <div className="text-sm text-gray-500">
+            {folderId && selectedFolder
+              ? `${selectedFolder.documentCount} documente în "${selectedFolder.name}"`
+              : totalCount > 0
+                ? hasMore
+                  ? `${documents.length} din ${totalCount} documente`
+                  : `${totalCount} documente`
+                : 'Niciun document'}
+          </div>
+        )}
       </div>
 
       {/* Content */}
-      {isLoading ? (
+      {/* OPS-174: Show review queue when review tab is active */}
+      {activeTab === 'review' && isSupervisor ? (
+        <div className="flex-1 overflow-y-auto p-6">
+          <ReviewQueueList onPreview={handleReviewPreview} onReview={handleReviewAction} />
+        </div>
+      ) : isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-sm text-gray-500">Se încarcă...</div>
         </div>
@@ -606,6 +907,7 @@ export function DocumentsContentPanel({
         />
       ) : (
         <div className="flex-1 overflow-y-auto p-6">
+          {/* OPS-163: Click anywhere on card opens preview, OPS-176: Version badge */}
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {documents.map((doc) => (
@@ -613,10 +915,15 @@ export function DocumentsContentPanel({
                   key={doc.document.id}
                   doc={doc}
                   viewMode="grid"
-                  isSelected={selectedDocumentId === doc.document.id}
-                  onSelect={() => setSelectedDocument(doc.document.id)}
                   onPreview={() => handlePreview(doc)}
                   onAddToMapa={() => handleAddToMapa(doc)}
+                  onOpenInWord={() => handleOpenInWord(doc)}
+                  onViewVersions={() =>
+                    setVersionDrawerDoc({
+                      id: doc.document.id,
+                      name: doc.document.fileName,
+                    })
+                  }
                 />
               ))}
             </div>
@@ -627,10 +934,15 @@ export function DocumentsContentPanel({
                   key={doc.document.id}
                   doc={doc}
                   viewMode="list"
-                  isSelected={selectedDocumentId === doc.document.id}
-                  onSelect={() => setSelectedDocument(doc.document.id)}
                   onPreview={() => handlePreview(doc)}
                   onAddToMapa={() => handleAddToMapa(doc)}
+                  onOpenInWord={() => handleOpenInWord(doc)}
+                  onViewVersions={() =>
+                    setVersionDrawerDoc({
+                      id: doc.document.id,
+                      name: doc.document.fileName,
+                    })
+                  }
                 />
               ))}
             </div>
@@ -696,8 +1008,8 @@ export function DocumentsContentPanel({
         onAction={handlePreviewAction}
       />
 
-      {/* Assign to Mapa Modal */}
-      {mapaAssignDoc && caseId && (
+      {/* Assign to Mapa Modal - always rendered so portal container is ready */}
+      {caseId && (
         <AssignToMapaModal
           isOpen={!!mapaAssignDoc}
           onClose={() => setMapaAssignDoc(null)}
@@ -706,6 +1018,83 @@ export function DocumentsContentPanel({
           onAssigned={() => {
             setMapaAssignDoc(null);
           }}
+        />
+      )}
+
+      {/* OPS-162: Delete Document Dialog */}
+      {deleteDoc && (
+        <DeleteDocumentDialog
+          documentId={deleteDoc.id}
+          documentName={deleteDoc.name}
+          open={!!deleteDoc}
+          onOpenChange={(open) => !open && setDeleteDoc(null)}
+          onSuccess={() => setDeleteDoc(null)}
+        />
+      )}
+
+      {/* OPS-162: Rename Document Dialog */}
+      {renameDoc && (
+        <RenameDocumentDialog
+          documentId={renameDoc.id}
+          currentName={renameDoc.name}
+          open={!!renameDoc}
+          onOpenChange={(open) => !open && setRenameDoc(null)}
+          onSuccess={() => setRenameDoc(null)}
+        />
+      )}
+
+      {/* OPS-162: Move Document Dialog */}
+      {moveDoc && (
+        <MoveDocumentDialog
+          caseDocumentId={moveDoc.caseDocumentId}
+          documentName={moveDoc.name}
+          currentFolderId={moveDoc.folderId}
+          folderTree={folderTree}
+          open={!!moveDoc}
+          onOpenChange={(open) => !open && setMoveDoc(null)}
+          onSuccess={() => setMoveDoc(null)}
+        />
+      )}
+
+      {/* OPS-162: Link to Case Dialog */}
+      {linkDoc && currentCase && (
+        <LinkToCaseDialog
+          documentId={linkDoc.id}
+          documentName={linkDoc.name}
+          currentCaseId={caseId!}
+          clientId={currentCase.client.id}
+          open={!!linkDoc}
+          onOpenChange={(open) => !open && setLinkDoc(null)}
+          onSuccess={() => setLinkDoc(null)}
+        />
+      )}
+
+      {/* OPS-176: Document Version History Drawer */}
+      <DocumentVersionDrawer
+        documentId={versionDrawerDoc?.id ?? null}
+        documentName={versionDrawerDoc?.name ?? ''}
+        isOpen={!!versionDrawerDoc}
+        onClose={() => setVersionDrawerDoc(null)}
+      />
+
+      {/* OPS-177: Submit for Review Modal */}
+      {submitForReviewDoc && (
+        <SubmitForReviewModal
+          documentId={submitForReviewDoc.id}
+          documentName={submitForReviewDoc.name}
+          open={!!submitForReviewDoc}
+          onOpenChange={(open) => !open && setSubmitForReviewDoc(null)}
+          onSuccess={() => setSubmitForReviewDoc(null)}
+        />
+      )}
+
+      {/* OPS-177: Review Actions Modal */}
+      {reviewDoc && (
+        <ReviewActionsModal
+          document={reviewDoc}
+          open={!!reviewDoc}
+          onOpenChange={(open) => !open && setReviewDoc(null)}
+          onSuccess={() => setReviewDoc(null)}
         />
       )}
     </div>

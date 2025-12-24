@@ -80,6 +80,8 @@ export interface BatchIntelligenceResult {
 const INTELLIGENCE_EXTRACTION_SYSTEM_PROMPT = `You are an AI assistant for a Romanian law firm analyzing email communications.
 Your task is to extract actionable items from emails with high accuracy.
 
+IMPORTANT: Extrage informațiile și răspunde în limba română. Toate descrierile, angajamentele și întrebările trebuie să fie în română.
+
 Extract the following types of items:
 
 1. DEADLINES: Specific dates or timeframes when something must be done

@@ -81,13 +81,15 @@ const COMMON_REFINEMENTS: Record<string, { en: string; ro: string }> = {
 
 const REFINEMENT_SYSTEM_PROMPT = `You are an AI assistant helping refine email drafts for a Romanian law firm.
 
+IMPORTANT: Răspunde ÎNTOTDEAUNA în limba română, cu excepția cazurilor în care emailul original este în engleză.
+
 CRITICAL RULES:
 1. Apply the requested refinement while preserving the core message
 2. Maintain the original intent and key points
 3. Keep the same salutation and closing style unless specifically asked to change
 4. Preserve any case-specific references (case numbers, document names, dates)
 5. Do not add new information not implied by the refinement request
-6. Maintain appropriate legal language for the context
+6. Maintain appropriate legal language for the context (use Romanian legal terminology)
 
 CASE CONTEXT (if available):
 {caseContext}`;
@@ -109,6 +111,8 @@ Return your response as JSON:
 
 const INLINE_SUGGESTION_SYSTEM_PROMPT = `You are an AI assistant providing real-time suggestions for email composition in a Romanian law firm.
 
+IMPORTANT: Sugestiile trebuie să fie în limba română, folosind terminologia juridică românească corespunzătoare.
+
 CONTEXT:
 - Original email subject: {originalSubject}
 - Recipient type: {recipientType}
@@ -117,8 +121,8 @@ CONTEXT:
 
 Provide helpful suggestions that:
 1. Complete the user's thought if they appear to be mid-sentence
-2. Correct any grammatical or spelling errors
-3. Suggest improvements to legal language or clarity
+2. Correct any grammatical or spelling errors in Romanian
+3. Suggest improvements to legal language or clarity using proper Romanian terminology
 
 Be concise - suggestions should be natural continuations or corrections.`;
 

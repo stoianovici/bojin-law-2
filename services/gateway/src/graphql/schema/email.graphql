@@ -157,6 +157,17 @@ type EmailAttachment {
   OPS-136: Allows filtering out non-useful attachments
   """
   irrelevant: Boolean!
+
+  """
+  OPS-175: Whether this attachment has been promoted to a working document.
+  True if the saved document has promotedToDocumentId in metadata.
+  """
+  isPromoted: Boolean!
+
+  """
+  OPS-175: ID of the promoted working document (if isPromoted is true)
+  """
+  promotedDocumentId: ID
 }
 
 """
@@ -732,6 +743,8 @@ type SaveAttachmentAsDocumentResult {
   document: Document!
   """Whether this was a new document (false if already saved)"""
   isNew: Boolean!
+  """OPS-175: The CaseDocument ID linking the document to the case"""
+  caseDocumentId: UUID!
 }
 
 # ============================================================================

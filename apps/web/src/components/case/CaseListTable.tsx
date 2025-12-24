@@ -8,6 +8,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import * as Avatar from '@radix-ui/react-avatar';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import type { CaseStatus } from '@legal-platform/types';
@@ -174,18 +175,30 @@ export function CaseListTable({ cases }: CaseListTableProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <motion.tbody
+            className="bg-white divide-y divide-gray-200"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: { opacity: 1, transition: { staggerChildren: 0.03 } },
+            }}
+          >
             {cases.map((caseItem) => (
-              <tr
+              <motion.tr
                 key={caseItem.id}
                 onClick={() => handleRowClick(caseItem.id)}
-                className="hover:bg-gray-50 cursor-pointer transition-colors focus-within:bg-gray-50"
+                className="hover:bg-gray-50 cursor-pointer transition-colors duration-150 focus-within:bg-gray-50"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     handleRowClick(caseItem.id);
                   }
+                }}
+                variants={{
+                  hidden: { opacity: 0, y: 8 },
+                  visible: { opacity: 1, y: 0 },
                 }}
               >
                 <td className="px-4 py-4 text-sm font-medium text-gray-900">
@@ -241,19 +254,27 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                     Vezi
                   </button>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
-          </tbody>
+          </motion.tbody>
         </table>
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden divide-y divide-gray-200">
+      <motion.div
+        className="md:hidden divide-y divide-gray-200"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { staggerChildren: 0.04 } },
+        }}
+      >
         {cases.map((caseItem) => (
-          <div
+          <motion.div
             key={caseItem.id}
             onClick={() => handleRowClick(caseItem.id)}
-            className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+            className="p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -263,6 +284,10 @@ export function CaseListTable({ cases }: CaseListTableProps) {
             }}
             role="button"
             aria-label={`Vezi dosarul ${caseItem.caseNumber}`}
+            variants={{
+              hidden: { opacity: 0, x: -12 },
+              visible: { opacity: 1, x: 0 },
+            }}
           >
             <div className="flex items-start justify-between mb-2">
               <div className="min-w-0 flex-1 mr-2">
@@ -304,9 +329,9 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }

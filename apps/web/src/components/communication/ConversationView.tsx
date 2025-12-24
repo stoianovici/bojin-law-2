@@ -10,6 +10,7 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Reply, Loader2, FolderInput, EyeOff, X, Users } from 'lucide-react';
 import { gql } from '@apollo/client';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
@@ -407,20 +408,29 @@ export function ConversationView() {
 
       {/* Messages - Chat style */}
       <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {sortedMessages.map((message) => {
+        {sortedMessages.map((message, index) => {
           // OPS-126: Use folderType as authoritative source for direction
           // 'sent' folder means user sent it, anything else means received
           const isSent = (message as any).folderType === 'sent';
 
           return (
-            <ConversationBubble
+            <motion.div
               key={message.id}
-              message={message}
-              isSent={isSent}
-              onAttachmentClick={(att) => handleAttachmentClick(att, message.id)}
-              onDownloadAttachment={handleDownloadAttachment}
-              downloadingId={downloadingId}
-            />
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.2,
+                delay: Math.min(index * 0.03, 0.3), // Cap delay at 300ms for long threads
+              }}
+            >
+              <ConversationBubble
+                message={message}
+                isSent={isSent}
+                onAttachmentClick={(att) => handleAttachmentClick(att, message.id)}
+                onDownloadAttachment={handleDownloadAttachment}
+                downloadingId={downloadingId}
+              />
+            </motion.div>
           );
         })}
         <div ref={messagesEndRef} />

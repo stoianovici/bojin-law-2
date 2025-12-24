@@ -13,6 +13,7 @@ import { useQuery } from '@apollo/client/react';
 const GET_CASE_DOCUMENTS = gql`
   query GetCaseDocuments($caseId: UUID!) {
     caseDocuments(caseId: $caseId) {
+      id
       document {
         id
         clientId
@@ -118,6 +119,7 @@ export interface CaseDocumentData {
 }
 
 export interface CaseDocumentWithContext {
+  id: string; // CaseDocument ID (join table)
   document: CaseDocumentData;
   linkedBy: DocumentUser;
   linkedAt: string;

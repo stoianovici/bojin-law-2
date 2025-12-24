@@ -16,6 +16,7 @@ import { r2StorageService } from '../../services/r2-storage.service';
 import { thumbnailService } from '../../services/thumbnail.service';
 import { caseSummaryService } from '../../services/case-summary.service';
 import { activityEventService } from '../../services/activity-event.service';
+import { wordIntegrationService } from '../../services/word-integration.service';
 import { queueThumbnailJob } from '../../workers/thumbnail-generation.worker';
 import { createSourceCaseDataLoader } from '../dataloaders/document.dataloaders';
 import logger from '../../utils/logger';
@@ -157,6 +158,74 @@ async function getDeletedUserPlaceholder(userId: string): Promise<{
     lastName: 'Șters',
     email: 'deleted@system',
   };
+}
+
+// ============================================================================
+// OPS-172: Document Status Transition Validation
+// ============================================================================
+
+type DocumentStatus =
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'CHANGES_REQUESTED'
+  | 'PENDING'
+  | 'FINAL'
+  | 'ARCHIVED';
+
+// Defines which status transitions are allowed
+// DRAFT -> IN_REVIEW: Submit for supervisor review
+// DRAFT -> ARCHIVED: Archive without review
+// IN_REVIEW -> CHANGES_REQUESTED: Supervisor requests modifications
+// IN_REVIEW -> FINAL: Supervisor approves
+// IN_REVIEW -> DRAFT: Withdrawn from review
+// CHANGES_REQUESTED -> DRAFT: Author addresses feedback
+// CHANGES_REQUESTED -> IN_REVIEW: Resubmit after changes
+// CHANGES_REQUESTED -> ARCHIVED: Abandon changes
+// PENDING -> DRAFT/FINAL/ARCHIVED: Legacy processing states
+// FINAL -> ARCHIVED: Archive finalized document
+// ARCHIVED -> DRAFT: Restore to draft
+const ALLOWED_STATUS_TRANSITIONS: Record<DocumentStatus, DocumentStatus[]> = {
+  DRAFT: ['IN_REVIEW', 'ARCHIVED'],
+  IN_REVIEW: ['CHANGES_REQUESTED', 'FINAL', 'DRAFT'],
+  CHANGES_REQUESTED: ['DRAFT', 'IN_REVIEW', 'ARCHIVED'],
+  PENDING: ['DRAFT', 'FINAL', 'ARCHIVED'],
+  FINAL: ['ARCHIVED'],
+  ARCHIVED: ['DRAFT'],
+};
+
+/**
+ * Validates if a document status transition is allowed
+ * @param from Current document status
+ * @param to Desired new status
+ * @returns true if transition is valid, false otherwise
+ */
+function isValidStatusTransition(from: DocumentStatus, to: DocumentStatus): boolean {
+  // Same status is always "valid" (no-op)
+  if (from === to) return true;
+
+  const allowedTransitions = ALLOWED_STATUS_TRANSITIONS[from];
+  return allowedTransitions?.includes(to) ?? false;
+}
+
+/**
+ * Returns a user-friendly error message for invalid status transitions
+ */
+function getInvalidTransitionMessage(from: DocumentStatus, to: DocumentStatus): string {
+  const statusLabels: Record<DocumentStatus, string> = {
+    DRAFT: 'Ciornă',
+    IN_REVIEW: 'În revizuire',
+    CHANGES_REQUESTED: 'Modificări solicitate',
+    PENDING: 'În așteptare',
+    FINAL: 'Final',
+    ARCHIVED: 'Arhivat',
+  };
+
+  return (
+    `Nu se poate schimba starea de la "${statusLabels[from]}" la "${statusLabels[to]}". ` +
+    `Tranziții permise din "${statusLabels[from]}": ${
+      ALLOWED_STATUS_TRANSITIONS[from]?.map((s) => statusLabels[s]).join(', ') || 'niciuna'
+    }`
+  );
 }
 
 export const documentResolvers = {
@@ -364,12 +433,16 @@ export const documentResolvers = {
           }
 
           return {
+            id: link.id,
             document: link.document,
             // OPS-045: Return placeholder if linker user was deleted
             linkedBy: link.linker || (await getDeletedUserPlaceholder(link.linkedBy)),
             linkedAt: link.linkedAt,
             isOriginal: link.isOriginal,
             sourceCase,
+            // OPS-171: Promotion tracking
+            promotedFromAttachment: link.promotedFromAttachment || false,
+            originalAttachmentId: link.originalAttachmentId || null,
           };
         })
       );
@@ -421,6 +494,25 @@ export const documentResolvers = {
         },
         orderBy: { timestamp: 'desc' },
         take: args.limit || 50,
+      });
+    },
+
+    // OPS-176: Get document versions for version history drawer
+    documentVersions: async (_: any, args: { documentId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessDocument(args.documentId, user))) {
+        throw new GraphQLError('Not authorized to view document versions', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      return prisma.documentVersion.findMany({
+        where: { documentId: args.documentId },
+        include: {
+          creator: true,
+        },
+        orderBy: { versionNumber: 'desc' },
       });
     },
 
@@ -503,7 +595,7 @@ export const documentResolvers = {
       return null;
     },
 
-    // Get document preview URL (OPS-087, OPS-109)
+    // Get document preview URL (OPS-087, OPS-109, OPS-183)
     documentPreviewUrl: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
@@ -521,6 +613,35 @@ export const documentResolvers = {
         throw new GraphQLError('Document not found', {
           extensions: { code: 'NOT_FOUND' },
         });
+      }
+
+      // OPS-183: Auto-sync from SharePoint before returning preview URL
+      // This lazily syncs Word edits when user previews the document
+      let syncResult: { synced: boolean; newVersionNumber?: number } | null = null;
+      if (document.sharePointItemId && context.user?.accessToken) {
+        try {
+          const result = await wordIntegrationService.syncFromSharePointIfChanged(
+            args.documentId,
+            context.user.accessToken,
+            user.id
+          );
+          if (result.synced) {
+            syncResult = {
+              synced: true,
+              newVersionNumber: result.newVersion,
+            };
+            logger.info('OPS-183: Document synced from SharePoint on preview access', {
+              documentId: args.documentId,
+              newVersionNumber: result.newVersion,
+            });
+          }
+        } catch (error) {
+          // Log but don't fail preview - sync is opportunistic
+          logger.warn('OPS-183: SharePoint sync check failed, continuing with preview', {
+            documentId: args.documentId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
       }
 
       // File types that can be previewed directly in browser (PDFs, images, and text)
@@ -562,11 +683,13 @@ export const documentResolvers = {
               documentId: args.documentId,
               sharePointItemId: document.sharePointItemId,
               source: previewInfo.source,
+              syncResult: syncResult ? 'synced' : 'none',
             });
             return {
               url: previewInfo.url,
               source: previewInfo.source,
               expiresAt: previewInfo.expiresAt,
+              syncResult: syncResult, // OPS-183: Include sync result
             };
           }
         } catch (error) {
@@ -596,6 +719,7 @@ export const documentResolvers = {
               url: previewInfo.url,
               source: previewInfo.source,
               expiresAt: previewInfo.expiresAt,
+              syncResult: syncResult, // OPS-183: Include sync result
             };
           }
         } catch (error) {
@@ -624,6 +748,7 @@ export const documentResolvers = {
               url: presignedUrl.url,
               source: 'r2',
               expiresAt: presignedUrl.expiresAt,
+              syncResult: syncResult, // OPS-183: Include sync result
             };
           }
 
@@ -638,6 +763,7 @@ export const documentResolvers = {
               url: officeViewerUrl,
               source: 'office365-r2',
               expiresAt: presignedUrl.expiresAt,
+              syncResult: syncResult, // OPS-183: Include sync result
             };
           }
         }
@@ -792,6 +918,7 @@ export const documentResolvers = {
     },
 
     // OPS-107: Grid view query with pagination
+    // OPS-173: Added sourceTypes and includePromotedAttachments filters
     caseDocumentsGrid: async (
       _: any,
       args: {
@@ -799,6 +926,8 @@ export const documentResolvers = {
         first?: number;
         after?: string;
         fileTypes?: string[];
+        sourceTypes?: ('UPLOAD' | 'EMAIL_ATTACHMENT' | 'AI_GENERATED' | 'TEMPLATE')[];
+        includePromotedAttachments?: boolean;
         sortBy?: 'LINKED_AT' | 'UPLOADED_AT' | 'FILE_NAME' | 'FILE_SIZE' | 'FILE_TYPE';
         sortDirection?: 'ASC' | 'DESC';
       },
@@ -861,6 +990,27 @@ export const documentResolvers = {
 
         if (typeConditions.length > 0) {
           where.OR = typeConditions;
+        }
+      }
+
+      // OPS-173: Source type filter for document separation tabs
+      // "Documente de lucru" tab: UPLOAD, AI_GENERATED, TEMPLATE sources OR promoted attachments
+      // "Corespondență" tab: EMAIL_ATTACHMENT sources that are NOT promoted
+      if (args.sourceTypes && args.sourceTypes.length > 0) {
+        if (args.includePromotedAttachments) {
+          // Working docs tab: include specified source types OR promoted attachments
+          where.OR = [
+            ...(where.OR || []),
+            { document: { sourceType: { in: args.sourceTypes } } },
+            { promotedFromAttachment: true },
+          ];
+        } else {
+          // Correspondence tab: filter by source type AND exclude promoted attachments
+          where.document = {
+            ...where.document,
+            sourceType: { in: args.sourceTypes },
+          };
+          where.promotedFromAttachment = false;
         }
       }
 
@@ -929,6 +1079,9 @@ export const documentResolvers = {
               linkedAt: link.linkedAt,
               isOriginal: link.isOriginal,
               sourceCase,
+              // OPS-171: Promotion tracking
+              promotedFromAttachment: link.promotedFromAttachment || false,
+              originalAttachmentId: link.originalAttachmentId || null,
             },
           };
         })
@@ -943,6 +1096,175 @@ export const documentResolvers = {
           endCursor: resultEdges[resultEdges.length - 1]?.cursor || null,
         },
         totalCount,
+      };
+    },
+
+    // OPS-174: Supervisor Review Queue - Get documents pending review by current user
+    documentsForReview: async (_: any, __: any, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only supervisors can access review queue
+      if (user.role !== 'Partner' && user.role !== 'Associate') {
+        throw new GraphQLError('Only supervisors can access the review queue', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Note: We check for 'Associate' here because SENIOR_ASSOCIATE is stored as 'Associate'
+      // in the database but with an additional flag. For now, we allow all Associates to
+      // view reviews assigned to them, which is the correct behavior.
+
+      // Find documents where current user is the reviewer and status is IN_REVIEW
+      const documents = await prisma.document.findMany({
+        where: {
+          reviewerId: user.id,
+          status: 'IN_REVIEW',
+          firmId: user.firmId,
+        },
+        include: {
+          uploader: true,
+          client: true,
+          caseLinks: {
+            where: { isOriginal: true },
+            include: {
+              case: {
+                include: {
+                  client: true,
+                },
+              },
+            },
+            take: 1, // Only need the original case
+          },
+        },
+        orderBy: { submittedAt: 'asc' }, // FIFO - oldest first
+      });
+
+      // Transform to DocumentForReview format
+      return documents
+        .filter((doc) => doc.caseLinks.length > 0) // Only documents linked to a case
+        .map((doc) => ({
+          id: doc.id,
+          document: {
+            ...doc,
+            // Include thumbnail URLs from database
+            thumbnailSmall: doc.thumbnailSmallUrl || null,
+            thumbnailMedium: doc.thumbnailMediumUrl || null,
+            thumbnailLarge: doc.thumbnailLargeUrl || null,
+          },
+          case: doc.caseLinks[0].case,
+          submittedBy: doc.uploader,
+          submittedAt: doc.submittedAt || doc.uploadedAt, // Fallback to uploadedAt if submittedAt null
+        }));
+    },
+
+    // OPS-174: Supervisor Review Queue - Get count of documents pending review
+    documentsForReviewCount: async (_: any, __: any, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only supervisors can access review queue
+      if (user.role !== 'Partner' && user.role !== 'Associate') {
+        // Return 0 for non-supervisors instead of error (for conditional UI)
+        return 0;
+      }
+
+      // Count documents where current user is the reviewer and status is IN_REVIEW
+      return prisma.document.count({
+        where: {
+          reviewerId: user.id,
+          status: 'IN_REVIEW',
+          firmId: user.firmId,
+        },
+      });
+    },
+
+    // OPS-177: Get list of supervisors for reviewer picker
+    supervisors: async (_: any, __: any, context: Context) => {
+      const user = requireAuth(context);
+
+      // Get all users with supervisor roles in the firm
+      // Partners can review anyone's work, Associates can be assigned as reviewers too
+      const supervisors = await prisma.user.findMany({
+        where: {
+          firmId: user.firmId,
+          role: {
+            in: ['Partner', 'Associate'],
+          },
+          status: 'Active', // Only active users
+        },
+        orderBy: [{ role: 'asc' }, { lastName: 'asc' }], // Partners first, then alphabetical
+      });
+
+      // Transform to Supervisor type
+      return supervisors.map((s) => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`,
+        email: s.email,
+        role: s.role,
+        initials: `${s.firstName.charAt(0)}${s.lastName.charAt(0)}`.toUpperCase(),
+      }));
+    },
+
+    // OPS-177: Preview review feedback email before sending
+    previewReviewFeedbackEmail: async (
+      _: any,
+      args: {
+        input: {
+          documentId: string;
+          recipientEmail: string;
+          recipientName: string;
+          feedback: string;
+        };
+      },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const { documentId, recipientEmail, recipientName, feedback } = args.input;
+
+      // Get document and case info
+      const document = await prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          caseLinks: {
+            include: { case: true },
+            take: 1,
+          },
+        },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Documentul nu a fost găsit', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      const caseName = document.caseLinks[0]?.case?.title || 'Dosar necunoscut';
+
+      // Get reviewer's full name from their user record
+      const reviewerUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { firstName: true, lastName: true },
+      });
+      const fullReviewerName = reviewerUser
+        ? `${reviewerUser.firstName} ${reviewerUser.lastName}`
+        : user.email.split('@')[0];
+
+      // Generate preview
+      return {
+        subject: `Modificări solicitate: ${document.fileName}`,
+        body: `Bună ${recipientName},
+
+${fullReviewerName} a revizuit documentul și solicită modificări:
+
+Document: ${document.fileName}
+Dosar: ${caseName}
+
+Feedback:
+${feedback}
+
+---
+Acest email a fost trimis automat din platforma Legal.`,
+        to: recipientEmail,
+        toName: recipientName,
       };
     },
   },
@@ -1498,6 +1820,82 @@ export const documentResolvers = {
         });
 
         return updatedDoc;
+      });
+
+      return updated;
+    },
+
+    // OPS-162: Rename document
+    renameDocument: async (
+      _: any,
+      args: { documentId: string; newFileName: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessDocument(args.documentId, user))) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const document = await prisma.document.findUnique({
+        where: { id: args.documentId },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Validate new file name
+      const newFileName = args.newFileName.trim();
+      if (!newFileName) {
+        throw new GraphQLError('File name cannot be empty', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedDoc = await tx.document.update({
+          where: { id: args.documentId },
+          data: {
+            fileName: newFileName,
+          },
+          include: {
+            uploader: true,
+            client: true,
+            caseLinks: {
+              include: {
+                case: true,
+                linker: true,
+              },
+            },
+          },
+        });
+
+        // Create audit log
+        await createDocumentAuditLog(tx, {
+          documentId: args.documentId,
+          userId: user.id,
+          action: 'MetadataUpdated',
+          caseId: null,
+          details: {
+            previousFileName: document.fileName,
+            newFileName,
+          },
+          firmId: user.firmId,
+        });
+
+        return updatedDoc;
+      });
+
+      logger.info('Document renamed', {
+        documentId: args.documentId,
+        previousName: document.fileName,
+        newName: newFileName,
+        userId: user.id,
       });
 
       return updated;
@@ -2155,9 +2553,10 @@ export const documentResolvers = {
     },
 
     // Update document status
+    // OPS-172: Extended with IN_REVIEW and CHANGES_REQUESTED states
     updateDocumentStatus: async (
       _: any,
-      args: { documentId: string; input: { status: 'DRAFT' | 'FINAL' | 'ARCHIVED' } },
+      args: { documentId: string; input: { status: DocumentStatus } },
       context: Context
     ) => {
       const user = requireAuth(context);
@@ -2181,11 +2580,21 @@ export const documentResolvers = {
         });
       }
 
+      // OPS-172: Validate status transition
+      const currentStatus = document.status as DocumentStatus;
+      const newStatus = args.input.status;
+
+      if (!isValidStatusTransition(currentStatus, newStatus)) {
+        throw new GraphQLError(getInvalidTransitionMessage(currentStatus, newStatus), {
+          extensions: { code: 'BAD_REQUEST' },
+        });
+      }
+
       const updated = await prisma.$transaction(async (tx) => {
         const updatedDoc = await tx.document.update({
           where: { id: args.documentId },
           data: {
-            status: args.input.status,
+            status: newStatus,
           },
           include: {
             uploader: true,
@@ -2209,8 +2618,8 @@ export const documentResolvers = {
           action: 'MetadataUpdated',
           caseId: document.caseLinks[0]?.caseId || null,
           details: {
-            previousStatus: document.status,
-            newStatus: args.input.status,
+            previousStatus: currentStatus,
+            newStatus: newStatus,
           },
           firmId: user.firmId,
         });
@@ -2219,6 +2628,752 @@ export const documentResolvers = {
       });
 
       return updated;
+    },
+
+    // OPS-175: Promote email attachment to working document
+    promoteAttachmentToDocument: async (
+      _: any,
+      args: { input: { caseDocumentId: string; targetFolderId?: string } },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const { caseDocumentId, targetFolderId } = args.input;
+
+      // 1. Get the original case document with all related data
+      const originalCaseDoc = await prisma.caseDocument.findUnique({
+        where: { id: caseDocumentId },
+        include: {
+          document: true,
+          case: true,
+        },
+      });
+
+      if (!originalCaseDoc) {
+        return {
+          success: false,
+          error: 'Documentul nu a fost găsit',
+          document: null,
+          caseDocument: null,
+        };
+      }
+
+      // Check user has access to this case
+      if (!(await canAccessCase(originalCaseDoc.caseId, user))) {
+        throw new GraphQLError('Not authorized to access this case', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // 2. Validate: Must be an email attachment
+      if (originalCaseDoc.document.sourceType !== 'EMAIL_ATTACHMENT') {
+        return {
+          success: false,
+          error: 'Doar atașamentele email pot fi promovate',
+          document: null,
+          caseDocument: null,
+        };
+      }
+
+      // 3. Check if already promoted
+      const existingPromotion = await prisma.caseDocument.findFirst({
+        where: {
+          originalAttachmentId: originalCaseDoc.document.id,
+          promotedFromAttachment: true,
+        },
+      });
+
+      if (existingPromotion) {
+        return {
+          success: false,
+          error: 'Acest atașament a fost deja promovat',
+          document: null,
+          caseDocument: null,
+        };
+      }
+
+      // 4. Get access token for SharePoint operations
+      const accessToken = context.accessToken || context.user?.accessToken;
+      if (!accessToken) {
+        throw new GraphQLError('Access token required for document promotion', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // 5. Copy file in SharePoint to working documents folder
+      let newSharePointItem: { id: string; webUrl: string; parentPath: string } | null = null;
+
+      if (originalCaseDoc.document.sharePointItemId) {
+        try {
+          const workingPath = `Cases/${originalCaseDoc.case.caseNumber}/Documents/Working`;
+          newSharePointItem = await sharePointService.copyFile(
+            accessToken,
+            originalCaseDoc.document.sharePointItemId,
+            workingPath,
+            originalCaseDoc.document.fileName
+          );
+        } catch (error) {
+          logger.error('Failed to copy file in SharePoint for promotion', {
+            caseDocumentId,
+            sharePointItemId: originalCaseDoc.document.sharePointItemId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+          return {
+            success: false,
+            error: 'Eroare la copierea fișierului în SharePoint',
+            document: null,
+            caseDocument: null,
+          };
+        }
+      } else {
+        // Document not in SharePoint - this shouldn't happen for email attachments
+        // but handle gracefully
+        logger.warn('Promoting attachment without SharePoint storage', {
+          caseDocumentId,
+          documentId: originalCaseDoc.document.id,
+        });
+      }
+
+      // 6. Create new Document and CaseDocument in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the new working document
+        const newDocument = await tx.document.create({
+          data: {
+            clientId: originalCaseDoc.document.clientId,
+            firmId: user.firmId,
+            fileName: originalCaseDoc.document.fileName,
+            fileType: originalCaseDoc.document.fileType,
+            fileSize: originalCaseDoc.document.fileSize,
+            storagePath: newSharePointItem?.parentPath
+              ? `${newSharePointItem.parentPath}/${originalCaseDoc.document.fileName}`
+              : originalCaseDoc.document.storagePath,
+            uploadedBy: user.id,
+            uploadedAt: new Date(),
+            sourceType: 'EMAIL_ATTACHMENT', // Retains origin info
+            status: 'DRAFT',
+            sharePointItemId: newSharePointItem?.id || null,
+            sharePointPath: newSharePointItem?.webUrl || null,
+            metadata: {
+              originalAttachmentId: originalCaseDoc.document.id,
+              promotedAt: new Date().toISOString(),
+              promotedBy: user.id,
+              originalEmailId: (originalCaseDoc.document.metadata as Record<string, any>)?.emailId,
+            },
+          },
+        });
+
+        // Create case-document link with promotion tracking
+        const newCaseDocument = await tx.caseDocument.create({
+          data: {
+            caseId: originalCaseDoc.caseId,
+            documentId: newDocument.id,
+            linkedBy: user.id,
+            linkedAt: new Date(),
+            isOriginal: true,
+            firmId: user.firmId,
+            folderId: targetFolderId || null,
+            promotedFromAttachment: true,
+            originalAttachmentId: originalCaseDoc.document.id,
+          },
+          include: {
+            document: {
+              include: {
+                uploader: true,
+                client: true,
+              },
+            },
+            linker: true,
+          },
+        });
+
+        // Create initial version
+        await tx.documentVersion.create({
+          data: {
+            documentId: newDocument.id,
+            versionNumber: 1,
+            createdBy: user.id,
+            changesSummary: 'Versiune inițială (promovat din atașament email)',
+          },
+        });
+
+        // Update original attachment's metadata to indicate it was promoted
+        await tx.document.update({
+          where: { id: originalCaseDoc.document.id },
+          data: {
+            metadata: {
+              ...(originalCaseDoc.document.metadata as Record<string, any>),
+              promotedToDocumentId: newDocument.id,
+              promotedAt: new Date().toISOString(),
+            },
+          },
+        });
+
+        // Create audit log
+        await createDocumentAuditLog(tx, {
+          documentId: newDocument.id,
+          userId: user.id,
+          action: 'Uploaded',
+          caseId: originalCaseDoc.caseId,
+          details: {
+            fileName: newDocument.fileName,
+            fileType: newDocument.fileType,
+            fileSize: newDocument.fileSize,
+            uploadMethod: 'PromotedFromAttachment',
+            originalAttachmentId: originalCaseDoc.document.id,
+          },
+          firmId: user.firmId,
+        });
+
+        return { newDocument, newCaseDocument };
+      });
+
+      // Emit activity event
+      activityEventService
+        .emit({
+          userId: user.id,
+          firmId: user.firmId,
+          eventType: 'DOCUMENT_UPLOADED',
+          entityType: 'DOCUMENT',
+          entityId: result.newDocument.id,
+          entityTitle: result.newDocument.fileName,
+          metadata: {
+            caseId: originalCaseDoc.caseId,
+            fileType: result.newDocument.fileType,
+            fileSize: result.newDocument.fileSize,
+            uploadMethod: 'PromotedFromAttachment',
+          },
+        })
+        .catch((err) => logger.error('Failed to emit document promoted event:', err));
+
+      // Mark case summary as stale
+      caseSummaryService.markSummaryStale(originalCaseDoc.caseId).catch(() => {});
+
+      logger.info('Attachment promoted to working document', {
+        originalCaseDocumentId: caseDocumentId,
+        originalDocumentId: originalCaseDoc.document.id,
+        newDocumentId: result.newDocument.id,
+        caseId: originalCaseDoc.caseId,
+        userId: user.id,
+      });
+
+      // Fetch the complete document with all relations
+      const fullDocument = await prisma.document.findUnique({
+        where: { id: result.newDocument.id },
+        include: {
+          uploader: true,
+          client: true,
+          caseLinks: {
+            include: {
+              case: true,
+              linker: true,
+            },
+          },
+          versions: {
+            orderBy: { versionNumber: 'desc' },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        document: fullDocument,
+        caseDocument: {
+          id: result.newCaseDocument.id,
+          document: result.newCaseDocument.document,
+          linkedBy: result.newCaseDocument.linker,
+          linkedAt: result.newCaseDocument.linkedAt,
+          isOriginal: result.newCaseDocument.isOriginal,
+          sourceCase: null,
+          promotedFromAttachment: result.newCaseDocument.promotedFromAttachment,
+          originalAttachmentId: result.newCaseDocument.originalAttachmentId,
+        },
+        error: null,
+      };
+    },
+
+    // ==========================================================================
+    // OPS-177: Review Workflow Mutations
+    // ==========================================================================
+
+    // Submit a document for supervisor review
+    submitForReview: async (
+      _: any,
+      args: { input: { documentId: string; reviewerId: string; message?: string } },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const { documentId, reviewerId, message } = args.input;
+
+      // 1. Validate document exists and user has access
+      const document = await prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          caseLinks: true,
+          uploader: true,
+        },
+      });
+
+      if (!document) {
+        return { success: false, error: 'Documentul nu a fost găsit', document: null };
+      }
+
+      if (document.firmId !== user.firmId) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      if (!(await canAccessDocument(documentId, user))) {
+        throw new GraphQLError('Not authorized to access this document', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // 2. Validate document is in submittable status
+      if (!['DRAFT', 'CHANGES_REQUESTED'].includes(document.status)) {
+        return {
+          success: false,
+          error: 'Documentul nu poate fi trimis pentru revizuire în starea curentă',
+          document: null,
+        };
+      }
+
+      // 3. Validate reviewer exists and is a supervisor
+      const reviewer = await prisma.user.findUnique({
+        where: { id: reviewerId },
+      });
+
+      if (!reviewer) {
+        return { success: false, error: 'Supervizorul nu a fost găsit', document: null };
+      }
+
+      if (reviewer.firmId !== user.firmId) {
+        return {
+          success: false,
+          error: 'Supervizorul nu face parte din firma dumneavoastră',
+          document: null,
+        };
+      }
+
+      if (!['Partner', 'Associate'].includes(reviewer.role)) {
+        return {
+          success: false,
+          error: 'Doar partenerii sau asociații pot fi selectați ca revizuitori',
+          document: null,
+        };
+      }
+
+      // 4. Update document in transaction
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedDoc = await tx.document.update({
+          where: { id: documentId },
+          data: {
+            status: 'IN_REVIEW',
+            reviewerId,
+            submittedAt: new Date(),
+            metadata: {
+              ...(document.metadata as Record<string, any>),
+              reviewSubmissionMessage: message || null,
+              submittedBy: user.id,
+              submittedByEmail: user.email,
+              // Note: submittedByName needs to be fetched from DB since context doesn't have firstName/lastName
+              submittedByName: user.email.split('@')[0], // Fallback to email prefix
+            },
+          },
+          include: {
+            uploader: true,
+            client: true,
+            reviewer: true,
+            caseLinks: {
+              include: {
+                case: true,
+                linker: true,
+              },
+            },
+            versions: {
+              orderBy: { versionNumber: 'desc' },
+            },
+          },
+        });
+
+        // Create audit log
+        await createDocumentAuditLog(tx, {
+          documentId,
+          userId: user.id,
+          action: 'MetadataUpdated',
+          caseId: document.caseLinks[0]?.caseId || null,
+          details: {
+            action: 'SUBMITTED_FOR_REVIEW',
+            reviewerId,
+            reviewerEmail: reviewer.email,
+            message: message || null,
+            previousStatus: document.status,
+          },
+          firmId: user.firmId,
+        });
+
+        return updatedDoc;
+      });
+
+      logger.info('Document submitted for review', {
+        documentId,
+        reviewerId,
+        submittedBy: user.id,
+        previousStatus: document.status,
+      });
+
+      // TODO: Send notification to reviewer (future enhancement)
+
+      return { success: true, document: updated, error: null };
+    },
+
+    // Make a review decision (approve or request changes)
+    reviewDocument: async (
+      _: any,
+      args: {
+        input: {
+          documentId: string;
+          decision: 'APPROVE' | 'REQUEST_CHANGES';
+          comment?: string;
+          assignToUserId?: string;
+        };
+      },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const { documentId, decision, comment, assignToUserId } = args.input;
+
+      // 1. Validate document exists
+      const document = await prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          caseLinks: true,
+          uploader: true,
+        },
+      });
+
+      if (!document) {
+        return { success: false, error: 'Documentul nu a fost găsit', document: null };
+      }
+
+      // 2. Validate document is in review
+      if (document.status !== 'IN_REVIEW') {
+        return {
+          success: false,
+          error: 'Documentul nu este în curs de revizuire',
+          document: null,
+        };
+      }
+
+      // 3. Validate current user is the assigned reviewer
+      if (document.reviewerId !== user.id) {
+        return {
+          success: false,
+          error: 'Nu sunteți revizuitorul desemnat pentru acest document',
+          document: null,
+        };
+      }
+
+      // 4. Validate comment is provided for changes request
+      if (decision === 'REQUEST_CHANGES' && !comment?.trim()) {
+        return {
+          success: false,
+          error: 'Comentariul este obligatoriu când solicitați modificări',
+          document: null,
+        };
+      }
+
+      // 5. Determine new status based on decision
+      const newStatus: DocumentStatus = decision === 'APPROVE' ? 'FINAL' : 'CHANGES_REQUESTED';
+
+      // 5.5. Validate assignToUserId if provided
+      let assignedToUser: {
+        id: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+      } | null = null;
+      if (decision === 'REQUEST_CHANGES' && assignToUserId) {
+        assignedToUser = await prisma.user.findFirst({
+          where: {
+            id: assignToUserId,
+            firmId: user.firmId,
+          },
+          select: { id: true, email: true, firstName: true, lastName: true },
+        });
+
+        if (!assignedToUser) {
+          return {
+            success: false,
+            error: 'Utilizatorul selectat nu a fost găsit',
+            document: null,
+          };
+        }
+      }
+
+      // 6. Update document in transaction
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedDoc = await tx.document.update({
+          where: { id: documentId },
+          data: {
+            status: newStatus,
+            // Clear reviewer if approved; if changes requested, keep original reviewer or assign to new user
+            reviewerId: decision === 'APPROVE' ? null : document.reviewerId,
+            metadata: {
+              ...(document.metadata as Record<string, any>),
+              lastReviewDecision: decision,
+              lastReviewComment: comment || null,
+              lastReviewedAt: new Date().toISOString(),
+              lastReviewedBy: user.id,
+              lastReviewedByName: user.email,
+              // Track who should make the changes (original submitter or assigned user)
+              ...(decision === 'REQUEST_CHANGES'
+                ? {
+                    changesAssignedTo:
+                      assignToUserId || (document.metadata as Record<string, any>)?.submittedBy,
+                    changesAssignedToName: assignToUserId
+                      ? `${assignedToUser?.firstName || ''} ${assignedToUser?.lastName || ''}`.trim() ||
+                        assignedToUser?.email
+                      : (document.metadata as Record<string, any>)?.submittedByName,
+                  }
+                : {}),
+            },
+          },
+          include: {
+            uploader: true,
+            client: true,
+            reviewer: true,
+            caseLinks: {
+              include: {
+                case: true,
+                linker: true,
+              },
+            },
+            versions: {
+              orderBy: { versionNumber: 'desc' },
+            },
+          },
+        });
+
+        // Create audit log
+        await createDocumentAuditLog(tx, {
+          documentId,
+          userId: user.id,
+          action: 'MetadataUpdated',
+          caseId: document.caseLinks[0]?.caseId || null,
+          details: {
+            action: decision === 'APPROVE' ? 'APPROVED' : 'CHANGES_REQUESTED',
+            decision,
+            comment: comment || null,
+            previousStatus: 'IN_REVIEW',
+            newStatus,
+            ...(assignToUserId ? { assignedToUserId: assignToUserId } : {}),
+          },
+          firmId: user.firmId,
+        });
+
+        return updatedDoc;
+      });
+
+      logger.info('Document review decision made', {
+        documentId,
+        decision,
+        reviewerId: user.id,
+        newStatus,
+        ...(assignToUserId ? { assignedToUserId: assignToUserId } : {}),
+      });
+
+      // TODO: Send notification to document owner (future enhancement)
+
+      return { success: true, document: updated, error: null };
+    },
+
+    // Withdraw a document from review (author can pull it back)
+    withdrawFromReview: async (_: any, args: { documentId: string }, context: Context) => {
+      const user = requireAuth(context);
+      const { documentId } = args;
+
+      // 1. Validate document exists
+      const document = await prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          caseLinks: true,
+        },
+      });
+
+      if (!document) {
+        return { success: false, error: 'Documentul nu a fost găsit', document: null };
+      }
+
+      // 2. Validate document is in review
+      if (document.status !== 'IN_REVIEW') {
+        return {
+          success: false,
+          error: 'Documentul nu este în curs de revizuire',
+          document: null,
+        };
+      }
+
+      // 3. Validate current user is the original submitter
+      const metadata = document.metadata as Record<string, any>;
+      if (metadata?.submittedBy !== user.id) {
+        // Also allow partners/business owners to withdraw any document in their firm
+        if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+          return {
+            success: false,
+            error: 'Doar persoana care a trimis documentul la revizuire poate să îl retragă',
+            document: null,
+          };
+        }
+      }
+
+      // 4. Update document in transaction
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedDoc = await tx.document.update({
+          where: { id: documentId },
+          data: {
+            status: 'DRAFT',
+            reviewerId: null,
+            submittedAt: null,
+            metadata: {
+              ...metadata,
+              withdrawnAt: new Date().toISOString(),
+              withdrawnBy: user.id,
+            },
+          },
+          include: {
+            uploader: true,
+            client: true,
+            reviewer: true,
+            caseLinks: {
+              include: {
+                case: true,
+                linker: true,
+              },
+            },
+            versions: {
+              orderBy: { versionNumber: 'desc' },
+            },
+          },
+        });
+
+        // Create audit log
+        await createDocumentAuditLog(tx, {
+          documentId,
+          userId: user.id,
+          action: 'MetadataUpdated',
+          caseId: document.caseLinks[0]?.caseId || null,
+          details: {
+            action: 'WITHDRAWN_FROM_REVIEW',
+            previousStatus: 'IN_REVIEW',
+            previousReviewerId: document.reviewerId,
+          },
+          firmId: user.firmId,
+        });
+
+        return updatedDoc;
+      });
+
+      logger.info('Document withdrawn from review', {
+        documentId,
+        withdrawnBy: user.id,
+        previousReviewerId: document.reviewerId,
+      });
+
+      return { success: true, document: updated, error: null };
+    },
+
+    // OPS-177: Send review feedback email
+    sendReviewFeedbackEmail: async (
+      _: any,
+      args: {
+        input: {
+          documentId: string;
+          recipientEmail: string;
+          recipientName: string;
+          feedback: string;
+        };
+      },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const { documentId, recipientEmail, recipientName, feedback } = args.input;
+
+      // Validate access token for email sending
+      if (!context.user?.accessToken) {
+        return {
+          success: false,
+          error: 'Token de acces lipsă pentru trimiterea email-ului',
+        };
+      }
+
+      // Get document and case info
+      const document = await prisma.document.findUnique({
+        where: { id: documentId },
+        include: {
+          caseLinks: {
+            include: { case: true },
+            take: 1,
+          },
+        },
+      });
+
+      if (!document) {
+        return { success: false, error: 'Documentul nu a fost găsit' };
+      }
+
+      const caseName = document.caseLinks[0]?.case?.title || 'Dosar necunoscut';
+      const caseId = document.caseLinks[0]?.caseId;
+
+      // Get reviewer's full name
+      const reviewerUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { firstName: true, lastName: true },
+      });
+      const fullReviewerName = reviewerUser
+        ? `${reviewerUser.firstName} ${reviewerUser.lastName}`
+        : user.email.split('@')[0];
+
+      // Build document URL
+      const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+      const documentUrl = caseId
+        ? `${baseUrl}/cases/${caseId}/documents?preview=${documentId}`
+        : `${baseUrl}/documents?preview=${documentId}`;
+
+      // Import and call the email service
+      const { sendReviewFeedbackEmail } = await import('../../services/email.service');
+
+      try {
+        const success = await sendReviewFeedbackEmail(
+          {
+            to: recipientEmail,
+            toName: recipientName,
+            documentName: document.fileName,
+            caseName,
+            reviewerName: fullReviewerName,
+            feedback,
+            documentUrl,
+          },
+          context.user.accessToken
+        );
+
+        if (success) {
+          logger.info('Review feedback email sent', {
+            documentId,
+            recipientEmail,
+            reviewerId: user.id,
+          });
+          return { success: true, error: null };
+        } else {
+          return { success: false, error: 'Eroare la trimiterea email-ului' };
+        }
+      } catch (error) {
+        logger.error('Failed to send review feedback email', {
+          documentId,
+          recipientEmail,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        return { success: false, error: 'Eroare la trimiterea email-ului' };
+      }
     },
   },
 
@@ -2239,6 +3394,8 @@ export const documentResolvers = {
         linkedBy: link.linker,
         linkedAt: link.linkedAt,
         isOriginal: link.isOriginal,
+        // OPS-171: Promotion tracking
+        promotedFromAttachment: link.promotedFromAttachment || false,
       }));
     },
 
@@ -2289,6 +3446,19 @@ export const documentResolvers = {
       });
     },
 
+    // OPS-176: Version count for UI display (badge on cards)
+    versionCount: async (parent: any) => {
+      // If versions are already loaded, use their length
+      if (parent.versions) return parent.versions.length;
+      // If versionCount is already computed (e.g., from grid query), use it
+      if (typeof parent._versionCount === 'number') return parent._versionCount;
+
+      // Otherwise, count from database
+      return prisma.documentVersion.count({
+        where: { documentId: parent.id },
+      });
+    },
+
     // Download URL is computed via mutation, return null for field resolver
     // Clients should use getDocumentDownloadUrl mutation for fresh URLs
     downloadUrl: async () => {
@@ -2331,6 +3501,23 @@ export const documentResolvers = {
 
     // OPS-114: Thumbnail generation status
     thumbnailStatus: (parent: any) => parent.thumbnailStatus || 'PENDING',
+
+    // OPS-171: Source type (defaults to UPLOAD from schema)
+    sourceType: (parent: any) => parent.sourceType || 'UPLOAD',
+
+    // OPS-171: Reviewer for document review workflow
+    reviewer: async (parent: any) => {
+      if (!parent.reviewerId) return null;
+      if (parent.reviewer) return parent.reviewer;
+
+      const user = await prisma.user.findUnique({
+        where: { id: parent.reviewerId },
+      });
+      return user || (await getDeletedUserPlaceholder(parent.reviewerId));
+    },
+
+    // OPS-171: Submitted at timestamp for review workflow
+    submittedAt: (parent: any) => parent.submittedAt || null,
   },
 
   // Field resolvers for DocumentVersion type
