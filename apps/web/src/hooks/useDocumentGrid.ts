@@ -212,6 +212,8 @@ interface UseDocumentGridOptions {
   includePromotedAttachments?: boolean;
   sortBy?: DocumentSortField;
   sortDirection?: SortDirection;
+  // OPS-229: Skip query when not in grid view (lazy loading optimization)
+  skip?: boolean;
 }
 
 interface UseDocumentGridResult {
@@ -246,9 +248,11 @@ export function useDocumentGrid(
     includePromotedAttachments,
     sortBy = 'LINKED_AT',
     sortDirection = 'DESC',
+    // OPS-229: Skip query when not in grid view
+    skip = false,
   } = options;
 
-  const { data, loading, error, fetchMore, refetch } = useQuery<{
+  const { data, loading, error, fetchMore, refetch, networkStatus } = useQuery<{
     caseDocumentsGrid: DocumentGridConnection;
   }>(GET_CASE_DOCUMENTS_GRID, {
     variables: {
@@ -261,7 +265,10 @@ export function useDocumentGrid(
       sortDirection,
     },
     fetchPolicy: 'cache-and-network',
-    skip: !caseId,
+    // OPS-228: Enable network status tracking to properly detect initial loading
+    notifyOnNetworkStatusChange: true,
+    // OPS-229: Skip query when not in grid view or caseId is missing
+    skip: !caseId || skip,
   });
 
   const loadMore = useCallback(() => {
@@ -288,9 +295,19 @@ export function useDocumentGrid(
   const totalCount = data?.caseDocumentsGrid.totalCount ?? 0;
   const hasMore = data?.caseDocumentsGrid.pageInfo.hasNextPage ?? false;
 
+  // OPS-228: Consider initial loading (networkStatus 1) and refetch (4) as loading
+  // With cache-and-network, 'loading' can be false while still fetching from network
+  // So we show loading if: standard loading OR no data yet while network is in progress
+  // OPS-229: Also consider as loading if query should run but we have no data yet
+  // This fixes a race condition on initial mount where loading=false before query starts
+  const isInitialLoading = networkStatus === 1 || networkStatus === 2;
+  const queryIsSkipped = !caseId || skip;
+  const effectiveLoading =
+    loading || (isInitialLoading && !data) || (!queryIsSkipped && !data && !error);
+
   return {
     documents,
-    loading,
+    loading: effectiveLoading,
     error: error as Error | undefined,
     totalCount,
     hasMore,

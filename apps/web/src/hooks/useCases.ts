@@ -74,8 +74,14 @@ interface UseCasesResult {
  * @returns Cases data, loading state, error, and refetch function
  */
 export function useCases(variables: UseCasesVariables = {}): UseCasesResult {
+  // Filter out empty string values to prevent GraphQL UUID validation errors
+  const cleanVariables: UseCasesVariables = {};
+  if (variables.status) cleanVariables.status = variables.status;
+  if (variables.clientId) cleanVariables.clientId = variables.clientId;
+  if (variables.assignedToMe !== undefined) cleanVariables.assignedToMe = variables.assignedToMe;
+
   const { data, loading, error, refetch } = useQuery<{ cases: CaseWithRelations[] }>(GET_CASES, {
-    variables,
+    variables: cleanVariables,
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-first',
   });

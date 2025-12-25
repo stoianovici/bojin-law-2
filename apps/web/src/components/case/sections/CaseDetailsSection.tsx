@@ -13,6 +13,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
+import Link from 'next/link';
 import { InlineEditField } from '../InlineEditField';
 import { FinancialData } from '../../auth/FinancialData';
 import { useCaseTypes } from '../../../hooks/useCaseTypes';
@@ -176,14 +177,14 @@ export function CaseDetailsSection({
           placeholder="Fără titlu"
         />
 
-        {/* Court Case Number */}
+        {/* Internal Case Number */}
         <InlineEditField
           caseId={caseId}
           fieldName="caseNumber"
           value={caseData.caseNumber}
-          label="Nr. Dosar Instanță"
+          label="Număr Intern"
           editable={editable}
-          placeholder="ex: 1234/5/2024"
+          placeholder="ex: BL-2024-001"
         />
 
         {/* Description */}
@@ -294,11 +295,22 @@ export function CaseDetailsSection({
           )}
         </div>
 
-        {/* Client (read-only for now - clientId not in UpdateCaseInput) */}
+        {/* Client (read-only - links to client profile) */}
         {caseData.clientName && (
           <div className="py-3">
             <dt className="text-sm font-medium text-gray-500 mb-1">Client</dt>
-            <dd className="text-base text-gray-900">{caseData.clientName}</dd>
+            <dd className="text-base text-gray-900">
+              {caseData.clientId ? (
+                <Link
+                  href={`/clients/${caseData.clientId}`}
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {caseData.clientName}
+                </Link>
+              ) : (
+                caseData.clientName
+              )}
+            </dd>
           </div>
         )}
 

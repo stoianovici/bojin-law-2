@@ -60,6 +60,20 @@ const UPLOAD_DOCUMENT = gql`
   }
 `;
 
+// OPS-228: Withdraw document from review mutation
+const WITHDRAW_FROM_REVIEW = gql`
+  mutation WithdrawFromReview($documentId: ID!) {
+    withdrawFromReview(documentId: $documentId) {
+      success
+      message
+      document {
+        id
+        status
+      }
+    }
+  }
+`;
+
 export interface LinkDocumentsInput {
   caseId: string;
   documentIds: string[];
@@ -94,6 +108,13 @@ interface UseDeleteDocumentResult {
 
 interface UseUploadDocumentResult {
   uploadDocument: (input: UploadDocumentInput) => Promise<any>;
+  loading: boolean;
+  error?: Error;
+}
+
+// OPS-228: Withdraw from review result interface
+interface UseWithdrawFromReviewResult {
+  withdrawFromReview: (documentId: string) => Promise<{ success: boolean; message?: string }>;
   loading: boolean;
   error?: Error;
 }
@@ -174,6 +195,37 @@ export function useUploadDocument(): UseUploadDocumentResult {
 
   return {
     uploadDocument,
+    loading,
+    error: error as Error | undefined,
+  };
+}
+
+/**
+ * OPS-228: Hook to withdraw a document from review
+ * Allows the author to retract their review request
+ */
+export function useWithdrawFromReview(): UseWithdrawFromReviewResult {
+  const [mutate, { loading, error }] = useMutation<{
+    withdrawFromReview: {
+      success: boolean;
+      message?: string;
+      document?: { id: string; status: string };
+    };
+  }>(WITHDRAW_FROM_REVIEW);
+
+  const withdrawFromReview = async (documentId: string) => {
+    const result = await mutate({
+      variables: { documentId },
+      refetchQueries: ['GetCaseDocuments', 'GetCaseDocumentsGrid'],
+    });
+    return {
+      success: result.data?.withdrawFromReview?.success ?? false,
+      message: result.data?.withdrawFromReview?.message,
+    };
+  };
+
+  return {
+    withdrawFromReview,
     loading,
     error: error as Error | undefined,
   };

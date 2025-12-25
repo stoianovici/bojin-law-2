@@ -9,18 +9,15 @@
 import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import { PubSub } from 'graphql-subscriptions';
-import { EmailSyncService, getEmailSyncService } from '../../services/email-sync.service';
-import { EmailThreadService, getEmailThreadService } from '../../services/email-thread.service';
-import { EmailSearchService, getEmailSearchService } from '../../services/email-search.service';
-import {
-  EmailAttachmentService,
-  getEmailAttachmentService,
-} from '../../services/email-attachment.service';
-import { EmailWebhookService, getEmailWebhookService } from '../../services/email-webhook.service';
+import { getEmailSyncService } from '../../services/email-sync.service';
+import { getEmailThreadService } from '../../services/email-thread.service';
+import { getEmailSearchService } from '../../services/email-search.service';
+import { getEmailAttachmentService } from '../../services/email-attachment.service';
+import { EmailWebhookService } from '../../services/email-webhook.service';
 import { triggerProcessing } from '../../workers/email-categorization.worker';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
 import { emailCleanerService } from '../../services/email-cleaner.service';
-import { classificationScoringService, CaseScore } from '../../services/classification-scoring';
+import { classificationScoringService } from '../../services/classification-scoring';
 import { CaseStatus, EmailClassificationState, DocumentStatus } from '@prisma/client';
 import Redis from 'ioredis';
 import { oneDriveService } from '../../services/onedrive.service';
@@ -640,12 +637,50 @@ export const emailResolvers = {
         }
       }
 
+      // Fallback to R2 for attachments stored directly (not yet saved as documents)
+      // This handles email attachments synced to R2 before being saved to a case
+      if (attachment.storageUrl?.startsWith('r2://')) {
+        const r2Path = attachment.storageUrl.replace('r2://', '');
+        const presignedUrl = await r2StorageService.getPresignedUrl(r2Path);
+        if (presignedUrl) {
+          // For browser-previewable types (PDF, images), return direct URL
+          if (browserPreviewableTypes.includes(attachment.contentType)) {
+            logger.debug('Using R2 presigned URL for unsaved attachment preview', {
+              attachmentId: args.attachmentId,
+              contentType: attachment.contentType,
+              storagePath: r2Path,
+            });
+            return {
+              url: presignedUrl.url,
+              source: 'r2',
+              expiresAt: presignedUrl.expiresAt,
+            };
+          }
+
+          // For Office documents, use Office Online viewer with R2 presigned URL
+          if (officeTypes.includes(attachment.contentType)) {
+            const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(presignedUrl.url)}`;
+            logger.debug('Using Office Online viewer with R2 URL for unsaved attachment', {
+              attachmentId: args.attachmentId,
+              contentType: attachment.contentType,
+              storagePath: r2Path,
+            });
+            return {
+              url: officeViewerUrl,
+              source: 'office365-r2',
+              expiresAt: presignedUrl.expiresAt,
+            };
+          }
+        }
+      }
+
       logger.debug('Preview not available for attachment', {
         attachmentId: args.attachmentId,
         contentType: attachment.contentType,
         hasDocument: !!attachment.document,
         hasOneDriveId: !!attachment.document?.oneDriveId,
         hasStoragePath: !!attachment.document?.storagePath,
+        hasStorageUrl: !!attachment.storageUrl,
       });
       return null;
     },

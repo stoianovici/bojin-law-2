@@ -708,9 +708,10 @@ export function DocumentPreviewModal({
               )}
 
             {/* Desktop: PDF Preview using custom react-pdf viewer for 100% zoom control */}
+            {/* Uses pdfDownloadUrl if available (documents), otherwise falls back to previewUrl (attachments) */}
             {!isMobile &&
               document.contentType === 'application/pdf' &&
-              pdfDownloadUrl &&
+              (pdfDownloadUrl || previewUrl) &&
               !error && (
                 <Suspense
                   fallback={
@@ -720,7 +721,7 @@ export function DocumentPreviewModal({
                   }
                 >
                   <PDFViewer
-                    url={pdfDownloadUrl}
+                    url={pdfDownloadUrl || previewUrl!}
                     initialScale={1.5}
                     onLoadSuccess={() => setLoading(false)}
                     onError={() => {

@@ -32,8 +32,11 @@ import {
   type DocumentSortField,
   type SortDirection,
 } from '../../hooks/useDocumentGrid';
-import { useUnlinkDocument, useDeleteDocument } from '../../hooks/useDocumentActions';
-import { useDocumentUpload } from '../../hooks/useDocumentUpload';
+import {
+  useUnlinkDocument,
+  useDeleteDocument,
+  useWithdrawFromReview,
+} from '../../hooks/useDocumentActions';
 import { useDocumentPreview } from '../../hooks/useDocumentPreview';
 import { DocumentBrowserModal } from './DocumentBrowserModal';
 import { DocumentUploadModal } from './DocumentUploadModal';
@@ -42,8 +45,14 @@ import { DocumentPreviewModal, type PreviewableDocument } from '../preview/Docum
 import { AssignToMapaModal, type DocumentInfo } from '../mapa/AssignToMapaModal';
 import { SubmitForReviewModal } from '../documents/SubmitForReviewModal';
 import { ReviewActionsModal, type ReviewDocument } from '../documents/ReviewActionsModal';
+// OPS-228: Secondary action dialogs for preview modal
+import { DeleteDocumentDialog } from '../documents/DeleteDocumentDialog';
+import { RenameDocumentDialog } from '../documents/RenameDocumentDialog';
+import { MoveDocumentDialog } from '../documents/MoveDocumentDialog';
+import { LinkToCaseDialog } from '../documents/LinkToCaseDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePreviewActions } from '../../hooks/usePreviewActions';
+import { useCaseFolderTree } from '../../hooks/useDocumentFolders';
 
 export interface CaseDocumentsListProps {
   caseId: string;
@@ -193,31 +202,38 @@ const STATUS_COLORS: Record<DocumentStatus, string> = {
 function ListDocumentCard({
   docContext,
   userRole,
-  onUnlink,
+  onPreview,
   onDelete,
-  onDownload,
-  onSync,
   onAddToMapa,
-  isDownloading,
-  isSyncing,
+  onOpenInWord,
+  onRename,
+  onLinkToCase,
 }: {
   docContext: CaseDocumentWithContext;
   userRole: 'Partner' | 'Associate' | 'Paralegal';
-  onUnlink: () => void;
+  onPreview: () => void;
   onDelete: () => void;
-  onDownload: () => void;
-  onSync: () => void;
   onAddToMapa: () => void;
-  isDownloading: boolean;
-  isSyncing: boolean;
+  onOpenInWord?: () => void;
+  onRename?: () => void;
+  onLinkToCase?: () => void;
 }) {
   const { document, linkedBy, linkedAt, isOriginal, sourceCase } = docContext;
   const uploaderName = `${document.uploadedBy.firstName} ${document.uploadedBy.lastName}`;
   const linkerName = `${linkedBy.firstName} ${linkedBy.lastName}`;
   const hasOneDrive = !!document.oneDriveId;
 
+  // OPS-228: Check if document is a Word file
+  const isWordDocument =
+    document.fileType ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    document.fileType === 'application/msword';
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div
+      onClick={onPreview}
+      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+    >
       <div className="flex items-start gap-4">
         <FileIcon fileType={document.fileType} />
 
@@ -271,8 +287,8 @@ function ListDocumentCard({
           )}
         </div>
 
-        {/* Actions - Story 2.9: Added download and sync */}
-        <div className="flex items-center gap-2">
+        {/* Actions */}
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {/* Add to Mapa button */}
           <button
             onClick={onAddToMapa}
@@ -289,99 +305,64 @@ function ListDocumentCard({
             </svg>
           </button>
 
-          {/* Download button */}
-          {hasOneDrive && (
+          {/* Open in Word button (for Word documents only) */}
+          {isWordDocument && onOpenInWord && (
             <button
-              onClick={onDownload}
-              disabled={isDownloading}
-              title="Download from OneDrive"
-              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+              onClick={onOpenInWord}
+              title="Deschide în Word"
+              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             >
-              {isDownloading ? (
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-              )}
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
             </button>
           )}
 
-          {/* Sync button */}
-          {hasOneDrive && (
+          {/* Rename button */}
+          {onRename && (
             <button
-              onClick={onSync}
-              disabled={isSyncing}
-              title="Sync from OneDrive"
-              className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+              onClick={onRename}
+              title="Redenumește"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              {isSyncing ? (
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-              )}
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
             </button>
           )}
 
-          <button
-            onClick={onUnlink}
-            title="Unlink from case"
-            className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-              />
-            </svg>
-          </button>
+          {/* Link to another case button */}
+          {onLinkToCase && (
+            <button
+              onClick={onLinkToCase}
+              title="Asociază la alt dosar"
+              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                />
+              </svg>
+            </button>
+          )}
 
           {userRole === 'Partner' && (
             <button
               onClick={onDelete}
-              title="Permanently delete"
+              title="Șterge permanent"
               className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,8 +400,6 @@ export function CaseDocumentsList({
   const [deleteConfirm, setDeleteConfirm] = useState<{ docId: string; docName: string } | null>(
     null
   );
-  const [downloadingId, setDownloadingId] = useState<string | null>(null); // Story 2.9
-  const [syncingId, setSyncingId] = useState<string | null>(null); // Story 2.9
   const [mapaAssignDoc, setMapaAssignDoc] = useState<DocumentInfo | null>(null);
 
   // OPS-177: Review workflow modals state
@@ -430,15 +409,32 @@ export function CaseDocumentsList({
   } | null>(null);
   const [reviewDoc, setReviewDoc] = useState<ReviewDocument | null>(null);
 
+  // OPS-228: Secondary action dialog states
+  const [renameDoc, setRenameDoc] = useState<{ id: string; name: string } | null>(null);
+  const [deleteDoc, setDeleteDoc] = useState<{ id: string; name: string } | null>(null);
+  const [moveDoc, setMoveDoc] = useState<{
+    caseDocumentId: string;
+    documentName: string;
+    folderId: string | null;
+  } | null>(null);
+  const [linkToCaseDoc, setLinkToCaseDoc] = useState<{
+    documentId: string;
+    documentName: string;
+  } | null>(null);
+
   // OPS-111: View mode and grid state
   const [viewMode, setViewMode] = useState<ViewMode>('grid'); // Default to grid
   const [sortBy, setSortBy] = useState<DocumentSortField>('LINKED_AT');
   const [sortDirection, setSortDirection] = useState<SortDirection>('DESC');
 
   // Fetch case documents (list view)
-  const { documents, loading, error, refetch } = useCaseDocuments(caseId);
+  // OPS-229: Only fetch list data when in list view (lazy loading optimization)
+  const { documents, loading, error, refetch } = useCaseDocuments(caseId, {
+    skip: viewMode !== 'list',
+  });
 
   // OPS-111: Fetch grid documents with thumbnails
+  // OPS-229: Only fetch grid data when in grid view (lazy loading optimization)
   const {
     documents: gridDocuments,
     loading: gridLoading,
@@ -446,7 +442,7 @@ export function CaseDocumentsList({
     hasMore: gridHasMore,
     loadMore: gridLoadMore,
     refetch: gridRefetch,
-  } = useDocumentGrid(caseId, { sortBy, sortDirection });
+  } = useDocumentGrid(caseId, { sortBy, sortDirection, skip: viewMode !== 'grid' });
 
   // OPS-111: Document preview
   const {
@@ -455,6 +451,7 @@ export function CaseDocumentsList({
     openPreview,
     closePreview,
     fetchPreviewUrl,
+    fetchDownloadUrl,
     fetchTextContent,
     openInWord,
   } = useDocumentPreview();
@@ -470,9 +467,11 @@ export function CaseDocumentsList({
   // Mutations
   const { unlinkDocument, loading: unlinking } = useUnlinkDocument();
   const { deleteDocument, loading: deleting } = useDeleteDocument();
+  // OPS-228: Withdraw from review mutation
+  const { withdrawFromReview } = useWithdrawFromReview();
 
-  // Story 2.9: OneDrive hooks
-  const { getDownloadUrl, syncDocument } = useDocumentUpload();
+  // OPS-228: Folder tree for move dialog
+  const { folderTree } = useCaseFolderTree(caseId);
 
   // Handle unlink
   const handleUnlink = useCallback(async () => {
@@ -498,43 +497,6 @@ export function CaseDocumentsList({
     }
   }, [deleteConfirm, deleteDocument]);
 
-  // Story 2.9: Handle download
-  const handleDownload = useCallback(
-    async (docId: string) => {
-      setDownloadingId(docId);
-      try {
-        const result = await getDownloadUrl(docId);
-        if (result?.url) {
-          window.open(result.url, '_blank');
-        }
-      } catch (err) {
-        console.error('Failed to get download URL:', err);
-      } finally {
-        setDownloadingId(null);
-      }
-    },
-    [getDownloadUrl]
-  );
-
-  // Story 2.9: Handle sync
-  const handleSync = useCallback(
-    async (docId: string) => {
-      setSyncingId(docId);
-      try {
-        const result = await syncDocument(docId);
-        if (result?.updated) {
-          refetch();
-          gridRefetch();
-        }
-      } catch (err) {
-        console.error('Failed to sync document:', err);
-      } finally {
-        setSyncingId(null);
-      }
-    },
-    [syncDocument, refetch, gridRefetch]
-  );
-
   // OPS-111: Handle grid preview
   const handleGridPreview = useCallback(
     (doc: DocumentGridItem) => {
@@ -545,6 +507,21 @@ export function CaseDocumentsList({
         size: doc.document.fileSize,
         // OPS-177: Include status for action toolbar filtering
         status: doc.document.status,
+      });
+    },
+    [openPreview]
+  );
+
+  // OPS-228: Handle list preview (same logic as grid, different data type)
+  const handleListPreview = useCallback(
+    (docContext: CaseDocumentWithContext) => {
+      openPreview({
+        id: docContext.document.id,
+        name: docContext.document.fileName,
+        contentType: docContext.document.fileType,
+        size: docContext.document.fileSize,
+        // OPS-177: Include status for action toolbar filtering
+        status: docContext.document.status,
       });
     },
     [openPreview]
@@ -571,6 +548,40 @@ export function CaseDocumentsList({
     refetch();
     gridRefetch();
   }, [refetch, gridRefetch]);
+
+  // OPS-228: Handle list view open in Word
+  const handleListOpenInWord = useCallback(
+    async (docContext: CaseDocumentWithContext) => {
+      try {
+        const result = await openInWord(docContext.document.id);
+        if (result?.webUrl) {
+          window.open(result.webUrl, '_blank');
+        } else {
+          alert('Nu s-a putut deschide documentul în Word.');
+        }
+      } catch (error) {
+        console.error('Failed to open in Word:', error);
+        alert('Eroare la deschiderea documentului în Word.');
+      }
+    },
+    [openInWord]
+  );
+
+  // OPS-228: Handle list view rename
+  const handleListRename = useCallback((docContext: CaseDocumentWithContext) => {
+    setRenameDoc({
+      id: docContext.document.id,
+      name: docContext.document.fileName,
+    });
+  }, []);
+
+  // Handle list view link to case
+  const handleListLinkToCase = useCallback((docContext: CaseDocumentWithContext) => {
+    setLinkToCaseDoc({
+      documentId: docContext.document.id,
+      documentName: docContext.document.fileName,
+    });
+  }, []);
 
   // OPS-177: Handle preview modal actions
   const handlePreviewAction = useCallback(
@@ -629,12 +640,69 @@ export function CaseDocumentsList({
           }
           break;
 
+        // OPS-228: Secondary actions
+        case 'rename':
+          closePreview();
+          setRenameDoc({
+            id: doc.id,
+            name: doc.name,
+          });
+          break;
+
+        case 'delete':
+          closePreview();
+          setDeleteDoc({
+            id: doc.id,
+            name: doc.name,
+          });
+          break;
+
+        case 'move':
+          if (gridDoc) {
+            closePreview();
+            setMoveDoc({
+              caseDocumentId: gridDoc.id, // CaseDocument join table ID
+              documentName: gridDoc.document.fileName,
+              folderId: null, // Documents don't have folder info in grid currently
+            });
+          }
+          break;
+
+        case 'link-to-case':
+          closePreview();
+          setLinkToCaseDoc({
+            documentId: doc.id,
+            documentName: doc.name,
+          });
+          break;
+
+        case 'withdraw-from-review':
+          closePreview();
+          try {
+            const result = await withdrawFromReview(doc.id);
+            if (result.success) {
+              handleRefetch();
+            } else {
+              console.error('[CaseDocumentsList] Failed to withdraw:', result.message);
+            }
+          } catch (err) {
+            console.error('[CaseDocumentsList] Error withdrawing from review:', err);
+          }
+          break;
+
         default:
           console.log('[CaseDocumentsList] Unhandled preview action:', actionId);
           break;
       }
     },
-    [gridDocuments, closePreview, handleGridAddToMapa, openInWord]
+    [
+      gridDocuments,
+      closePreview,
+      handleGridAddToMapa,
+      openInWord,
+      withdrawFromReview,
+      handleRefetch,
+    ]
   );
 
   return (
@@ -806,20 +874,13 @@ export function CaseDocumentsList({
                 key={docContext.document.id}
                 docContext={docContext}
                 userRole={userRole}
-                onUnlink={() =>
-                  setUnlinkConfirm({
-                    docId: docContext.document.id,
-                    docName: docContext.document.fileName,
-                  })
-                }
+                onPreview={() => handleListPreview(docContext)}
                 onDelete={() =>
                   setDeleteConfirm({
                     docId: docContext.document.id,
                     docName: docContext.document.fileName,
                   })
                 }
-                onDownload={() => handleDownload(docContext.document.id)}
-                onSync={() => handleSync(docContext.document.id)}
                 onAddToMapa={() =>
                   setMapaAssignDoc({
                     id: docContext.id, // CaseDocument ID (join table), not Document ID
@@ -828,8 +889,9 @@ export function CaseDocumentsList({
                     fileSize: docContext.document.fileSize,
                   })
                 }
-                isDownloading={downloadingId === docContext.document.id}
-                isSyncing={syncingId === docContext.document.id}
+                onOpenInWord={() => handleListOpenInWord(docContext)}
+                onRename={() => handleListRename(docContext)}
+                onLinkToCase={() => handleListLinkToCase(docContext)}
               />
             ))}
           </div>
@@ -861,6 +923,7 @@ export function CaseDocumentsList({
         onClose={closePreview}
         document={previewDocument}
         onRequestPreviewUrl={fetchPreviewUrl}
+        onRequestDownloadUrl={fetchDownloadUrl}
         onRequestTextContent={fetchTextContent}
         hasMsalAccount={hasMsalAccount}
         // OPS-177: Context-aware action toolbar
@@ -930,6 +993,66 @@ export function CaseDocumentsList({
           onOpenChange={(open) => !open && setReviewDoc(null)}
           onSuccess={() => {
             setReviewDoc(null);
+            handleRefetch();
+          }}
+        />
+      )}
+
+      {/* OPS-228: Rename Document Dialog */}
+      {renameDoc && (
+        <RenameDocumentDialog
+          documentId={renameDoc.id}
+          currentName={renameDoc.name}
+          open={!!renameDoc}
+          onOpenChange={(open) => !open && setRenameDoc(null)}
+          onSuccess={() => {
+            setRenameDoc(null);
+            handleRefetch();
+          }}
+        />
+      )}
+
+      {/* OPS-228: Delete Document Dialog */}
+      {deleteDoc && (
+        <DeleteDocumentDialog
+          documentId={deleteDoc.id}
+          documentName={deleteDoc.name}
+          open={!!deleteDoc}
+          onOpenChange={(open) => !open && setDeleteDoc(null)}
+          onSuccess={() => {
+            setDeleteDoc(null);
+            handleRefetch();
+          }}
+        />
+      )}
+
+      {/* OPS-228: Move Document Dialog */}
+      {moveDoc && (
+        <MoveDocumentDialog
+          caseDocumentId={moveDoc.caseDocumentId}
+          documentName={moveDoc.documentName}
+          currentFolderId={moveDoc.folderId}
+          folderTree={folderTree}
+          open={!!moveDoc}
+          onOpenChange={(open) => !open && setMoveDoc(null)}
+          onSuccess={() => {
+            setMoveDoc(null);
+            handleRefetch();
+          }}
+        />
+      )}
+
+      {/* OPS-228: Link to Case Dialog */}
+      {linkToCaseDoc && (
+        <LinkToCaseDialog
+          documentId={linkToCaseDoc.documentId}
+          documentName={linkToCaseDoc.documentName}
+          currentCaseId={caseId}
+          clientId={clientId}
+          open={!!linkToCaseDoc}
+          onOpenChange={(open) => !open && setLinkToCaseDoc(null)}
+          onSuccess={() => {
+            setLinkToCaseDoc(null);
             handleRefetch();
           }}
         />

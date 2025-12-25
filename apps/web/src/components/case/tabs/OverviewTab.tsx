@@ -1,6 +1,7 @@
 /**
  * OverviewTab - Case overview with summary cards
  * OPS-214: Refactored to use section components with edit mode support
+ * OPS-225: Added section groups to separate editable from operational sections
  *
  * Displays case details, team, activity, deadlines, and stats.
  * Editable sections use inline editing when ?edit=true and user has permission.
@@ -22,6 +23,7 @@ import {
   ContactsSection,
   ReferencesSection,
   BillingSection,
+  SectionGroup,
   parseReferencesFromMetadata,
 } from '../sections';
 
@@ -155,200 +157,211 @@ export function OverviewTab({
     customRates: caseData.customRates,
   };
 
+  // Count items for badges
+  const contactsCount = caseData.actors?.length || 0;
+  const referencesCount = references.length;
+
   return (
     <div className={clsx('h-full overflow-y-auto bg-gray-50 p-6', className)}>
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* AI Summary Section */}
-        <CaseAISummarySection caseId={caseData.id} />
+        {/* ================================================================== */}
+        {/* EDITABLE SECTION GROUP - "Informații Dosar"                       */}
+        {/* ================================================================== */}
+        <SectionGroup
+          title="Informații Dosar"
+          variant="editable"
+          storageKey={`case-${caseData.id}-info`}
+          count={contactsCount + referencesCount}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Case Details Section */}
+            <CaseDetailsSection
+              caseId={caseData.id}
+              caseData={caseDetailsData}
+              editable={isEditMode && !permissionLoading}
+              canEditFinancials={canEditFinancials}
+            />
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* ================================================================ */}
-          {/* LEFT COLUMN - Editable Sections                                 */}
-          {/* ================================================================ */}
+            {/* Contacts Section */}
+            <ContactsSection
+              caseId={caseData.id}
+              actors={caseData.actors || []}
+              editable={isEditMode && !permissionLoading}
+            />
 
-          {/* Case Details Section */}
-          <CaseDetailsSection
-            caseId={caseData.id}
-            caseData={caseDetailsData}
-            editable={isEditMode && !permissionLoading}
-            canEditFinancials={canEditFinancials}
-          />
+            {/* References Section */}
+            <ReferencesSection
+              caseId={caseData.id}
+              references={references}
+              metadata={(caseData.metadata as Record<string, unknown>) || {}}
+              editable={isEditMode && !permissionLoading}
+            />
 
-          {/* Team Members Card (read-only) */}
-          <Card title="Membrii Echipei">
-            <div className="space-y-3">
-              {teamMembers.map((member) => {
-                const firstName = member.firstName || 'U';
-                const lastName = member.lastName || 'U';
-                const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-                return (
-                  <div key={member.id} className="flex items-center gap-3">
-                    <Avatar.Root className="inline-flex h-10 w-10 rounded-full">
-                      <Avatar.Fallback className="flex h-full w-full items-center justify-center rounded-full bg-blue-600 text-white text-sm font-medium">
-                        {initials}
-                      </Avatar.Fallback>
-                    </Avatar.Root>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {firstName} {lastName}
-                      </p>
-                      <p className="text-xs text-gray-600">{member.role || 'Team Member'}</p>
-                    </div>
-                    <div className="text-xs text-gray-500">{member.email || ''}</div>
-                  </div>
-                );
-              })}
-              {teamMembers.length === 0 && (
-                <p className="text-sm text-gray-500">Niciun membru în echipă</p>
-              )}
-            </div>
-          </Card>
-
-          {/* Contacts Section */}
-          <ContactsSection
-            caseId={caseData.id}
-            actors={caseData.actors || []}
-            editable={isEditMode && !permissionLoading}
-          />
-
-          {/* References Section */}
-          <ReferencesSection
-            caseId={caseData.id}
-            references={references}
-            metadata={(caseData.metadata as Record<string, unknown>) || {}}
-            editable={isEditMode && !permissionLoading}
-          />
-
-          {/* ================================================================ */}
-          {/* RIGHT COLUMN - Read-Only Sections                               */}
-          {/* ================================================================ */}
-
-          {/* Recent Activity Card */}
-          <Card title="Activitate Recentă">
-            <div className="space-y-3">
-              {recentActivity.slice(0, 10).map((activity) => (
-                <div key={activity.id} className="flex gap-3">
-                  <div className="flex-shrink-0 w-2 h-2 mt-1.5 rounded-full bg-blue-600" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">{activity.description}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {format(activity.timestamp, "dd MMM 'la' HH:mm", {
-                        locale: ro,
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {recentActivity.length === 0 && (
-                <p className="text-sm text-gray-500">Nicio activitate recentă</p>
-              )}
-            </div>
-          </Card>
-
-          {/* Key Deadlines Card */}
-          <Card title="Termene Importante">
-            <div className="space-y-3">
-              {upcomingDeadlines.map((deadline) => {
-                const statusColors = {
-                  upcoming: 'text-blue-700 bg-blue-50',
-                  today: 'text-yellow-700 bg-yellow-50',
-                  overdue: 'text-red-700 bg-red-50',
-                };
-                return (
-                  <div key={deadline.id} className="flex items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{deadline.title}</p>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        {format(deadline.date, 'dd MMMM yyyy', { locale: ro })}
-                      </p>
-                    </div>
-                    <div
-                      className={clsx(
-                        'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
-                        statusColors[deadline.status]
-                      )}
-                    >
-                      <Clock className="w-3 h-3" />
-                      <span>
-                        {deadline.status === 'overdue'
-                          ? 'Întârziat'
-                          : deadline.status === 'today'
-                            ? 'Astăzi'
-                            : 'Viitor'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-              {upcomingDeadlines.length === 0 && (
-                <p className="text-sm text-gray-500">Niciun termen programat</p>
-              )}
-            </div>
-          </Card>
-
-          {/* ================================================================ */}
-          {/* FULL WIDTH SECTIONS                                             */}
-          {/* ================================================================ */}
-
-          {/* Quick Stats Card - Full Width */}
-          <div className="lg:col-span-2">
-            <Card title="Statistici Rapide">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Total Documents */}
-                <div key="total-documents" className="flex items-center gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalDocuments}</p>
-                    <p className="text-sm text-gray-600">Total Documente</p>
-                  </div>
-                </div>
-
-                {/* Open Tasks */}
-                <div key="open-tasks" className="flex items-center gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
-                    <ClipboardList className="w-6 h-6 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{stats.openTasks}</p>
-                    <p className="text-sm text-gray-600">Sarcini Deschise</p>
-                  </div>
-                </div>
-
-                {/* Billable Hours */}
-                <div key="billable-hours" className="flex items-center gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{stats.billableHours}</p>
-                    <p className="text-sm text-gray-600">Ore Facturabile Luna Aceasta</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Billing Section - Full Width */}
-          <div className="lg:col-span-2">
+            {/* Billing Section */}
             <BillingSection
               caseId={caseData.id}
               billing={billingData}
               editable={isEditMode && canEditFinancials && !permissionLoading}
             />
           </div>
+        </SectionGroup>
 
-          {/* Revenue KPI Widget - Full Width (Partners only, Fixed cases only) */}
-          <div className="lg:col-span-2">
+        {/* ================================================================== */}
+        {/* READ-ONLY SECTION GROUP - "Stare Operațională"                    */}
+        {/* ================================================================== */}
+        <SectionGroup
+          title="Stare Operațională"
+          variant="readonly"
+          storageKey={`case-${caseData.id}-status`}
+        >
+          <div className="space-y-6">
+            {/* AI Summary Section */}
+            <CaseAISummarySection caseId={caseData.id} />
+
+            {/* Grid for team, activity, deadlines */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Team Members Card */}
+              <Card title="Membrii Echipei">
+                <div className="space-y-3">
+                  {teamMembers.map((member) => {
+                    const firstName = member.firstName || 'U';
+                    const lastName = member.lastName || 'U';
+                    const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+                    return (
+                      <div key={member.id} className="flex items-center gap-3">
+                        <Avatar.Root className="inline-flex h-10 w-10 rounded-full">
+                          <Avatar.Fallback className="flex h-full w-full items-center justify-center rounded-full bg-blue-600 text-white text-sm font-medium">
+                            {initials}
+                          </Avatar.Fallback>
+                        </Avatar.Root>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">
+                            {firstName} {lastName}
+                          </p>
+                          <p className="text-xs text-gray-600">{member.role || 'Team Member'}</p>
+                        </div>
+                        <div className="text-xs text-gray-500">{member.email || ''}</div>
+                      </div>
+                    );
+                  })}
+                  {teamMembers.length === 0 && (
+                    <p className="text-sm text-gray-500">Niciun membru în echipă</p>
+                  )}
+                </div>
+              </Card>
+
+              {/* Recent Activity Card */}
+              <Card title="Activitate Recentă">
+                <div className="space-y-3">
+                  {recentActivity.slice(0, 10).map((activity) => (
+                    <div key={activity.id} className="flex gap-3">
+                      <div className="flex-shrink-0 w-2 h-2 mt-1.5 rounded-full bg-blue-600" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900">{activity.description}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {format(activity.timestamp, "dd MMM 'la' HH:mm", {
+                            locale: ro,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {recentActivity.length === 0 && (
+                    <p className="text-sm text-gray-500">Nicio activitate recentă</p>
+                  )}
+                </div>
+              </Card>
+
+              {/* Key Deadlines Card */}
+              <Card title="Termene Importante">
+                <div className="space-y-3">
+                  {upcomingDeadlines.map((deadline) => {
+                    const statusColors = {
+                      upcoming: 'text-blue-700 bg-blue-50',
+                      today: 'text-yellow-700 bg-yellow-50',
+                      overdue: 'text-red-700 bg-red-50',
+                    };
+                    return (
+                      <div key={deadline.id} className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {deadline.title}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-0.5">
+                            {format(deadline.date, 'dd MMMM yyyy', { locale: ro })}
+                          </p>
+                        </div>
+                        <div
+                          className={clsx(
+                            'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium',
+                            statusColors[deadline.status]
+                          )}
+                        >
+                          <Clock className="w-3 h-3" />
+                          <span>
+                            {deadline.status === 'overdue'
+                              ? 'Întârziat'
+                              : deadline.status === 'today'
+                                ? 'Astăzi'
+                                : 'Viitor'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {upcomingDeadlines.length === 0 && (
+                    <p className="text-sm text-gray-500">Niciun termen programat</p>
+                  )}
+                </div>
+              </Card>
+
+              {/* Quick Stats Card */}
+              <Card title="Statistici Rapide">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Total Documents */}
+                  <div key="total-documents" className="flex items-center gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">{stats.totalDocuments}</p>
+                      <p className="text-sm text-gray-600">Total Documente</p>
+                    </div>
+                  </div>
+
+                  {/* Open Tasks */}
+                  <div key="open-tasks" className="flex items-center gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
+                      <ClipboardList className="w-6 h-6 text-yellow-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">{stats.openTasks}</p>
+                      <p className="text-sm text-gray-600">Sarcini Deschise</p>
+                    </div>
+                  </div>
+
+                  {/* Billable Hours */}
+                  <div key="billable-hours" className="flex items-center gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">{stats.billableHours}</p>
+                      <p className="text-sm text-gray-600">Ore Facturabile</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Revenue KPI Widget - Full Width (Partners only, Fixed cases only) */}
             <FinancialData>
               <Card title="Metrici Venituri">
                 <CaseRevenueKPIWidget caseId={caseData.id} billingType={caseData.billingType} />
               </Card>
             </FinancialData>
           </div>
-        </div>
+        </SectionGroup>
       </div>
 
       {/* Edit Rates Modal */}

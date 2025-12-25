@@ -117,6 +117,9 @@ services:
         value: https://legal-platform-ai-service.onrender.com
       - key: AI_SERVICE_API_KEY
         sync: false
+      # Anthropic API Key for AI Assistant (set in Render dashboard)
+      - key: ANTHROPIC_API_KEY
+        sync: false
     healthCheckPath: /health
     autoDeploy: false # Manual deploy only - use: npm run deploy:production
 

@@ -273,8 +273,13 @@ function DocumentCard({
         isDragging && 'opacity-50 ring-2 ring-blue-300'
       )}
     >
-      {/* Thumbnail or Icon */}
-      <div className="aspect-[4/3] bg-gray-100 rounded-md flex items-center justify-center mb-3 relative">
+      {/* Thumbnail or Icon - compact height when no thumbnail */}
+      <div
+        className={clsx(
+          'bg-gray-100 rounded-md flex items-center justify-center mb-3 relative',
+          doc.document.thumbnailUrl ? 'aspect-[4/3]' : 'h-16'
+        )}
+      >
         {doc.document.thumbnailUrl ? (
           <img
             src={doc.document.thumbnailUrl}
@@ -282,7 +287,7 @@ function DocumentCard({
             className="w-full h-full object-cover rounded-md"
           />
         ) : (
-          React.createElement(getFileIcon(fileType), { className: 'h-12 w-12 text-gray-400' })
+          React.createElement(getFileIcon(fileType), { className: 'h-8 w-8 text-gray-400' })
         )}
         {/* OPS-176: Version badge overlay */}
         {hasMultipleVersions && onViewVersions && (

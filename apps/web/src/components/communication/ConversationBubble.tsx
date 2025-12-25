@@ -21,6 +21,7 @@ import type { CommunicationMessage } from '@legal-platform/types';
 /**
  * Strips HTML tags and decodes entities for plain text display.
  * Used when bodyClean is not available and content is HTML.
+ * Properly converts block-level elements to line breaks.
  */
 function stripHtmlForDisplay(html: string): string {
   if (!html) return '';
@@ -32,21 +33,54 @@ function stripHtmlForDisplay(html: string): string {
     // Remove style and script elements
     doc.querySelectorAll('style, script').forEach((el) => el.remove());
 
-    // Get text content
+    // Convert block-level elements to newlines BEFORE extracting text
+    // This preserves paragraph structure that textContent would lose
+    const blockElements = [
+      'p',
+      'div',
+      'br',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'li',
+      'tr',
+      'blockquote',
+      'hr',
+    ];
+    blockElements.forEach((tag) => {
+      doc.querySelectorAll(tag).forEach((el) => {
+        // Insert newline marker before closing tag content
+        if (tag === 'br' || tag === 'hr') {
+          el.replaceWith('\n');
+        } else {
+          // Add newline after block element content
+          el.insertAdjacentText('afterend', '\n');
+        }
+      });
+    });
+
+    // Get text content (now with proper line breaks)
     const text = doc.body.textContent || '';
 
     // Clean up excessive whitespace while preserving paragraph breaks
     return text
       .replace(/\n{3,}/g, '\n\n') // Max 2 newlines
       .replace(/[ \t]+/g, ' ') // Collapse horizontal whitespace
+      .replace(/ ?\n ?/g, '\n') // Clean spaces around newlines
       .trim();
   }
 
-  // SSR fallback - basic regex strip
+  // SSR fallback - basic regex strip with block element handling
   return html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<[^>]+>/g, '')
+    .replace(/<br\s*\/?>/gi, '\n') // Convert <br> to newlines
+    .replace(/<\/?(p|div|h[1-6]|li|tr|blockquote)[^>]*>/gi, '\n') // Block elements to newlines
+    .replace(/<hr\s*\/?>/gi, '\n---\n') // Horizontal rules
+    .replace(/<[^>]+>/g, '') // Strip remaining tags
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -54,6 +88,7 @@ function stripHtmlForDisplay(html: string): string {
     .replace(/&quot;/g, '"')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]+/g, ' ')
+    .replace(/ ?\n ?/g, '\n')
     .trim();
 }
 

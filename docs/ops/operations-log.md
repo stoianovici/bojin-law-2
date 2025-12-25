@@ -224,6 +224,10 @@
 | OPS-221 | ActorTypeConfig GraphQL & Service                     | Feature      | P2-Medium   | Closed     | [archive/ops-221.md](archive/ops-221.md) |
 | OPS-222 | useActorTypes Hook                                    | Feature      | P2-Medium   | Closed     | [archive/ops-222.md](archive/ops-222.md) |
 | OPS-223 | Actor Type Selection UI                               | Feature      | P2-Medium   | Completed  | [issues/ops-223.md](issues/ops-223.md)   |
+| OPS-224 | Fix Case Number Field Label                           | Bug          | P2-Medium   | Resolved   | [issues/ops-224.md](issues/ops-224.md)   |
+| OPS-225 | OverviewTab Section Groups                            | Feature      | P2-Medium   | Completed  | [issues/ops-225.md](issues/ops-225.md)   |
+| OPS-226 | Client GraphQL Query + Resolver                       | Feature      | P2-Medium   | Completed  | [issues/ops-226.md](issues/ops-226.md)   |
+| OPS-227 | Client Profile Page + Case Links                      | Feature      | P2-Medium   | Completed  | [issues/ops-227.md](issues/ops-227.md)   |
 
 ---
 
@@ -578,6 +582,26 @@ Phase 5:                OPS-217 [blocked by: 216]
 - ✅ OPS-221: ActorTypeConfig GraphQL & Service
 - ✅ OPS-222: useActorTypes Hook
 - ✅ OPS-223: Actor Type Selection UI
+
+---
+
+### Case Details UI Improvements (Epic) - OPS-224 to OPS-227 - COMPLETED ✅
+
+**Goal**: Fix case number field mislabeling, separate operational overview from editable details, and add client portfolio view for multi-case client management.
+
+**Key Changes**:
+
+- Fix caseNumber label from "Nr. Dosar Instanță" to "Număr Intern" (it's internal ref, not court number)
+- Add collapsible section groups to OverviewTab: "Informații Dosar" (editable) vs "Stare Operațională" (read-only)
+- Add client profile page showing all cases for a client
+- Make client name in case details clickable to navigate to client profile
+
+**All phases completed**:
+
+- ~~OPS-224: Fix Case Number Field Label (Bug)~~ ✅
+- ~~OPS-225: OverviewTab Section Groups~~ ✅
+- ~~OPS-226: Client GraphQL Query + Resolver~~ ✅
+- ~~OPS-227: Client Profile Page + Case Links~~ ✅
 
 ---
 

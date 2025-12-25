@@ -60,8 +60,8 @@ export interface DocumentGridProps {
 function DocumentCardSkeleton() {
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      {/* Thumbnail skeleton */}
-      <Skeleton className="aspect-[4/3] rounded-none" />
+      {/* Thumbnail skeleton - compact height for no-image state */}
+      <Skeleton className="h-20 rounded-none" />
       {/* Content skeleton */}
       <div className="p-4 space-y-3">
         <Skeleton className="h-5 w-3/4" />
@@ -284,9 +284,11 @@ export function DocumentGrid({
         )}
       </div>
 
-      {/* Grid */}
+      {/* Grid - OPS-228: Match /documents layout with more columns for smaller cards */}
+      {/* OPS-229: Use key to force re-animation when documents load, fixing stale animation state */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        key={documents.length > 0 ? 'has-documents' : 'no-documents'}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
         initial="hidden"
         animate="visible"
         variants={{
@@ -295,13 +297,12 @@ export function DocumentGrid({
         }}
       >
         {/* Documents - OPS-163: Click anywhere opens preview */}
-        {documents.map((doc) => (
+        {documents.map((doc, index) => (
           <motion.div
             key={doc.id}
-            variants={{
-              hidden: { opacity: 0, scale: 0.95 },
-              visible: { opacity: 1, scale: 1 },
-            }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, delay: index * 0.02 }}
           >
             <DocumentCard
               document={doc}

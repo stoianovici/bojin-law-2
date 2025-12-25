@@ -134,24 +134,41 @@ interface UseCaseDocumentsResult {
   refetch: () => void;
 }
 
+interface UseCaseDocumentsOptions {
+  // OPS-229: Skip query when not in list view (lazy loading optimization)
+  skip?: boolean;
+}
+
 /**
  * Hook to fetch documents linked to a case
  * @param caseId - Case ID (UUID)
+ * @param options - Query options (skip)
  * @returns Case documents with context, loading state, error, and refetch function
  */
-export function useCaseDocuments(caseId: string): UseCaseDocumentsResult {
+export function useCaseDocuments(
+  caseId: string,
+  options: UseCaseDocumentsOptions = {}
+): UseCaseDocumentsResult {
+  const { skip = false } = options;
+
   const { data, loading, error, refetch } = useQuery<{ caseDocuments: CaseDocumentWithContext[] }>(
     GET_CASE_DOCUMENTS,
     {
       variables: { caseId },
       fetchPolicy: 'cache-and-network',
-      skip: !caseId,
+      // OPS-229: Skip query when not in list view or caseId is missing
+      skip: !caseId || skip,
     }
   );
 
+  // OPS-229: Also consider as loading if query should run but we have no data yet
+  // This fixes a race condition on initial mount where loading=false before query starts
+  const queryIsSkipped = !caseId || skip;
+  const effectiveLoading = loading || (!queryIsSkipped && !data && !error);
+
   return {
     documents: data?.caseDocuments || [],
-    loading,
+    loading: effectiveLoading,
     error: error as Error | undefined,
     refetch,
   };

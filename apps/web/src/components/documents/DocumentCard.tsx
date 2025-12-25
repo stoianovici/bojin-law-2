@@ -187,8 +187,13 @@ export function DocumentCard({
         className
       )}
     >
-      {/* Thumbnail Area - 4:3 aspect ratio */}
-      <div className="aspect-[4/3] bg-gray-50 relative overflow-hidden">
+      {/* Thumbnail Area - 4:3 aspect ratio when image available, compact when not */}
+      <div
+        className={clsx(
+          'bg-gray-50 relative overflow-hidden',
+          thumbnailUrl && !imageError ? 'aspect-[4/3]' : 'h-20'
+        )}
+      >
         {thumbnailUrl && !imageError ? (
           <>
             {imageLoading && <ThumbnailSkeleton />}
@@ -208,7 +213,7 @@ export function DocumentCard({
           </>
         ) : (
           <div className="flex items-center justify-center h-full bg-gray-100">
-            <FileTypeIcon fileType={document.fileType} />
+            <FileTypeIcon fileType={document.fileType} className="!w-10 !h-10" />
           </div>
         )}
 
