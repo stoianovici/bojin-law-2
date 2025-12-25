@@ -140,8 +140,19 @@ export class AIAssistantService {
     const systemPrompt = await this.buildContextualSystemPrompt(context);
 
     // Build messages array from history + new user message
+    // Filter out messages with pending actions (incomplete tool exchanges) to prevent
+    // "tool_use ids without tool_result" errors from the Anthropic API
+    const sanitizedHistory = history.filter((m) => {
+      // Skip messages with pending/proposed actions - these indicate incomplete tool exchanges
+      if (m.actionStatus === 'Proposed') {
+        console.log('[AIAssistant] Skipping message with pending action:', m.id);
+        return false;
+      }
+      return true;
+    });
+
     const messages: Anthropic.MessageParam[] = [
-      ...history.map((m) => ({
+      ...sanitizedHistory.map((m) => ({
         role: (m.role === 'User' ? 'user' : 'assistant') as 'user' | 'assistant',
         content: m.content,
       })),
@@ -462,9 +473,12 @@ export class AIAssistantService {
 
     const systemPrompt = await this.buildContextualSystemPrompt(context);
 
+    // Filter out messages with pending actions to prevent orphaned tool_use errors
+    const sanitizedHistory = history.filter((m) => m.actionStatus !== 'Proposed');
+
     // Build messages: history + assistant's tool call + tool result
     const messages: Anthropic.MessageParam[] = [
-      ...history.map((m) => ({
+      ...sanitizedHistory.map((m) => ({
         role: (m.role === 'User' ? 'user' : 'assistant') as 'user' | 'assistant',
         content: m.content,
       })),
