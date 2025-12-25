@@ -1,0 +1,79 @@
+# Client GraphQL Schema
+# OPS-226: Client Query + Resolver for Client Portfolio View
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Summary of a case for client portfolio view (OPS-226)
+Lightweight case representation without sensitive financial data
+"""
+type CaseSummaryForClient {
+  """Unique identifier for the case"""
+  id: UUID!
+
+  """Case number for tracking"""
+  caseNumber: String!
+
+  """Title of the case"""
+  title: String!
+
+  """Current status"""
+  status: CaseStatus!
+
+  """Type of legal case"""
+  type: String!
+
+  """Date when the case was opened"""
+  openedDate: DateTime!
+}
+
+"""
+Client with their case portfolio (OPS-226)
+Extended client type that includes all cases for the client
+"""
+type ClientWithCases {
+  """Unique identifier for the client"""
+  id: UUID!
+
+  """Client's full name or organization name"""
+  name: String!
+
+  """Contact email address (extracted from contactInfo)"""
+  email: String
+
+  """Contact phone number (extracted from contactInfo)"""
+  phone: String
+
+  """Physical address of the client"""
+  address: String
+
+  """All cases for this client"""
+  cases: [CaseSummaryForClient!]!
+
+  """Total number of cases"""
+  caseCount: Int!
+
+  """Number of active cases"""
+  activeCaseCount: Int!
+
+  """Timestamp when the client record was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the client record was last updated"""
+  updatedAt: DateTime!
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get a client by ID with their case portfolio (OPS-226)
+  Returns null if client not found or not in user's firm
+  Authorization: Authenticated users in the same firm
+  """
+  client(id: UUID!): ClientWithCases
+}

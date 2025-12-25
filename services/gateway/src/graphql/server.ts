@@ -66,6 +66,7 @@ import { reportsResolvers } from './resolvers/reports.resolvers';
 import { wordIntegrationResolvers } from './resolvers/word-integration.resolvers';
 import { personalContactResolvers } from './resolvers/personal-contact.resolvers';
 import { actorTypeResolvers } from './resolvers/actor-type.resolvers';
+import { clientResolvers } from './resolvers/client.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -124,6 +125,7 @@ const resolvers = {
     ...wordIntegrationResolvers.Query,
     ...personalContactResolvers.Query,
     ...actorTypeResolvers.Query,
+    ...clientResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
