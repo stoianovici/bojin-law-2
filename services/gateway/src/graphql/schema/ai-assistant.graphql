@@ -312,12 +312,6 @@ extend type Query {
     """
     caseId: ID
   ): [AIConversation!]!
-
-  """
-  Get morning briefing for the current user.
-  Returns tasks, deadlines, and email summary for the day.
-  """
-  morningBriefing: MorningBriefing!
 }
 
 # ============================================================================

@@ -816,25 +816,191 @@ export const proactiveSuggestionsResolvers = {
     generateMorningBriefing: async (_parent: unknown, _args: unknown, context: Context) => {
       const user = requireAuth(context);
 
-      // Create a basic briefing (in production, this would call the AI service)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(today);
+      endOfToday.setHours(23, 59, 59, 999);
+      const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const briefing = await prisma.morningBriefing.create({
-        data: {
+      // Gather task data in parallel
+      const [overdueTasks, todayTasks, upcomingTasks, urgentDeadlines] = await Promise.all([
+        // Overdue tasks
+        prisma.task.findMany({
+          where: {
+            assignedTo: user.id,
+            firmId: user.firmId,
+            status: { in: ['Pending', 'InProgress'] },
+            dueDate: { lt: today },
+          },
+          include: {
+            case: { select: { id: true, title: true, caseNumber: true } },
+          },
+          orderBy: { dueDate: 'asc' },
+          take: 5,
+        }),
+        // Today's tasks
+        prisma.task.findMany({
+          where: {
+            assignedTo: user.id,
+            firmId: user.firmId,
+            status: { in: ['Pending', 'InProgress'] },
+            dueDate: { gte: today, lte: endOfToday },
+          },
+          include: {
+            case: { select: { id: true, title: true, caseNumber: true } },
+          },
+          orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
+          take: 10,
+        }),
+        // This week's tasks
+        prisma.task.findMany({
+          where: {
+            assignedTo: user.id,
+            firmId: user.firmId,
+            status: { in: ['Pending', 'InProgress'] },
+            dueDate: { gt: endOfToday, lte: sevenDaysFromNow },
+          },
+          include: {
+            case: { select: { id: true, title: true, caseNumber: true } },
+          },
+          orderBy: { dueDate: 'asc' },
+          take: 10,
+        }),
+        // Urgent deadlines
+        prisma.task.findMany({
+          where: {
+            assignedTo: user.id,
+            firmId: user.firmId,
+            status: { in: ['Pending', 'InProgress'] },
+            dueDate: { gte: today, lte: sevenDaysFromNow },
+            OR: [{ priority: 'Urgent' }, { priority: 'High' }],
+          },
+          include: {
+            case: { select: { id: true, title: true, caseNumber: true } },
+          },
+          orderBy: { dueDate: 'asc' },
+          take: 5,
+        }),
+      ]);
+
+      // Build prioritized tasks (overdue first, then today, then high priority)
+      const allTasks = [...overdueTasks, ...todayTasks];
+      const prioritizedTasks = allTasks.slice(0, 10).map((task, index) => {
+        const isOverdue = task.dueDate && task.dueDate < today;
+        const priority = isOverdue ? 10 : 10 - index;
+        return {
+          taskId: task.id,
+          priority,
+          priorityReason: isOverdue
+            ? 'Sarcină întârziată - necesită atenție imediată'
+            : task.priority === 'Urgent'
+              ? 'Prioritate urgentă'
+              : task.priority === 'High'
+                ? 'Prioritate ridicată'
+                : 'Termen astăzi',
+          suggestedTimeSlot: isOverdue ? 'Dimineață' : index < 3 ? 'Dimineață' : 'După-amiază',
+        };
+      });
+
+      // Build key deadlines
+      const keyDeadlines = urgentDeadlines.map((task) => {
+        const dueDate = task.dueDate ? new Date(task.dueDate) : new Date();
+        const daysUntilDue = Math.ceil(
+          (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        let severity: 'critical' | 'warning' | 'info' = 'info';
+        if (daysUntilDue <= 1) severity = 'critical';
+        else if (daysUntilDue <= 3) severity = 'warning';
+
+        return {
+          id: task.id,
+          taskId: task.id,
+          title: task.title,
+          dueDate: task.dueDate,
+          daysUntilDue,
+          severity,
+          caseId: task.caseId,
+          suggestedActions: [],
+          blockedBy: [],
+        };
+      });
+
+      // Build risk alerts for overdue items
+      const riskAlerts = overdueTasks.slice(0, 3).map((task) => ({
+        type: 'Sarcină întârziată',
+        description: `"${task.title}" a depășit termenul limită`,
+        suggestedAction: 'Finalizați sau reprogramați această sarcină',
+        severity: 'high' as const,
+      }));
+
+      // Generate summary
+      const overdueCount = overdueTasks.length;
+      const todayCount = todayTasks.length;
+      const upcomingCount = upcomingTasks.length;
+
+      let summary = 'Bună dimineața! ';
+      if (overdueCount > 0) {
+        summary += `Aveți ${overdueCount} sarcin${overdueCount === 1 ? 'ă întârziată' : 'i întârziate'} care necesită atenție imediată. `;
+      }
+      if (todayCount > 0) {
+        summary += `Pentru astăzi aveți ${todayCount} sarcin${todayCount === 1 ? 'ă' : 'i'} programat${todayCount === 1 ? 'ă' : 'e'}. `;
+      } else if (overdueCount === 0) {
+        summary += 'Nu aveți sarcini urgente pentru astăzi. ';
+      }
+      if (upcomingCount > 0) {
+        summary += `În următoarele 7 zile: ${upcomingCount} sarcin${upcomingCount === 1 ? 'ă' : 'i'}.`;
+      }
+
+      // Upsert briefing (update if exists for today, create if not)
+      const briefing = await prisma.morningBriefing.upsert({
+        where: {
+          userId_briefingDate: {
+            userId: user.id,
+            briefingDate: today,
+          },
+        },
+        create: {
           userId: user.id,
           firmId: user.firmId,
           briefingDate: today,
-          summary: 'Your morning briefing is ready.',
-          prioritizedTasks: [],
-          keyDeadlines: [],
-          riskAlerts: [],
+          summary,
+          prioritizedTasks: JSON.parse(JSON.stringify(prioritizedTasks)),
+          keyDeadlines: JSON.parse(JSON.stringify(keyDeadlines)),
+          riskAlerts: JSON.parse(JSON.stringify(riskAlerts)),
+          suggestions: [],
+          tokensUsed: 0,
+        },
+        update: {
+          summary,
+          prioritizedTasks: JSON.parse(JSON.stringify(prioritizedTasks)),
+          keyDeadlines: JSON.parse(JSON.stringify(keyDeadlines)),
+          riskAlerts: JSON.parse(JSON.stringify(riskAlerts)),
           suggestions: [],
           tokensUsed: 0,
         },
       });
 
-      return briefing;
+      logger.info('Morning briefing generated', {
+        userId: user.id,
+        briefingId: briefing.id,
+        prioritizedTaskCount: prioritizedTasks.length,
+        deadlineCount: keyDeadlines.length,
+        riskAlertCount: riskAlerts.length,
+      });
+
+      return {
+        id: briefing.id,
+        briefingDate: briefing.briefingDate,
+        prioritizedTasks: briefing.prioritizedTasks,
+        keyDeadlines: briefing.keyDeadlines,
+        riskAlerts: briefing.riskAlerts,
+        suggestions: briefing.suggestions,
+        summary: briefing.summary,
+        isViewed: briefing.isViewed,
+        viewedAt: briefing.viewedAt,
+        tokensUsed: briefing.tokensUsed,
+        createdAt: briefing.generatedAt,
+      };
     },
 
     /**

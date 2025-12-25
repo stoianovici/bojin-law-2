@@ -118,44 +118,6 @@ export const aiAssistantResolvers = {
         args.caseId ?? undefined
       );
     },
-
-    /**
-     * Get morning briefing for the current user.
-     */
-    morningBriefing: async (_: unknown, _args: unknown, context: Context) => {
-      if (!context.user) {
-        throw new GraphQLError('Autentificare necesară', {
-          extensions: { code: 'UNAUTHENTICATED' },
-        });
-      }
-
-      const userContext = {
-        userId: context.user.id,
-        firmId: context.user.firmId,
-      };
-
-      const result = await briefingHandler.getMorningBriefing(userContext);
-
-      // Extract the briefing data from the result
-      const briefingData = result.data as
-        | {
-            urgentTasks: unknown[];
-            todayTasks: unknown[];
-            upcomingDeadlines: unknown[];
-            unreadEmailsCount: number;
-            aiSummary?: string;
-          }
-        | undefined;
-
-      return {
-        message: result.message || 'Bună dimineața!',
-        urgentTasks: briefingData?.urgentTasks || [],
-        todayTasks: briefingData?.todayTasks || [],
-        upcomingDeadlines: briefingData?.upcomingDeadlines || [],
-        unreadEmailsCount: briefingData?.unreadEmailsCount || 0,
-        aiSummary: briefingData?.aiSummary,
-      };
-    },
   },
 
   Mutation: {
