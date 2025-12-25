@@ -32,6 +32,8 @@ export function AssistantChat() {
     sendMessage,
     confirmAction,
     clearError,
+    resetConversation,
+    hasActiveConversation,
   } = useAssistant();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,28 @@ export function AssistantChat() {
 
   return (
     <div className="flex flex-col h-[520px]">
+      {/* Header with reset button */}
+      {hasActiveConversation && messages.length > 0 && (
+        <div className="flex justify-end px-4 pt-2 pb-1 border-b border-gray-100">
+          <button
+            onClick={resetConversation}
+            disabled={isLoading}
+            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors disabled:opacity-50"
+            title="Începe o conversație nouă"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Conversație nouă
+          </button>
+        </div>
+      )}
+
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 ? (

@@ -97,6 +97,15 @@ const CONFIRM_ACTION = gql`
   }
 `;
 
+const CLOSE_CONVERSATION = gql`
+  mutation CloseConversation($id: ID!) {
+    closeConversation(id: $id) {
+      id
+      status
+    }
+  }
+`;
+
 const GET_MORNING_BRIEFING = gql`
   query GetMorningBriefing {
     morningBriefing {
@@ -320,6 +329,7 @@ export interface UseAssistantReturn {
     modifications?: Record<string, unknown>
   ) => Promise<ActionResult>;
   clearConversation: () => void;
+  resetConversation: () => Promise<void>;
   clearError: () => void;
   setContext: (context: Partial<AssistantContext>) => void;
   requestBriefing: () => Promise<void>;
@@ -362,6 +372,7 @@ export function useAssistant(): UseAssistantReturn {
       }
     },
   });
+  const [closeConversationMutation] = useMutation(CLOSE_CONVERSATION);
   const [loadConversation] = useLazyQuery<ActiveConversationData>(GET_ACTIVE_CONVERSATION);
   const [loadBriefing] = useLazyQuery<MorningBriefingResponse>(GET_MORNING_BRIEFING);
 
@@ -569,6 +580,29 @@ export function useAssistant(): UseAssistantReturn {
     store.setError(null);
   }, [store]);
 
+  /**
+   * Reset conversation - closes current conversation on server and clears local state.
+   * Use this to start a fresh conversation when encountering errors.
+   */
+  const resetConversation = useCallback(async () => {
+    // Close conversation on server if we have one
+    if (store.conversationId) {
+      try {
+        await closeConversationMutation({
+          variables: { id: store.conversationId },
+        });
+      } catch (error) {
+        // Log but don't block - we still want to clear local state
+        console.warn('[useAssistant] Failed to close conversation on server:', error);
+      }
+    }
+
+    // Clear local state
+    store.clearConversation();
+    store.setError(null);
+    setSuggestedFollowUps([]);
+  }, [store, closeConversationMutation]);
+
   return {
     // State
     isOpen: store.isOpen,
@@ -587,6 +621,7 @@ export function useAssistant(): UseAssistantReturn {
     sendMessage,
     confirmAction,
     clearConversation: store.clearConversation,
+    resetConversation,
     clearError,
     setContext: store.setContext,
     requestBriefing,
