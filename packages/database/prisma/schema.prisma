@@ -73,6 +73,9 @@ model Firm {
   // Custom case types
   caseTypeConfigs CaseTypeConfig[]
 
+  // Custom actor types (OPS-220)
+  actorTypeConfigs ActorTypeConfig[]
+
   // Relations (Story 5.1: Email Integration)
   emails Email[]
 
@@ -207,9 +210,13 @@ model User {
   // Custom case types created by this user
   createdCaseTypes CaseTypeConfig[]
 
+  // Custom actor types created by this user (OPS-220)
+  createdActorTypes ActorTypeConfig[] @relation("ActorTypeCreator")
+
   // Relations (Story 5.1: Email Integration)
-  emails         Email[]
-  emailSyncState EmailSyncState?
+  emails           Email[]
+  emailSyncState   EmailSyncState?
+  personalContacts PersonalContact[] // OPS-187: Personal email blocklist
 
   // Relations (Story 5.3: Email Drafting)
   emailDrafts EmailDraft[]
@@ -370,14 +377,42 @@ model CaseTypeConfig {
   @@map("case_type_configs")
 }
 
+// Custom actor types per firm (user-defined) - OPS-220
+model ActorTypeConfig {
+  id        String   @id @default(uuid())
+  firmId    String   @map("firm_id")
+  name      String   @db.VarChar(100) // Display name in Romanian
+  code      String   @db.VarChar(50) // Internal code (unique per firm)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String   @map("created_by")
+
+  // Relations
+  firm    Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  creator User @relation("ActorTypeCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@unique([firmId, code])
+  @@index([firmId])
+  @@map("actor_type_configs")
+}
+
 // External party roles in a case
+// OPS-219: Expanded for Romanian legal practice
 enum CaseActorRole {
   Client
   OpposingParty
   OpposingCounsel
   Witness
   Expert
-  Other // OPS-125: Generic contact role for auto-added senders
+  Intervenient        // Intervenient (third party joining case)
+  Mandatar            // Mandatar (legal representative with mandate)
+  Court               // Instanță (court/tribunal)
+  Prosecutor          // Procuror (prosecutor)
+  Bailiff             // Executor Judecătoresc (bailiff)
+  Notary              // Notar (notary)
+  LegalRepresentative // Reprezentant Legal (legal representative)
+  Other               // OPS-125: Generic contact role for auto-added senders
 }
 
 // Global email source categories (OPS-027: Multi-Case Classification)
@@ -591,18 +626,19 @@ model CaseAuditLog {
 
 // Case actors - external parties involved in the case
 model CaseActor {
-  id           String        @id @default(uuid())
-  caseId       String        @map("case_id")
-  role         CaseActorRole
-  name         String        @db.VarChar(200)
-  organization String?       @db.VarChar(200)
-  email        String?       @db.VarChar(255)
-  phone        String?       @db.VarChar(50)
-  address      String?       @db.Text
-  notes        String?       @db.Text
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
-  createdBy    String?       @map("created_by")
+  id             String        @id @default(uuid())
+  caseId         String        @map("case_id")
+  role           CaseActorRole
+  customRoleCode String?       @map("custom_role_code") @db.VarChar(50) // OPS-220: References ActorTypeConfig.code when set
+  name           String        @db.VarChar(200)
+  organization   String?       @db.VarChar(200)
+  email          String?       @db.VarChar(255)
+  phone          String?       @db.VarChar(50)
+  address        String?       @db.Text
+  notes          String?       @db.Text
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  createdBy      String?       @map("created_by")
 
   // Email classification (OPS-027: Multi-Case Classification)
   emailDomains String[] @default([]) @map("email_domains") // Additional email domains for this actor
@@ -2683,6 +2719,11 @@ model Email {
   ignoredAt         DateTime? @map("ignored_at") @db.Timestamptz // When the email was ignored
   folderType        String?   @map("folder_type") @db.VarChar(10) // OPS-091: 'inbox' | 'sent'
 
+  // Privacy fields (OPS-187)
+  isPrivate       Boolean   @default(false) @map("is_private") // Marked private by partner
+  markedPrivateAt DateTime? @map("marked_private_at") @db.Timestamptz
+  markedPrivateBy String?   @map("marked_private_by") // Partner userId who marked it private
+
   // Classification state machine (OPS-035)
   classificationState      EmailClassificationState @default(Pending) @map("classification_state")
   classificationConfidence Float?                   @map("classification_confidence") // 0.0 - 1.0
@@ -2779,6 +2820,22 @@ model EmailSyncState {
   user User @relation(fields: [userId], references: [id])
 
   @@map("email_sync_states")
+}
+
+// Personal contacts blocklist (OPS-187)
+// Emails from these addresses are not synced/displayed for this user
+model PersonalContact {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  email     String   @db.VarChar(255) // Blocked email address
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, email])
+  @@index([userId])
+  @@map("personal_contacts")
 }
 
 // ============================================================================
@@ -3681,6 +3738,8 @@ enum ClassificationAction {
   MANUAL_CLASSIFY // User manually classified email
   MANUAL_LINK // User linked email to additional case
   MANUAL_UNLINK // User removed email from case
+  CONFIRMED // OPS-195: User confirmed multi-case assignment
+  MANUAL_REASSIGN // OPS-195: User reassigned email to different case
 }
 
 // Classification match type - how the email was matched to a case
@@ -3840,6 +3899,12 @@ model EmailCaseLink {
   linkedAt   DateTime                 @default(now()) @map("linked_at") @db.Timestamptz
   linkedBy   String                   @map("linked_by") // "auto" or userId
   isPrimary  Boolean                  @default(false) @map("is_primary") // First/original assignment
+
+  // Multi-case confirmation (OPS-195)
+  needsConfirmation Boolean   @default(false) @map("needs_confirmation") // True for multi-case sender emails
+  isConfirmed       Boolean   @default(true) @map("is_confirmed") // Defaults true, set false for pending
+  confirmedAt       DateTime? @map("confirmed_at") @db.Timestamptz
+  confirmedBy       String?   @map("confirmed_by") // userId who confirmed
 
   // Relations
   email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)

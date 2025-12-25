@@ -7,6 +7,25 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { CaseHeader } from './CaseHeader';
 import type { Case, User } from '@legal-platform/types';
 
+// Mock next/navigation
+const mockPush = jest.fn();
+const mockSearchParams = new URLSearchParams();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => mockSearchParams,
+}));
+
+// Mock useCaseEditPermission
+const mockCaseEditPermission = {
+  canEdit: true,
+  canEditFinancials: false,
+  editReason: 'partner' as const,
+  isLoading: false,
+};
+jest.mock('@/hooks/useCaseEditPermission', () => ({
+  useCaseEditPermission: () => mockCaseEditPermission,
+}));
+
 // Mock date-fns
 jest.mock('date-fns', () => ({
   format: jest.fn((_date: Date) => '12 Nov 2025'),
@@ -66,6 +85,11 @@ describe('CaseHeader', () => {
     description: 'Depunere răspuns',
   };
 
+  beforeEach(() => {
+    mockPush.mockClear();
+    mockCaseEditPermission.canEdit = true;
+  });
+
   it('renders case information correctly', () => {
     render(<CaseHeader case={mockCase} />);
 
@@ -102,14 +126,26 @@ describe('CaseHeader', () => {
     expect(screen.getByText(/12 Nov 2025 - Depunere răspuns/)).toBeInTheDocument();
   });
 
-  it('calls onEditCase when edit button clicked', () => {
-    const mockOnEditCase = jest.fn();
-    render(<CaseHeader case={mockCase} onEditCase={mockOnEditCase} />);
+  it('shows edit button when user has permission', () => {
+    render(<CaseHeader case={mockCase} />);
 
-    const editButton = screen.getByText('Editează Cazul');
+    expect(screen.getByText('Editează')).toBeInTheDocument();
+  });
+
+  it('hides edit button when user lacks permission', () => {
+    mockCaseEditPermission.canEdit = false;
+    render(<CaseHeader case={mockCase} />);
+
+    expect(screen.queryByText('Editează')).not.toBeInTheDocument();
+  });
+
+  it('navigates to edit mode when edit button clicked', () => {
+    render(<CaseHeader case={mockCase} />);
+
+    const editButton = screen.getByText('Editează');
     fireEvent.click(editButton);
 
-    expect(mockOnEditCase).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/cases/1?edit=true');
   });
 
   it('calls onAddTeamMember when add button clicked', () => {

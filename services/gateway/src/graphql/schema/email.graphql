@@ -57,6 +57,16 @@ type EmailCaseLink {
   linkedBy: String!
   """Whether this is the primary (first) assignment"""
   isPrimary: Boolean!
+
+  # OPS-195: Multi-Case Confirmation Flow
+  """True when sender has 2+ active cases - requires user confirmation before reply"""
+  needsConfirmation: Boolean!
+  """Whether this assignment has been confirmed by a user"""
+  isConfirmed: Boolean!
+  """When the assignment was confirmed"""
+  confirmedAt: DateTime
+  """User ID who confirmed the assignment"""
+  confirmedBy: ID
 }
 
 """
@@ -106,6 +116,17 @@ type Email {
   classifiedAt: DateTime
   """Who classified the email - 'auto' or userId"""
   classifiedBy: String
+
+  # ============================================================================
+  # Partner Privacy (OPS-191)
+  # ============================================================================
+
+  """Whether this email is marked as private by a partner"""
+  isPrivate: Boolean!
+  """User ID of the partner who marked this email as private"""
+  markedPrivateBy: ID
+  """When the email was marked as private"""
+  markedPrivateAt: DateTime
 
   # ============================================================================
   # Multi-Case Support (OPS-060)
@@ -321,6 +342,8 @@ Uncertain email from the NECLAR queue
 """
 type UncertainEmail {
   id: ID!
+  """Thread conversation ID for loading thread view (OPS-200)"""
+  conversationId: String
   subject: String!
   from: EmailAddress!
   receivedDateTime: DateTime!
@@ -667,6 +690,31 @@ extend type Mutation {
   ): Boolean!
 
   # ============================================================================
+  # Multi-Case Confirmation (OPS-195)
+  # ============================================================================
+
+  """
+  Confirm or reassign an email's case assignment.
+  Used when sender has multiple active cases - user confirms which case the email belongs to.
+
+  If confirming the current assignment:
+    - Sets isConfirmed=true on the EmailCaseLink
+    - Reply button becomes enabled
+
+  If reassigning to a different case:
+    - Updates the primary case assignment
+    - Sets the new assignment as confirmed
+
+  Authorization: User must be on the case team
+  """
+  confirmEmailAssignment(
+    """Email ID to confirm assignment for"""
+    emailId: ID!
+    """Case ID to confirm/assign to"""
+    caseId: ID!
+  ): ConfirmEmailAssignmentResult!
+
+  # ============================================================================
   # Attachment Actions (OPS-135)
   # ============================================================================
 
@@ -705,6 +753,43 @@ extend type Mutation {
     """Whether to mark as irrelevant (true) or restore (false)"""
     irrelevant: Boolean!
   ): EmailAttachment!
+
+  # ============================================================================
+  # Partner Privacy (OPS-191)
+  # ============================================================================
+
+  """
+  Mark an email as private (Partner only).
+  Private emails are hidden from case details but remain visible
+  to the marking partner in their /communications view.
+
+  Authorization: User must have Partner role
+  """
+  markEmailPrivate(emailId: ID!): Email!
+
+  """
+  Restore a private email to normal visibility.
+  Only the partner who marked the email as private can restore it.
+
+  Authorization: User must have Partner role and be the one who marked it private
+  """
+  unmarkEmailPrivate(emailId: ID!): Email!
+
+  """
+  Mark all emails in a thread as private (Partner only).
+  All emails in the conversation will be hidden from case details.
+
+  Authorization: User must have Partner role
+  """
+  markThreadPrivate(conversationId: String!): [Email!]!
+
+  """
+  Restore all private emails in a thread.
+  Only emails marked by the current user will be restored.
+
+  Authorization: User must have Partner role
+  """
+  unmarkThreadPrivate(conversationId: String!): [Email!]!
 }
 
 """
@@ -745,6 +830,18 @@ type SaveAttachmentAsDocumentResult {
   isNew: Boolean!
   """OPS-175: The CaseDocument ID linking the document to the case"""
   caseDocumentId: UUID!
+}
+
+"""
+Result of confirming an email assignment (OPS-195)
+"""
+type ConfirmEmailAssignmentResult {
+  """The email that was confirmed"""
+  email: Email!
+  """The confirmed case link with updated confirmation fields"""
+  caseLink: EmailCaseLink!
+  """Whether the case assignment changed (false if confirming existing assignment)"""
+  wasReassigned: Boolean!
 }
 
 # ============================================================================

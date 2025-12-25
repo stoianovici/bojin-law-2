@@ -2,7 +2,11 @@
 /**
  * OPS-090: Backfill script for email content cleaning
  *
- * Run with: npx ts-node scripts/backfill-email-clean.ts
+ * Usage:
+ *   npx ts-node scripts/backfill-email-clean.ts              # Process emails without clean content
+ *   npx ts-node scripts/backfill-email-clean.ts --reprocess  # Re-clean ALL emails (fix formatting)
+ *   npx ts-node scripts/backfill-email-clean.ts --limit=500  # Process up to 500 emails
+ *   npx ts-node scripts/backfill-email-clean.ts --reprocess --limit=50  # Re-clean 50 emails
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -18,10 +22,19 @@ const EXTRACTION_PROMPT = `Extract only the new message content from this email.
 - Automatic replies ("This is an automatic reply", "Răspuns automat")
 
 Return ONLY the actual new message text in plain text format (no HTML tags).
-Preserve paragraph breaks and formatting structure.
+
+CRITICAL - WHITESPACE FORMATTING:
+- Preserve ALL paragraph breaks as DOUBLE newlines (blank line between paragraphs)
+- Preserve single line breaks within addresses, lists, or structured content
+- Do NOT collapse multiple paragraphs into a single block of text
+- Each distinct paragraph/thought should be separated by a blank line
+
+IMPORTANT: Răspunde DOAR în limba română. NU include explicații, raționamente sau comentarii în engleză.
+Returnează DOAR textul extras, fără meta-comentarii.
 
 If the email is entirely quoted/forwarded with no new content, return "[Mesaj redirecționat fără conținut nou]".
 If the email contains only an attachment notice with no text, return "[Doar atașament]".
+If the email is a newsletter or informative bulletin with no personal message, return "[Newsletter informativ]".
 If you cannot extract meaningful content, return the original text cleaned of HTML.`;
 
 function stripHtml(html: string): string {
@@ -68,10 +81,10 @@ async function cleanEmail(
       ],
     });
 
-    const textBlock = response.content.find((block) => block.type === 'text');
-    return textBlock && textBlock.type === 'text'
-      ? textBlock.text.trim()
-      : stripHtml(bodyContent).trim();
+    const textBlock = response.content.find(
+      (block): block is { type: 'text'; text: string } => block.type === 'text'
+    );
+    return textBlock ? textBlock.text.trim() : stripHtml(bodyContent).trim();
   } catch (error) {
     console.error('Error cleaning email:', error);
     return stripHtml(bodyContent).trim();
@@ -79,16 +92,24 @@ async function cleanEmail(
 }
 
 async function main() {
-  console.log('Starting email content backfill...\n');
+  // Check for --reprocess flag to re-clean emails that already have bodyContentClean
+  const reprocess = process.argv.includes('--reprocess');
+  const limit = parseInt(
+    process.argv.find((arg) => arg.startsWith('--limit='))?.split('=')[1] || '100'
+  );
+
+  console.log(`Starting email content backfill...`);
+  console.log(`Mode: ${reprocess ? 'REPROCESS existing' : 'Process new only'}`);
+  console.log(`Limit: ${limit}\n`);
 
   const anthropic = new Anthropic();
 
-  // Find emails without clean content
+  // Find emails to process
+  // Note: bodyContent is a required field, so we just filter on bodyContentClean for non-reprocess mode
   const emails = await prisma.email.findMany({
-    where: {
-      bodyContentClean: null,
-      bodyContent: { not: null },
-    },
+    where: reprocess
+      ? {} // All emails (bodyContent is required, so all emails have it)
+      : { bodyContentClean: null }, // Only those without clean content
     select: {
       id: true,
       subject: true,
@@ -96,7 +117,7 @@ async function main() {
       bodyContentType: true,
     },
     orderBy: { receivedDateTime: 'desc' },
-    take: 100,
+    take: limit,
   });
 
   console.log(`Found ${emails.length} emails to process\n`);

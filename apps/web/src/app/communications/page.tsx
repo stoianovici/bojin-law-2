@@ -25,7 +25,6 @@ import { CaseSidebar, type MoveThreadInfo } from '../../components/communication
 import { MessageView } from '../../components/communication/MessageView';
 import { ConversationView } from '../../components/communication/ConversationView';
 import { ComposeInterface } from '../../components/communication/ComposeInterface';
-import { ClassificationModal } from '../../components/communication/ClassificationModal';
 import { MoveThreadModal } from '../../components/communication/MoveThreadModal';
 import { AttachmentPreviewPanel } from '../../components/communication/AttachmentPreviewPanel';
 
@@ -79,6 +78,19 @@ interface ViewState {
   caseId: string | null;
 }
 
+// OPS-196: NECLAR email data for inline assignment
+// OPS-200: Added conversationId for thread view loading
+interface NeclarEmailData {
+  id: string;
+  conversationId?: string;
+  suggestedCases: Array<{
+    id: string;
+    caseNumber: string;
+    title: string;
+    score: number;
+  }>;
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -117,8 +129,9 @@ export default function CommunicationsPage() {
     caseId: null,
   });
 
-  // Classification modal state
-  const [classificationEmailId, setClassificationEmailId] = useState<string | null>(null);
+  // OPS-196: NECLAR inline assignment - store the selected uncertain email data
+  // Instead of opening a modal, we now load the email in ConversationView
+  const [neclarEmailData, setNeclarEmailData] = useState<NeclarEmailData | null>(null);
 
   // Move thread modal state
   const [moveThreadInfo, setMoveThreadInfo] = useState<MoveThreadInfo | null>(null);
@@ -270,21 +283,57 @@ export default function CommunicationsPage() {
     });
   }, []);
 
-  // Handle uncertain email selection - open classification modal
-  const handleSelectUncertainEmail = useCallback((emailId: string) => {
-    setClassificationEmailId(emailId);
-  }, []);
+  // OPS-196: Handle uncertain email selection - load in ConversationView with inline assignment
+  // OPS-200: Use conversationId for thread loading so SplitAssignmentButton renders
+  const handleSelectUncertainEmail = useCallback(
+    (emailId: string) => {
+      // Find the uncertain email data to get conversationId and suggestions
+      const uncertainEmail = emailData.uncertain.find((e) => e.id === emailId);
+      if (!uncertainEmail) return;
 
-  // Handle classification modal close
-  const handleClassificationClose = useCallback(() => {
-    setClassificationEmailId(null);
-  }, []);
+      // Store the NECLAR data for the action bar
+      setNeclarEmailData({
+        id: uncertainEmail.id,
+        conversationId: uncertainEmail.conversationId,
+        suggestedCases: uncertainEmail.suggestedCases,
+      });
 
-  // Handle classification complete - refetch data
-  const handleClassificationComplete = useCallback(() => {
-    setClassificationEmailId(null);
+      // OPS-200: Use conversationId (not email ID) so useEmailThread can find the thread
+      // This allows the thread to load properly and SplitAssignmentButton to render
+      setViewState({
+        mode: 'uncertain-email',
+        threadId: uncertainEmail.conversationId || uncertainEmail.id, // Prefer conversationId
+        emailId,
+        caseId: null,
+      });
+    },
+    [emailData.uncertain]
+  );
+
+  // OPS-196: Handle assignment complete - clear NECLAR state and refetch
+  const handleNeclarAssignmentComplete = useCallback(() => {
+    setNeclarEmailData(null);
     refetch();
   }, [refetch]);
+
+  // OPS-206: Handle unassigned thread selection from merged NECLAR section
+  // These are threads without a case that need inline assignment
+  const handleSelectUnassignedThread = useCallback((conversationId: string) => {
+    // For unassigned threads, we don't have AI suggestions
+    // The CasePickerDropup will be shown in ConversationView
+    setNeclarEmailData({
+      id: conversationId, // Use conversationId as a pseudo-id
+      conversationId,
+      suggestedCases: [], // No suggestions - will trigger CasePickerDropup
+    });
+
+    setViewState({
+      mode: 'uncertain-email', // Use same mode as uncertain emails for NECLAR bar
+      threadId: conversationId,
+      emailId: null,
+      caseId: null,
+    });
+  }, []);
 
   // Handle move thread request from sidebar
   const handleMoveThread = useCallback((info: MoveThreadInfo) => {
@@ -530,6 +579,7 @@ export default function CommunicationsPage() {
             onSelectThread={handleSelectThread}
             onSelectCourtEmail={handleSelectCourtEmail}
             onSelectUncertainEmail={handleSelectUncertainEmail}
+            onSelectUnassignedThread={handleSelectUnassignedThread}
             onMoveThread={handleMoveThread}
             // OPS-132: Load more support
             hasMoreThreads={hasMore}
@@ -543,10 +593,16 @@ export default function CommunicationsPage() {
         <div className="flex-1 flex overflow-hidden">
           {/* Content View */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            {viewState.mode === 'thread' && selectedThread ? (
+            {/* OPS-196: NECLAR emails now open in ConversationView with inline assignment */}
+            {(viewState.mode === 'thread' || viewState.mode === 'uncertain-email') &&
+            selectedThread ? (
               // OPS-121: Conditionally render conversation or card view
               threadViewMode === 'conversation' ? (
-                <ConversationView />
+                <ConversationView
+                  neclarMode={viewState.mode === 'uncertain-email'}
+                  neclarData={neclarEmailData}
+                  onNeclarAssigned={handleNeclarAssignmentComplete}
+                />
               ) : (
                 <MessageView />
               )
@@ -647,6 +703,7 @@ export default function CommunicationsPage() {
 
           {/* OPS-122: Attachment Preview Panel */}
           {/* OPS-140: Added caseId for action toolbar */}
+          {/* OPS-197: Added isEmailAssigned to disable save for NECLAR emails */}
           {previewPanelOpen && threadAttachments.length > 0 && (
             <AttachmentPreviewPanel
               isOpen={previewPanelOpen}
@@ -656,6 +713,9 @@ export default function CommunicationsPage() {
               onSelectAttachment={handleSelectAttachment}
               onRequestPreviewUrl={handleRequestPreviewUrl}
               caseId={selectedThread?.caseId}
+              isEmailAssigned={
+                viewState.mode !== 'uncertain-email' && Boolean(selectedThread?.caseId)
+              }
             />
           )}
         </div>
@@ -663,15 +723,6 @@ export default function CommunicationsPage() {
 
       {/* Compose Modal */}
       <ComposeInterface />
-
-      {/* Classification Modal */}
-      {classificationEmailId && (
-        <ClassificationModal
-          emailId={classificationEmailId}
-          onClose={handleClassificationClose}
-          onClassified={handleClassificationComplete}
-        />
-      )}
 
       {/* Move Thread Modal */}
       {moveThreadInfo && (

@@ -1,10 +1,11 @@
 /**
  * Unified Settings Page
- * Combines Billing, Firm, and AI Personalization settings
+ * Combines Billing, Firm, AI Personalization, and Personal Contacts settings
  *
  * Story 2.8.1: Billing & Rate Management - Task 9
  * OPS-028: Firm Settings
  * Story 5.6: AI Personalization
+ * OPS-193: Personal Contacts Profile Page
  */
 
 'use client';
@@ -16,6 +17,7 @@ import { useQuery } from '@apollo/client/react';
 import { FinancialData } from '@/components/auth/FinancialData';
 import { DefaultRatesForm } from '@/components/settings/DefaultRatesForm';
 import { GlobalEmailSourcesPanel } from '@/components/settings/GlobalEmailSourcesPanel';
+import { PersonalContactsSection } from '@/components/settings/PersonalContactsSection';
 import { SettingsTabBar, type SettingsTab } from '@/components/settings/SettingsTabBar';
 
 // Lazy load the heavy AI Personalization components
@@ -135,11 +137,25 @@ function FirmContent() {
   );
 }
 
+function ContactsContent() {
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PersonalContactsSection />
+    </div>
+  );
+}
+
 function SettingsContent() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
   const activeTab: SettingsTab =
-    tabParam === 'firm' ? 'firm' : tabParam === 'ai' ? 'ai' : 'billing';
+    tabParam === 'firm'
+      ? 'firm'
+      : tabParam === 'ai'
+        ? 'ai'
+        : tabParam === 'contacts'
+          ? 'contacts'
+          : 'billing';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -150,6 +166,7 @@ function SettingsContent() {
       {activeTab === 'billing' && <BillingContent />}
       {activeTab === 'firm' && <FirmContent />}
       {activeTab === 'ai' && <AIPersonalizationContent />}
+      {activeTab === 'contacts' && <ContactsContent />}
     </div>
   );
 }

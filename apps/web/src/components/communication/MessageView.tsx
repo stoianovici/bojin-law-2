@@ -17,13 +17,15 @@ import {
   FolderInput,
   EyeOff,
   X,
-  Users,
+  Plus,
+  ExternalLink,
   Eye,
   FileText,
   FileCode,
   FileEdit,
 } from 'lucide-react';
-import { NotifyStakeholdersModal } from './NotifyStakeholdersModal';
+// OPS-192: Removed NotifyStakeholdersModal - using Outlook directly
+import { openOutlookCompose, openOutlookReply } from '../../utils/outlook';
 import { DocumentPreviewModal, type PreviewableDocument } from '@/components/preview';
 import { useState, useCallback } from 'react';
 import { gql } from '@apollo/client';
@@ -166,7 +168,7 @@ interface ExtendedMessage extends CommunicationMessage {
 
 function Message({
   message,
-  threadId,
+  threadId: _threadId, // OPS-192: Kept for potential future use, but reply now handled at parent level
   isExpanded,
   onToggle,
   onReply,
@@ -180,10 +182,11 @@ function Message({
   userRole, // OPS-141: User role for action filtering
 }: {
   message: ExtendedMessage;
-  threadId: string;
+  threadId: string; // OPS-192: Kept in interface for API compatibility
   isExpanded: boolean;
   onToggle: () => void;
-  onReply: (threadId: string) => void;
+  // OPS-192: Updated signature - no longer needs threadId, handles Outlook directly
+  onReply: () => void;
   isCollapsed?: boolean;
   onAttachmentsSynced?: (messageId: string, attachments: any[]) => void;
   hasMsalAccount?: boolean;
@@ -600,16 +603,17 @@ function Message({
     [message.id, syncEmailAttachments, syncingAttachments, onAttachmentsSynced]
   );
 
+  // OPS-192: Updated to call parent's Outlook handler
   const handleReplyClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onReply(threadId);
+    onReply();
   };
 
   const handleReplyKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       e.stopPropagation();
-      onReply(threadId);
+      onReply();
     }
   };
 
@@ -823,13 +827,13 @@ function Message({
 }
 
 export function MessageView() {
+  // OPS-192: Removed openCompose - using Outlook directly now
   const {
     getSelectedThread,
     expandedMessageIds,
     toggleMessageExpanded,
     expandAllMessages,
     collapseAllMessages,
-    openCompose,
     threads,
     setThreads,
     selectThread,
@@ -853,9 +857,7 @@ export function MessageView() {
   // Modal state for assigning to case
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string>('');
-
-  // Modal state for notifying stakeholders
-  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  // OPS-192: Removed showNotifyModal state - using Outlook directly now
 
   // Mutations
   const [assignThreadToCase, { loading: assigning }] =
@@ -976,8 +978,20 @@ export function MessageView() {
   const allExpanded = allMessages.every((m) => expandedMessageIds.has(m.id));
   const isUnassigned = !thread.caseId;
 
-  const handleReply = (threadId: string) => {
-    openCompose('reply', threadId);
+  // OPS-192: Updated to use Outlook directly instead of internal compose
+  const handleReply = () => {
+    if (thread && thread.messages.length > 0) {
+      // Find the most recent non-sent message to reply to
+      const receivedMessages = thread.messages.filter((m) => (m as any).folderType !== 'sent');
+      const lastMessage =
+        receivedMessages.length > 0
+          ? receivedMessages[receivedMessages.length - 1]
+          : thread.messages[thread.messages.length - 1];
+
+      const senderEmail = lastMessage.senderEmail || '';
+      const subject = thread.subject || '';
+      openOutlookReply(senderEmail, subject);
+    }
   };
 
   const handleMarkAsProcessed = () => {
@@ -1067,7 +1081,7 @@ export function MessageView() {
           </div>
         )}
 
-        {/* Actions */}
+        {/* Actions - OPS-192: Updated layout with Outlook integration */}
         <div className="flex items-center gap-3">
           <button
             onClick={toggleMessageOrder}
@@ -1087,17 +1101,23 @@ export function MessageView() {
           >
             {allExpanded ? 'Restrânge tot' : 'Extinde tot'}
           </button>
-          {/* Notify stakeholders button - only when assigned to a case */}
-          {!isUnassigned && (
-            <button
-              onClick={() => setShowNotifyModal(true)}
-              className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1.5"
-              title="Trimite o notificare părților interesate"
-            >
-              <Users className="h-4 w-4" />
-              Notifică părțile
-            </button>
-          )}
+          {/* + Nou button - opens Outlook compose */}
+          <button
+            onClick={openOutlookCompose}
+            className="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            Nou
+          </button>
+          {/* Răspunde button - opens Outlook reply */}
+          <button
+            onClick={handleReply}
+            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+          >
+            <Reply className="h-4 w-4" />
+            Răspunde
+            <ExternalLink className="h-3 w-3 opacity-70" />
+          </button>
           <button
             onClick={handleMarkAsProcessed}
             className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
@@ -1195,10 +1215,7 @@ export function MessageView() {
         </div>
       )}
 
-      {/* Notify Stakeholders Modal */}
-      {showNotifyModal && (
-        <NotifyStakeholdersModal thread={thread} onClose={() => setShowNotifyModal(false)} />
-      )}
+      {/* OPS-192: Removed NotifyStakeholdersModal - using Outlook directly */}
     </div>
   );
 }

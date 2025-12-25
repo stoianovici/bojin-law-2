@@ -55,6 +55,7 @@ export interface CustomRatesInput {
 
 export interface CreateCaseInput {
   title: string;
+  caseNumber?: string;
   clientName: string;
   type: string; // Dynamic case type code
   description: string;

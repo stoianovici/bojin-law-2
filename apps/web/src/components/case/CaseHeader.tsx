@@ -11,8 +11,10 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { format, differenceInDays } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { Case, CaseStatus, CaseType, User } from '@legal-platform/types';
-import { Calendar, Edit2, Plus, MoreVertical, UserCircle } from 'lucide-react';
+import { Calendar, Eye, Pencil, Plus, MoreVertical, UserCircle } from 'lucide-react';
+import { useCaseEditPermission } from '@/hooks/useCaseEditPermission';
 
 export interface CaseHeaderProps {
   case: Case;
@@ -21,7 +23,6 @@ export interface CaseHeaderProps {
     date: Date;
     description: string;
   };
-  onEditCase?: () => void;
   onAddTeamMember?: () => void;
   onMenuAction?: (action: string) => void;
 }
@@ -141,10 +142,26 @@ function CaseHeaderComponent({
   case: caseData,
   teamMembers = [],
   nextDeadline,
-  onEditCase,
   onAddTeamMember,
   onMenuAction,
 }: CaseHeaderProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { canEdit } = useCaseEditPermission(caseData.id);
+
+  const isEditMode = searchParams.get('edit') === 'true';
+
+  const toggleEditMode = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (isEditMode) {
+      params.delete('edit');
+    } else {
+      params.set('edit', 'true');
+    }
+    const queryString = params.toString();
+    router.push(`/cases/${caseData.id}${queryString ? `?${queryString}` : ''}`);
+  };
+
   const visibleTeamMembers = teamMembers.slice(0, 5);
   const remainingCount = teamMembers.length - 5;
 
@@ -169,13 +186,29 @@ function CaseHeaderComponent({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={onEditCase}
-              className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-            >
-              <Edit2 className="w-4 h-4 mr-2" />
-              Editează Cazul
-            </button>
+            {canEdit && (
+              <button
+                onClick={toggleEditMode}
+                className={clsx(
+                  'inline-flex items-center px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors',
+                  isEditMode
+                    ? 'text-white bg-blue-600 hover:bg-blue-700'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                )}
+              >
+                {isEditMode ? (
+                  <>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Vizualizare
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Editează
+                  </>
+                )}
+              </button>
+            )}
 
             <button
               onClick={onAddTeamMember}

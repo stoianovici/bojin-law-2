@@ -36,7 +36,12 @@ const EXTRACTION_PROMPT = `Extract only the new message content from this email.
 - Automatic replies ("This is an automatic reply", "Răspuns automat")
 
 Return ONLY the actual new message text in plain text format (no HTML tags).
-Preserve paragraph breaks and formatting structure.
+
+CRITICAL - WHITESPACE FORMATTING:
+- Preserve ALL paragraph breaks as DOUBLE newlines (blank line between paragraphs)
+- Preserve single line breaks within addresses, lists, or structured content
+- Do NOT collapse multiple paragraphs into a single block of text
+- Each distinct paragraph/thought should be separated by a blank line
 
 IMPORTANT: Răspunde DOAR în limba română. NU include explicații, raționamente sau comentarii în engleză.
 Returnează DOAR textul extras, fără meta-comentarii.

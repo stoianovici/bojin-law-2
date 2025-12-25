@@ -3,24 +3,47 @@
 /**
  * ConversationView Component
  * OPS-121: Conversation-first thread view for chat-style email display
+ * OPS-194: Partner privacy UI + case details filter
+ * OPS-196: NECLAR inline assignment with SplitAssignmentButton
  *
  * Displays email threads as a flowing conversation with chat-style bubbles.
  * All messages are visible by default (no expand/collapse needed).
  * Sent messages are right-aligned with blue styling, received left-aligned.
+ *
+ * In NECLAR mode (neclarMode=true), shows inline assignment buttons instead of reply buttons.
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Reply, Loader2, FolderInput, EyeOff, X, Users } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Reply,
+  Forward,
+  Users,
+  Loader2,
+  FolderInput,
+  EyeOff,
+  X,
+  Ban,
+  ExternalLink,
+  Lock,
+  LockOpen,
+  AlertTriangle,
+  Check,
+} from 'lucide-react';
 import { gql } from '@apollo/client';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
 import { ConversationBubble } from './ConversationBubble';
 import { ConversationHeader } from './ConversationHeader';
-import { DocumentPreviewModal, type PreviewableDocument } from '@/components/preview';
+import { SplitAssignmentButton, type CaseSuggestion } from './SplitAssignmentButton';
+import { CasePickerDropup } from './CasePickerDropup';
 import { NotifyStakeholdersModal } from './NotifyStakeholdersModal';
+import { DocumentPreviewModal, type PreviewableDocument } from '@/components/preview';
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useMyCases } from '../../hooks/useMyCases';
+import { useEmailPrivacy } from '../../hooks/useEmailPrivacy';
+import { useAuth } from '../../contexts/AuthContext';
+import { openOutlookCompose, openOutlookReply } from '../../utils/outlook';
 
 // ============================================================================
 // GraphQL Operations
@@ -74,6 +97,63 @@ const IGNORE_EMAIL_THREAD = gql`
   }
 `;
 
+// OPS-196: Mutation for classifying uncertain emails (NECLAR)
+const CLASSIFY_UNCERTAIN_EMAIL = gql`
+  mutation ClassifyUncertainEmail($emailId: ID!, $action: ClassificationActionInput!) {
+    classifyUncertainEmail(emailId: $emailId, action: $action) {
+      email {
+        id
+        classificationState
+      }
+      case {
+        id
+        title
+        caseNumber
+      }
+      wasIgnored
+    }
+  }
+`;
+
+// OPS-196: Mutation for marking sender as personal contact
+const MARK_SENDER_AS_PERSONAL = gql`
+  mutation MarkSenderAsPersonal($emailId: ID!, $ignoreEmail: Boolean) {
+    markSenderAsPersonal(emailId: $emailId, ignoreEmail: $ignoreEmail) {
+      id
+      email
+      createdAt
+    }
+  }
+`;
+
+// OPS-195: Mutation for confirming email assignment (multi-case confirmation flow)
+const CONFIRM_EMAIL_ASSIGNMENT = gql`
+  mutation ConfirmEmailAssignment($emailId: ID!, $caseId: ID!) {
+    confirmEmailAssignment(emailId: $emailId, caseId: $caseId) {
+      email {
+        id
+        caseLinks {
+          id
+          caseId
+          isConfirmed
+          needsConfirmation
+          case {
+            id
+            title
+            caseNumber
+          }
+        }
+      }
+      caseLink {
+        id
+        isConfirmed
+        confirmedAt
+      }
+      wasReassigned
+    }
+  }
+`;
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -90,15 +170,95 @@ interface Attachment {
   downloadUrl?: string;
 }
 
+// OPS-196: Props for NECLAR mode
+interface NeclarEmailData {
+  id: string;
+  conversationId?: string;
+  suggestedCases: Array<{
+    id: string;
+    caseNumber: string;
+    title: string;
+    score: number;
+  }>;
+}
+
+// OPS-195: Case link with confirmation state
+interface CaseLinkData {
+  id: string;
+  caseId: string;
+  isConfirmed: boolean;
+  needsConfirmation: boolean;
+  isPrimary?: boolean;
+  confidence?: number;
+  case: {
+    id: string;
+    title: string;
+    caseNumber: string;
+  };
+}
+
+interface ConversationViewProps {
+  /** OPS-196: When true, show assignment UI instead of reply UI */
+  neclarMode?: boolean;
+  /** OPS-196: Data for NECLAR email including suggested cases */
+  neclarData?: NeclarEmailData | null;
+  /** OPS-196: Callback when NECLAR email is assigned or sender marked as personal */
+  onNeclarAssigned?: () => void;
+  /** OPS-195: Unconfirmed case link data when sender has multiple cases */
+  unconfirmedCaseLink?: CaseLinkData | null;
+  /** OPS-195: Alternative case suggestions for multi-case confirmation */
+  alternativeCases?: CaseLinkData[] | null;
+  /** OPS-195: Callback when assignment is confirmed */
+  onConfirmed?: () => void;
+}
+
 // ============================================================================
 // Component
 // ============================================================================
 
-export function ConversationView() {
-  const { getSelectedThread, openCompose, threads, setThreads, selectThread, userEmail } =
+export function ConversationView({
+  neclarMode = false,
+  neclarData = null,
+  onNeclarAssigned,
+  unconfirmedCaseLink = null,
+  alternativeCases = null,
+  onConfirmed,
+}: ConversationViewProps) {
+  // OPS-203: Restored openCompose for in-app AI draft compose
+  const { getSelectedThread, threads, setThreads, selectThread, userEmail, openCompose } =
     useCommunicationStore();
   const { addNotification } = useNotificationStore();
+  const { user } = useAuth();
   const thread = getSelectedThread();
+
+  // OPS-194: Privacy state - check if any message in thread is private
+  const threadIsPrivate = thread?.messages.some((m) => (m as any).isPrivate) ?? false;
+  const {
+    canToggle: canTogglePrivacy,
+    loading: privacyLoading,
+    toggleThreadPrivacy,
+  } = useEmailPrivacy({
+    conversationId: thread?.conversationId,
+    isCurrentlyPrivate: threadIsPrivate,
+    onToggled: (isPrivate) => {
+      // Update local thread state to reflect privacy change
+      if (thread) {
+        const updatedThreads = threads.map((t) =>
+          t.id === thread.id
+            ? {
+                ...t,
+                messages: t.messages.map((m) => ({
+                  ...m,
+                  isPrivate,
+                  markedPrivateBy: isPrivate ? user?.id : null,
+                })),
+              }
+            : t
+        );
+        setThreads(updatedThreads as any);
+      }
+    },
+  });
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -110,6 +270,7 @@ export function ConversationView() {
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string>('');
+  // OPS-203: Restored NotifyStakeholdersModal for assigned emails
   const [showNotifyModal, setShowNotifyModal] = useState(false);
 
   // GraphQL
@@ -121,6 +282,17 @@ export function ConversationView() {
   });
   const [assignThreadToCase, { loading: assigning }] = useMutation(ASSIGN_THREAD_TO_CASE);
   const [ignoreEmailThread, { loading: ignoring }] = useMutation(IGNORE_EMAIL_THREAD);
+  // OPS-196: NECLAR mutations
+  const [classifyUncertainEmail, { loading: classifying }] = useMutation(CLASSIFY_UNCERTAIN_EMAIL);
+  const [markSenderAsPersonalMutation, { loading: markingPersonal }] =
+    useMutation(MARK_SENDER_AS_PERSONAL);
+  // OPS-195: Multi-case confirmation mutation
+  const [confirmEmailAssignment, { loading: confirming }] = useMutation(CONFIRM_EMAIL_ASSIGNMENT);
+
+  // OPS-196: Track if NECLAR assignment completed (for transition to reply mode)
+  const [neclarAssigned, setNeclarAssigned] = useState(false);
+  // OPS-195: Track if assignment confirmed (for enabling reply)
+  const [isConfirmed, setIsConfirmed] = useState(!unconfirmedCaseLink);
 
   // Hooks
   const { cases: userCases, loading: casesLoading } = useMyCases();
@@ -136,9 +308,17 @@ export function ConversationView() {
   }, [thread?.id, thread?.messages.length]);
 
   // Handlers
+  // OPS-203: Open ComposeInterface with AI draft panel for replies
   const handleReply = useCallback(() => {
     if (thread) {
       openCompose('reply', thread.id);
+    }
+  }, [thread, openCompose]);
+
+  // OPS-203: Open ComposeInterface in forward mode
+  const handleForward = useCallback(() => {
+    if (thread) {
+      openCompose('forward', thread.id);
     }
   }, [thread, openCompose]);
 
@@ -326,19 +506,145 @@ export function ConversationView() {
     }
   }, [thread, ignoreEmailThread, threads, setThreads, selectThread, addNotification]);
 
-  const handleMarkAsProcessed = useCallback(() => {
-    if (thread) {
-      const updatedThreads = threads.map((t) =>
-        t.id === thread.id ? { ...t, isProcessed: true, processedAt: new Date() } : t
-      );
-      setThreads(updatedThreads);
+  // OPS-203: Removed handleMarkAsProcessed - button removed from action bar
+
+  // OPS-194: Handle privacy toggle
+  const handleTogglePrivacy = useCallback(async () => {
+    if (!thread || !canTogglePrivacy || !thread.conversationId) return;
+    await toggleThreadPrivacy(thread.conversationId, threadIsPrivate);
+  }, [thread, canTogglePrivacy, toggleThreadPrivacy, threadIsPrivate]);
+
+  // OPS-204: Handle NECLAR reply via Outlook
+  const handleNeclarReply = useCallback(() => {
+    if (thread && thread.messages.length > 0) {
+      // Get the last received message to reply to
+      const lastMessage = thread.messages[thread.messages.length - 1];
+      const senderEmail = lastMessage.senderEmail || '';
+      const subject = thread.subject || '';
+      openOutlookReply(senderEmail, subject);
+    }
+  }, [thread]);
+
+  // OPS-196: Handle NECLAR assignment to case
+  const handleNeclarAssign = useCallback(
+    async (caseId: string) => {
+      if (!neclarData) return;
+
+      try {
+        const result = await classifyUncertainEmail({
+          variables: {
+            emailId: neclarData.id,
+            action: { type: 'ASSIGN_TO_CASE', caseId },
+          },
+        });
+
+        const data = result.data as {
+          classifyUncertainEmail?: {
+            case?: { id: string; title: string; caseNumber: string };
+          };
+        };
+        const assignedCase = data?.classifyUncertainEmail?.case;
+
+        setNeclarAssigned(true);
+        addNotification({
+          type: 'success',
+          title: 'Email atribuit',
+          message: assignedCase
+            ? `Email atribuit la ${assignedCase.caseNumber}`
+            : 'Email clasificat cu succes',
+        });
+
+        // Notify parent that assignment is complete
+        onNeclarAssigned?.();
+      } catch (error) {
+        console.error('Failed to classify uncertain email:', error);
+        addNotification({
+          type: 'error',
+          title: 'Eroare',
+          message: 'Nu s-a putut atribui email-ul',
+        });
+      }
+    },
+    [neclarData, classifyUncertainEmail, addNotification, onNeclarAssigned]
+  );
+
+  // OPS-204: Removed handleNeclarIgnore - NECLAR emails use "Privat" to block sender instead
+
+  // OPS-196: Handle marking sender as personal contact
+  const handleMarkSenderAsPersonal = useCallback(async () => {
+    if (!neclarData) return;
+
+    try {
+      await markSenderAsPersonalMutation({
+        variables: {
+          emailId: neclarData.id,
+          ignoreEmail: true, // Also ignore the email
+        },
+      });
+
       addNotification({
         type: 'success',
-        title: 'Comunicare procesată',
-        message: 'Comunicarea a fost marcată ca procesată',
+        title: 'Contact personal adăugat',
+        message: 'Expeditorul a fost adăugat la contactele personale și email-ul va fi ignorat',
+      });
+
+      onNeclarAssigned?.();
+    } catch (error) {
+      console.error('Failed to mark sender as personal:', error);
+      addNotification({
+        type: 'error',
+        title: 'Eroare',
+        message: 'Nu s-a putut marca expeditorul ca personal',
       });
     }
-  }, [thread, threads, setThreads, addNotification]);
+  }, [neclarData, markSenderAsPersonalMutation, addNotification, onNeclarAssigned]);
+
+  // OPS-195: Handle multi-case confirmation
+  const handleConfirmAssignment = useCallback(
+    async (caseId: string) => {
+      if (!thread?.messages?.[0]?.id) return;
+
+      const emailId = thread.messages[0].id; // Use first email in thread
+
+      try {
+        await confirmEmailAssignment({
+          variables: { emailId, caseId },
+        });
+
+        setIsConfirmed(true);
+        addNotification({
+          type: 'success',
+          title: 'Atribuire confirmată',
+          message: 'Email-ul a fost confirmat la dosar',
+        });
+
+        onConfirmed?.();
+      } catch (error) {
+        console.error('Failed to confirm email assignment:', error);
+        addNotification({
+          type: 'error',
+          title: 'Eroare',
+          message: 'Nu s-a putut confirma atribuirea',
+        });
+      }
+    },
+    [thread, confirmEmailAssignment, addNotification, onConfirmed]
+  );
+
+  // OPS-196: Prepare suggested cases for SplitAssignmentButton
+  const neclarSuggestions: CaseSuggestion[] =
+    neclarData?.suggestedCases.map((c) => ({
+      id: c.id,
+      caseNumber: c.caseNumber,
+      title: c.title,
+      confidence: c.score / 100, // Convert score (0-100) to confidence (0-1)
+    })) || [];
+  // Get primary and secondary case suggestions for SplitAssignmentButton
+  const primaryCase = neclarSuggestions[0];
+  const secondaryCase = neclarSuggestions[1];
+
+  // OPS-195: Check if confirmation is needed
+  const needsConfirmation = !!unconfirmedCaseLink && !isConfirmed;
 
   // Empty state
   if (!thread) {
@@ -367,13 +673,24 @@ export function ConversationView() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* Header */}
+      {/* Header - OPS-201: Added new compose button */}
       <ConversationHeader
         thread={thread}
         sentCount={sentCount}
         totalCount={sortedMessages.length}
         userEmail={userEmail}
+        onNewCompose={openOutlookCompose}
       />
+
+      {/* OPS-194: Private email indicator banner */}
+      {threadIsPrivate && (
+        <div className="mx-4 mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2">
+          <Lock className="h-4 w-4 text-purple-600 flex-shrink-0" />
+          <p className="text-sm text-purple-800">
+            Această conversație este privată (doar pentru tine)
+          </p>
+        </div>
+      )}
 
       {/* Unassigned email banner */}
       {isUnassigned && (
@@ -402,6 +719,58 @@ export function ConversationView() {
               )}
               Ignoră
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* OPS-195: Multi-case confirmation banner */}
+      {needsConfirmation && unconfirmedCaseLink && (
+        <div className="mx-4 mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-orange-800 mb-1">
+                Confirmați dosarul pentru acest email
+              </p>
+              <p className="text-sm text-orange-700 mb-3">
+                Expeditorul are mai multe dosare active. Confirmați dosarul corect înainte de a
+                răspunde.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {/* Primary suggestion - confirm current assignment */}
+                <button
+                  onClick={() => handleConfirmAssignment(unconfirmedCaseLink.case.id)}
+                  disabled={confirming}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+                >
+                  {confirming ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  {unconfirmedCaseLink.case.caseNumber}
+                </button>
+
+                {/* Alternative cases */}
+                {alternativeCases?.slice(0, 3).map((alt) => (
+                  <button
+                    key={alt.case.id}
+                    onClick={() => handleConfirmAssignment(alt.case.id)}
+                    disabled={confirming}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white text-orange-700 border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50"
+                  >
+                    {alt.case.caseNumber}
+                  </button>
+                ))}
+
+                {/* Show more - link to full case list */}
+                {(alternativeCases?.length ?? 0) > 3 && (
+                  <span className="text-sm text-orange-600 self-center">
+                    +{(alternativeCases?.length ?? 0) - 3} altele
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -436,35 +805,154 @@ export function ConversationView() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Reply bar */}
-      <div className="border-t bg-white px-4 py-3">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleReply}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors font-medium"
+      {/* Action bar - OPS-192/OPS-196: NECLAR mode vs normal mode */}
+      <AnimatePresence mode="wait">
+        {neclarMode && !neclarAssigned ? (
+          /* OPS-196: NECLAR mode action bar with SplitAssignmentButton */
+          <motion.div
+            key="neclar-actions"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="border-t bg-amber-50 px-4 py-3"
           >
-            <Reply className="h-4 w-4" />
-            Răspunde
-          </button>
-          {!isUnassigned && (
-            <>
+            <div className="flex items-center gap-3">
+              {/* OPS-204/OPS-206: SplitAssignmentButton or CasePickerDropup */}
+              <div className="flex-1">
+                {primaryCase ? (
+                  <SplitAssignmentButton
+                    primaryCase={primaryCase}
+                    secondaryCase={secondaryCase}
+                    allSuggestions={neclarSuggestions}
+                    onAssign={handleNeclarAssign}
+                    onPersonal={handleMarkSenderAsPersonal}
+                    loading={classifying}
+                    disabled={classifying || markingPersonal}
+                  />
+                ) : (
+                  /* OPS-206: CasePickerDropup for emails without suggestions */
+                  <CasePickerDropup
+                    onSelect={handleNeclarAssign}
+                    loading={classifying}
+                    disabled={classifying || markingPersonal}
+                  />
+                )}
+              </div>
+
+              {/* OPS-204: Răspunde button - opens Outlook reply */}
+              <button
+                onClick={handleNeclarReply}
+                disabled={classifying || markingPersonal}
+                className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-full hover:bg-white transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Reply className="h-4 w-4" />
+                Răspunde
+                <ExternalLink className="h-3 w-3 opacity-70" />
+              </button>
+
+              {/* OPS-204: Privat button - blocks sender from future sync */}
+              <button
+                onClick={handleMarkSenderAsPersonal}
+                disabled={markingPersonal || classifying}
+                className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-full hover:bg-white transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {markingPersonal ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Ban className="h-4 w-4" />
+                )}
+                Privat
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+          /* OPS-203: Normal mode action bar - Răspunde (ComposeInterface), Forward, Notify, Privat */
+          <motion.div
+            key="normal-actions"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="border-t bg-white px-4 py-3"
+          >
+            <div className="flex items-center gap-3">
+              {/* OPS-203: Răspunde button - opens ComposeInterface with AI draft panel */}
+              {/* OPS-195: Disabled when confirmation is needed */}
+              <button
+                onClick={handleReply}
+                disabled={needsConfirmation}
+                title={needsConfirmation ? 'Confirmați dosarul înainte de a răspunde' : undefined}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full transition-colors font-medium ${
+                  needsConfirmation
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
+              >
+                <Reply className="h-4 w-4" />
+                {needsConfirmation ? 'Confirmați dosarul' : 'Răspunde'}
+              </button>
+
+              {/* OPS-203: Forward button - opens ComposeInterface in forward mode */}
+              <button
+                onClick={handleForward}
+                disabled={needsConfirmation}
+                title={
+                  needsConfirmation ? 'Confirmați dosarul înainte de a redirecționa' : undefined
+                }
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-colors font-medium ${
+                  needsConfirmation
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Forward className="h-4 w-4" />
+                Forward
+              </button>
+
+              {/* OPS-203: Notify button - opens NotifyStakeholdersModal */}
               <button
                 onClick={() => setShowNotifyModal(true)}
-                className="px-3 py-2.5 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
-                title="Notifică părțile"
+                disabled={needsConfirmation}
+                title={needsConfirmation ? 'Confirmați dosarul înainte de a notifica' : undefined}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-colors font-medium ${
+                  needsConfirmation
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                <Users className="h-5 w-5" />
+                <Users className="h-4 w-4" />
+                Notify
               </button>
-              <button
-                onClick={handleMarkAsProcessed}
-                className="px-4 py-2.5 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
-              >
-                Marchează ca procesat
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+
+              {/* OPS-194: Privacy toggle - only for partners */}
+              {canTogglePrivacy && (
+                <button
+                  onClick={handleTogglePrivacy}
+                  disabled={privacyLoading}
+                  title={
+                    threadIsPrivate
+                      ? 'Anulează marcarea ca privat'
+                      : 'Marchează conversația ca privată (doar pentru tine)'
+                  }
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-colors font-medium ${
+                    threadIsPrivate
+                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  } ${privacyLoading ? 'opacity-50 cursor-wait' : ''}`}
+                >
+                  {privacyLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : threadIsPrivate ? (
+                    <Lock className="h-4 w-4" />
+                  ) : (
+                    <LockOpen className="h-4 w-4" />
+                  )}
+                  {threadIsPrivate ? 'Privat' : 'Privat'}
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Assign to Case Modal */}
       {showAssignModal && (
@@ -540,8 +1028,8 @@ export function ConversationView() {
         onRequestPreviewUrl={handleRequestPreviewUrl}
       />
 
-      {/* Notify Stakeholders Modal */}
-      {showNotifyModal && (
+      {/* OPS-203: NotifyStakeholdersModal for assigned emails */}
+      {showNotifyModal && thread && (
         <NotifyStakeholdersModal thread={thread} onClose={() => setShowNotifyModal(false)} />
       )}
     </div>

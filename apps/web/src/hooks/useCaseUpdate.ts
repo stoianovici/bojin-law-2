@@ -36,6 +36,7 @@ const UPDATE_CASE = gql`
 
 export interface UpdateCaseInput {
   title?: string;
+  caseNumber?: string;
   status?: CaseStatus;
   type?: string; // Dynamic case type code
   description?: string;

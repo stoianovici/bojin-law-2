@@ -593,8 +593,8 @@ export const caseResolvers = {
         }
       }
 
-      // Generate unique case number
-      const caseNumber = await generateCaseNumber(user.firmId);
+      // OPS-218: Use provided court case number or generate internal tracking number
+      const caseNumber = args.input.caseNumber?.trim() || (await generateCaseNumber(user.firmId));
 
       // Story 2.8.2: Determine if case requires approval
       // Partners create cases directly as Active (no approval needed)

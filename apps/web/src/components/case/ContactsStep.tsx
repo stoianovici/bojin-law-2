@@ -76,21 +76,24 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
     });
   };
 
+  // OPS-219: Expanded actor roles for Romanian legal practice
   const getRoleBadgeColor = (role: CaseActorRole) => {
-    switch (role) {
-      case 'Client':
-        return 'bg-blue-100 text-blue-800';
-      case 'OpposingParty':
-        return 'bg-red-100 text-red-800';
-      case 'OpposingCounsel':
-        return 'bg-orange-100 text-orange-800';
-      case 'Witness':
-        return 'bg-green-100 text-green-800';
-      case 'Expert':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+    const colorMap: Record<CaseActorRole, string> = {
+      Client: 'bg-blue-100 text-blue-800',
+      OpposingParty: 'bg-red-100 text-red-800',
+      OpposingCounsel: 'bg-orange-100 text-orange-800',
+      Witness: 'bg-green-100 text-green-800',
+      Expert: 'bg-purple-100 text-purple-800',
+      Intervenient: 'bg-cyan-100 text-cyan-800',
+      Mandatar: 'bg-indigo-100 text-indigo-800',
+      Court: 'bg-amber-100 text-amber-800',
+      Prosecutor: 'bg-rose-100 text-rose-800',
+      Bailiff: 'bg-slate-100 text-slate-800',
+      Notary: 'bg-emerald-100 text-emerald-800',
+      LegalRepresentative: 'bg-violet-100 text-violet-800',
+      Other: 'bg-gray-100 text-gray-800',
+    };
+    return colorMap[role] || 'bg-gray-100 text-gray-800';
   };
 
   const getRoleLabel = (role: CaseActorRole) => {
@@ -100,6 +103,14 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
       OpposingCounsel: 'Avocat parte adversă',
       Witness: 'Martor',
       Expert: 'Expert',
+      Intervenient: 'Intervenient',
+      Mandatar: 'Mandatar',
+      Court: 'Instanță',
+      Prosecutor: 'Procuror',
+      Bailiff: 'Executor Judecătoresc',
+      Notary: 'Notar',
+      LegalRepresentative: 'Reprezentant Legal',
+      Other: 'Altele',
     };
     return labels[role];
   };

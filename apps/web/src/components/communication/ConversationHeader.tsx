@@ -8,7 +8,7 @@
  * Compact design that doesn't take too much vertical space.
  */
 
-import { Folder, Users, MessageSquare, Send } from 'lucide-react';
+import { Folder, Users, MessageSquare, Send, Plus } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { CommunicationThread } from '@legal-platform/types';
 
@@ -21,6 +21,8 @@ export interface ConversationHeaderProps {
   sentCount: number;
   totalCount: number;
   userEmail: string | null;
+  /** OPS-201: Callback for new compose button */
+  onNewCompose?: () => void;
 }
 
 // ============================================================================
@@ -32,6 +34,7 @@ export function ConversationHeader({
   sentCount,
   totalCount,
   userEmail,
+  onNewCompose,
 }: ConversationHeaderProps) {
   // Get unique participants (excluding the current user for cleaner display)
   const uniqueParticipants = new Set<string>();
@@ -54,10 +57,21 @@ export function ConversationHeader({
 
   return (
     <div className="bg-white border-b px-4 py-3">
-      {/* Subject line */}
-      <h2 className="font-semibold text-gray-900 text-base leading-tight mb-2 line-clamp-2">
-        {thread.subject || '(Fără subiect)'}
-      </h2>
+      {/* Subject line with new compose button - OPS-201 */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h2 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 flex-1">
+          {thread.subject || '(Fără subiect)'}
+        </h2>
+        {onNewCompose && (
+          <button
+            onClick={onNewCompose}
+            title="Email nou"
+            className="flex-shrink-0 p-1.5 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
       {/* Metadata row */}
       <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">

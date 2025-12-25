@@ -93,6 +93,8 @@ export interface AttachmentPreviewPanelProps {
   onDownload?: (attachment: ThreadAttachment) => void;
   /** Case ID for saving attachments - required for action buttons to work */
   caseId?: string;
+  /** OPS-197: Whether the email is assigned to a case (not in NECLAR queue) */
+  isEmailAssigned?: boolean;
   /** Callback when attachment is saved as document */
   onAttachmentSaved?: (attachmentId: string, documentId: string) => void;
   /** Callback when attachment is marked as irrelevant */
@@ -175,6 +177,7 @@ export function AttachmentPreviewPanel({
   onRequestPreviewUrl,
   onDownload,
   caseId,
+  isEmailAssigned,
   onAttachmentSaved,
   onAttachmentMarkedIrrelevant,
   onAttachmentPromoted,
@@ -214,11 +217,22 @@ export function AttachmentPreviewPanel({
             : 'Acest atașament a fost salvat anterior',
         });
       },
-      onError: (error) => {
+      onError: (error: {
+        message?: string;
+        graphQLErrors?: Array<{ extensions?: { code?: string } }>;
+      }) => {
+        // OPS-197: Handle EMAIL_NOT_ASSIGNED error code with specific message
+        const isNotAssigned = error.graphQLErrors?.some(
+          (e) => e.extensions?.code === 'EMAIL_NOT_ASSIGNED'
+        );
         addNotification({
           type: 'error',
-          title: 'Eroare la salvare',
-          message: error.message || 'Nu s-a putut salva atașamentul',
+          title: isNotAssigned ? 'Email neatribuit' : 'Eroare la salvare',
+          message:
+            error.message ||
+            (isNotAssigned
+              ? 'Emailul trebuie atribuit unui dosar înainte de a salva atașamentele.'
+              : 'Nu s-a putut salva atașamentul'),
         });
       },
     }
@@ -368,8 +382,17 @@ export function AttachmentPreviewPanel({
     ? savedAttachmentIds.has(selectedAttachment.id)
     : false;
 
-  // Check if we can show actions (need caseId)
-  const canShowActions = Boolean(caseId);
+  // OPS-197: Check if email is assigned to a case
+  // If isEmailAssigned is undefined, fall back to checking if caseId exists
+  const emailAssigned = isEmailAssigned ?? Boolean(caseId);
+
+  // Check if we can perform document actions (need caseId AND email must be assigned)
+  const canSaveToDocuments = Boolean(caseId) && emailAssigned;
+
+  // Message for disabled state - shown when email is not assigned
+  const disabledTooltip = !emailAssigned
+    ? 'Atribuiți emailul unui dosar pentru a salva atașamentele'
+    : undefined;
 
   // Load preview when attachment changes
   useEffect(() => {
@@ -664,85 +687,93 @@ export function AttachmentPreviewPanel({
         )}
       </div>
 
-      {/* OPS-140: Action Footer */}
-      {canShowActions && (
-        <div className="flex items-center justify-between p-3 border-t bg-gray-50 flex-shrink-0">
-          {/* Primary actions - left side */}
-          <div className="flex items-center gap-2">
+      {/* OPS-140: Action Footer - OPS-197: Always show, but disable save when email not assigned */}
+      <div className="flex items-center justify-between p-3 border-t bg-gray-50 flex-shrink-0">
+        {/* Primary actions - left side */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSaveToDocuments}
+            disabled={!canSaveToDocuments || savingAttachment || isAttachmentSaved}
+            className={clsx(
+              'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors',
+              isAttachmentSaved
+                ? 'bg-green-100 text-green-700 cursor-default'
+                : canSaveToDocuments
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            )}
+            title={
+              disabledTooltip ||
+              (isAttachmentSaved ? 'Salvat în documente' : 'Salvează în documente')
+            }
+          >
+            {savingAttachment ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isAttachmentSaved ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">{isAttachmentSaved ? 'Salvat' : 'Salvează'}</span>
+          </button>
+          {/* OPS-175: Promote to working document button - hidden if already promoted */}
+          {!selectedAttachment?.isPromoted && (
             <button
-              onClick={handleSaveToDocuments}
-              disabled={savingAttachment || isAttachmentSaved}
+              onClick={handlePromoteToWorking}
+              disabled={!canSaveToDocuments || promotingAttachment || savingAttachment}
               className={clsx(
                 'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors',
-                isAttachmentSaved
-                  ? 'bg-green-100 text-green-700 cursor-default'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                canSaveToDocuments
+                  ? 'text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
               )}
-              title={isAttachmentSaved ? 'Salvat în documente' : 'Salvează în documente'}
+              title={disabledTooltip || 'Editează ca document de lucru'}
             >
-              {savingAttachment ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isAttachmentSaved ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">{isAttachmentSaved ? 'Salvat' : 'Salvează'}</span>
-            </button>
-            {/* OPS-175: Promote to working document button - hidden if already promoted */}
-            {!selectedAttachment?.isPromoted && (
-              <button
-                onClick={handlePromoteToWorking}
-                disabled={promotingAttachment || savingAttachment}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Editează ca document de lucru"
-              >
-                {promotingAttachment ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileEdit className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Editează</span>
-              </button>
-            )}
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-              title="Descarcă"
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Descarcă</span>
-            </button>
-          </div>
-
-          {/* Secondary actions - right side */}
-          <div className="flex items-center gap-1">
-            {previewUrl && !isBlobUrl && (
-              <a
-                href={previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                title="Deschide în fereastră nouă"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            )}
-            <button
-              onClick={handleMarkIrrelevant}
-              disabled={markingIrrelevant}
-              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Marchează ca irelevant"
-            >
-              {markingIrrelevant ? (
+              {promotingAttachment ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <EyeOff className="h-4 w-4" />
+                <FileEdit className="h-4 w-4" />
               )}
+              <span className="hidden sm:inline">Editează</span>
             </button>
-          </div>
+          )}
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            title="Descarcă"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Descarcă</span>
+          </button>
         </div>
-      )}
+
+        {/* Secondary actions - right side */}
+        <div className="flex items-center gap-1">
+          {previewUrl && !isBlobUrl && (
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              title="Deschide în fereastră nouă"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          )}
+          <button
+            onClick={handleMarkIrrelevant}
+            disabled={markingIrrelevant}
+            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Marchează ca irelevant"
+          >
+            {markingIrrelevant ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <EyeOff className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
 
       {/* Navigation Actions */}
       <div className="flex items-center justify-between p-3 border-t bg-white flex-shrink-0">

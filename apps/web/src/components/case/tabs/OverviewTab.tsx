@@ -1,21 +1,45 @@
 /**
  * OverviewTab - Case overview with summary cards
- * Displays case details, team, activity, deadlines, and stats
+ * OPS-214: Refactored to use section components with edit mode support
+ *
+ * Displays case details, team, activity, deadlines, and stats.
+ * Editable sections use inline editing when ?edit=true and user has permission.
  */
 
 'use client';
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import type { Case } from '@legal-platform/types';
 import * as Avatar from '@radix-ui/react-avatar';
 import { Clock, FileText, ClipboardList } from 'lucide-react';
-import { BillingInfoSection } from '../BillingInfoSection';
+
+// Section components
+import {
+  CaseDetailsSection,
+  ContactsSection,
+  ReferencesSection,
+  BillingSection,
+  parseReferencesFromMetadata,
+} from '../sections';
+
+// Hooks
+import { useCaseEditPermission } from '../../../hooks/useCaseEditPermission';
+
+// Other components
 import { CaseRevenueKPIWidget } from '../CaseRevenueKPIWidget';
 import { EditRatesModal } from '../EditRatesModal';
 import { CaseAISummarySection } from '../CaseAISummarySection';
+import { FinancialData } from '../../auth/FinancialData';
+
+// Types
+import type { CaseWithFullRelations } from '../../../hooks/useCase';
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface CaseTeamMember {
   id: string;
@@ -26,12 +50,11 @@ interface CaseTeamMember {
 }
 
 export interface OverviewTabProps {
-  case: Case;
+  case: CaseWithFullRelations;
   teamMembers?: CaseTeamMember[];
   recentActivity?: ActivityItem[];
   upcomingDeadlines?: DeadlineItem[];
   stats?: CaseStats;
-  onEditDetails?: () => void;
   className?: string;
 }
 
@@ -56,9 +79,10 @@ export interface CaseStats {
   billableHours: number;
 }
 
-/**
- * Card Component
- */
+// ============================================================================
+// Card Component (for read-only sections)
+// ============================================================================
+
 interface CardProps {
   title: string;
   children: React.ReactNode;
@@ -78,10 +102,15 @@ function Card({ title, children, action, className }: CardProps) {
   );
 }
 
+// ============================================================================
+// OverviewTab Component
+// ============================================================================
+
 /**
  * OverviewTab Component
  *
- * Displays case overview in grid layout with various information cards
+ * Displays case overview in grid layout with various information cards.
+ * Supports edit mode via ?edit=true query param for users with permission.
  */
 export function OverviewTab({
   case: caseData,
@@ -89,10 +118,42 @@ export function OverviewTab({
   recentActivity = [],
   upcomingDeadlines = [],
   stats = { totalDocuments: 0, openTasks: 0, billableHours: 0 },
-  onEditDetails,
   className,
 }: OverviewTabProps) {
   const [showEditRatesModal, setShowEditRatesModal] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Check edit permissions
+  const {
+    canEdit,
+    canEditFinancials,
+    isLoading: permissionLoading,
+  } = useCaseEditPermission(caseData.id);
+
+  // Determine if edit mode is active
+  const isEditMode = searchParams.get('edit') === 'true' && canEdit;
+
+  // Parse references from metadata
+  const references = parseReferencesFromMetadata(caseData.metadata as Record<string, unknown>);
+
+  // Prepare case details data for section component
+  const caseDetailsData = {
+    title: caseData.title,
+    caseNumber: caseData.caseNumber,
+    description: caseData.description,
+    type: caseData.type,
+    clientId: caseData.clientId,
+    clientName: caseData.client?.name,
+    value: caseData.value,
+    openedDate: caseData.openedDate,
+  };
+
+  // Prepare billing data for section component
+  const billingData = {
+    type: caseData.billingType,
+    fixedAmount: caseData.fixedAmount,
+    customRates: caseData.customRates,
+  };
 
   return (
     <div className={clsx('h-full overflow-y-auto bg-gray-50 p-6', className)}>
@@ -100,47 +161,21 @@ export function OverviewTab({
         {/* AI Summary Section */}
         <CaseAISummarySection caseId={caseData.id} />
 
-        {/* Existing cards in grid */}
+        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Case Details Card */}
-          <Card
-            title="Detalii Caz"
-            action={
-              <button
-                onClick={onEditDetails}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Editează
-              </button>
-            }
-          >
-            <dl className="space-y-3 text-sm">
-              <div key="description">
-                <dt className="text-gray-600 mb-1">Descriere</dt>
-                <dd className="text-gray-900">{caseData.description}</dd>
-              </div>
-              <div key="dates-and-value" className="grid grid-cols-2 gap-4">
-                <div key="opened-date">
-                  <dt className="text-gray-600 mb-1">Data Deschidere</dt>
-                  <dd className="text-gray-900">
-                    {format(caseData.openedDate, 'dd MMMM yyyy', { locale: ro })}
-                  </dd>
-                </div>
-                <div key="case-value">
-                  <dt className="text-gray-600 mb-1">Valoare Caz</dt>
-                  <dd className="text-gray-900">
-                    {caseData.value ? `${caseData.value.toLocaleString('ro-RO')} RON` : 'N/A'}
-                  </dd>
-                </div>
-              </div>
-              <div key="case-type">
-                <dt className="text-gray-600 mb-1">Tip Caz</dt>
-                <dd className="text-gray-900">{caseData.type}</dd>
-              </div>
-            </dl>
-          </Card>
+          {/* ================================================================ */}
+          {/* LEFT COLUMN - Editable Sections                                 */}
+          {/* ================================================================ */}
 
-          {/* Team Members Card */}
+          {/* Case Details Section */}
+          <CaseDetailsSection
+            caseId={caseData.id}
+            caseData={caseDetailsData}
+            editable={isEditMode && !permissionLoading}
+            canEditFinancials={canEditFinancials}
+          />
+
+          {/* Team Members Card (read-only) */}
           <Card title="Membrii Echipei">
             <div className="space-y-3">
               {teamMembers.map((member) => {
@@ -169,6 +204,25 @@ export function OverviewTab({
               )}
             </div>
           </Card>
+
+          {/* Contacts Section */}
+          <ContactsSection
+            caseId={caseData.id}
+            actors={caseData.actors || []}
+            editable={isEditMode && !permissionLoading}
+          />
+
+          {/* References Section */}
+          <ReferencesSection
+            caseId={caseData.id}
+            references={references}
+            metadata={(caseData.metadata as Record<string, unknown>) || {}}
+            editable={isEditMode && !permissionLoading}
+          />
+
+          {/* ================================================================ */}
+          {/* RIGHT COLUMN - Read-Only Sections                               */}
+          {/* ================================================================ */}
 
           {/* Recent Activity Card */}
           <Card title="Activitate Recentă">
@@ -233,6 +287,10 @@ export function OverviewTab({
             </div>
           </Card>
 
+          {/* ================================================================ */}
+          {/* FULL WIDTH SECTIONS                                             */}
+          {/* ================================================================ */}
+
           {/* Quick Stats Card - Full Width */}
           <div className="lg:col-span-2">
             <Card title="Statistici Rapide">
@@ -273,24 +331,22 @@ export function OverviewTab({
             </Card>
           </div>
 
-          {/* Billing Information Section - Full Width */}
+          {/* Billing Section - Full Width */}
           <div className="lg:col-span-2">
-            <Card title="Billing Information">
-              <BillingInfoSection
-                caseId={caseData.id}
-                billingType={caseData.billingType}
-                fixedAmount={caseData.fixedAmount}
-                customRates={caseData.customRates}
-                onEdit={() => setShowEditRatesModal(true)}
-              />
-            </Card>
+            <BillingSection
+              caseId={caseData.id}
+              billing={billingData}
+              editable={isEditMode && canEditFinancials && !permissionLoading}
+            />
           </div>
 
           {/* Revenue KPI Widget - Full Width (Partners only, Fixed cases only) */}
           <div className="lg:col-span-2">
-            <Card title="Revenue Metrics">
-              <CaseRevenueKPIWidget caseId={caseData.id} billingType={caseData.billingType} />
-            </Card>
+            <FinancialData>
+              <Card title="Metrici Venituri">
+                <CaseRevenueKPIWidget caseId={caseData.id} billingType={caseData.billingType} />
+              </Card>
+            </FinancialData>
           </div>
         </div>
       </div>

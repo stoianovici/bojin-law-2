@@ -24,6 +24,7 @@ interface ActorsManagementProps {
 
 /**
  * Get actor role display name (Romanian)
+ * OPS-219: Expanded for Romanian legal practice
  */
 function getActorRoleDisplay(role: CaseActorRole): string {
   const roleMap: Record<CaseActorRole, string> = {
@@ -32,12 +33,21 @@ function getActorRoleDisplay(role: CaseActorRole): string {
     OpposingCounsel: 'Avocat parte adversă',
     Witness: 'Martor',
     Expert: 'Expert',
+    Intervenient: 'Intervenient',
+    Mandatar: 'Mandatar',
+    Court: 'Instanță',
+    Prosecutor: 'Procuror',
+    Bailiff: 'Executor Judecătoresc',
+    Notary: 'Notar',
+    LegalRepresentative: 'Reprezentant Legal',
+    Other: 'Altele',
   };
   return roleMap[role];
 }
 
 /**
  * Get role color classes
+ * OPS-219: Expanded for Romanian legal practice
  */
 function getRoleColorClasses(role: CaseActorRole): string {
   const colorMap: Record<CaseActorRole, string> = {
@@ -46,6 +56,14 @@ function getRoleColorClasses(role: CaseActorRole): string {
     OpposingCounsel: 'bg-orange-100 text-orange-800',
     Witness: 'bg-green-100 text-green-800',
     Expert: 'bg-purple-100 text-purple-800',
+    Intervenient: 'bg-cyan-100 text-cyan-800',
+    Mandatar: 'bg-indigo-100 text-indigo-800',
+    Court: 'bg-amber-100 text-amber-800',
+    Prosecutor: 'bg-rose-100 text-rose-800',
+    Bailiff: 'bg-slate-100 text-slate-800',
+    Notary: 'bg-emerald-100 text-emerald-800',
+    LegalRepresentative: 'bg-violet-100 text-violet-800',
+    Other: 'bg-gray-100 text-gray-800',
   };
   return colorMap[role];
 }
@@ -453,13 +471,21 @@ export function ActorsManagement({ caseId, actors }: ActorsManagementProps) {
   const [actorToEdit, setActorToEdit] = useState<CaseActor | null>(null);
   const [actorToRemove, setActorToRemove] = useState<CaseActor | null>(null);
 
-  // Group actors by role
+  // Group actors by role (OPS-219: Expanded roles)
   const actorsByRole: Record<CaseActorRole, CaseActor[]> = {
     Client: [],
     OpposingParty: [],
     OpposingCounsel: [],
     Witness: [],
     Expert: [],
+    Intervenient: [],
+    Mandatar: [],
+    Court: [],
+    Prosecutor: [],
+    Bailiff: [],
+    Notary: [],
+    LegalRepresentative: [],
+    Other: [],
   };
 
   actors.forEach((actor) => {

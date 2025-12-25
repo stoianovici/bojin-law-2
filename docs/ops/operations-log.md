@@ -187,6 +187,43 @@
 | OPS-184 | OneDrive to SharePoint Lazy Migration                 | Feature      | P3-Low      | Closed     | [archive/ops-184.md](archive/ops-184.md) |
 | OPS-185 | Unify Case Communications with Thread View            | Feature      | P2-Medium   | Closed     | [archive/ops-185.md](archive/ops-185.md) |
 | OPS-186 | Case Communications Shows Unrelated Emails            | Bug          | P1-High     | Closed     | [archive/ops-186.md](archive/ops-186.md) |
+| OPS-187 | Schema - PersonalContact + Email Privacy Fields       | Feature      | P1-High     | Closed     | [archive/ops-187.md](archive/ops-187.md) |
+| OPS-188 | SplitAssignmentButton Component                       | Feature      | P1-High     | Closed     | [archive/ops-188.md](archive/ops-188.md) |
+| OPS-189 | Sidebar Sender-First Display                          | Feature      | P2-Medium   | Closed     | [archive/ops-189.md](archive/ops-189.md) |
+| OPS-190 | Personal Contacts Service + GraphQL                   | Feature      | P1-High     | Closed     | [archive/ops-190.md](archive/ops-190.md) |
+| OPS-191 | Email Privacy Service + GraphQL                       | Feature      | P1-High     | Closed     | [archive/ops-191.md](archive/ops-191.md) |
+| OPS-192 | Action Bar - Outlook + Compose Button                 | Feature      | P2-Medium   | Closed     | [archive/ops-192.md](archive/ops-192.md) |
+| OPS-193 | Personal Contacts Profile Page                        | Feature      | P2-Medium   | Closed     | [archive/ops-193.md](archive/ops-193.md) |
+| OPS-194 | Partner Privacy UI + Case Details Filter              | Feature      | P2-Medium   | Closed     | [archive/ops-194.md](archive/ops-194.md) |
+| OPS-195 | Multi-Case Confirmation Flow                          | Feature      | P1-High     | Closed     | [archive/ops-195.md](archive/ops-195.md) |
+| OPS-196 | NECLAR Inline Assignment                              | Feature      | P1-High     | Closed     | [archive/ops-196.md](archive/ops-196.md) |
+| OPS-197 | Document Rule - Assigned Emails Only                  | Feature      | P2-Medium   | Closed     | [archive/ops-197.md](archive/ops-197.md) |
+| OPS-198 | Remove ClassificationModal                            | Feature      | P2-Medium   | Closed     | [archive/ops-198.md](archive/ops-198.md) |
+| OPS-199 | Production Data Reset - Full Wipe & Fresh Start       | Migration    | P1-High     | Ready      | [issues/ops-199.md](issues/ops-199.md)   |
+| OPS-200 | Debug SplitAssignmentButton Visibility                | Bug          | P1-High     | Closed     | [archive/ops-200.md](archive/ops-200.md) |
+| OPS-201 | Move "+" Button to ConversationHeader                 | Feature      | P2-Medium   | Closed     | [archive/ops-201.md](archive/ops-201.md) |
+| OPS-202 | blockSenderFromSync Mutation                          | Feature      | P1-High     | Closed     | [archive/ops-202.md](archive/ops-202.md) |
+| OPS-203 | Restructure Assigned Email Action Bar                 | Feature      | P1-High     | Closed     | [archive/ops-203.md](archive/ops-203.md) |
+| OPS-204 | Restructure NECLAR Action Bar                         | Feature      | P1-High     | Closed     | [archive/ops-204.md](archive/ops-204.md) |
+| OPS-205 | Partner Privacy E2E Verification                      | Testing      | P2-Medium   | Closed     | [archive/ops-205.md](archive/ops-205.md) |
+| OPS-206 | Merge NECLAR + Unassigned with Inline Assignment      | Feature      | P1-High     | Closed     | [archive/ops-206.md](archive/ops-206.md) |
+| OPS-207 | useCaseEditPermission Hook                            | Feature      | P2-Medium   | Closed     | [archive/ops-207.md](archive/ops-207.md) |
+| OPS-208 | useDraftCase Hook                                     | Feature      | P2-Medium   | Closed     | [archive/ops-208.md](archive/ops-208.md) |
+| OPS-209 | DraftModeToolbar Component                            | Feature      | P2-Medium   | Closed     | [archive/ops-209.md](archive/ops-209.md) |
+| OPS-210 | CaseDetailsSection Component                          | Feature      | P2-Medium   | Closed     | [archive/ops-210.md](archive/ops-210.md) |
+| OPS-211 | ContactsSection Component                             | Feature      | P2-Medium   | Closed     | [archive/ops-211.md](archive/ops-211.md) |
+| OPS-212 | ReferencesSection Component                           | Feature      | P2-Medium   | Closed     | [archive/ops-212.md](archive/ops-212.md) |
+| OPS-213 | BillingSection Component                              | Feature      | P2-Medium   | Closed     | [archive/ops-213.md](archive/ops-213.md) |
+| OPS-214 | OverviewTab Refactor                                  | Refactor     | P2-Medium   | Closed     | [archive/ops-214.md](archive/ops-214.md) |
+| OPS-215 | CaseHeader Edit Toggle                                | Feature      | P2-Medium   | Closed     | [archive/ops-215.md](archive/ops-215.md) |
+| OPS-216 | Draft Mode New Case Page                              | Feature      | P2-Medium   | Closed     | [archive/ops-216.md](archive/ops-216.md) |
+| OPS-217 | Remove Case Modals & Update Entry Points              | Refactor     | P2-Medium   | Closed     | [archive/ops-217.md](archive/ops-217.md) |
+| OPS-218 | Court Case Number Field in Case UI                    | Feature      | P2-Medium   | Closed     | [archive/ops-218.md](archive/ops-218.md) |
+| OPS-219 | Expand CaseActorRole Enum                             | Feature      | P2-Medium   | Closed     | [archive/ops-219.md](archive/ops-219.md) |
+| OPS-220 | ActorTypeConfig Data Model                            | Feature      | P2-Medium   | Closed     | [archive/ops-220.md](archive/ops-220.md) |
+| OPS-221 | ActorTypeConfig GraphQL & Service                     | Feature      | P2-Medium   | Closed     | [archive/ops-221.md](archive/ops-221.md) |
+| OPS-222 | useActorTypes Hook                                    | Feature      | P2-Medium   | Closed     | [archive/ops-222.md](archive/ops-222.md) |
+| OPS-223 | Actor Type Selection UI                               | Feature      | P2-Medium   | Completed  | [issues/ops-223.md](issues/ops-223.md)   |
 
 ---
 
@@ -293,6 +330,105 @@
 
 ---
 
+### Communications UX Overhaul (Epic) - OPS-187 to OPS-199
+
+**Goal**: Replace modal-based email classification with inline assignment, add personal contact blocklist, partner privacy marking, and require confirmation for multi-case senders. Wipe existing classifications for fresh start.
+
+**Key Changes**:
+
+- NECLAR emails open in ThreadView with inline assignment buttons (no modal)
+- Split button design: 80/20 split with confidence colors (cyan/yellow/magenta)
+- Sidebar shows sender-first for unassigned emails
+- "Răspunde" opens Outlook, "+ Nou" for new threads
+- "Personal" marks sender as blocklist (emails won't sync)
+- Partners can mark emails private (hidden from case details)
+- Multi-case senders require confirmation before reply
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):     OPS-187 + OPS-188 + OPS-189
+                             │
+Phase 2 (parallel):     OPS-190 + OPS-191 + OPS-192
+                             │
+Phase 3 (parallel):     OPS-193 + OPS-194 + OPS-195 + OPS-196
+                             │
+Phase 4:                OPS-197 + OPS-198
+                             │
+Phase 5:                OPS-199 (migration - must be last)
+```
+
+**Phase 1 - Foundation** (parallel) - COMPLETE ✅:
+
+- ~~OPS-187: Schema - PersonalContact + Email Privacy Fields~~ ✅
+- ~~OPS-188: SplitAssignmentButton Component~~ ✅
+- ~~OPS-189: Sidebar Sender-First Display~~ ✅
+
+**Phase 2 - Backend** (after OPS-187) - COMPLETE ✅:
+
+- ~~OPS-190: Personal Contacts Service + GraphQL~~ ✅
+- ~~OPS-191: Email Privacy Service + GraphQL~~ ✅
+- ~~OPS-192: Action Bar - Outlook + Compose Button~~ ✅
+
+**Phase 3 - Integration** (after Phase 2) - COMPLETE ✅:
+
+- ~~OPS-193: Personal Contacts Profile Page~~ ✅
+- ~~OPS-194: Partner Privacy UI + Case Details Filter~~ ✅
+- ~~OPS-195: Multi-Case Confirmation Flow~~ ✅
+- ~~OPS-196: NECLAR Inline Assignment~~ ✅
+
+**Phase 4 - Cleanup** (after Phase 3) - COMPLETE ✅:
+
+- ~~OPS-197: Document Rule - Assigned Emails Only~~ ✅
+- ~~OPS-198: Remove ClassificationModal~~ ✅
+
+**Phase 5 - Migration** (after all above):
+
+- OPS-199: Production Data Reset - Full Wipe & Fresh Start
+
+---
+
+### Communications Action Bar Redesign (Epic) - OPS-200 to OPS-205 - COMPLETED ✅
+
+**Goal**: Fix action bar UI issues - SplitAssignmentButton not visible, wrong buttons for assigned vs NECLAR emails, partner privacy verification.
+
+**Key Changes**:
+
+- Fix SplitAssignmentButton visibility bug (80/20 split for NECLAR)
+- Assigned emails: AI draft compose instead of Outlook, add Forward/Notify buttons
+- NECLAR emails: Add "Răspunde" (Outlook) + "Privat" (block sender), remove "Ignoră"
+- Move "+" button to header
+- Verify partner privacy flow end-to-end
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):     OPS-200 + OPS-201 + OPS-202
+                             │         │         │
+Phase 2 (parallel):     OPS-203  +  OPS-204
+                             │         │
+Phase 3:                OPS-205
+```
+
+**Phase 1 - Foundation** (parallel) - COMPLETE ✅:
+
+- ~~OPS-200: Debug SplitAssignmentButton Visibility~~ ✅
+- ~~OPS-201: Move "+" Button to ConversationHeader~~ ✅
+- ~~OPS-202: blockSenderFromSync Mutation~~ ✅ (already implemented in OPS-190)
+
+**Phase 2 - Action Bar Restructure** (after Phase 1) - COMPLETE ✅:
+
+- ~~OPS-203: Restructure Assigned Email Action Bar~~ ✅
+- ~~OPS-204: Restructure NECLAR Action Bar~~ ✅
+
+**Phase 3 - Verification** (after Phase 2) - COMPLETE ✅:
+
+- ~~OPS-205: Partner Privacy E2E Verification~~ ✅
+
+**Next:** OPS-206 - Merge NECLAR + Unassigned with inline drop-up case picker
+
+---
+
 ### Documents Separation & Review Workflow (Epic) - OPS-171 to OPS-177
 
 **Goal**: Separate working documents from email attachments, enable attachment-to-document promotion, add version history UI, and create supervisor review queue.
@@ -366,6 +502,82 @@ Phase 4 (optional):     OPS-184 [blocked by: 181]
 **Phase 4 - Migration** (optional, after OPS-181):
 
 - OPS-184: OneDrive to SharePoint Lazy Migration
+
+---
+
+### Expandable Case Workspace (Epic) - OPS-207 to OPS-217
+
+**Goal**: Replace modal-based case creation/editing with inline editing in the case workspace. Partners and Case Leads can edit directly in the Overview tab. New cases created at `/cases/new` in draft mode.
+
+**Key Design Decisions**:
+
+- Per-field saves (existing `InlineEditField` pattern)
+- Warning on navigation for unsaved draft
+- Leads can edit without approval (same as Partners)
+- Progressive tabs: only show tabs with content in draft mode
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):     OPS-207 + OPS-208 + OPS-209
+                             │
+Phase 2 (parallel):     OPS-210 + OPS-211 + OPS-212 + OPS-213 [blocked by: 207]
+                             │
+Phase 3 (parallel):     OPS-214 [blocked by: 210-213] + OPS-215 [blocked by: 207]
+                             │
+Phase 4:                OPS-216 [blocked by: 208, 209, 214]
+                             │
+Phase 5:                OPS-217 [blocked by: 216]
+```
+
+**Phase 1 - Foundation** (parallel) - COMPLETE ✅:
+
+- ~~OPS-207: useCaseEditPermission Hook (Partner/Lead check)~~ ✅
+- ~~OPS-208: useDraftCase Hook (local state + useBeforeUnload)~~ ✅
+- ~~OPS-209: DraftModeToolbar Component (floating save/cancel)~~ ✅
+
+**Phase 2 - Section Components** (after OPS-207) - COMPLETE ✅:
+
+- ~~OPS-210: CaseDetailsSection Component~~ ✅
+- ~~OPS-211: ContactsSection Component~~ ✅
+- ~~OPS-212: ReferencesSection Component~~ ✅
+- ~~OPS-213: BillingSection Component (FinancialData wrapped)~~ ✅
+
+**Phase 3 - Integration** (after Phase 2) - COMPLETE ✅:
+
+- ~~OPS-214: OverviewTab Refactor (use section components)~~ ✅
+- ~~OPS-215: CaseHeader Edit Toggle (?edit=true)~~ ✅
+
+**Phase 4 - New Case Page** (after Phase 3) - COMPLETE ✅:
+
+- ~~OPS-216: Draft Mode New Case Page (/cases/new)~~ ✅
+
+**Phase 5 - Cleanup** (after Phase 4):
+
+- OPS-217: Remove Case Modals & Update Entry Points
+
+---
+
+### Court Case Number + Dynamic Actor Types (Epic) - OPS-218 to OPS-223 ✅ COMPLETED
+
+**Goal**: Add first-class court case number field to case create/edit, expand built-in actor roles for Romanian legal practice, and enable Partners to create custom actor types per firm.
+
+**Key Changes**:
+
+- Surface existing `caseNumber` DB field as "Nr. Dosar Instanță" in case UI
+- Expand CaseActorRole enum with 8 new roles (Intervenient, Mandatar, Court, etc.)
+- New ActorTypeConfig model for firm-scoped custom actor types
+- Backwards-compatible: built-in roles use enum, custom roles use `customRoleCode` field
+- "+ Tip nou" inline form for Partners (following CaseTypeConfig pattern)
+
+**All phases completed**:
+
+- ✅ OPS-218: Court Case Number Field in Case UI
+- ✅ OPS-219: Expand CaseActorRole Enum
+- ✅ OPS-220: ActorTypeConfig Data Model
+- ✅ OPS-221: ActorTypeConfig GraphQL & Service
+- ✅ OPS-222: useActorTypes Hook
+- ✅ OPS-223: Actor Type Selection UI
 
 ---
 

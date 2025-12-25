@@ -7,9 +7,9 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { CreditCard, Building2, Brain } from 'lucide-react';
+import { CreditCard, Building2, Brain, UserX } from 'lucide-react';
 
-export type SettingsTab = 'billing' | 'firm' | 'ai';
+export type SettingsTab = 'billing' | 'firm' | 'ai' | 'contacts';
 
 interface SettingsTabBarProps {
   activeTab: SettingsTab;
@@ -30,6 +30,11 @@ const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
     id: 'ai',
     label: 'AI Personalizare',
     icon: <Brain className="w-5 h-5" />,
+  },
+  {
+    id: 'contacts',
+    label: 'Contacte',
+    icon: <UserX className="w-5 h-5" />,
   },
 ];
 

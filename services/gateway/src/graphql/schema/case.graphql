@@ -250,6 +250,9 @@ type CaseActor {
   """Role of the actor in the case"""
   role: CaseActorRole!
 
+  """Custom role code for firm-specific actor types (OPS-223)"""
+  customRoleCode: String
+
   """Full name of the actor"""
   name: String!
 
@@ -334,6 +337,9 @@ input CreateCaseInput {
   """Title of the case (3-500 characters)"""
   title: String!
 
+  """Court case number / Nr. Dosar Instanță (optional)"""
+  caseNumber: String
+
   """Client name - will create or find existing client"""
   clientName: String!
 
@@ -369,6 +375,9 @@ All fields are optional - only provided fields will be updated
 input UpdateCaseInput {
   """Updated title (3-500 characters if provided)"""
   title: String
+
+  """Updated court case number (Nr. Dosar Instanță)"""
+  caseNumber: String
 
   """Updated status"""
   status: CaseStatus
@@ -421,6 +430,9 @@ input AddCaseActorInput {
 
   """Role of the actor in the case"""
   role: CaseActorRole!
+
+  """Custom role code for firm-specific actor types (OPS-223)"""
+  customRoleCode: String
 
   """Name of the actor (2-200 characters)"""
   name: String!

@@ -85,6 +85,8 @@ export interface ThreadFilters {
   dateFrom?: Date;
   dateTo?: Date;
   includeIgnored?: boolean; // Include ignored threads (default: false)
+  /** OPS-191: Skip privacy filter (for /communications where user sees their own private emails) */
+  skipPrivacyFilter?: boolean;
 }
 
 export interface PaginationOptions {
@@ -227,8 +229,17 @@ export class EmailThreadService {
     filters: ThreadFilters,
     pagination: PaginationOptions = {}
   ): Promise<{ threads: EmailThread[]; totalCount: number }> {
-    const { userId, caseId, hasUnread, hasAttachments, search, dateFrom, dateTo, includeIgnored } =
-      filters;
+    const {
+      userId,
+      caseId,
+      hasUnread,
+      hasAttachments,
+      search,
+      dateFrom,
+      dateTo,
+      includeIgnored,
+      skipPrivacyFilter,
+    } = filters;
     const { limit = 20, offset = 0 } = pagination;
 
     // Build where clause
@@ -261,11 +272,31 @@ export class EmailThreadService {
       if (dateTo) where.receivedDateTime.lte = dateTo;
     }
 
+    // Build AND conditions for various filters that need OR logic
+    const andConditions: any[] = [];
+
+    // OPS-191: Filter private emails when viewing case details
+    // Private emails are hidden from case communications unless:
+    // 1. The viewer is the one who marked them private
+    // 2. skipPrivacyFilter is true (for /communications personal view)
+    if (caseId && !skipPrivacyFilter) {
+      andConditions.push({
+        OR: [{ isPrivate: false }, { isPrivate: null }, { markedPrivateBy: userId }],
+      });
+    }
+
     if (search) {
-      where.OR = [
-        { subject: { contains: search, mode: 'insensitive' } },
-        { bodyPreview: { contains: search, mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        OR: [
+          { subject: { contains: search, mode: 'insensitive' } },
+          { bodyPreview: { contains: search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    // Combine AND conditions if any exist
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     // Get unique conversation IDs with aggregation
@@ -284,11 +315,19 @@ export class EmailThreadService {
 
     // Fetch all emails for paginated conversations
     // OPS-127: Include attachments when fetching thread emails
+    // OPS-191: Apply privacy filter when fetching individual emails
+    const emailWhere: any = {
+      userId,
+      conversationId: { in: paginatedConversations.map((g) => g.conversationId) },
+    };
+
+    // OPS-191: Re-apply privacy filter when fetching thread emails
+    if (caseId && !skipPrivacyFilter) {
+      emailWhere.OR = [{ isPrivate: false }, { isPrivate: null }, { markedPrivateBy: userId }];
+    }
+
     const emails = await this.prisma.email.findMany({
-      where: {
-        userId,
-        conversationId: { in: paginatedConversations.map((g) => g.conversationId) },
-      },
+      where: emailWhere,
       orderBy: { receivedDateTime: 'asc' },
       include: {
         attachments: {

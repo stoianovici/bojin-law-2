@@ -1,0 +1,57 @@
+# Personal Contact Schema
+# OPS-190: Personal Contacts Service + GraphQL
+#
+# Manages personal contact blocklist. Emails from personal contacts won't be synced.
+# This is a per-user setting.
+
+type PersonalContact {
+  id: ID!
+  email: String!
+  createdAt: DateTime!
+}
+
+extend type Query {
+  """
+  Get all personal contacts (blocked email addresses) for the current user
+  """
+  personalContacts: [PersonalContact!]!
+
+  """
+  Get count of personal contacts for the current user
+  """
+  personalContactsCount: Int!
+
+  """
+  Check if a specific email address is in the personal contacts list
+  """
+  isPersonalContact(email: String!): Boolean!
+}
+
+extend type Mutation {
+  """
+  Add an email address to the personal contacts blocklist.
+  Emails from this address will not be synced in future.
+  """
+  addPersonalContact(email: String!): PersonalContact!
+
+  """
+  Remove an email address from the personal contacts blocklist.
+  Emails from this address will be synced again.
+  """
+  removePersonalContact(email: String!): Boolean!
+
+  """
+  Mark the sender of an email as a personal contact.
+  Optionally marks the email as ignored.
+  """
+  markSenderAsPersonal(
+    """
+    The ID of the email whose sender should be marked as personal
+    """
+    emailId: ID!
+    """
+    Whether to also mark the email as ignored (default: true)
+    """
+    ignoreEmail: Boolean = true
+  ): PersonalContact!
+}

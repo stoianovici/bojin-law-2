@@ -13,7 +13,12 @@ import { Pencil1Icon, CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { useCaseUpdate, type UpdateCaseInput } from '../../hooks/useCaseUpdate';
 import { useNotificationStore } from '../../stores/notificationStore';
 
-export type FieldType = 'text' | 'textarea' | 'number' | 'select' | 'date';
+export type FieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'autocomplete';
+
+export interface AutocompleteOption {
+  value: string;
+  label: string;
+}
 
 export interface InlineEditFieldProps {
   caseId: string;
@@ -27,6 +32,14 @@ export interface InlineEditFieldProps {
   validate?: (value: string | number) => string | null; // Returns error message or null
   onSuccess?: () => void;
   formatDisplay?: (value: string | number | null | undefined) => React.ReactNode;
+  /** Display value for autocomplete fields (e.g., client name when value is client ID) */
+  displayValue?: string;
+  /** Search function for autocomplete fields */
+  onSearch?: (query: string) => void;
+  /** Options for autocomplete field (from search results) */
+  autocompleteOptions?: AutocompleteOption[];
+  /** Loading state for autocomplete search */
+  autocompleteLoading?: boolean;
 }
 
 /**
@@ -46,30 +59,78 @@ export function InlineEditField({
   validate,
   onSuccess,
   formatDisplay,
+  displayValue: propDisplayValue,
+  onSearch,
+  autocompleteOptions = [],
+  autocompleteLoading = false,
 }: InlineEditFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState<string>('');
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(null);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
 
   const { updateCase, loading } = useCaseUpdate();
   const { addNotification } = useNotificationStore();
 
   // Convert value to string for editing
-  const displayValue = value !== null && value !== undefined ? String(value) : '';
+  const stringValue = value !== null && value !== undefined ? String(value) : '';
 
   // Start edit mode
   const handleEdit = () => {
     if (!editable) return;
-    setEditValue(displayValue);
+    setEditValue(stringValue);
+    if (fieldType === 'autocomplete') {
+      setSearchValue(propDisplayValue || '');
+      setShowAutocomplete(false);
+    }
     setIsEditing(true);
     setValidationError(null);
   };
+
+  // Handle autocomplete search input
+  const handleSearchChange = (query: string) => {
+    setSearchValue(query);
+    setShowAutocomplete(true);
+    onSearch?.(query);
+  };
+
+  // Handle autocomplete option selection
+  const handleSelectOption = (option: AutocompleteOption) => {
+    setEditValue(option.value);
+    setSearchValue(option.label);
+    setShowAutocomplete(false);
+  };
+
+  // Close autocomplete when clicking outside
+  useEffect(() => {
+    if (!isEditing || fieldType !== 'autocomplete') {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        autocompleteRef.current &&
+        !autocompleteRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowAutocomplete(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isEditing, fieldType]);
 
   // Cancel editing
   const handleCancel = () => {
     setIsEditing(false);
     setEditValue('');
+    setSearchValue('');
+    setShowAutocomplete(false);
     setValidationError(null);
   };
 
@@ -85,7 +146,7 @@ export function InlineEditField({
     }
 
     // Don't save if value hasn't changed
-    if (editValue === displayValue) {
+    if (editValue === stringValue) {
       handleCancel();
       return;
     }
@@ -189,6 +250,47 @@ export function InlineEditField({
                   </option>
                 ))}
               </select>
+            ) : fieldType === 'autocomplete' ? (
+              <div className="relative">
+                <input
+                  ref={inputRef as React.RefObject<HTMLInputElement>}
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => searchValue && setShowAutocomplete(true)}
+                  className="w-full px-3 py-2 border border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  disabled={loading}
+                  placeholder={placeholder}
+                />
+                {showAutocomplete && (
+                  <div
+                    ref={autocompleteRef}
+                    className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto"
+                  >
+                    {autocompleteLoading ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">Se încarcă...</div>
+                    ) : autocompleteOptions.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        {searchValue.length < 2
+                          ? 'Tastați pentru a căuta...'
+                          : 'Niciun rezultat găsit'}
+                      </div>
+                    ) : (
+                      autocompleteOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => handleSelectOption(option)}
+                          className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                        >
+                          {option.label}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             ) : (
               <input
                 ref={inputRef as React.RefObject<HTMLInputElement>}
@@ -230,11 +332,14 @@ export function InlineEditField({
   }
 
   // Render display mode
+  // For autocomplete fields, use the displayValue prop (e.g., client name instead of ID)
   const displayContent = formatDisplay
     ? formatDisplay(value)
-    : value !== null && value !== undefined
-      ? String(value)
-      : placeholder;
+    : fieldType === 'autocomplete' && propDisplayValue
+      ? propDisplayValue
+      : value !== null && value !== undefined
+        ? String(value)
+        : placeholder;
 
   return (
     <div

@@ -17,6 +17,7 @@ import { GraphService } from './graph.service';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
 import { activityEventService } from './activity-event.service';
+import { personalContactService } from './personal-contact.service';
 
 // ============================================================================
 // Types
@@ -180,8 +181,18 @@ export class EmailSyncService {
 
           if (messages.length > 0) {
             const syncedEmails = this.transformMessages(messages, folderType);
-            await this.storeEmails(syncedEmails, userId, user.firmId);
-            emailsSynced += messages.length;
+
+            // OPS-190: Filter out emails from personal contacts
+            const filteredEmails = await this.filterOutPersonalContacts(
+              syncedEmails,
+              userId,
+              folderType
+            );
+
+            if (filteredEmails.length > 0) {
+              await this.storeEmails(filteredEmails, userId, user.firmId);
+            }
+            emailsSynced += filteredEmails.length;
           }
 
           // Check for next page
@@ -410,6 +421,61 @@ export class EmailSyncService {
         isRead: message.isRead || false,
         folderType, // OPS-091: Track source folder
       }));
+  }
+
+  /**
+   * OPS-190: Filter out emails from personal contacts
+   * For inbox emails, filter by sender address.
+   * For sent emails, don't filter (user sent them).
+   */
+  private async filterOutPersonalContacts(
+    emails: SyncedEmail[],
+    userId: string,
+    folderType: 'inbox' | 'sent'
+  ): Promise<SyncedEmail[]> {
+    // Don't filter sent emails - they were sent by the user
+    if (folderType === 'sent') {
+      return emails;
+    }
+
+    if (emails.length === 0) {
+      return emails;
+    }
+
+    // Extract unique sender addresses
+    const senderAddresses = [...new Set(emails.map((e) => e.from.address).filter(Boolean))];
+
+    if (senderAddresses.length === 0) {
+      return emails;
+    }
+
+    // Get list of personal contacts from this batch
+    const personalEmails = await personalContactService.filterPersonalContacts(
+      userId,
+      senderAddresses
+    );
+
+    if (personalEmails.length === 0) {
+      return emails;
+    }
+
+    // Create set for efficient lookup (lowercase for case-insensitive matching)
+    const personalEmailsSet = new Set(personalEmails.map((e) => e.toLowerCase()));
+
+    // Filter out emails from personal contacts
+    const filteredEmails = emails.filter((email) => {
+      const senderAddress = email.from.address?.toLowerCase();
+      return !senderAddress || !personalEmailsSet.has(senderAddress);
+    });
+
+    const filteredCount = emails.length - filteredEmails.length;
+    if (filteredCount > 0) {
+      console.log(
+        `[EmailSyncService.filterOutPersonalContacts] Filtered ${filteredCount} emails from personal contacts`
+      );
+    }
+
+    return filteredEmails;
   }
 
   /**

@@ -140,6 +140,10 @@ export function loadSchema(): string {
   const mapaSchema = readFileSync(join(schemaDir, 'mapa.graphql'), 'utf-8');
   // OPS-154: Predefined Reports with AI Insights
   const reportsSchema = readFileSync(join(schemaDir, 'reports.graphql'), 'utf-8');
+  // OPS-190: Personal Contacts Blocklist
+  const personalContactSchema = readFileSync(join(schemaDir, 'personal-contact.graphql'), 'utf-8');
+  // OPS-221: Dynamic Actor Types
+  const actorTypeSchema = readFileSync(join(schemaDir, 'actor-type.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -189,6 +193,8 @@ export function loadSchema(): string {
     documentFolderSchema,
     mapaSchema,
     reportsSchema,
+    personalContactSchema,
+    actorTypeSchema,
   ].join('\n\n');
 }
 

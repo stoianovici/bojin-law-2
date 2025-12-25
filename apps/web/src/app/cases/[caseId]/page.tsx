@@ -25,9 +25,9 @@ import { useCase } from '../../../hooks/useCase';
 // import { useSuggestions } from '../../../hooks/useSuggestions'; // HIDDEN: AI panel removed
 import { useSetAIContext } from '../../../contexts/AIAssistantContext';
 import { useAuth } from '../../../lib/hooks/useAuth';
-import { EditCaseModal } from '../../../components/case/EditCaseModal';
 import { AddTeamMemberModal } from '../../../components/case/AddTeamMemberModal';
-import type { Case, User, Document, Task, DocumentNode } from '@legal-platform/types';
+import type { User, Document, Task, DocumentNode } from '@legal-platform/types';
+import type { CaseWithFullRelations } from '../../../hooks/useCase';
 
 interface CaseWorkspacePageProps {
   params: Promise<{
@@ -39,7 +39,7 @@ interface CaseWorkspacePageProps {
  * Type-safe workspace data structure
  */
 interface CaseWorkspaceData {
-  case: Case;
+  case: CaseWithFullRelations;
   teamMembers: User[];
   nextDeadline?: {
     date: Date;
@@ -95,7 +95,6 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   const { activeTab, setSelectedCase } = useCaseWorkspaceStore();
 
   // Modal state
-  const [editCaseModalOpen, setEditCaseModalOpen] = useState(false);
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
 
   // Use the real useCase hook to get actual case data
@@ -138,10 +137,6 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   // );
 
   // Handlers for header actions
-  const handleEditCase = useCallback(() => {
-    setEditCaseModalOpen(true);
-  }, []);
-
   const handleAddTeamMember = useCallback(() => {
     setAddMemberModalOpen(true);
   }, []);
@@ -284,7 +279,6 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           case={caseData.case}
           teamMembers={caseData.teamMembers}
           nextDeadline={caseData.nextDeadline}
-          onEditCase={handleEditCase}
           onAddTeamMember={handleAddTeamMember}
         />
 
@@ -303,13 +297,6 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
           onTakeAction={handleTakeAction}
         />
         */}
-
-        {/* Edit Case Modal */}
-        <EditCaseModal
-          caseData={caseData.case}
-          open={editCaseModalOpen}
-          onOpenChange={setEditCaseModalOpen}
-        />
 
         {/* Add Team Member Modal */}
         <AddTeamMemberModal

@@ -102,6 +102,8 @@ export interface ClassificationResult {
   isFromInstitution?: boolean;
   /** Institution category if detected */
   institutionCategory?: GlobalEmailSourceCategory;
+  /** OPS-195: True when sender has 2+ active cases, requires user confirmation */
+  needsConfirmation?: boolean;
 }
 
 export interface EmailForClassification {
@@ -359,11 +361,21 @@ export class ClassificationScoringService {
     // Determine primary case for backward compatibility
     const primaryAssignment = caseAssignments.find((a) => a.isPrimary) || caseAssignments[0];
 
+    // OPS-195: Check if sender has multiple cases (requires confirmation)
+    // needsConfirmation is true when:
+    // 1. candidateCases has 2+ entries (sender appears in multiple cases)
+    // 2. NOT a thread continuity match (those are deterministic)
+    const hasThreadMatch = caseAssignments.some(
+      (a) => a.matchType === ClassificationMatchType.ThreadContinuity
+    );
+    const needsConfirmation = candidateCases.length >= 2 && !hasThreadMatch;
+
     logger.info('[ClassificationScoring.classifyEmail] Classification complete', {
       emailId: email.id,
       assignmentCount: caseAssignments.length,
       primaryCaseId: primaryAssignment.caseId,
       caseIds: caseAssignments.map((a) => a.caseId),
+      needsConfirmation,
     });
 
     return {
@@ -372,6 +384,7 @@ export class ClassificationScoringService {
       confidence: primaryAssignment.confidence,
       matchType: primaryAssignment.signals?.[0]?.type || 'CONTACT_MATCH',
       caseAssignments,
+      needsConfirmation,
     };
   }
 

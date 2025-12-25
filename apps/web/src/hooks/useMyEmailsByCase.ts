@@ -114,6 +114,7 @@ const GET_UNCERTAIN_EMAILS = gql`
   query GetUncertainEmailsForSidebar($limit: Int, $offset: Int) {
     uncertainEmails(limit: $limit, offset: $offset) {
       id
+      conversationId
       subject
       from {
         ...EmailAddressFieldsCase
@@ -201,6 +202,7 @@ export interface UnassignedCourtEmail {
 
 export interface UncertainEmail {
   id: string;
+  conversationId?: string; // OPS-200: For thread view loading
   subject: string;
   from: EmailAddress;
   receivedDateTime: string;

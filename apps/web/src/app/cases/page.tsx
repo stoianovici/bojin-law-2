@@ -10,11 +10,11 @@
 
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { CaseListTable } from '../../components/case/CaseListTable';
 import { PendingApprovalTable } from '../../components/case/PendingApprovalTable';
 import { CaseFilters } from '../../components/case/CaseFilters';
 import { CaseSearchBar } from '../../components/case/CaseSearchBar';
-import { CreateCaseModal } from '../../components/case/CreateCaseModal';
 import { useCases } from '../../hooks/useCases';
 import { usePendingCases } from '../../hooks/usePendingCases';
 import { useAuthorization } from '../../hooks/useAuthorization';
@@ -89,7 +89,11 @@ function CasesPageContent() {
         {/* Search and Actions Bar */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <CaseSearchBar />
-          <CreateCaseModal />
+          <Link href="/cases/new">
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
+              + Dosar nou
+            </button>
+          </Link>
         </div>
 
         {/* Filters */}
@@ -159,7 +163,11 @@ function CasesPageContent() {
             </p>
             <div className="flex items-center justify-center gap-3">
               {!filters.status && !filters.assignedToMe && !showPendingApprovalQueue && (
-                <CreateCaseModal />
+                <Link href="/cases/new">
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
+                    + Dosar nou
+                  </button>
+                </Link>
               )}
               {(filters.status || filters.assignedToMe) && (
                 <button

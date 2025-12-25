@@ -64,6 +64,8 @@ import {
 import { mapaResolvers } from './resolvers/mapa.resolvers';
 import { reportsResolvers } from './resolvers/reports.resolvers';
 import { wordIntegrationResolvers } from './resolvers/word-integration.resolvers';
+import { personalContactResolvers } from './resolvers/personal-contact.resolvers';
+import { actorTypeResolvers } from './resolvers/actor-type.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -120,6 +122,8 @@ const resolvers = {
     ...mapaResolvers.Query,
     ...reportsResolvers.Query,
     ...wordIntegrationResolvers.Query,
+    ...personalContactResolvers.Query,
+    ...actorTypeResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -155,6 +159,8 @@ const resolvers = {
     ...documentFolderMutationResolvers,
     ...mapaResolvers.Mutation,
     ...wordIntegrationResolvers.Mutation,
+    ...personalContactResolvers.Mutation,
+    ...actorTypeResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -296,6 +302,8 @@ const resolvers = {
   MapaSlot: mapaResolvers.MapaSlot,
   MapaTemplate: mapaResolvers.MapaTemplate,
   MapaCompletionStatus: mapaResolvers.MapaCompletionStatus,
+  // Actor Type Config resolvers (OPS-221)
+  ActorTypeConfig: actorTypeResolvers.ActorTypeConfig,
 };
 
 /**

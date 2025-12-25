@@ -1,0 +1,138 @@
+# Actor Type Configuration GraphQL Schema
+# OPS-221: Dynamic actor types per firm - allows Partners to create custom actor types
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Actor type - represents either a built-in role or a custom firm-specific type
+"""
+type ActorType {
+  """Unique identifier for the actor type (e.g., "builtin-Client" or UUID)"""
+  id: String!
+
+  """Internal code for the actor type (e.g., "Client" or "MANDATAR_SOCIETATE")"""
+  code: String!
+
+  """Display name of the actor type (in Romanian)"""
+  name: String!
+
+  """Whether this is a built-in role (from CaseActorRole enum)"""
+  isBuiltIn: Boolean!
+
+  """Whether this actor type is active and can be selected"""
+  isActive: Boolean!
+
+  """Sort order for display in dropdown"""
+  sortOrder: Int!
+}
+
+"""
+Full actor type config - includes metadata for custom types
+"""
+type ActorTypeConfig {
+  """Unique identifier for the actor type"""
+  id: UUID!
+
+  """Firm that owns this actor type"""
+  firmId: UUID!
+
+  """Display name of the actor type (in Romanian)"""
+  name: String!
+
+  """Internal code for the actor type (unique per firm)"""
+  code: String!
+
+  """Whether this actor type is active and can be selected"""
+  isActive: Boolean!
+
+  """Sort order for display in dropdown"""
+  sortOrder: Int!
+
+  """When the actor type was created"""
+  createdAt: DateTime!
+
+  """User who created this actor type"""
+  creator: User!
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for creating a new actor type
+"""
+input CreateActorTypeInput {
+  """Display name of the actor type (2-100 characters)"""
+  name: String!
+
+  """Internal code (2-50 characters, alphanumeric with underscores)"""
+  code: String!
+
+  """Sort order for display (optional, defaults to 50)"""
+  sortOrder: Int
+}
+
+"""
+Input for updating an actor type
+"""
+input UpdateActorTypeInput {
+  """Updated display name"""
+  name: String
+
+  """Updated sort order"""
+  sortOrder: Int
+
+  """Whether the actor type is active"""
+  isActive: Boolean
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get all actor types for the current user's firm
+  Returns built-in roles merged with custom firm-specific types, sorted by sortOrder
+  Authorization: Authenticated users only
+  """
+  actorTypes(
+    """Include inactive actor types (default: false)"""
+    includeInactive: Boolean
+  ): [ActorType!]!
+
+  """
+  Get a single actor type by ID
+  Returns null if not found or user doesn't have access
+  """
+  actorType(id: UUID!): ActorTypeConfig
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Create a new custom actor type for the firm
+  Authorization: Partner role required
+  """
+  createActorType(input: CreateActorTypeInput!): ActorTypeConfig!
+
+  """
+  Update an existing custom actor type
+  Cannot update built-in types
+  Authorization: Partner role required
+  """
+  updateActorType(id: UUID!, input: UpdateActorTypeInput!): ActorTypeConfig!
+
+  """
+  Deactivate an actor type (soft delete)
+  Cannot deactivate built-in types
+  Authorization: Partner role required
+  """
+  deactivateActorType(id: UUID!): ActorTypeConfig!
+}

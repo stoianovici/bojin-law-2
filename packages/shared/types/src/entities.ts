@@ -12,7 +12,21 @@ export type UserRole = 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
 export type UserStatus = 'Pending' | 'Active' | 'Inactive';
 export type CaseStatus = 'PendingApproval' | 'Active' | 'OnHold' | 'Closed' | 'Archived';
 export type CaseType = 'Litigation' | 'Contract' | 'Advisory' | 'Criminal' | 'Other';
-export type CaseActorRole = 'Client' | 'OpposingParty' | 'OpposingCounsel' | 'Witness' | 'Expert';
+// OPS-219: Expanded actor roles for Romanian legal practice
+export type CaseActorRole =
+  | 'Client'
+  | 'OpposingParty'
+  | 'OpposingCounsel'
+  | 'Witness'
+  | 'Expert'
+  | 'Intervenient'
+  | 'Mandatar'
+  | 'Court'
+  | 'Prosecutor'
+  | 'Bailiff'
+  | 'Notary'
+  | 'LegalRepresentative'
+  | 'Other';
 export type CasePriority = 'Low' | 'Medium' | 'High';
 export type DocumentType = 'Contract' | 'Motion' | 'Letter' | 'Memo' | 'Pleading' | 'Other';
 export type DocumentStatus = 'Draft' | 'Review' | 'Approved' | 'Filed';
@@ -243,6 +257,7 @@ export interface CaseActor {
   id: string; // UUID
   caseId: string; // UUID
   role: CaseActorRole;
+  customRoleCode: string | null; // OPS-223: References ActorTypeConfig.code for custom roles
   name: string;
   organization: string | null;
   email: string | null;

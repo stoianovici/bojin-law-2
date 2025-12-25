@@ -791,6 +791,7 @@ export const emailResolvers = {
         },
         select: {
           id: true,
+          conversationId: true, // OPS-200: For thread view loading
           subject: true,
           from: true,
           receivedDateTime: true,
@@ -808,6 +809,7 @@ export const emailResolvers = {
           const suggestedCases = await getSuggestedCasesForEmail(email, user);
           return {
             id: email.id,
+            conversationId: email.conversationId, // OPS-200: For thread view loading
             subject: email.subject,
             from: email.from || { address: '' },
             receivedDateTime: email.receivedDateTime,
@@ -2367,6 +2369,164 @@ export const emailResolvers = {
     },
 
     // =========================================================================
+    // Multi-Case Confirmation (OPS-195)
+    // =========================================================================
+
+    /**
+     * Confirm or reassign an email's case assignment
+     * Used when sender has multiple active cases - user confirms which case the email belongs to
+     */
+    confirmEmailAssignment: async (
+      _: any,
+      args: { emailId: string; caseId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify email exists and user has access
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          firmId: user.firmId,
+        },
+        include: {
+          caseLinks: true,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify user has access to target case
+      const caseAccess = await prisma.case.findFirst({
+        where: {
+          id: args.caseId,
+          firmId: user.firmId,
+          teamMembers: {
+            some: { userId: user.id },
+          },
+        },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Check if email is already linked to target case
+      const existingLink = email.caseLinks.find((link) => link.caseId === args.caseId);
+      const currentPrimaryLink = email.caseLinks.find((link) => link.isPrimary);
+
+      let wasReassigned = false;
+      let confirmedLink;
+
+      if (existingLink) {
+        // Case 1: Confirming existing link - just update isConfirmed
+        confirmedLink = await prisma.emailCaseLink.update({
+          where: { id: existingLink.id },
+          data: {
+            isConfirmed: true,
+            confirmedAt: new Date(),
+            confirmedBy: user.id,
+          },
+          include: {
+            email: true,
+            case: true,
+          },
+        });
+        wasReassigned = false;
+      } else {
+        // Case 2: Reassigning to different case - create new primary link
+        // First, demote current primary to non-primary if exists
+        if (currentPrimaryLink) {
+          await prisma.emailCaseLink.update({
+            where: { id: currentPrimaryLink.id },
+            data: { isPrimary: false },
+          });
+        }
+
+        // Create new confirmed primary link
+        confirmedLink = await prisma.emailCaseLink.create({
+          data: {
+            emailId: args.emailId,
+            caseId: args.caseId,
+            isPrimary: true,
+            linkedBy: user.id,
+            isConfirmed: true,
+            confirmedAt: new Date(),
+            confirmedBy: user.id,
+            needsConfirmation: false, // No longer needs confirmation since user just confirmed
+            confidence: 1.0,
+          },
+          include: {
+            email: true,
+            case: true,
+          },
+        });
+
+        // Update email's primary caseId for backward compatibility
+        await prisma.email.update({
+          where: { id: args.emailId },
+          data: { caseId: args.caseId },
+        });
+
+        wasReassigned = true;
+      }
+
+      // Log the confirmation action
+      await prisma.emailClassificationLog.create({
+        data: {
+          firmId: user.firmId,
+          emailId: args.emailId,
+          action: wasReassigned ? 'MANUAL_REASSIGN' : 'CONFIRMED',
+          fromCaseId: wasReassigned ? currentPrimaryLink?.caseId : undefined,
+          toCaseId: args.caseId,
+          performedBy: user.id,
+          correctionReason: wasReassigned
+            ? 'Reassigned via multi-case confirmation flow'
+            : 'Confirmed via multi-case confirmation flow',
+        },
+      });
+
+      // Sync to timeline if reassigned
+      if (wasReassigned) {
+        try {
+          await unifiedTimelineService.syncEmailToCommunicationEntry(args.emailId);
+        } catch (syncError) {
+          console.error('[confirmEmailAssignment] Failed to sync to timeline:', syncError);
+        }
+      }
+
+      // Fetch updated email
+      const updatedEmail = await prisma.email.findUnique({
+        where: { id: args.emailId },
+        include: {
+          caseLinks: {
+            include: {
+              case: true,
+            },
+          },
+        },
+      });
+
+      return {
+        email: updatedEmail,
+        caseLink: confirmedLink,
+        wasReassigned,
+      };
+    },
+
+    // =========================================================================
     // Attachment Actions (OPS-135)
     // =========================================================================
 
@@ -2406,6 +2566,17 @@ export const emailResolvers = {
         throw new GraphQLError('Email not found', {
           extensions: { code: 'NOT_FOUND' },
         });
+      }
+
+      // OPS-197: Block attachment save for unassigned emails (NECLAR queue)
+      // Emails must be assigned to a case before attachments can be saved
+      if (email.classificationState === 'Uncertain') {
+        throw new GraphQLError(
+          'Emailul trebuie atribuit unui dosar înainte de a salva atașamentele.',
+          {
+            extensions: { code: 'EMAIL_NOT_ASSIGNED' },
+          }
+        );
       }
 
       // Verify case access
@@ -2627,6 +2798,251 @@ export const emailResolvers = {
 
       return updatedAttachment;
     },
+
+    // =========================================================================
+    // Partner Privacy (OPS-191)
+    // =========================================================================
+
+    /**
+     * Mark an email as private (Partner only)
+     * Private emails are hidden from case details but visible to marking partner
+     */
+    markEmailPrivate: async (_: any, args: { emailId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (user.role !== 'Partner') {
+        throw new GraphQLError('Only partners can mark emails as private', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify email exists and belongs to user's firm
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Mark as private
+      const updatedEmail = await prisma.email.update({
+        where: { id: args.emailId },
+        data: {
+          isPrivate: true,
+          markedPrivateBy: user.id,
+          markedPrivateAt: new Date(),
+        },
+        include: { case: true, attachments: true },
+      });
+
+      logger.info('[markEmailPrivate] Email marked as private', {
+        emailId: args.emailId,
+        userId: user.id,
+      });
+
+      return updatedEmail;
+    },
+
+    /**
+     * Restore a private email to normal visibility
+     * Only the partner who marked it can unmark it
+     */
+    unmarkEmailPrivate: async (_: any, args: { emailId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (user.role !== 'Partner') {
+        throw new GraphQLError('Only partners can manage email privacy', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify email exists and belongs to user's firm
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Only the partner who marked it can unmark it
+      if (email.isPrivate && email.markedPrivateBy !== user.id) {
+        throw new GraphQLError('Only the partner who marked this email as private can restore it', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Unmark as private
+      const updatedEmail = await prisma.email.update({
+        where: { id: args.emailId },
+        data: {
+          isPrivate: false,
+          markedPrivateBy: null,
+          markedPrivateAt: null,
+        },
+        include: { case: true, attachments: true },
+      });
+
+      logger.info('[unmarkEmailPrivate] Email unmarked as private', {
+        emailId: args.emailId,
+        userId: user.id,
+      });
+
+      return updatedEmail;
+    },
+
+    /**
+     * Mark all emails in a thread as private (Partner only)
+     */
+    markThreadPrivate: async (_: any, args: { conversationId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (user.role !== 'Partner') {
+        throw new GraphQLError('Only partners can mark emails as private', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get all emails in the thread belonging to user's firm
+      const emails = await prisma.email.findMany({
+        where: {
+          conversationId: args.conversationId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (emails.length === 0) {
+        throw new GraphQLError('No emails found in thread', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Mark all as private in a transaction
+      const updatedEmails = await prisma.$transaction(
+        emails.map((email) =>
+          prisma.email.update({
+            where: { id: email.id },
+            data: {
+              isPrivate: true,
+              markedPrivateBy: user.id,
+              markedPrivateAt: new Date(),
+            },
+            include: { case: true, attachments: true },
+          })
+        )
+      );
+
+      logger.info('[markThreadPrivate] Thread marked as private', {
+        conversationId: args.conversationId,
+        userId: user.id,
+        emailCount: updatedEmails.length,
+      });
+
+      return updatedEmails;
+    },
+
+    /**
+     * Restore all private emails in a thread
+     * Only emails marked by the current user will be restored
+     */
+    unmarkThreadPrivate: async (_: any, args: { conversationId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (user.role !== 'Partner') {
+        throw new GraphQLError('Only partners can manage email privacy', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get all emails in the thread that this user marked as private
+      const emails = await prisma.email.findMany({
+        where: {
+          conversationId: args.conversationId,
+          firmId: user.firmId,
+          isPrivate: true,
+          markedPrivateBy: user.id,
+        },
+      });
+
+      if (emails.length === 0) {
+        // Return all emails in thread (none were marked by this user)
+        const allEmails = await prisma.email.findMany({
+          where: {
+            conversationId: args.conversationId,
+            firmId: user.firmId,
+          },
+          include: { case: true, attachments: true },
+        });
+        return allEmails;
+      }
+
+      // Unmark all in a transaction
+      const updatedEmails = await prisma.$transaction(
+        emails.map((email) =>
+          prisma.email.update({
+            where: { id: email.id },
+            data: {
+              isPrivate: false,
+              markedPrivateBy: null,
+              markedPrivateAt: null,
+            },
+            include: { case: true, attachments: true },
+          })
+        )
+      );
+
+      logger.info('[unmarkThreadPrivate] Thread unmarked as private', {
+        conversationId: args.conversationId,
+        userId: user.id,
+        emailCount: updatedEmails.length,
+      });
+
+      // Return all emails in thread (including those that weren't modified)
+      const allEmails = await prisma.email.findMany({
+        where: {
+          conversationId: args.conversationId,
+          firmId: user.firmId,
+        },
+        include: { case: true, attachments: true },
+      });
+
+      return allEmails;
+    },
   },
 
   Subscription: {
@@ -2654,6 +3070,13 @@ export const emailResolvers = {
     classificationConfidence: (parent: any) => parent.classificationConfidence || null,
     classifiedAt: (parent: any) => parent.classifiedAt || null,
     classifiedBy: (parent: any) => parent.classifiedBy || null,
+
+    // =========================================================================
+    // Partner Privacy (OPS-191)
+    // =========================================================================
+    isPrivate: (parent: any) => parent.isPrivate ?? false,
+    markedPrivateBy: (parent: any) => parent.markedPrivateBy || null,
+    markedPrivateAt: (parent: any) => parent.markedPrivateAt || null,
 
     // =========================================================================
     // Multi-Case Support (OPS-060)
