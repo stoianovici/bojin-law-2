@@ -248,43 +248,6 @@ input ConfirmActionInput {
 # Queries
 # ============================================================================
 
-"""
-Morning briefing response with tasks, deadlines, and emails
-"""
-type MorningBriefing {
-  message: String!
-  urgentTasks: [BriefingTask!]!
-  todayTasks: [BriefingTask!]!
-  upcomingDeadlines: [BriefingDeadline!]!
-  unreadEmailsCount: Int!
-  aiSummary: String
-}
-
-"""
-A task in the briefing
-"""
-type BriefingTask {
-  id: ID!
-  title: String!
-  priority: String!
-  dueDate: DateTime
-  caseTitle: String
-  caseNumber: String
-  isOverdue: Boolean!
-}
-
-"""
-An upcoming deadline in the briefing
-"""
-type BriefingDeadline {
-  id: ID!
-  title: String!
-  dueDate: DateTime!
-  caseTitle: String
-  caseNumber: String
-  daysUntilDue: Int!
-}
-
 extend type Query {
   """
   Get active conversation for current context.
