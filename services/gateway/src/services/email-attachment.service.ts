@@ -883,6 +883,7 @@ export class EmailAttachmentService {
         oneDriveId: uploadResult.id,
         oneDrivePath: uploadResult.parentPath + '/' + attachment.name,
         status: DocumentStatus.FINAL,
+        sourceType: 'EMAIL_ATTACHMENT',
         metadata: {
           source: 'email_attachment',
           category: 'Email Attachment',
