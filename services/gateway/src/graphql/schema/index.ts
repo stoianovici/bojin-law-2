@@ -146,6 +146,8 @@ export function loadSchema(): string {
   const actorTypeSchema = readFileSync(join(schemaDir, 'actor-type.graphql'), 'utf-8');
   // OPS-226: Client Portfolio View
   const clientSchema = readFileSync(join(schemaDir, 'client.graphql'), 'utf-8');
+  // OPS-241: AI Ops Dashboard
+  const aiOpsSchema = readFileSync(join(schemaDir, 'ai-ops.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -198,6 +200,7 @@ export function loadSchema(): string {
     personalContactSchema,
     actorTypeSchema,
     clientSchema,
+    aiOpsSchema,
   ].join('\n\n');
 }
 

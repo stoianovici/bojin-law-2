@@ -145,7 +145,6 @@ function SearchResultCard({ result }: SearchResultCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-medium text-gray-500 uppercase">Dosar</span>
-              <MatchTypeBadge matchType={result.matchType} />
               <ScoreBadge score={result.score} />
             </div>
             <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -198,7 +197,6 @@ function SearchResultCard({ result }: SearchResultCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-medium text-gray-500 uppercase">Document</span>
-              <MatchTypeBadge matchType={result.matchType} />
               <ScoreBadge score={result.score} />
             </div>
             <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -251,7 +249,6 @@ function SearchResultCard({ result }: SearchResultCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-medium text-gray-500 uppercase">Client</span>
-              <MatchTypeBadge matchType={result.matchType} />
               <ScoreBadge score={result.score} />
             </div>
             <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -294,28 +291,6 @@ function ScoreBadge({ score }: { score: number }) {
 
   return (
     <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${color}`}>{percentage}%</span>
-  );
-}
-
-function MatchTypeBadge({ matchType }: { matchType: string }) {
-  const labels: Record<string, string> = {
-    FULL_TEXT: 'Cuvânt cheie',
-    SEMANTIC: 'AI',
-    HYBRID: 'Inteligent',
-  };
-
-  const colors: Record<string, string> = {
-    FULL_TEXT: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-    SEMANTIC: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400',
-    HYBRID: 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',
-  };
-
-  return (
-    <span
-      className={`px-1.5 py-0.5 text-xs font-medium rounded ${colors[matchType] || colors.FULL_TEXT}`}
-    >
-      {labels[matchType] || matchType}
-    </span>
   );
 }
 

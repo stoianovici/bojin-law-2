@@ -1,8 +1,10 @@
 /**
  * Morning Briefing React Hooks
  * Story 5.4: Proactive AI Suggestions System
+ * OPS-238: Updated with pre-computed briefing fallback
  */
 
+import React from 'react';
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import type {
@@ -335,12 +337,37 @@ export function useRiskAlerts() {
 
 /**
  * Combined hook for the complete morning briefing experience
- * Includes auto-mark-viewed functionality
+ * OPS-238: Updated to fetch pre-computed briefing with fallback to on-demand generation
+ *
+ * Priority:
+ * 1. Fetch pre-computed briefing (from batch job at 5 AM)
+ * 2. If no pre-computed exists, trigger on-demand generation
+ *
+ * Fallback cases:
+ * - User wasn't active in last 7 days (batch job skipped them)
+ * - Batch job failed or hasn't run yet
+ * - User is new since last batch run
  */
 export function useMorningBriefing() {
   const { briefing, loading, error, refetch, hasBriefing } = useTodaysBriefing();
   const { markBriefingViewed, loading: markingViewed } = useMarkBriefingViewed();
-  const { generateBriefing, loading: generating } = useGenerateMorningBriefing();
+  const {
+    generateBriefing,
+    loading: generating,
+    error: generateError,
+  } = useGenerateMorningBriefing();
+  const [fallbackTriggered, setFallbackTriggered] = React.useState(false);
+
+  // Auto-trigger on-demand generation if no pre-computed briefing exists
+  React.useEffect(() => {
+    // Only trigger fallback once, after initial load completes
+    if (!loading && !hasBriefing && !fallbackTriggered && !generating) {
+      setFallbackTriggered(true);
+      generateBriefing().catch((err) => {
+        console.error('[useMorningBriefing] Fallback generation failed:', err);
+      });
+    }
+  }, [loading, hasBriefing, fallbackTriggered, generating, generateBriefing]);
 
   // Mark as viewed when briefing is loaded and not yet viewed
   const markViewed = async () => {
@@ -352,11 +379,13 @@ export function useMorningBriefing() {
   return {
     briefing,
     loading: loading || markingViewed || generating,
-    error,
+    error: error || generateError,
     refetch,
     hasBriefing,
     markViewed,
     generateBriefing,
+    // Indicates if we're using on-demand fallback (useful for UI)
+    isOnDemandGeneration: fallbackTriggered,
     // Convenience getters
     summary: briefing?.summary ?? null,
     prioritizedTasks: briefing?.prioritizedTasks ?? [],

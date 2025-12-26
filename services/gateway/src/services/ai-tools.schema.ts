@@ -77,7 +77,7 @@ const CREATE_TASK_TOOL: Tool = {
       caseId: {
         type: 'string',
         description:
-          'ID-ul dosarului asociat (OBLIGATORIU). Obține din: 1) contextul conversației dacă utilizatorul e pe pagina unui dosar, sau 2) rezultatul search_cases dacă utilizatorul a menționat dosarul după nume.',
+          'ID-ul dosarului asociat (OBLIGATORIU). TREBUIE să fie un UUID (ex: "6d51aba7-3bd0-4a0a-b038-d848589aada0"), NU numărul dosarului. Obține UUID-ul din: 1) contextul conversației dacă utilizatorul e pe pagina unui dosar, sau 2) câmpul "caseId" din rezultatul search_cases.',
       },
       taskType: {
         type: 'string',
@@ -411,7 +411,7 @@ const SUMMARIZE_DOCUMENT_TOOL: Tool = {
 const GENERATE_DOCUMENT_TOOL: Tool = {
   name: 'generate_document',
   description:
-    'Generează un document nou (contract, cerere, scrisoare, notificare). Returnează draft pentru aprobare. Folosește când utilizatorul vrea să creeze un document nou.',
+    'Generează un document nou (contract, cerere, scrisoare, notificare) și îl salvează în SharePoint. IMPORTANT: Necesită caseId valid pentru a salva documentul. Dacă utilizatorul menționează un dosar după nume (ex: "pentru dosarul Solaria", "în cazul Popescu"), folosește MAI ÎNTÂI search_cases pentru a găsi dosarul, apoi apelează generate_document cu caseId-ul găsit.',
   input_schema: {
     type: 'object',
     properties: {
@@ -423,12 +423,13 @@ const GENERATE_DOCUMENT_TOOL: Tool = {
       },
       caseId: {
         type: 'string',
-        description: 'Dosarul asociat - va fi folosit pentru context (părți, numere, etc.).',
+        description:
+          'ID-ul dosarului asociat (OBLIGATORIU pentru salvare). TREBUIE să fie un UUID (ex: "6d51aba7-3bd0-4a0a-b038-d848589aada0"), NU numărul dosarului (care arată ca "f8f501d6-2025-003"). Obține UUID-ul din: 1) contextul conversației dacă utilizatorul e pe pagina unui dosar, sau 2) câmpul "caseId" din rezultatul search_cases. Fără caseId valid, documentul nu va fi salvat în SharePoint.',
       },
       instructions: {
         type: 'string',
         description:
-          'Instrucțiuni specifice pentru conținut - ce să includă, stilul, puncte specifice.',
+          'Instrucțiuni specifice pentru conținut - ce să includă, stilul, puncte specifice de menționat.',
       },
     },
     required: ['templateType'],

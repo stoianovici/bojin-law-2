@@ -8,7 +8,7 @@
 
 import { prisma } from '@legal-platform/database';
 import { AIOperationType } from '@legal-platform/types';
-import { searchService, SearchMode } from '../search.service';
+import { searchService } from '../search.service';
 import { documentGenerationService, DocumentType } from '../document-generation.service';
 import { aiService } from '../ai.service';
 import type { AssistantContext, UserContext, HandlerResult, IntentHandler } from './types';
@@ -82,7 +82,6 @@ export class DocumentIntentHandler implements IntentHandler {
     const searchResponse = await searchService.search(
       searchQuery,
       userContext.firmId,
-      SearchMode.HYBRID,
       filters,
       5, // limit
       0 // offset

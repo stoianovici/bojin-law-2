@@ -12,9 +12,7 @@ import { SearchFiltersPanel } from './SearchFiltersPanel';
 describe('SearchFiltersPanel', () => {
   const defaultProps = {
     filters: {},
-    searchMode: 'HYBRID' as const,
     onFiltersChange: jest.fn(),
-    onSearchModeChange: jest.fn(),
     onClearFilters: jest.fn(),
   };
 
@@ -49,13 +47,13 @@ describe('SearchFiltersPanel', () => {
     it('should start expanded by default', () => {
       render(<SearchFiltersPanel {...defaultProps} />);
 
-      expect(screen.getByText('Mod de căutare')).toBeInTheDocument();
+      expect(screen.getByText('Interval de date')).toBeInTheDocument();
     });
 
     it('should start collapsed when collapsed prop is true', () => {
       render(<SearchFiltersPanel {...defaultProps} collapsed={true} />);
 
-      expect(screen.queryByText('Mod de căutare')).not.toBeInTheDocument();
+      expect(screen.queryByText('Interval de date')).not.toBeInTheDocument();
     });
 
     it('should toggle collapse on header click', async () => {
@@ -66,11 +64,11 @@ describe('SearchFiltersPanel', () => {
 
       // Collapse
       await user.click(header);
-      expect(screen.queryByText('Mod de căutare')).not.toBeInTheDocument();
+      expect(screen.queryByText('Interval de date')).not.toBeInTheDocument();
 
       // Expand
       await user.click(header);
-      expect(screen.getByText('Mod de căutare')).toBeInTheDocument();
+      expect(screen.getByText('Interval de date')).toBeInTheDocument();
     });
   });
 
@@ -91,44 +89,6 @@ describe('SearchFiltersPanel', () => {
       render(<SearchFiltersPanel {...defaultProps} filters={filters} />);
 
       expect(screen.getByText('2')).toBeInTheDocument();
-    });
-  });
-
-  describe('Search Mode', () => {
-    it('should render all search mode options', () => {
-      render(<SearchFiltersPanel {...defaultProps} />);
-
-      expect(screen.getByText('Căutare inteligentă')).toBeInTheDocument();
-      expect(screen.getByText('Căutare după cuvinte cheie')).toBeInTheDocument();
-      expect(screen.getByText('Căutare AI')).toBeInTheDocument();
-    });
-
-    it('should show descriptions for search modes', () => {
-      render(<SearchFiltersPanel {...defaultProps} />);
-
-      expect(
-        screen.getByText('Cele mai bune rezultate folosind AI + cuvinte cheie')
-      ).toBeInTheDocument();
-      expect(screen.getByText('Potrivire exactă a cuvintelor cheie')).toBeInTheDocument();
-      expect(screen.getByText('Găsește conținut similar')).toBeInTheDocument();
-    });
-
-    it('should highlight selected mode', () => {
-      render(<SearchFiltersPanel {...defaultProps} searchMode="SEMANTIC" />);
-
-      const semanticButton = screen.getByText('Căutare AI').closest('button');
-      expect(semanticButton).toHaveClass('border-blue-500');
-    });
-
-    it('should call onSearchModeChange when mode clicked', async () => {
-      const user = userEvent.setup();
-      const onSearchModeChange = jest.fn();
-
-      render(<SearchFiltersPanel {...defaultProps} onSearchModeChange={onSearchModeChange} />);
-
-      await user.click(screen.getByText('Căutare după cuvinte cheie'));
-
-      expect(onSearchModeChange).toHaveBeenCalledWith('FULL_TEXT');
     });
   });
 

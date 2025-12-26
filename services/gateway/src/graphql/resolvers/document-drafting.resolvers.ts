@@ -10,6 +10,12 @@ import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import type { DocumentType } from '@legal-platform/types';
 import logger from '../../utils/logger';
+import { aiClient } from '../../services/ai-client.service';
+import {
+  aiFeatureConfigService,
+  type AIFeatureKey,
+} from '../../services/ai-feature-config.service';
+import crypto from 'crypto';
 
 // Rate limiting configuration
 const RATE_LIMIT = {
@@ -20,9 +26,56 @@ const RATE_LIMIT = {
 // In-memory rate limiting (should use Redis in production)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-// AI Service base URL
+// AI Service base URL (kept for clauseSuggestions and other endpoints)
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || '';
+
+// Document type-specific system prompts
+const DOCUMENT_TYPE_PROMPTS: Record<DocumentType, string> = {
+  Contract: `You are an expert legal document drafter specializing in contract law.
+Create precise, enforceable contract language with clear terms and conditions.
+Include standard contract sections: parties, recitals, definitions, terms, conditions, signatures.
+Use clear Romanian legal terminology where appropriate.`,
+
+  Motion: `You are an expert legal document drafter specializing in court motions.
+Create persuasive, well-structured legal arguments with proper citations.
+Follow standard motion format: caption, introduction, facts, legal argument, conclusion, prayer for relief.
+Reference relevant Romanian procedural law.`,
+
+  Letter: `You are an expert legal document drafter specializing in professional legal correspondence.
+Create clear, professional letters with appropriate tone and legal precision.
+Include proper salutation, body paragraphs, and formal closing.
+Maintain client confidentiality and professional standards.`,
+
+  Memo: `You are an expert legal document drafter specializing in legal memoranda.
+Create thorough legal analysis with clear organization and citations.
+Follow standard memo format: heading, question presented, brief answer, facts, discussion, conclusion.
+Provide balanced analysis of legal issues.`,
+
+  Pleading: `You are an expert legal document drafter specializing in court pleadings.
+Create well-structured pleadings that meet court requirements.
+Include proper caption, numbered paragraphs, and signature block.
+Follow Romanian civil procedure requirements.`,
+
+  Other: `You are an expert legal document drafter.
+Create professional, well-organized legal documents.
+Ensure clarity, precision, and appropriate legal terminology.
+Adapt format to the specific document requirements.`,
+};
+
+// Base system prompt for document generation
+const DOCUMENT_GENERATION_SYSTEM_PROMPT = `You are an AI assistant for a Romanian law firm, specializing in legal document drafting.
+
+IMPORTANT: Generate all documents in Romanian (limba română) unless the user explicitly requests English.
+
+Key Guidelines:
+1. Generate complete, professional legal documents in Romanian
+2. Use appropriate Romanian legal terminology (e.g., "reclamant", "pârât", "instanță", "cerere", "hotărâre")
+3. Structure documents logically with clear sections
+4. Include all necessary legal formalities
+5. Reference relevant Romanian law where appropriate (e.g., Codul Civil, Codul de Procedură Civilă)
+6. Maintain a formal, professional tone
+7. Ensure clarity and precision in all language`;
 
 // Context type
 export interface Context {
@@ -317,6 +370,7 @@ export const documentDraftingResolvers = {
   Mutation: {
     /**
      * Generate a document using AI
+     * OPS-248: Uses aiClient.complete() for usage tracking in AI Ops dashboard
      */
     generateDocumentWithAI: async (
       _: unknown,
@@ -332,6 +386,19 @@ export const documentDraftingResolvers = {
       context: Context
     ) => {
       const user = requireDocumentGenerationRole(context.user);
+      const startTime = Date.now();
+      const requestId = crypto.randomUUID();
+
+      // Check if feature is enabled
+      const featureEnabled = await aiFeatureConfigService.isFeatureEnabled(
+        user.firmId,
+        'document_drafting' as AIFeatureKey
+      );
+      if (!featureEnabled) {
+        throw new GraphQLError('Document drafting feature is disabled for this firm', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
 
       // Check case access
       if (!(await canAccessCase(args.input.caseId, user))) {
@@ -344,51 +411,131 @@ export const documentDraftingResolvers = {
       checkRateLimit(user.id);
 
       logger.info('Document generation requested', {
+        requestId,
         userId: user.id,
         caseId: args.input.caseId,
         documentType: args.input.documentType,
       });
 
       try {
-        const result = (await callAIService('/api/ai/documents/generate', 'POST', {
-          caseId: args.input.caseId,
-          prompt: args.input.prompt,
-          documentType: args.input.documentType,
-          templateId: args.input.templateId,
-          includeContext: args.input.includeContext ?? true,
-          userId: user.id,
-          firmId: user.firmId,
-        })) as {
-          id: string;
-          title: string;
-          content: string;
-          suggestedTitle: string;
-          templateUsed?: { id: string; name: string; category: string };
-          precedentsReferenced: Array<{
-            documentId: string;
-            title: string;
-            similarity: number;
-            relevantSections: string[];
-          }>;
-          tokensUsed: number;
-          generationTimeMs: number;
-        };
-
-        // Increment template usage if one was used
-        if (args.input.templateId) {
-          await prisma.templateLibrary
-            .update({
-              where: { id: args.input.templateId },
-              data: { usageCount: { increment: 1 } },
-            })
-            .catch(() => {
-              // Ignore if template not found
-            });
+        // Get case context if requested
+        let caseContext = '';
+        if (args.input.includeContext !== false) {
+          const caseData = await prisma.case.findUnique({
+            where: { id: args.input.caseId },
+            include: {
+              client: { select: { name: true } },
+            },
+          });
+          if (caseData) {
+            const clientName = caseData.client?.name || 'Client necunoscut';
+            caseContext = `\n\nCase Context:
+- Case Title: ${caseData.title}
+- Case Number: ${caseData.caseNumber || 'N/A'}
+- Case Type: ${caseData.type || 'General'}
+- Client: ${clientName}
+- Description: ${caseData.description || 'No description'}`;
+          }
         }
 
-        return result;
+        // Get template content if provided
+        let templateContext = '';
+        let templateUsed: { id: string; name: string; category: string } | undefined;
+        if (args.input.templateId) {
+          const template = await prisma.templateLibrary.findUnique({
+            where: { id: args.input.templateId },
+          });
+          if (template) {
+            templateContext = `\n\nUse this template as a reference for structure and style:\n${template.structure || ''}`;
+            templateUsed = {
+              id: template.id,
+              name: template.name || template.category,
+              category: template.category,
+            };
+            // Increment template usage
+            await prisma.templateLibrary
+              .update({
+                where: { id: args.input.templateId },
+                data: { usageCount: { increment: 1 } },
+              })
+              .catch(() => {
+                /* Ignore if template not found */
+              });
+          }
+        }
+
+        // Build system prompt
+        const documentTypeInstructions = DOCUMENT_TYPE_PROMPTS[args.input.documentType];
+        const systemPrompt = `${DOCUMENT_GENERATION_SYSTEM_PROMPT}
+
+${documentTypeInstructions}${caseContext}${templateContext}`;
+
+        // Build user prompt
+        const userPrompt = `Please draft the following document:
+
+Document Type: ${args.input.documentType}
+User Request: ${args.input.prompt}
+
+Generate a complete, professional document that fulfills this request.
+The document should be ready for review with minimal editing required.`;
+
+        // Get feature config for model selection
+        const featureConfig = await aiFeatureConfigService.getFeatureConfig(
+          user.firmId,
+          'document_drafting' as AIFeatureKey
+        );
+
+        // Call Claude via aiClient for usage tracking (OPS-248)
+        const aiResponse = await aiClient.complete(
+          userPrompt,
+          {
+            feature: 'document_drafting',
+            userId: user.id,
+            firmId: user.firmId,
+            entityType: 'case',
+            entityId: args.input.caseId,
+          },
+          {
+            model: featureConfig.model || 'claude-sonnet-4-20250514', // Default to Sonnet for quality
+            maxTokens: 4096,
+            system: systemPrompt,
+          }
+        );
+
+        const generationTimeMs = Date.now() - startTime;
+
+        // Generate suggested title
+        const titlePrefix: Record<DocumentType, string> = {
+          Contract: 'Contract',
+          Motion: 'Cerere',
+          Letter: 'Scrisoare',
+          Memo: 'Memorandum',
+          Pleading: 'Cerere de chemare în judecată',
+          Other: 'Document',
+        };
+        const today = new Date().toLocaleDateString('ro-RO');
+        const suggestedTitle = `${titlePrefix[args.input.documentType]} - ${today}`;
+
+        logger.info('Document generation completed', {
+          requestId,
+          generationTimeMs,
+          tokensUsed: aiResponse.inputTokens + aiResponse.outputTokens,
+          contentLength: aiResponse.content.length,
+        });
+
+        return {
+          id: requestId,
+          title: suggestedTitle,
+          content: aiResponse.content,
+          suggestedTitle,
+          templateUsed,
+          precedentsReferenced: [], // Simplified: no precedent lookup in gateway version
+          tokensUsed: aiResponse.inputTokens + aiResponse.outputTokens,
+          generationTimeMs,
+        };
       } catch (error) {
         logger.error('Document generation failed', {
+          requestId,
           userId: user.id,
           caseId: args.input.caseId,
           error: error instanceof Error ? error.message : String(error),

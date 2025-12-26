@@ -1,36 +1,8 @@
 # Search GraphQL Schema
 # Story 2.10: Basic AI Search Implementation - Tasks 13-14
 #
-# Provides AI-powered search capabilities across cases and documents
-# with full-text, semantic, and hybrid search modes.
-
-# ==============================================================================
-# Enums
-# ==============================================================================
-
-"""
-Search mode determines the algorithm used for searching.
-"""
-enum SearchMode {
-  """Full-text search using PostgreSQL tsvector/tsquery"""
-  FULL_TEXT
-  """Semantic search using vector similarity (pgvector)"""
-  SEMANTIC
-  """Combined search using Reciprocal Rank Fusion (recommended)"""
-  HYBRID
-}
-
-"""
-Match type indicates how a result was found.
-"""
-enum SearchMatchType {
-  """Result found via full-text keyword match"""
-  FULL_TEXT
-  """Result found via semantic similarity"""
-  SEMANTIC
-  """Result found by both methods"""
-  HYBRID
-}
+# Provides full-text search capabilities across cases and documents
+# using PostgreSQL tsvector/tsquery.
 
 # ==============================================================================
 # Search Result Types
@@ -46,8 +18,6 @@ type CaseSearchResult {
   score: Float!
   """Highlighted snippet with matched terms wrapped in <mark> tags"""
   highlight: String
-  """How this result was matched"""
-  matchType: SearchMatchType!
 }
 
 """
@@ -60,8 +30,6 @@ type DocumentSearchResult {
   score: Float!
   """Highlighted snippet with matched terms wrapped in <mark> tags"""
   highlight: String
-  """How this result was matched"""
-  matchType: SearchMatchType!
 }
 
 """
@@ -74,8 +42,6 @@ type ClientSearchResult {
   score: Float!
   """Highlighted snippet with matched terms wrapped in <mark> tags"""
   highlight: String
-  """How this result was matched"""
-  matchType: SearchMatchType!
 }
 
 """
@@ -96,8 +62,6 @@ type SearchResponse {
   searchTime: Float!
   """The query that was searched"""
   query: String!
-  """The search mode that was used"""
-  searchMode: SearchMode!
 }
 
 """
@@ -107,8 +71,6 @@ type SearchHistory {
   id: UUID!
   """The search query text"""
   query: String!
-  """Search mode used"""
-  searchMode: SearchMode!
   """Filters applied (JSON)"""
   filters: JSON
   """Number of results returned"""
@@ -155,8 +117,6 @@ Search input parameters.
 input SearchInput {
   """Search query string (required, min 1 character)"""
   query: String!
-  """Search mode (default: HYBRID for best results)"""
-  searchMode: SearchMode = HYBRID
   """Optional filters to narrow results"""
   filters: SearchFiltersInput
   """Maximum results to return (default: 20, max: 100)"""
@@ -171,14 +131,9 @@ input SearchInput {
 
 extend type Query {
   """
-  Search across all cases and documents.
+  Search across all cases, documents, and clients.
 
-  Supports three search modes:
-  - FULL_TEXT: Traditional keyword search using PostgreSQL full-text search
-  - SEMANTIC: AI-powered semantic search using vector embeddings
-  - HYBRID: Combines both methods using Reciprocal Rank Fusion (recommended)
-
-  Results include relevance scores and highlighted snippets.
+  Uses PostgreSQL full-text search with relevance scoring and highlighting.
   Requires authentication. Results are scoped to the user's firm.
   """
   search(input: SearchInput!): SearchResponse!

@@ -13,7 +13,7 @@ import { emailDraftingService } from './email-drafting.service';
 import { documentGenerationService } from './document-generation.service';
 import { morningBriefingService } from './morning-briefing.service';
 import { TaskService } from './task.service';
-import { searchService, SearchMode } from './search.service';
+import { searchService } from './search.service';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { prisma } from '@legal-platform/database';
 import { taskIntentHandler } from './intent-handlers/task.handler';
@@ -1176,7 +1176,6 @@ export class AIOrchestratorService {
       const results = await searchService.search(
         query,
         userContext.firmId,
-        SearchMode.HYBRID,
         {}, // No filters for now
         10, // limit
         0 // offset

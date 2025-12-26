@@ -541,6 +541,78 @@ export const caseResolvers = {
       const limit = Math.min(args.limit || 12, 100);
       return retainerService.getUsageHistory(args.caseId, user.firmId, limit);
     },
+
+    // OPS-239: Get cases sorted by health score
+    casesByHealthScore: async (
+      _: any,
+      args: { maxScore?: number; order?: string; limit?: number },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Require Partner role for dashboard view
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Partner access required for health dashboard', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const limit = Math.min(args.limit || 50, 100);
+      const maxScore = args.maxScore || 100;
+      const orderDir = args.order === 'desc' ? 'desc' : 'asc';
+
+      // Get latest health scores for each case
+      const healthScores = await prisma.caseHealthScore.findMany({
+        where: {
+          firmId: user.firmId,
+          score: { lte: maxScore },
+        },
+        orderBy: { calculatedAt: 'desc' },
+        distinct: ['caseId'],
+        include: {
+          case: {
+            include: {
+              client: true,
+              teamMembers: { include: { user: true } },
+              actors: true,
+            },
+          },
+        },
+      });
+
+      // Sort by score and return cases
+      const sorted = healthScores.sort((a, b) =>
+        orderDir === 'asc' ? a.score - b.score : b.score - a.score
+      );
+
+      return sorted.slice(0, limit).map((hs) => hs.case);
+    },
+
+    // OPS-239: Get health score history for a case
+    caseHealthHistory: async (
+      _: any,
+      args: { caseId: string; limit?: number },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessCase(args.caseId, user))) {
+        throw new GraphQLError('Not authorized to view this case', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const limit = Math.min(args.limit || 30, 100);
+
+      return prisma.caseHealthScore.findMany({
+        where: {
+          caseId: args.caseId,
+          firmId: user.firmId,
+        },
+        orderBy: { calculatedAt: 'desc' },
+        take: limit,
+      });
+    },
   },
 
   Mutation: {
@@ -1531,6 +1603,23 @@ export const caseResolvers = {
       }
 
       return retainerService.calculateCurrentUsage(parent.id, user.firmId);
+    },
+
+    // OPS-239: Latest health score for case
+    latestHealthScore: async (parent: any, _: any, context: Context) => {
+      const user = context.user;
+      if (!user) return null;
+
+      // Get the most recent health score for this case
+      const healthScore = await prisma.caseHealthScore.findFirst({
+        where: {
+          caseId: parent.id,
+          firmId: user.firmId,
+        },
+        orderBy: { calculatedAt: 'desc' },
+      });
+
+      return healthScore;
     },
   },
 

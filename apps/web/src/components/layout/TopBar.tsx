@@ -14,7 +14,7 @@ import { useNavigationStore } from '../../stores/navigation.store';
 import { NotificationCenter } from './NotificationCenter';
 import { useCurrentTimeDisplay } from '../../lib/hooks/useTimeSimulation';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { Bot, Search } from 'lucide-react';
 
 export interface TopBarProps {
   /**
@@ -356,6 +356,24 @@ export function TopBar({
                         />
                       </svg>
                       User Management
+                    </Link>
+                  </DropdownMenu.Item>
+
+                  <DropdownMenu.Item asChild>
+                    <Link
+                      href="/admin/ai-ops"
+                      className="
+                        flex items-center gap-3 px-3 py-2
+                        text-sm text-gray-700
+                        rounded-md
+                        cursor-pointer
+                        hover:bg-gray-100
+                        focus:bg-gray-100 focus:outline-none
+                        transition-colors
+                      "
+                    >
+                      <Bot className="w-4 h-4" aria-hidden="true" />
+                      Operațiuni AI
                     </Link>
                   </DropdownMenu.Item>
                 </>

@@ -2,58 +2,35 @@
  * Search Service
  * Story 2.10: Basic AI Search Implementation - Tasks 8-12, 17-18
  *
- * Provides full-text, semantic, and hybrid search capabilities across
- * cases and documents using PostgreSQL full-text search and pgvector.
+ * Provides full-text search capabilities across cases and documents
+ * using PostgreSQL full-text search.
  *
  * Features:
  * - Full-text search with PostgreSQL tsvector/tsquery
- * - Semantic search using pgvector cosine similarity
- * - Hybrid search with Reciprocal Rank Fusion (RRF) algorithm
  * - Search filters (date range, case type, status, document type)
  * - Redis caching for search results
  * - Cache warming for popular searches
  *
  * References:
  * - PostgreSQL Full-Text Search: https://www.postgresql.org/docs/current/textsearch.html
- * - pgvector: https://github.com/pgvector/pgvector
- * - RRF Paper: "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods"
  */
 
-import { prisma, cacheManager, redis } from '@legal-platform/database';
+import { prisma, cacheManager } from '@legal-platform/database';
 import { CaseType, CaseStatus } from '@legal-platform/database';
 import { createHash } from 'crypto';
-import { embeddingService } from './embedding.service';
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
-// Search Configuration
-const SEARCH_MIN_SIMILARITY = parseFloat(process.env.SEARCH_MIN_SIMILARITY || '0.7');
 const SEARCH_RESULTS_LIMIT = parseInt(process.env.SEARCH_RESULTS_LIMIT || '20', 10);
 const SEARCH_CACHE_PREFIX = 'search';
-const FULL_TEXT_CACHE_TTL = 300; // 5 minutes
-const SEMANTIC_CACHE_TTL = 900; // 15 minutes
+const SEARCH_CACHE_TTL = 300; // 5 minutes
 const RECENT_SEARCHES_TTL = 900; // 15 minutes
-
-// RRF Configuration
-const RRF_K = 60; // Standard RRF constant
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export enum SearchMode {
-  FULL_TEXT = 'FULL_TEXT',
-  SEMANTIC = 'SEMANTIC',
-  HYBRID = 'HYBRID',
-}
-
-export enum SearchMatchType {
-  FULL_TEXT = 'FULL_TEXT',
-  SEMANTIC = 'SEMANTIC',
-  HYBRID = 'HYBRID',
-}
 
 export interface SearchFilters {
   dateRange?: {
@@ -79,7 +56,6 @@ export interface CaseSearchResult {
   openedDate: Date;
   score: number;
   highlight: string | null;
-  matchType: SearchMatchType;
 }
 
 export interface DocumentSearchResult {
@@ -91,7 +67,6 @@ export interface DocumentSearchResult {
   uploadedAt: Date;
   score: number;
   highlight: string | null;
-  matchType: SearchMatchType;
 }
 
 export interface ClientSearchResult {
@@ -103,7 +78,6 @@ export interface ClientSearchResult {
   caseCount: number;
   score: number;
   highlight: string | null;
-  matchType: SearchMatchType;
 }
 
 export type SearchResult = CaseSearchResult | DocumentSearchResult | ClientSearchResult;
@@ -113,16 +87,6 @@ export interface SearchResponse {
   totalCount: number;
   searchTime: number; // milliseconds
   query: string;
-  searchMode: SearchMode;
-}
-
-interface RankedItem {
-  id: string;
-  type: 'case' | 'document' | 'client';
-  fullTextRank?: number;
-  semanticRank?: number;
-  rrfScore?: number;
-  data?: any;
 }
 
 // ============================================================================
@@ -135,11 +99,10 @@ export class SearchService {
   // ==========================================================================
 
   /**
-   * Main search method - routes to appropriate search type
+   * Main search method - performs full-text search across cases, documents, and clients
    *
    * @param query - Search query string
    * @param firmId - Firm UUID for data isolation
-   * @param mode - Search mode (full_text, semantic, hybrid)
    * @param filters - Optional search filters
    * @param limit - Maximum results to return
    * @param offset - Pagination offset
@@ -147,7 +110,6 @@ export class SearchService {
   async search(
     query: string,
     firmId: string,
-    mode: SearchMode = SearchMode.HYBRID,
     filters: SearchFilters = {},
     limit: number = SEARCH_RESULTS_LIMIT,
     offset: number = 0
@@ -155,7 +117,7 @@ export class SearchService {
     const startTime = Date.now();
 
     // Check cache
-    const cacheKey = this.getCacheKey(firmId, query, filters, mode);
+    const cacheKey = this.getCacheKey(firmId, query, filters);
     const cached = await cacheManager.get<SearchResponse>(`${SEARCH_CACHE_PREFIX}:${cacheKey}`);
     if (cached) {
       console.log(`[Search Service] Cache hit for query: "${query}"`);
@@ -165,32 +127,17 @@ export class SearchService {
       };
     }
 
-    let results: SearchResult[];
-
-    switch (mode) {
-      case SearchMode.FULL_TEXT:
-        results = await this.fullTextSearch(query, firmId, filters, limit, offset);
-        break;
-      case SearchMode.SEMANTIC:
-        results = await this.semanticSearch(query, firmId, filters, limit, offset);
-        break;
-      case SearchMode.HYBRID:
-      default:
-        results = await this.hybridSearch(query, firmId, filters, limit, offset);
-        break;
-    }
+    const results = await this.fullTextSearch(query, firmId, filters, limit, offset);
 
     const response: SearchResponse = {
       results,
       totalCount: results.length,
       searchTime: Date.now() - startTime,
       query,
-      searchMode: mode,
     };
 
     // Cache results
-    const ttl = mode === SearchMode.SEMANTIC ? SEMANTIC_CACHE_TTL : FULL_TEXT_CACHE_TTL;
-    await cacheManager.set(`${SEARCH_CACHE_PREFIX}:${cacheKey}`, response, ttl);
+    await cacheManager.set(`${SEARCH_CACHE_PREFIX}:${cacheKey}`, response, SEARCH_CACHE_TTL);
 
     console.log(
       `[Search Service] Search completed in ${response.searchTime}ms, ${results.length} results`
@@ -298,7 +245,7 @@ export class SearchService {
         cl.name as client_name,
         c.opened_date,
         ts_rank(
-          to_tsvector('simple', COALESCE(c.title, '') || ' ' || COALESCE(c.description, '') || ' ' || COALESCE(c.case_number, '') || ' ' || COALESCE(c.search_text, '')),
+          to_tsvector('simple', COALESCE(c.title, '') || ' ' || COALESCE(c.description, '') || ' ' || COALESCE(c.case_number, '') || ' ' || COALESCE(c.search_text, '') || ' ' || COALESCE(c.search_terms, '')),
           plainto_tsquery('simple', $2)
         ) as rank,
         ts_headline(
@@ -310,7 +257,7 @@ export class SearchService {
       FROM cases c
       LEFT JOIN clients cl ON c.client_id = cl.id
       WHERE c.firm_id = $1
-        AND to_tsvector('simple', COALESCE(c.title, '') || ' ' || COALESCE(c.description, '') || ' ' || COALESCE(c.case_number, '') || ' ' || COALESCE(c.search_text, ''))
+        AND to_tsvector('simple', COALESCE(c.title, '') || ' ' || COALESCE(c.description, '') || ' ' || COALESCE(c.case_number, '') || ' ' || COALESCE(c.search_text, '') || ' ' || COALESCE(c.search_terms, ''))
             @@ plainto_tsquery('simple', $4)
         ${filterSql}
       ORDER BY rank DESC
@@ -331,7 +278,6 @@ export class SearchService {
       openedDate: r.opened_date,
       score: r.rank,
       highlight: r.highlight,
-      matchType: SearchMatchType.FULL_TEXT,
     }));
   }
 
@@ -384,7 +330,7 @@ export class SearchService {
         cl.name as client_name,
         d.uploaded_at,
         ts_rank(
-          to_tsvector('simple', COALESCE(d.file_name, '') || ' ' || COALESCE(d.metadata->>'description', '') || ' ' || COALESCE(d.metadata->>'tags', '')),
+          to_tsvector('simple', COALESCE(d.file_name, '') || ' ' || COALESCE(d.metadata->>'description', '') || ' ' || COALESCE(d.metadata->>'tags', '') || ' ' || COALESCE(d.search_terms, '')),
           plainto_tsquery('simple', $2)
         ) as rank,
         ts_headline(
@@ -396,7 +342,7 @@ export class SearchService {
       FROM documents d
       LEFT JOIN clients cl ON d.client_id = cl.id
       WHERE d.firm_id = $1
-        AND to_tsvector('simple', COALESCE(d.file_name, '') || ' ' || COALESCE(d.metadata->>'description', '') || ' ' || COALESCE(d.metadata->>'tags', ''))
+        AND to_tsvector('simple', COALESCE(d.file_name, '') || ' ' || COALESCE(d.metadata->>'description', '') || ' ' || COALESCE(d.metadata->>'tags', '') || ' ' || COALESCE(d.search_terms, ''))
             @@ plainto_tsquery('simple', $4)
         ${filterSql}
       ORDER BY rank DESC
@@ -414,7 +360,6 @@ export class SearchService {
       uploadedAt: r.uploaded_at,
       score: r.rank,
       highlight: r.highlight,
-      matchType: SearchMatchType.FULL_TEXT,
     }));
   }
 
@@ -479,333 +424,7 @@ export class SearchService {
       caseCount: r.case_count,
       score: r.rank,
       highlight: r.highlight,
-      matchType: SearchMatchType.FULL_TEXT,
     }));
-  }
-
-  /**
-   * Semantic search using pgvector cosine similarity (Task 10)
-   */
-  async semanticSearch(
-    query: string,
-    firmId: string,
-    filters: SearchFilters = {},
-    limit: number = SEARCH_RESULTS_LIMIT,
-    offset: number = 0
-  ): Promise<SearchResult[]> {
-    // Generate query embedding
-    const queryEmbedding = await embeddingService.generateEmbedding(query);
-
-    const results: SearchResult[] = [];
-
-    // Search cases
-    const caseResults = await this.semanticSearchCases(
-      queryEmbedding,
-      firmId,
-      filters,
-      limit,
-      offset
-    );
-    results.push(...caseResults);
-
-    // Search documents
-    const docResults = await this.semanticSearchDocuments(
-      queryEmbedding,
-      firmId,
-      filters,
-      limit,
-      offset
-    );
-    results.push(...docResults);
-
-    // Sort by score descending
-    results.sort((a, b) => b.score - a.score);
-
-    return results.slice(0, limit);
-  }
-
-  /**
-   * Semantic search on cases using pgvector
-   */
-  private async semanticSearchCases(
-    queryEmbedding: number[],
-    firmId: string,
-    filters: SearchFilters,
-    limit: number,
-    offset: number
-  ): Promise<CaseSearchResult[]> {
-    const filterConditions = this.buildCaseFilterConditions(filters);
-    const embeddingStr = `[${queryEmbedding.join(',')}]`;
-
-    // Build WHERE clause parts
-    const whereParts: string[] = [];
-    const params: any[] = [
-      firmId,
-      embeddingStr,
-      embeddingStr,
-      SEARCH_MIN_SIMILARITY,
-      embeddingStr,
-      limit,
-      offset,
-    ];
-    let paramIndex = 8;
-
-    if (filterConditions.dateRange && filters.dateRange) {
-      whereParts.push(
-        `AND c.opened_date BETWEEN $${paramIndex}::timestamp AND $${paramIndex + 1}::timestamp`
-      );
-      params.push(filters.dateRange.start, filters.dateRange.end);
-      paramIndex += 2;
-    }
-
-    if (filterConditions.caseTypes && filters.caseTypes) {
-      whereParts.push(`AND c.type::text = ANY($${paramIndex}::text[])`);
-      params.push(filters.caseTypes);
-      paramIndex++;
-    }
-
-    if (filterConditions.caseStatuses && filters.caseStatuses) {
-      whereParts.push(`AND c.status::text = ANY($${paramIndex}::text[])`);
-      params.push(filters.caseStatuses);
-      paramIndex++;
-    }
-
-    if (filterConditions.clientIds && filters.clientIds) {
-      whereParts.push(`AND c.client_id = ANY($${paramIndex}::text[])`);
-      params.push(filters.clientIds);
-      paramIndex++;
-    }
-
-    const filterSql = whereParts.join(' ');
-
-    const results = await prisma.$queryRawUnsafe<
-      Array<{
-        id: string;
-        case_number: string;
-        title: string;
-        description: string;
-        status: string;
-        type: string;
-        client_name: string | null;
-        opened_date: Date;
-        similarity: number;
-      }>
-    >(
-      `SELECT
-        c.id,
-        c.case_number,
-        c.title,
-        c.description,
-        c.status::text,
-        c.type::text,
-        cl.name as client_name,
-        c.opened_date,
-        1 - (c.content_embedding <=> $2::vector) as similarity
-      FROM cases c
-      LEFT JOIN clients cl ON c.client_id = cl.id
-      WHERE c.firm_id = $1
-        AND c.content_embedding IS NOT NULL
-        AND 1 - (c.content_embedding <=> $3::vector) > $4
-        ${filterSql}
-      ORDER BY c.content_embedding <=> $5::vector
-      LIMIT $6
-      OFFSET $7`,
-      ...params
-    );
-
-    return results.map((r) => ({
-      type: 'case' as const,
-      id: r.id,
-      caseNumber: r.case_number,
-      title: r.title,
-      description: r.description,
-      status: r.status as CaseStatus,
-      caseType: r.type as CaseType,
-      clientName: r.client_name,
-      openedDate: r.opened_date,
-      score: r.similarity,
-      highlight: this.truncateText(r.description, 200), // No term highlighting for semantic
-      matchType: SearchMatchType.SEMANTIC,
-    }));
-  }
-
-  /**
-   * Semantic search on documents using pgvector
-   */
-  private async semanticSearchDocuments(
-    queryEmbedding: number[],
-    firmId: string,
-    filters: SearchFilters,
-    limit: number,
-    offset: number
-  ): Promise<DocumentSearchResult[]> {
-    const filterConditions = this.buildDocumentFilterConditions(filters);
-    const embeddingStr = `[${queryEmbedding.join(',')}]`;
-
-    // Build WHERE clause parts
-    const whereParts: string[] = [];
-    const params: any[] = [
-      firmId,
-      embeddingStr,
-      embeddingStr,
-      SEARCH_MIN_SIMILARITY,
-      embeddingStr,
-      limit,
-      offset,
-    ];
-    let paramIndex = 8;
-
-    if (filterConditions.documentTypes && filters.documentTypes) {
-      whereParts.push(`AND d.file_type = ANY($${paramIndex}::text[])`);
-      params.push(filters.documentTypes);
-      paramIndex++;
-    }
-
-    if (filterConditions.clientIds && filters.clientIds) {
-      whereParts.push(`AND d.client_id = ANY($${paramIndex}::text[])`);
-      params.push(filters.clientIds);
-      paramIndex++;
-    }
-
-    const filterSql = whereParts.join(' ');
-
-    const results = await prisma.$queryRawUnsafe<
-      Array<{
-        id: string;
-        file_name: string;
-        file_type: string;
-        client_name: string | null;
-        uploaded_at: Date;
-        similarity: number;
-        description: string | null;
-      }>
-    >(
-      `SELECT
-        d.id,
-        d.file_name,
-        d.file_type,
-        cl.name as client_name,
-        d.uploaded_at,
-        1 - (d.metadata_embedding <=> $2::vector) as similarity,
-        d.metadata->>'description' as description
-      FROM documents d
-      LEFT JOIN clients cl ON d.client_id = cl.id
-      WHERE d.firm_id = $1
-        AND d.metadata_embedding IS NOT NULL
-        AND 1 - (d.metadata_embedding <=> $3::vector) > $4
-        ${filterSql}
-      ORDER BY d.metadata_embedding <=> $5::vector
-      LIMIT $6
-      OFFSET $7`,
-      ...params
-    );
-
-    return results.map((r) => ({
-      type: 'document' as const,
-      id: r.id,
-      fileName: r.file_name,
-      fileType: r.file_type,
-      clientName: r.client_name,
-      uploadedAt: r.uploaded_at,
-      score: r.similarity,
-      highlight: this.truncateText(r.description || r.file_name, 200),
-      matchType: SearchMatchType.SEMANTIC,
-    }));
-  }
-
-  /**
-   * Hybrid search using Reciprocal Rank Fusion (Task 11)
-   */
-  async hybridSearch(
-    query: string,
-    firmId: string,
-    filters: SearchFilters = {},
-    limit: number = SEARCH_RESULTS_LIMIT,
-    offset: number = 0
-  ): Promise<SearchResult[]> {
-    // Run both searches in parallel
-    const [fullTextResults, semanticResults] = await Promise.all([
-      this.fullTextSearch(query, firmId, filters, limit * 2, 0), // Get more results for merging
-      this.semanticSearch(query, firmId, filters, limit * 2, 0),
-    ]);
-
-    // Apply RRF algorithm
-    const mergedResults = this.applyRRF(fullTextResults, semanticResults);
-
-    // Apply pagination
-    return mergedResults.slice(offset, offset + limit);
-  }
-
-  /**
-   * Reciprocal Rank Fusion algorithm
-   * Combines results from multiple search methods
-   */
-  private applyRRF(
-    fullTextResults: SearchResult[],
-    semanticResults: SearchResult[]
-  ): SearchResult[] {
-    const resultMap = new Map<string, RankedItem>();
-
-    // Add full-text results with rank
-    fullTextResults.forEach((result, index) => {
-      const key = `${result.type}:${result.id}`;
-      resultMap.set(key, {
-        id: result.id,
-        type: result.type,
-        fullTextRank: index + 1,
-        data: result,
-      });
-    });
-
-    // Add/update semantic results with rank
-    semanticResults.forEach((result, index) => {
-      const key = `${result.type}:${result.id}`;
-      const existing = resultMap.get(key);
-
-      if (existing) {
-        existing.semanticRank = index + 1;
-        // If found in both, update matchType to HYBRID
-        existing.data = { ...existing.data, matchType: SearchMatchType.HYBRID };
-      } else {
-        resultMap.set(key, {
-          id: result.id,
-          type: result.type,
-          semanticRank: index + 1,
-          data: result,
-        });
-      }
-    });
-
-    // Compute RRF scores
-    const scoredResults: Array<{ result: SearchResult; rrfScore: number }> = [];
-
-    resultMap.forEach((item) => {
-      let rrfScore = 0;
-
-      if (item.fullTextRank !== undefined) {
-        rrfScore += 1 / (RRF_K + item.fullTextRank);
-      }
-
-      if (item.semanticRank !== undefined) {
-        rrfScore += 1 / (RRF_K + item.semanticRank);
-      }
-
-      // Normalize score to 0-1 range (approximately)
-      const normalizedScore = Math.min(rrfScore * RRF_K, 1);
-
-      scoredResults.push({
-        result: {
-          ...item.data,
-          score: normalizedScore,
-        },
-        rrfScore,
-      });
-    });
-
-    // Sort by RRF score descending
-    scoredResults.sort((a, b) => b.rrfScore - a.rrfScore);
-
-    return scoredResults.map((sr) => sr.result);
   }
 
   // ==========================================================================
@@ -843,14 +462,9 @@ export class SearchService {
   /**
    * Generate cache key for search query
    */
-  private getCacheKey(
-    firmId: string,
-    query: string,
-    filters: SearchFilters,
-    mode: SearchMode
-  ): string {
+  private getCacheKey(firmId: string, query: string, filters: SearchFilters): string {
     const hash = createHash('sha256')
-      .update(JSON.stringify({ query, filters, mode }))
+      .update(JSON.stringify({ query, filters }))
       .digest('hex')
       .substring(0, 16);
 
@@ -876,7 +490,6 @@ export class SearchService {
     userId: string,
     firmId: string,
     query: string,
-    searchType: 'FullText' | 'Semantic' | 'Hybrid',
     filters: SearchFilters,
     resultCount: number
   ): Promise<void> {
@@ -885,7 +498,7 @@ export class SearchService {
         userId,
         firmId,
         query,
-        searchType,
+        searchType: 'FullText',
         filters: filters as any,
         resultCount,
       },
@@ -995,7 +608,7 @@ export class SearchService {
     for (const { query } of popularSearches) {
       try {
         // Execute search to populate cache
-        await this.search(query, firmId, SearchMode.HYBRID, {}, SEARCH_RESULTS_LIMIT, 0);
+        await this.search(query, firmId, {}, SEARCH_RESULTS_LIMIT, 0);
         warmedCount++;
       } catch (error) {
         console.error(`[Search Service] Failed to warm cache for query: "${query}"`, error);
@@ -1004,19 +617,6 @@ export class SearchService {
 
     console.log(`[Search Service] Warmed ${warmedCount} searches for firm ${firmId}`);
     return warmedCount;
-  }
-
-  // ==========================================================================
-  // Utility Methods
-  // ==========================================================================
-
-  /**
-   * Truncate text to a maximum length
-   */
-  private truncateText(text: string | null, maxLength: number): string | null {
-    if (!text) return null;
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + '...';
   }
 }
 

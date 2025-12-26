@@ -286,8 +286,17 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
   });
 
   // OPS-132: Track if more threads exist based on initial fetch
+  // OPS-177: Added debug logging
   useEffect(() => {
     if (threadsData?.emailThreads && !threadsLoading) {
+      // Debug logging to understand pagination behavior
+      const uniqueCases = new Set(threadsData.emailThreads.map((t) => t.case?.id).filter(Boolean));
+      console.log('[useMyEmailsByCase] Threads received:', {
+        count: threadsData.emailThreads.length,
+        uniqueCases: uniqueCases.size,
+        limit,
+      });
+
       // If we got fewer threads than the limit, there are no more to load
       // This handles the initial load case
       if (threadsData.emailThreads.length < limit && threadsData.emailThreads.length > 0) {
@@ -364,6 +373,7 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
   });
 
   // OPS-132: Load more threads callback
+  // OPS-177: Updated to work with Apollo cache type policies (removed deprecated updateQuery)
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || threadsLoading) return;
 
@@ -371,23 +381,14 @@ export function useMyEmailsByCase(options?: { limit?: number }) {
     setLoadingMore(true);
 
     try {
-      await fetchMore({
+      const result = await fetchMore({
         variables: { offset: currentCount, limit },
-        updateQuery: (prev, { fetchMoreResult }) => {
-          if (!fetchMoreResult) return prev;
-
-          // Check if we got fewer than limit - means no more to load
-          if (fetchMoreResult.emailThreads.length < limit) {
-            setHasMore(false);
-          }
-
-          // Merge new threads with existing ones
-          return {
-            ...prev,
-            emailThreads: [...prev.emailThreads, ...fetchMoreResult.emailThreads],
-          };
-        },
       });
+
+      // Check if we got fewer than limit - means no more to load
+      if (result.data?.emailThreads && result.data.emailThreads.length < limit) {
+        setHasMore(false);
+      }
     } finally {
       setLoadingMore(false);
     }

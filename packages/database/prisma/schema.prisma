@@ -514,6 +514,10 @@ model Case {
   searchText       String?                     @map("search_text") @db.Text // Concatenated searchable text for full-text search
   contentEmbedding Unsupported("vector(768)")? @map("content_embedding") // multilingual-e5-base embedding for semantic search
 
+  // OPS-237: AI-generated search terms for fuzzy search
+  searchTerms          String?   @map("search_terms") @db.Text // Space-separated terms (abbreviations, alternates, entities, tags)
+  searchTermsUpdatedAt DateTime? @map("search_terms_updated_at") @db.Timestamptz // When search terms were last generated
+
   // Email classification fields (OPS-027: Multi-Case Classification)
   keywords            String[] @default([]) // User-defined terms for matching emails to this case
   referenceNumbers    String[] @default([]) @map("reference_numbers") // Court file numbers, contract refs (e.g., "1234/5/2024")
@@ -575,6 +579,9 @@ model Case {
 
   // Relations (OPS-115: AI Context Files)
   briefing CaseBriefing?
+
+  // Relations (OPS-239: Case Health Scoring)
+  healthScores CaseHealthScore[]
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -889,6 +896,10 @@ model Document {
   // Search fields (Story 2.10)
   metadataEmbedding Unsupported("vector(768)")? @map("metadata_embedding") // multilingual-e5-base embedding for semantic search
 
+  // OPS-237: AI-generated search terms for fuzzy search
+  searchTerms          String?   @map("search_terms") @db.Text // Space-separated terms (abbreviations, alternates, entities, tags)
+  searchTermsUpdatedAt DateTime? @map("search_terms_updated_at") @db.Timestamptz // When search terms were last generated
+
   // OPS-171: Document source type and review fields
   sourceType  DocumentSourceType @default(UPLOAD) @map("source_type")
   reviewerId  String?            @map("reviewer_id")
@@ -1173,6 +1184,36 @@ model AIResponseCache {
   @@index([operationType])
   @@index([expiresAt])
   @@map("ai_response_cache")
+}
+
+// AIFeatureConfig - per-feature toggles and budget controls (OPS-234)
+model AIFeatureConfig {
+  id     String @id @default(uuid())
+  firmId String @map("firm_id")
+
+  // Feature identifier (e.g., 'assistant_chat', 'search_index', 'morning_briefings')
+  feature String @db.VarChar(100)
+
+  // Enable/disable toggle
+  enabled Boolean @default(true)
+
+  // Budget controls (EUR for Romanian firm)
+  monthlyBudgetEur Decimal? @map("monthly_budget_eur") @db.Decimal(10, 2)
+  dailyLimitEur    Decimal? @map("daily_limit_eur") @db.Decimal(10, 2)
+
+  // Batch job schedule (cron format, e.g., '0 3 * * *' for 3 AM daily)
+  schedule String? @db.VarChar(50)
+
+  // Claude model to use for this feature (null = use default: claude-sonnet-4-20250514)
+  model String? @db.VarChar(100)
+
+  // Audit
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String   @map("updated_by") // User ID who last updated
+
+  @@unique([firmId, feature])
+  @@index([firmId])
+  @@map("ai_feature_configs")
 }
 
 // ============================================================================
@@ -3002,6 +3043,7 @@ model RiskIndicator {
 }
 
 // Thread summary for opposing counsel analysis (AC: 5)
+// OPS-240: Extended with general summary fields for batch processing
 model ThreadSummary {
   id                      String   @id @default(uuid())
   conversationId          String   @unique @map("conversation_id") // Graph conversation ID
@@ -3014,6 +3056,13 @@ model ThreadSummary {
   messageCount            Int      @map("message_count")
   createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // OPS-240: General thread summary fields (batch processor)
+  overview     String? @db.Text                          // 1-2 sentence overview in Romanian
+  keyPoints    Json?   @map("key_points")                // Array of bullet points (string[])
+  actionItems  Json?   @map("action_items")              // Array of action items (string[])
+  sentiment    String? @map("sentiment") @db.VarChar(20) // 'positive' | 'neutral' | 'negative' | 'urgent'
+  participants Json?                                     // Array of participant names/emails
 
   case Case? @relation(fields: [caseId], references: [id])
   firm Firm  @relation(fields: [firmId], references: [id])
@@ -4215,6 +4264,15 @@ model CaseBriefing {
   lastDocumentAt DateTime? @map("last_document_at") @db.Timestamptz
   lastTaskAt     DateTime? @map("last_task_at") @db.Timestamptz
 
+  // OPS-257: Rich context sections for pre-compiled AI context
+  documentSummaries    Json? @map("document_summaries")     // Top document summaries
+  emailThreadSummaries Json? @map("email_thread_summaries") // Recent thread summaries with action items
+  upcomingDeadlines    Json? @map("upcoming_deadlines")     // Next 10 deadlines structured
+  contactContext       Json? @map("contact_context")        // Case contacts with last communication
+  clientContext        Json? @map("client_context")         // Client profile, portfolio, relationship
+  caseHealthIndicators Json? @map("case_health_indicators") // Risk flags, staleness warnings
+  contextVersion       Int   @default(1) @map("context_version") // Schema version for migrations
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -4304,4 +4362,133 @@ model DigestQueue {
   @@index([userId, scheduledFor, sent])
   @@index([scheduledFor, sent])
   @@map("digest_queue")
+}
+
+// ============================================================================
+// OPS-232: AI Batch Processing & Ops Dashboard
+// ============================================================================
+
+// AI Usage Log - detailed tracking of every AI API call for cost monitoring
+// Different from AITokenUsage: uses EUR decimals, supports batch job linking
+model AIUsageLog {
+  id String @id @default(uuid())
+
+  // What was called
+  feature String @db.VarChar(100) // 'assistant_chat', 'search_index', 'morning_briefing', etc.
+  model   String @db.VarChar(100) // 'claude-3-haiku-20240307', 'claude-sonnet-4-20250514', etc.
+
+  // Token counts
+  inputTokens  Int @map("input_tokens")
+  outputTokens Int @map("output_tokens")
+
+  // Cost calculation (EUR for Romanian firm - precise decimals)
+  costEur Decimal @map("cost_eur") @db.Decimal(10, 6)
+
+  // Context
+  userId     String? @map("user_id") // null for batch jobs
+  firmId     String  @map("firm_id")
+  entityType String? @map("entity_type") @db.VarChar(50) // 'document', 'case', 'email', etc.
+  entityId   String? @map("entity_id")
+
+  // Timing
+  durationMs Int      @map("duration_ms")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // For batch jobs (intentionally not a FK for flexibility - jobs may be deleted)
+  batchJobId String? @map("batch_job_id")
+
+  @@index([firmId, createdAt])
+  @@index([feature, createdAt])
+  @@index([batchJobId])
+  @@map("ai_usage_logs")
+}
+
+// AI Batch Job Run - tracks batch processing job executions
+model AIBatchJobRun {
+  id     String @id @default(uuid())
+  firmId String @map("firm_id")
+
+  // Job identification
+  feature String @db.VarChar(100) // 'search_index', 'morning_briefing', 'case_health', etc.
+
+  // Status tracking
+  status String @db.VarChar(20) // 'running', 'completed', 'failed', 'partial'
+
+  // Timing
+  startedAt   DateTime  @map("started_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+
+  // Metrics
+  itemsProcessed Int     @default(0) @map("items_processed")
+  itemsFailed    Int     @default(0) @map("items_failed")
+  totalTokens    Int     @default(0) @map("total_tokens")
+  totalCostEur   Decimal @default(0) @map("total_cost_eur") @db.Decimal(10, 6)
+
+  // Error tracking
+  errorMessage String? @map("error_message") @db.Text
+
+  @@index([firmId, feature, startedAt])
+  @@index([status])
+  @@map("ai_batch_job_runs")
+}
+
+// AI Budget Settings - firm-wide budget controls and alert thresholds
+// OPS-246: Budget Controls & Alerts Page
+model AIBudgetSettings {
+  id     String @id @default(uuid())
+  firmId String @unique @map("firm_id")
+
+  // Monthly budget limit in EUR
+  monthlyBudgetEur Decimal @default(100) @map("monthly_budget_eur") @db.Decimal(10, 2)
+
+  // Alert thresholds
+  alertAt75Percent       Boolean @default(true) @map("alert_at_75_percent")
+  alertAt90Percent       Boolean @default(true) @map("alert_at_90_percent")
+  autoPauseAt100Percent  Boolean @default(false) @map("auto_pause_at_100_percent")
+
+  // Slack webhook for alerts (optional)
+  slackWebhookUrl String? @map("slack_webhook_url") @db.VarChar(500)
+
+  // Track which thresholds have been triggered this month
+  alertsSentThisMonth String[] @default([]) @map("alerts_sent_this_month")
+  lastAlertResetAt    DateTime @default(now()) @map("last_alert_reset_at") @db.Timestamptz
+
+  // Audit
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?  @map("updated_by")
+
+  @@map("ai_budget_settings")
+}
+
+// Case Health Score - nightly-computed health metrics for cases
+// OPS-239: Case Health Scoring Processor
+model CaseHealthScore {
+  id     String @id @default(uuid())
+  caseId String @map("case_id")
+  firmId String @map("firm_id")
+
+  // Overall score 0-100
+  score Int
+
+  // Factor breakdown (each 0-100)
+  activityScore Int @map("activity_score") // Days since last activity
+  emailScore    Int @map("email_score") // Unanswered emails
+  taskScore     Int @map("task_score") // Overdue tasks
+  deadlineScore Int @map("deadline_score") // Upcoming deadlines
+
+  // AI-generated insights (in Romanian)
+  concerns    String[] // Top concerns
+  suggestions String[] // Suggested actions
+  riskLevel   String   @map("risk_level") @db.VarChar(20) // 'low', 'medium', 'high', 'critical'
+
+  // Metadata
+  calculatedAt DateTime @default(now()) @map("calculated_at") @db.Timestamptz
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([firmId, calculatedAt])
+  @@index([caseId])
+  @@index([score])
+  @@map("case_health_scores")
 }

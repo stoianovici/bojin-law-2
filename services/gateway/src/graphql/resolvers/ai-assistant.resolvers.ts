@@ -43,6 +43,7 @@ interface Context {
     firmId: string;
     role: string;
     email: string;
+    accessToken?: string;
   };
 }
 
@@ -139,6 +140,7 @@ export const aiAssistantResolvers = {
       const { input } = args;
 
       // Build assistant context from input
+      // OPS-256: Include accessToken for SharePoint document upload
       const assistantContext = {
         userId: context.user.id,
         firmId: context.user.firmId,
@@ -147,6 +149,7 @@ export const aiAssistantResolvers = {
         currentScreen: input.context?.currentScreen,
         selectedEmailId: input.context?.selectedEmailId,
         selectedDocumentId: input.context?.currentDocumentId,
+        accessToken: context.user.accessToken,
       };
 
       try {
@@ -222,10 +225,12 @@ export const aiAssistantResolvers = {
       }
 
       // Build context with caseId from the conversation
+      // OPS-256: Include accessToken for SharePoint document upload
       const assistantContext = {
         userId: context.user.id,
         firmId: context.user.firmId,
         caseId: message.conversation.caseId ?? undefined,
+        accessToken: context.user.accessToken,
       };
 
       try {

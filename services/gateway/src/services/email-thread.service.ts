@@ -310,6 +310,15 @@ export class EmailThreadService {
 
     const totalCount = conversationGroups.length;
 
+    // OPS-177: Debug logging for pagination issues
+    logger.info('[EmailThread.getThreads] Pagination debug', {
+      userId,
+      totalConversations: totalCount,
+      requestedLimit: limit,
+      requestedOffset: offset,
+      willReturnCount: Math.min(limit, totalCount - offset),
+    });
+
     // Apply pagination to conversation IDs
     const paginatedConversations = conversationGroups.slice(offset, offset + limit);
 
@@ -344,6 +353,15 @@ export class EmailThreadService {
     if (hasUnread !== undefined) {
       threads = threads.filter((t) => t.hasUnread === hasUnread);
     }
+
+    // OPS-177: Debug logging - count unique cases in returned threads
+    const uniqueCaseIds = new Set(threads.map((t) => t.caseId).filter(Boolean));
+    logger.info('[EmailThread.getThreads] Result debug', {
+      userId,
+      threadsReturned: threads.length,
+      uniqueCasesInBatch: uniqueCaseIds.size,
+      hasUnassigned: threads.some((t) => !t.caseId),
+    });
 
     return { threads, totalCount };
   }

@@ -252,6 +252,114 @@ export interface CaseBriefingData {
   documentsByCategory?: Record<string, number>;
 }
 
+// ============================================================================
+// OPS-257: Rich Case Context Types
+// ============================================================================
+
+/**
+ * Document summary for AI context
+ */
+export interface DocumentSummary {
+  id: string;
+  title: string;
+  type: string;
+  summary: string;
+  updatedAt: string;
+}
+
+/**
+ * Email thread summary with action items for AI context
+ */
+export interface EmailThreadSummary {
+  threadId: string;
+  subject: string;
+  participants: string[];
+  summary: string;
+  actionItems: string[];
+  lastMessageAt: string;
+  isUrgent: boolean;
+}
+
+/**
+ * Upcoming deadline for AI context
+ */
+export interface UpcomingDeadline {
+  id: string;
+  title: string;
+  dueDate: string;
+  type: 'task' | 'hearing' | 'deadline';
+  daysUntil: number;
+  isOverdue: boolean;
+}
+
+/**
+ * Contact context with last communication
+ */
+export interface ContactContextEntry {
+  id: string;
+  name: string;
+  email?: string;
+  role: string;
+  lastCommunicationAt?: string;
+  lastCommunicationType?: 'email' | 'meeting' | 'call';
+}
+
+/**
+ * Contact context for case
+ */
+export interface ContactContext {
+  contacts: ContactContextEntry[];
+  primaryContact?: ContactContextEntry;
+}
+
+/**
+ * Client context with portfolio information for case briefings
+ * Named with Briefing prefix to avoid conflict with DocumentDrafting.ClientContext
+ */
+export interface BriefingClientContext {
+  id: string;
+  name: string;
+  type: 'individual' | 'company';
+  relationshipStartDate?: string;
+  activeCaseCount: number;
+  closedCaseCount: number;
+  primaryContacts: { name: string; email: string; role: string }[];
+  notes?: string;
+}
+
+/**
+ * Health indicator for case
+ */
+export interface HealthIndicator {
+  type: 'warning' | 'risk' | 'info';
+  code: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+  relatedEntityId?: string;
+}
+
+/**
+ * Rich case context - comprehensive pre-compiled context (~2000-4000 tokens)
+ * OPS-257: Extends basic CaseBriefingData with deep context sections
+ */
+export interface RichCaseContext {
+  // Existing briefing data
+  briefingData: CaseBriefingData;
+  briefingText: string;
+
+  // OPS-257: Rich context sections
+  documentSummaries: DocumentSummary[];
+  emailThreadSummaries: EmailThreadSummary[];
+  upcomingDeadlines: UpcomingDeadline[];
+  contactContext: ContactContext;
+  clientContext: BriefingClientContext | null;
+  caseHealthIndicators: HealthIndicator[];
+
+  // Metadata
+  contextVersion: number;
+  lastComputedAt: string;
+}
+
 /**
  * Case briefing record
  */
@@ -269,6 +377,15 @@ export interface CaseBriefing {
   lastEmailAt?: Date;
   lastDocumentAt?: Date;
   lastTaskAt?: Date;
+
+  // OPS-257: Rich context sections
+  documentSummaries?: DocumentSummary[];
+  emailThreadSummaries?: EmailThreadSummary[];
+  upcomingDeadlines?: UpcomingDeadline[];
+  contactContext?: ContactContext;
+  clientContext?: BriefingClientContext;
+  caseHealthIndicators?: HealthIndicator[];
+  contextVersion: number;
 
   createdAt: Date;
   updatedAt: Date;

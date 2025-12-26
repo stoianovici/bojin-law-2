@@ -24,8 +24,6 @@ export default function SearchPage() {
     searchTime,
     loading,
     error,
-    searchMode,
-    setSearchMode,
     query,
     setQuery,
     filters,
@@ -35,7 +33,6 @@ export default function SearchPage() {
   // Parse URL params on mount
   useEffect(() => {
     const q = searchParams.get('q');
-    const mode = searchParams.get('mode') as any;
     const caseTypes = searchParams.get('caseTypes')?.split(',').filter(Boolean) as CaseType[];
     const caseStatuses = searchParams
       .get('caseStatuses')
@@ -57,10 +54,6 @@ export default function SearchPage() {
       };
     }
 
-    if (mode) {
-      setSearchMode(mode);
-    }
-
     if (Object.keys(urlFilters).length > 0) {
       setFilters(urlFilters);
     }
@@ -78,7 +71,6 @@ export default function SearchPage() {
       const params = new URLSearchParams();
 
       if (newQuery) params.set('q', newQuery);
-      if (searchMode !== 'HYBRID') params.set('mode', searchMode);
       if (newFilters.caseTypes?.length) params.set('caseTypes', newFilters.caseTypes.join(','));
       if (newFilters.caseStatuses?.length)
         params.set('caseStatuses', newFilters.caseStatuses.join(','));
@@ -91,7 +83,7 @@ export default function SearchPage() {
 
       router.push(`/search?${params.toString()}`, { scroll: false });
     },
-    [router, searchMode]
+    [router]
   );
 
   // Handle filter changes
@@ -125,9 +117,7 @@ export default function SearchPage() {
           <aside className="lg:w-80 shrink-0">
             <SearchFiltersPanel
               filters={filters}
-              searchMode={searchMode}
               onFiltersChange={handleFiltersChange}
-              onSearchModeChange={setSearchMode}
               onClearFilters={handleClearFilters}
             />
           </aside>

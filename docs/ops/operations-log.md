@@ -228,10 +228,150 @@
 | OPS-225 | OverviewTab Section Groups                            | Feature      | P2-Medium   | Completed  | [issues/ops-225.md](issues/ops-225.md)   |
 | OPS-226 | Client GraphQL Query + Resolver                       | Feature      | P2-Medium   | Completed  | [issues/ops-226.md](issues/ops-226.md)   |
 | OPS-227 | Client Profile Page + Case Links                      | Feature      | P2-Medium   | Completed  | [issues/ops-227.md](issues/ops-227.md)   |
+| OPS-228 | Fix Search - Graceful Fallback to Full-Text           | Bug          | P0-Critical | Resolved   | [issues/ops-228.md](issues/ops-228.md)   |
+| OPS-229 | Remove Semantic Search from Backend                   | Refactor     | P2-Medium   | Resolved   | [issues/ops-229.md](issues/ops-229.md)   |
+| OPS-230 | Simplify Search GraphQL Schema                        | Refactor     | P2-Medium   | Resolved   | [issues/ops-230.md](issues/ops-230.md)   |
+| OPS-231 | Simplify Search Frontend                              | Refactor     | P2-Medium   | Resolved   | [issues/ops-231.md](issues/ops-231.md)   |
+| OPS-232 | AI Usage & Batch Job Data Models                      | Feature      | P1-High     | Completed  | [issues/ops-232.md](issues/ops-232.md)   |
+| OPS-233 | AI Call Wrapper with Usage Logging                    | Feature      | P1-High     | Completed  | [issues/ops-233.md](issues/ops-233.md)   |
+| OPS-234 | Feature Configuration Data Model & Service            | Feature      | P1-High     | Completed  | [issues/ops-234.md](issues/ops-234.md)   |
+| OPS-235 | AI Usage Aggregation Service                          | Feature      | P1-High     | Completed  | [issues/ops-235.md](issues/ops-235.md)   |
+| OPS-236 | Batch Job Runner Framework                            | Feature      | P1-High     | Completed  | [issues/ops-236.md](issues/ops-236.md)   |
+| OPS-237 | Search Index Processor (Nightly)                      | Feature      | P1-High     | Completed  | [issues/ops-237.md](issues/ops-237.md)   |
+| OPS-238 | Morning Briefings Processor (Pre-compute)             | Feature      | P1-High     | Completed  | [issues/ops-238.md](issues/ops-238.md)   |
+| OPS-239 | Case Health Scoring Processor                         | Feature      | P2-Medium   | Completed  | [issues/ops-239.md](issues/ops-239.md)   |
+| OPS-240 | Thread Summaries Processor                            | Feature      | P2-Medium   | Completed  | [issues/ops-240.md](issues/ops-240.md)   |
+| OPS-241 | AI Ops GraphQL Schema & Resolvers                     | Feature      | P1-High     | Completed  | [issues/ops-241.md](issues/ops-241.md)   |
+| OPS-242 | AI Ops Dashboard Layout & Overview                    | Feature      | P2-Medium   | Completed  | [issues/ops-242.md](issues/ops-242.md)   |
+| OPS-243 | Feature Toggles Page                                  | Feature      | P2-Medium   | Completed  | [issues/ops-243.md](issues/ops-243.md)   |
+| OPS-244 | Cost Breakdown & Charts Page                          | Feature      | P2-Medium   | Completed  | [issues/ops-244.md](issues/ops-244.md)   |
+| OPS-245 | Batch Job History Page                                | Feature      | P2-Medium   | Completed  | [issues/ops-245.md](issues/ops-245.md)   |
+| OPS-246 | Budget Controls & Alerts Page                         | Feature      | P2-Medium   | Completed  | [issues/ops-246.md](issues/ops-246.md)   |
+| OPS-247 | Per-User AI Usage Dashboard                           | Feature      | P2-Medium   | Closed     | [archive/ops-247.md](archive/ops-247.md) |
+| OPS-248 | Add document_drafting to AI Feature Config            | Feature      | P2-Medium   | Completed  | [issues/ops-248.md](issues/ops-248.md)   |
+| OPS-256 | AI Document Generation: Create .docx in SharePoint    | Feature      | P1-High     | Verifying  | [issues/ops-256.md](issues/ops-256.md)   |
+| OPS-257 | Extend CaseBriefing Schema for Rich Context           | Feature      | P2-Medium   | Completed  | [issues/ops-257.md](issues/ops-257.md)   |
+| OPS-258 | Document Summary Aggregation Service                  | Feature      | P2-Medium   | Completed  | [issues/ops-258.md](issues/ops-258.md)   |
+| OPS-259 | Email Thread Summary Aggregation Service              | Feature      | P2-Medium   | Completed  | [issues/ops-259.md](issues/ops-259.md)   |
+| OPS-260 | Client Context Aggregation Service                    | Feature      | P2-Medium   | Completed  | [issues/ops-260.md](issues/ops-260.md)   |
+| OPS-261 | Case Context Batch Processor                          | Feature      | P2-Medium   | Completed  | [issues/ops-261.md](issues/ops-261.md)   |
+| OPS-262 | AI Assistant Pre-compiled Context Integration         | Feature      | P2-Medium   | Verifying  | [issues/ops-262.md](issues/ops-262.md)   |
 
 ---
 
 ## Active Issues Summary
+
+### AI Batch Processing & Ops Dashboard (Epic) - OPS-232 to OPS-246 - COMPLETED ✅
+
+**Goal**: Build nightly AI batch processing infrastructure that generates search indexes, morning briefings, case health scores, and other pre-computed intelligence. Includes an admin dashboard for monitoring costs, toggling features, and setting budget limits.
+
+**Key Benefits**:
+
+- **Search works like Google**: "act constit. tt solaria" finds the right document
+- **Instant briefings**: Pre-computed at 5 AM, no loading delay
+- **Cost visibility**: See exactly where every AI dollar goes
+- **Feature control**: Toggle AI features on/off, set per-feature budgets
+- **Proactive insights**: Case health scores, deadline detection
+
+**All phases completed**:
+
+- ~~OPS-232: AI Usage & Batch Job Data Models~~ ✅
+- ~~OPS-233: AI Call Wrapper with Usage Logging~~ ✅
+- ~~OPS-234: Feature Configuration Data Model & Service~~ ✅
+- ~~OPS-235: AI Usage Aggregation Service~~ ✅
+- ~~OPS-236: Batch Job Runner Framework~~ ✅
+- ~~OPS-237: Search Index Processor (Nightly)~~ ✅
+- ~~OPS-238: Morning Briefings Processor (Pre-compute)~~ ✅
+- ~~OPS-239: Case Health Scoring Processor~~ ✅
+- ~~OPS-240: Thread Summaries Processor~~ ✅
+- ~~OPS-241: AI Ops GraphQL Schema & Resolvers~~ ✅
+- ~~OPS-242: AI Ops Dashboard Layout & Overview~~ ✅
+- ~~OPS-243: Feature Toggles Page~~ ✅
+- ~~OPS-244: Cost Breakdown & Charts Page~~ ✅
+- ~~OPS-245: Batch Job History Page~~ ✅
+- ~~OPS-246: Budget Controls & Alerts Page~~ ✅
+
+**Estimated Daily Cost**: ~$0.60/day with Haiku, ~$3-5/day with Sonnet for critical items
+
+---
+
+### Case Context Pre-compilation (Epic) - OPS-257 to OPS-262
+
+**Goal**: Pre-compile comprehensive case context nightly so AI assistant can inject rich context instantly. Eliminates 200-500ms context gathering latency and enables deeper case understanding.
+
+**Key Benefits**:
+
+- **Instant AI context**: Pre-compiled at 4 AM, no request-time gathering
+- **Richer context**: Documents, emails, client info (~2000-4000 tokens vs ~600)
+- **Client awareness**: AI knows client's other cases, contacts, relationship history
+- **Consistent quality**: Same comprehensive context for every request
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):
+├── OPS-257: Extend CaseBriefing Schema for Rich Context
+├── OPS-258: Document Summary Aggregation Service
+├── OPS-259: Email Thread Summary Aggregation Service
+└── OPS-260: Client Context Aggregation Service
+
+Phase 2 (after 257-260):
+└── OPS-261: Case Context Batch Processor
+
+Phase 3 (after 261):
+└── OPS-262: AI Assistant Pre-compiled Context Integration
+```
+
+**Phase 1 - Foundation** (parallel) - COMPLETED ✅:
+
+- ~~OPS-257: Extend CaseBriefing Schema for Rich Context~~ ✅
+- ~~OPS-258: Document Summary Aggregation Service~~ ✅
+- ~~OPS-259: Email Thread Summary Aggregation Service~~ ✅
+- ~~OPS-260: Client Context Aggregation Service~~ ✅
+
+**Phase 2 - Batch Processor** (after Phase 1) - COMPLETED ✅:
+
+- ~~OPS-261: Case Context Batch Processor~~ ✅
+
+**Phase 3 - Integration** (after Phase 2) - IN PROGRESS:
+
+- OPS-262: AI Assistant Pre-compiled Context Integration (Verifying)
+
+**Token Budget**:
+
+| Section                     | Tokens    |
+| --------------------------- | --------- |
+| Case metadata & parties     | ~300      |
+| Document summaries (top 10) | ~500      |
+| Email thread summaries      | ~600      |
+| Client context              | ~400      |
+| Deadlines & health          | ~300      |
+| **Total**                   | **~2100** |
+
+---
+
+### Search Simplification (Epic) - OPS-228 to OPS-231 - COMPLETED ✅
+
+**Goal**: Fix broken search and remove unused semantic search code to simplify the codebase.
+
+**Context**: Search was failing because HYBRID mode required `VOYAGE_API_KEY` for Voyage AI embeddings. Since semantic search was never going to be used, we removed it entirely.
+
+**All phases completed**:
+
+- ~~OPS-228: Fix Search - Graceful Fallback to Full-Text (P0-Critical)~~ ✅
+- ~~OPS-229: Remove Semantic Search from Backend~~ ✅
+- ~~OPS-230: Simplify Search GraphQL Schema~~ ✅
+- ~~OPS-231: Simplify Search Frontend~~ ✅
+
+**Impact**:
+
+- ~400 lines of dead code removed
+- No external API dependency for search
+- Simpler codebase to maintain
+- GraphQL schema simplified (removed SearchMode, SearchMatchType enums)
+- Frontend simplified (removed search mode dropdown, match type badges)
+
+---
 
 ### Fluid UI Transitions (Epic) - OPS-143 to OPS-149 - COMPLETED ✅
 

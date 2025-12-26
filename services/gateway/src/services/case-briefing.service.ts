@@ -8,8 +8,19 @@
  */
 
 import { prisma, redis } from '@legal-platform/database';
-import type { CaseBriefingData, CaseBriefingParty, CaseBriefingEvent } from '@legal-platform/types';
-import { format, subDays, addDays, addMinutes } from 'date-fns';
+import type {
+  CaseBriefingData,
+  CaseBriefingParty,
+  CaseBriefingEvent,
+  RichCaseContext,
+  DocumentSummary,
+  EmailThreadSummary,
+  UpcomingDeadline,
+  ContactContext,
+  BriefingClientContext,
+  HealthIndicator,
+} from '@legal-platform/types';
+import { format, subDays, addDays, addMinutes, differenceInHours } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import logger from '../utils/logger';
 
@@ -304,6 +315,159 @@ export class CaseBriefingService {
       Expert: 'Expert',
     };
     return translations[role] || role;
+  }
+
+  // ============================================================================
+  // OPS-262: Rich Context Methods
+  // ============================================================================
+
+  /**
+   * Get pre-compiled rich context from database
+   * OPS-262: Used by AI assistant for comprehensive case understanding
+   */
+  async getRichContext(caseId: string): Promise<RichCaseContext | null> {
+    try {
+      const briefing = await prisma.caseBriefing.findUnique({
+        where: { caseId },
+      });
+
+      if (!briefing) {
+        logger.debug('No pre-compiled context found', { caseId });
+        return null;
+      }
+
+      // Check if rich context fields are populated
+      if (
+        !briefing.documentSummaries &&
+        !briefing.emailThreadSummaries &&
+        !briefing.clientContext
+      ) {
+        logger.debug('Pre-compiled context exists but lacks rich fields', { caseId });
+        return null;
+      }
+
+      return {
+        briefingData: briefing.briefingData as unknown as CaseBriefingData,
+        briefingText: briefing.briefingText,
+        documentSummaries: (briefing.documentSummaries as unknown as DocumentSummary[]) || [],
+        emailThreadSummaries:
+          (briefing.emailThreadSummaries as unknown as EmailThreadSummary[]) || [],
+        upcomingDeadlines: (briefing.upcomingDeadlines as unknown as UpcomingDeadline[]) || [],
+        contactContext: (briefing.contactContext as unknown as ContactContext) || { contacts: [] },
+        clientContext: (briefing.clientContext as unknown as BriefingClientContext) || null,
+        caseHealthIndicators: (briefing.caseHealthIndicators as unknown as HealthIndicator[]) || [],
+        contextVersion: briefing.contextVersion,
+        lastComputedAt: briefing.lastComputedAt.toISOString(),
+      };
+    } catch (error) {
+      logger.warn('Failed to get rich context', { caseId, error });
+      return null;
+    }
+  }
+
+  /**
+   * Check if pre-compiled context is fresh enough to use
+   * Context is fresh if computed within last 24 hours OR validUntil hasn't passed
+   */
+  isContextFresh(ctx: RichCaseContext): boolean {
+    if (!ctx.lastComputedAt) return false;
+
+    const computedAt = new Date(ctx.lastComputedAt);
+    const ageHours = differenceInHours(new Date(), computedAt);
+
+    // Context is fresh if computed within last 24 hours
+    return ageHours < 24;
+  }
+
+  /**
+   * Get human-readable age of context for logging
+   */
+  getContextAge(ctx: RichCaseContext): string {
+    if (!ctx.lastComputedAt) return 'necunoscut';
+
+    const computedAt = new Date(ctx.lastComputedAt);
+    const hours = differenceInHours(new Date(), computedAt);
+
+    if (hours < 1) return 'sub 1 oră';
+    if (hours < 24) return `${Math.round(hours)} ore`;
+    return `${Math.round(hours / 24)} zile`;
+  }
+
+  /**
+   * Format rich context for AI prompt injection (~2000-4000 tokens)
+   * OPS-262: Comprehensive context with documents, emails, client info
+   */
+  formatRichContext(ctx: RichCaseContext): string {
+    const sections: string[] = [];
+
+    // Start with the existing briefing text
+    sections.push(ctx.briefingText);
+
+    // Add client context if available
+    if (ctx.clientContext) {
+      sections.push('');
+      sections.push('### Context client');
+      sections.push(`Relație din: ${ctx.clientContext.relationshipStartDate || 'necunoscut'}`);
+      sections.push(
+        `Portofoliu: ${ctx.clientContext.activeCaseCount} dosare active, ${ctx.clientContext.closedCaseCount} închise`
+      );
+      if (ctx.clientContext.primaryContacts?.length > 0) {
+        const contact = ctx.clientContext.primaryContacts[0];
+        sections.push(`Contact principal: ${contact.name} (${contact.role})`);
+      }
+    }
+
+    // Add document summaries (top 5)
+    if (ctx.documentSummaries?.length > 0) {
+      sections.push('');
+      sections.push('### Documente cheie');
+      for (const doc of ctx.documentSummaries.slice(0, 5)) {
+        sections.push(`- **${doc.title}** (${doc.type}): ${doc.summary}`);
+      }
+    }
+
+    // Add email thread summaries (top 3)
+    if (ctx.emailThreadSummaries?.length > 0) {
+      sections.push('');
+      sections.push('### Comunicări recente');
+      for (const thread of ctx.emailThreadSummaries.slice(0, 3)) {
+        const urgentMark = thread.isUrgent ? ' ⚠️' : '';
+        sections.push(`- **${thread.subject}**${urgentMark}: ${thread.summary}`);
+        if (thread.actionItems?.length > 0) {
+          for (const action of thread.actionItems.slice(0, 2)) {
+            sections.push(`  - Acțiune: ${action}`);
+          }
+        }
+      }
+    }
+
+    // Add upcoming deadlines (top 5)
+    if (ctx.upcomingDeadlines?.length > 0) {
+      sections.push('');
+      sections.push('### Termene apropiate');
+      for (const deadline of ctx.upcomingDeadlines.slice(0, 5)) {
+        const overdueMark = deadline.isOverdue ? ' ⚠️ DEPĂȘIT' : '';
+        const daysText =
+          deadline.daysUntil === 0
+            ? 'AZI'
+            : deadline.daysUntil === 1
+              ? 'mâine'
+              : `în ${deadline.daysUntil} zile`;
+        sections.push(`- ${deadline.title} (${daysText})${overdueMark}`);
+      }
+    }
+
+    // Add health indicators (high severity only)
+    const warnings = ctx.caseHealthIndicators?.filter((h) => h.severity === 'high') || [];
+    if (warnings.length > 0) {
+      sections.push('');
+      sections.push('### ⚠️ Atenție');
+      for (const warning of warnings) {
+        sections.push(`- ${warning.message}`);
+      }
+    }
+
+    return sections.join('\n');
   }
 
   // ============================================================================

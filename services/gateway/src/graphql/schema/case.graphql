@@ -160,6 +160,12 @@ type Case {
   """
   communications: [Email!]!
 
+  """
+  Latest health score for this case (OPS-239)
+  Updated nightly by batch processor
+  """
+  latestHealthScore: CaseHealthScore
+
   """Timestamp when the case was created"""
   createdAt: DateTime!
 
@@ -282,6 +288,45 @@ type CaseActor {
 
   """ID of the user who added this actor"""
   createdBy: UUID!
+}
+
+"""
+Case Health Score - nightly-computed health metrics
+OPS-239: Case Health Scoring Processor
+"""
+type CaseHealthScore {
+  """Unique identifier"""
+  id: UUID!
+
+  """Case this score belongs to"""
+  caseId: UUID!
+
+  """Overall health score (0-100)"""
+  score: Int!
+
+  """Activity score component (0-100) - based on days since last activity"""
+  activityScore: Int!
+
+  """Email score component (0-100) - based on unanswered emails"""
+  emailScore: Int!
+
+  """Task score component (0-100) - based on overdue tasks"""
+  taskScore: Int!
+
+  """Deadline score component (0-100) - based on upcoming deadlines"""
+  deadlineScore: Int!
+
+  """Top concerns identified by AI (in Romanian)"""
+  concerns: [String!]!
+
+  """Suggested actions from AI (in Romanian)"""
+  suggestions: [String!]!
+
+  """Risk level: low, medium, high, critical"""
+  riskLevel: String!
+
+  """When this score was calculated"""
+  calculatedAt: DateTime!
 }
 
 """
@@ -594,6 +639,35 @@ type Query {
     """Maximum number of periods to return (default 12)"""
     limit: Int
   ): [RetainerUsage!]!
+
+  """
+  Get cases sorted by health score (OPS-239)
+  Returns active cases ordered by score (worst first by default)
+  Authorization: Partner role required (dashboard view)
+  """
+  casesByHealthScore(
+    """Maximum score to include (default 100 = all cases)"""
+    maxScore: Int
+
+    """Order: asc (worst first) or desc (best first). Default: asc"""
+    order: String
+
+    """Maximum number of results (default 50)"""
+    limit: Int
+  ): [Case!]!
+
+  """
+  Get health score history for a case (OPS-239)
+  Returns scores in reverse chronological order
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  caseHealthHistory(
+    """Case ID"""
+    caseId: UUID!
+
+    """Maximum number of scores to return (default 30)"""
+    limit: Int
+  ): [CaseHealthScore!]!
 }
 
 # ============================================================================

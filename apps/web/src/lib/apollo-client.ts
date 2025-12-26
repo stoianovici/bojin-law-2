@@ -142,6 +142,19 @@ export const apolloClient = new ApolloClient({
               return incoming;
             },
           },
+          // OPS-177: Proper pagination support for emailThreads
+          emailThreads: {
+            // No keyArgs - treat all fetches as the same list for pagination
+            keyArgs: false,
+            merge(existing = [], incoming, { args }) {
+              // If offset is 0, replace the list (fresh fetch)
+              if (!args?.offset || args.offset === 0) {
+                return incoming;
+              }
+              // Otherwise merge with existing (load more)
+              return [...existing, ...incoming];
+            },
+          },
         },
       },
     },

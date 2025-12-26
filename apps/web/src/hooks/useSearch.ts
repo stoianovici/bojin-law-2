@@ -2,8 +2,7 @@
  * Search Hooks
  * Story 2.10: Basic AI Search Implementation - Task 22
  *
- * Provides hooks for AI-powered search across cases and documents.
- * Supports full-text, semantic, and hybrid search modes.
+ * Provides hooks for full-text search across cases, documents, and clients.
  */
 
 import { gql } from '@apollo/client';
@@ -35,7 +34,6 @@ const SEARCH_QUERY = gql`
           }
           score
           highlight
-          matchType
         }
         ... on DocumentSearchResult {
           document {
@@ -50,7 +48,6 @@ const SEARCH_QUERY = gql`
           }
           score
           highlight
-          matchType
         }
         ... on ClientSearchResult {
           client {
@@ -61,13 +58,11 @@ const SEARCH_QUERY = gql`
           }
           score
           highlight
-          matchType
         }
       }
       totalCount
       searchTime
       query
-      searchMode
     }
   }
 `;
@@ -77,7 +72,6 @@ const RECENT_SEARCHES_QUERY = gql`
     recentSearches(limit: $limit) {
       id
       query
-      searchMode
       resultCount
       createdAt
     }
@@ -87,9 +81,6 @@ const RECENT_SEARCHES_QUERY = gql`
 // ============================================================================
 // Types
 // ============================================================================
-
-export type SearchMode = 'FULL_TEXT' | 'SEMANTIC' | 'HYBRID';
-export type SearchMatchType = 'FULL_TEXT' | 'SEMANTIC' | 'HYBRID';
 
 export interface SearchFilters {
   dateRange?: {
@@ -119,7 +110,6 @@ export interface CaseSearchResult {
   };
   score: number;
   highlight: string | null;
-  matchType: SearchMatchType;
 }
 
 export interface DocumentSearchResult {
@@ -136,7 +126,6 @@ export interface DocumentSearchResult {
   };
   score: number;
   highlight: string | null;
-  matchType: SearchMatchType;
 }
 
 export interface ClientSearchResult {
@@ -149,7 +138,6 @@ export interface ClientSearchResult {
   };
   score: number;
   highlight: string | null;
-  matchType: SearchMatchType;
 }
 
 export type SearchResult = CaseSearchResult | DocumentSearchResult | ClientSearchResult;
@@ -159,13 +147,11 @@ export interface SearchResponse {
   totalCount: number;
   searchTime: number;
   query: string;
-  searchMode: SearchMode;
 }
 
 export interface RecentSearch {
   id: string;
   query: string;
-  searchMode: SearchMode;
   resultCount: number;
   createdAt: string;
 }
@@ -176,7 +162,6 @@ export interface RecentSearch {
 
 interface UseSearchOptions {
   debounceMs?: number;
-  defaultMode?: SearchMode;
   defaultLimit?: number;
 }
 
@@ -187,8 +172,6 @@ interface UseSearchReturn {
   searchTime: number;
   loading: boolean;
   error: Error | null;
-  searchMode: SearchMode;
-  setSearchMode: (mode: SearchMode) => void;
   query: string;
   setQuery: (query: string) => void;
   filters: SearchFilters;
@@ -197,13 +180,12 @@ interface UseSearchReturn {
 }
 
 /**
- * Hook for performing AI-powered search across cases and documents
+ * Hook for performing full-text search across cases, documents, and clients
  */
 export function useSearch(options: UseSearchOptions = {}): UseSearchReturn {
-  const { defaultMode = 'HYBRID', defaultLimit = 20 } = options;
+  const { defaultLimit = 20 } = options;
 
   const [query, setQuery] = useState('');
-  const [searchMode, setSearchMode] = useState<SearchMode>(defaultMode);
   const [filters, setFilters] = useState<SearchFilters>({});
 
   const [executeSearch, { data, loading, error }] = useLazyQuery<{
@@ -227,7 +209,6 @@ export function useSearch(options: UseSearchOptions = {}): UseSearchReturn {
         variables: {
           input: {
             query: searchQuery,
-            searchMode,
             filters: searchFilters || filters,
             limit: defaultLimit,
             offset: 0,
@@ -235,7 +216,7 @@ export function useSearch(options: UseSearchOptions = {}): UseSearchReturn {
         },
       });
     },
-    [executeSearch, searchMode, filters, defaultLimit]
+    [executeSearch, filters, defaultLimit]
   );
 
   const clearSearch = useCallback(() => {
@@ -250,8 +231,6 @@ export function useSearch(options: UseSearchOptions = {}): UseSearchReturn {
     searchTime: data?.search?.searchTime || 0,
     loading,
     error: error as Error | null,
-    searchMode,
-    setSearchMode,
     query,
     setQuery,
     filters,

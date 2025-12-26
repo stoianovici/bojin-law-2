@@ -327,12 +327,15 @@ export const emailResolvers = {
         ...args.filters,
       };
 
-      console.log(
-        '[emailThreads] Query with userId:',
-        user.id,
-        'filters:',
-        JSON.stringify(args.filters)
-      );
+      // OPS-177: Enhanced logging for pagination debugging
+      const requestedLimit = args.limit || 20;
+      const requestedOffset = args.offset || 0;
+      console.log('[emailThreads] Query:', {
+        userId: user.id,
+        filters: JSON.stringify(args.filters),
+        limit: requestedLimit,
+        offset: requestedOffset,
+      });
 
       try {
         // First, check how many emails exist for this user
@@ -340,16 +343,19 @@ export const emailResolvers = {
         console.log('[emailThreads] Email count for user:', emailCount);
 
         const result = await emailThreadService.getThreads(filters, {
-          limit: args.limit || 20,
-          offset: args.offset || 0,
+          limit: requestedLimit,
+          offset: requestedOffset,
         });
 
-        console.log(
-          '[emailThreads] Result: threads=',
-          result?.threads?.length,
-          'totalCount=',
-          result?.totalCount
-        );
+        // OPS-177: Log unique cases in the result for debugging
+        const uniqueCases = new Set(result?.threads?.map((t: any) => t.caseId).filter(Boolean));
+        console.log('[emailThreads] Result:', {
+          threads: result?.threads?.length,
+          totalCount: result?.totalCount,
+          uniqueCases: uniqueCases.size,
+          limit: requestedLimit,
+          offset: requestedOffset,
+        });
 
         // Always return an array, even if empty
         return result?.threads || [];

@@ -10,6 +10,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Command } from 'cmdk';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   LayoutDashboard,
   Scale,
@@ -312,6 +314,11 @@ export function CommandMenu({ className }: CommandMenuProps) {
           'animate-in fade-in-0 zoom-in-95 duration-200'
         )}
       >
+        {/* Visually hidden title for accessibility */}
+        <VisuallyHidden.Root asChild>
+          <Dialog.Title>Meniu de comandă</Dialog.Title>
+        </VisuallyHidden.Root>
+
         {/* Search Input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200">
           {searchLoading ? (

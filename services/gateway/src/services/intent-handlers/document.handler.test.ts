@@ -105,7 +105,6 @@ const mockSearchResults = {
       uploadedAt: new Date('2024-01-15'),
       score: 0.95,
       highlight: 'contract de reprezentare',
-      matchType: 'HYBRID' as const,
     },
     {
       type: 'document' as const,
@@ -116,13 +115,11 @@ const mockSearchResults = {
       uploadedAt: new Date('2024-02-20'),
       score: 0.82,
       highlight: 'contract servicii',
-      matchType: 'HYBRID' as const,
     },
   ],
   totalCount: 2,
   searchTime: 45,
   query: 'contract',
-  searchMode: 'HYBRID' as const,
 };
 
 const mockCaseDocuments = [

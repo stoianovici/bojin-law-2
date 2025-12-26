@@ -1,0 +1,355 @@
+# OPS-241: AI Ops GraphQL Schema
+# Admin dashboard for AI usage monitoring, feature toggles, and batch job management
+
+"""
+Overview of AI usage statistics for a firm
+"""
+type AIUsageOverview {
+  "Total cost in EUR for the period"
+  totalCost: Float!
+  "Total tokens used (input + output)"
+  totalTokens: Int!
+  "Total number of AI calls made"
+  totalCalls: Int!
+  "Success rate percentage (0-100)"
+  successRate: Float!
+  "Projected cost by end of current month"
+  projectedMonthEnd: Float!
+  "Configured monthly budget limit in EUR"
+  budgetLimit: Float
+  "Percentage of budget used (0-100)"
+  budgetUsedPercent: Float
+}
+
+"""
+Daily cost breakdown for charting
+"""
+type AIDailyCost {
+  "Date in ISO format (YYYY-MM-DD)"
+  date: String!
+  "Cost in EUR"
+  cost: Float!
+  "Tokens used"
+  tokens: Int!
+  "Number of calls"
+  calls: Int!
+}
+
+"""
+Cost breakdown by feature
+"""
+type AIFeatureCost {
+  "Feature key (e.g., 'assistant_chat')"
+  feature: String!
+  "Human-readable feature name"
+  featureName: String!
+  "Cost in EUR"
+  cost: Float!
+  "Tokens used"
+  tokens: Int!
+  "Number of calls"
+  calls: Int!
+  "Percentage of total cost"
+  percentOfTotal: Float!
+}
+
+"""
+Cost breakdown by user
+"""
+type AIUserCost {
+  "User ID"
+  userId: ID!
+  "User display name"
+  userName: String!
+  "Cost in EUR"
+  cost: Float!
+  "Tokens used"
+  tokens: Int!
+  "Number of calls"
+  calls: Int!
+}
+
+"""
+OPS-247: Detailed AI usage data for a specific user
+"""
+type AIUserUsage {
+  "User ID"
+  userId: ID!
+  "User display name"
+  userName: String!
+  "User email"
+  userEmail: String
+  "Total cost in EUR for the period"
+  totalCost: Float!
+  "Total tokens used (input + output)"
+  totalTokens: Int!
+  "Total number of AI calls"
+  totalCalls: Int!
+  "Daily cost breakdown"
+  dailyCosts: [AIDailyCost!]!
+  "Cost breakdown by feature"
+  costsByFeature: [AIFeatureCost!]!
+}
+
+"""
+OPS-247: Individual AI usage log entry for activity tracking
+"""
+type AIUsageLogEntry {
+  "Log entry ID"
+  id: ID!
+  "Feature key (e.g., 'assistant_chat')"
+  feature: String!
+  "Human-readable feature name"
+  featureName: String!
+  "Input tokens used"
+  inputTokens: Int!
+  "Output tokens used"
+  outputTokens: Int!
+  "Cost in EUR"
+  costEur: Float!
+  "Duration in milliseconds"
+  durationMs: Int!
+  "When the call was made"
+  createdAt: DateTime!
+  "Entity type (e.g., 'case', 'email')"
+  entityType: String
+  "Entity ID (e.g., case ID)"
+  entityId: String
+}
+
+"""
+AI feature type enum
+"""
+enum AIFeatureType {
+  "Features triggered by user actions"
+  request
+  "Scheduled nightly batch jobs"
+  batch
+}
+
+"""
+Configuration for an AI feature
+"""
+type AIFeatureConfig {
+  id: ID!
+  "Feature key"
+  feature: String!
+  "Human-readable feature name"
+  featureName: String!
+  "Feature type: 'request' or 'batch'"
+  featureType: AIFeatureType!
+  "Whether the feature is enabled"
+  enabled: Boolean!
+  "Monthly budget limit in EUR (null = unlimited)"
+  monthlyBudgetEur: Float
+  "Daily limit in EUR (null = unlimited)"
+  dailyLimitEur: Float
+  "Cron schedule for batch features"
+  schedule: String
+  "Claude model to use for this feature (null = use default)"
+  model: String
+  "When the feature was last run (batch only)"
+  lastRunAt: DateTime
+  "Status of the last run (batch only)"
+  lastRunStatus: String
+  "Estimated daily cost based on last 7 days"
+  dailyCostEstimate: Float
+}
+
+"""
+Available Claude model for selection
+"""
+type AIAvailableModel {
+  "Model ID (e.g., 'claude-sonnet-4-20250514')"
+  id: String!
+  "Human-readable name (e.g., 'Claude Sonnet 4')"
+  name: String!
+  "Model category: haiku, sonnet, or opus"
+  category: String!
+  "Cost per 1M input tokens in EUR"
+  inputCostPerMillion: Float!
+  "Cost per 1M output tokens in EUR"
+  outputCostPerMillion: Float!
+  "Whether this is the default model"
+  isDefault: Boolean!
+}
+
+"""
+Batch job status enum
+"""
+enum AIBatchJobStatus {
+  running
+  completed
+  partial
+  failed
+  skipped
+}
+
+"""
+Record of a batch job execution
+"""
+type AIBatchJobRun {
+  id: ID!
+  "Feature key"
+  feature: String!
+  "Human-readable feature name"
+  featureName: String!
+  "Job status"
+  status: AIBatchJobStatus!
+  "When the job started"
+  startedAt: DateTime!
+  "When the job completed"
+  completedAt: DateTime
+  "Number of items successfully processed"
+  itemsProcessed: Int!
+  "Number of items that failed"
+  itemsFailed: Int!
+  "Total tokens used"
+  totalTokens: Int!
+  "Total cost in EUR"
+  totalCostEur: Float!
+  "Error message if failed"
+  errorMessage: String
+}
+
+"""
+Date range input for filtering
+"""
+input AIDateRangeInput {
+  start: DateTime!
+  end: DateTime!
+}
+
+"""
+Input for updating feature configuration
+"""
+input AIFeatureConfigInput {
+  enabled: Boolean
+  monthlyBudgetEur: Float
+  dailyLimitEur: Float
+  schedule: String
+  "Claude model to use for this feature (null = use default)"
+  model: String
+}
+
+"""
+Input for updating budget settings
+"""
+input AIBudgetSettingsInput {
+  monthlyBudget: Float
+  alertAt75: Boolean
+  alertAt90: Boolean
+  autoPauseAt100: Boolean
+  slackWebhookUrl: String
+}
+
+"""
+Budget settings for a firm
+"""
+type AIBudgetSettings {
+  monthlyBudgetEur: Float!
+  alertAt75Percent: Boolean!
+  alertAt90Percent: Boolean!
+  autoPauseAt100Percent: Boolean!
+  slackWebhookUrl: String
+}
+
+extend type Query {
+  """
+  Get all available Claude models for feature configuration.
+  Requires Partner role.
+  """
+  aiAvailableModels: [AIAvailableModel!]!
+
+  """
+  Get budget settings for the current firm.
+  Requires Partner role.
+  """
+  aiBudgetSettings: AIBudgetSettings
+
+  """
+  Get overall AI usage statistics for the current month or specified range.
+  Requires Partner role.
+  """
+  aiUsageOverview(dateRange: AIDateRangeInput): AIUsageOverview!
+
+  """
+  Get daily cost breakdown for charting.
+  Requires Partner role.
+  """
+  aiDailyCosts(dateRange: AIDateRangeInput!): [AIDailyCost!]!
+
+  """
+  Get cost breakdown by AI feature.
+  Requires Partner role.
+  """
+  aiCostsByFeature(dateRange: AIDateRangeInput!): [AIFeatureCost!]!
+
+  """
+  Get cost breakdown by user.
+  Requires Partner role.
+  """
+  aiCostsByUser(dateRange: AIDateRangeInput!): [AIUserCost!]!
+
+  """
+  Get all AI feature configurations.
+  Requires Partner role.
+  """
+  aiFeatures: [AIFeatureConfig!]!
+
+  """
+  Get configuration for a specific feature.
+  Requires Partner role.
+  """
+  aiFeature(feature: String!): AIFeatureConfig
+
+  """
+  Get batch job execution history.
+  Requires Partner role.
+  """
+  aiBatchJobs(
+    feature: String
+    status: AIBatchJobStatus
+    limit: Int = 50
+    offset: Int = 0
+  ): [AIBatchJobRun!]!
+
+  """
+  OPS-247: Get detailed AI usage for a specific user.
+  Requires Partner role.
+  """
+  aiUserUsage(userId: ID!, dateRange: AIDateRangeInput!): AIUserUsage
+
+  """
+  OPS-247: Get activity log for a specific user (recent AI calls).
+  Requires Partner role.
+  """
+  aiUserActivity(
+    userId: ID!
+    limit: Int = 50
+    offset: Int = 0
+  ): [AIUsageLogEntry!]!
+}
+
+extend type Mutation {
+  """
+  Update AI feature configuration (enable/disable, budget, schedule).
+  Requires Partner role.
+  """
+  updateAIFeatureConfig(
+    feature: String!
+    input: AIFeatureConfigInput!
+  ): AIFeatureConfig!
+
+  """
+  Manually trigger a batch job.
+  Requires Partner role.
+  """
+  triggerBatchJob(feature: String!): AIBatchJobRun!
+
+  """
+  Update global AI budget settings.
+  Requires Partner role.
+  """
+  updateAIBudgetSettings(input: AIBudgetSettingsInput!): Boolean!
+}

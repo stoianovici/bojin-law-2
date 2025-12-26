@@ -2,7 +2,7 @@
  * Search GraphQL Resolvers
  * Story 2.10: Basic AI Search Implementation - Tasks 15-16
  *
- * Resolvers for search queries including full-text, semantic, and hybrid search.
+ * Resolvers for search queries using full-text search.
  * All queries require authentication and are scoped to the user's firm.
  */
 
@@ -10,7 +10,6 @@ import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import {
   searchService,
-  SearchMode,
   SearchFilters,
   SearchResult,
   CaseSearchResult,
@@ -33,7 +32,6 @@ interface Context {
 
 interface SearchInput {
   query: string;
-  searchMode?: 'FULL_TEXT' | 'SEMANTIC' | 'HYBRID';
   filters?: {
     dateRange?: {
       start: Date;
@@ -52,36 +50,6 @@ interface SearchInput {
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Map GraphQL search mode to service search mode
- */
-function mapSearchMode(mode?: string): SearchMode {
-  switch (mode) {
-    case 'FULL_TEXT':
-      return SearchMode.FULL_TEXT;
-    case 'SEMANTIC':
-      return SearchMode.SEMANTIC;
-    case 'HYBRID':
-    default:
-      return SearchMode.HYBRID;
-  }
-}
-
-/**
- * Map service search type to database enum
- */
-function mapSearchTypeToDb(mode: SearchMode): 'FullText' | 'Semantic' | 'Hybrid' {
-  switch (mode) {
-    case SearchMode.FULL_TEXT:
-      return 'FullText';
-    case SearchMode.SEMANTIC:
-      return 'Semantic';
-    case SearchMode.HYBRID:
-    default:
-      return 'Hybrid';
-  }
-}
 
 /**
  * Validate search input
@@ -138,8 +106,7 @@ function requireAuth(context: Context): { userId: string; firmId: string } {
 export const searchResolvers = {
   Query: {
     /**
-     * Main search query
-     * Supports full-text, semantic, and hybrid search modes
+     * Main search query using PostgreSQL full-text search
      */
     search: async (_: unknown, { input }: { input: SearchInput }, context: Context) => {
       const { userId, firmId } = requireAuth(context);
@@ -147,7 +114,6 @@ export const searchResolvers = {
       // Validate input
       validateSearchInput(input);
 
-      const searchMode = mapSearchMode(input.searchMode);
       const limit = Math.min(input.limit || 20, 100);
       const offset = input.offset || 0;
 
@@ -184,25 +150,11 @@ export const searchResolvers = {
       }
 
       // Execute search
-      const response = await searchService.search(
-        input.query,
-        firmId,
-        searchMode,
-        filters,
-        limit,
-        offset
-      );
+      const response = await searchService.search(input.query, firmId, filters, limit, offset);
 
       // Record search in history (async, don't await)
       searchService
-        .recordSearch(
-          userId,
-          firmId,
-          input.query,
-          mapSearchTypeToDb(searchMode),
-          filters,
-          response.totalCount
-        )
+        .recordSearch(userId, firmId, input.query, filters, response.totalCount)
         .catch((err) => {
           console.error('[Search Resolver] Failed to record search history:', err);
         });
@@ -212,7 +164,6 @@ export const searchResolvers = {
         totalCount: response.totalCount,
         searchTime: response.searchTime,
         query: response.query,
-        searchMode: input.searchMode || 'HYBRID',
       };
     },
 
@@ -230,7 +181,6 @@ export const searchResolvers = {
       return searches.map((s) => ({
         id: s.id,
         query: s.query,
-        searchMode: s.searchType.toUpperCase(),
         filters: s.filters,
         resultCount: s.resultCount,
         createdAt: s.createdAt,
@@ -274,7 +224,6 @@ export const searchResolvers = {
     },
     score: (result: CaseSearchResult) => result.score,
     highlight: (result: CaseSearchResult) => result.highlight,
-    matchType: (result: CaseSearchResult) => result.matchType,
   },
 
   // Document search result resolver
@@ -293,7 +242,6 @@ export const searchResolvers = {
     },
     score: (result: DocumentSearchResult) => result.score,
     highlight: (result: DocumentSearchResult) => result.highlight,
-    matchType: (result: DocumentSearchResult) => result.matchType,
   },
 
   // Client search result resolver
@@ -314,6 +262,5 @@ export const searchResolvers = {
     },
     score: (result: ClientSearchResult) => result.score,
     highlight: (result: ClientSearchResult) => result.highlight,
-    matchType: (result: ClientSearchResult) => result.matchType,
   },
 };

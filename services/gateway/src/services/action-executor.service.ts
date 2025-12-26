@@ -23,6 +23,8 @@ import {
   GenerateDocumentInput,
 } from './document-generation.service';
 import { createCalendarSuggestionService, CalendarSuggestion } from './calendar-suggestion.service';
+import { docxGeneratorService } from './docx-generator.service';
+import { sharePointService } from './sharepoint.service';
 
 // ============================================================================
 // Types
@@ -465,6 +467,7 @@ export class ActionExecutorService {
 
   /**
    * Generate a document.
+   * OPS-256: Creates .docx file and uploads to SharePoint
    */
   private async executeGenerateDocument(
     data: GenerateDocumentData,
@@ -483,37 +486,89 @@ export class ActionExecutorService {
       firmId: userContext.firmId,
     });
 
-    // Save document to database if we have a case
+    // Save document to database and upload to SharePoint if we have a case
     let savedDocumentId: string | undefined;
     let navigationUrl: string | undefined;
+    let wordUrl: string | undefined;
 
-    if (data.caseId) {
+    if (data.caseId && userContext.accessToken) {
       try {
-        // Get the case to find the client
+        // Get the case to find the client and case number
         const caseData = await prisma.case.findFirst({
           where: { id: data.caseId, firmId: userContext.firmId },
-          select: { clientId: true, title: true },
+          select: { clientId: true, title: true, caseNumber: true },
         });
 
-        if (caseData?.clientId) {
-          // Create the document record
+        // Get firm name for document header
+        const firm = await prisma.firm.findUnique({
+          where: { id: userContext.firmId },
+          select: { name: true },
+        });
+
+        // Get user name for document metadata
+        const user = await prisma.user.findUnique({
+          where: { id: userContext.userId },
+          select: { firstName: true, lastName: true },
+        });
+        const authorName = user ? `${user.firstName} ${user.lastName}` : 'Legal Platform';
+
+        if (caseData?.clientId && caseData?.caseNumber) {
+          // Generate .docx file
+          const docxBuffer = await docxGeneratorService.markdownToDocx(
+            generatedDoc.content,
+            {
+              title: generatedDoc.title,
+              author: authorName,
+              subject: caseData.title,
+              creator: 'Legal Platform AI',
+              lastModifiedBy: authorName,
+            },
+            {
+              includePageNumbers: true,
+              headerText: firm?.name,
+            }
+          );
+
+          // Generate .docx filename
+          const timestamp = new Date().toISOString().split('T')[0];
+          const sanitizedTitle = generatedDoc.title
+            .toLowerCase()
+            .replace(/[^a-z0-9ăâîșț\s-]/gi, '')
+            .replace(/\s+/g, '-')
+            .substring(0, 50);
+          const docxFileName = `${sanitizedTitle}-${timestamp}.docx`;
+
+          // Upload to SharePoint
+          const sharePointItem = await sharePointService.uploadDocument(
+            userContext.accessToken,
+            caseData.caseNumber,
+            docxFileName,
+            docxBuffer,
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          );
+
+          // Create the document record with SharePoint reference
           const document = await prisma.document.create({
             data: {
               clientId: caseData.clientId,
               firmId: userContext.firmId,
-              fileName: generatedDoc.suggestedFileName,
-              fileType: generatedDoc.format === 'html' ? 'text/html' : 'text/markdown',
-              fileSize: Buffer.byteLength(generatedDoc.content, 'utf8'),
-              storagePath: `/${userContext.firmId}/ai-generated/${generatedDoc.suggestedFileName}`,
+              fileName: docxFileName,
+              fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              fileSize: docxBuffer.length,
+              storagePath: sharePointItem.parentPath + '/' + docxFileName,
+              sharePointItemId: sharePointItem.id,
+              sharePointPath: sharePointItem.parentPath,
+              sharePointLastModified: new Date(sharePointItem.lastModifiedDateTime),
               uploadedBy: userContext.userId,
               status: 'DRAFT',
+              sourceType: 'AI_GENERATED',
               metadata: {
                 generatedBy: 'ai-assistant',
                 documentType: generatedDoc.documentType,
                 title: generatedDoc.title,
-                content: generatedDoc.content, // Store content in metadata
                 tokensUsed: generatedDoc.tokensUsed,
                 generatedAt: new Date().toISOString(),
+                sharePointWebUrl: sharePointItem.webUrl, // Store webUrl in metadata for "Open in Word"
               },
             },
           });
@@ -531,13 +586,18 @@ export class ActionExecutorService {
 
           savedDocumentId = document.id;
           navigationUrl = `/cases/${data.caseId}/documents?documentId=${document.id}`;
+          wordUrl = `ms-word:ofe|u|${sharePointItem.webUrl}`;
 
-          console.log(`[ActionExecutor] Document saved: ${document.id} for case ${data.caseId}`);
+          console.log(
+            `[ActionExecutor] Document created and uploaded to SharePoint: ${document.id} for case ${data.caseId}`
+          );
         }
       } catch (error) {
-        console.error('[ActionExecutor] Error saving document to database:', error);
+        console.error('[ActionExecutor] Error creating/uploading document:', error);
         // Continue - we still have the generated content to return
       }
+    } else if (data.caseId && !userContext.accessToken) {
+      console.warn('[ActionExecutor] No accessToken available for SharePoint upload');
     }
 
     // Build response message with the document content
@@ -547,11 +607,23 @@ export class ActionExecutorService {
           '\n\n... [Document trunchiat - vezi în dosar pentru versiunea completă]'
         : generatedDoc.content;
 
+    // Build message based on outcome
+    let message: string;
+    if (savedDocumentId && wordUrl) {
+      message =
+        `Documentul "${generatedDoc.title}" a fost generat și salvat în SharePoint.\n\n` +
+        `📄 **Fișier:** ${generatedDoc.title}.docx\n` +
+        `📂 **Locație:** Dosar > Documente\n\n` +
+        `---\n\n${contentPreview}`;
+    } else if (savedDocumentId) {
+      message = `Documentul "${generatedDoc.title}" a fost generat și salvat în dosar.\n\n---\n\n${contentPreview}`;
+    } else {
+      message = `Documentul "${generatedDoc.title}" a fost generat.\n\n---\n\n${contentPreview}`;
+    }
+
     return {
       success: true,
-      message: savedDocumentId
-        ? `Documentul "${generatedDoc.title}" a fost generat și salvat în dosar.\n\n---\n\n${contentPreview}`
-        : `Documentul "${generatedDoc.title}" a fost generat.\n\n---\n\n${contentPreview}`,
+      message,
       entityId: savedDocumentId || generatedDoc.suggestedFileName,
       entityType: 'Document',
       navigationUrl,

@@ -19,6 +19,7 @@ import { conversationService } from './conversation.service';
 import { AIMessageRole, AIActionStatus } from '@prisma/client';
 import { CreateTaskInput as TaskServiceInput } from './task-validation.service';
 import type { TaskType } from '@legal-platform/types';
+import { aiClient } from './ai-client.service';
 
 // ============================================================================
 // Types
@@ -93,10 +94,9 @@ function getTimezoneOffset(timezone: string, date: Date): number {
 // ============================================================================
 
 export class AIAssistantService {
-  private anthropic: Anthropic;
-
+  // Note: Using aiClient singleton for AI calls (OPS-233) for usage logging
   constructor() {
-    this.anthropic = new Anthropic();
+    // No direct Anthropic client needed - using aiClient wrapper
   }
 
   /**
@@ -169,18 +169,45 @@ export class AIAssistantService {
       context.firmId
     );
 
-    // Call Claude Sonnet with tools
-    const response = await this.anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages,
-      tools: AI_TOOLS.map((t) => ({
-        name: t.name,
-        description: t.description,
-        input_schema: t.input_schema as Anthropic.Tool['input_schema'],
+    // Call Claude Sonnet with tools (via aiClient for usage logging)
+    const aiResponse = await aiClient.chat(
+      messages.map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
       })),
-    });
+      {
+        feature: 'assistant_chat',
+        userId: context.userId,
+        firmId: context.firmId,
+        entityType: context.caseId ? 'case' : undefined,
+        entityId: context.caseId,
+      },
+      {
+        model: 'claude-sonnet-4-20250514',
+        maxTokens: 1024,
+        system: systemPrompt,
+        tools: AI_TOOLS.map((t) => ({
+          name: t.name,
+          description: t.description,
+          input_schema: t.input_schema as Anthropic.Tool['input_schema'],
+        })),
+      }
+    );
+
+    // Convert aiClient response to Anthropic.Message format for processResponse
+    const response: Anthropic.Message = {
+      id: 'msg_' + Date.now(),
+      type: 'message',
+      role: 'assistant',
+      content: aiResponse.content,
+      model: aiResponse.model,
+      stop_reason: aiResponse.stopReason as Anthropic.Message['stop_reason'],
+      stop_sequence: null,
+      usage: {
+        input_tokens: aiResponse.inputTokens,
+        output_tokens: aiResponse.outputTokens,
+      } as Anthropic.Usage,
+    };
 
     // Process the response
     return this.processResponse(response, conversation.id, context);
@@ -506,18 +533,45 @@ export class AIAssistantService {
 
     console.log('[AIAssistant] Continuing with tool result, depth:', depth);
 
-    // Call Claude again with the tool result
-    const response = await this.anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages,
-      tools: AI_TOOLS.map((t) => ({
-        name: t.name,
-        description: t.description,
-        input_schema: t.input_schema as Anthropic.Tool['input_schema'],
+    // Call Claude again with the tool result (via aiClient for usage logging)
+    const aiResponse = await aiClient.chat(
+      messages.map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content as string | Anthropic.ContentBlockParam[],
       })),
-    });
+      {
+        feature: 'assistant_chat',
+        userId: context.userId,
+        firmId: context.firmId,
+        entityType: context.caseId ? 'case' : undefined,
+        entityId: context.caseId,
+      },
+      {
+        model: 'claude-sonnet-4-20250514',
+        maxTokens: 1024,
+        system: systemPrompt,
+        tools: AI_TOOLS.map((t) => ({
+          name: t.name,
+          description: t.description,
+          input_schema: t.input_schema as Anthropic.Tool['input_schema'],
+        })),
+      }
+    );
+
+    // Convert aiClient response to Anthropic.Message format for recursive calls
+    const response: Anthropic.Message = {
+      id: 'msg_' + Date.now(),
+      type: 'message',
+      role: 'assistant',
+      content: aiResponse.content,
+      model: aiResponse.model,
+      stop_reason: aiResponse.stopReason as Anthropic.Message['stop_reason'],
+      stop_sequence: null,
+      usage: {
+        input_tokens: aiResponse.inputTokens,
+        output_tokens: aiResponse.outputTokens,
+      } as Anthropic.Usage,
+    };
 
     // Process the new response
     const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text');
@@ -1236,20 +1290,16 @@ export class AIAssistantService {
       };
     }
 
-    // Include IDs in output so Claude can use them for subsequent tool calls
-    const caseList = cases
-      .map((c) => `• [ID: ${c.id}] ${c.title} (${c.caseNumber}) - ${c.status}`)
-      .join('\n');
+    // Include caseId (UUID) in output so Claude can use them for subsequent tool calls
+    // IMPORTANT: Do NOT show caseNumber to avoid confusion - only show the UUID which is required for tool calls
+    const caseList = cases.map((c) => `• ${c.title} - ${c.status}\n  caseId: ${c.id}`).join('\n');
 
-    // If only one case found, highlight it for easy reference
-    const singleCaseHint =
-      cases.length === 1
-        ? `\n\nPentru a crea o sarcină în acest dosar, folosește caseId: "${cases[0].id}"`
-        : '';
+    // Always include explicit instruction about using caseId
+    const usageHint = `\n\nIMPORTANT: Pentru orice operațiune pe aceste dosare (generare documente, creare sarcini, etc.), folosește valoarea "caseId" de mai sus.`;
 
     return {
       success: true,
-      message: `Am găsit ${cases.length} dosar${cases.length === 1 ? '' : 'e'}:\n${caseList}${singleCaseHint}`,
+      message: `Am găsit ${cases.length} dosar${cases.length === 1 ? '' : 'e'}:\n${caseList}${usageHint}`,
       data: { cases },
     };
   }
@@ -1617,21 +1667,28 @@ export class AIAssistantService {
     };
   }
 
+  /**
+   * Execute document generation with .docx creation and SharePoint upload
+   * OPS-256: Creates .docx file and uploads to SharePoint
+   */
   private async executeGenerateDocument(
     input: Record<string, unknown>,
     context: AssistantContext
   ): Promise<ToolExecutionResult> {
     const { documentGenerationService } = await import('./document-generation.service');
+    const { docxGeneratorService } = await import('./docx-generator.service');
+    const { sharePointService } = await import('./sharepoint.service');
 
     const templateType = (input.templateType as string) || 'Other';
     const caseId = (input.caseId as string) || context.caseId;
+    const instructions = (input.instructions as string) || `Generează ${templateType}`;
 
-    // Generate the document content
+    // Generate the document content (markdown)
     const generatedDoc = await documentGenerationService.generateDocument(
       {
         type: templateType as 'Contract' | 'Motion' | 'Letter' | 'Memo' | 'Pleading' | 'Other',
         caseId,
-        instructions: (input.instructions as string) || `Generează ${templateType}`,
+        instructions,
       },
       {
         userId: context.userId,
@@ -1639,37 +1696,89 @@ export class AIAssistantService {
       }
     );
 
-    // Save document to database if we have a case
+    // Save document to database and upload to SharePoint if we have a case and accessToken
     let savedDocumentId: string | undefined;
     let navigationUrl: string | undefined;
+    let wordUrl: string | undefined;
 
-    if (caseId) {
+    if (caseId && context.accessToken) {
       try {
-        // Get the case to find the client
+        // Get the case to find the client and case number
         const caseData = await prisma.case.findFirst({
           where: { id: caseId, firmId: context.firmId },
-          select: { clientId: true, title: true },
+          select: { clientId: true, title: true, caseNumber: true },
         });
 
-        if (caseData?.clientId) {
-          // Create the document record
+        // Get firm name for document header
+        const firm = await prisma.firm.findUnique({
+          where: { id: context.firmId },
+          select: { name: true },
+        });
+
+        // Get user name for document metadata
+        const user = await prisma.user.findUnique({
+          where: { id: context.userId },
+          select: { firstName: true, lastName: true },
+        });
+        const authorName = user ? `${user.firstName} ${user.lastName}` : 'Legal Platform';
+
+        if (caseData?.clientId && caseData?.caseNumber) {
+          // Generate .docx file
+          const docxBuffer = await docxGeneratorService.markdownToDocx(
+            generatedDoc.content,
+            {
+              title: generatedDoc.title,
+              author: authorName,
+              subject: caseData.title,
+              creator: 'Legal Platform AI',
+              lastModifiedBy: authorName,
+            },
+            {
+              includePageNumbers: true,
+              headerText: firm?.name,
+            }
+          );
+
+          // Generate .docx filename
+          const timestamp = new Date().toISOString().split('T')[0];
+          const sanitizedTitle = generatedDoc.title
+            .toLowerCase()
+            .replace(/[^a-z0-9ăâîșț\s-]/gi, '')
+            .replace(/\s+/g, '-')
+            .substring(0, 50);
+          const docxFileName = `${sanitizedTitle}-${timestamp}.docx`;
+
+          // Upload to SharePoint
+          const sharePointItem = await sharePointService.uploadDocument(
+            context.accessToken,
+            caseData.caseNumber,
+            docxFileName,
+            docxBuffer,
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          );
+
+          // Create the document record with SharePoint reference
           const document = await prisma.document.create({
             data: {
               clientId: caseData.clientId,
               firmId: context.firmId,
-              fileName: generatedDoc.suggestedFileName,
-              fileType: generatedDoc.format === 'html' ? 'text/html' : 'text/markdown',
-              fileSize: Buffer.byteLength(generatedDoc.content, 'utf8'),
-              storagePath: `/${context.firmId}/ai-generated/${generatedDoc.suggestedFileName}`,
+              fileName: docxFileName,
+              fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              fileSize: docxBuffer.length,
+              storagePath: sharePointItem.parentPath + '/' + docxFileName,
+              sharePointItemId: sharePointItem.id,
+              sharePointPath: sharePointItem.parentPath,
+              sharePointLastModified: new Date(sharePointItem.lastModifiedDateTime),
               uploadedBy: context.userId,
               status: 'DRAFT',
+              sourceType: 'AI_GENERATED',
               metadata: {
                 generatedBy: 'ai-assistant',
                 documentType: generatedDoc.documentType,
                 title: generatedDoc.title,
-                content: generatedDoc.content, // Store content in metadata
                 tokensUsed: generatedDoc.tokensUsed,
                 generatedAt: new Date().toISOString(),
+                sharePointWebUrl: sharePointItem.webUrl,
               },
             },
           });
@@ -1687,13 +1796,18 @@ export class AIAssistantService {
 
           savedDocumentId = document.id;
           navigationUrl = `/cases/${caseId}/documents?documentId=${document.id}`;
+          wordUrl = `ms-word:ofe|u|${sharePointItem.webUrl}`;
 
-          console.log(`[AIAssistant] Document saved: ${document.id} for case ${caseId}`);
+          console.log(
+            `[AIAssistant] Document created and uploaded to SharePoint: ${document.id} for case ${caseId}`
+          );
         }
       } catch (error) {
-        console.error('[AIAssistant] Error saving document to database:', error);
+        console.error('[AIAssistant] Error creating/uploading document:', error);
         // Continue - we still have the generated content to return
       }
+    } else if (caseId && !context.accessToken) {
+      console.warn('[AIAssistant] No accessToken available for SharePoint upload');
     }
 
     // Build response message with the document content
@@ -1703,9 +1817,19 @@ export class AIAssistantService {
           '\n\n... [Document trunchiat - vezi în dosar pentru versiunea completă]'
         : generatedDoc.content;
 
-    const message = savedDocumentId
-      ? `Am generat și salvat documentul "${generatedDoc.title}" în dosarul selectat.\n\n---\n\n${contentPreview}`
-      : `Am generat documentul "${generatedDoc.title}".\n\n---\n\n${contentPreview}`;
+    // Build message based on outcome
+    let message: string;
+    if (savedDocumentId && wordUrl) {
+      message =
+        `Am generat și salvat documentul "${generatedDoc.title}" în SharePoint.\n\n` +
+        `📄 **Fișier:** ${generatedDoc.title}.docx\n` +
+        `📂 **Locație:** Dosar > Documente\n\n` +
+        `---\n\n${contentPreview}`;
+    } else if (savedDocumentId) {
+      message = `Am generat și salvat documentul "${generatedDoc.title}" în dosarul selectat.\n\n---\n\n${contentPreview}`;
+    } else {
+      message = `Am generat documentul "${generatedDoc.title}".\n\n---\n\n${contentPreview}`;
+    }
 
     return {
       success: true,
@@ -2069,11 +2193,38 @@ export class AIAssistantService {
       // Continue without context - non-blocking
     }
 
-    // OPS-118/119: Get pre-computed case briefing when in case context
+    // OPS-262: Try to get pre-compiled rich context first, fall back to on-demand
     let caseBriefing: string | undefined;
     if (context.caseId) {
       try {
-        caseBriefing = await caseBriefingService.getBriefingText(context.caseId);
+        // Try pre-compiled rich context first
+        const richContext = await caseBriefingService.getRichContext(context.caseId);
+
+        if (richContext && caseBriefingService.isContextFresh(richContext)) {
+          // Use pre-compiled comprehensive context
+          caseBriefing = caseBriefingService.formatRichContext(richContext);
+          console.log('[AIAssistant] Using pre-compiled context', {
+            caseId: context.caseId,
+            contextAge: caseBriefingService.getContextAge(richContext),
+            version: richContext.contextVersion,
+            hasDocSummaries: richContext.documentSummaries?.length || 0,
+            hasEmailSummaries: richContext.emailThreadSummaries?.length || 0,
+            hasClientContext: !!richContext.clientContext,
+          });
+        } else if (richContext) {
+          // Rich context exists but is stale - fall back to on-demand
+          console.log('[AIAssistant] Pre-compiled context stale, using on-demand', {
+            caseId: context.caseId,
+            contextAge: caseBriefingService.getContextAge(richContext),
+          });
+          caseBriefing = await caseBriefingService.getBriefingText(context.caseId);
+        } else {
+          // No pre-compiled context available - use on-demand
+          console.log('[AIAssistant] No pre-compiled context, using on-demand', {
+            caseId: context.caseId,
+          });
+          caseBriefing = await caseBriefingService.getBriefingText(context.caseId);
+        }
       } catch (err) {
         console.error('[AIAssistant] Failed to load case briefing:', err);
         // Continue without briefing - non-blocking

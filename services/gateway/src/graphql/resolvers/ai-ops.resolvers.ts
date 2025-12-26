@@ -1,0 +1,532 @@
+/**
+ * AI Ops Resolvers
+ * OPS-241: AI Ops GraphQL Schema & Resolvers
+ *
+ * Admin dashboard API for AI usage monitoring, feature toggles, and batch job management.
+ * All operations require Partner role.
+ */
+
+import { GraphQLError } from 'graphql';
+import { prisma } from '@legal-platform/database';
+import { aiUsageService, type DateRange } from '../../services/ai-usage.service';
+import {
+  aiFeatureConfigService,
+  AI_FEATURES,
+  type AIFeatureKey,
+} from '../../services/ai-feature-config.service';
+import { aiBudgetAlertsService } from '../../services/ai-budget-alerts.service';
+import { batchRunner } from '../../batch/batch-runner.service';
+import { getAvailableModels, DEFAULT_MODEL } from '../../services/ai-client.service';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface Context {
+  user?: {
+    id: string;
+    firmId: string;
+    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
+    email: string;
+  };
+}
+
+interface AIDateRangeInput {
+  start: Date;
+  end: Date;
+}
+
+interface AIFeatureConfigInput {
+  enabled?: boolean;
+  monthlyBudgetEur?: number | null;
+  dailyLimitEur?: number | null;
+  schedule?: string | null;
+  model?: string | null;
+}
+
+interface AIBudgetSettingsInput {
+  monthlyBudget?: number | null;
+  alertAt75?: boolean;
+  alertAt90?: boolean;
+  autoPauseAt100?: boolean;
+  slackWebhookUrl?: string | null;
+}
+
+// ============================================================================
+// Authorization Helper
+// ============================================================================
+
+/**
+ * Require Partner role for AI Ops operations
+ * Throws GraphQLError if not authorized
+ */
+function requirePartner(context: Context): { firmId: string; userId: string } {
+  if (!context.user) {
+    throw new GraphQLError('Autentificare necesară', {
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
+  }
+
+  if (context.user.role !== 'Partner') {
+    throw new GraphQLError('Acces interzis. Rol de Partner necesar.', {
+      extensions: { code: 'FORBIDDEN' },
+    });
+  }
+
+  return {
+    firmId: context.user.firmId,
+    userId: context.user.id,
+  };
+}
+
+/**
+ * Parse date range input to DateRange
+ */
+function parseDateRange(input?: AIDateRangeInput): DateRange | undefined {
+  if (!input) return undefined;
+  return {
+    start: new Date(input.start),
+    end: new Date(input.end),
+  };
+}
+
+/**
+ * Get feature name from AI_FEATURES constant
+ */
+function getFeatureName(feature: string): string {
+  const featureConfig = AI_FEATURES[feature as AIFeatureKey];
+  return featureConfig?.name || feature;
+}
+
+/**
+ * Get feature type from AI_FEATURES constant
+ */
+function getFeatureType(feature: string): 'request' | 'batch' {
+  const featureConfig = AI_FEATURES[feature as AIFeatureKey];
+  return featureConfig?.type || 'request';
+}
+
+// ============================================================================
+// Query Resolvers
+// ============================================================================
+
+export const aiOpsQueryResolvers = {
+  /**
+   * Get all available Claude models for feature configuration
+   */
+  aiAvailableModels: (_: unknown, __: unknown, context: Context) => {
+    requirePartner(context);
+
+    const models = getAvailableModels();
+    return models.map((m) => ({
+      id: m.id,
+      name: m.name,
+      category: m.category,
+      inputCostPerMillion: m.input,
+      outputCostPerMillion: m.output,
+      isDefault: m.id === DEFAULT_MODEL,
+    }));
+  },
+
+  /**
+   * Get budget settings for the current firm
+   */
+  aiBudgetSettings: async (_: unknown, __: unknown, context: Context) => {
+    const { firmId } = requirePartner(context);
+    const settings = await aiBudgetAlertsService.getBudgetSettings(firmId);
+    return settings;
+  },
+
+  /**
+   * Get overall AI usage statistics
+   */
+  aiUsageOverview: async (
+    _: unknown,
+    { dateRange }: { dateRange?: AIDateRangeInput },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+    const range = parseDateRange(dateRange);
+
+    const overview = await aiUsageService.getUsageOverview(firmId, range);
+
+    // Get budget settings for this firm (if implemented)
+    // For now, return null for budget fields
+    return {
+      totalCost: overview.totalCost,
+      totalTokens: overview.totalTokens,
+      totalCalls: overview.totalCalls,
+      successRate: overview.successRate,
+      projectedMonthEnd: overview.projectedMonthEnd,
+      budgetLimit: null, // TODO: Implement firm-wide budget settings
+      budgetUsedPercent: null,
+    };
+  },
+
+  /**
+   * Get daily cost breakdown
+   */
+  aiDailyCosts: async (
+    _: unknown,
+    { dateRange }: { dateRange: AIDateRangeInput },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+    const range = parseDateRange(dateRange)!;
+
+    return aiUsageService.getDailyCosts(firmId, range);
+  },
+
+  /**
+   * Get cost breakdown by feature
+   */
+  aiCostsByFeature: async (
+    _: unknown,
+    { dateRange }: { dateRange: AIDateRangeInput },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+    const range = parseDateRange(dateRange)!;
+
+    return aiUsageService.getCostsByFeature(firmId, range);
+  },
+
+  /**
+   * Get cost breakdown by user
+   */
+  aiCostsByUser: async (
+    _: unknown,
+    { dateRange }: { dateRange: AIDateRangeInput },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+    const range = parseDateRange(dateRange)!;
+
+    return aiUsageService.getCostsByUser(firmId, range);
+  },
+
+  /**
+   * Get all AI feature configurations
+   */
+  aiFeatures: async (_: unknown, __: unknown, context: Context) => {
+    const { firmId } = requirePartner(context);
+
+    const features = await aiFeatureConfigService.getAllFeatures(firmId);
+
+    // Get last run info for batch features
+    const batchFeatures = features.filter((f) => AI_FEATURES[f.feature]?.type === 'batch');
+    const lastRuns = await Promise.all(
+      batchFeatures.map(async (f) => {
+        const lastJob = await prisma.aIBatchJobRun.findFirst({
+          where: { firmId, feature: f.feature },
+          orderBy: { startedAt: 'desc' },
+        });
+        return { feature: f.feature, lastJob };
+      })
+    );
+    const lastRunMap = new Map(lastRuns.map((r) => [r.feature, r.lastJob]));
+
+    // Get daily cost estimates from last 7 days
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const costsByFeature = await aiUsageService.getCostsByFeature(firmId, {
+      start: weekAgo,
+      end: new Date(),
+    });
+    const costMap = new Map(costsByFeature.map((c) => [c.feature, c.cost / 7]));
+
+    return features.map((f) => {
+      const lastJob = lastRunMap.get(f.feature);
+      return {
+        id: f.id,
+        feature: f.feature,
+        featureName: getFeatureName(f.feature),
+        featureType: getFeatureType(f.feature),
+        enabled: f.enabled,
+        monthlyBudgetEur: f.monthlyBudgetEur,
+        dailyLimitEur: f.dailyLimitEur,
+        schedule: f.schedule,
+        model: f.model,
+        lastRunAt: lastJob?.completedAt || lastJob?.startedAt || null,
+        lastRunStatus: lastJob?.status || null,
+        dailyCostEstimate: costMap.get(f.feature) || 0,
+      };
+    });
+  },
+
+  /**
+   * Get configuration for a specific feature
+   */
+  aiFeature: async (_: unknown, { feature }: { feature: string }, context: Context) => {
+    const { firmId } = requirePartner(context);
+
+    // Validate feature key
+    if (!AI_FEATURES[feature as AIFeatureKey]) {
+      return null;
+    }
+
+    const config = await aiFeatureConfigService.getFeatureConfig(firmId, feature as AIFeatureKey);
+
+    // Get last run for batch features
+    let lastJob = null;
+    if (AI_FEATURES[feature as AIFeatureKey]?.type === 'batch') {
+      lastJob = await prisma.aIBatchJobRun.findFirst({
+        where: { firmId, feature },
+        orderBy: { startedAt: 'desc' },
+      });
+    }
+
+    // Get daily cost estimate
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const costsByFeature = await aiUsageService.getCostsByFeature(firmId, {
+      start: weekAgo,
+      end: new Date(),
+    });
+    const featureCost = costsByFeature.find((c) => c.feature === feature);
+
+    return {
+      id: config.id,
+      feature: config.feature,
+      featureName: getFeatureName(config.feature),
+      featureType: getFeatureType(config.feature),
+      enabled: config.enabled,
+      monthlyBudgetEur: config.monthlyBudgetEur,
+      dailyLimitEur: config.dailyLimitEur,
+      schedule: config.schedule,
+      model: config.model,
+      lastRunAt: lastJob?.completedAt || lastJob?.startedAt || null,
+      lastRunStatus: lastJob?.status || null,
+      dailyCostEstimate: featureCost ? featureCost.cost / 7 : 0,
+    };
+  },
+
+  /**
+   * Get batch job execution history
+   */
+  aiBatchJobs: async (
+    _: unknown,
+    {
+      feature,
+      status,
+      limit = 50,
+      offset = 0,
+    }: { feature?: string; status?: string; limit?: number; offset?: number },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+
+    const where: {
+      firmId: string;
+      feature?: string;
+      status?: string;
+    } = { firmId };
+
+    if (feature) {
+      where.feature = feature;
+    }
+    if (status) {
+      where.status = status;
+    }
+
+    const jobs = await prisma.aIBatchJobRun.findMany({
+      where,
+      orderBy: { startedAt: 'desc' },
+      take: limit,
+      skip: offset,
+    });
+
+    return jobs.map((job) => ({
+      id: job.id,
+      feature: job.feature,
+      featureName: getFeatureName(job.feature),
+      status: job.status,
+      startedAt: job.startedAt,
+      completedAt: job.completedAt,
+      itemsProcessed: job.itemsProcessed,
+      itemsFailed: job.itemsFailed,
+      totalTokens: job.totalTokens,
+      totalCostEur: Number(job.totalCostEur),
+      errorMessage: job.errorMessage,
+    }));
+  },
+
+  /**
+   * OPS-247: Get detailed AI usage for a specific user
+   */
+  aiUserUsage: async (
+    _: unknown,
+    { userId, dateRange }: { userId: string; dateRange: AIDateRangeInput },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+    const range = parseDateRange(dateRange)!;
+
+    const usage = await aiUsageService.getUserUsage(firmId, userId, range);
+
+    if (!usage) {
+      return null;
+    }
+
+    return {
+      userId: usage.userId,
+      userName: usage.userName,
+      userEmail: usage.userEmail,
+      totalCost: usage.totalCost,
+      totalTokens: usage.totalTokens,
+      totalCalls: usage.totalCalls,
+      dailyCosts: usage.dailyCosts,
+      costsByFeature: usage.costsByFeature,
+    };
+  },
+
+  /**
+   * OPS-247: Get activity log for a specific user
+   */
+  aiUserActivity: async (
+    _: unknown,
+    { userId, limit = 50, offset = 0 }: { userId: string; limit?: number; offset?: number },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+
+    return aiUsageService.getUserActivity(firmId, userId, limit, offset);
+  },
+};
+
+// ============================================================================
+// Mutation Resolvers
+// ============================================================================
+
+export const aiOpsMutationResolvers = {
+  /**
+   * Update AI feature configuration
+   */
+  updateAIFeatureConfig: async (
+    _: unknown,
+    { feature, input }: { feature: string; input: AIFeatureConfigInput },
+    context: Context
+  ) => {
+    const { firmId, userId } = requirePartner(context);
+
+    // Validate feature key
+    if (!AI_FEATURES[feature as AIFeatureKey]) {
+      throw new GraphQLError(`Funcționalitate necunoscută: ${feature}`, {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    const config = await aiFeatureConfigService.updateFeatureConfig(
+      firmId,
+      feature as AIFeatureKey,
+      {
+        enabled: input.enabled,
+        monthlyBudgetEur: input.monthlyBudgetEur,
+        dailyLimitEur: input.dailyLimitEur,
+        schedule: input.schedule,
+        model: input.model,
+      },
+      userId
+    );
+
+    // Refresh scheduler if schedule changed
+    if (input.schedule !== undefined) {
+      await batchRunner.refreshScheduleForFirm(firmId);
+    }
+
+    return {
+      id: config.id,
+      feature: config.feature,
+      featureName: getFeatureName(config.feature),
+      featureType: getFeatureType(config.feature),
+      enabled: config.enabled,
+      monthlyBudgetEur: config.monthlyBudgetEur,
+      dailyLimitEur: config.dailyLimitEur,
+      schedule: config.schedule,
+      model: config.model,
+      lastRunAt: null,
+      lastRunStatus: null,
+      dailyCostEstimate: 0,
+    };
+  },
+
+  /**
+   * Manually trigger a batch job
+   */
+  triggerBatchJob: async (_: unknown, { feature }: { feature: string }, context: Context) => {
+    const { firmId } = requirePartner(context);
+
+    // Validate feature key
+    if (!AI_FEATURES[feature as AIFeatureKey]) {
+      throw new GraphQLError(`Funcționalitate necunoscută: ${feature}`, {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    // Check if feature is a batch type
+    if (AI_FEATURES[feature as AIFeatureKey]?.type !== 'batch') {
+      throw new GraphQLError(`${feature} nu este o funcționalitate de tip batch`, {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    try {
+      const result = await batchRunner.runProcessor(firmId, feature);
+
+      return {
+        id: result.job.id,
+        feature: result.job.feature,
+        featureName: getFeatureName(result.job.feature),
+        status: result.job.status,
+        startedAt: result.job.startedAt,
+        completedAt: result.job.completedAt,
+        itemsProcessed: result.job.itemsProcessed,
+        itemsFailed: result.job.itemsFailed,
+        totalTokens: result.job.totalTokens,
+        totalCostEur: Number(result.job.totalCostEur),
+        errorMessage: result.job.errorMessage,
+      };
+    } catch (error) {
+      throw new GraphQLError(
+        `Eroare la pornirea job-ului: ${error instanceof Error ? error.message : 'Eroare necunoscută'}`,
+        {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        }
+      );
+    }
+  },
+
+  /**
+   * Update global AI budget settings
+   */
+  updateAIBudgetSettings: async (
+    _: unknown,
+    { input }: { input: AIBudgetSettingsInput },
+    context: Context
+  ) => {
+    const { firmId, userId } = requirePartner(context);
+
+    await aiBudgetAlertsService.updateBudgetSettings(
+      firmId,
+      {
+        monthlyBudgetEur: input.monthlyBudget ?? undefined,
+        alertAt75Percent: input.alertAt75,
+        alertAt90Percent: input.alertAt90,
+        autoPauseAt100Percent: input.autoPauseAt100,
+        slackWebhookUrl: input.slackWebhookUrl,
+      },
+      userId
+    );
+
+    return true;
+  },
+};
+
+// ============================================================================
+// Export Combined Resolvers
+// ============================================================================
+
+export const aiOpsResolvers = {
+  Query: aiOpsQueryResolvers,
+  Mutation: aiOpsMutationResolvers,
+};
