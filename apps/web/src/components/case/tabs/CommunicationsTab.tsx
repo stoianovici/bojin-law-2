@@ -152,7 +152,7 @@ export function CommunicationsTab({ caseId, className }: CommunicationsTabProps)
     error: threadsError,
   } = useEmailThreads(
     caseId ? { caseId } : undefined,
-    50 // Fetch up to 50 threads
+    500 // Fetch up to 500 threads to avoid pagination
   );
 
   // Auto-select first thread when threads load

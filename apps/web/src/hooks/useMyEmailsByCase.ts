@@ -230,8 +230,9 @@ export interface MyEmailsByCase {
 // ============================================================================
 
 export function useMyEmailsByCase(options?: { limit?: number }) {
-  // OPS-129: Limit initial load to 50 threads for performance
-  const { limit = 50 } = options || {};
+  // OPS-129: Load all threads by default to avoid "load more" button
+  // Increased from 50 to 500 so users can see all cases immediately
+  const { limit = 500 } = options || {};
 
   // OPS-132: Track whether more threads exist beyond current loaded set
   const [hasMore, setHasMore] = useState(true);
