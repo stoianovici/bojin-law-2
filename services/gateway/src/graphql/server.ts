@@ -232,6 +232,7 @@ const resolvers = {
   TimeEntry: timeEntryResolvers.TimeEntry,
   WeeklySummary: timeEntryResolvers.WeeklySummary,
   DailySummary: timeEntryResolvers.DailySummary,
+  TrendIndicator: timeEntryResolvers.TrendIndicator,
   // Task Template and Dependency resolvers (Story 4.4)
   TaskTemplate: taskTemplateResolvers.TaskTemplate,
   TaskTemplateStep: taskTemplateResolvers.TaskTemplateStep,
