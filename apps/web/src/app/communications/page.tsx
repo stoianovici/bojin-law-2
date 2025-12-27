@@ -30,6 +30,7 @@ import { AttachmentPreviewPanel } from '../../components/communication/Attachmen
 
 // Hooks
 import { useMyEmailsByCase } from '../../hooks/useMyEmailsByCase';
+import { useEmailsByFolder } from '../../hooks/useEmailsByFolder';
 import { useEmailSync, useEmailThread } from '../../hooks/useEmailSync';
 import { useCommunicationStore } from '../../stores/communication.store';
 import { useAuth } from '../../contexts/AuthContext';
@@ -69,13 +70,15 @@ const GET_ATTACHMENT_CONTENT = gql`
 // Types
 // ============================================================================
 
-type ViewMode = 'thread' | 'court-email' | 'uncertain-email' | 'none';
+// OPS-293: Added 'folder-email' mode for emails from Outlook folders
+type ViewMode = 'thread' | 'court-email' | 'uncertain-email' | 'folder-email' | 'none';
 
 interface ViewState {
   mode: ViewMode;
   threadId: string | null;
   emailId: string | null;
   caseId: string | null;
+  folderId: string | null; // OPS-293: Track selected folder for folder emails
 }
 
 // OPS-196: NECLAR email data for inline assignment
@@ -127,6 +130,7 @@ export default function CommunicationsPage() {
     threadId: null,
     emailId: null,
     caseId: null,
+    folderId: null, // OPS-293
   });
 
   // OPS-196: NECLAR inline assignment - store the selected uncertain email data
@@ -182,6 +186,9 @@ export default function CommunicationsPage() {
     hasMore,
     loadingMore,
   } = useMyEmailsByCase();
+
+  // OPS-293: Fetch emails grouped by Outlook folder
+  const { folders: outlookFolders, refetch: refetchFolders } = useEmailsByFolder();
 
   // Fetch selected thread if viewing a thread
   const { thread: selectedThreadData } = useEmailThread(viewState.threadId || '');
@@ -257,7 +264,11 @@ export default function CommunicationsPage() {
   const handleSync = async () => {
     try {
       await startSync();
-      setTimeout(() => refetch(), 2000);
+      // Refetch both case-organized emails and folder emails after sync
+      setTimeout(() => {
+        refetch();
+        refetchFolders();
+      }, 2000);
     } catch (error) {
       console.error('[Communications] Email sync failed:', error);
     }
@@ -270,6 +281,7 @@ export default function CommunicationsPage() {
       threadId: conversationId,
       emailId: null,
       caseId: caseId || null,
+      folderId: null,
     });
   }, []);
 
@@ -280,6 +292,7 @@ export default function CommunicationsPage() {
       threadId: null,
       emailId,
       caseId: null,
+      folderId: null,
     });
   }, []);
 
@@ -305,6 +318,7 @@ export default function CommunicationsPage() {
         threadId: uncertainEmail.conversationId || uncertainEmail.id, // Prefer conversationId
         emailId,
         caseId: null,
+        folderId: null,
       });
     },
     [emailData.uncertain]
@@ -332,7 +346,29 @@ export default function CommunicationsPage() {
       threadId: conversationId,
       emailId: null,
       caseId: null,
+      folderId: null,
     });
+  }, []);
+
+  // OPS-293: Handle folder email selection - show in main panel
+  const handleSelectFolderEmail = useCallback((emailId: string, folderId: string) => {
+    // For folder emails, we use the email directly without ConversationView
+    // The email will be displayed in a simple card view
+    setViewState({
+      mode: 'folder-email',
+      threadId: null,
+      emailId,
+      caseId: null,
+      folderId,
+    });
+  }, []);
+
+  // OPS-293: Handle assigning a folder email to a case
+  // This will trigger the classification flow
+  const handleAssignFolderEmailToCase = useCallback((emailId: string) => {
+    // TODO: Open a case picker modal to assign the email
+    // For now, log the action - this will be implemented in a follow-up
+    console.log('[Communications] Assign folder email to case:', emailId);
   }, []);
 
   // Handle move thread request from sidebar
@@ -431,6 +467,19 @@ export default function CommunicationsPage() {
   const selectedCourtEmail =
     viewState.mode === 'court-email'
       ? emailData.courtUnassigned.find((e) => e.id === viewState.emailId)
+      : null;
+
+  // OPS-293: Find selected folder email for display
+  const selectedFolderEmail =
+    viewState.mode === 'folder-email' && viewState.folderId
+      ? (() => {
+          const folder = outlookFolders.find((f) => f.id === viewState.folderId);
+          return folder?.emails.find((e) => e.id === viewState.emailId) || null;
+        })()
+      : null;
+  const selectedFolder =
+    viewState.mode === 'folder-email' && viewState.folderId
+      ? outlookFolders.find((f) => f.id === viewState.folderId)
       : null;
 
   return (
@@ -585,6 +634,21 @@ export default function CommunicationsPage() {
             hasMoreThreads={hasMore}
             onLoadMore={loadMore}
             loadingMore={loadingMore}
+            // OPS-293: Outlook folders with unassigned emails
+            outlookFolders={outlookFolders.map((folder) => ({
+              ...folder,
+              emails: folder.emails.map((email) => ({
+                id: email.id,
+                subject: email.subject,
+                from: email.from,
+                receivedDateTime: email.receivedDateTime,
+                bodyPreview: email.bodyPreview,
+                hasAttachments: email.hasAttachments,
+                isRead: email.isRead,
+              })),
+            }))}
+            onSelectFolderEmail={handleSelectFolderEmail}
+            onAssignFolderEmailToCase={handleAssignFolderEmailToCase}
             className="h-full"
           />
         </div>
@@ -688,6 +752,64 @@ export default function CommunicationsPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+            ) : viewState.mode === 'folder-email' && selectedFolderEmail && selectedFolder ? (
+              // OPS-293: Folder email view - simple card display
+              <div className="flex-1 p-6 overflow-y-auto">
+                <div className="max-w-3xl mx-auto">
+                  <div className="bg-white rounded-lg shadow-sm border p-6">
+                    {/* Folder indicator */}
+                    <div className="mb-4 pb-4 border-b border-gray-100">
+                      <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">
+                        {selectedFolder.name}
+                      </span>
+                    </div>
+
+                    {/* Email header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          {selectedFolderEmail.subject || '(Fără subiect)'}
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-1">
+                          De la: {selectedFolderEmail.from.name || selectedFolderEmail.from.address}
+                          {selectedFolderEmail.from.name && (
+                            <span className="text-gray-400 ml-1">
+                              &lt;{selectedFolderEmail.from.address}&gt;
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(selectedFolderEmail.receivedDateTime).toLocaleDateString(
+                            'ro-RO',
+                            {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Body preview */}
+                    <div className="prose prose-sm max-w-none text-gray-700">
+                      {selectedFolderEmail.bodyPreview || 'Fără previzualizare disponibilă'}
+                    </div>
+
+                    {/* Action bar */}
+                    <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                      <button
+                        onClick={() => handleAssignFolderEmailToCase(selectedFolderEmail.id)}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Atribuie la dosar
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

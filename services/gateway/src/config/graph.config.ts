@@ -123,7 +123,10 @@ export const graphEndpoints = {
   userById: (userId: string) => `/users/${userId}`,
 
   // Mail endpoints
-  messages: '/me/messages',
+  messages: '/me/messages', // All messages across all folders
+  mailFolders: '/me/mailFolders', // List all mail folders
+  mailFolderById: (folderId: string) => `/me/mailFolders/${folderId}`,
+  mailFolderChildFolders: (folderId: string) => `/me/mailFolders/${folderId}/childFolders`,
   inboxMessages: '/me/mailFolders/Inbox/messages',
   sentMessages: '/me/mailFolders/SentItems/messages', // OPS-091: Sent emails sync
   messageById: (messageId: string) => `/me/messages/${messageId}`,

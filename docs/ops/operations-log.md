@@ -7,6 +7,12 @@
 
 | ID      | Title                                                 | Type         | Priority    | Status           | File                                     |
 | ------- | ----------------------------------------------------- | ------------ | ----------- | ---------------- | ---------------------------------------- |
+| OPS-293 | Add Outlook Folders Section to CaseSidebar            | Feature      | P1-High     | Closed           | [archive/ops-293.md](archive/ops-293.md) |
+| OPS-292 | Add GraphQL Query for Emails by Folder                | Feature      | P1-High     | Closed           | [archive/ops-292.md](archive/ops-292.md) |
+| OPS-291 | Update Email Sync to Fetch All Folders                | Feature      | P1-High     | Closed           | [archive/ops-291.md](archive/ops-291.md) |
+| OPS-290 | Design Folder Email Display (Card View)               | Feature      | P1-High     | Closed           | [archive/ops-290.md](archive/ops-290.md) |
+| OPS-289 | Add Folder List Fetching to Graph Service             | Feature      | P1-High     | Closed           | [archive/ops-289.md](archive/ops-289.md) |
+| OPS-288 | Add Email Folder Fields to Schema                     | Feature      | P1-High     | Closed           | [archive/ops-288.md](archive/ops-288.md) |
 | OPS-286 | Timesheet billable checkbox fails for team entries    | Bug          | P1-High     | Root Cause Found | [issues/ops-286.md](issues/ops-286.md)   |
 | OPS-287 | Timesheet manual total with discount export           | Feature      | P2-Medium   | Verifying        | [issues/ops-287.md](issues/ops-287.md)   |
 | OPS-001 | Communications page not loading emails                | Bug          | P0-Critical | Resolved         | [archive/ops-001.md](archive/ops-001.md) |

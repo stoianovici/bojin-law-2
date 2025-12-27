@@ -940,6 +940,132 @@ export const emailResolvers = {
         uncertaintyReason: 'AMBIGUOUS',
       };
     },
+
+    // ============================================================================
+    // Outlook Folder Queries (OPS-292)
+    // ============================================================================
+
+    /**
+     * Get emails grouped by Outlook folder
+     * Returns only folders containing unassigned, non-ignored emails
+     * Excludes system folders: Drafts, Deleted Items, Junk Email
+     */
+    emailsByFolder: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // System folders to exclude
+      const excludedFolders = ['Drafts', 'Deleted Items', 'Junk Email', 'Outbox'];
+
+      // Get all unassigned, non-ignored emails with folder info
+      // Note: groupBy doesn't support relation filtering, so we query first then aggregate
+      const unassignedEmails = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          isIgnored: false,
+          // Check for unassigned - no EmailCaseLink records
+          caseLinks: {
+            none: {},
+          },
+          parentFolderName: {
+            notIn: excludedFolders,
+            not: null,
+          },
+        },
+        select: {
+          parentFolderId: true,
+          parentFolderName: true,
+          isRead: true,
+        },
+      });
+
+      // Aggregate by folder
+      const folderMap = new Map<
+        string,
+        { id: string; name: string; total: number; unread: number }
+      >();
+
+      for (const email of unassignedEmails) {
+        if (!email.parentFolderName || !email.parentFolderId) continue;
+
+        const existing = folderMap.get(email.parentFolderName);
+        if (existing) {
+          existing.total++;
+          if (!email.isRead) existing.unread++;
+        } else {
+          folderMap.set(email.parentFolderName, {
+            id: email.parentFolderId,
+            name: email.parentFolderName,
+            total: 1,
+            unread: email.isRead ? 0 : 1,
+          });
+        }
+      }
+
+      // Transform to OutlookFolder type and sort by email count descending
+      const folders = Array.from(folderMap.values())
+        .map((folder) => ({
+          id: folder.id,
+          name: folder.name,
+          emailCount: folder.total,
+          unreadCount: folder.unread,
+        }))
+        .sort((a, b) => b.emailCount - a.emailCount);
+
+      return folders;
+    },
+  },
+
+  // ============================================================================
+  // OutlookFolder Field Resolvers (OPS-292)
+  // ============================================================================
+
+  OutlookFolder: {
+    /**
+     * Resolve emails for a specific folder with pagination
+     */
+    emails: async (
+      parent: { id: string; name: string },
+      args: { limit?: number; offset?: number },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        return [];
+      }
+
+      const limit = args.limit || 20;
+      const offset = args.offset || 0;
+
+      const emails = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          parentFolderName: parent.name,
+          isIgnored: false,
+          caseLinks: {
+            none: {},
+          },
+        },
+        orderBy: {
+          receivedDateTime: 'desc',
+        },
+        take: limit,
+        skip: offset,
+        include: {
+          attachments: true,
+        },
+      });
+
+      return emails;
+    },
   },
 
   Mutation: {
@@ -1332,6 +1458,43 @@ export const emailResolvers = {
 
       console.log(`[backfillEmailCleanContent] Processed ${processed} emails, ${errors} errors`);
       return processed;
+    },
+
+    /**
+     * OPS-291: Backfill folder info for existing emails
+     * Updates emails that don't have parentFolderName yet with their Outlook folder info
+     */
+    backfillEmailFolderInfo: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only partners/admins can trigger backfill
+      if (user.role !== 'Partner' && user.role !== 'Admin' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only partners/admins can trigger backfill', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required for folder backfill', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
+        });
+      }
+
+      const result = await emailSyncService.backfillFolderInfo(user.id, user.accessToken);
+
+      if (!result.success) {
+        throw new GraphQLError(result.error || 'Failed to backfill folder info', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
+      }
+
+      return result.updated;
     },
 
     /**

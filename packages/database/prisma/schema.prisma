@@ -2767,7 +2767,9 @@ model Email {
   isRead            Boolean   @map("is_read")
   isIgnored         Boolean   @default(false) @map("is_ignored") // Marked as not case-related
   ignoredAt         DateTime? @map("ignored_at") @db.Timestamptz // When the email was ignored
-  folderType        String?   @map("folder_type") @db.VarChar(10) // OPS-091: 'inbox' | 'sent'
+  folderType        String?   @map("folder_type") @db.VarChar(10) // OPS-091: 'inbox' | 'sent' (deprecated, use parentFolderName)
+  parentFolderId    String?   @map("parent_folder_id") @db.VarChar(255) // Graph API folder ID
+  parentFolderName  String?   @map("parent_folder_name") @db.VarChar(255) // Display name: "Inbox", "Archive", etc.
 
   // Privacy fields (OPS-187)
   isPrivate       Boolean   @default(false) @map("is_private") // Marked private by partner
@@ -2816,6 +2818,7 @@ model Email {
   @@index([isIgnored])
   @@index([classificationState])
   @@index([folderType])
+  @@index([parentFolderName])
   @@map("emails")
 }
 

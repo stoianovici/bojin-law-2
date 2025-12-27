@@ -10,7 +10,7 @@
  */
 
 import { Client } from '@microsoft/microsoft-graph-client';
-import type { User, Message, DriveItem, Event } from '@microsoft/microsoft-graph-types';
+import type { User, Message, DriveItem, Event, MailFolder } from '@microsoft/microsoft-graph-types';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { azureAdConfig, msalConfig } from '../config/auth.config';
 import { graphConfig, graphEndpoints, graphScopes } from '../config/graph.config';
@@ -224,6 +224,78 @@ export class GraphService {
       {},
       'graph-api-list-messages'
     );
+  }
+
+  /**
+   * Get mail folders (delegated)
+   *
+   * Retrieves the list of mail folders in the user's mailbox.
+   * Includes well-known folders (Inbox, Sent Items, Drafts, etc.) and custom folders.
+   * Optionally fetches child folders recursively.
+   * Requires Mail.Read delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param includeChildren - Whether to recursively fetch child folders (default: true)
+   * @returns Array of mail folders with nested children if requested
+   * @throws Error if Graph API call fails
+   */
+  async getMailFolders(
+    accessToken: string,
+    includeChildren: boolean = true
+  ): Promise<MailFolder[]> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          // Fetch top-level folders
+          const response = await client.api(graphEndpoints.mailFolders).get();
+          const folders = response.value as MailFolder[];
+
+          if (includeChildren) {
+            // Recursively fetch child folders for folders that have children
+            await Promise.all(
+              folders.map(async (folder) => {
+                if (folder.childFolderCount && folder.childFolderCount > 0 && folder.id) {
+                  folder.childFolders = await this.fetchChildFolders(client, folder.id);
+                }
+              })
+            );
+          }
+
+          return folders;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-mail-folders'
+    );
+  }
+
+  /**
+   * Recursively fetch child folders
+   *
+   * @param client - Authenticated Graph client
+   * @param parentFolderId - Parent folder ID
+   * @returns Array of child mail folders
+   */
+  private async fetchChildFolders(client: Client, parentFolderId: string): Promise<MailFolder[]> {
+    const response = await client.api(graphEndpoints.mailFolderChildFolders(parentFolderId)).get();
+    const childFolders = response.value as MailFolder[];
+
+    // Recursively fetch grandchildren
+    await Promise.all(
+      childFolders.map(async (folder) => {
+        if (folder.childFolderCount && folder.childFolderCount > 0 && folder.id) {
+          folder.childFolders = await this.fetchChildFolders(client, folder.id);
+        }
+      })
+    );
+
+    return childFolders;
   }
 
   /**

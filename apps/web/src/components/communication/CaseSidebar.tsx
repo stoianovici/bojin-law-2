@@ -3,9 +3,11 @@
 /**
  * CaseSidebar Component
  * OPS-041: /communications Case-Organized Redesign
+ * OPS-293: Add Outlook Folders Section
  *
  * Left sidebar for the /communications page showing:
  * - DOSARE: Cases with expandable thread lists
+ * - FOLDERE OUTLOOK: User-created folders with unassigned emails (OPS-293)
  * - INSTANȚE: Unassigned court emails
  * - NECLAR: Uncertain emails needing classification
  */
@@ -31,6 +33,8 @@ import type {
   UnassignedCourtEmail,
   UncertainEmail,
 } from '../../hooks/useMyEmailsByCase';
+import { OutlookFoldersSection, type OutlookFolder } from './OutlookFoldersSection';
+import type { FolderEmailData } from './OutlookFolderEmailItem';
 
 // ============================================================================
 // Animation Variants
@@ -61,6 +65,11 @@ export interface MoveThreadInfo {
   currentCaseTitle?: string;
 }
 
+// OPS-293: Folder data with emails for OutlookFoldersSection
+export interface OutlookFolderWithEmails extends OutlookFolder {
+  emails: FolderEmailData[];
+}
+
 interface CaseSidebarProps {
   cases: CaseWithThreads[];
   unassignedCase: CaseWithThreads | null;
@@ -80,6 +89,10 @@ interface CaseSidebarProps {
   hasMoreThreads?: boolean;
   onLoadMore?: () => void;
   loadingMore?: boolean;
+  // OPS-293: Outlook folders with unassigned emails
+  outlookFolders?: OutlookFolderWithEmails[];
+  onSelectFolderEmail?: (emailId: string, folderId: string) => void;
+  onAssignFolderEmailToCase?: (emailId: string) => void;
   className?: string;
 }
 
@@ -509,6 +522,10 @@ export function CaseSidebar({
   hasMoreThreads,
   onLoadMore,
   loadingMore,
+  // OPS-293: Outlook folders
+  outlookFolders = [],
+  onSelectFolderEmail,
+  onAssignFolderEmailToCase,
   className,
 }: CaseSidebarProps) {
   // Track which cases are expanded (default: expand cases with unread)
@@ -613,6 +630,18 @@ export function CaseSidebar({
             </>
           )}
         </div>
+
+        {/* OPS-293: FOLDERE OUTLOOK Section (User folders with unassigned emails) */}
+        {outlookFolders.length > 0 && (
+          <OutlookFoldersSection
+            folders={outlookFolders}
+            selectedEmailId={selectedEmailId}
+            onSelectEmail={onSelectFolderEmail || (() => {})}
+            onAssignToCase={onAssignFolderEmailToCase}
+            isCollapsed={collapsedSections.has('folders')}
+            onToggleSection={() => toggleSection('folders')}
+          />
+        )}
 
         {/* INSTANȚE Section (Court emails) */}
         {hasCourtEmails && (

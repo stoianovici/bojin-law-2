@@ -275,6 +275,27 @@ type EmailCaseCount {
 }
 
 # ============================================================================
+# Outlook Folder Types (OPS-292: Email by Folder Query)
+# ============================================================================
+
+"""
+Outlook folder with aggregated email counts (OPS-292)
+Used for displaying unassigned emails grouped by source folder
+"""
+type OutlookFolder {
+  """Outlook folder ID from Graph API (parentFolderId)"""
+  id: String!
+  """Display name: Inbox, Sent Items, Archive, etc."""
+  name: String!
+  """Total emails in this folder (unassigned only)"""
+  emailCount: Int!
+  """Unread emails in this folder"""
+  unreadCount: Int!
+  """Emails in this folder with pagination"""
+  emails(limit: Int, offset: Int): [Email!]!
+}
+
+# ============================================================================
 # INSTANȚE Types (OPS-040: Court Email Detection)
 # ============================================================================
 
@@ -541,6 +562,17 @@ extend type Query {
   Get a single uncertain email with full details for the classification modal
   """
   uncertainEmail(id: ID!): UncertainEmail
+
+  # ============================================================================
+  # Outlook Folder Queries (OPS-292)
+  # ============================================================================
+
+  """
+  Get emails grouped by Outlook folder (OPS-292)
+  Returns only folders containing unassigned, non-ignored emails.
+  Excludes system folders: Drafts, Deleted Items, Junk Email.
+  """
+  emailsByFolder: [OutlookFolder!]!
 }
 
 # ============================================================================
@@ -592,6 +624,14 @@ extend type Mutation {
     """Number of emails to process (default: 50)"""
     limit: Int
   ): Int!
+
+  """
+  OPS-291: Backfill folder info for existing emails
+  Updates emails without parentFolderName with their Outlook folder info.
+  Requires Microsoft token to fetch folder data from Graph API.
+  Authorization: Partner, Admin, or BusinessOwner role required
+  """
+  backfillEmailFolderInfo: Int!
 
   """
   Create or renew email webhook subscription

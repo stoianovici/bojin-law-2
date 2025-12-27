@@ -47,7 +47,9 @@ export interface SyncedEmail {
   hasAttachments: boolean;
   importance: string;
   isRead: boolean;
-  folderType: 'inbox' | 'sent'; // OPS-091: Track email source folder
+  folderType: 'inbox' | 'sent' | null; // OPS-091: Track email source folder (deprecated, derived from parentFolderName)
+  parentFolderId: string; // OPS-291: Graph API folder ID
+  parentFolderName: string; // OPS-291: Display name ("Inbox", "Sent Items", "Archive", etc.)
 }
 
 export interface EmailAddress {
@@ -69,6 +71,7 @@ const DEFAULT_PAGE_SIZE = parseInt(process.env.EMAIL_SYNC_PAGE_SIZE || '50', 10)
 const MAX_EMAILS_PER_SYNC = 10000; // Safety limit
 
 // Fields to select for efficiency (AC: 1)
+// OPS-291: Added parentFolderId for all-folders sync
 const EMAIL_SELECT_FIELDS = [
   'id',
   'conversationId',
@@ -86,6 +89,7 @@ const EMAIL_SELECT_FIELDS = [
   'importance',
   'isRead',
   'internetMessageHeaders',
+  'parentFolderId', // OPS-291: For folder tracking
 ].join(',');
 
 // Fields for delta query (lighter payload)
@@ -118,8 +122,8 @@ export class EmailSyncService {
   /**
    * Perform initial full sync of user emails (AC: 1)
    *
-   * Fetches all emails from user's inbox and stores them in the database.
-   * Returns a delta token for subsequent incremental syncs.
+   * OPS-291: Changed to fetch from /me/messages (all folders at once) instead of
+   * folder-specific endpoints. This syncs all user-created folders like "Clients", "Archive", etc.
    *
    * @param userId - Internal user ID
    * @param accessToken - User's OAuth access token
@@ -161,56 +165,58 @@ export class EmailSyncService {
       const client = this.graphService.getAuthenticatedClient(accessToken);
       let emailsSynced = 0;
 
-      // OPS-091: Sync both inbox and sent folders
-      const foldersToSync: Array<'inbox' | 'sent'> = ['inbox', 'sent'];
+      // OPS-291: Fetch all mail folders to build ID→name lookup map
+      console.log('[EmailSyncService.syncUserEmails] Fetching mail folders...');
+      const folders = await this.graphService.getMailFolders(accessToken, true);
+      const folderMap = this.buildFolderMap(folders);
+      console.log(
+        `[EmailSyncService.syncUserEmails] Built folder map with ${folderMap.size} folders`
+      );
 
-      for (const folderType of foldersToSync) {
-        let nextLink: string | undefined;
+      // OPS-291: Fetch from /me/messages (all folders at once)
+      let nextLink: string | undefined;
+      console.log('[EmailSyncService.syncUserEmails] Fetching all emails from /me/messages...');
+      let response = await this.fetchAllEmailsPage(client, pageSize);
+      console.log(
+        '[EmailSyncService.syncUserEmails] First page - messages:',
+        response?.value?.length,
+        'hasNextLink:',
+        !!response?.['@odata.nextLink']
+      );
 
-        console.log(`[EmailSyncService.syncUserEmails] Fetching ${folderType} emails...`);
-        let response = await this.fetchEmailsPage(client, pageSize, folderType, false);
-        console.log(
-          `[EmailSyncService.syncUserEmails] ${folderType} first page - messages:`,
-          response?.value?.length,
-          'hasNextLink:',
-          !!response?.['@odata.nextLink']
-        );
+      do {
+        const messages = response.value as Message[];
 
-        do {
-          const messages = response.value as Message[];
+        if (messages.length > 0) {
+          const syncedEmails = this.transformMessagesWithFolders(messages, folderMap);
 
-          if (messages.length > 0) {
-            const syncedEmails = this.transformMessages(messages, folderType);
+          // OPS-190: Filter out emails from personal contacts (for inbox emails)
+          const filteredEmails = await this.filterOutPersonalContactsAllFolders(
+            syncedEmails,
+            userId
+          );
 
-            // OPS-190: Filter out emails from personal contacts
-            const filteredEmails = await this.filterOutPersonalContacts(
-              syncedEmails,
-              userId,
-              folderType
-            );
-
-            if (filteredEmails.length > 0) {
-              await this.storeEmails(filteredEmails, userId, user.firmId);
-            }
-            emailsSynced += filteredEmails.length;
+          if (filteredEmails.length > 0) {
+            await this.storeEmails(filteredEmails, userId, user.firmId);
           }
+          emailsSynced += filteredEmails.length;
+        }
 
-          // Check for next page
-          nextLink = response['@odata.nextLink'];
+        // Check for next page
+        nextLink = response['@odata.nextLink'];
 
-          if (nextLink && emailsSynced < maxEmails) {
-            response = await this.fetchNextPage(client, nextLink);
-          }
-        } while (nextLink && emailsSynced < maxEmails);
+        if (nextLink && emailsSynced < maxEmails) {
+          response = await this.fetchNextPage(client, nextLink);
+        }
+      } while (nextLink && emailsSynced < maxEmails);
 
-        console.log(
-          `[EmailSyncService.syncUserEmails] ${folderType} sync complete:`,
-          emailsSynced,
-          'total emails'
-        );
-      }
+      console.log(
+        '[EmailSyncService.syncUserEmails] All folders sync complete:',
+        emailsSynced,
+        'total emails'
+      );
 
-      // Note: Delta token not supported for multi-folder sync, will rely on full sync
+      // Note: Delta token not supported for all-messages sync, will rely on full sync
       const deltaToken = undefined;
 
       // Update sync state with delta token
@@ -379,9 +385,186 @@ export class EmailSyncService {
   }
 
   /**
+   * OPS-291: Fetch emails from /me/messages (all folders)
+   * @param client - Graph API client
+   * @param pageSize - Number of emails per page
+   */
+  private async fetchAllEmailsPage(client: Client, pageSize: number): Promise<any> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const request = client
+            .api(graphEndpoints.messages) // /me/messages - all folders
+            .select(EMAIL_SELECT_FIELDS)
+            .top(pageSize)
+            .orderby('receivedDateTime DESC');
+
+          return await request.get();
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'email-sync-fetch-all-emails'
+    );
+  }
+
+  /**
+   * OPS-291: Build a flat map of folder ID → display name from hierarchical folder list
+   * @param folders - Mail folders from Graph API (may have nested childFolders)
+   * @returns Map of folder ID to display name
+   */
+  private buildFolderMap(
+    folders: import('@microsoft/microsoft-graph-types').MailFolder[]
+  ): Map<string, string> {
+    const map = new Map<string, string>();
+
+    const processFolder = (folder: import('@microsoft/microsoft-graph-types').MailFolder) => {
+      if (folder.id && folder.displayName) {
+        map.set(folder.id, folder.displayName);
+      }
+      // Recursively process child folders
+      if (folder.childFolders && folder.childFolders.length > 0) {
+        folder.childFolders.forEach(processFolder);
+      }
+    };
+
+    folders.forEach(processFolder);
+    return map;
+  }
+
+  /**
+   * OPS-291: Derive folderType from folder name for backwards compatibility
+   * @param folderName - Display name of the folder
+   * @returns 'inbox' | 'sent' | null
+   */
+  private deriveFolderType(folderName: string): 'inbox' | 'sent' | null {
+    const name = folderName.toLowerCase();
+    if (name === 'inbox') {
+      return 'inbox';
+    }
+    if (name === 'sent items' || name === 'sent') {
+      return 'sent';
+    }
+    return null; // Custom folders get null
+  }
+
+  /**
+   * OPS-291: Transform messages with folder information from the folder map
+   * @param messages - Messages from Graph API
+   * @param folderMap - Map of folder ID to display name
+   */
+  private transformMessagesWithFolders(
+    messages: Message[],
+    folderMap: Map<string, string>
+  ): SyncedEmail[] {
+    return messages
+      .filter((m) => m.id && !('removed' in m))
+      .map((message) => {
+        const parentFolderId = (message as any).parentFolderId || '';
+        const parentFolderName = folderMap.get(parentFolderId) || 'Unknown';
+        const folderType = this.deriveFolderType(parentFolderName);
+
+        return {
+          graphMessageId: message.id!,
+          conversationId: message.conversationId || message.id || '',
+          internetMessageId: message.internetMessageId || undefined,
+          subject: message.subject || '(No Subject)',
+          bodyPreview: message.bodyPreview || '',
+          bodyContent: message.body?.content || '',
+          bodyContentType: message.body?.contentType || 'text',
+          from: {
+            name: message.from?.emailAddress?.name ?? undefined,
+            address: message.from?.emailAddress?.address || '',
+          },
+          toRecipients: (message.toRecipients || []).map((r) => ({
+            name: r.emailAddress?.name ?? undefined,
+            address: r.emailAddress?.address || '',
+          })),
+          ccRecipients: (message.ccRecipients || []).map((r) => ({
+            name: r.emailAddress?.name ?? undefined,
+            address: r.emailAddress?.address || '',
+          })),
+          bccRecipients: (message.bccRecipients || []).map((r) => ({
+            name: r.emailAddress?.name ?? undefined,
+            address: r.emailAddress?.address || '',
+          })),
+          receivedDateTime: new Date(message.receivedDateTime || Date.now()),
+          sentDateTime: new Date(message.sentDateTime || Date.now()),
+          hasAttachments: message.hasAttachments || false,
+          importance: message.importance || 'normal',
+          isRead: message.isRead || false,
+          folderType, // OPS-291: Derived from parentFolderName for backwards compatibility
+          parentFolderId, // OPS-291: Graph API folder ID
+          parentFolderName, // OPS-291: Display name
+        };
+      });
+  }
+
+  /**
+   * OPS-291: Filter out emails from personal contacts (for all-folders sync)
+   * Only filters inbox emails, not sent emails or other folders
+   */
+  private async filterOutPersonalContactsAllFolders(
+    emails: SyncedEmail[],
+    userId: string
+  ): Promise<SyncedEmail[]> {
+    if (emails.length === 0) {
+      return emails;
+    }
+
+    // Only filter inbox emails - sent emails were sent by the user
+    const inboxEmails = emails.filter((e) => e.folderType === 'inbox');
+    const otherEmails = emails.filter((e) => e.folderType !== 'inbox');
+
+    if (inboxEmails.length === 0) {
+      return emails; // No inbox emails to filter
+    }
+
+    // Extract unique sender addresses from inbox emails
+    const senderAddresses = [...new Set(inboxEmails.map((e) => e.from.address).filter(Boolean))];
+
+    if (senderAddresses.length === 0) {
+      return emails;
+    }
+
+    // Get list of personal contacts from this batch
+    const personalEmails = await personalContactService.filterPersonalContacts(
+      userId,
+      senderAddresses
+    );
+
+    if (personalEmails.length === 0) {
+      return emails;
+    }
+
+    // Create set for efficient lookup (lowercase for case-insensitive matching)
+    const personalEmailsSet = new Set(personalEmails.map((e) => e.toLowerCase()));
+
+    // Filter out inbox emails from personal contacts
+    const filteredInboxEmails = inboxEmails.filter((email) => {
+      const senderAddress = email.from.address?.toLowerCase();
+      return !senderAddress || !personalEmailsSet.has(senderAddress);
+    });
+
+    const filteredCount = inboxEmails.length - filteredInboxEmails.length;
+    if (filteredCount > 0) {
+      console.log(
+        `[EmailSyncService.filterOutPersonalContactsAllFolders] Filtered ${filteredCount} inbox emails from personal contacts`
+      );
+    }
+
+    // Return filtered inbox + all other emails (sent, custom folders, etc.)
+    return [...filteredInboxEmails, ...otherEmails];
+  }
+
+  /**
    * Transform Graph API messages to our format
    * @param messages - Messages from Graph API
    * @param folderType - Source folder type ('inbox' or 'sent') - OPS-091
+   * @deprecated Use transformMessagesWithFolders for all-folders sync
    */
   private transformMessages(
     messages: Message[],
@@ -419,7 +602,10 @@ export class EmailSyncService {
         hasAttachments: message.hasAttachments || false,
         importance: message.importance || 'normal',
         isRead: message.isRead || false,
-        folderType, // OPS-091: Track source folder
+        folderType, // OPS-091: Track source folder (deprecated)
+        // OPS-291: Backwards compatibility - use well-known folder names
+        parentFolderId: (message as any).parentFolderId || '',
+        parentFolderName: folderType === 'inbox' ? 'Inbox' : 'Sent Items',
       }));
   }
 
@@ -517,7 +703,9 @@ export class EmailSyncService {
         hasAttachments: email.hasAttachments,
         importance: email.importance,
         isRead: email.isRead,
-        folderType: email.folderType, // OPS-091
+        folderType: email.folderType, // OPS-091 (deprecated, kept for backwards compatibility)
+        parentFolderId: email.parentFolderId, // OPS-291
+        parentFolderName: email.parentFolderName, // OPS-291
         userId,
         firmId,
       })),
@@ -590,7 +778,9 @@ export class EmailSyncService {
             hasAttachments: email.hasAttachments,
             importance: email.importance,
             isRead: email.isRead,
-            folderType: email.folderType, // OPS-091
+            folderType: email.folderType, // OPS-091 (deprecated)
+            parentFolderId: email.parentFolderId, // OPS-291
+            parentFolderName: email.parentFolderName, // OPS-291
             userId,
             firmId,
           },
@@ -601,6 +791,8 @@ export class EmailSyncService {
             isRead: email.isRead,
             importance: email.importance,
             folderType: email.folderType, // OPS-126: Update folderType for existing emails
+            parentFolderId: email.parentFolderId, // OPS-291
+            parentFolderName: email.parentFolderName, // OPS-291
           },
         })
       )
@@ -655,6 +847,136 @@ export class EmailSyncService {
       // If not a valid URL, try to extract token directly
       const match = deltaLink.match(/\$deltatoken=([^&]+)/);
       return match ? decodeURIComponent(match[1]) : '';
+    }
+  }
+
+  // ============================================================================
+  // Backfill Methods
+  // ============================================================================
+
+  /**
+   * OPS-291: Backfill folder info for existing emails
+   *
+   * One-time operation to update existing emails with parentFolderId and parentFolderName.
+   * Fetches messages from Graph API to get their folder info.
+   *
+   * @param userId - Internal user ID
+   * @param accessToken - User's OAuth access token
+   * @returns Result with count of updated emails
+   */
+  async backfillFolderInfo(
+    userId: string,
+    accessToken: string
+  ): Promise<{ success: boolean; updated: number; error?: string }> {
+    console.log('[EmailSyncService.backfillFolderInfo] Starting backfill for user:', userId);
+
+    try {
+      // 1. Fetch all mail folders to build ID→name map
+      const folders = await this.graphService.getMailFolders(accessToken, true);
+      const folderMap = this.buildFolderMap(folders);
+      console.log(
+        `[EmailSyncService.backfillFolderInfo] Built folder map with ${folderMap.size} folders`
+      );
+
+      // 2. Find emails without parentFolderName
+      const emailsToUpdate = await this.prisma.email.findMany({
+        where: {
+          userId,
+          parentFolderName: null,
+        },
+        select: {
+          id: true,
+          graphMessageId: true,
+        },
+      });
+
+      if (emailsToUpdate.length === 0) {
+        console.log('[EmailSyncService.backfillFolderInfo] No emails need backfill');
+        return { success: true, updated: 0 };
+      }
+
+      console.log(
+        `[EmailSyncService.backfillFolderInfo] Found ${emailsToUpdate.length} emails to backfill`
+      );
+
+      // 3. Fetch messages from Graph API to get parentFolderId
+      // Do this in batches to avoid rate limits
+      const client = this.graphService.getAuthenticatedClient(accessToken);
+      const BATCH_SIZE = 50;
+      let updated = 0;
+
+      for (let i = 0; i < emailsToUpdate.length; i += BATCH_SIZE) {
+        const batch = emailsToUpdate.slice(i, i + BATCH_SIZE);
+
+        // Fetch messages with parentFolderId
+        // For each email, fetch individual message to get parentFolderId
+        const folderUpdates: Array<{
+          id: string;
+          parentFolderId: string;
+          parentFolderName: string;
+        }> = [];
+
+        // For each email, fetch individual message to get parentFolderId
+        for (const email of batch) {
+          try {
+            const message = await client
+              .api(`/me/messages/${email.graphMessageId}`)
+              .select('id,parentFolderId')
+              .get();
+
+            if (message.parentFolderId) {
+              const folderName = folderMap.get(message.parentFolderId) || 'Unknown';
+              folderUpdates.push({
+                id: email.id,
+                parentFolderId: message.parentFolderId,
+                parentFolderName: folderName,
+              });
+            }
+          } catch (err) {
+            // Message may have been deleted, skip it
+            console.log(
+              `[EmailSyncService.backfillFolderInfo] Failed to fetch message ${email.graphMessageId}:`,
+              err
+            );
+          }
+        }
+
+        // 4. Update emails in database
+        if (folderUpdates.length > 0) {
+          await Promise.all(
+            folderUpdates.map((update) =>
+              this.prisma.email.update({
+                where: { id: update.id },
+                data: {
+                  parentFolderId: update.parentFolderId,
+                  parentFolderName: update.parentFolderName,
+                  folderType: this.deriveFolderType(update.parentFolderName),
+                },
+              })
+            )
+          );
+          updated += folderUpdates.length;
+        }
+
+        console.log(
+          `[EmailSyncService.backfillFolderInfo] Batch ${Math.floor(i / BATCH_SIZE) + 1}: updated ${folderUpdates.length} emails`
+        );
+
+        // Small delay between batches to avoid rate limiting
+        if (i + BATCH_SIZE < emailsToUpdate.length) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+
+      console.log(
+        `[EmailSyncService.backfillFolderInfo] Backfill complete: ${updated} emails updated`
+      );
+      return { success: true, updated };
+    } catch (error: any) {
+      const parsedError = parseGraphError(error);
+      logGraphError(parsedError);
+      console.error('[EmailSyncService.backfillFolderInfo] Error:', parsedError.message);
+      return { success: false, updated: 0, error: parsedError.message };
     }
   }
 }
