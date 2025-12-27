@@ -595,6 +595,13 @@ export const timeEntryResolvers = {
 
   // Field resolvers for DailySummary (computed fields are handled by service)
   DailySummary: {},
+
+  // Enum resolver: maps internal lowercase values to GraphQL uppercase enum values
+  TrendIndicator: {
+    UP: 'up',
+    STABLE: 'stable',
+    DOWN: 'down',
+  },
 };
 
 // Helper function for buildFilterWhere

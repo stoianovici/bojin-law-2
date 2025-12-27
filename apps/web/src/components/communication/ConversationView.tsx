@@ -21,7 +21,6 @@ import {
   Users,
   Loader2,
   FolderInput,
-  EyeOff,
   X,
   Ban,
   ExternalLink,
@@ -84,15 +83,6 @@ const ASSIGN_THREAD_TO_CASE = gql`
       newContactAdded
       contactName
       contactEmail
-    }
-  }
-`;
-
-const IGNORE_EMAIL_THREAD = gql`
-  mutation IgnoreEmailThread($conversationId: String!) {
-    ignoreEmailThread(conversationId: $conversationId) {
-      id
-      conversationId
     }
   }
 `;
@@ -225,7 +215,7 @@ export function ConversationView({
   onConfirmed,
 }: ConversationViewProps) {
   // OPS-203: Restored openCompose for in-app AI draft compose
-  const { getSelectedThread, threads, setThreads, selectThread, userEmail, openCompose } =
+  const { getSelectedThread, threads, setThreads, userEmail, openCompose } =
     useCommunicationStore();
   const { addNotification } = useNotificationStore();
   const { user } = useAuth();
@@ -281,7 +271,7 @@ export function ConversationView({
     fetchPolicy: 'network-only',
   });
   const [assignThreadToCase, { loading: assigning }] = useMutation(ASSIGN_THREAD_TO_CASE);
-  const [ignoreEmailThread, { loading: ignoring }] = useMutation(IGNORE_EMAIL_THREAD);
+  // Note: ignoreEmailThread mutation removed per OPS-204 - NECLAR uses "Privat" instead
   // OPS-196: NECLAR mutations
   const [classifyUncertainEmail, { loading: classifying }] = useMutation(CLASSIFY_UNCERTAIN_EMAIL);
   const [markSenderAsPersonalMutation, { loading: markingPersonal }] =
@@ -478,34 +468,6 @@ export function ConversationView({
     }
   }, [thread, selectedCaseId, assignThreadToCase, threads, setThreads, addNotification]);
 
-  const handleIgnoreThread = useCallback(async () => {
-    if (!thread) return;
-
-    try {
-      await ignoreEmailThread({
-        variables: {
-          conversationId: thread.conversationId,
-        },
-      });
-
-      const updatedThreads = threads.filter((t) => t.id !== thread.id);
-      setThreads(updatedThreads);
-      selectThread('');
-      addNotification({
-        type: 'success',
-        title: 'Succes',
-        message: 'Conversația a fost ignorată',
-      });
-    } catch (error) {
-      console.error('Failed to ignore thread:', error);
-      addNotification({
-        type: 'error',
-        title: 'Eroare',
-        message: 'Nu s-a putut ignora conversația',
-      });
-    }
-  }, [thread, ignoreEmailThread, threads, setThreads, selectThread, addNotification]);
-
   // OPS-203: Removed handleMarkAsProcessed - button removed from action bar
 
   // OPS-194: Handle privacy toggle
@@ -698,28 +660,14 @@ export function ConversationView({
           <p className="text-sm text-amber-800 mb-2">
             Această conversație nu este asociată cu un dosar.
           </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowAssignModal(true)}
-              disabled={assigning}
-              className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <FolderInput className="h-4 w-4" />
-              Atribuie la dosar
-            </button>
-            <button
-              onClick={handleIgnoreThread}
-              disabled={ignoring}
-              className="px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-            >
-              {ignoring ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <EyeOff className="h-4 w-4" />
-              )}
-              Ignoră
-            </button>
-          </div>
+          <button
+            onClick={() => setShowAssignModal(true)}
+            disabled={assigning}
+            className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <FolderInput className="h-4 w-4" />
+            Atribuie la dosar
+          </button>
         </div>
       )}
 
