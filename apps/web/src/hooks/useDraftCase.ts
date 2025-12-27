@@ -276,10 +276,8 @@ export function useDraftCase(): UseDraftCaseResult {
       errors.type = 'Tipul dosarului este obligatoriu';
     }
 
-    // Description validation
-    if (!draft.description.trim()) {
-      errors.description = 'Descrierea este obligatorie';
-    } else if (draft.description.length < 10) {
+    // Description validation (optional field, but if provided must be meaningful)
+    if (draft.description.trim() && draft.description.trim().length < 10) {
       errors.description = 'Descrierea trebuie să aibă cel puțin 10 caractere';
     }
 

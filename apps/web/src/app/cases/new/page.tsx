@@ -15,11 +15,10 @@ import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import { clsx } from 'clsx';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDraftCase, type DraftActor, type DraftBilling } from '@/hooks/useDraftCase';
-import { useCaseTypes } from '@/hooks/useCaseTypes';
+import { CaseTypeCombobox } from '@/components/case/CaseTypeCombobox';
 import { useActorTypes } from '@/hooks/useActorTypes';
 import { DraftModeToolbar } from '@/components/case/DraftModeToolbar';
 import { FinancialData } from '@/components/auth/FinancialData';
-import { useNotificationStore } from '@/stores/notificationStore';
 import type { CaseActorRole, BillingType } from '@legal-platform/types';
 
 // ============================================================================
@@ -501,35 +500,11 @@ function DraftBillingSection({ billing, onUpdate, error }: DraftBillingSectionPr
 export default function NewCasePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { caseTypes, loading: typesLoading, createCaseType, createLoading } = useCaseTypes();
   // OPS-223: Fetch dynamic actor types
   const { actorTypeOptions, createActorType, createLoading: createActorLoading } = useActorTypes();
-  const { addNotification } = useNotificationStore();
 
   const isAssociate = user?.role === 'Associate';
   const isPartner = user?.role === 'Partner';
-
-  // New type form state
-  const [showAddType, setShowAddType] = useState(false);
-  const [newTypeName, setNewTypeName] = useState('');
-  const [newTypeCode, setNewTypeCode] = useState('');
-
-  // Helper to generate code from name
-  const generateTypeCodeFromName = (name: string) =>
-    name
-      .toUpperCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^A-Z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-  const handleTypeNameChange = (name: string) => {
-    setNewTypeName(name);
-    if (name) {
-      setNewTypeCode(generateTypeCodeFromName(name));
-    }
-  };
 
   // Draft case state
   const {
@@ -545,41 +520,6 @@ export default function NewCasePage() {
     isValid,
     validationErrors,
   } = useDraftCase();
-
-  // Handle create new type
-  const handleCreateType = useCallback(async () => {
-    if (!newTypeName.trim() || !newTypeCode.trim()) return;
-
-    const result = await createCaseType(newTypeName.trim(), newTypeCode.trim());
-    if (result.success) {
-      addNotification({
-        type: 'success',
-        title: 'Tip dosar creat',
-        message: `Tipul "${newTypeName}" a fost adăugat cu succes.`,
-      });
-      // Auto-select the new type
-      if (result.caseType) {
-        updateField('type', result.caseType.code);
-      }
-      setShowAddType(false);
-      setNewTypeName('');
-      setNewTypeCode('');
-    } else {
-      addNotification({
-        type: 'error',
-        title: 'Eroare',
-        message: result.error || 'Nu s-a putut crea tipul de dosar.',
-      });
-    }
-  }, [newTypeName, newTypeCode, createCaseType, addNotification, updateField]);
-
-  // Convert case types to select options
-  const typeOptions = useMemo(() => {
-    return caseTypes.map((ct) => ({
-      value: ct.code,
-      label: ct.name,
-    }));
-  }, [caseTypes]);
 
   // Convert validation errors to array for toolbar
   const errorMessages = useMemo(() => {
@@ -613,7 +553,7 @@ export default function NewCasePage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <button
@@ -671,118 +611,20 @@ export default function NewCasePage() {
                 placeholder="Descrierea pe scurt a dosarului..."
                 type="textarea"
                 error={validationErrors.description}
-                required
               />
 
-              {/* Case Type with Add New button for Partners */}
+              {/* Case Type with searchable combobox */}
               <div className="py-3 border-b border-gray-200">
                 <label className="block text-sm font-medium text-gray-500 mb-2">
                   Tip dosar <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
-                  <select
-                    value={draft.type || ''}
-                    onChange={(e) => updateField('type', e.target.value)}
-                    disabled={typesLoading}
-                    className={clsx(
-                      'flex-1 px-3 py-2 border rounded-md text-gray-900 focus:outline-none focus:ring-2',
-                      validationErrors.type
-                        ? 'border-red-300 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500',
-                      typesLoading && 'bg-gray-50 cursor-not-allowed'
-                    )}
-                  >
-                    <option value="">Selectează...</option>
-                    {typeOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  {isPartner && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAddType(!showAddType)}
-                      className="px-3 py-2 text-sm font-medium text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors whitespace-nowrap"
-                    >
-                      + Tip nou
-                    </button>
-                  )}
-                </div>
-                {validationErrors.type && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.type}</p>
-                )}
-
-                {/* Add New Type Form */}
-                {showAddType && isPartner && (
-                  <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Nume tip nou
-                      </label>
-                      <input
-                        type="text"
-                        value={newTypeName}
-                        onChange={(e) => handleTypeNameChange(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="ex: Insolvență"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Cod (generat automat)
-                      </label>
-                      <input
-                        type="text"
-                        value={newTypeCode}
-                        onChange={(e) =>
-                          setNewTypeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))
-                        }
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
-                        placeholder="INSOLVENTA"
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowAddType(false);
-                          setNewTypeName('');
-                          setNewTypeCode('');
-                        }}
-                        className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
-                      >
-                        Anulează
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!newTypeName.trim() || !newTypeCode.trim() || createLoading}
-                        onClick={handleCreateType}
-                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                      >
-                        {createLoading && (
-                          <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              fill="none"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                        )}
-                        Salvează
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <CaseTypeCombobox
+                  value={draft.type || null}
+                  onChange={(typeCode) => updateField('type', typeCode)}
+                  required
+                  canCreate={isPartner}
+                  error={validationErrors.type}
+                />
               </div>
 
               <DraftField
