@@ -48,7 +48,7 @@ const ROLE_OPTIONS: { value: UserRole; label: string; description: string }[] = 
   },
   {
     value: 'Paralegal',
-    label: 'Paralegal',
+    label: 'Asociat Jr.',
     description: 'Categorizare documente în loturile atribuite',
   },
   { value: 'Admin', label: 'Administrator', description: 'Acces complet la administrare' },
@@ -369,7 +369,7 @@ export function UserManagement({ currentUserId }: UserManagementProps) {
                 OneDrive și administra utilizatori
               </li>
               <li>
-                <strong>Asociat/Paralegal:</strong> Poate categoriza documentele din loturile
+                <strong>Asociat/Asociat Jr.:</strong> Poate categoriza documentele din loturile
                 atribuite
               </li>
               <li>

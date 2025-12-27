@@ -24,7 +24,7 @@ const roleOptions: { value: UserRole; label: string; description: string }[] = [
   },
   {
     value: 'Paralegal',
-    label: 'Asistent Juridic',
+    label: 'Asociat Jr.',
     description: 'Suport administrativ și documente',
   },
 ];

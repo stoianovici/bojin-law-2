@@ -187,9 +187,9 @@ export default function ActiveUsersPage() {
                       onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                       className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="Paralegal">Paralegal</option>
-                      <option value="Associate">Associate</option>
-                      <option value="Partner">Partner</option>
+                      <option value="Paralegal">Asociat Jr.</option>
+                      <option value="Associate">Asociat</option>
+                      <option value="Partner">Partener</option>
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">

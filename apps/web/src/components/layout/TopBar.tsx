@@ -80,7 +80,7 @@ export function TopBar({
     const roleTitles = {
       Partner: 'Dashboard - Partener',
       Associate: 'Dashboard - Asociat',
-      Paralegal: 'Dashboard - Asistent Juridic',
+      Paralegal: 'Dashboard - Asociat Jr.',
     };
 
     if (pathname === '/') {
