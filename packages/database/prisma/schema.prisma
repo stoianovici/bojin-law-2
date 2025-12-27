@@ -128,6 +128,9 @@ model Firm {
   // Relations (OPS-115: AI Context Files)
   activityEvents UserActivityEvent[]
 
+  // Relations (OPS-279: Universal Draft Mode)
+  sentEmailDrafts SentEmailDraft[]
+
   @@map("firms")
 }
 
@@ -262,6 +265,9 @@ model User {
 
   // Relations (OPS-178: Document Edit Sessions)
   documentEditSessions DocumentEditSession[] @relation("DocumentEditSessionUser")
+
+  // Relations (OPS-279: Universal Draft Mode)
+  sentEmailDrafts SentEmailDraft[]
 
   @@map("users")
 }
@@ -582,6 +588,9 @@ model Case {
 
   // Relations (OPS-239: Case Health Scoring)
   healthScores CaseHealthScore[]
+
+  // Relations (OPS-279: Universal Draft Mode)
+  sentEmailDrafts SentEmailDraft[]
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -3118,6 +3127,7 @@ model EmailDraft {
   status               DraftStatus   @default(Generated)
   userEdits            Json?         @map("user_edits") // Track user modifications
   sentAt               DateTime?     @map("sent_at") @db.Timestamptz
+  outlookDraftId       String?       @map("outlook_draft_id") // Outlook message ID when saved as draft
   createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -3134,6 +3144,38 @@ model EmailDraft {
   @@index([userId])
   @@index([status])
   @@map("email_drafts")
+}
+
+// Source types for sent email drafts (non-AI-drafted emails)
+enum SentEmailSource {
+  NEW_EMAIL // sendNewEmail mutation
+  REPLY // replyToEmail mutation
+  TASK_REMINDER // Task due date notification
+  OVERDUE_NOTIFICATION // Overdue task notification
+}
+
+// Tracks emails sent via platform that weren't AI-drafted (ad-hoc sends)
+// These go to Outlook drafts when EMAIL_SEND_MODE=draft
+model SentEmailDraft {
+  id             String          @id @default(uuid())
+  outlookDraftId String          @map("outlook_draft_id") // Outlook message ID for the draft
+  userId         String          @map("user_id")
+  firmId         String          @map("firm_id")
+  recipientEmail String          @map("recipient_email")
+  subject        String          @db.VarChar(500)
+  caseId         String?         @map("case_id")
+  source         SentEmailSource
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  user User  @relation(fields: [userId], references: [id])
+  firm Firm  @relation(fields: [firmId], references: [id])
+  case Case? @relation(fields: [caseId], references: [id])
+
+  @@index([userId])
+  @@index([firmId])
+  @@index([outlookDraftId])
+  @@index([createdAt])
+  @@map("sent_email_drafts")
 }
 
 // Draft refinement model - tracks AI refinement history

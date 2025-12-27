@@ -37,9 +37,9 @@ describe('DraftIndicator', () => {
     it('should render Sent status with correct styling', () => {
       render(<DraftIndicator status="Sent" confidence={0.85} />);
 
-      expect(screen.getByText(/Trimis/i)).toBeInTheDocument();
-      const indicator = screen.getByText(/Trimis/i).parentElement;
-      expect(indicator).toHaveClass('bg-gray-100', 'text-gray-700');
+      expect(screen.getByText(/În Ciorne/i)).toBeInTheDocument();
+      const indicator = screen.getByText(/În Ciorne/i).parentElement;
+      expect(indicator).toHaveClass('bg-blue-100', 'text-blue-700');
     });
 
     it('should render Discarded status with correct styling', () => {
@@ -118,7 +118,9 @@ describe('DraftIndicator', () => {
       expect(screen.getByText(/Gata/i).parentElement?.querySelector('svg')).toBeInTheDocument();
 
       rerender(<DraftIndicator status="Sent" />);
-      expect(screen.getByText(/Trimis/i).parentElement?.querySelector('svg')).toBeInTheDocument();
+      expect(
+        screen.getByText(/În Ciorne/i).parentElement?.querySelector('svg')
+      ).toBeInTheDocument();
     });
   });
 

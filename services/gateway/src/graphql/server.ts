@@ -68,6 +68,7 @@ import { personalContactResolvers } from './resolvers/personal-contact.resolvers
 import { actorTypeResolvers } from './resolvers/actor-type.resolvers';
 import { clientResolvers } from './resolvers/client.resolvers';
 import { aiOpsResolvers } from './resolvers/ai-ops.resolvers';
+import { teamActivityResolvers } from './resolvers/team-activity.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -128,6 +129,7 @@ const resolvers = {
     ...actorTypeResolvers.Query,
     ...clientResolvers.Query,
     ...aiOpsResolvers.Query,
+    ...teamActivityResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -309,6 +311,8 @@ const resolvers = {
   MapaCompletionStatus: mapaResolvers.MapaCompletionStatus,
   // Actor Type Config resolvers (OPS-221)
   ActorTypeConfig: actorTypeResolvers.ActorTypeConfig,
+  // Team Activity resolvers (OPS-272)
+  ActivityEntry: teamActivityResolvers.ActivityEntry,
 };
 
 /**

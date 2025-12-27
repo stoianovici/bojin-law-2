@@ -11,7 +11,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
-import { X, Send, Loader2, Users, Mail, Sparkles } from 'lucide-react';
+import { X, Save, Loader2, Users, Mail, Sparkles } from 'lucide-react';
 import { useNotificationStore } from '../../stores/notificationStore';
 import type { CommunicationThread, CommunicationMessage } from '@legal-platform/types';
 
@@ -326,12 +326,12 @@ Cu stimă`
               {sending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Se trimite...
+                  Se salvează...
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4" />
-                  Trimite notificarea
+                  <Save className="h-4 w-4" />
+                  Salvează în Ciorne
                 </>
               )}
             </button>

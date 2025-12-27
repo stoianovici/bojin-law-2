@@ -1,11 +1,13 @@
 // Story 4.4: Email Service
 // Sends task reminder emails via Microsoft Graph API
+// OPS-283: Updated to use GraphService for draft mode support
 
 import { EmailReminderPayload } from '@legal-platform/types';
-import { Client } from '@microsoft/microsoft-graph-client';
-import 'isomorphic-fetch';
+import { graphConfig } from '../config/graph.config';
+import { GraphService } from './graph.service';
 
 // Note: Requires Mail.Send permission in Azure AD app registration (Story 2.5)
+// Email sending respects EMAIL_SEND_MODE config ('draft' creates Outlook drafts, 'send' sends immediately)
 
 // ============================================================================
 // Email Configuration
@@ -28,6 +30,7 @@ const defaultConfig: EmailConfig = {
 
 /**
  * Sends a task reminder email via Microsoft Graph API
+ * OPS-283: Respects EMAIL_SEND_MODE - creates Outlook draft when in draft mode
  */
 export async function sendTaskReminderEmail(
   payload: EmailReminderPayload,
@@ -59,11 +62,13 @@ export async function sendTaskReminderEmail(
     saveToSentItems: true,
   };
 
-  return sendEmailWithRetry(message, accessToken, finalConfig);
+  const result = await sendEmailWithRetry(message, accessToken, finalConfig);
+  return result.success;
 }
 
 /**
  * Sends an overdue notification email
+ * OPS-283: Respects EMAIL_SEND_MODE - creates Outlook draft when in draft mode
  */
 export async function sendOverdueNotification(
   payload: EmailReminderPayload,
@@ -94,11 +99,13 @@ export async function sendOverdueNotification(
     saveToSentItems: true,
   };
 
-  return sendEmailWithRetry(message, accessToken, finalConfig);
+  const result = await sendEmailWithRetry(message, accessToken, finalConfig);
+  return result.success;
 }
 
 /**
  * Sends a dependency unblocked email
+ * OPS-283: Respects EMAIL_SEND_MODE - creates Outlook draft when in draft mode
  */
 export async function sendDependencyUnblockedEmail(
   userId: string,
@@ -156,30 +163,70 @@ export async function sendDependencyUnblockedEmail(
     saveToSentItems: true,
   };
 
-  return sendEmailWithRetry(message, accessToken, finalConfig);
+  const result = await sendEmailWithRetry(message, accessToken, finalConfig);
+  return result.success;
 }
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
+/**
+ * Result of sending an email via the email service
+ * When in draft mode, includes the Outlook draft ID for tracking
+ */
+export interface EmailSendResult {
+  success: boolean;
+  draftId?: string;
+  isDraftMode: boolean;
+}
+
+/**
+ * Send email with retry logic
+ * OPS-283: Updated to use GraphService which respects EMAIL_SEND_MODE
+ *
+ * @param message - Email message with subject, body, recipients
+ * @param accessToken - User's MS access token
+ * @param config - Retry configuration
+ * @returns Result with success status and optional draftId
+ */
 async function sendEmailWithRetry(
   message: any,
   accessToken: string,
   config: EmailConfig
-): Promise<boolean> {
-  const client = Client.init({
-    authProvider: (done) => {
-      done(null, accessToken);
-    },
-  });
+): Promise<EmailSendResult> {
+  const graphService = new GraphService();
+  const isDraftMode = graphConfig.emailSendMode === 'draft';
 
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < config.maxRetries; attempt++) {
     try {
-      await client.api('/me/sendMail').post(message);
-      return true;
+      // Extract message content from the sendMail format
+      const messageContent = message.message;
+
+      const result = await graphService.sendMail(accessToken, {
+        subject: messageContent.subject,
+        body: {
+          contentType: messageContent.body.contentType === 'HTML' ? 'HTML' : 'Text',
+          content: messageContent.body.content,
+        },
+        toRecipients: messageContent.toRecipients.map((r: any) => ({
+          emailAddress: { address: r.emailAddress.address },
+        })),
+        ccRecipients: messageContent.ccRecipients?.map((r: any) => ({
+          emailAddress: { address: r.emailAddress.address },
+        })),
+        bccRecipients: messageContent.bccRecipients?.map((r: any) => ({
+          emailAddress: { address: r.emailAddress.address },
+        })),
+      });
+
+      return {
+        success: true,
+        draftId: result.draftId,
+        isDraftMode,
+      };
     } catch (error) {
       lastError = error as Error;
       console.error(`Email send attempt ${attempt + 1} failed:`, error);
@@ -192,7 +239,7 @@ async function sendEmailWithRetry(
   }
 
   console.error('All email send attempts failed:', lastError);
-  return false;
+  return { success: false, isDraftMode };
 }
 
 function generateReminderEmailHTML(payload: EmailReminderPayload): string {
@@ -290,6 +337,7 @@ interface DailyDigest {
 /**
  * Sends a daily digest email via Microsoft Graph API
  * Story 4.6: Task Collaboration and Updates (AC: 6)
+ * OPS-283: Respects EMAIL_SEND_MODE - creates Outlook draft when in draft mode
  */
 export async function sendDailyDigestEmail(
   userEmail: string,
@@ -332,7 +380,8 @@ export async function sendDailyDigestEmail(
     saveToSentItems: true,
   };
 
-  return sendEmailWithRetry(message, accessToken, finalConfig);
+  const result = await sendEmailWithRetry(message, accessToken, finalConfig);
+  return result.success;
 }
 
 /**
@@ -522,6 +571,7 @@ export interface ReviewFeedbackEmailPayload {
 
 /**
  * Sends a review feedback email when a supervisor requests changes
+ * OPS-283: Respects EMAIL_SEND_MODE - creates Outlook draft when in draft mode
  */
 export async function sendReviewFeedbackEmail(
   payload: ReviewFeedbackEmailPayload,
@@ -552,7 +602,8 @@ export async function sendReviewFeedbackEmail(
     saveToSentItems: true,
   };
 
-  return sendEmailWithRetry(message, accessToken, finalConfig);
+  const result = await sendEmailWithRetry(message, accessToken, finalConfig);
+  return result.success;
 }
 
 /**

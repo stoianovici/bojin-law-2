@@ -19,6 +19,7 @@ interface TaskManagementState {
   filters: TaskFilters;
   sortConfig: TaskSortConfig;
   isTaskDetailModalOpen: boolean;
+  isCreateModalOpen: boolean;
 
   // Actions
   setActiveView: (view: TaskView) => void;
@@ -32,6 +33,8 @@ interface TaskManagementState {
   setSortConfig: (config: TaskSortConfig) => void;
   openTaskDetailModal: (task?: Task) => void;
   closeTaskDetailModal: () => void;
+  openCreateModal: () => void;
+  closeCreateModal: () => void;
 }
 
 /**
@@ -68,6 +71,7 @@ export const useTaskManagementStore = create<TaskManagementState>()(
       filters: initialFilters,
       sortConfig: initialSortConfig,
       isTaskDetailModalOpen: false,
+      isCreateModalOpen: false,
 
       // Switch between task views (Calendar, Kanban, List)
       setActiveView: (view: TaskView) => {
@@ -159,6 +163,16 @@ export const useTaskManagementStore = create<TaskManagementState>()(
           isTaskDetailModalOpen: false,
           selectedTask: null,
         });
+      },
+
+      // Open create task modal
+      openCreateModal: () => {
+        set({ isCreateModalOpen: true });
+      },
+
+      // Close create task modal
+      closeCreateModal: () => {
+        set({ isCreateModalOpen: false });
       },
     }),
     {

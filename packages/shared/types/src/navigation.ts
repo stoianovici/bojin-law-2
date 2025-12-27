@@ -17,6 +17,7 @@ export type NavigationSection =
   | 'tasks'
   | 'communications'
   | 'time-tracking'
+  | 'team-activity'
   | 'reports'
   | 'user-management'
   | 'settings';

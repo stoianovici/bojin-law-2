@@ -35,6 +35,8 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import type { ThreadAttachment } from '../../hooks/useThreadAttachments';
 import { useNotificationStore } from '../../stores/notificationStore';
+import { useTimePeriodGroups } from '../../hooks/useTimePeriodGroups';
+import { TimePeriodSection } from '../ui/TimePeriodSection';
 
 // ============================================================================
 // GraphQL Mutations (OPS-140)
@@ -388,6 +390,9 @@ export function AttachmentPreviewPanel({
 
   // Check if we can perform document actions (need caseId AND email must be assigned)
   const canSaveToDocuments = Boolean(caseId) && emailAssigned;
+
+  // OPS-270: Group attachments by time period for display
+  const attachmentPeriods = useTimePeriodGroups(threadAttachments, (att) => att.messageDate);
 
   // Message for disabled state - shown when email is not assigned
   const disabledTooltip = !emailAssigned
@@ -803,30 +808,45 @@ export function AttachmentPreviewPanel({
         <span className="text-xs text-gray-400">← → pentru navigare</span>
       </div>
 
-      {/* All Attachments List */}
-      <div className="border-t bg-gray-50 flex-shrink-0 max-h-48 overflow-y-auto">
+      {/* All Attachments List - OPS-270: Grouped by time period */}
+      <div className="border-t bg-gray-50 flex-shrink-0 max-h-56 overflow-y-auto">
         <div className="p-3">
           <p className="text-xs font-medium text-gray-500 mb-2">
             Atașamente în conversație ({threadAttachments.length})
           </p>
-          <div className="space-y-1">
-            {threadAttachments.map((att) => (
-              <button
-                key={att.id}
-                onClick={() => onSelectAttachment(att.id, att.messageId)}
-                className={clsx(
-                  'w-full text-left px-2.5 py-2 rounded text-sm flex items-center gap-2 transition-colors',
-                  att.id === selectedAttachment?.id
-                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                    : 'hover:bg-gray-100 text-gray-700'
-                )}
+          <div className="space-y-2">
+            {attachmentPeriods.map((period) => (
+              <TimePeriodSection
+                key={period.key}
+                periodKey={period.key}
+                label={period.label}
+                count={period.items.length}
+                defaultOpen={period.defaultOpen}
+                storageKey="attachment-preview-time"
               >
-                <span className="text-gray-400 flex-shrink-0">{getFileIcon(att.contentType)}</span>
-                <span className="truncate flex-1">{att.name}</span>
-                <span className="text-xs text-gray-400 flex-shrink-0">
-                  {formatFileSize(att.size)}
-                </span>
-              </button>
+                <div className="space-y-1">
+                  {period.items.map((att) => (
+                    <button
+                      key={att.id}
+                      onClick={() => onSelectAttachment(att.id, att.messageId)}
+                      className={clsx(
+                        'w-full text-left px-2.5 py-2 rounded text-sm flex items-center gap-2 transition-colors',
+                        att.id === selectedAttachment?.id
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      )}
+                    >
+                      <span className="text-gray-400 flex-shrink-0">
+                        {getFileIcon(att.contentType)}
+                      </span>
+                      <span className="truncate flex-1">{att.name}</span>
+                      <span className="text-xs text-gray-400 flex-shrink-0">
+                        {formatFileSize(att.size)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </TimePeriodSection>
             ))}
           </div>
         </div>

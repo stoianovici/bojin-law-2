@@ -11,9 +11,17 @@
  * - GRAPH_RETRY_MAX_ATTEMPTS: Maximum retry attempts (default: 5)
  * - GRAPH_RETRY_INITIAL_DELAY: Initial retry delay in milliseconds (default: 1000)
  * - GRAPH_RETRY_MAX_DELAY: Maximum retry delay in milliseconds (default: 32000)
+ * - EMAIL_SEND_MODE: Email sending behavior - 'draft' saves to Drafts folder, 'send' sends immediately (default: 'draft')
  */
 
 import { Client, ClientOptions } from '@microsoft/microsoft-graph-client';
+
+/**
+ * Email send mode type
+ * - 'draft': Create message in user's Drafts folder (default, for review before send)
+ * - 'send': Send email immediately via sendMail API
+ */
+export type EmailSendMode = 'draft' | 'send';
 
 /**
  * Graph API configuration values
@@ -48,6 +56,14 @@ export const graphConfig = {
    * @default 32000 (32 seconds)
    */
   retryMaxDelay: parseInt(process.env.GRAPH_RETRY_MAX_DELAY || '32000', 10),
+
+  /**
+   * Email send mode - controls whether emails are sent immediately or saved as drafts
+   * Set to 'draft' to save all outgoing emails to user's Drafts folder for review
+   * Set to 'send' to send emails immediately (original behavior)
+   * @default 'draft'
+   */
+  emailSendMode: (process.env.EMAIL_SEND_MODE || 'draft') as EmailSendMode,
 };
 
 /**
@@ -112,6 +128,7 @@ export const graphEndpoints = {
   sentMessages: '/me/mailFolders/SentItems/messages', // OPS-091: Sent emails sync
   messageById: (messageId: string) => `/me/messages/${messageId}`,
   sendMail: '/me/sendMail',
+  createDraft: '/me/messages', // OPS-280: Create draft in Drafts folder (POST creates a draft)
 
   // OneDrive endpoints
   drive: '/me/drive',

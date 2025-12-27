@@ -20,7 +20,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mail, Send, X } from 'lucide-react';
+import { Loader2, Mail, Save, X } from 'lucide-react';
 import { useNotificationStore } from '@/stores/notificationStore';
 
 // ============================================================================
@@ -214,12 +214,12 @@ export function ReviewEmailPreviewModal({
             {sending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Se trimite...
+                Se salvează...
               </>
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
-                Trimite email
+                <Save className="mr-2 h-4 w-4" />
+                Salvează în Ciorne
               </>
             )}
           </Button>

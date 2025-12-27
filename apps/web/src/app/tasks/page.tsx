@@ -12,8 +12,8 @@ import { clsx } from 'clsx';
 import { MultiWeekCalendarView } from '../../components/task/MultiWeekCalendarView';
 import { KanbanBoard } from '../../components/task/KanbanBoard';
 import { ListView } from '../../components/task/ListView';
-import { TaskCreationBar } from '../../components/task/TaskCreationBar';
 import { TaskDetailModal } from '../../components/task/TaskDetailModal';
+import { CreateTaskModal } from '../../components/task/CreateTaskModal';
 import { TaskFilterBar } from '../../components/task/TaskFilterBar';
 import { useTaskManagementStore, useFilteredTasks } from '../../stores/task-management.store';
 import { useSetAIContext } from '../../contexts/AIAssistantContext';
@@ -38,10 +38,13 @@ export default function TasksPage() {
     updateTask,
     createTask,
     deleteTask,
+    isCreateModalOpen,
+    openCreateModal,
+    closeCreateModal,
   } = useTaskManagementStore();
 
   // Fetch all tasks from API (not just current user's tasks)
-  const { tasks: apiTasks, loading: tasksLoading } = useTasks();
+  const { tasks: apiTasks, loading: tasksLoading, refetch: refetchTasks } = useTasks();
 
   // Sync API tasks to store when they change
   // Always sync, even when empty, to ensure stale data is cleared
@@ -53,8 +56,6 @@ export default function TasksPage() {
 
   // Use filtered tasks instead of raw tasks for display
   const filteredTasks = useFilteredTasks();
-
-  const [isCreationBarOpen, setIsCreationBarOpen] = React.useState(false);
 
   /**
    * Set document title
@@ -68,16 +69,6 @@ export default function TasksPage() {
    */
   const handleTaskClick = (task: Task) => {
     openTaskDetailModal(task);
-  };
-
-  /**
-   * Handle task creation from natural language bar
-   */
-  const handleCreateTaskFromNL = (_parsedText: string) => {
-    // Open modal with empty task (create mode)
-    openTaskDetailModal();
-    // Close the creation bar modal
-    setIsCreationBarOpen(false);
   };
 
   /**
@@ -192,7 +183,7 @@ export default function TasksPage() {
 
             {/* Create Task Button */}
             <button
-              onClick={() => setIsCreationBarOpen(true)}
+              onClick={openCreateModal}
               className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               <div className="flex items-center gap-2">
@@ -251,20 +242,14 @@ export default function TasksPage() {
         onDelete={handleTaskDelete}
       />
 
-      {/* Task Creation Modal */}
-      {isCreationBarOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-20 px-4"
-          onClick={() => setIsCreationBarOpen(false)}
-        >
-          <div
-            className="w-full max-w-4xl animate-in fade-in slide-in-from-top-4 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <TaskCreationBar onCreateTask={handleCreateTaskFromNL} />
-          </div>
-        </div>
-      )}
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        isOpen={isCreateModalOpen}
+        onClose={closeCreateModal}
+        onSuccess={() => {
+          refetchTasks();
+        }}
+      />
     </main>
   );
 }

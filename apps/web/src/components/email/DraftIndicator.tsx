@@ -47,9 +47,9 @@ const STATUS_CONFIG: Record<
     icon: 'check',
   },
   Sent: {
-    label: 'Trimis',
-    color: 'text-gray-700 dark:text-gray-300',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    label: 'În Ciorne',
+    color: 'text-blue-700 dark:text-blue-300',
+    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     icon: 'send',
   },
   Discarded: {

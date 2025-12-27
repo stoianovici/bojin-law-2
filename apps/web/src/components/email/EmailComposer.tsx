@@ -378,18 +378,18 @@ export function EmailComposer({
           >
             {sending ? (
               <>
-                <Spinner size="xs" /> Sending...
+                <Spinner size="xs" /> Se salvează...
               </>
             ) : (
               <>
-                <SendIcon className="h-4 w-4" /> Send
+                <SaveIcon className="h-4 w-4" /> Salvează în Ciorne
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Send confirmation dialog */}
+      {/* Save to drafts confirmation dialog */}
       {sendConfirmation && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -402,18 +402,18 @@ export function EmailComposer({
               id="send-confirm-title"
               className="text-lg font-semibold text-gray-900 dark:text-white"
             >
-              Send Email?
+              Salvează în Ciorne Outlook?
             </h3>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              This will send the email to {originalEmail.from.address}. Make sure you&apos;ve
-              reviewed the content.
+              Emailul va fi salvat în Ciorne Outlook pentru {originalEmail.from.address}. Deschide
+              Outlook pentru a revizui și trimite.
             </p>
             <div className="mt-4 flex justify-end gap-3">
               <button
                 onClick={() => setSendConfirmation(false)}
                 className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
               >
-                Cancel
+                Anulează
               </button>
               <button
                 onClick={() => {
@@ -422,7 +422,7 @@ export function EmailComposer({
                 }}
                 className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
-                Send
+                Salvează în Ciorne
               </button>
             </div>
           </div>
@@ -467,14 +467,14 @@ function SparklesIcon({ className }: { className?: string }) {
   );
 }
 
-function SendIcon({ className }: { className?: string }) {
+function SaveIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
-        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
       />
     </svg>
   );

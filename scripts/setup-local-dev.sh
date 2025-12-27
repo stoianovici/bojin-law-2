@@ -114,93 +114,113 @@ else
 fi
 
 # =============================================================================
-# Step 4: Run Prisma migrations
+# Step 4: Run Prisma migrations on all databases
 # =============================================================================
 echo ""
 echo -e "${YELLOW}[4/6] Running database migrations...${NC}"
 
 cd packages/database
+
+# Apply migrations to seed database
+echo "  Applying migrations to legal_platform_seed..."
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/legal_platform_seed" pnpm db:migrate:deploy
+
+# Apply migrations to prod database
+echo "  Applying migrations to legal_platform_prod..."
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/legal_platform_prod" pnpm db:migrate:deploy
+
+# Apply migrations to dev database (backwards compatibility)
+echo "  Applying migrations to legal_platform_dev..."
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/legal_platform_dev" pnpm db:migrate:deploy
+
 cd "$PROJECT_ROOT"
 
-echo -e "${GREEN}✓ Migrations applied${NC}"
+echo -e "${GREEN}✓ Migrations applied to all databases${NC}"
 
 # =============================================================================
-# Step 5: Check for production database import
+# Step 5: Database data setup (dual database support)
 # =============================================================================
 echo ""
 echo -e "${YELLOW}[5/6] Database data setup...${NC}"
 
-USER_COUNT=$(docker exec legal-platform-postgres psql -U postgres -d legal_platform_dev -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d ' ')
+# Check if seed database has data
+SEED_USER_COUNT=$(docker exec legal-platform-postgres psql -U postgres -d legal_platform_seed -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d ' ')
 
-if [ "$USER_COUNT" -eq 0 ] 2>/dev/null; then
-    echo -e "${YELLOW}Database is empty.${NC}"
+# Seed the seed database if empty
+if [ "$SEED_USER_COUNT" -eq 0 ] 2>/dev/null || [ -z "$SEED_USER_COUNT" ]; then
+    echo "Populating seed database with test data..."
+    cd packages/database
+    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/legal_platform_seed" pnpm db:seed
+    cd "$PROJECT_ROOT"
+    echo -e "${GREEN}✓ Seed data loaded into legal_platform_seed${NC}"
+else
+    echo -e "${GREEN}✓ Seed database has $SEED_USER_COUNT users${NC}"
+fi
+
+# Check if user wants to import production data
+PROD_USER_COUNT=$(docker exec legal-platform-postgres psql -U postgres -d legal_platform_prod -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d ' ')
+
+if [ "$PROD_USER_COUNT" -eq 0 ] 2>/dev/null || [ -z "$PROD_USER_COUNT" ]; then
     echo ""
-    echo "Options:"
-    echo "  1) Import production backup (download from Render Dashboard first)"
-    echo "  2) Run seed data"
-    echo "  3) Skip (start with empty database)"
+    echo -e "${YELLOW}Production database (legal_platform_prod) is empty.${NC}"
+    echo "Would you like to import a production backup?"
     echo ""
-    read -p "Choose option [1/2/3]: " db_choice
+    read -p "Import production backup? [y/N]: " import_choice
 
-    case $db_choice in
-        1)
-            read -p "Enter path to backup file (.tar.gz): " backup_file
-            if [ -f "$backup_file" ]; then
-                echo "Extracting and importing backup..."
-                TEMP_DIR=$(mktemp -d)
-                tar -xzf "$backup_file" -C "$TEMP_DIR"
+    if [[ "$import_choice" =~ ^[Yy]$ ]]; then
+        read -p "Enter path to backup file (.tar.gz): " backup_file
+        if [ -f "$backup_file" ]; then
+            echo "Extracting and importing backup into legal_platform_prod..."
+            TEMP_DIR=$(mktemp -d)
+            tar -xzf "$backup_file" -C "$TEMP_DIR"
 
-                # Find the backup directory
-                BACKUP_DIR=$(find "$TEMP_DIR" -name "toc.dat" -exec dirname {} \; | head -1)
+            # Find the backup directory
+            BACKUP_DIR=$(find "$TEMP_DIR" -name "toc.dat" -exec dirname {} \; | head -1)
 
-                if [ -n "$BACKUP_DIR" ]; then
-                    # Install libpq if needed
-                    if ! command -v pg_restore &> /dev/null; then
-                        if command -v brew &> /dev/null; then
-                            echo "Installing PostgreSQL client tools..."
-                            brew install libpq 2>/dev/null || true
-                            brew link --force libpq 2>/dev/null || true
-                        fi
+            if [ -n "$BACKUP_DIR" ]; then
+                # Install libpq if needed
+                if ! command -v pg_restore &> /dev/null; then
+                    if command -v brew &> /dev/null; then
+                        echo "Installing PostgreSQL client tools..."
+                        brew install libpq 2>/dev/null || true
+                        brew link --force libpq 2>/dev/null || true
                     fi
-
-                    PG_RESTORE=$(command -v pg_restore || echo "/opt/homebrew/opt/libpq/bin/pg_restore")
-
-                    PGPASSWORD=postgres $PG_RESTORE \
-                        --host=localhost \
-                        --port=5432 \
-                        --username=postgres \
-                        --dbname=legal_platform_dev \
-                        --no-owner \
-                        --no-privileges \
-                        --clean \
-                        --if-exists \
-                        "$BACKUP_DIR" 2>&1 || true
-
-                    echo -e "${GREEN}✓ Production data imported${NC}"
-                else
-                    echo -e "${RED}Could not find backup data in archive${NC}"
                 fi
 
-                rm -rf "$TEMP_DIR"
+                PG_RESTORE=$(command -v pg_restore || echo "/opt/homebrew/opt/libpq/bin/pg_restore")
+
+                PGPASSWORD=postgres $PG_RESTORE \
+                    --host=localhost \
+                    --port=5432 \
+                    --username=postgres \
+                    --dbname=legal_platform_prod \
+                    --no-owner \
+                    --no-privileges \
+                    --clean \
+                    --if-exists \
+                    "$BACKUP_DIR" 2>&1 || true
+
+                echo -e "${GREEN}✓ Production data imported into legal_platform_prod${NC}"
             else
-                echo -e "${RED}Backup file not found: $backup_file${NC}"
+                echo -e "${RED}Could not find backup data in archive${NC}"
             fi
-            ;;
-        2)
-            echo "Running seed data..."
-            cd packages/database
-            pnpm db:seed
-            cd "$PROJECT_ROOT"
-            echo -e "${GREEN}✓ Seed data loaded${NC}"
-            ;;
-        3)
-            echo -e "${YELLOW}Skipping database data setup${NC}"
-            ;;
-    esac
+
+            rm -rf "$TEMP_DIR"
+        else
+            echo -e "${RED}Backup file not found: $backup_file${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Skipping production database import${NC}"
+        echo "  You can import later with: pnpm db:use:prod && pnpm db:restore <backup-file>"
+    fi
 else
-    echo -e "${GREEN}✓ Database has $USER_COUNT users${NC}"
+    echo -e "${GREEN}✓ Prod database has $PROD_USER_COUNT users${NC}"
 fi
+
+# Default to seed database for development
+echo ""
+echo "Setting default database to legal_platform_seed..."
+./scripts/switch-db.sh seed > /dev/null 2>&1 || true
 
 # =============================================================================
 # Step 6: Final checks
@@ -208,8 +228,8 @@ fi
 echo ""
 echo -e "${YELLOW}[6/6] Final verification...${NC}"
 
-# Verify database connection
-if docker exec legal-platform-postgres psql -U postgres -d legal_platform_dev -c "SELECT 1;" > /dev/null 2>&1; then
+# Verify database connection (use seed as default)
+if docker exec legal-platform-postgres psql -U postgres -d legal_platform_seed -c "SELECT 1;" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Database connection OK${NC}"
 else
     echo -e "${RED}✗ Database connection failed${NC}"
@@ -262,8 +282,13 @@ echo ""
 echo "Services will be available at:"
 echo "  Web:     http://localhost:3000"
 echo "  API:     http://localhost:4000/graphql"
-echo "  DB:      postgresql://postgres:postgres@localhost:5432/legal_platform_dev"
+echo "  DB:      postgresql://postgres:postgres@localhost:5432/legal_platform_seed"
 echo "  Redis:   redis://localhost:6379"
+echo ""
+echo "Database switching commands:"
+echo -e "  ${BLUE}pnpm db:use:seed${NC}  - Use seed database (clean test data) [default]"
+echo -e "  ${BLUE}pnpm db:use:prod${NC}  - Use prod database (imported production data)"
+echo -e "  ${BLUE}pnpm db:which${NC}     - Show current database"
 echo ""
 
 if [ ${#MISSING_VARS[@]} -gt 0 ]; then

@@ -18,7 +18,14 @@ import { triggerProcessing } from '../../workers/email-categorization.worker';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
 import { emailCleanerService } from '../../services/email-cleaner.service';
 import { classificationScoringService } from '../../services/classification-scoring';
-import { CaseStatus, EmailClassificationState, DocumentStatus } from '@prisma/client';
+import {
+  CaseStatus,
+  EmailClassificationState,
+  DocumentStatus,
+  SentEmailSource,
+} from '@prisma/client';
+import { GraphService } from '../../services/graph.service';
+import { graphConfig } from '../../config/graph.config';
 import Redis from 'ioredis';
 import { oneDriveService } from '../../services/onedrive.service';
 import { r2StorageService } from '../../services/r2-storage.service';
@@ -67,6 +74,7 @@ const emailSyncService = getEmailSyncService(prisma);
 const emailThreadService = getEmailThreadService(prisma);
 const emailSearchService = getEmailSearchService(prisma);
 const emailAttachmentService = getEmailAttachmentService(prisma);
+const graphService = new GraphService();
 
 // Redis for webhook service (lazy init)
 let redis: Redis | null = null;
@@ -1459,7 +1467,7 @@ export const emailResolvers = {
       }
 
       try {
-        // Build recipients
+        // Build recipients for graphService.sendMail()
         const toRecipients = to.map((address) => ({
           emailAddress: { address },
         }));
@@ -1468,58 +1476,50 @@ export const emailResolvers = {
           ? cc.map((address) => ({
               emailAddress: { address },
             }))
-          : [];
-
-        // Build attachments for MS Graph API
-        const graphAttachments = attachments
-          ? attachments.map((att) => ({
-              '@odata.type': '#microsoft.graph.fileAttachment',
-              name: att.name,
-              contentType: att.contentType,
-              contentBytes: att.contentBase64,
-            }))
           : undefined;
 
-        // Send via MS Graph API
-        const response = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-            'Content-Type': 'application/json',
+        // OPS-281: Use graphService.sendMail() which respects EMAIL_SEND_MODE
+        // In draft mode, this creates a draft in Outlook and returns the draftId
+        // In send mode, this sends immediately and returns empty object
+        const result = await graphService.sendMail(user.accessToken, {
+          subject,
+          body: {
+            contentType: isHtml ? 'HTML' : 'Text',
+            content: body,
           },
-          body: JSON.stringify({
-            message: {
-              subject,
-              body: {
-                contentType: isHtml ? 'HTML' : 'Text',
-                content: body,
-              },
-              toRecipients,
-              ccRecipients: ccRecipients.length > 0 ? ccRecipients : undefined,
-              attachments: graphAttachments,
-            },
-            saveToSentItems: true,
-          }),
+          toRecipients,
+          ccRecipients,
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[sendNewEmail] Graph API error:', errorText);
-          return {
-            success: false,
-            error: `Failed to send email: ${response.status}`,
-          };
+        // OPS-281: Track the draft/sent email for audit purposes
+        if (result.draftId) {
+          await prisma.sentEmailDraft.create({
+            data: {
+              outlookDraftId: result.draftId,
+              userId: user.id,
+              firmId: user.firmId,
+              recipientEmail: to[0], // Primary recipient
+              subject,
+              caseId: caseId || null,
+              source: SentEmailSource.NEW_EMAIL,
+            },
+          });
         }
 
+        const isDraftMode = graphConfig.emailSendMode === 'draft';
         return {
           success: true,
-          messageId: null, // sendMail doesn't return message ID
+          messageId: null,
+          outlookDraftId: result.draftId || null,
+          // Include mode info for frontend messaging
+          ...(isDraftMode && { savedToDrafts: true }),
         };
       } catch (error: any) {
         console.error('[sendNewEmail] Error:', error);
         return {
           success: false,
           error: error.message || 'Failed to send email',
+          outlookDraftId: null,
         };
       }
     },
@@ -1561,8 +1561,7 @@ export const emailResolvers = {
         });
       }
 
-      const { conversationId, to, cc, subject, body, isHtml, includeOriginal, attachments } =
-        args.input;
+      const { conversationId, to, cc, subject, body, isHtml, includeOriginal } = args.input;
 
       try {
         // Get the last email in the thread to reply to
@@ -1574,12 +1573,20 @@ export const emailResolvers = {
           orderBy: {
             receivedDateTime: 'desc',
           },
+          include: {
+            // OPS-281: Get case links to track caseId in SentEmailDraft
+            caseLinks: {
+              where: { isPrimary: true },
+              take: 1,
+            },
+          },
         });
 
         if (!lastEmail) {
           return {
             success: false,
             error: 'Thread not found',
+            outlookDraftId: null,
           };
         }
 
@@ -1596,7 +1603,7 @@ export const emailResolvers = {
           replyBody = `${body}\n\n---\nÎn ${originalDate}, ${originalFrom} a scris:\n\n${lastEmail.bodyContent}`;
         }
 
-        // Build recipients
+        // Build recipients for graphService.sendMail()
         const toRecipients = to.map((address) => ({
           emailAddress: { address },
         }));
@@ -1605,60 +1612,51 @@ export const emailResolvers = {
           ? cc.map((address) => ({
               emailAddress: { address },
             }))
-          : [];
-
-        // Build attachments for MS Graph API
-        const graphAttachments = attachments
-          ? attachments.map((att) => ({
-              '@odata.type': '#microsoft.graph.fileAttachment',
-              name: att.name,
-              contentType: att.contentType,
-              contentBytes: att.contentBase64,
-            }))
           : undefined;
 
-        // Send via MS Graph API
-        const response = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-            'Content-Type': 'application/json',
+        // OPS-281: Use graphService.sendMail() which respects EMAIL_SEND_MODE
+        // In draft mode, this creates a draft in Outlook and returns the draftId
+        // In send mode, this sends immediately and returns empty object
+        const result = await graphService.sendMail(user.accessToken, {
+          subject,
+          body: {
+            contentType: isHtml ? 'HTML' : 'Text',
+            content: replyBody,
           },
-          body: JSON.stringify({
-            message: {
-              subject,
-              body: {
-                contentType: isHtml ? 'HTML' : 'Text',
-                content: replyBody,
-              },
-              toRecipients,
-              ccRecipients: ccRecipients.length > 0 ? ccRecipients : undefined,
-              attachments: graphAttachments,
-              // Link to original conversation
-              conversationId: lastEmail.conversationId || conversationId,
-            },
-            saveToSentItems: true,
-          }),
+          toRecipients,
+          ccRecipients,
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[replyToEmail] Graph API error:', errorText);
-          return {
-            success: false,
-            error: `Failed to send reply: ${response.status}`,
-          };
+        // OPS-281: Track the draft/sent email for audit purposes
+        if (result.draftId) {
+          const primaryCaseId = lastEmail.caseLinks[0]?.caseId || null;
+          await prisma.sentEmailDraft.create({
+            data: {
+              outlookDraftId: result.draftId,
+              userId: user.id,
+              firmId: user.firmId,
+              recipientEmail: to[0], // Primary recipient
+              subject,
+              caseId: primaryCaseId,
+              source: SentEmailSource.REPLY,
+            },
+          });
         }
 
+        const isDraftMode = graphConfig.emailSendMode === 'draft';
         return {
           success: true,
           messageId: null,
+          outlookDraftId: result.draftId || null,
+          // Include mode info for frontend messaging
+          ...(isDraftMode && { savedToDrafts: true }),
         };
       } catch (error: any) {
         console.error('[replyToEmail] Error:', error);
         return {
           success: false,
           error: error.message || 'Failed to send reply',
+          outlookDraftId: null,
         };
       }
     },

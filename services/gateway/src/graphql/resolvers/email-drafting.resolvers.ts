@@ -10,7 +10,10 @@
 import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import { attachmentSuggestionService } from '../../services/attachment-suggestion.service';
+import { GraphService } from '../../services/graph.service';
 import DataLoader from 'dataloader';
+
+const graphService = new GraphService();
 
 // ============================================================================
 // Types
@@ -610,6 +613,10 @@ export const emailDraftingResolvers = {
 
     /**
      * Send the draft email via Graph API
+     *
+     * OPS-282: Updated to use graphService.sendMail() which respects
+     * EMAIL_SEND_MODE env var (draft mode saves to Outlook drafts folder)
+     * and stores the outlookDraftId for audit trail.
      */
     sendDraft: async (_: any, args: { draftId: string }, context: Context) => {
       const { user } = context;
@@ -637,15 +644,6 @@ export const emailDraftingResolvers = {
         });
       }
 
-      // Get selected attachments
-      const selectedAttachments = await prisma.attachmentSuggestion.findMany({
-        where: {
-          draftId: args.draftId,
-          isSelected: true,
-        },
-        include: { document: true },
-      });
-
       // Build Graph API request
       const email = draft.email as any;
       const replyToAddress = email.from?.address;
@@ -656,45 +654,27 @@ export const emailDraftingResolvers = {
         });
       }
 
-      // Send via Graph API
-      const graphResponse = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-          'Content-Type': 'application/json',
+      // Send via graphService (respects EMAIL_SEND_MODE for draft vs send)
+      const result = await graphService.sendMail(user.accessToken, {
+        subject: draft.subject,
+        body: {
+          contentType: draft.htmlBody ? 'HTML' : 'Text',
+          content: draft.htmlBody || draft.body,
         },
-        body: JSON.stringify({
-          message: {
-            subject: draft.subject,
-            body: {
-              contentType: draft.htmlBody ? 'HTML' : 'Text',
-              content: draft.htmlBody || draft.body,
-            },
-            toRecipients: [
-              {
-                emailAddress: { address: replyToAddress },
-              },
-            ],
-            // Include any attachments would go here
+        toRecipients: [
+          {
+            emailAddress: { address: replyToAddress },
           },
-          saveToSentItems: true,
-        }),
+        ],
       });
 
-      if (!graphResponse.ok) {
-        const error = await graphResponse.text();
-        console.error('Graph API error:', error);
-        throw new GraphQLError('Failed to send email', {
-          extensions: { code: 'GRAPH_API_ERROR' },
-        });
-      }
-
-      // Update draft status
+      // Update draft status and store Outlook draft ID if returned
       await prisma.emailDraft.update({
         where: { id: draft.id },
         data: {
           status: 'Sent',
           sentAt: new Date(),
+          ...(result.draftId && { outlookDraftId: result.draftId }),
         },
       });
 

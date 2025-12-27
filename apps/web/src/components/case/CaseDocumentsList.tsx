@@ -40,7 +40,7 @@ import {
 import { useDocumentPreview } from '../../hooks/useDocumentPreview';
 import { DocumentBrowserModal } from './DocumentBrowserModal';
 import { DocumentUploadModal } from './DocumentUploadModal';
-import { DocumentGrid } from '../documents/DocumentGrid';
+import { DocumentCard } from '../documents/DocumentCard';
 import { DocumentPreviewModal, type PreviewableDocument } from '../preview/DocumentPreviewModal';
 import { AssignToMapaModal, type DocumentInfo } from '../mapa/AssignToMapaModal';
 import { SubmitForReviewModal } from '../documents/SubmitForReviewModal';
@@ -53,6 +53,8 @@ import { LinkToCaseDialog } from '../documents/LinkToCaseDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePreviewActions } from '../../hooks/usePreviewActions';
 import { useCaseFolderTree } from '../../hooks/useDocumentFolders';
+import { useTimePeriodGroups } from '../../hooks/useTimePeriodGroups';
+import { TimePeriodSection } from '../ui/TimePeriodSection';
 
 export interface CaseDocumentsListProps {
   caseId: string;
@@ -473,6 +475,12 @@ export function CaseDocumentsList({
   // OPS-228: Folder tree for move dialog
   const { folderTree } = useCaseFolderTree(caseId);
 
+  // OPS-269: Group grid documents by time period
+  const gridPeriods = useTimePeriodGroups(gridDocuments, (doc) => doc.linkedAt);
+
+  // OPS-269: Group list documents by time period
+  const listPeriods = useTimePeriodGroups(documents, (doc) => doc.linkedAt);
+
   // Handle unlink
   const handleUnlink = useCallback(async () => {
     if (!unlinkConfirm) return;
@@ -796,21 +804,145 @@ export function CaseDocumentsList({
 
       {/* Content */}
       <div className="p-6">
-        {/* OPS-111: Grid View - OPS-163: Removed download actions, now in preview modal */}
+        {/* OPS-111: Grid View - OPS-269: Time period grouping */}
         {viewMode === 'grid' ? (
-          <DocumentGrid
-            documents={gridDocuments}
-            loading={gridLoading}
-            totalCount={gridTotalCount}
-            hasMore={gridHasMore}
-            onLoadMore={gridLoadMore}
-            onPreview={handleGridPreview}
-            onAddToMapa={handleGridAddToMapa}
-            sortBy={sortBy}
-            sortDirection={sortDirection}
-            onSortChange={handleSortChange}
-          />
-        ) : /* List View (original) */
+          gridLoading && gridDocuments.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            </div>
+          ) : gridDocuments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+              <svg
+                className="w-16 h-16 mb-4 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <p className="font-medium mb-1">Niciun document</p>
+              <p className="text-sm mb-4">Încărcați sau importați documente pentru acest dosar</p>
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+                Încarcă Document
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Sort dropdown */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">{gridTotalCount}</span>{' '}
+                  {gridTotalCount === 1 ? 'document' : 'documente'}
+                </p>
+                <div className="relative">
+                  <select
+                    value={`${sortBy}-${sortDirection}`}
+                    onChange={(e) => {
+                      const [field, dir] = e.target.value.split('-') as [
+                        DocumentSortField,
+                        SortDirection,
+                      ];
+                      handleSortChange(field, dir);
+                    }}
+                    className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <option value="LINKED_AT-DESC">Cele mai recente</option>
+                    <option value="LINKED_AT-ASC">Cele mai vechi</option>
+                    <option value="FILE_NAME-ASC">Nume (A-Z)</option>
+                    <option value="FILE_NAME-DESC">Nume (Z-A)</option>
+                    <option value="FILE_SIZE-DESC">Dimensiune (mare)</option>
+                    <option value="FILE_SIZE-ASC">Dimensiune (mic)</option>
+                  </select>
+                  <svg
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Time-grouped document sections */}
+              {gridPeriods.map((period) => (
+                <TimePeriodSection
+                  key={period.key}
+                  periodKey={period.key}
+                  label={period.label}
+                  count={period.items.length}
+                  defaultOpen={period.defaultOpen}
+                  storageKey={`case-docs-grid-${caseId}`}
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {period.items.map((doc) => (
+                      <DocumentCard
+                        key={doc.id}
+                        document={doc}
+                        onPreview={() => handleGridPreview(doc)}
+                        onAddToMapa={() => handleGridAddToMapa(doc)}
+                      />
+                    ))}
+                  </div>
+                </TimePeriodSection>
+              ))}
+
+              {/* Load more button */}
+              {gridHasMore && (
+                <div className="flex justify-center pt-4">
+                  {gridLoading ? (
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      <span>Se încarcă...</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={gridLoadMore}
+                      className="px-6 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      Încarcă mai multe
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        ) : /* OPS-269: List View with time period grouping */
         loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
@@ -868,31 +1000,45 @@ export function CaseDocumentsList({
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {documents.map((docContext) => (
-              <ListDocumentCard
-                key={docContext.document.id}
-                docContext={docContext}
-                userRole={userRole}
-                onPreview={() => handleListPreview(docContext)}
-                onDelete={() =>
-                  setDeleteConfirm({
-                    docId: docContext.document.id,
-                    docName: docContext.document.fileName,
-                  })
-                }
-                onAddToMapa={() =>
-                  setMapaAssignDoc({
-                    id: docContext.id, // CaseDocument ID (join table), not Document ID
-                    fileName: docContext.document.fileName,
-                    fileType: docContext.document.fileType,
-                    fileSize: docContext.document.fileSize,
-                  })
-                }
-                onOpenInWord={() => handleListOpenInWord(docContext)}
-                onRename={() => handleListRename(docContext)}
-                onLinkToCase={() => handleListLinkToCase(docContext)}
-              />
+          <div className="space-y-4">
+            {/* Time-grouped list sections */}
+            {listPeriods.map((period) => (
+              <TimePeriodSection
+                key={period.key}
+                periodKey={period.key}
+                label={period.label}
+                count={period.items.length}
+                defaultOpen={period.defaultOpen}
+                storageKey={`case-docs-list-${caseId}`}
+              >
+                <div className="space-y-3">
+                  {period.items.map((docContext) => (
+                    <ListDocumentCard
+                      key={docContext.document.id}
+                      docContext={docContext}
+                      userRole={userRole}
+                      onPreview={() => handleListPreview(docContext)}
+                      onDelete={() =>
+                        setDeleteConfirm({
+                          docId: docContext.document.id,
+                          docName: docContext.document.fileName,
+                        })
+                      }
+                      onAddToMapa={() =>
+                        setMapaAssignDoc({
+                          id: docContext.id, // CaseDocument ID (join table), not Document ID
+                          fileName: docContext.document.fileName,
+                          fileType: docContext.document.fileType,
+                          fileSize: docContext.document.fileSize,
+                        })
+                      }
+                      onOpenInWord={() => handleListOpenInWord(docContext)}
+                      onRename={() => handleListRename(docContext)}
+                      onLinkToCase={() => handleListLinkToCase(docContext)}
+                    />
+                  ))}
+                </div>
+              </TimePeriodSection>
             ))}
           </div>
         )}

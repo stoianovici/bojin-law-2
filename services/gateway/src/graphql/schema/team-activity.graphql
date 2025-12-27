@@ -1,0 +1,55 @@
+# Team Activity Schema
+# OPS-272: Team Activity View Mode - Query for completed tasks with time entries
+
+"""
+Input filters for team activity query
+"""
+input TeamActivityFilters {
+  """
+  Filter by specific case (optional)
+  """
+  caseId: ID
+
+  """
+  Filter by specific team members (optional, if empty returns all)
+  """
+  userIds: [ID!]
+
+  """
+  Start of the time period (required)
+  """
+  periodStart: DateTime!
+
+  """
+  End of the time period (required)
+  """
+  periodEnd: DateTime!
+}
+
+"""
+A single activity entry representing work done on a task
+"""
+type ActivityEntry {
+  id: ID!
+  task: Task!
+  user: User!
+  hoursLogged: Float!
+  completedAt: DateTime!
+}
+
+"""
+Result of team activity query with summary stats
+"""
+type TeamActivityResult {
+  entries: [ActivityEntry!]!
+  totalTasks: Int!
+  totalHours: Float!
+}
+
+extend type Query {
+  """
+  Get team activity (completed tasks with hours) for a time period.
+  Used for partner oversight and timesheet generation.
+  """
+  teamActivity(filters: TeamActivityFilters!): TeamActivityResult!
+}

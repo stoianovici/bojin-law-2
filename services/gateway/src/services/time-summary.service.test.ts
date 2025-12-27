@@ -93,7 +93,7 @@ describe('TimeSummaryService', () => {
 
       const result = await getWeeklySummary('user-123', weekStart);
 
-      expect(result.trend).toBe('up');
+      expect(result.trend).toBe('UP');
       expect(result.totalHours).toBe(10.0);
     });
 
@@ -109,7 +109,7 @@ describe('TimeSummaryService', () => {
 
       const result = await getWeeklySummary('user-123', weekStart);
 
-      expect(result.trend).toBe('down');
+      expect(result.trend).toBe('DOWN');
     });
 
     it('should calculate trend as STABLE when within 5% range', async () => {
@@ -124,7 +124,7 @@ describe('TimeSummaryService', () => {
 
       const result = await getWeeklySummary('user-123', weekStart);
 
-      expect(result.trend).toBe('stable');
+      expect(result.trend).toBe('STABLE');
     });
 
     it('should group entries by day of week', async () => {
@@ -183,7 +183,7 @@ describe('TimeSummaryService', () => {
         nonBillableHours: 0,
         billableAmount: 0,
         entriesCount: 0,
-        trend: 'stable',
+        trend: 'STABLE',
       });
       expect(result.byDay).toHaveLength(7);
     });

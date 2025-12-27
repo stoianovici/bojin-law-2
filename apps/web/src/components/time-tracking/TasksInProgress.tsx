@@ -1,16 +1,38 @@
 /**
  * TasksInProgress Component
  * Displays active tasks with quick time tracking actions
+ * Fetches real data from GraphQL API
  */
 
 'use client';
 
 import React from 'react';
 import { useTimeTrackingStore } from '../../stores/time-tracking.store';
-import type { TimeTaskType } from '@legal-platform/types';
+import { useMyTasks } from '../../hooks/useTasks';
+import type { TimeTaskType, Task, TaskType } from '@legal-platform/types';
 
-// Tasks should be fetched from API - empty array for clean state
-const mockTasksInProgress: Array<{
+// Map TaskType to TimeTaskType for time tracking
+function mapTaskTypeToTimeTaskType(taskType: TaskType): TimeTaskType {
+  const mapping: Record<TaskType, TimeTaskType> = {
+    Research: 'Research',
+    DocumentCreation: 'Drafting',
+    DocumentRetrieval: 'Administrative',
+    Meeting: 'ClientMeeting',
+    CourtDate: 'CourtAppearance',
+    BusinessTrip: 'Other',
+  };
+  return mapping[taskType] || 'Other';
+}
+
+// Map priority from API format to component format
+function mapPriority(priority: string): 'high' | 'medium' | 'low' {
+  const normalized = priority.toLowerCase();
+  if (normalized === 'urgent' || normalized === 'high') return 'high';
+  if (normalized === 'medium') return 'medium';
+  return 'low';
+}
+
+interface TaskInProgress {
   id: string;
   title: string;
   caseId: string;
@@ -19,7 +41,7 @@ const mockTasksInProgress: Array<{
   dueDate: Date;
   assignee: string;
   suggestedTimeTaskType: TimeTaskType;
-}> = [];
+}
 
 const taskTypeLabels: Record<TimeTaskType, string> = {
   Research: 'Cercetare',
@@ -55,6 +77,25 @@ function formatRelativeDate(date: Date): string {
 export function TasksInProgress() {
   const addTimeEntry = useTimeTrackingStore((state) => state.addTimeEntry);
 
+  // Fetch in-progress tasks from API
+  const { tasks: apiTasks, loading, error } = useMyTasks({ statuses: ['InProgress'] });
+
+  // Transform API tasks to component format
+  const tasksInProgress: TaskInProgress[] = React.useMemo(() => {
+    return apiTasks.map((task: Task) => ({
+      id: task.id,
+      title: task.title,
+      caseId: task.caseId,
+      caseName: task.case?.title || 'Necunoscut',
+      priority: mapPriority(task.priority),
+      dueDate: new Date(task.dueDate),
+      assignee: task.assignee
+        ? `${task.assignee.firstName} ${task.assignee.lastName}`
+        : 'Neasignat',
+      suggestedTimeTaskType: mapTaskTypeToTimeTaskType(task.type),
+    }));
+  }, [apiTasks]);
+
   const [showQuickEntry, setShowQuickEntry] = React.useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = React.useState(60); // Default 1 hour
   const pickerRef = React.useRef<HTMLDivElement>(null);
@@ -82,7 +123,7 @@ export function TasksInProgress() {
     }
   }, [showQuickEntry, selectedDuration, durationOptions]);
 
-  const handleCompleteTask = (task: (typeof mockTasksInProgress)[0], durationMinutes: number) => {
+  const handleCompleteTask = (task: TaskInProgress, durationMinutes: number) => {
     // TODO: Get userId and userName from auth context
     addTimeEntry({
       userId: '', // Should come from auth context
@@ -110,12 +151,35 @@ export function TasksInProgress() {
 
       {/* Tasks List */}
       <div className="divide-y divide-gray-200">
-        {mockTasksInProgress.length === 0 ? (
+        {/* Loading state */}
+        {loading && (
+          <div className="px-6 py-8 text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-gray-500 mt-2">Se încarcă...</p>
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div className="px-6 py-4">
+            <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
+              Eroare la încărcarea sarcinilor: {error.message}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && tasksInProgress.length === 0 ? (
           <div className="px-6 py-8 text-center">
             <p className="text-gray-500">Nu există sarcini în lucru</p>
           </div>
-        ) : (
-          mockTasksInProgress.map((task) => (
+        ) : null}
+
+        {/* Tasks */}
+        {!loading &&
+          !error &&
+          tasksInProgress.length > 0 &&
+          tasksInProgress.map((task) => (
             <div key={task.id} className="px-6 py-4 hover:bg-gray-50">
               {/* Task Info */}
               <div className="mb-3">
@@ -263,8 +327,7 @@ export function TasksInProgress() {
                 </div>
               )}
             </div>
-          ))
-        )}
+          ))}
       </div>
     </div>
   );

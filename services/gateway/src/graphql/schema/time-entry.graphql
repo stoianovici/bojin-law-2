@@ -60,6 +60,38 @@ enum TrendIndicator {
   STABLE
 }
 
+# ============================================================================
+# OPS-273: Timesheet Mode Types
+# ============================================================================
+
+"""
+Result type for timesheet query with case context and totals
+"""
+type TimesheetResult {
+  entries: [TimesheetEntry!]!
+  case: Case!
+  totalHours: Float!
+  totalBillableHours: Float!
+  totalCost: Float! @requiresFinancialAccess
+  totalBillableCost: Float! @requiresFinancialAccess
+}
+
+"""
+Individual timesheet entry (simplified TimeEntry for timesheet UI)
+"""
+type TimesheetEntry {
+  id: ID!
+  date: DateTime!
+  description: String!
+  narrative: String
+  hours: Float!
+  hourlyRate: Float! @requiresFinancialAccess
+  amount: Float! @requiresFinancialAccess
+  billable: Boolean!
+  user: User!
+  task: Task
+}
+
 """
 Task type comparison for estimate vs actual analysis
 """
@@ -153,6 +185,17 @@ extend type Query {
   Query time entries with filters
   """
   timeEntries(filters: TimeEntryFilterInput, limit: Int, offset: Int): [TimeEntry!]!
+
+  """
+  OPS-273: Get timesheet entries for a case within a date range
+  Returns time entries with case context for timesheet mode UI
+  """
+  timesheetEntries(
+    caseId: ID!
+    startDate: DateTime!
+    endDate: DateTime!
+    teamMemberIds: [ID!]
+  ): TimesheetResult!
 
   """
   Get all time entries for a specific task

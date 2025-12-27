@@ -12,7 +12,6 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
-  Send,
   CheckCircle,
   Save,
   Paperclip,
@@ -710,17 +709,17 @@ export function ComposeInterface() {
               {sendStatus === 'success' ? (
                 <>
                   <CheckCircle className="h-4 w-4" />
-                  Trimis!
+                  Salvat în Ciorne!
                 </>
               ) : isSending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Se trimite...
+                  Se salvează...
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4" />
-                  Trimite
+                  <Save className="h-4 w-4" />
+                  Salvează în Ciorne
                 </>
               )}
             </button>

@@ -138,18 +138,33 @@ export class TimeEntryService {
     input: UpdateTimeEntryInput,
     userId: string
   ): Promise<TimeEntry> {
-    // Fetch existing entry
-    const existing = await this.prisma.timeEntry.findUnique({
-      where: { id },
-      select: { id: true, userId: true, firmId: true },
-    });
+    // Fetch existing entry AND the updating user's role for authorization
+    const [existing, updatingUser] = await Promise.all([
+      this.prisma.timeEntry.findUnique({
+        where: { id },
+        select: { id: true, userId: true, firmId: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true, firmId: true },
+      }),
+    ]);
 
     if (!existing) {
       throw new Error('Time entry not found');
     }
 
-    // Only owner can update their own entries
-    if (existing.userId !== userId) {
+    if (!updatingUser) {
+      throw new Error('User not found');
+    }
+
+    // Partners and BusinessOwners can update any entry in their firm (for timesheet management)
+    // Regular users can only update their own entries
+    const isAdminRole = updatingUser.role === 'Partner' || updatingUser.role === 'BusinessOwner';
+    const isSameFirm = existing.firmId === updatingUser.firmId;
+    const isOwner = existing.userId === userId;
+
+    if (!isOwner && !(isAdminRole && isSameFirm)) {
       throw new Error('Unauthorized: Cannot update another user time entry');
     }
 

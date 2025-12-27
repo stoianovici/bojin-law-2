@@ -258,14 +258,17 @@ export class GraphService {
   }
 
   /**
-   * Send email (delegated)
+   * Send email or create draft (delegated)
    *
-   * Sends an email on behalf of the authenticated user.
-   * Requires Mail.Send delegated permission.
+   * Behavior controlled by EMAIL_SEND_MODE environment variable:
+   * - 'draft' (default): Creates message in user's Drafts folder, returns draft ID
+   * - 'send': Sends email immediately via sendMail API
+   *
+   * Requires Mail.Send or Mail.ReadWrite delegated permission.
    *
    * @param accessToken - User's access token
-   * @param message - Message to send
-   * @returns void
+   * @param message - Message to send/draft
+   * @returns Object with draftId when in draft mode, empty object when sent
    * @throws Error if Graph API call fails
    */
   async sendMail(
@@ -281,17 +284,36 @@ export class GraphService {
           address: string;
         };
       }>;
+      ccRecipients?: Array<{
+        emailAddress: {
+          address: string;
+        };
+      }>;
+      bccRecipients?: Array<{
+        emailAddress: {
+          address: string;
+        };
+      }>;
     }
-  ): Promise<void> {
+  ): Promise<{ draftId?: string }> {
     return retryWithBackoff(
       async () => {
         try {
           const client = this.getAuthenticatedClient(accessToken);
 
-          await client.api(graphEndpoints.sendMail).post({
-            message,
-            saveToSentItems: true,
-          });
+          // OPS-280: Check email send mode
+          if (graphConfig.emailSendMode === 'draft') {
+            // Create draft in user's Drafts folder
+            const response = await client.api(graphEndpoints.createDraft).post(message);
+            return { draftId: response.id };
+          } else {
+            // Original behavior: send immediately
+            await client.api(graphEndpoints.sendMail).post({
+              message,
+              saveToSentItems: true,
+            });
+            return {};
+          }
         } catch (error: any) {
           const parsedError = parseGraphError(error);
           logGraphError(parsedError);

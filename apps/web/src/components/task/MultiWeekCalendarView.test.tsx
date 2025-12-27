@@ -94,7 +94,7 @@ describe('MultiWeekCalendarView', () => {
       expect(screen.getByText(/Afișare 4 săptămâni/i)).toBeInTheDocument();
     });
 
-    it('displays empty state message "Fără sarcini" for days without tasks', () => {
+    it('renders empty day columns without tasks', () => {
       render(
         <MultiWeekCalendarView
           tasks={[]}
@@ -104,8 +104,9 @@ describe('MultiWeekCalendarView', () => {
         />
       );
 
-      const emptyMessages = screen.getAllByText(/Fără sarcini/i);
-      expect(emptyMessages.length).toBeGreaterThan(0);
+      // When no tasks, the week header shows "(0 sarcini)" and day columns are empty
+      // Check that the week header displays the zero count
+      expect(screen.getByText(/\(0 sarcini\)/i)).toBeInTheDocument();
     });
   });
 

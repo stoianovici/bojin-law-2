@@ -26,6 +26,7 @@ import {
   Clock,
   Users,
   Briefcase,
+  UserCog,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -41,6 +42,7 @@ const iconMap: Record<string, LucideIcon> = {
   tasks: CheckSquare,
   communications: Mail,
   'time-tracking': Clock,
+  'team-activity': UserCog,
   'user-management': Users,
 };
 
@@ -111,6 +113,14 @@ const navigationItems: NavigationItem[] = [
     href: '/time-tracking',
     section: 'time-tracking',
     roles: ['Partner', 'Associate', 'Paralegal'],
+  },
+  {
+    id: 'team-activity',
+    label: 'Activitate Echipă',
+    icon: 'team-activity',
+    href: '/activitate-echipa',
+    section: 'team-activity',
+    roles: ['Partner', 'BusinessOwner'], // OPS-271: Partners and BusinessOwners only
   },
 ];
 

@@ -247,7 +247,7 @@ export class TimeSummaryService {
       0
     );
 
-    // Calculate trend
+    // Calculate trend (values must match GraphQL TrendIndicator enum: up, down, stable)
     if (previousWeekHours === 0) {
       // No previous data, consider stable
       return currentWeekHours > 0 ? 'up' : 'stable';

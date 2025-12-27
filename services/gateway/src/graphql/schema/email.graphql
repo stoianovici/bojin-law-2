@@ -891,6 +891,10 @@ type SendEmailResult {
   success: Boolean!
   messageId: String
   error: String
+  """OPS-281: Outlook draft message ID when EMAIL_SEND_MODE=draft"""
+  outlookDraftId: String
+  """True when email was saved to Drafts folder instead of sent"""
+  savedToDrafts: Boolean
 }
 
 # ============================================================================

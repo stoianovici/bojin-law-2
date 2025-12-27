@@ -57,7 +57,11 @@
     "smoke-test": "scripts/render/smoke-test.sh",
     "smoke-test:staging": "scripts/render/smoke-test.sh --staging",
     "setup": "scripts/setup-local-dev.sh",
-    "setup:local": "scripts/setup-local-dev.sh"
+    "setup:local": "scripts/setup-local-dev.sh",
+    "db:use:seed": "./scripts/switch-db.sh seed",
+    "db:use:prod": "./scripts/switch-db.sh prod",
+    "db:use:dev": "./scripts/switch-db.sh dev",
+    "db:which": "./scripts/switch-db.sh"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

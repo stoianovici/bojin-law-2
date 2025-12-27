@@ -241,6 +241,157 @@ export const timeEntryResolvers = {
 
       return await estimateComparisonService.getTaskTypeAccuracy(user.id, args.taskType);
     },
+
+    /**
+     * OPS-273: Get timesheet entries for a case within a date range
+     * Returns time entries with case context for timesheet mode UI
+     */
+    timesheetEntries: async (
+      _: any,
+      args: {
+        caseId: string;
+        startDate: string;
+        endDate: string;
+        teamMemberIds?: string[];
+      },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only Partners and BusinessOwners can view team timesheets
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Not authorized to view team timesheets', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Fetch the case first to verify access and get billing info
+      const caseData = await prisma.case.findFirst({
+        where: {
+          id: args.caseId,
+          firmId: user.firmId,
+        },
+        include: {
+          client: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!caseData) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Build where clause for time entries
+      const whereClause: any = {
+        caseId: args.caseId,
+        firmId: user.firmId,
+        date: {
+          gte: new Date(args.startDate),
+          lte: new Date(args.endDate),
+        },
+      };
+
+      // Filter by team members if specified
+      if (args.teamMemberIds && args.teamMemberIds.length > 0) {
+        whereClause.userId = {
+          in: args.teamMemberIds,
+        };
+      }
+
+      // Fetch time entries
+      const entries = await prisma.timeEntry.findMany({
+        where: whereClause,
+        orderBy: {
+          date: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          task: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      });
+
+      // Calculate totals
+      let totalHours = 0;
+      let totalBillableHours = 0;
+      let totalCost = 0;
+      let totalBillableCost = 0;
+
+      const mappedEntries = entries.map((entry) => {
+        const hours = parseFloat(entry.hours.toString());
+        const hourlyRate = parseFloat(entry.hourlyRate.toString());
+        const amount = hours * hourlyRate;
+
+        totalHours += hours;
+        totalCost += amount;
+
+        if (entry.billable) {
+          totalBillableHours += hours;
+          totalBillableCost += amount;
+        }
+
+        return {
+          id: entry.id,
+          date: entry.date,
+          description: entry.description,
+          narrative: entry.narrative,
+          hours,
+          hourlyRate,
+          amount,
+          billable: entry.billable,
+          user: entry.user,
+          task: entry.task,
+        };
+      });
+
+      // Extract partner hourly rate from customRates if available
+      // customRates: { partnerRate?: number, associateRate?: number, paralegalRate?: number }
+      let defaultHourlyRate: number | null = null;
+      if (caseData.customRates && typeof caseData.customRates === 'object') {
+        const rates = caseData.customRates as { partnerRate?: number; associateRate?: number };
+        // Use partner rate as the default display rate
+        defaultHourlyRate = rates.partnerRate ?? rates.associateRate ?? null;
+      }
+
+      return {
+        entries: mappedEntries,
+        case: {
+          id: caseData.id,
+          title: caseData.title,
+          caseNumber: caseData.caseNumber,
+          billingType: caseData.billingType,
+          hourlyRate: defaultHourlyRate,
+          client: caseData.client,
+        },
+        totalHours,
+        totalBillableHours,
+        totalCost,
+        totalBillableCost,
+      };
+    },
   },
 
   Mutation: {
