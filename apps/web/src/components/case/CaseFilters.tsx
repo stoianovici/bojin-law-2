@@ -11,23 +11,19 @@ import type { CaseStatus } from '@legal-platform/types';
 import { useCaseFiltersStore } from '../../stores/caseFiltersStore';
 
 export function CaseFilters() {
-  const { status, assignedToMe, setStatus, setAssignedToMe, clearFilters } = useCaseFiltersStore();
+  const { status, setStatus, clearFilters } = useCaseFiltersStore();
 
   const handleStatusChange = (newStatus: string) => {
     const statusValue = newStatus === 'All' ? undefined : (newStatus as CaseStatus);
     setStatus(statusValue);
   };
 
-  const handleAssignedToMeChange = (checked: boolean) => {
-    setAssignedToMe(checked);
-  };
-
-  const hasActiveFilters = status !== undefined || assignedToMe;
+  const hasActiveFilters = status !== undefined;
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+    <div className="flex gap-4 items-end bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
       {/* Status Filter */}
-      <div className="flex-1 min-w-[200px]">
+      <div className="w-48">
         <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
           Status
         </label>
@@ -44,20 +40,6 @@ export function CaseFilters() {
           <option value="Closed">Închis</option>
           <option value="Archived">Arhivat</option>
         </select>
-      </div>
-
-      {/* Assigned to Me Toggle */}
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="assigned-to-me"
-          checked={assignedToMe}
-          onChange={(e) => handleAssignedToMeChange(e.target.checked)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-        <label htmlFor="assigned-to-me" className="text-sm font-medium text-gray-700">
-          Atribuite mie
-        </label>
       </div>
 
       {/* Clear Filters Button */}
