@@ -220,7 +220,7 @@ export interface WeeklySummary {
   totalHours: number;
   billableHours: number;
   nonBillableHours: number;
-  billableAmount: number; // In cents
+  billableAmount: number | null; // In cents (null for non-financial users)
   entriesCount: number;
   byDay: DailySummary[];
   trend: TrendIndicator;

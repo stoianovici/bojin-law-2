@@ -226,7 +226,7 @@ export interface WeeklySummary {
   totalHours: number;
   billableHours: number;
   nonBillableHours: number;
-  billableAmount: number;
+  billableAmount: number | null;
   entriesCount: number;
   byDay: DailySummary[];
   trend: 'UP' | 'DOWN' | 'STABLE';

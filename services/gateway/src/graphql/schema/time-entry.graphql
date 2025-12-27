@@ -34,7 +34,7 @@ type WeeklySummary {
   totalHours: Float!
   billableHours: Float!
   nonBillableHours: Float!
-  billableAmount: Float! @requiresFinancialAccess
+  billableAmount: Float @requiresFinancialAccess
   entriesCount: Int!
   byDay: [DailySummary!]!
   trend: TrendIndicator!
