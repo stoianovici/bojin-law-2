@@ -274,6 +274,8 @@ const resolvers = {
   Email: emailResolvers.Email,
   EmailThread: emailResolvers.EmailThread,
   EmailAttachment: emailResolvers.EmailAttachment,
+  // OPS-292: Outlook folder field resolvers
+  OutlookFolder: emailResolvers.OutlookFolder,
   // Communication Hub resolvers (Story 5.5)
   TimelineEntry: communicationHubResolvers.TimelineEntry,
   CommunicationTemplate: communicationHubResolvers.CommunicationTemplate,
