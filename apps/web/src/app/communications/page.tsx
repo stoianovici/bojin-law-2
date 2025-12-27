@@ -36,7 +36,7 @@ import { useCommunicationStore } from '../../stores/communication.store';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSetAIContext } from '../../contexts/AIAssistantContext';
 import { useThreadAttachments, findAttachmentById } from '../../hooks/useThreadAttachments';
-import { useLazyQuery } from '@apollo/client/react';
+import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 
 // ============================================================================
@@ -63,6 +63,13 @@ const GET_ATTACHMENT_CONTENT = gql`
       contentType
       size
     }
+  }
+`;
+
+// OPS-291: Mutation to backfill folder info for existing emails
+const BACKFILL_EMAIL_FOLDER_INFO = gql`
+  mutation BackfillEmailFolderInfo {
+    backfillEmailFolderInfo
   }
 `;
 
@@ -190,6 +197,14 @@ export default function CommunicationsPage() {
   // OPS-293: Fetch emails grouped by Outlook folder
   const { folders: outlookFolders, refetch: refetchFolders } = useEmailsByFolder();
 
+  // OPS-291: Backfill folder info mutation
+  const [backfillFolderInfo, { loading: backfillLoading }] = useMutation(
+    BACKFILL_EMAIL_FOLDER_INFO
+  );
+  const [backfillResult, setBackfillResult] = useState<{ count: number; error?: string } | null>(
+    null
+  );
+
   // Fetch selected thread if viewing a thread
   const { thread: selectedThreadData } = useEmailThread(viewState.threadId || '');
 
@@ -271,6 +286,27 @@ export default function CommunicationsPage() {
       }, 2000);
     } catch (error) {
       console.error('[Communications] Email sync failed:', error);
+    }
+  };
+
+  // OPS-291: Handle backfill folder info
+  const handleBackfillFolders = async () => {
+    setBackfillResult(null);
+    try {
+      const result = await backfillFolderInfo();
+      const count =
+        (result.data as { backfillEmailFolderInfo?: number })?.backfillEmailFolderInfo ?? 0;
+      setBackfillResult({ count });
+      // Refetch folder data after backfill
+      if (count > 0) {
+        refetchFolders();
+      }
+      // Clear result after 5 seconds
+      setTimeout(() => setBackfillResult(null), 5000);
+    } catch (error: any) {
+      console.error('[Communications] Backfill failed:', error);
+      setBackfillResult({ count: 0, error: error.message || 'Backfill failed' });
+      setTimeout(() => setBackfillResult(null), 5000);
     }
   };
 
@@ -516,6 +552,32 @@ export default function CommunicationsPage() {
               )}
             </span>
           )}
+
+          {/* OPS-291: Backfill folder info button (admin tool) */}
+          {user?.role === 'Partner' || user?.role === 'BusinessOwner' ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBackfillFolders}
+                disabled={backfillLoading || !hasMsalAccount}
+                className="px-3 py-1.5 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Actualizează informațiile despre foldere pentru emailurile existente"
+              >
+                {backfillLoading ? 'Se actualizează...' : 'Backfill Foldere'}
+              </button>
+              {backfillResult && (
+                <span
+                  className={clsx(
+                    'text-xs',
+                    backfillResult.error ? 'text-red-600' : 'text-green-600'
+                  )}
+                >
+                  {backfillResult.error
+                    ? backfillResult.error
+                    : `${backfillResult.count} emailuri actualizate`}
+                </span>
+              )}
+            </div>
+          ) : null}
         </div>
 
         {/* Right: View mode toggle + Open Outlook */}
