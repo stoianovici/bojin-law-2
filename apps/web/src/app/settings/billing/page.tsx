@@ -116,7 +116,7 @@ function BillingContent() {
             <h3 className="text-sm font-medium text-blue-800">Despre Tarife Implicite</h3>
             <div className="mt-2 text-sm text-blue-700">
               <ul className="list-disc list-inside space-y-1">
-                <li>Tarifele sunt în USD pe oră</li>
+                <li>Tarifele sunt în EUR pe oră</li>
                 <li>Dosarele noi moștenesc automat aceste tarife</li>
                 <li>Puteți suprascrie tarifele pentru fiecare dosar</li>
                 <li>Modificările de tarif sunt urmărite în istoricul dosarului</li>
