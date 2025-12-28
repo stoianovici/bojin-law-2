@@ -95,20 +95,22 @@ function BillableHoursCard({
   const recoveredRevenue = billableHours * hourlyRate;
 
   return (
-    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-6 text-white">
+    <div className="relative overflow-hidden rounded-lg border border-linear-border-subtle bg-linear-bg-secondary p-6">
+      {/* Gradient accent line at top */}
+      <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-linear-accent to-[#8B5CF6]" />
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm opacity-80 mb-1">Ore facturabile recuperate</div>
-          <div className="text-4xl font-bold">{formatHours(billableHours)}</div>
-          <div className="mt-2 text-sm opacity-70">
+          <div className="text-sm text-linear-text-tertiary mb-1">Ore facturabile recuperate</div>
+          <div className="text-4xl font-bold text-linear-text-primary">{formatHours(billableHours)}</div>
+          <div className="mt-2 text-sm text-linear-text-muted">
             {formatHours(totalTimeSavedHours)} economisit × {(utilizationRate * 100).toFixed(0)}%
             utilizare
           </div>
         </div>
         <div className="text-right">
-          <div className="text-sm opacity-80 mb-1">Venit recuperat</div>
-          <div className="text-3xl font-bold">{formatCurrency(recoveredRevenue)}</div>
-          <div className="text-sm opacity-70 mt-1">@ {formatCurrency(hourlyRate)}/oră</div>
+          <div className="text-sm text-linear-text-tertiary mb-1">Venit recuperat</div>
+          <div className="text-3xl font-bold text-linear-success">{formatCurrency(recoveredRevenue)}</div>
+          <div className="text-sm text-linear-text-muted mt-1">@ {formatCurrency(hourlyRate)}/oră</div>
         </div>
       </div>
     </div>
@@ -138,24 +140,24 @@ function SubscriptionComparison({
   ];
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
       <h4 className="text-md font-semibold mb-4">Comparație cost abonament</h4>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center p-3 bg-emerald-50 rounded-lg">
-          <div className="text-xs text-gray-500 mb-1">Economii lunare</div>
-          <div className="text-xl font-bold text-emerald-600">{formatCurrency(monthlySavings)}</div>
+        <div className="text-center p-3 bg-linear-success/10 rounded-lg">
+          <div className="text-xs text-linear-text-tertiary mb-1">Economii lunare</div>
+          <div className="text-xl font-bold text-linear-success">{formatCurrency(monthlySavings)}</div>
         </div>
-        <div className="text-center p-3 bg-red-50 rounded-lg">
-          <div className="text-xs text-gray-500 mb-1">Cost abonament</div>
-          <div className="text-xl font-bold text-red-600">{formatCurrency(subscriptionCost)}</div>
+        <div className="text-center p-3 bg-linear-error/10 rounded-lg">
+          <div className="text-xs text-linear-text-tertiary mb-1">Cost abonament</div>
+          <div className="text-xl font-bold text-linear-error">{formatCurrency(subscriptionCost)}</div>
         </div>
         <div
-          className={`text-center p-3 rounded-lg ${isPositiveROI ? 'bg-blue-50' : 'bg-amber-50'}`}
+          className={`text-center p-3 rounded-lg ${isPositiveROI ? 'bg-linear-accent/10' : 'bg-linear-warning/10'}`}
         >
-          <div className="text-xs text-gray-500 mb-1">ROI lunar</div>
+          <div className="text-xs text-linear-text-tertiary mb-1">ROI lunar</div>
           <div
-            className={`text-xl font-bold ${isPositiveROI ? 'text-blue-600' : 'text-amber-600'}`}
+            className={`text-xl font-bold ${isPositiveROI ? 'text-linear-accent' : 'text-linear-warning'}`}
           >
             {monthlyROI > 0 ? '+' : ''}
             {monthlyROI.toFixed(0)}%
@@ -180,11 +182,11 @@ function SubscriptionComparison({
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-linear-border-subtle">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Beneficiu net anual estimat:</span>
+          <span className="text-sm text-linear-text-secondary">Beneficiu net anual estimat:</span>
           <span
-            className={`text-lg font-bold ${netAnnualBenefit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+            className={`text-lg font-bold ${netAnnualBenefit >= 0 ? 'text-linear-success' : 'text-linear-error'}`}
           >
             {netAnnualBenefit >= 0 ? '+' : ''}
             {formatCurrency(netAnnualBenefit)}
@@ -239,12 +241,12 @@ function YearlyProjectionChart({
   });
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-md font-semibold">Proiecție anuală economii</h4>
         <div className="text-right">
-          <div className="text-xs text-gray-500">Total anual proiectat</div>
-          <div className="text-lg font-bold text-emerald-600">
+          <div className="text-xs text-linear-text-tertiary">Total anual proiectat</div>
+          <div className="text-lg font-bold text-linear-success">
             {formatCurrency(projectedAnnualSavings)}
           </div>
         </div>
@@ -310,23 +312,23 @@ export function ROIDashboard({
       <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-gray-100 animate-pulse rounded-lg" />
+            <div key={i} className="h-24 bg-linear-bg-tertiary animate-pulse rounded-lg" />
           ))}
         </div>
-        <div className="h-64 bg-gray-100 animate-pulse rounded-lg" />
+        <div className="h-64 bg-linear-bg-tertiary animate-pulse rounded-lg" />
       </div>
     );
   }
 
   if (!data) {
-    return <div className="text-center py-8 text-gray-500">Nu există date ROI disponibile</div>;
+    return <div className="text-center py-8 text-linear-text-tertiary">Nu există date ROI disponibile</div>;
   }
 
   const { currentPeriod, timeSeries = [], topSavingsCategories = [] } = data;
 
   // Early return if missing required data
   if (!currentPeriod) {
-    return <div className="text-center py-8 text-gray-500">Nu există date ROI disponibile</div>;
+    return <div className="text-center py-8 text-linear-text-tertiary">Nu există date ROI disponibile</div>;
   }
 
   const timeSeriesData = timeSeries.map((point) => ({
@@ -351,29 +353,31 @@ export function ROIDashboard({
   return (
     <div className="space-y-6">
       {/* Main Value Card */}
-      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg p-6 text-white">
+      <div className="relative overflow-hidden rounded-lg border border-linear-border-subtle bg-linear-bg-secondary p-6">
+        {/* Gradient accent line at top - success (green) theme */}
+        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-linear-success to-[#06B6D4]" />
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm opacity-80 mb-1">
+            <div className="text-sm text-linear-text-tertiary mb-1">
               Valoare totală economisită în această perioadă
             </div>
-            <div className="text-4xl font-bold">
+            <div className="text-4xl font-bold text-linear-text-primary">
               {formatCurrency(currentPeriod.totalValueSaved)}
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className={`text-sm ${growthIsPositive ? 'text-emerald-200' : 'text-red-200'}`}>
+              <span className={`text-sm font-medium ${growthIsPositive ? 'text-linear-success' : 'text-linear-error'}`}>
                 {growthIsPositive ? '↑' : '↓'}{' '}
                 {Math.abs(currentPeriod.savingsGrowthPercent ?? 0).toFixed(1)}%
               </span>
-              <span className="text-sm opacity-70">vs. perioada anterioară</span>
+              <span className="text-sm text-linear-text-muted">vs. perioada anterioară</span>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm opacity-80 mb-1">Timp economisit</div>
-            <div className="text-3xl font-bold">
+            <div className="text-sm text-linear-text-tertiary mb-1">Timp economisit</div>
+            <div className="text-3xl font-bold text-linear-success">
               {formatHours(currentPeriod.totalTimeSavedHours)}
             </div>
-            <div className="text-sm opacity-70 mt-1">
+            <div className="text-sm text-linear-text-muted mt-1">
               @ {formatCurrency(currentPeriod.avgHourlyRate)}/oră
             </div>
           </div>
@@ -383,11 +387,11 @@ export function ROIDashboard({
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Template Tasks */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-linear-accent/10 flex items-center justify-center">
               <svg
-                className="w-4 h-4 text-blue-600"
+                className="w-4 h-4 text-linear-accent"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -400,28 +404,28 @@ export function ROIDashboard({
                 />
               </svg>
             </div>
-            <span className="text-sm text-gray-500">Șabloane</span>
+            <span className="text-sm text-linear-text-tertiary">Șabloane</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-linear-text-primary">
             {currentPeriod.templateTasksCreated}
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-linear-text-tertiary">
             {formatHours(currentPeriod.estimatedTemplateTimeSavedHours)} economisit
           </div>
-          <div className="mt-2 text-xs text-gray-400">
+          <div className="mt-2 text-xs text-linear-text-muted">
             {currentPeriod.manualTasksCreated} sarcini manuale
           </div>
-          <div className="text-xs text-blue-600">
+          <div className="text-xs text-linear-accent">
             {(currentPeriod.templateAdoptionRate * 100).toFixed(0)}% adoptare
           </div>
         </div>
 
         {/* NLP Tasks */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-linear-accent/10 flex items-center justify-center">
               <svg
-                className="w-4 h-4 text-violet-600"
+                className="w-4 h-4 text-linear-accent"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -434,21 +438,21 @@ export function ROIDashboard({
                 />
               </svg>
             </div>
-            <span className="text-sm text-gray-500">Parsare NLP</span>
+            <span className="text-sm text-linear-text-tertiary">Parsare NLP</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">{currentPeriod.nlpTasksCreated}</div>
-          <div className="text-sm text-gray-500">
+          <div className="text-2xl font-bold text-linear-text-primary">{currentPeriod.nlpTasksCreated}</div>
+          <div className="text-sm text-linear-text-tertiary">
             {formatHours(currentPeriod.estimatedNLPTimeSavedHours)} economisit
           </div>
-          <div className="mt-2 text-xs text-violet-600">Creare sarcini în limbaj natural</div>
+          <div className="mt-2 text-xs text-linear-accent">Creare sarcini în limbaj natural</div>
         </div>
 
         {/* Automation */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-linear-warning/10 flex items-center justify-center">
               <svg
-                className="w-4 h-4 text-amber-600"
+                className="w-4 h-4 text-linear-warning"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -461,17 +465,17 @@ export function ROIDashboard({
                 />
               </svg>
             </div>
-            <span className="text-sm text-gray-500">Automatizare</span>
+            <span className="text-sm text-linear-text-tertiary">Automatizare</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-linear-text-primary">
             {currentPeriod.autoRemindersSet +
               currentPeriod.autoDependencyTriggers +
               currentPeriod.autoReassignments}
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-linear-text-tertiary">
             {formatHours(currentPeriod.estimatedAutomationTimeSavedHours)} economisit
           </div>
-          <div className="mt-2 grid grid-cols-3 gap-1 text-xs text-gray-400">
+          <div className="mt-2 grid grid-cols-3 gap-1 text-xs text-linear-text-muted">
             <span>{currentPeriod.autoRemindersSet} memento</span>
             <span>{currentPeriod.autoDependencyTriggers} dep.</span>
             <span>{currentPeriod.autoReassignments} reasig.</span>
@@ -479,11 +483,11 @@ export function ROIDashboard({
         </div>
 
         {/* Projected Annual */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-linear-success/10 flex items-center justify-center">
               <svg
-                className="w-4 h-4 text-emerald-600"
+                className="w-4 h-4 text-linear-success"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -496,20 +500,20 @@ export function ROIDashboard({
                 />
               </svg>
             </div>
-            <span className="text-sm text-gray-500">Proiecție anuală</span>
+            <span className="text-sm text-linear-text-tertiary">Proiecție anuală</span>
           </div>
-          <div className="text-2xl font-bold text-emerald-600">
+          <div className="text-2xl font-bold text-linear-success">
             {formatCurrency(data.projectedAnnualSavings)}
           </div>
-          <div className="text-sm text-gray-500">economii estimate</div>
-          <div className="mt-2 text-xs text-gray-400">Pe baza tendințelor curente</div>
+          <div className="text-sm text-linear-text-tertiary">economii estimate</div>
+          <div className="mt-2 text-xs text-linear-text-muted">Pe baza tendințelor curente</div>
         </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Time Series Chart */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
           <h4 className="text-md font-semibold mb-4">Economii în timp</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -557,7 +561,7 @@ export function ROIDashboard({
         </div>
 
         {/* Category Breakdown */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
           <h4 className="text-md font-semibold mb-4">Economii pe categorie</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -592,7 +596,7 @@ export function ROIDashboard({
       </div>
 
       {/* Category Details */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
         <h4 className="text-md font-semibold mb-4">Defalcare pe categorii</h4>
         <div className="space-y-4">
           {topSavingsCategories.map((category, index) => (
@@ -604,11 +608,11 @@ export function ROIDashboard({
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium">{category.category}</span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-linear-text-tertiary">
                     {formatHours(category.hoursSaved)} • {formatCurrency(category.valueSaved)}
                   </span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-linear-bg-tertiary rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full"
                     style={{
@@ -618,7 +622,7 @@ export function ROIDashboard({
                   />
                 </div>
               </div>
-              <span className="text-sm font-medium text-gray-600 w-12 text-right">
+              <span className="text-sm font-medium text-linear-text-secondary w-12 text-right">
                 {category.percentageOfTotal.toFixed(0)}%
               </span>
             </div>
@@ -663,7 +667,7 @@ export function ROIDashboard({
 
           {/* Platform ROI Savings by Category (if provided) */}
           {platformROI?.savingsByCategory && platformROI.savingsByCategory.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
               <h4 className="text-md font-semibold mb-4">Economii pe categorii platformă</h4>
               <div className="space-y-4">
                 {platformROI.savingsByCategory.map((category, index) => (
@@ -675,12 +679,12 @@ export function ROIDashboard({
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium">{category.category}</span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-linear-text-tertiary">
                           {formatHours(category.hoursSaved)} •{' '}
                           {formatCurrency(category.valueInCurrency)}
                         </span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-linear-bg-tertiary rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full"
                           style={{
@@ -690,7 +694,7 @@ export function ROIDashboard({
                         />
                       </div>
                     </div>
-                    <span className="text-sm font-medium text-gray-600 w-12 text-right">
+                    <span className="text-sm font-medium text-linear-text-secondary w-12 text-right">
                       {category.percentOfTotal.toFixed(0)}%
                     </span>
                   </div>

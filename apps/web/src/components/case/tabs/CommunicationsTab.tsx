@@ -85,10 +85,10 @@ function ThreadItem({ thread, isSelected, onClick }: ThreadItemProps) {
     <button
       onClick={onClick}
       className={clsx(
-        'w-full px-3 py-2.5 text-left text-sm transition-colors border-b border-gray-100',
+        'w-full px-3 py-2.5 text-left text-sm transition-colors border-b border-linear-border-subtle',
         isSelected
-          ? 'bg-blue-50 border-l-2 border-l-blue-500'
-          : 'hover:bg-gray-50 border-l-2 border-l-transparent'
+          ? 'bg-linear-accent/10 border-l-2 border-l-linear-accent'
+          : 'hover:bg-linear-bg-tertiary border-l-2 border-l-transparent'
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -96,21 +96,21 @@ function ThreadItem({ thread, isSelected, onClick }: ThreadItemProps) {
           <p
             className={clsx(
               'truncate',
-              thread.hasUnread ? 'font-semibold text-gray-900' : 'text-gray-700'
+              thread.hasUnread ? 'font-semibold text-linear-text-primary' : 'text-linear-text-secondary'
             )}
           >
             {thread.subject || '(Fără subiect)'}
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {thread.hasAttachments && <Paperclip className="h-3 w-3 text-gray-400" />}
-          {thread.hasUnread && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+          {thread.hasAttachments && <Paperclip className="h-3 w-3 text-linear-text-muted" />}
+          {thread.hasUnread && <span className="w-2 h-2 bg-linear-accent rounded-full" />}
         </div>
       </div>
       <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-gray-400">{formattedDate}</span>
+        <span className="text-xs text-linear-text-muted">{formattedDate}</span>
         {thread.messageCount > 1 && (
-          <span className="text-xs text-gray-400">{thread.messageCount} mesaje</span>
+          <span className="text-xs text-linear-text-muted">{thread.messageCount} mesaje</span>
         )}
       </div>
     </button>
@@ -238,27 +238,27 @@ export function CommunicationsTab({ caseId, className }: CommunicationsTabProps)
 
   if (!caseId) {
     return (
-      <div className={clsx('flex items-center justify-center h-full bg-white p-8', className)}>
-        <p className="text-gray-500">Selectați un dosar pentru a vedea comunicările.</p>
+      <div className={clsx('flex items-center justify-center h-full bg-linear-bg-secondary p-8', className)}>
+        <p className="text-linear-text-tertiary">Selectați un dosar pentru a vedea comunicările.</p>
       </div>
     );
   }
 
   return (
-    <div className={clsx('flex flex-col h-full bg-white', className)}>
+    <div className={clsx('flex flex-col h-full bg-linear-bg-secondary', className)}>
       {/* Header with view mode toggle */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-        <h3 className="text-sm font-medium text-gray-700">Comunicări</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-linear-border-subtle bg-linear-bg-tertiary flex-shrink-0">
+        <h3 className="text-sm font-medium text-linear-text-secondary">Comunicări</h3>
 
         {/* View mode toggle */}
-        <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+        <div className="flex items-center bg-linear-bg-quaternary rounded-lg p-0.5">
           <button
             onClick={() => setThreadViewMode('conversation')}
             className={clsx(
               'px-2 py-1 text-xs rounded-md transition-colors flex items-center gap-1',
               threadViewMode === 'conversation'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-linear-bg-secondary text-linear-text-primary shadow-sm'
+                : 'text-linear-text-secondary hover:text-linear-text-primary'
             )}
             title="Vizualizare conversație"
           >
@@ -270,8 +270,8 @@ export function CommunicationsTab({ caseId, className }: CommunicationsTabProps)
             className={clsx(
               'px-2 py-1 text-xs rounded-md transition-colors flex items-center gap-1',
               threadViewMode === 'cards'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-linear-bg-secondary text-linear-text-primary shadow-sm'
+                : 'text-linear-text-secondary hover:text-linear-text-primary'
             )}
             title="Vizualizare carduri"
           >
@@ -282,21 +282,21 @@ export function CommunicationsTab({ caseId, className }: CommunicationsTabProps)
       </div>
 
       {/* AI Thread Summary Section */}
-      <div className="border-b border-gray-200 flex-shrink-0">
+      <div className="border-b border-linear-border-subtle flex-shrink-0">
         <button
           onClick={() => setIsAISummaryExpanded(!isAISummaryExpanded)}
-          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-linear-bg-tertiary transition-colors"
           aria-expanded={isAISummaryExpanded}
           aria-controls="ai-summary-panel"
         >
           <div className="flex items-center gap-2">
             <Brain className="h-4 w-4 text-purple-500" aria-hidden="true" />
-            <span className="text-sm font-medium text-gray-700">Rezumat AI Thread-uri</span>
+            <span className="text-sm font-medium text-linear-text-secondary">Rezumat AI Thread-uri</span>
           </div>
           {isAISummaryExpanded ? (
-            <ChevronUp className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <ChevronUp className="h-4 w-4 text-linear-text-muted" aria-hidden="true" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <ChevronDown className="h-4 w-4 text-linear-text-muted" aria-hidden="true" />
           )}
         </button>
         {isAISummaryExpanded && (
@@ -309,10 +309,10 @@ export function CommunicationsTab({ caseId, className }: CommunicationsTabProps)
       {/* Two-column layout: Thread list + Conversation view */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Thread List */}
-        <div className="w-64 lg:w-72 border-r border-gray-200 flex flex-col overflow-hidden bg-white flex-shrink-0">
+        <div className="w-64 lg:w-72 border-r border-linear-border-subtle flex flex-col overflow-hidden bg-linear-bg-secondary flex-shrink-0">
           {/* Thread list header */}
-          <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+          <div className="px-3 py-2 bg-linear-bg-tertiary border-b border-linear-border-subtle">
+            <span className="text-xs font-medium text-linear-text-tertiary uppercase tracking-wide">
               Conversații ({threads.length})
             </span>
           </div>
@@ -321,16 +321,16 @@ export function CommunicationsTab({ caseId, className }: CommunicationsTabProps)
           <div className="flex-1 overflow-y-auto">
             {threadsLoading && threads.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                <Loader2 className="h-6 w-6 animate-spin text-linear-text-muted" />
               </div>
             ) : threadsError ? (
-              <div className="px-3 py-4 text-sm text-red-600">
+              <div className="px-3 py-4 text-sm text-linear-error">
                 Eroare la încărcarea conversațiilor
               </div>
             ) : threads.length === 0 ? (
               <div className="px-3 py-8 text-center">
-                <Mail className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Nu există conversații pentru acest dosar</p>
+                <Mail className="h-8 w-8 text-linear-text-muted mx-auto mb-2" />
+                <p className="text-sm text-linear-text-tertiary">Nu există conversații pentru acest dosar</p>
               </div>
             ) : (
               <motion.div variants={listContainerVariants} initial="hidden" animate="visible">
@@ -352,7 +352,7 @@ export function CommunicationsTab({ caseId, className }: CommunicationsTabProps)
         <div className="flex-1 flex flex-col overflow-hidden">
           {threadLoading && !selectedThread ? (
             <div className="flex-1 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-linear-text-muted" />
             </div>
           ) : selectedThread ? (
             threadViewMode === 'conversation' ? (
@@ -361,9 +361,9 @@ export function CommunicationsTab({ caseId, className }: CommunicationsTabProps)
               <MessageView />
             )
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="flex-1 flex items-center justify-center text-linear-text-tertiary">
               <div className="text-center">
-                <Mail className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <Mail className="h-12 w-12 text-linear-text-muted mx-auto mb-3" />
                 <p>Selectați o conversație din stânga</p>
               </div>
             </div>

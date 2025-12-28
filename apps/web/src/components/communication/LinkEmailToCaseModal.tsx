@@ -143,16 +143,16 @@ export function LinkEmailToCaseModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col">
+      <div className="bg-linear-bg-secondary rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Link2 className="h-5 w-5 text-blue-600" />
+            <Link2 className="h-5 w-5 text-linear-accent" />
             Adaugă email la dosar
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded"
+            className="text-linear-text-muted hover:text-linear-text-secondary p-1 rounded"
             aria-label="Închide"
           >
             <X className="h-5 w-5" />
@@ -162,36 +162,36 @@ export function LinkEmailToCaseModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Email Preview */}
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Email:</p>
-            <p className="font-medium text-gray-900 truncate">{emailSubject || '(Fără subiect)'}</p>
+          <div className="bg-linear-bg-tertiary rounded-lg p-3 border border-linear-border-subtle">
+            <p className="text-sm text-linear-text-tertiary mb-1">Email:</p>
+            <p className="font-medium text-linear-text-primary truncate">{emailSubject || '(Fără subiect)'}</p>
             {linkedCaseIds.length > 0 && (
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-linear-text-tertiary">
                 Deja în {linkedCaseIds.length} dosar{linkedCaseIds.length === 1 ? '' : 'e'}
               </p>
             )}
           </div>
 
           {/* Info Message */}
-          <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-            <p className="text-sm text-blue-800">
+          <div className="bg-linear-accent/10 rounded-lg p-3 border border-linear-accent/30">
+            <p className="text-sm text-linear-accent">
               Selectați un dosar pentru a adăuga acest email. Emailul va apărea în ambele dosare.
             </p>
           </div>
 
           {/* Case Search/Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-linear-text-secondary mb-2">
               Selectați dosarul:
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-linear-text-muted" />
               <input
                 type="text"
                 value={caseSearch}
                 onChange={(e) => setCaseSearch(e.target.value)}
                 placeholder="Filtrați după nume sau număr dosar..."
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 text-sm border border-linear-border rounded-md focus:ring-linear-accent focus:border-linear-accent"
               />
             </div>
           </div>
@@ -199,7 +199,7 @@ export function LinkEmailToCaseModal({
           {/* Case List */}
           <div className="space-y-2">
             {loadingCases && (
-              <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+              <div className="flex items-center gap-2 text-sm text-linear-text-tertiary py-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Se încarcă dosarele...
               </div>
@@ -214,8 +214,8 @@ export function LinkEmailToCaseModal({
                     className={clsx(
                       'w-full p-3 rounded-lg border-2 text-left transition-all',
                       selectedCaseId === caseData.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-linear-accent bg-linear-accent/10'
+                        : 'border-linear-border-subtle hover:border-linear-border hover:bg-linear-bg-tertiary'
                     )}
                   >
                     <div className="flex items-center gap-2">
@@ -223,15 +223,15 @@ export function LinkEmailToCaseModal({
                         className={clsx(
                           'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0',
                           selectedCaseId === caseData.id
-                            ? 'border-blue-500 bg-blue-500'
-                            : 'border-gray-300'
+                            ? 'border-linear-accent bg-linear-accent'
+                            : 'border-linear-border'
                         )}
                       >
                         {selectedCaseId === caseData.id && <Check className="h-3 w-3 text-white" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 truncate">{caseData.title}</p>
-                        <p className="text-sm text-gray-500">{caseData.caseNumber}</p>
+                        <p className="font-medium text-linear-text-primary truncate">{caseData.title}</p>
+                        <p className="text-sm text-linear-text-tertiary">{caseData.caseNumber}</p>
                       </div>
                     </div>
                   </button>
@@ -240,14 +240,14 @@ export function LinkEmailToCaseModal({
             )}
 
             {!loadingCases && availableCases.length === 0 && caseSearch.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-gray-500 py-4">
+              <div className="flex items-center gap-2 text-sm text-linear-text-tertiary py-4">
                 <AlertCircle className="h-4 w-4" />
                 <span>Nu s-au găsit dosare pentru &ldquo;{caseSearch}&rdquo;</span>
               </div>
             )}
 
             {!loadingCases && availableCases.length === 0 && caseSearch.length === 0 && (
-              <p className="text-sm text-gray-500 text-center py-4">
+              <p className="text-sm text-linear-text-tertiary text-center py-4">
                 Nu aveți alte dosare active disponibile
               </p>
             )}
@@ -255,10 +255,10 @@ export function LinkEmailToCaseModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t bg-gray-50">
+        <div className="flex items-center justify-end gap-2 p-4 border-t bg-linear-bg-tertiary">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 rounded-md transition-colors"
+            className="px-4 py-2 text-sm text-linear-text-secondary hover:bg-linear-bg-hover rounded-md transition-colors"
           >
             Anulează
           </button>
@@ -267,7 +267,7 @@ export function LinkEmailToCaseModal({
             disabled={linking || !selectedCaseId}
             className={clsx(
               'px-4 py-2 text-sm text-white rounded-md transition-colors flex items-center gap-2',
-              'bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+              'bg-linear-accent hover:bg-linear-accent-hover disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
             {linking ? (

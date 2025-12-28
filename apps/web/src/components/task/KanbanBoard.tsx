@@ -22,41 +22,13 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
-import type { Task, TaskType } from '@legal-platform/types';
-
-/**
- * Task type color mapping (same as CalendarView)
- */
-const TASK_TYPE_COLORS: Record<TaskType, string> = {
-  Research: '#3B82F6',
-  DocumentCreation: '#10B981',
-  DocumentRetrieval: '#8B5CF6',
-  CourtDate: '#EF4444',
-  Meeting: '#F59E0B',
-  BusinessTrip: '#6366F1',
-};
-
-/**
- * Task type labels in Romanian
- */
-const TASK_TYPE_LABELS: Record<TaskType, string> = {
-  Research: 'Cercetare',
-  DocumentCreation: 'Creare Doc',
-  DocumentRetrieval: 'Recuperare Doc',
-  CourtDate: 'Termen Instanță',
-  Meeting: 'Întâlnire',
-  BusinessTrip: 'Deplasare',
-};
-
-/**
- * Priority indicator colors
- */
-const PRIORITY_COLORS = {
-  Low: '#10B981',
-  Medium: '#F59E0B',
-  High: '#EF4444',
-  Urgent: '#DC2626',
-};
+import type { Task } from '@legal-platform/types';
+import {
+  TASK_TYPE_COLORS,
+  TASK_TYPE_LABELS_SHORT as TASK_TYPE_LABELS,
+  PRIORITY_COLORS,
+  COLUMN_COLORS,
+} from '@/utils/task-colors';
 
 /**
  * Kanban column definition
@@ -72,19 +44,19 @@ interface KanbanColumn {
  * Kanban columns configuration
  */
 const COLUMNS: KanbanColumn[] = [
-  { id: 'todo', title: 'De Făcut', statuses: ['Pending'], color: '#6B7280' },
-  { id: 'inProgress', title: 'În Progres', statuses: ['InProgress'], color: '#3B82F6' },
+  { id: 'todo', title: 'De Făcut', statuses: ['Pending'], color: COLUMN_COLORS.todo },
+  { id: 'inProgress', title: 'În Progres', statuses: ['InProgress'], color: COLUMN_COLORS.inProgress },
   {
     id: 'review',
     title: 'În Revizuire',
     statuses: ['InProgress'], // Will use metadata.review flag
-    color: '#F59E0B',
+    color: COLUMN_COLORS.review,
   },
   {
     id: 'complete',
     title: 'Finalizat',
     statuses: ['Completed', 'Cancelled'],
-    color: '#10B981',
+    color: COLUMN_COLORS.done,
   },
 ];
 
@@ -125,14 +97,14 @@ function TaskCard({ task, onClick, isDragging = false }: TaskCardProps) {
       {...listeners}
       onClick={onClick}
       title={TASK_TYPE_LABELS[task.type]}
-      className="bg-white border border-gray-200 border-l-[3px] rounded-lg p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
+      className="bg-linear-bg-secondary border border-linear-border-subtle border-l-[3px] rounded-lg p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
     >
       {/* Task title with optional duration badge */}
       <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{task.title}</h3>
+        <h3 className="text-sm font-semibold text-linear-text-primary line-clamp-2">{task.title}</h3>
         {hasDuration && (
           <span
-            className="shrink-0 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+            className="shrink-0 text-[10px] font-medium text-linear-text-tertiary bg-linear-bg-tertiary px-1.5 py-0.5 rounded"
             title={`Durată estimată: ${task.estimatedHours} ore`}
           >
             {task.estimatedHours}h
@@ -141,10 +113,10 @@ function TaskCard({ task, onClick, isDragging = false }: TaskCardProps) {
       </div>
 
       {/* Case name */}
-      {caseName && <p className="text-xs text-gray-500 mb-2 line-clamp-1">{caseName}</p>}
+      {caseName && <p className="text-xs text-linear-text-tertiary mb-2 line-clamp-1">{caseName}</p>}
 
       {/* Task metadata */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="flex items-center justify-between text-xs text-linear-text-tertiary">
         {/* Due date */}
         <div className="flex items-center gap-1">
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,8 +139,8 @@ function TaskCard({ task, onClick, isDragging = false }: TaskCardProps) {
       </div>
 
       {/* Drag handle indicator */}
-      <div className="flex justify-center mt-2 pt-2 border-t border-gray-100">
-        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+      <div className="flex justify-center mt-2 pt-2 border-t border-linear-border-subtle/50">
+        <svg className="w-4 h-4 text-linear-text-muted" fill="currentColor" viewBox="0 0 24 24">
           <path d="M9 5h2v2H9V5zm0 6h2v2H9v-2zm0 6h2v2H9v-2zm4-12h2v2h-2V5zm0 6h2v2h-2v-2zm0 6h2v2h-2v-2z" />
         </svg>
       </div>
@@ -186,18 +158,18 @@ function TaskCardOverlay({ task }: { task: Task }) {
 
   return (
     <div
-      className="bg-white border-2 border-blue-500 border-l-[4px] rounded-lg p-3 shadow-2xl w-72"
+      className="bg-linear-bg-secondary border-2 border-linear-accent border-l-[4px] rounded-lg p-3 shadow-2xl w-72"
       style={{ borderLeftColor: typeColor }}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{task.title}</h3>
+        <h3 className="text-sm font-semibold text-linear-text-primary line-clamp-2">{task.title}</h3>
         {hasDuration && (
-          <span className="shrink-0 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+          <span className="shrink-0 text-[10px] font-medium text-linear-text-tertiary bg-linear-bg-tertiary px-1.5 py-0.5 rounded">
             {task.estimatedHours}h
           </span>
         )}
       </div>
-      {caseName && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{caseName}</p>}
+      {caseName && <p className="text-xs text-linear-text-tertiary mt-1 line-clamp-1">{caseName}</p>}
     </div>
   );
 }
@@ -221,12 +193,12 @@ function Column({ column, tasks, onTaskClick }: ColumnProps) {
     <div
       ref={setNodeRef}
       className={`flex-shrink-0 w-80 rounded-lg p-4 transition-colors ${
-        isOver ? 'bg-blue-50 ring-2 ring-blue-400' : 'bg-gray-50'
+        isOver ? 'bg-linear-accent/10 ring-2 ring-linear-accent' : 'bg-linear-bg-tertiary'
       }`}
     >
       {/* Column header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">{column.title}</h2>
+        <h2 className="text-sm font-bold text-linear-text-secondary uppercase tracking-wide">{column.title}</h2>
         <span
           className="px-2 py-1 rounded-full text-xs font-semibold text-white"
           style={{ backgroundColor: column.color }}
@@ -239,7 +211,7 @@ function Column({ column, tasks, onTaskClick }: ColumnProps) {
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
         <div className="space-y-2 min-h-[200px]">
           {tasks.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-32 text-linear-text-muted text-sm">
               <div className="text-center">
                 <svg
                   className="w-8 h-8 mx-auto mb-2 opacity-50"
@@ -308,7 +280,7 @@ export function KanbanBoard({ tasks, onTaskClick, onTaskStatusChange }: KanbanBo
         grouped.todo.push(task);
       } else if (task.status === 'InProgress') {
         // Check if task is in review (using metadata flag for prototype)
-        if (task.metadata.review) {
+        if (task.metadata?.review) {
           grouped.review.push(task);
         } else {
           grouped.inProgress.push(task);

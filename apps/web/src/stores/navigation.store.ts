@@ -20,6 +20,7 @@ export const useNavigationStore = create<NavigationState>()(
       currentRole: 'Partner',
       isSidebarCollapsed: false,
       isCommandPaletteOpen: false,
+      isShortcutReferenceOpen: false,
 
       // Actions
       setCurrentSection: (section: NavigationSection) => set({ currentSection: section }),
@@ -31,6 +32,13 @@ export const useNavigationStore = create<NavigationState>()(
       openCommandPalette: () => set({ isCommandPaletteOpen: true }),
 
       closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
+
+      openShortcutReference: () => set({ isShortcutReferenceOpen: true }),
+
+      closeShortcutReference: () => set({ isShortcutReferenceOpen: false }),
+
+      toggleShortcutReference: () =>
+        set((state) => ({ isShortcutReferenceOpen: !state.isShortcutReferenceOpen })),
     }),
     {
       name: 'navigation-storage', // localStorage key

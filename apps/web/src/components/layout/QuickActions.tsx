@@ -1,5 +1,6 @@
 /**
  * Quick Actions Component
+ * OPS-330: Linear Design Migration
  * Role-based quick action buttons
  */
 
@@ -171,7 +172,7 @@ export function QuickActions({ mode = 'sidebar', className = '' }: QuickActionsP
   return (
     <div className={`${className} space-y-2`}>
       {mode === 'sidebar' && (
-        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <div className="px-4 py-2 text-xs font-semibold text-linear-text-tertiary uppercase tracking-wider">
           Quick Actions
         </div>
       )}
@@ -185,9 +186,9 @@ export function QuickActions({ mode = 'sidebar', className = '' }: QuickActionsP
               className="
                 flex items-center justify-center gap-2
                 w-full px-3 py-2 rounded-lg
-                bg-blue-600 hover:bg-blue-700
+                bg-linear-accent hover:bg-linear-accent-hover
                 text-white text-sm font-medium
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 focus:ring-offset-linear-bg-primary
                 transition-colors
               "
               title={action.shortcut ? `${action.label} (${action.shortcut})` : action.label}

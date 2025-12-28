@@ -10,6 +10,7 @@ import React, { Suspense } from 'react';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { PageLayout } from '../../components/linear/PageLayout';
 
 // Session storage key for return URL
 const RETURN_URL_KEY = 'auth_return_url';
@@ -100,29 +101,29 @@ function LoginPageContent() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <PageLayout className="flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-          <p className="mt-4 text-gray-600">Se încarcă...</p>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-linear-accent border-r-transparent"></div>
+          <p className="mt-4 text-linear-text-secondary">Se încarcă...</p>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <PageLayout className="flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-linear-text-primary">
             Legal Platform
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-linear-text-secondary">
             Conectați-vă pentru a accesa spațiul de lucru
           </p>
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 p-4">
+          <div className="rounded-md border border-red-500/30 bg-red-500/10 p-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
@@ -140,14 +141,14 @@ function LoginPageContent() {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                <h3 className="text-sm font-medium text-red-400">{error}</h3>
               </div>
               <div className="ml-auto pl-3">
                 <div className="-mx-1.5 -my-1.5">
                   <button
                     type="button"
                     onClick={clearError}
-                    className="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-red-50"
+                    className="inline-flex rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-linear-bg-primary"
                   >
                     <span className="sr-only">Închide</span>
                     <svg
@@ -171,8 +172,8 @@ function LoginPageContent() {
             type="button"
             onClick={handleLogin}
             disabled={isLoginClicked}
-            className={`group relative flex w-full justify-center rounded-md border border-transparent px-4 py-3 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              isLoginClicked ? 'cursor-not-allowed bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+            className={`group relative flex w-full justify-center rounded-md border border-transparent px-4 py-3 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 focus:ring-offset-linear-bg-primary ${
+              isLoginClicked ? 'cursor-not-allowed bg-linear-accent/60' : 'bg-linear-accent hover:bg-linear-accent-hover'
             }`}
           >
             <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -180,7 +181,7 @@ function LoginPageContent() {
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent" />
               ) : (
                 <svg
-                  className="h-5 w-5 text-blue-500 group-hover:text-blue-400"
+                  className="h-5 w-5 text-linear-accent-hover group-hover:text-linear-accent"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -197,18 +198,18 @@ function LoginPageContent() {
             {isLoginClicked ? 'Redirecționare...' : 'Conectare cu Microsoft 365'}
           </button>
 
-          <p className="mt-2 text-center text-xs text-gray-500">
+          <p className="mt-2 text-center text-xs text-linear-text-tertiary">
             Această aplicație folosește Microsoft 365 pentru autentificare securizată.
             <br />
             Vă rugăm să folosiți email-ul organizației pentru a vă conecta.
           </p>
         </div>
 
-        <div className="mt-6 text-center text-xs text-gray-400">
+        <div className="mt-6 text-center text-xs text-linear-text-tertiary">
           <p>Alimentat de Azure Active Directory</p>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
@@ -216,12 +217,12 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <PageLayout className="flex items-center justify-center">
           <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-            <p className="mt-4 text-gray-600">Se încarcă...</p>
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-linear-accent border-r-transparent"></div>
+            <p className="mt-4 text-linear-text-secondary">Se încarcă...</p>
           </div>
-        </div>
+        </PageLayout>
       }
     >
       <LoginPageContent />

@@ -137,9 +137,9 @@ export function CasePickerDropup({
         className={clsx(
           'flex items-center justify-center gap-2 px-4 py-2.5',
           'rounded-lg font-medium text-sm transition-all',
-          'bg-amber-500 text-white hover:bg-amber-600',
+          'bg-linear-warning text-white hover:bg-linear-warning/90',
           'disabled:opacity-50 disabled:cursor-not-allowed',
-          isOpen && 'bg-amber-600'
+          isOpen && 'bg-linear-warning/90'
         )}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
@@ -163,7 +163,7 @@ export function CasePickerDropup({
         <div
           className={clsx(
             'absolute bottom-full left-0 mb-2 w-80 max-h-72',
-            'bg-white rounded-lg shadow-lg border border-gray-200',
+            'bg-linear-bg-secondary rounded-lg shadow-lg border border-linear-border-subtle',
             'animate-in fade-in-0 slide-in-from-bottom-2 duration-150',
             'flex flex-col overflow-hidden z-50'
           )}
@@ -171,9 +171,9 @@ export function CasePickerDropup({
         >
           {/* Search Input (only for 10+ cases) */}
           {showSearch && (
-            <div className="p-2 border-b border-gray-100 flex-shrink-0">
+            <div className="p-2 border-b border-linear-border-subtle/50 flex-shrink-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-linear-text-muted" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -181,9 +181,9 @@ export function CasePickerDropup({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Caută dosar..."
                   className={clsx(
-                    'w-full pl-9 pr-3 py-2 text-sm',
-                    'border border-gray-200 rounded-md',
-                    'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent'
+                    'w-full pl-9 pr-3 py-2 text-sm bg-linear-bg-tertiary',
+                    'border border-linear-border-subtle rounded-md',
+                    'focus:outline-none focus:ring-2 focus:ring-linear-warning focus:border-transparent'
                   )}
                 />
               </div>
@@ -194,10 +194,10 @@ export function CasePickerDropup({
           <div className="flex-1 overflow-y-auto">
             {casesLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                <Loader2 className="h-5 w-5 animate-spin text-linear-warning" />
               </div>
             ) : filteredCases.length === 0 ? (
-              <div className="py-6 text-center text-sm text-gray-500">
+              <div className="py-6 text-center text-sm text-linear-text-tertiary">
                 {searchQuery ? 'Nu s-au găsit dosare' : 'Nu aveți dosare disponibile'}
               </div>
             ) : (
@@ -209,25 +209,25 @@ export function CasePickerDropup({
                     disabled={loading}
                     className={clsx(
                       'w-full flex items-start gap-3 px-3 py-2.5 text-left',
-                      'hover:bg-amber-50 transition-colors',
+                      'hover:bg-linear-warning/10 transition-colors',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
-                      selectedCaseId === caseItem.id && loading && 'bg-amber-50'
+                      selectedCaseId === caseItem.id && loading && 'bg-linear-warning/10'
                     )}
                   >
-                    <Folder className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <Folder className="h-4 w-4 text-linear-warning mt-0.5 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-linear-text-primary truncate">
                         {caseItem.caseNumber || 'Fără număr'}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">{caseItem.title}</p>
+                      <p className="text-xs text-linear-text-tertiary truncate">{caseItem.title}</p>
                       {caseItem.client?.name && (
-                        <p className="text-xs text-gray-400 truncate mt-0.5">
+                        <p className="text-xs text-linear-text-muted truncate mt-0.5">
                           {caseItem.client.name}
                         </p>
                       )}
                     </div>
                     {selectedCaseId === caseItem.id && loading && (
-                      <Loader2 className="h-4 w-4 animate-spin text-amber-600 flex-shrink-0" />
+                      <Loader2 className="h-4 w-4 animate-spin text-linear-warning flex-shrink-0" />
                     )}
                   </button>
                 ))}

@@ -102,11 +102,11 @@ function getSeverityBadge(severity: 'low' | 'medium' | 'high'): {
 } {
   switch (severity) {
     case 'high':
-      return { label: 'Ridicat', bg: 'bg-red-100', text: 'text-red-700' };
+      return { label: 'Ridicat', bg: 'bg-linear-error/15', text: 'text-linear-error' };
     case 'medium':
-      return { label: 'Mediu', bg: 'bg-amber-100', text: 'text-amber-700' };
+      return { label: 'Mediu', bg: 'bg-linear-warning/15', text: 'text-linear-warning' };
     case 'low':
-      return { label: 'Scăzut', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+      return { label: 'Scăzut', bg: 'bg-linear-success/15', text: 'text-linear-success' };
   }
 }
 
@@ -116,11 +116,11 @@ function getSeverityBadge(severity: 'low' | 'medium' | 'high'): {
 
 function LoadingSkeleton() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-      <div className="h-5 bg-gray-200 rounded w-48 mb-6" />
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 animate-pulse">
+      <div className="h-5 bg-linear-bg-hover rounded w-48 mb-6" />
       <div className="space-y-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-12 bg-gray-100 rounded" />
+          <div key={i} className="h-12 bg-linear-bg-tertiary rounded" />
         ))}
       </div>
     </div>
@@ -141,22 +141,22 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   const severityBadge = getSeverityBadge(data.severity);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 min-w-[220px]">
+    <div className="bg-linear-bg-secondary border border-linear-border-subtle rounded-lg shadow-lg p-4 min-w-[220px]">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-3 h-3 rounded" style={{ backgroundColor: data.color }} />
-        <span className="font-semibold text-gray-900">{data.label}</span>
+        <span className="font-semibold text-linear-text-primary">{data.label}</span>
       </div>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-gray-500">Total probleme:</span>
+          <span className="text-linear-text-tertiary">Total probleme:</span>
           <span className="font-medium">{data.count.toLocaleString()}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Procent:</span>
+          <span className="text-linear-text-tertiary">Procent:</span>
           <span className="font-medium">{data.percentage.toFixed(1)}%</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-500">Severitate:</span>
+          <span className="text-linear-text-tertiary">Severitate:</span>
           <span
             className={`px-2 py-0.5 rounded text-xs font-medium ${severityBadge.bg} ${severityBadge.text}`}
           >
@@ -164,7 +164,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
           </span>
         </div>
       </div>
-      <div className="mt-3 pt-2 border-t text-xs text-gray-400">
+      <div className="mt-3 pt-2 border-t text-xs text-linear-text-muted">
         {CATEGORY_CONFIG[data.category].description}
       </div>
     </div>
@@ -179,62 +179,62 @@ interface DataTableProps {
 function DataTable({ data, onCategoryClick }: DataTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-linear-border-subtle">
+        <thead className="bg-linear-bg-tertiary">
           <tr>
             <th
               scope="col"
-              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
             >
               Categorie
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              className="px-4 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
             >
               Probleme
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              className="px-4 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
             >
               Procent
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+              className="px-4 py-3 text-center text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
             >
               Severitate
             </th>
             {onCategoryClick && (
               <th
                 scope="col"
-                className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-4 py-3 text-center text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
               >
                 Acțiune
               </th>
             )}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
           {data.map((row) => {
             const severityBadge = getSeverityBadge(row.severity);
             return (
               <tr
                 key={row.category}
-                className={onCategoryClick ? 'hover:bg-gray-50 cursor-pointer' : ''}
+                className={onCategoryClick ? 'hover:bg-linear-bg-hover cursor-pointer' : ''}
                 onClick={() => onCategoryClick?.(row.category)}
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded" style={{ backgroundColor: row.color }} />
-                    <span className="text-sm font-medium text-gray-900">{row.label}</span>
+                    <span className="text-sm font-medium text-linear-text-primary">{row.label}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right text-sm text-gray-900">
+                <td className="px-4 py-3 text-right text-sm text-linear-text-primary">
                   {row.count.toLocaleString()}
                 </td>
-                <td className="px-4 py-3 text-right text-sm text-gray-900">
+                <td className="px-4 py-3 text-right text-sm text-linear-text-primary">
                   {row.percentage.toFixed(1)}%
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -247,7 +247,7 @@ function DataTable({ data, onCategoryClick }: DataTableProps) {
                 {onCategoryClick && (
                   <td className="px-4 py-3 text-center">
                     <button
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="text-linear-accent hover:text-linear-accent-hover text-sm font-medium"
                       onClick={(e) => {
                         e.stopPropagation();
                         onCategoryClick(row.category);
@@ -261,13 +261,13 @@ function DataTable({ data, onCategoryClick }: DataTableProps) {
             );
           })}
         </tbody>
-        <tfoot className="bg-gray-50">
+        <tfoot className="bg-linear-bg-tertiary">
           <tr>
-            <td className="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
-            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+            <td className="px-4 py-3 text-sm font-semibold text-linear-text-primary">Total</td>
+            <td className="px-4 py-3 text-right text-sm font-semibold text-linear-text-primary">
               {data.reduce((sum, d) => sum + d.count, 0).toLocaleString()}
             </td>
-            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">100%</td>
+            <td className="px-4 py-3 text-right text-sm font-semibold text-linear-text-primary">100%</td>
             <td colSpan={onCategoryClick ? 2 : 1}></td>
           </tr>
         </tfoot>
@@ -320,22 +320,22 @@ export function DocumentIssuesBreakdown({
   const hasData = totalIssues > 0;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Detaliere probleme documente</h3>
+        <h3 className="text-lg font-semibold text-linear-text-primary">Detaliere probleme documente</h3>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-linear-text-tertiary">
             {totalIssues.toLocaleString()} probleme totale
           </span>
           {/* View Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-0.5 ml-4">
+          <div className="flex bg-linear-bg-tertiary rounded-lg p-0.5 ml-4">
             <button
               onClick={() => setViewMode('chart')}
               className={`px-3 py-1 text-sm rounded-md transition-colors ${
                 viewMode === 'chart'
-                  ? 'bg-white shadow text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-linear-bg-secondary shadow text-linear-text-primary'
+                  : 'text-linear-text-tertiary hover:text-linear-text-secondary'
               }`}
               aria-pressed={viewMode === 'chart'}
             >
@@ -345,8 +345,8 @@ export function DocumentIssuesBreakdown({
               onClick={() => setViewMode('table')}
               className={`px-3 py-1 text-sm rounded-md transition-colors ${
                 viewMode === 'table'
-                  ? 'bg-white shadow text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-linear-bg-secondary shadow text-linear-text-primary'
+                  : 'text-linear-text-tertiary hover:text-linear-text-secondary'
               }`}
               aria-pressed={viewMode === 'table'}
             >
@@ -358,7 +358,7 @@ export function DocumentIssuesBreakdown({
 
       {/* Severity Legend */}
       <div className="flex gap-4 mb-4 text-sm">
-        <span className="text-gray-500">Severitate:</span>
+        <span className="text-linear-text-tertiary">Severitate:</span>
         {(['high', 'medium', 'low'] as const).map((sev) => {
           const badge = getSeverityBadge(sev);
           return (
@@ -370,14 +370,14 @@ export function DocumentIssuesBreakdown({
                     sev === 'high' ? '#FCA5A5' : sev === 'medium' ? '#FCD34D' : '#6EE7B7',
                 }}
               />
-              <span className="text-gray-600">{badge.label}</span>
+              <span className="text-linear-text-secondary">{badge.label}</span>
             </div>
           );
         })}
       </div>
 
       {!hasData ? (
-        <div className="h-48 flex items-center justify-center text-gray-500">
+        <div className="h-48 flex items-center justify-center text-linear-text-tertiary">
           Nu există probleme înregistrate
         </div>
       ) : viewMode === 'chart' ? (
@@ -429,7 +429,7 @@ export function DocumentIssuesBreakdown({
 
       {/* Category Details */}
       {onCategoryClick && viewMode === 'chart' && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-4 border-t border-linear-border-subtle">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {chartData.map((item) => {
               const severityBadge = getSeverityBadge(item.severity);
@@ -437,14 +437,14 @@ export function DocumentIssuesBreakdown({
                 <button
                   key={item.category}
                   onClick={() => onCategoryClick(item.category)}
-                  className="flex flex-col items-start p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                  className="flex flex-col items-start p-3 rounded-lg bg-linear-bg-tertiary hover:bg-linear-bg-hover transition-colors text-left"
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: item.color }} />
-                    <span className="text-sm font-medium text-gray-900 truncate">{item.label}</span>
+                    <span className="text-sm font-medium text-linear-text-primary truncate">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-gray-900">{item.count}</span>
+                    <span className="text-lg font-bold text-linear-text-primary">{item.count}</span>
                     <span
                       className={`text-xs px-1.5 py-0.5 rounded ${severityBadge.bg} ${severityBadge.text}`}
                     >

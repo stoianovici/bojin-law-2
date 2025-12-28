@@ -52,18 +52,18 @@ export function RunNowDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <AlertTriangle className="h-5 w-5 text-linear-warning" />
             Rulare manuală
           </DialogTitle>
           <DialogDescription>
             Sunteți sigur că doriți să rulați acum procesorul{' '}
-            <span className="font-medium text-gray-900">{featureName}</span>?
+            <span className="font-medium text-linear-text-primary">{featureName}</span>?
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <p className="text-sm text-amber-800">
+          <div className="bg-linear-warning/10 border border-linear-warning/30 rounded-lg p-3">
+            <p className="text-sm text-linear-warning">
               Această acțiune va consuma resurse AI și poate dura câteva minute. Procesorul rulează
               în mod normal automat conform programării.
             </p>

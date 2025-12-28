@@ -119,15 +119,15 @@ function formatCurrency(cents: number): string {
 }
 
 function getAdoptionColor(score: number): string {
-  if (score >= 70) return 'text-emerald-600';
-  if (score >= 40) return 'text-amber-600';
-  return 'text-red-600';
+  if (score >= 70) return 'text-linear-success';
+  if (score >= 40) return 'text-linear-warning';
+  return 'text-linear-error';
 }
 
 function getAdoptionBg(score: number): string {
-  if (score >= 70) return 'bg-emerald-50';
-  if (score >= 40) return 'bg-amber-50';
-  return 'bg-red-50';
+  if (score >= 70) return 'bg-linear-success/10';
+  if (score >= 40) return 'bg-linear-warning/10';
+  return 'bg-linear-error/10';
 }
 
 // ============================================================================
@@ -136,16 +136,16 @@ function getAdoptionBg(score: number): string {
 
 function LoadingSkeleton() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-      <div className="h-5 bg-gray-200 rounded w-48 mb-6" />
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 animate-pulse">
+      <div className="h-5 bg-linear-bg-hover rounded w-48 mb-6" />
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-gray-100 rounded" />
+          <div key={i} className="h-24 bg-linear-bg-tertiary rounded" />
         ))}
       </div>
       <div className="grid grid-cols-2 gap-6">
-        <div className="h-64 bg-gray-100 rounded" />
-        <div className="h-64 bg-gray-100 rounded" />
+        <div className="h-64 bg-linear-bg-tertiary rounded" />
+        <div className="h-64 bg-linear-bg-tertiary rounded" />
       </div>
     </div>
   );
@@ -161,17 +161,17 @@ interface MetricCardProps {
 
 function MetricCard({ title, value, subtitle, trend, icon }: MetricCardProps) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4">
+    <div className="bg-linear-bg-tertiary rounded-lg p-4">
       <div className="flex items-start justify-between">
-        <div className="text-xs text-gray-500 mb-1">{title}</div>
+        <div className="text-xs text-linear-text-tertiary mb-1">{title}</div>
         {icon && <span className="text-lg">{icon}</span>}
       </div>
-      <div className="text-2xl font-bold text-gray-900">{value}</div>
-      {subtitle && <div className="text-xs text-gray-400 mt-1">{subtitle}</div>}
+      <div className="text-2xl font-bold text-linear-text-primary">{value}</div>
+      {subtitle && <div className="text-xs text-linear-text-muted mt-1">{subtitle}</div>}
       {trend && (
         <div
           className={`text-xs font-medium mt-1 ${
-            trend.isPositive ? 'text-emerald-600' : 'text-red-600'
+            trend.isPositive ? 'text-linear-success' : 'text-linear-error'
           }`}
         >
           {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value).toFixed(1)}%
@@ -189,7 +189,7 @@ interface FeatureUsageChartProps {
 function FeatureUsageChart({ data, onFeatureClick }: FeatureUsageChartProps) {
   if (data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-500">
+      <div className="h-64 flex items-center justify-center text-linear-text-tertiary">
         Nu există date de utilizare AI
       </div>
     );
@@ -230,7 +230,7 @@ function FeatureDistributionPie({ data }: FeatureDistributionPieProps) {
 
   if (data.length === 0 || totalRequests === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-500">
+      <div className="h-64 flex items-center justify-center text-linear-text-tertiary">
         Nu există date disponibile
       </div>
     );
@@ -271,12 +271,12 @@ function FeatureDistributionPie({ data }: FeatureDistributionPieProps) {
               className="w-3 h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: item.color }}
             />
-            <span className="text-xs text-gray-600 truncate flex-1">{item.label}</span>
-            <span className="text-xs font-medium text-gray-900">{item.percent.toFixed(0)}%</span>
+            <span className="text-xs text-linear-text-secondary truncate flex-1">{item.label}</span>
+            <span className="text-xs font-medium text-linear-text-primary">{item.percent.toFixed(0)}%</span>
           </div>
         ))}
         {pieData.length > 6 && (
-          <div className="text-xs text-gray-400">+{pieData.length - 6} altele</div>
+          <div className="text-xs text-linear-text-muted">+{pieData.length - 6} altele</div>
         )}
       </div>
     </div>
@@ -294,7 +294,7 @@ function CostPerUserTable({ users, onUserClick }: CostPerUserTableProps) {
 
   if (topUsers.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-4">Nu există date de cost per utilizator</div>
+      <div className="text-center text-linear-text-tertiary py-4">Nu există date de cost per utilizator</div>
     );
   }
 
@@ -304,17 +304,17 @@ function CostPerUserTable({ users, onUserClick }: CostPerUserTableProps) {
         <button
           key={user.userId}
           onClick={() => onUserClick?.(user.userId)}
-          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-linear-bg-hover transition-colors text-left"
         >
-          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
+          <div className="w-6 h-6 rounded-full bg-linear-bg-hover flex items-center justify-center text-xs font-medium text-linear-text-secondary">
             {index + 1}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-gray-900 truncate">{user.userName}</div>
-            <div className="text-xs text-gray-500">{formatNumber(user.totalRequests)} cereri</div>
+            <div className="text-sm font-medium text-linear-text-primary truncate">{user.userName}</div>
+            <div className="text-xs text-linear-text-tertiary">{formatNumber(user.totalRequests)} cereri</div>
           </div>
           <div className="text-right">
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-sm font-semibold text-linear-text-primary">
               {formatCurrency(user.totalCostCents)}
             </div>
             <div className={`text-xs ${getAdoptionColor(user.adoptionScore)}`}>
@@ -374,7 +374,7 @@ export function AIUtilizationPanel({
 
   if (!data) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6 text-center text-gray-500">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 text-center text-linear-text-tertiary">
         Nu există date de utilizare AI disponibile
       </div>
     );
@@ -383,10 +383,10 @@ export function AIUtilizationPanel({
   const { firmTotal, byUser, topUsers, underutilizedUsers } = data;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Utilizare AI</h3>
+        <h3 className="text-lg font-semibold text-linear-text-primary">Utilizare AI</h3>
         <div className="flex items-center gap-2">
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium ${getAdoptionBg(
@@ -432,8 +432,8 @@ export function AIUtilizationPanel({
           onClick={() => setSelectedFeature(null)}
           className={`px-3 py-1 text-sm rounded-full transition-colors ${
             selectedFeature === null
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-linear-accent text-white'
+              : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
           }`}
         >
           Toate
@@ -444,8 +444,8 @@ export function AIUtilizationPanel({
             onClick={() => setSelectedFeature(selectedFeature === f.feature ? null : f.feature)}
             className={`px-3 py-1 text-sm rounded-full transition-colors flex items-center gap-1 ${
               selectedFeature === f.feature
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-linear-accent text-white'
+                : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
             }`}
           >
             <span>{FEATURE_CONFIG[f.feature]?.icon}</span>
@@ -458,16 +458,16 @@ export function AIUtilizationPanel({
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         {/* Feature Usage Bar Chart */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Utilizare pe funcționalitate</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Utilizare pe funcționalitate</h4>
+          <div className="bg-linear-bg-tertiary rounded-lg p-4">
             <FeatureUsageChart data={filteredFeatureData} onFeatureClick={onFeatureClick} />
           </div>
         </div>
 
         {/* Feature Distribution Pie */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Distribuție cereri</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Distribuție cereri</h4>
+          <div className="bg-linear-bg-tertiary rounded-lg p-4">
             <FeatureDistributionPie data={featureChartData} />
           </div>
         </div>
@@ -477,19 +477,19 @@ export function AIUtilizationPanel({
       <div className="grid md:grid-cols-2 gap-6">
         {/* Top Users by Cost */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Top utilizatori (cost)</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Top utilizatori (cost)</h4>
+          <div className="bg-linear-bg-tertiary rounded-lg p-4">
             <CostPerUserTable users={byUser} onUserClick={onUserClick} />
           </div>
         </div>
 
         {/* Adoption Summary */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Sumar adopție</h4>
-          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+          <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Sumar adopție</h4>
+          <div className="bg-linear-bg-tertiary rounded-lg p-4 space-y-4">
             {/* Top Users */}
             <div>
-              <div className="text-xs text-gray-500 mb-2">
+              <div className="text-xs text-linear-text-tertiary mb-2">
                 Top performeri ({topUsers?.length || 0})
               </div>
               <div className="flex flex-wrap gap-2">
@@ -497,7 +497,7 @@ export function AIUtilizationPanel({
                   <button
                     key={user.userId}
                     onClick={() => onUserClick?.(user.userId)}
-                    className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium hover:bg-emerald-200 transition-colors"
+                    className="px-2 py-1 bg-linear-success/15 text-linear-success rounded text-xs font-medium hover:bg-linear-success/20 transition-colors"
                   >
                     {user.userName} ({user.adoptionScore}%)
                   </button>
@@ -508,7 +508,7 @@ export function AIUtilizationPanel({
             {/* Underutilized Users */}
             {underutilizedUsers && underutilizedUsers.length > 0 && (
               <div>
-                <div className="text-xs text-gray-500 mb-2">
+                <div className="text-xs text-linear-text-tertiary mb-2">
                   Necesită training ({underutilizedUsers.length})
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -516,7 +516,7 @@ export function AIUtilizationPanel({
                     <button
                       key={user.userId}
                       onClick={() => onUserClick?.(user.userId)}
-                      className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-medium hover:bg-amber-200 transition-colors"
+                      className="px-2 py-1 bg-linear-warning/15 text-linear-warning rounded text-xs font-medium hover:bg-linear-warning/20 transition-colors"
                     >
                       {user.userName} ({user.adoptionScore}%)
                     </button>
@@ -526,19 +526,19 @@ export function AIUtilizationPanel({
             )}
 
             {/* Quick Stats */}
-            <div className="pt-3 border-t border-gray-200 grid grid-cols-2 gap-4">
+            <div className="pt-3 border-t border-linear-border-subtle grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs text-gray-500">Funcții utilizate</div>
-                <div className="text-lg font-bold text-gray-900">
+                <div className="text-xs text-linear-text-tertiary">Funcții utilizate</div>
+                <div className="text-lg font-bold text-linear-text-primary">
                   {featureChartData.filter((f) => f.requestCount > 0).length}
-                  <span className="text-sm text-gray-400 font-normal">
+                  <span className="text-sm text-linear-text-muted font-normal">
                     /{Object.keys(FEATURE_CONFIG).length}
                   </span>
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Rată acceptare medie</div>
-                <div className="text-lg font-bold text-gray-900">
+                <div className="text-xs text-linear-text-tertiary">Rată acceptare medie</div>
+                <div className="text-lg font-bold text-linear-text-primary">
                   {(() => {
                     const withAcceptance = featureChartData.filter(
                       (f) => f.acceptanceRate !== undefined

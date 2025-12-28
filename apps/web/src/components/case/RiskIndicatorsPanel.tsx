@@ -80,9 +80,9 @@ function getRiskTypeLabel(riskType: RiskType): string {
 
 function getSeverityConfig(severity: RiskSeverity) {
   const configs = {
-    High: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300' },
-    Medium: { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300' },
-    Low: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300' },
+    High: { bg: 'bg-linear-error/15', text: 'text-linear-error', border: 'border-linear-error/30' },
+    Medium: { bg: 'bg-linear-warning/15', text: 'text-linear-warning', border: 'border-linear-warning/30' },
+    Low: { bg: 'bg-linear-success/15', text: 'text-linear-success', border: 'border-linear-success/30' },
   };
   return configs[severity];
 }
@@ -119,7 +119,7 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
 
   return (
     <div
-      className={`border rounded-lg ${risk.isResolved ? 'bg-gray-50 opacity-75' : 'bg-white'}`}
+      className={`border rounded-lg ${risk.isResolved ? 'bg-linear-bg-primary opacity-75' : 'bg-linear-bg-secondary'}`}
       role="listitem"
     >
       {/* Header */}
@@ -128,14 +128,14 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
           {/* Expand button */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex-shrink-0 p-1 hover:bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-shrink-0 p-1 hover:bg-linear-bg-hover rounded focus:outline-none focus:ring-2 focus:ring-linear-accent"
             aria-expanded={isExpanded}
             aria-controls={`risk-details-${risk.id}`}
           >
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-500" aria-hidden="true" />
+              <ChevronDown className="h-4 w-4 text-linear-text-tertiary" aria-hidden="true" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-500" aria-hidden="true" />
+              <ChevronRight className="h-4 w-4 text-linear-text-tertiary" aria-hidden="true" />
             )}
           </button>
 
@@ -153,13 +153,13 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
                 {risk.severity}
               </span>
               {risk.isResolved && (
-                <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-linear-bg-tertiary text-linear-text-secondary">
                   Resolved
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{risk.description}</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-sm text-linear-text-secondary mt-1 line-clamp-2">{risk.description}</p>
+            <p className="text-xs text-linear-text-muted mt-1">
               {format(parseISO(risk.createdAt), 'MMM d, yyyy h:mm a')}
             </p>
           </div>
@@ -169,7 +169,7 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
             {onViewEmail && (
               <button
                 onClick={onViewEmail}
-                className="p-1 text-gray-400 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                className="p-1 text-linear-text-muted hover:text-linear-accent focus:outline-none focus:ring-2 focus:ring-linear-accent rounded"
                 aria-label="View source email"
               >
                 <ExternalLink className="h-4 w-4" aria-hidden="true" />
@@ -178,7 +178,7 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
             {!risk.isResolved && (
               <button
                 onClick={() => setShowResolveForm(!showResolveForm)}
-                className="p-1 text-gray-400 hover:text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 rounded"
+                className="p-1 text-linear-text-muted hover:text-linear-success focus:outline-none focus:ring-2 focus:ring-linear-success rounded"
                 aria-label="Resolve risk"
               >
                 <CheckCircle className="h-4 w-4" aria-hidden="true" />
@@ -189,25 +189,25 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
 
         {/* Resolve form */}
         {showResolveForm && (
-          <div className="mt-3 p-2 bg-gray-50 rounded flex items-center gap-2">
+          <div className="mt-3 p-2 bg-linear-bg-primary rounded flex items-center gap-2">
             <input
               type="text"
               value={resolutionNote}
               onChange={(e) => setResolutionNote(e.target.value)}
               placeholder="Resolution note (optional)"
-              className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 px-2 py-1 text-sm border border-linear-border rounded focus:outline-none focus:ring-2 focus:ring-linear-success bg-linear-bg-secondary text-linear-text-primary"
               aria-label="Resolution note"
             />
             <button
               onClick={handleResolve}
               disabled={isResolving}
-              className="px-3 py-1 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="px-3 py-1 text-sm font-medium text-white bg-linear-success rounded hover:bg-linear-success/90 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-linear-success"
             >
               {isResolving ? 'Saving...' : 'Resolve'}
             </button>
             <button
               onClick={() => setShowResolveForm(false)}
-              className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="px-2 py-1 text-sm text-linear-text-secondary hover:text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent"
             >
               Cancel
             </button>
@@ -220,19 +220,19 @@ function RiskItem({ risk, onResolve, onViewEmail, isResolving }: RiskItemProps) 
         <div id={`risk-details-${risk.id}`} className="px-3 pb-3 border-t pt-3 ml-10">
           {risk.evidence && (
             <div className="mb-2">
-              <p className="text-xs font-medium text-gray-500 mb-1">Evidence</p>
-              <p className="text-sm text-gray-700 italic">&ldquo;{risk.evidence}&rdquo;</p>
+              <p className="text-xs font-medium text-linear-text-tertiary mb-1">Evidence</p>
+              <p className="text-sm text-linear-text-secondary italic">&ldquo;{risk.evidence}&rdquo;</p>
             </div>
           )}
           {risk.suggestedAction && (
             <div className="mb-2">
-              <p className="text-xs font-medium text-gray-500 mb-1">Suggested Action</p>
-              <p className="text-sm text-gray-700">{risk.suggestedAction}</p>
+              <p className="text-xs font-medium text-linear-text-tertiary mb-1">Suggested Action</p>
+              <p className="text-sm text-linear-text-secondary">{risk.suggestedAction}</p>
             </div>
           )}
           {risk.isResolved && risk.resolvedAt && (
-            <div className="mt-2 p-2 bg-green-50 rounded">
-              <p className="text-xs text-green-700">
+            <div className="mt-2 p-2 bg-linear-success/10 rounded">
+              <p className="text-xs text-linear-success">
                 Resolved on {format(parseISO(risk.resolvedAt), 'MMM d, yyyy')}
                 {risk.resolutionNote && `: ${risk.resolutionNote}`}
               </p>
@@ -304,8 +304,8 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
   if (loading && risks.length === 0) {
     return (
       <div className="p-4 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-500" aria-hidden="true" />
-        <span className="ml-2 text-sm text-gray-600">Loading risk indicators...</span>
+        <Loader2 className="h-6 w-6 animate-spin text-linear-accent" aria-hidden="true" />
+        <span className="ml-2 text-sm text-linear-text-secondary">Loading risk indicators...</span>
       </div>
     );
   }
@@ -313,8 +313,8 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
   // Error state
   if (error) {
     return (
-      <div className="p-4 bg-red-50 rounded-lg" role="alert">
-        <div className="flex items-center gap-2 text-red-800">
+      <div className="p-4 bg-linear-error/10 rounded-lg" role="alert">
+        <div className="flex items-center gap-2 text-linear-error">
           <AlertTriangle className="h-5 w-5" aria-hidden="true" />
           <span className="font-medium">Failed to load risk indicators</span>
         </div>
@@ -329,13 +329,13 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
         <h2 className="font-semibold text-lg">Risk Indicators</h2>
         {summary && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="px-2 py-0.5 rounded bg-red-100 text-red-800">
+            <span className="px-2 py-0.5 rounded bg-linear-error/15 text-linear-error">
               {summary.highSeverity} High
             </span>
-            <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">
+            <span className="px-2 py-0.5 rounded bg-linear-warning/15 text-linear-warning">
               {summary.mediumSeverity} Med
             </span>
-            <span className="px-2 py-0.5 rounded bg-green-100 text-green-800">
+            <span className="px-2 py-0.5 rounded bg-linear-success/15 text-linear-success">
               {summary.lowSeverity} Low
             </span>
           </div>
@@ -343,13 +343,13 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-gray-50 rounded-lg">
-        <Filter className="h-4 w-4 text-gray-500" aria-hidden="true" />
+      <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-linear-bg-primary rounded-lg">
+        <Filter className="h-4 w-4 text-linear-text-tertiary" aria-hidden="true" />
 
         <select
           value={filterSeverity}
           onChange={(e) => setFilterSeverity(e.target.value as RiskSeverity | 'all')}
-          className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-sm border border-linear-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-linear-accent bg-linear-bg-secondary text-linear-text-primary"
           aria-label="Filter by severity"
         >
           <option value="all">All severities</option>
@@ -361,7 +361,7 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value as RiskType | 'all')}
-          className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-sm border border-linear-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-linear-accent bg-linear-bg-secondary text-linear-text-primary"
           aria-label="Filter by type"
         >
           <option value="all">All types</option>
@@ -376,7 +376,7 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
         <select
           value={filterResolved}
           onChange={(e) => setFilterResolved(e.target.value as 'all' | 'resolved' | 'unresolved')}
-          className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-sm border border-linear-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-linear-accent bg-linear-bg-secondary text-linear-text-primary"
           aria-label="Filter by status"
         >
           <option value="all">All statuses</option>
@@ -387,7 +387,7 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
         <div className="ml-auto flex items-center gap-1">
           <button
             onClick={() => toggleSort('severity')}
-            className={`p-1 rounded hover:bg-gray-200 ${sortField === 'severity' ? 'bg-gray-200' : ''}`}
+            className={`p-1 rounded hover:bg-linear-bg-hover ${sortField === 'severity' ? 'bg-linear-bg-tertiary' : ''}`}
             aria-label="Sort by severity"
             aria-sort={
               sortField === 'severity'
@@ -403,14 +403,14 @@ export function RiskIndicatorsPanel({ caseId, onViewEmail }: RiskIndicatorsPanel
               <SortDesc className="h-4 w-4" aria-hidden="true" />
             )}
           </button>
-          <span className="text-xs text-gray-500">Severity</span>
+          <span className="text-xs text-linear-text-tertiary">Severity</span>
         </div>
       </div>
 
       {/* Risk list */}
       {filteredRisks.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" aria-hidden="true" />
+        <div className="text-center py-8 text-linear-text-tertiary">
+          <CheckCircle className="h-8 w-8 mx-auto mb-2 text-linear-success" aria-hidden="true" />
           <p className="text-sm">No risks found</p>
         </div>
       ) : (

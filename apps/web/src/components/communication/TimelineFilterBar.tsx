@@ -103,19 +103,19 @@ export function TimelineFilterBar({
   };
 
   return (
-    <div className={`rounded-lg border border-gray-200 bg-gray-50 ${className}`}>
+    <div className={`rounded-lg border border-linear-border-subtle bg-linear-bg-tertiary ${className}`}>
       {/* Collapsed View */}
       <div className="flex items-center gap-3 p-3">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="flex items-center gap-2 rounded-lg border border-linear-border bg-linear-bg-secondary px-3 py-1.5 text-sm font-medium text-linear-text-secondary hover:bg-linear-bg-tertiary"
           aria-expanded={isExpanded}
           aria-controls="filter-panel"
         >
           <Filter className="h-4 w-4" />
           Filtre
           {activeCount > 0 && (
-            <span className="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+            <span className="ml-1 rounded-full bg-linear-accent/15 px-2 py-0.5 text-xs text-linear-accent">
               {activeCount}
             </span>
           )}
@@ -123,13 +123,13 @@ export function TimelineFilterBar({
 
         {/* Quick search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-linear-text-muted" />
           <input
             type="text"
             placeholder="Caută comunicări..."
             value={filter.searchTerm || ''}
             onChange={handleSearchChange}
-            className="w-full rounded-lg border border-gray-300 bg-white py-1.5 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-linear-border bg-linear-bg-secondary py-1.5 pl-9 pr-3 text-sm placeholder:text-linear-text-muted focus:border-linear-accent focus:outline-none focus:ring-1 focus:ring-linear-accent"
             aria-label="Caută comunicări"
           />
         </div>
@@ -151,8 +151,8 @@ export function TimelineFilterBar({
                 disabled={disabled}
                 className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-xs transition-colors ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                    ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                    : 'border-linear-border bg-linear-bg-secondary text-linear-text-tertiary hover:bg-linear-bg-tertiary'
                 } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
                 title={disabled ? 'În curând' : getChannelLabel(channel)}
                 aria-pressed={isSelected}
@@ -168,7 +168,7 @@ export function TimelineFilterBar({
         {activeCount > 0 && (
           <button
             onClick={onClear}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+            className="flex items-center gap-1 text-sm text-linear-text-tertiary hover:text-linear-text-secondary"
           >
             <X className="h-4 w-4" />
             Șterge
@@ -180,14 +180,14 @@ export function TimelineFilterBar({
       {isExpanded && (
         <div
           id="filter-panel"
-          className="border-t border-gray-200 p-4"
+          className="border-t border-linear-border-subtle p-4"
           role="region"
           aria-label="Filter options"
         >
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Channel Types */}
             <fieldset>
-              <legend className="mb-2 text-xs font-medium uppercase text-gray-500">Canale</legend>
+              <legend className="mb-2 text-xs font-medium uppercase text-linear-text-tertiary">Canale</legend>
               <div className="flex flex-wrap gap-2">
                 {ALL_CHANNELS.map((channel) => {
                   const isSelected = selectedChannels.includes(channel);
@@ -198,9 +198,9 @@ export function TimelineFilterBar({
                       key={channel}
                       className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ${
                         isSelected
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-300 bg-white text-gray-600'
-                      } ${disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-50'}`}
+                          ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                          : 'border-linear-border bg-linear-bg-secondary text-linear-text-tertiary'
+                      } ${disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-linear-bg-tertiary'}`}
                     >
                       <input
                         type="checkbox"
@@ -212,7 +212,7 @@ export function TimelineFilterBar({
                       {getChannelIcon(channel)}
                       {getChannelLabel(channel)}
                       {disabled && (
-                        <span className="rounded bg-gray-200 px-1 text-[10px] text-gray-500">
+                        <span className="rounded bg-linear-bg-hover px-1 text-[10px] text-linear-text-muted">
                           În curând
                         </span>
                       )}
@@ -224,15 +224,15 @@ export function TimelineFilterBar({
 
             {/* Direction */}
             <fieldset>
-              <legend className="mb-2 text-xs font-medium uppercase text-gray-500">Direcție</legend>
+              <legend className="mb-2 text-xs font-medium uppercase text-linear-text-tertiary">Direcție</legend>
               <div className="flex gap-2">
                 {ALL_DIRECTIONS.map(({ value, label }) => (
                   <label
                     key={label}
                     className={`flex cursor-pointer items-center rounded-lg border px-3 py-1.5 text-sm ${
                       filter.direction === value
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                        ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                        : 'border-linear-border bg-linear-bg-secondary text-linear-text-tertiary hover:bg-linear-bg-tertiary'
                     }`}
                   >
                     <input
@@ -250,28 +250,28 @@ export function TimelineFilterBar({
 
             {/* Date Range */}
             <fieldset>
-              <legend className="mb-2 text-xs font-medium uppercase text-gray-500">
+              <legend className="mb-2 text-xs font-medium uppercase text-linear-text-tertiary">
                 Interval Date
               </legend>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <CalendarDays className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <CalendarDays className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-linear-text-muted" />
                   <input
                     type="date"
                     value={filter.dateFrom?.toISOString().split('T')[0] || ''}
                     onChange={handleDateFromChange}
-                    className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-linear-border bg-linear-bg-secondary py-1.5 pl-8 pr-2 text-sm focus:border-linear-accent focus:outline-none focus:ring-1 focus:ring-linear-accent"
                     aria-label="De la data"
                   />
                 </div>
-                <span className="text-gray-400">până la</span>
+                <span className="text-linear-text-muted">până la</span>
                 <div className="relative flex-1">
-                  <CalendarDays className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <CalendarDays className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-linear-text-muted" />
                   <input
                     type="date"
                     value={filter.dateTo?.toISOString().split('T')[0] || ''}
                     onChange={handleDateToChange}
-                    className="w-full rounded-lg border border-gray-300 py-1.5 pl-8 pr-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-linear-border bg-linear-bg-secondary py-1.5 pl-8 pr-2 text-sm focus:border-linear-accent focus:outline-none focus:ring-1 focus:ring-linear-accent"
                     aria-label="Până la data"
                   />
                 </div>
@@ -280,7 +280,7 @@ export function TimelineFilterBar({
 
             {/* Privacy Toggle */}
             <fieldset>
-              <legend className="mb-2 text-xs font-medium uppercase text-gray-500">
+              <legend className="mb-2 text-xs font-medium uppercase text-linear-text-tertiary">
                 Confidențialitate
               </legend>
               <label className="flex cursor-pointer items-center gap-2">
@@ -288,9 +288,9 @@ export function TimelineFilterBar({
                   type="checkbox"
                   checked={filter.includePrivate || false}
                   onChange={handlePrivacyToggle}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-linear-border text-linear-accent focus:ring-linear-accent"
                 />
-                <span className="text-sm text-gray-700">Afișează comunicările private</span>
+                <span className="text-sm text-linear-text-secondary">Afișează comunicările private</span>
               </label>
             </fieldset>
           </div>

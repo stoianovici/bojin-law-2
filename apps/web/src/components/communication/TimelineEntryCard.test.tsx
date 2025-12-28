@@ -12,12 +12,12 @@ import type { TimelineEntry } from '@/hooks/useCaseTimeline';
 // Mock the hooks
 jest.mock('@/hooks/useCaseTimeline', () => ({
   useChannelMetadata: () => ({
-    getChannelColor: () => 'text-blue-600',
+    getChannelColor: () => 'text-linear-accent',
     getChannelLabel: (channel: string) => channel,
     isChannelDisabled: () => false,
   }),
   usePrivacyMetadata: () => ({
-    getPrivacyColor: () => 'text-gray-600',
+    getPrivacyColor: () => 'text-linear-text-secondary',
     getPrivacyLabel: (level: string) => level,
   }),
 }));

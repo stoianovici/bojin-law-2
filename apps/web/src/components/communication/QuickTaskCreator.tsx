@@ -111,12 +111,12 @@ export function QuickTaskCreator({
   };
 
   return (
-    <div className="border border-blue-300 rounded-lg bg-blue-50 p-3 space-y-3">
+    <div className="border border-linear-accent/30 rounded-lg bg-linear-accent/10 p-3 space-y-3">
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-medium text-sm">Creează Task</h4>
         <button
           onClick={onCancel}
-          className="text-gray-500 hover:text-gray-700"
+          className="text-linear-text-tertiary hover:text-linear-text-secondary"
           aria-label="Anulează"
         >
           <X className="h-4 w-4" />
@@ -132,7 +132,7 @@ export function QuickTaskCreator({
           id="task-type"
           value={taskType}
           onChange={(e) => setTaskType(e.target.value as TaskType)}
-          className="w-full border rounded px-2 py-1.5 text-sm bg-white"
+          className="w-full border rounded px-2 py-1.5 text-sm bg-linear-bg-secondary"
         >
           <option value="Research">Research</option>
           <option value="DocumentCreation">Creare Document</option>
@@ -146,7 +146,7 @@ export function QuickTaskCreator({
       {/* Title */}
       <div>
         <label htmlFor="task-title" className="block text-xs font-medium mb-1">
-          Titlu: <span className="text-red-500">*</span>
+          Titlu: <span className="text-linear-error">*</span>
         </label>
         <input
           id="task-title"
@@ -155,10 +155,10 @@ export function QuickTaskCreator({
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Titlul task-ului..."
           className={`w-full border rounded px-2 py-1.5 text-sm ${
-            errors.title ? 'border-red-500' : ''
+            errors.title ? 'border-linear-error' : ''
           }`}
         />
-        {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+        {errors.title && <p className="text-xs text-linear-error mt-1">{errors.title}</p>}
       </div>
 
       {/* Description */}
@@ -184,7 +184,7 @@ export function QuickTaskCreator({
           id="task-assigned-to"
           value={assignedTo}
           onChange={(e) => setAssignedTo(e.target.value)}
-          className="w-full border rounded px-2 py-1.5 text-sm bg-white"
+          className="w-full border rounded px-2 py-1.5 text-sm bg-linear-bg-secondary"
         >
           <option value="current-user">Eu (Utilizator curent)</option>
           <option value="user-1">Mihai Bojin</option>
@@ -196,7 +196,7 @@ export function QuickTaskCreator({
       {/* Due Date */}
       <div>
         <label htmlFor="task-due-date" className="block text-xs font-medium mb-1">
-          Scadență: <span className="text-red-500">*</span>
+          Scadență: <span className="text-linear-error">*</span>
         </label>
         <input
           id="task-due-date"
@@ -204,10 +204,10 @@ export function QuickTaskCreator({
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
           className={`w-full border rounded px-2 py-1.5 text-sm ${
-            errors.dueDate ? 'border-red-500' : ''
+            errors.dueDate ? 'border-linear-error' : ''
           }`}
         />
-        {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+        {errors.dueDate && <p className="text-xs text-linear-error mt-1">{errors.dueDate}</p>}
       </div>
 
       {/* Priority */}
@@ -219,7 +219,7 @@ export function QuickTaskCreator({
           id="task-priority"
           value={priority}
           onChange={(e) => setPriority(e.target.value as 'Low' | 'Medium' | 'High' | 'Urgent')}
-          className="w-full border rounded px-2 py-1.5 text-sm bg-white"
+          className="w-full border rounded px-2 py-1.5 text-sm bg-linear-bg-secondary"
         >
           <option value="Low">Scăzută</option>
           <option value="Medium">Medie</option>
@@ -232,19 +232,19 @@ export function QuickTaskCreator({
       <div className="flex items-center gap-2 pt-2">
         <button
           onClick={handleSave}
-          className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium"
+          className="flex-1 px-3 py-2 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors font-medium"
         >
           Salvează Task
         </button>
         <button
           onClick={onCancel}
-          className="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+          className="px-3 py-2 text-sm bg-linear-bg-tertiary text-linear-text-secondary rounded hover:bg-linear-bg-hover transition-colors"
         >
           Anulează
         </button>
       </div>
 
-      <p className="text-xs text-gray-600 italic">
+      <p className="text-xs text-linear-text-tertiary italic">
         Apasă Ctrl+Enter pentru a salva, Esc pentru a anula
       </p>
     </div>

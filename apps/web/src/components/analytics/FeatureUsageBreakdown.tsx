@@ -42,63 +42,63 @@ const FEATURE_CONFIG: Record<
     description: 'Generare și rafinare emailuri',
     icon: '✉️',
     color: '#3B82F6',
-    bgLight: 'bg-blue-50',
+    bgLight: 'bg-linear-accent/10',
   },
   document_generation: {
     label: 'Generare documente',
     description: 'Creare documente juridice',
     icon: '📄',
     color: '#10B981',
-    bgLight: 'bg-emerald-50',
+    bgLight: 'bg-linear-success/10',
   },
   clause_suggestions: {
     label: 'Sugestii clauze',
     description: 'Propuneri de clauze contractuale',
     icon: '📝',
     color: '#8B5CF6',
-    bgLight: 'bg-violet-50',
+    bgLight: 'bg-linear-accent/10',
   },
   task_parsing: {
     label: 'Parsare sarcini',
     description: 'Extragere sarcini din text',
     icon: '✅',
     color: '#F59E0B',
-    bgLight: 'bg-amber-50',
+    bgLight: 'bg-linear-warning/10',
   },
   morning_briefing: {
     label: 'Briefing matinal',
     description: 'Sumar zilnic personalizat',
     icon: '☀️',
     color: '#EC4899',
-    bgLight: 'bg-pink-50',
+    bgLight: 'bg-linear-error/10',
   },
   proactive_suggestions: {
     label: 'Sugestii proactive',
     description: 'Recomandări bazate pe context',
     icon: '💡',
     color: '#06B6D4',
-    bgLight: 'bg-cyan-50',
+    bgLight: 'bg-linear-accent/10',
   },
   semantic_search: {
     label: 'Căutare semantică',
     description: 'Căutare inteligentă documente',
     icon: '🔍',
     color: '#84CC16',
-    bgLight: 'bg-lime-50',
+    bgLight: 'bg-linear-success/10',
   },
   version_comparison: {
     label: 'Comparare versiuni',
     description: 'Diferențe semantice documente',
     icon: '📊',
     color: '#F97316',
-    bgLight: 'bg-orange-50',
+    bgLight: 'bg-linear-warning/10',
   },
   style_analysis: {
     label: 'Analiză stil',
     description: 'Învățare stil redactare',
     icon: '🎨',
     color: '#6366F1',
-    bgLight: 'bg-indigo-50',
+    bgLight: 'bg-linear-accent/10',
   },
 };
 
@@ -118,10 +118,10 @@ function formatLatency(ms: number): string {
 }
 
 function getAcceptanceColor(rate: number | undefined): string {
-  if (rate === undefined) return 'text-gray-400';
-  if (rate >= 70) return 'text-emerald-600';
-  if (rate >= 50) return 'text-amber-600';
-  return 'text-red-600';
+  if (rate === undefined) return 'text-linear-text-muted';
+  if (rate >= 70) return 'text-linear-success';
+  if (rate >= 50) return 'text-linear-warning';
+  return 'text-linear-error';
 }
 
 function getUsageLevel(count: number, maxCount: number): { label: string; width: string } {
@@ -138,11 +138,11 @@ function getUsageLevel(count: number, maxCount: number): { label: string; width:
 
 function LoadingSkeleton() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-      <div className="h-5 bg-gray-200 rounded w-48 mb-6" />
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 animate-pulse">
+      <div className="h-5 bg-linear-bg-hover rounded w-48 mb-6" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-40 bg-gray-100 rounded-lg" />
+          <div key={i} className="h-40 bg-linear-bg-tertiary rounded-lg" />
         ))}
       </div>
     </div>
@@ -165,8 +165,8 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
       onClick={onClick}
       disabled={!onClick}
       className={`w-full p-4 rounded-lg border transition-all text-left ${
-        onClick ? 'hover:shadow-md hover:border-gray-300 cursor-pointer' : ''
-      } ${isUsed ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60'}`}
+        onClick ? 'hover:shadow-md hover:border-linear-border cursor-pointer' : ''
+      } ${isUsed ? 'border-linear-border-subtle bg-linear-bg-secondary' : 'border-linear-border-subtle/50 bg-linear-bg-tertiary opacity-60'}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -177,8 +177,8 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
             {config.icon}
           </span>
           <div>
-            <div className="font-medium text-gray-900 text-sm">{config.label}</div>
-            <div className="text-xs text-gray-500">{config.description}</div>
+            <div className="font-medium text-linear-text-primary text-sm">{config.label}</div>
+            <div className="text-xs text-linear-text-tertiary">{config.description}</div>
           </div>
         </div>
       </div>
@@ -187,11 +187,11 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
       <div className="space-y-3">
         {/* Request Count */}
         <div>
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
+          <div className="flex justify-between text-xs text-linear-text-tertiary mb-1">
             <span>Cereri</span>
-            <span className="font-medium text-gray-900">{formatNumber(feature.requestCount)}</span>
+            <span className="font-medium text-linear-text-primary">{formatNumber(feature.requestCount)}</span>
           </div>
-          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-linear-bg-hover rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all"
               style={{
@@ -205,24 +205,24 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-2 text-center">
           {/* Tokens */}
-          <div className="bg-gray-50 rounded p-1.5">
-            <div className="text-xs text-gray-500">Tokeni</div>
-            <div className="text-sm font-semibold text-gray-900">
+          <div className="bg-linear-bg-tertiary rounded p-1.5">
+            <div className="text-xs text-linear-text-tertiary">Tokeni</div>
+            <div className="text-sm font-semibold text-linear-text-primary">
               {formatNumber(feature.tokenCount)}
             </div>
           </div>
 
           {/* Latency */}
-          <div className="bg-gray-50 rounded p-1.5">
-            <div className="text-xs text-gray-500">Latență</div>
-            <div className="text-sm font-semibold text-gray-900">
+          <div className="bg-linear-bg-tertiary rounded p-1.5">
+            <div className="text-xs text-linear-text-tertiary">Latență</div>
+            <div className="text-sm font-semibold text-linear-text-primary">
               {formatLatency(feature.avgLatencyMs)}
             </div>
           </div>
 
           {/* Acceptance Rate */}
-          <div className="bg-gray-50 rounded p-1.5">
-            <div className="text-xs text-gray-500">Acceptare</div>
+          <div className="bg-linear-bg-tertiary rounded p-1.5">
+            <div className="text-xs text-linear-text-tertiary">Acceptare</div>
             <div className={`text-sm font-semibold ${getAcceptanceColor(feature.acceptanceRate)}`}>
               {feature.acceptanceRate !== undefined
                 ? `${feature.acceptanceRate.toFixed(0)}%`
@@ -237,11 +237,11 @@ function FeatureCard({ feature, config, maxRequests, onClick }: FeatureCardProps
             className={`text-xs px-2 py-0.5 rounded-full ${
               isUsed
                 ? usageLevel.label === 'Ridicat'
-                  ? 'bg-emerald-100 text-emerald-700'
+                  ? 'bg-linear-success/10 text-linear-success'
                   : usageLevel.label === 'Moderat'
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-gray-100 text-gray-600'
-                : 'bg-gray-100 text-gray-400'
+                    ? 'bg-linear-warning/10 text-linear-warning'
+                    : 'bg-linear-bg-tertiary text-linear-text-secondary'
+                : 'bg-linear-bg-tertiary text-linear-text-muted'
             }`}
           >
             {usageLevel.label}
@@ -316,20 +316,20 @@ export function FeatureUsageBreakdown({
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Funcționalități AI</h3>
+        <h3 className="text-lg font-semibold text-linear-text-primary">Funcționalități AI</h3>
         <div className="flex items-center gap-4 text-sm">
-          <span className="text-gray-500">
-            <span className="font-medium text-gray-900">{stats.usedCount}</span>/{stats.totalCount}{' '}
+          <span className="text-linear-text-tertiary">
+            <span className="font-medium text-linear-text-primary">{stats.usedCount}</span>/{stats.totalCount}{' '}
             active
           </span>
           {stats.avgAcceptance !== null && (
             <span
               className={`px-2 py-0.5 rounded-full ${getAcceptanceColor(
                 stats.avgAcceptance
-              )} bg-gray-100`}
+              )} bg-linear-bg-tertiary`}
             >
               {stats.avgAcceptance.toFixed(0)}% acceptare medie
             </span>
@@ -338,20 +338,20 @@ export function FeatureUsageBreakdown({
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+      <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-linear-bg-tertiary rounded-lg">
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-linear-text-primary">
             {formatNumber(stats.totalRequests)}
           </div>
-          <div className="text-xs text-gray-500">Total cereri</div>
+          <div className="text-xs text-linear-text-tertiary">Total cereri</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900">{formatNumber(stats.totalTokens)}</div>
-          <div className="text-xs text-gray-500">Total tokeni</div>
+          <div className="text-2xl font-bold text-linear-text-primary">{formatNumber(stats.totalTokens)}</div>
+          <div className="text-xs text-linear-text-tertiary">Total tokeni</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900">{stats.usedCount}</div>
-          <div className="text-xs text-gray-500">Funcții utilizate</div>
+          <div className="text-2xl font-bold text-linear-text-primary">{stats.usedCount}</div>
+          <div className="text-xs text-linear-text-tertiary">Funcții utilizate</div>
         </div>
       </div>
 
@@ -374,22 +374,22 @@ export function FeatureUsageBreakdown({
       </div>
 
       {/* Legend */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+      <div className="mt-6 pt-4 border-t border-linear-border-subtle">
+        <div className="flex flex-wrap gap-4 text-xs text-linear-text-tertiary">
           <div className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-full bg-linear-success" />
             <span>Ridicat ({'>'}60%)</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="w-2 h-2 rounded-full bg-linear-warning" />
             <span>Moderat (30-60%)</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-gray-400" />
+            <span className="w-2 h-2 rounded-full bg-linear-text-muted" />
             <span>Scăzut ({'<'}30%)</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-gray-200" />
+            <span className="w-2 h-2 rounded-full bg-linear-bg-hover" />
             <span>Nefolosit</span>
           </div>
         </div>

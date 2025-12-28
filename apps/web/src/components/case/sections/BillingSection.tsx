@@ -96,7 +96,7 @@ function RateField({ label, value, editable, onSave, loading }: RateFieldProps) 
   if (isEditing) {
     return (
       <div className="flex-1">
-        <label className="text-sm font-medium text-gray-500 block mb-1">{label}</label>
+        <label className="text-sm font-medium text-linear-text-muted block mb-1">{label}</label>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <input
@@ -105,20 +105,20 @@ function RateField({ label, value, editable, onSave, loading }: RateFieldProps) 
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-1.5 pr-16 border border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 text-sm"
+              className="w-full px-3 py-1.5 pr-16 border border-linear-accent rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary text-sm bg-linear-bg-secondary"
               placeholder="RON/oră"
               disabled={loading}
               step="1"
               min="0"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-linear-text-muted">
               RON/h
             </span>
           </div>
           <button
             onClick={handleSave}
             disabled={loading}
-            className="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50"
+            className="p-1.5 text-linear-success hover:bg-linear-success/10 rounded-md transition-colors disabled:opacity-50"
             title="Salvează"
             type="button"
           >
@@ -127,30 +127,30 @@ function RateField({ label, value, editable, onSave, loading }: RateFieldProps) 
           <button
             onClick={handleCancel}
             disabled={loading}
-            className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+            className="p-1.5 text-linear-error hover:bg-linear-error/10 rounded-md transition-colors disabled:opacity-50"
             title="Anulează"
             type="button"
           >
             <Cross2Icon className="h-4 w-4" />
           </button>
         </div>
-        <p className="mt-1 text-xs text-gray-500">Enter = salvează, ESC = anulează</p>
+        <p className="mt-1 text-xs text-linear-text-muted">Enter = salvează, ESC = anulează</p>
       </div>
     );
   }
 
   return (
     <div className={`flex-1 group ${editable ? 'cursor-pointer' : ''}`} onClick={handleEdit}>
-      <div className="text-sm font-medium text-gray-500 mb-1 flex items-center justify-between">
+      <div className="text-sm font-medium text-linear-text-muted mb-1 flex items-center justify-between">
         <span>{label}</span>
         {editable && (
-          <Pencil1Icon className="h-3.5 w-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Pencil1Icon className="h-3.5 w-3.5 text-linear-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
         )}
       </div>
       <div
         className={`text-sm font-semibold ${
-          value != null ? 'text-gray-900' : 'text-gray-400 italic'
-        } ${editable ? 'group-hover:text-blue-600 transition-colors' : ''}`}
+          value != null ? 'text-linear-text-primary' : 'text-linear-text-muted italic'
+        } ${editable ? 'group-hover:text-linear-accent transition-colors' : ''}`}
       >
         {displayValue}
       </div>
@@ -207,8 +207,8 @@ export function BillingSection({ caseId, billing, editable }: BillingSectionProp
 
   return (
     <FinancialData>
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Facturare</h3>
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-5">
+        <h3 className="text-base font-semibold text-linear-text-primary mb-4">Facturare</h3>
 
         <div className="space-y-4">
           {/* Billing Type */}
@@ -243,7 +243,7 @@ export function BillingSection({ caseId, billing, editable }: BillingSectionProp
           {/* Custom Rates (when type=Hourly) */}
           {billing.type === 'Hourly' && (
             <div className="pt-2">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Rate orare personalizate</h4>
+              <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Rate orare personalizate</h4>
               <div className="grid grid-cols-3 gap-4">
                 <RateField
                   label="Partner"
@@ -268,7 +268,7 @@ export function BillingSection({ caseId, billing, editable }: BillingSectionProp
                 />
               </div>
               {billing.customRates && (
-                <p className="mt-3 text-xs text-gray-500">
+                <p className="mt-3 text-xs text-linear-text-tertiary">
                   {billing.customRates.partnerRate != null ||
                   billing.customRates.associateRate != null ||
                   billing.customRates.paralegalRate != null

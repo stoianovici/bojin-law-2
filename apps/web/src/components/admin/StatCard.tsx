@@ -53,27 +53,27 @@ export function StatCard({
 }: StatCardProps) {
   // Icon background color mapping
   const iconBgColors = {
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    yellow: 'bg-yellow-100 text-yellow-600',
-    red: 'bg-red-100 text-red-600',
+    blue: 'bg-linear-accent/15 text-linear-accent',
+    green: 'bg-linear-success/15 text-linear-success',
+    yellow: 'bg-linear-warning/15 text-linear-warning',
+    red: 'bg-linear-error/15 text-linear-error',
     purple: 'bg-purple-100 text-purple-600',
   };
 
   // Trend color
   const trendPositive = trend !== undefined && trend >= 0;
-  const trendColor = trendPositive ? 'text-green-600' : 'text-red-600';
+  const trendColor = trendPositive ? 'text-linear-success' : 'text-linear-error';
 
   if (loading) {
     return (
       <div
-        className={clsx('bg-white rounded-lg border border-gray-200 p-6 animate-pulse', className)}
+        className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 animate-pulse', className)}
       >
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-gray-200" />
+          <div className="w-12 h-12 rounded-lg bg-linear-bg-hover" />
           <div className="flex-1">
-            <div className="h-4 w-24 bg-gray-200 rounded mb-2" />
-            <div className="h-8 w-32 bg-gray-200 rounded" />
+            <div className="h-4 w-24 bg-linear-bg-hover rounded mb-2" />
+            <div className="h-8 w-32 bg-linear-bg-hover rounded" />
           </div>
         </div>
       </div>
@@ -83,7 +83,7 @@ export function StatCard({
   return (
     <div
       className={clsx(
-        'bg-white rounded-lg border border-gray-200 p-6 transition-shadow hover:shadow-md',
+        'bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 transition-shadow hover:shadow-md',
         className
       )}
     >
@@ -97,8 +97,8 @@ export function StatCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-500 truncate">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+          <p className="text-sm font-medium text-linear-text-tertiary truncate">{title}</p>
+          <p className="text-2xl font-bold text-linear-text-primary mt-1">{value}</p>
 
           {/* Subtitle or Trend */}
           {(subtitle || trend !== undefined) && (
@@ -114,7 +114,7 @@ export function StatCard({
                 </span>
               )}
               {(trendLabel || subtitle) && (
-                <span className="text-sm text-gray-500">{trendLabel || subtitle}</span>
+                <span className="text-sm text-linear-text-tertiary">{trendLabel || subtitle}</span>
               )}
             </div>
           )}

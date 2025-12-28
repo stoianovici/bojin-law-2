@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { PendingReviewsDashboard } from '@/components/documents/PendingReviewsDashboard';
 import { useAuthorization } from '@/hooks/useAuthorization';
 import { useAuth } from '@/contexts/AuthContext';
+import { PageLayout, PageContent } from '@/components/linear/PageLayout';
 
 // Mock data for development - replace with actual GraphQL query
 interface PendingReview {
@@ -166,68 +167,72 @@ export default function ReviewsPage() {
   // Loading state
   if (authLoading || loading) {
     return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
+      <PageLayout>
+        <PageContent className="flex h-64 items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-linear-accent"></div>
+        </PageContent>
+      </PageLayout>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <div className="p-8">
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error loading reviews</h3>
-              <p className="mt-2 text-sm text-red-700">{error.message}</p>
-              <button
-                onClick={fetchReviews}
-                className="mt-3 text-sm font-medium text-red-800 hover:text-red-600"
-              >
-                Try again
-              </button>
+      <PageLayout>
+        <PageContent>
+          <div className="rounded-md border border-red-500/30 bg-red-500/10 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-400">Error loading reviews</h3>
+                <p className="mt-2 text-sm text-red-300">{error.message}</p>
+                <button
+                  onClick={fetchReviews}
+                  className="mt-3 text-sm font-medium text-red-400 hover:text-red-300"
+                >
+                  Try again
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </PageContent>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Document Reviews</h1>
-            <p className="mt-2 text-sm text-gray-700">
-              {isPartner
-                ? 'Review and approve documents submitted by your team. Select multiple documents for batch review.'
-                : 'View documents assigned to you for review.'}
-            </p>
+    <PageLayout>
+      <PageContent>
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-linear-text-primary">Document Reviews</h1>
+              <p className="mt-2 text-sm text-linear-text-secondary">
+                {isPartner
+                  ? 'Review and approve documents submitted by your team. Select multiple documents for batch review.'
+                  : 'View documents assigned to you for review.'}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <PendingReviewsDashboard
-        reviews={reviews}
-        statistics={statistics}
-        onSelectReview={handleSelectReview}
-        onBatchReview={handleBatchReview}
-        isPartner={isPartner}
-      />
-    </div>
+        <PendingReviewsDashboard
+          reviews={reviews}
+          statistics={statistics}
+          onSelectReview={handleSelectReview}
+          onBatchReview={handleBatchReview}
+          isPartner={isPartner}
+        />
+      </PageContent>
+    </PageLayout>
   );
 }

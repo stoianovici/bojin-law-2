@@ -98,7 +98,7 @@ export function ExtractedItemsSidebar() {
 
   if (!thread) {
     return (
-      <div className="p-4 text-sm text-gray-500">
+      <div className="p-4 text-sm text-linear-text-tertiary">
         Selectați o conversație pentru a vedea elementele extrase
       </div>
     );
@@ -114,22 +114,22 @@ export function ExtractedItemsSidebar() {
       <div className="border rounded">
         <button
           onClick={() => toggleSection('deadlines')}
-          className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-gray-50"
+          className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-linear-bg-hover"
         >
           <span className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-orange-500" />
+            <Clock className="h-4 w-4 text-linear-warning" />
             Termene ({extractedItems.deadlines.length})
           </span>
           {expandedSections.has('deadlines') ? (
-            <ChevronDown className="h-4 w-4 text-gray-500" />
+            <ChevronDown className="h-4 w-4 text-linear-text-tertiary" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-gray-500" />
+            <ChevronRight className="h-4 w-4 text-linear-text-tertiary" />
           )}
         </button>
         {expandedSections.has('deadlines') && (
           <div className="p-3 border-t space-y-2">
             {extractedItems.deadlines.length === 0 ? (
-              <p className="text-sm text-gray-500">Nu s-au detectat termene</p>
+              <p className="text-sm text-linear-text-tertiary">Nu s-au detectat termene</p>
             ) : (
               <AnimatePresence mode="popLayout">
                 {extractedItems.deadlines
@@ -162,11 +162,11 @@ export function ExtractedItemsSidebar() {
                     return (
                       <AnimatedListItem key={deadline.id}>
                         <div
-                          className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-yellow-50'} relative group`}
+                          className={`p-2 rounded text-sm ${isConverted ? 'bg-linear-success/10 border border-linear-success/30' : 'bg-linear-warning/10'} relative group`}
                         >
                           <button
                             onClick={() => showDismissPrompt(deadline.id)}
-                            className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 p-1 text-linear-text-muted hover:text-linear-error hover:bg-linear-error/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Respinge"
                           >
                             <X className="h-3 w-3" />
@@ -174,16 +174,16 @@ export function ExtractedItemsSidebar() {
                           <div className="flex items-start justify-between gap-2 pr-6">
                             <div className="flex-1">
                               <div className="font-semibold">{deadline.description}</div>
-                              <div className="text-xs text-gray-600 mt-1">
+                              <div className="text-xs text-linear-text-tertiary mt-1">
                                 {format(deadline.dueDate, 'dd.MM.yyyy')}
                               </div>
                             </div>
                             {isConverted ? (
                               <div className="flex items-center gap-1 text-xs">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <CheckCircle className="h-4 w-4 text-linear-success" />
                                 <a
                                   href={`/tasks?id=${taskId}`}
-                                  className="text-green-600 hover:underline flex items-center gap-1"
+                                  className="text-linear-success hover:underline flex items-center gap-1"
                                 >
                                   Task creat
                                   <ExternalLink className="h-3 w-3" />
@@ -192,7 +192,7 @@ export function ExtractedItemsSidebar() {
                             ) : (
                               <button
                                 onClick={() => setCreatingItemId(deadline.id)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                className="flex items-center gap-1 px-2 py-1 text-xs bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors"
                               >
                                 <Plus className="h-3 w-3" />
                                 Creează Task
@@ -213,22 +213,22 @@ export function ExtractedItemsSidebar() {
       <div className="border rounded">
         <button
           onClick={() => toggleSection('commitments')}
-          className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-gray-50"
+          className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-linear-bg-hover"
         >
           <span className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4 text-blue-500" />
+            <ClipboardList className="h-4 w-4 text-linear-accent" />
             Angajamente ({extractedItems.commitments.length})
           </span>
           {expandedSections.has('commitments') ? (
-            <ChevronDown className="h-4 w-4 text-gray-500" />
+            <ChevronDown className="h-4 w-4 text-linear-text-tertiary" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-gray-500" />
+            <ChevronRight className="h-4 w-4 text-linear-text-tertiary" />
           )}
         </button>
         {expandedSections.has('commitments') && (
           <div className="p-3 border-t space-y-2">
             {extractedItems.commitments.length === 0 ? (
-              <p className="text-sm text-gray-500">Nu s-au detectat angajamente</p>
+              <p className="text-sm text-linear-text-tertiary">Nu s-au detectat angajamente</p>
             ) : (
               <AnimatePresence mode="popLayout">
                 {extractedItems.commitments
@@ -261,11 +261,11 @@ export function ExtractedItemsSidebar() {
                     return (
                       <AnimatedListItem key={commitment.id}>
                         <div
-                          className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-blue-50'} relative group`}
+                          className={`p-2 rounded text-sm ${isConverted ? 'bg-linear-success/10 border border-linear-success/30' : 'bg-linear-accent/10'} relative group`}
                         >
                           <button
                             onClick={() => showDismissPrompt(commitment.id)}
-                            className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 p-1 text-linear-text-muted hover:text-linear-error hover:bg-linear-error/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Respinge"
                           >
                             <X className="h-3 w-3" />
@@ -277,10 +277,10 @@ export function ExtractedItemsSidebar() {
                             </div>
                             {isConverted ? (
                               <div className="flex items-center gap-1 text-xs">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <CheckCircle className="h-4 w-4 text-linear-success" />
                                 <a
                                   href={`/tasks?id=${taskId}`}
-                                  className="text-green-600 hover:underline flex items-center gap-1"
+                                  className="text-linear-success hover:underline flex items-center gap-1"
                                 >
                                   Task creat
                                   <ExternalLink className="h-3 w-3" />
@@ -289,7 +289,7 @@ export function ExtractedItemsSidebar() {
                             ) : (
                               <button
                                 onClick={() => setCreatingItemId(commitment.id)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                className="flex items-center gap-1 px-2 py-1 text-xs bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors"
                               >
                                 <Plus className="h-3 w-3" />
                                 Creează Task
@@ -310,22 +310,22 @@ export function ExtractedItemsSidebar() {
       <div className="border rounded">
         <button
           onClick={() => toggleSection('actions')}
-          className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-gray-50"
+          className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-linear-bg-hover"
         >
           <span className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4 text-linear-success" />
             Acțiuni ({extractedItems.actionItems.length})
           </span>
           {expandedSections.has('actions') ? (
-            <ChevronDown className="h-4 w-4 text-gray-500" />
+            <ChevronDown className="h-4 w-4 text-linear-text-tertiary" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-gray-500" />
+            <ChevronRight className="h-4 w-4 text-linear-text-tertiary" />
           )}
         </button>
         {expandedSections.has('actions') && (
           <div className="p-3 border-t space-y-2">
             {extractedItems.actionItems.length === 0 ? (
-              <p className="text-sm text-gray-500">Nu s-au detectat acțiuni</p>
+              <p className="text-sm text-linear-text-tertiary">Nu s-au detectat acțiuni</p>
             ) : (
               <AnimatePresence mode="popLayout">
                 {extractedItems.actionItems
@@ -358,11 +358,11 @@ export function ExtractedItemsSidebar() {
                     return (
                       <AnimatedListItem key={action.id}>
                         <div
-                          className={`p-2 rounded text-sm ${isConverted ? 'bg-green-50 border border-green-200' : 'bg-green-50'} relative group`}
+                          className={`p-2 rounded text-sm ${isConverted ? 'bg-linear-success/10 border border-linear-success/30' : 'bg-linear-success/10'} relative group`}
                         >
                           <button
                             onClick={() => showDismissPrompt(action.id)}
-                            className="absolute top-1 right-1 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 p-1 text-linear-text-muted hover:text-linear-error hover:bg-linear-error/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Respinge"
                           >
                             <X className="h-3 w-3" />
@@ -370,16 +370,16 @@ export function ExtractedItemsSidebar() {
                           <div className="flex items-start justify-between gap-2 pr-6">
                             <div className="flex-1">
                               <div className="font-semibold">{action.description}</div>
-                              <div className="text-xs text-gray-600 mt-1">
+                              <div className="text-xs text-linear-text-tertiary mt-1">
                                 Prioritate: {action.priority}
                               </div>
                             </div>
                             {isConverted ? (
                               <div className="flex items-center gap-1 text-xs">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <CheckCircle className="h-4 w-4 text-linear-success" />
                                 <a
                                   href={`/tasks?id=${taskId}`}
-                                  className="text-green-600 hover:underline flex items-center gap-1"
+                                  className="text-linear-success hover:underline flex items-center gap-1"
                                 >
                                   Task creat
                                   <ExternalLink className="h-3 w-3" />
@@ -388,7 +388,7 @@ export function ExtractedItemsSidebar() {
                             ) : (
                               <button
                                 onClick={() => setCreatingItemId(action.id)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                className="flex items-center gap-1 px-2 py-1 text-xs bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors"
                               >
                                 <Plus className="h-3 w-3" />
                                 Creează Task

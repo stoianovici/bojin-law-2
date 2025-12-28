@@ -106,7 +106,7 @@ export function TimelineEntryCard({
       role="article"
       aria-setsize={setsize}
       aria-posinset={posinset}
-      className={`group rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md ${
+      className={`group rounded-lg border border-linear-border-subtle bg-linear-bg-secondary p-4 transition-shadow hover:shadow-md ${
         isDisabled ? 'opacity-60' : ''
       } ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
@@ -117,7 +117,7 @@ export function TimelineEntryCard({
       <div className="flex items-start gap-3">
         {/* Channel Icon */}
         <div
-          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 ${channelColor}`}
+          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-linear-bg-tertiary ${channelColor}`}
           aria-label={getChannelLabel(entry.channelType)}
         >
           {channelIcon}
@@ -128,26 +128,26 @@ export function TimelineEntryCard({
           {/* Meta line */}
           <div className="flex flex-wrap items-center gap-2 text-sm">
             {/* Direction */}
-            <span className="flex items-center gap-1 text-gray-500" title={entry.direction}>
+            <span className="flex items-center gap-1 text-linear-text-tertiary" title={entry.direction}>
               {directionIcon}
             </span>
 
             {/* Sender */}
-            <span className="font-medium text-gray-900">{entry.senderName}</span>
+            <span className="font-medium text-linear-text-primary">{entry.senderName}</span>
 
             {entry.senderEmail && (
-              <span className="text-gray-500">&lt;{entry.senderEmail}&gt;</span>
+              <span className="text-linear-text-tertiary">&lt;{entry.senderEmail}&gt;</span>
             )}
 
             {/* Timestamp */}
-            <time dateTime={entry.sentAt} title={fullDate} className="text-gray-400">
+            <time dateTime={entry.sentAt} title={fullDate} className="text-linear-text-muted">
               {timeAgo}
             </time>
 
             {/* Privacy Badge */}
             {entry.privacyLevel !== 'Normal' && (
               <span
-                className={`flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs ${privacyColor}`}
+                className={`flex items-center gap-1 rounded-full bg-linear-bg-tertiary px-2 py-0.5 text-xs ${privacyColor}`}
                 title={getPrivacyLabel(entry.privacyLevel)}
               >
                 {getPrivacyIcon(entry.privacyLevel)}
@@ -157,7 +157,7 @@ export function TimelineEntryCard({
 
             {/* Attachment Badge */}
             {entry.hasAttachments && (
-              <span className="flex items-center gap-1 text-gray-500">
+              <span className="flex items-center gap-1 text-linear-text-tertiary">
                 <Paperclip className="h-3 w-3" />
                 {entry.attachments.length}
               </span>
@@ -165,18 +165,18 @@ export function TimelineEntryCard({
 
             {/* Disabled indicator for future channels */}
             {isDisabled && (
-              <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500">
+              <span className="rounded-full bg-linear-bg-hover px-2 py-0.5 text-xs text-linear-text-tertiary">
                 În curând
               </span>
             )}
           </div>
 
           {/* Subject */}
-          {entry.subject && <h3 className="mt-1 font-medium text-gray-900">{entry.subject}</h3>}
+          {entry.subject && <h3 className="mt-1 font-medium text-linear-text-primary">{entry.subject}</h3>}
 
           {/* Recipients */}
           {entry.recipients.length > 0 && (
-            <div className="mt-1 text-sm text-gray-500">
+            <div className="mt-1 text-sm text-linear-text-tertiary">
               To:{' '}
               {entry.recipients
                 .slice(0, 3)
@@ -190,13 +190,13 @@ export function TimelineEntryCard({
           <div className="mt-2">
             {entry.htmlBody ? (
               <div
-                className={`prose prose-sm max-w-none text-gray-700 ${
+                className={`prose prose-sm max-w-none text-linear-text-secondary ${
                   !isExpanded ? 'line-clamp-3 max-h-20 overflow-hidden' : ''
                 }`}
                 dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(entry.htmlBody) }}
               />
             ) : (
-              <p className="whitespace-pre-wrap text-sm text-gray-700">
+              <p className="whitespace-pre-wrap text-sm text-linear-text-secondary">
                 {isExpanded ? entry.body : bodyPreview}
                 {!isExpanded && hasFullBody && '...'}
               </p>
@@ -206,7 +206,7 @@ export function TimelineEntryCard({
             {hasFullBody && (
               <button
                 onClick={toggleExpand}
-                className="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                className="mt-2 flex items-center gap-1 text-sm text-linear-accent hover:underline"
                 aria-expanded={isExpanded}
               >
                 {isExpanded ? (
@@ -226,22 +226,22 @@ export function TimelineEntryCard({
 
           {/* Attachments */}
           {isExpanded && entry.attachments.length > 0 && (
-            <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <h4 className="mb-2 text-xs font-medium uppercase text-gray-500">Atașamente</h4>
+            <div className="mt-3 rounded-lg border border-linear-border-subtle bg-linear-bg-tertiary p-3">
+              <h4 className="mb-2 text-xs font-medium uppercase text-linear-text-tertiary">Atașamente</h4>
               <ul className="space-y-1">
                 {entry.attachments.map((att) => (
                   <li key={att.id} className="flex items-center gap-2 text-sm">
-                    <Paperclip className="h-3 w-3 text-gray-400" />
+                    <Paperclip className="h-3 w-3 text-linear-text-muted" />
                     <a
                       href={att.downloadUrl}
-                      className="text-blue-600 hover:underline"
+                      className="text-linear-accent hover:underline"
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {att.fileName}
                     </a>
-                    <span className="text-gray-400">({formatFileSize(att.fileSize)})</span>
+                    <span className="text-linear-text-muted">({formatFileSize(att.fileSize)})</span>
                   </li>
                 ))}
               </ul>
@@ -250,7 +250,7 @@ export function TimelineEntryCard({
 
           {/* Thread indicator */}
           {entry.childCount > 0 && (
-            <div className="mt-2 text-sm text-gray-500">
+            <div className="mt-2 text-sm text-linear-text-tertiary">
               {entry.childCount} {entry.childCount === 1 ? 'răspuns' : 'răspunsuri'} în conversație
             </div>
           )}
@@ -266,14 +266,14 @@ export function TimelineEntryCard({
             {entry.channelType === 'Email' && (
               <>
                 <button
-                  className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  className="rounded p-1 text-linear-text-muted hover:bg-linear-bg-tertiary hover:text-linear-text-secondary"
                   title="Reply"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Reply className="h-4 w-4" />
                 </button>
                 <button
-                  className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  className="rounded p-1 text-linear-text-muted hover:bg-linear-bg-tertiary hover:text-linear-text-secondary"
                   title="Forward"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -282,7 +282,7 @@ export function TimelineEntryCard({
               </>
             )}
             <button
-              className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              className="rounded p-1 text-linear-text-muted hover:bg-linear-bg-tertiary hover:text-linear-text-secondary"
               title="More actions"
               onClick={(e) => e.stopPropagation()}
             >
@@ -323,11 +323,11 @@ function getDirectionIcon(direction: string): React.ReactNode {
 
   switch (direction) {
     case 'Inbound':
-      return <ArrowDownLeft {...iconProps} className="h-4 w-4 text-green-500" />;
+      return <ArrowDownLeft {...iconProps} className="h-4 w-4 text-linear-success" />;
     case 'Outbound':
-      return <ArrowUpRight {...iconProps} className="h-4 w-4 text-blue-500" />;
+      return <ArrowUpRight {...iconProps} className="h-4 w-4 text-linear-accent" />;
     case 'Internal':
-      return <RotateCw {...iconProps} className="h-4 w-4 text-gray-400" />;
+      return <RotateCw {...iconProps} className="h-4 w-4 text-linear-text-muted" />;
     default:
       return null;
   }

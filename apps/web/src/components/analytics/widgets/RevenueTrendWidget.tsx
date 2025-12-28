@@ -68,12 +68,12 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null;
 
   return (
-    <div className="bg-white px-3 py-2 shadow-lg rounded-lg border border-gray-200">
-      <p className="text-sm font-medium text-gray-900 mb-1">{label}</p>
+    <div className="bg-linear-bg-secondary px-3 py-2 shadow-lg rounded-lg border border-linear-border-subtle">
+      <p className="text-sm font-medium text-linear-text-primary mb-1">{label}</p>
       {payload.map((entry: any, index: number) => (
         <div key={index} className="flex items-center gap-2 text-sm">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          <span className="text-gray-600">{entry.name}:</span>
+          <span className="text-linear-text-secondary">{entry.name}:</span>
           <span className="font-medium">{formatCurrency(entry.value)}</span>
         </div>
       ))}

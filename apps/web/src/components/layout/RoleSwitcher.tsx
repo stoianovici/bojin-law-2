@@ -1,5 +1,6 @@
 /**
  * RoleSwitcher Component
+ * OPS-330: Linear Design Migration
  * Dropdown component for switching between user roles in demo mode
  */
 
@@ -58,10 +59,10 @@ export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
             ${className}
             flex items-center gap-2
             px-3 py-2 rounded-lg
-            bg-blue-50 hover:bg-blue-100
-            border border-blue-200
-            text-blue-700 text-sm font-medium
-            focus:outline-none focus:ring-2 focus:ring-blue-500
+            bg-linear-accent-muted hover:bg-linear-accent/20
+            border border-linear-accent/30
+            text-linear-accent text-sm font-medium
+            focus:outline-none focus:ring-2 focus:ring-linear-accent
             transition-colors
           `}
           aria-label="Switch user role"
@@ -97,18 +98,18 @@ export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
         <DropdownMenu.Content
           className="
             min-w-[280px] p-2
-            bg-white rounded-lg
-            shadow-lg border border-gray-200
+            bg-linear-bg-elevated rounded-lg
+            shadow-lg border border-linear-border-subtle
             z-50
           "
           align="end"
           sideOffset={5}
         >
-          <DropdownMenu.Label className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          <DropdownMenu.Label className="px-3 py-2 text-xs font-semibold text-linear-text-tertiary uppercase tracking-wide">
             Schimbă Rol Demonstrativ
           </DropdownMenu.Label>
 
-          <DropdownMenu.Separator className="h-px my-2 bg-gray-200" />
+          <DropdownMenu.Separator className="h-px my-2 bg-linear-border-subtle" />
 
           {roleOptions.map((option) => (
             <DropdownMenu.Item
@@ -117,18 +118,18 @@ export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
                 flex flex-col px-3 py-3
                 text-sm rounded-md
                 cursor-pointer
-                hover:bg-gray-100
-                focus:bg-gray-100 focus:outline-none
+                hover:bg-linear-bg-hover
+                focus:bg-linear-bg-hover focus:outline-none
                 transition-colors
-                ${currentRole === option.value ? 'bg-blue-50 border border-blue-200' : ''}
+                ${currentRole === option.value ? 'bg-linear-accent-muted border border-linear-accent/30' : ''}
               `}
               onSelect={() => handleRoleChange(option.value)}
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-900">{option.label}</span>
+                <span className="font-medium text-linear-text-primary">{option.label}</span>
                 {currentRole === option.value && (
                   <svg
-                    className="w-4 h-4 text-blue-600"
+                    className="w-4 h-4 text-linear-accent"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -143,13 +144,13 @@ export function RoleSwitcher({ className = '' }: RoleSwitcherProps) {
                   </svg>
                 )}
               </div>
-              <span className="text-xs text-gray-500 mt-1">{option.description}</span>
+              <span className="text-xs text-linear-text-tertiary mt-1">{option.description}</span>
             </DropdownMenu.Item>
           ))}
 
-          <DropdownMenu.Separator className="h-px my-2 bg-gray-200" />
+          <DropdownMenu.Separator className="h-px my-2 bg-linear-border-subtle" />
 
-          <div className="px-3 py-2 text-xs text-gray-500">
+          <div className="px-3 py-2 text-xs text-linear-text-tertiary">
             Datele se schimbă în funcție de rol pentru demonstrație
           </div>
         </DropdownMenu.Content>

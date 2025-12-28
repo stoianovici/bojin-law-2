@@ -107,34 +107,40 @@ const CLOSE_CONVERSATION = gql`
 `;
 
 const GET_MORNING_BRIEFING = gql`
-  query GetMorningBriefing {
+  query GetMorningBriefingAssistant {
     morningBriefing {
-      message
-      urgentTasks {
-        id
-        title
+      id
+      briefingDate
+      summary
+      prioritizedTasks {
+        taskId
         priority
-        dueDate
-        caseTitle
-        isOverdue
+        priorityReason
+        suggestedTimeSlot
+        task {
+          id
+          title
+          priority
+          dueDate
+          status
+        }
       }
-      todayTasks {
+      keyDeadlines {
         id
-        title
-        priority
-        dueDate
-        caseTitle
-        isOverdue
-      }
-      upcomingDeadlines {
-        id
+        taskId
         title
         dueDate
-        caseTitle
         daysUntilDue
+        severity
+        caseId
       }
-      unreadEmailsCount
-      aiSummary
+      riskAlerts {
+        type
+        description
+        suggestedAction
+        severity
+      }
+      isViewed
     }
   }
 `;
@@ -235,35 +241,41 @@ export interface ActionResult {
 }
 
 /**
- * Morning briefing data
+ * Morning briefing data (matches GraphQL MorningBriefing type)
  */
 export interface MorningBriefingData {
-  message: string;
-  urgentTasks: {
-    id: string;
-    title: string;
-    priority: string;
-    dueDate: string | null;
-    caseTitle: string | null;
-    isOverdue: boolean;
+  id: string;
+  briefingDate: string;
+  summary: string;
+  prioritizedTasks: {
+    taskId: string;
+    priority: number;
+    priorityReason: string;
+    suggestedTimeSlot: string | null;
+    task: {
+      id: string;
+      title: string;
+      priority: string;
+      dueDate: string | null;
+      status: string;
+    } | null;
   }[];
-  todayTasks: {
-    id: string;
-    title: string;
-    priority: string;
-    dueDate: string | null;
-    caseTitle: string | null;
-    isOverdue: boolean;
-  }[];
-  upcomingDeadlines: {
-    id: string;
+  keyDeadlines: {
+    id: string | null;
+    taskId: string | null;
     title: string;
     dueDate: string;
-    caseTitle: string | null;
     daysUntilDue: number;
+    severity: string;
+    caseId: string | null;
   }[];
-  unreadEmailsCount: number;
-  aiSummary?: string;
+  riskAlerts: {
+    type: string;
+    description: string;
+    suggestedAction: string;
+    severity: string;
+  }[];
+  isViewed: boolean;
 }
 
 /**

@@ -448,18 +448,18 @@ export function ComposeInterface() {
   if (!isComposeOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-linear-bg-secondary rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold">
+        <div className="p-4 border-b border-linear-border-subtle flex items-center justify-between">
+          <h2 className="font-semibold text-linear-text-primary">
             {composeMode === 'new' && 'Mesaj nou'}
             {composeMode === 'reply' && 'Răspunde'}
             {composeMode === 'forward' && 'Redirecționează'}
           </h2>
           <button
             onClick={closeCompose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-linear-text-tertiary hover:text-linear-text-primary transition-colors"
             aria-label="Închide"
           >
             <X className="h-5 w-5" />
@@ -475,7 +475,7 @@ export function ComposeInterface() {
               value={to}
               onChange={(e) => setTo(e.target.value)}
               placeholder="Destinatar..."
-              className="w-full border rounded px-3 py-2 text-sm"
+              className="w-full border border-linear-border-subtle bg-linear-bg-tertiary rounded px-3 py-2 text-sm"
               readOnly={composeMode === 'reply'}
             />
           </div>
@@ -487,17 +487,17 @@ export function ComposeInterface() {
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subiect..."
-              className="w-full border rounded px-3 py-2 text-sm"
+              className="w-full border border-linear-border-subtle bg-linear-bg-tertiary rounded px-3 py-2 text-sm"
             />
           </div>
 
           {/* AI Draft Panel for replies */}
           {showAIDraft && composeMode === 'reply' && (
-            <div className="p-3 bg-purple-50 rounded border border-purple-200">
+            <div className="p-3 bg-linear-accent/10 rounded border border-linear-accent/30">
               <div className="font-semibold mb-2 flex items-center gap-2 text-sm">
-                <Sparkles className="h-4 w-4 text-purple-500" />
+                <Sparkles className="h-4 w-4 text-linear-accent" />
                 Răspuns generat de AI
-                {aiLoading && <Loader2 className="h-3 w-3 animate-spin text-purple-500" />}
+                {aiLoading && <Loader2 className="h-3 w-3 animate-spin text-linear-accent" />}
               </div>
               <div className="space-y-2">
                 <div className="flex gap-2 items-center flex-wrap">
@@ -526,7 +526,7 @@ export function ComposeInterface() {
                       handleGenerateDraft();
                     }}
                     disabled={aiLoading || !emailId}
-                    className="px-2 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    className="px-2 py-1 text-xs bg-linear-bg-tertiary rounded hover:bg-linear-bg-hover transition-colors disabled:opacity-50 flex items-center gap-1"
                   >
                     <RefreshCw className={`h-3 w-3 ${aiLoading ? 'animate-spin' : ''}`} />
                     Regenerează
@@ -534,7 +534,7 @@ export function ComposeInterface() {
                   <button
                     onClick={handleUseAIDraft}
                     disabled={!generatedDraftBody || aiLoading}
-                    className="ml-auto px-3 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="ml-auto px-3 py-1 text-xs bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Folosește draft AI
                   </button>
@@ -542,7 +542,7 @@ export function ComposeInterface() {
 
                 {/* Error state */}
                 {aiError && (
-                  <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 flex items-start gap-2">
+                  <div className="text-xs text-linear-error bg-linear-error/10 p-2 rounded border border-linear-error/30 flex items-start gap-2">
                     <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
                     <div>
                       <span className="font-medium">Eroare:</span> {aiError.message}
@@ -552,7 +552,7 @@ export function ComposeInterface() {
 
                 {/* Loading state */}
                 {aiLoading && !generatedDraftBody && (
-                  <div className="text-xs text-gray-500 bg-white p-3 rounded border text-center">
+                  <div className="text-xs text-linear-text-tertiary bg-linear-bg-secondary p-3 rounded border border-linear-border-subtle text-center">
                     <Loader2 className="h-4 w-4 animate-spin mx-auto mb-1" />
                     Se generează răspunsul...
                   </div>
@@ -560,14 +560,14 @@ export function ComposeInterface() {
 
                 {/* Generated draft */}
                 {generatedDraftBody && (
-                  <div className="text-xs text-gray-600 bg-white p-2 rounded border max-h-32 overflow-y-auto whitespace-pre-wrap">
+                  <div className="text-xs text-linear-text-secondary bg-linear-bg-secondary p-2 rounded border border-linear-border-subtle max-h-32 overflow-y-auto whitespace-pre-wrap">
                     {generatedDraftBody}
                   </div>
                 )}
 
                 {/* No email ID warning */}
                 {!emailId && !aiLoading && (
-                  <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                  <div className="text-xs text-linear-warning bg-linear-warning/10 p-2 rounded border border-linear-warning/30">
                     Nu se poate genera draft - emailul nu a fost găsit.
                   </div>
                 )}
@@ -578,7 +578,7 @@ export function ComposeInterface() {
                   !generatedDraftBody &&
                   !aiError &&
                   generationCompleted && (
-                    <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                    <div className="text-xs text-linear-warning bg-linear-warning/10 p-2 rounded border border-linear-warning/30">
                       Nu s-a putut genera răspunsul. Apăsați &quot;Regenerează&quot; pentru a
                       încerca din nou.
                     </div>
@@ -593,7 +593,7 @@ export function ComposeInterface() {
               value={draftBody}
               onChange={(e) => updateDraft(e.target.value)}
               placeholder="Scrie mesajul..."
-              className="w-full border rounded px-3 py-2 text-sm h-64"
+              className="w-full border border-linear-border-subtle bg-linear-bg-tertiary rounded px-3 py-2 text-sm h-64"
             />
           </div>
 
@@ -607,7 +607,7 @@ export function ComposeInterface() {
                 onChange={(e) => setIncludeOriginal(e.target.checked)}
                 className="rounded"
               />
-              <label htmlFor="includeOriginal" className="text-sm text-gray-700 cursor-pointer">
+              <label htmlFor="includeOriginal" className="text-sm text-linear-text-secondary cursor-pointer">
                 Include mesajul original în răspuns
               </label>
             </div>
@@ -617,7 +617,7 @@ export function ComposeInterface() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium">Atașamente:</label>
-              <label className="cursor-pointer text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
+              <label className="cursor-pointer text-sm text-linear-accent hover:text-linear-accent-hover flex items-center gap-1">
                 <Paperclip className="h-4 w-4" />
                 <span>Adaugă fișiere</span>
                 <input
@@ -632,31 +632,31 @@ export function ComposeInterface() {
 
             {/* Attachment error */}
             {attachmentError && (
-              <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 mb-2">
+              <div className="text-xs text-linear-error bg-linear-error/10 p-2 rounded border border-linear-error/30 mb-2">
                 {attachmentError}
               </div>
             )}
 
             {/* Attachment list */}
             {attachments.length > 0 ? (
-              <div className="border rounded p-2 space-y-2">
+              <div className="border border-linear-border-subtle rounded p-2 space-y-2">
                 {attachments.map((att) => (
                   <div
                     key={att.id}
-                    className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                    className="flex items-center justify-between bg-linear-bg-tertiary p-2 rounded"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <FileIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <FileIcon className="h-4 w-4 text-linear-text-muted flex-shrink-0" />
                       <span className="text-sm truncate" title={att.name}>
                         {att.name}
                       </span>
-                      <span className="text-xs text-gray-400 flex-shrink-0">
+                      <span className="text-xs text-linear-text-muted flex-shrink-0">
                         ({formatFileSize(att.size)})
                       </span>
                     </div>
                     <button
                       onClick={() => handleRemoveAttachment(att.id)}
-                      className="text-gray-400 hover:text-red-500 p-1"
+                      className="text-linear-text-muted hover:text-linear-error p-1"
                       title="Elimină"
                     >
                       <X className="h-4 w-4" />
@@ -665,7 +665,7 @@ export function ComposeInterface() {
                 ))}
               </div>
             ) : (
-              <div className="border rounded p-3 text-sm text-gray-400 text-center border-dashed">
+              <div className="border border-linear-border-subtle rounded p-3 text-sm text-linear-text-muted text-center border-dashed">
                 Niciun atașament (max 3MB per fișier, {MAX_TOTAL_ATTACHMENTS} fișiere)
               </div>
             )}
@@ -673,12 +673,12 @@ export function ComposeInterface() {
 
           {/* Natural Language Enhancements Mockup */}
           {composeMode === 'new' && (
-            <div className="p-3 bg-blue-50 rounded text-sm">
+            <div className="p-3 bg-linear-accent/10 rounded text-sm">
               <div className="font-semibold mb-2 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-blue-500" />
+                <Sparkles className="h-4 w-4 text-linear-accent" />
                 Sugestii inteligente
               </div>
-              <div className="space-y-1 text-xs text-gray-600">
+              <div className="space-y-1 text-xs text-linear-text-secondary">
                 <div>• Referință dosar detectată: Dosar #12345</div>
                 <div>• Termen sugerat: 15 martie 2025</div>
               </div>
@@ -688,22 +688,22 @@ export function ComposeInterface() {
 
         {/* Send Error */}
         {sendStatus === 'error' && sendError && (
-          <div className="px-4 py-2 bg-red-50 border-t border-red-200 text-sm text-red-600 flex items-center gap-2">
+          <div className="px-4 py-2 bg-linear-error/10 border-t border-linear-error/30 text-sm text-linear-error flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
             {sendError}
           </div>
         )}
 
         {/* Footer */}
-        <div className="p-4 border-t flex items-center justify-between">
+        <div className="p-4 border-t border-linear-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={handleSendEmail}
               disabled={isSending || sendStatus === 'success'}
               className={`px-4 py-2 text-sm rounded flex items-center gap-2 transition-colors ${
                 sendStatus === 'success'
-                  ? 'bg-green-500 text-white'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed'
+                  ? 'bg-linear-success text-white'
+                  : 'bg-linear-accent text-white hover:bg-linear-accent-hover disabled:opacity-50 disabled:cursor-not-allowed'
               }`}
             >
               {sendStatus === 'success' ? (
@@ -726,13 +726,13 @@ export function ComposeInterface() {
             <button
               onClick={handleSaveDraft}
               disabled={isSending}
-              className="px-3 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-2 disabled:opacity-50"
+              className="px-3 py-2 text-sm bg-linear-bg-tertiary rounded hover:bg-linear-bg-hover flex items-center gap-2 disabled:opacity-50"
             >
               <Save className="h-4 w-4" />
               Salvează
             </button>
             {lastSaved && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-linear-text-muted">
                 Salvat:{' '}
                 {lastSaved.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -741,7 +741,7 @@ export function ComposeInterface() {
           <button
             onClick={closeCompose}
             disabled={isSending}
-            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50"
+            className="px-3 py-1 text-sm text-linear-text-secondary hover:text-linear-text-primary disabled:opacity-50"
           >
             Anulează
           </button>

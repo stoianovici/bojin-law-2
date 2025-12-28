@@ -19,7 +19,7 @@ function RevisionBadge({ count }: { count: number }) {
   if (count === 0) return null;
 
   return (
-    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 border border-amber-200">
+    <span className="inline-flex items-center rounded-full bg-linear-warning/15 px-2.5 py-0.5 text-xs font-medium text-linear-warning border border-linear-warning/30">
       Revizie #{count}
     </span>
   );
@@ -148,69 +148,69 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
 
   return (
     <>
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
+      <div className="overflow-hidden rounded-lg border border-linear-border-subtle bg-linear-bg-secondary shadow">
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 table-fixed">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-linear-border-subtle table-fixed">
+            <thead className="bg-linear-bg-tertiary">
               <tr>
                 <th
                   scope="col"
-                  className="w-1/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-1/5 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
                 >
                   Titlu dosar
                 </th>
                 <th
                   scope="col"
-                  className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-1/6 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
                 >
                   Client
                 </th>
                 <th
                   scope="col"
-                  className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-1/6 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
                 >
                   Trimis de
                 </th>
                 <th
                   scope="col"
-                  className="w-1/6 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-1/6 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
                 >
                   Data trimiterii
                 </th>
                 <th
                   scope="col"
-                  className="w-24 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-24 px-4 py-3 text-center text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
                 >
                   Revizie
                 </th>
                 <th
                   scope="col"
-                  className="w-28 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-28 px-4 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
                 >
                   Acțiuni
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
               {cases.map((caseItem) => (
-                <tr key={caseItem.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={caseItem.id} className="hover:bg-linear-bg-hover transition-colors">
                   <td
                     className="px-4 py-4 cursor-pointer"
                     onClick={() => handleRowClick(caseItem.id)}
                   >
                     <div className="flex flex-col">
-                      <div className="text-sm font-medium text-gray-900 truncate">
+                      <div className="text-sm font-medium text-linear-text-primary truncate">
                         {caseItem.title}
                       </div>
-                      <div className="text-sm text-gray-500">{caseItem.caseNumber}</div>
+                      <div className="text-sm text-linear-text-tertiary">{caseItem.caseNumber}</div>
                     </div>
                   </td>
                   <td
                     className="px-4 py-4 cursor-pointer"
                     onClick={() => handleRowClick(caseItem.id)}
                   >
-                    <div className="text-sm text-gray-900 truncate">
+                    <div className="text-sm text-linear-text-primary truncate">
                       {caseItem.client?.name || 'N/A'}
                     </div>
                   </td>
@@ -218,7 +218,7 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
                     className="px-4 py-4 cursor-pointer"
                     onClick={() => handleRowClick(caseItem.id)}
                   >
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-linear-text-primary">
                       {caseItem.approval?.submittedBy
                         ? `${caseItem.approval.submittedBy.firstName} ${caseItem.approval.submittedBy.lastName}`
                         : 'Necunoscut'}
@@ -229,12 +229,12 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
                     onClick={() => handleRowClick(caseItem.id)}
                   >
                     <div className="flex flex-col">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-linear-text-primary">
                         {caseItem.approval?.submittedAt
                           ? formatDate(caseItem.approval.submittedAt)
                           : 'N/A'}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-linear-text-tertiary">
                         {caseItem.approval?.submittedAt
                           ? getTimeSinceSubmission(caseItem.approval.submittedAt)
                           : ''}
@@ -252,7 +252,7 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
                         e.stopPropagation();
                         setSelectedCase(caseItem);
                       }}
-                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-linear-accent hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-linear-accent transition-colors"
                     >
                       Revizuire
                     </button>
@@ -264,16 +264,16 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
         </div>
 
         {/* Mobile Card View */}
-        <div className="md:hidden divide-y divide-gray-200">
+        <div className="md:hidden divide-y divide-linear-border-subtle">
           {cases.map((caseItem) => (
             <div key={caseItem.id} className="p-4">
               <div className="cursor-pointer" onClick={() => handleRowClick(caseItem.id)}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="min-w-0 flex-1 mr-2">
-                    <div className="text-sm font-medium text-gray-900 truncate">
+                    <div className="text-sm font-medium text-linear-text-primary truncate">
                       {caseItem.title}
                     </div>
-                    <div className="text-sm text-gray-500 truncate">{caseItem.caseNumber}</div>
+                    <div className="text-sm text-linear-text-tertiary truncate">{caseItem.caseNumber}</div>
                   </div>
                   {caseItem.approval?.revisionCount !== undefined &&
                     caseItem.approval.revisionCount > 0 && (
@@ -282,22 +282,22 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Client:</span>
-                    <span className="text-gray-900 truncate ml-2">
+                    <span className="text-linear-text-tertiary">Client:</span>
+                    <span className="text-linear-text-primary truncate ml-2">
                       {caseItem.client?.name || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Trimis de:</span>
-                    <span className="text-gray-900">
+                    <span className="text-linear-text-tertiary">Trimis de:</span>
+                    <span className="text-linear-text-primary">
                       {caseItem.approval?.submittedBy
                         ? `${caseItem.approval.submittedBy.firstName} ${caseItem.approval.submittedBy.lastName}`
                         : 'Necunoscut'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Data:</span>
-                    <span className="text-gray-900">
+                    <span className="text-linear-text-tertiary">Data:</span>
+                    <span className="text-linear-text-primary">
                       {caseItem.approval?.submittedAt
                         ? getTimeSinceSubmission(caseItem.approval.submittedAt)
                         : 'N/A'}
@@ -308,7 +308,7 @@ export function PendingApprovalTable({ cases, onRefetch }: PendingApprovalTableP
               <div className="mt-3">
                 <button
                   onClick={() => setSelectedCase(caseItem)}
-                  className="w-full inline-flex justify-center items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="w-full inline-flex justify-center items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-linear-accent hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-linear-accent transition-colors"
                 >
                   Revizuire
                 </button>

@@ -33,7 +33,7 @@ function centsToDollars(cents: number): string {
  */
 function BillingTypeBadge({ billingType }: { billingType: BillingType }) {
   const badgeColor =
-    billingType === 'Hourly' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800';
+    billingType === 'Hourly' ? 'bg-linear-accent/15 text-linear-accent' : 'bg-linear-success/15 text-linear-success';
 
   return (
     <span
@@ -55,20 +55,20 @@ export function BillingInfoSection({
 
   return (
     <FinancialData>
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-linear-bg-secondary rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Billing Information</h2>
+          <h2 className="text-xl font-semibold text-linear-text-primary">Billing Information</h2>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowHistoryModal(true)}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-md hover:bg-linear-bg-hover focus:outline-none focus:ring-2 focus:ring-linear-accent transition-colors"
             >
               View History
             </button>
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="px-3 py-1.5 text-sm font-medium text-linear-accent bg-linear-accent/10 rounded-md hover:bg-linear-accent/15 focus:outline-none focus:ring-2 focus:ring-linear-accent transition-colors"
               >
                 Edit Rates
               </button>
@@ -79,7 +79,7 @@ export function BillingInfoSection({
         <div className="space-y-4">
           {/* Billing Type */}
           <div>
-            <dt className="text-sm font-medium text-gray-500 mb-1">Billing Type</dt>
+            <dt className="text-sm font-medium text-linear-text-tertiary mb-1">Billing Type</dt>
             <dd>
               <BillingTypeBadge billingType={billingType} />
             </dd>
@@ -88,43 +88,43 @@ export function BillingInfoSection({
           {/* Fixed Amount (if Fixed billing) */}
           {billingType === 'Fixed' && fixedAmount != null && (
             <div>
-              <dt className="text-sm font-medium text-gray-500 mb-1">Fixed Amount</dt>
-              <dd className="text-2xl font-bold text-gray-900">${centsToDollars(fixedAmount)}</dd>
+              <dt className="text-sm font-medium text-linear-text-tertiary mb-1">Fixed Amount</dt>
+              <dd className="text-2xl font-bold text-linear-text-primary">${centsToDollars(fixedAmount)}</dd>
             </div>
           )}
 
           {/* Hourly Rates */}
           {billingType === 'Hourly' && (
             <div>
-              <dt className="text-sm font-medium text-gray-500 mb-2">Hourly Rates</dt>
+              <dt className="text-sm font-medium text-linear-text-tertiary mb-2">Hourly Rates</dt>
               <dd className="space-y-2">
-                <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
-                  <span className="text-sm text-gray-700">Partner</span>
-                  <span className="text-sm font-semibold text-gray-900">
+                <div className="flex justify-between items-center py-2 px-3 bg-linear-bg-tertiary rounded">
+                  <span className="text-sm text-linear-text-secondary">Partner</span>
+                  <span className="text-sm font-semibold text-linear-text-primary">
                     {customRates?.partnerRate != null ? (
                       `$${centsToDollars(customRates.partnerRate)}/hr`
                     ) : (
-                      <span className="text-gray-500 italic">Default rate</span>
+                      <span className="text-linear-text-muted italic">Default rate</span>
                     )}
                   </span>
                 </div>
-                <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
-                  <span className="text-sm text-gray-700">Associate</span>
-                  <span className="text-sm font-semibold text-gray-900">
+                <div className="flex justify-between items-center py-2 px-3 bg-linear-bg-tertiary rounded">
+                  <span className="text-sm text-linear-text-secondary">Associate</span>
+                  <span className="text-sm font-semibold text-linear-text-primary">
                     {customRates?.associateRate != null ? (
                       `$${centsToDollars(customRates.associateRate)}/hr`
                     ) : (
-                      <span className="text-gray-500 italic">Default rate</span>
+                      <span className="text-linear-text-muted italic">Default rate</span>
                     )}
                   </span>
                 </div>
-                <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
-                  <span className="text-sm text-gray-700">Paralegal</span>
-                  <span className="text-sm font-semibold text-gray-900">
+                <div className="flex justify-between items-center py-2 px-3 bg-linear-bg-tertiary rounded">
+                  <span className="text-sm text-linear-text-secondary">Paralegal</span>
+                  <span className="text-sm font-semibold text-linear-text-primary">
                     {customRates?.paralegalRate != null ? (
                       `$${centsToDollars(customRates.paralegalRate)}/hr`
                     ) : (
-                      <span className="text-gray-500 italic">Default rate</span>
+                      <span className="text-linear-text-muted italic">Default rate</span>
                     )}
                   </span>
                 </div>
@@ -134,8 +134,8 @@ export function BillingInfoSection({
 
           {/* Rate Source Info */}
           {billingType === 'Hourly' && customRates != null && (
-            <div className="pt-3 border-t border-gray-200">
-              <p className="text-xs text-gray-500">
+            <div className="pt-3 border-t border-linear-border-subtle">
+              <p className="text-xs text-linear-text-muted">
                 {customRates.partnerRate != null ||
                 customRates.associateRate != null ||
                 customRates.paralegalRate != null

@@ -88,20 +88,20 @@ function AddTeamMemberModal({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fadeIn" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto focus:outline-none">
-          <Dialog.Title className="text-xl font-semibold text-gray-900 mb-4">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-linear-bg-elevated rounded-lg shadow-xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto focus:outline-none">
+          <Dialog.Title className="text-xl font-semibold text-linear-text-primary mb-4">
             Add Team Member
           </Dialog.Title>
 
-          <Dialog.Description className="text-sm text-gray-600 mb-6">
+          <Dialog.Description className="text-sm text-linear-text-secondary mb-6">
             Assign a user to this case team with a specific role.
           </Dialog.Description>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* User ID Input (temporary workaround - no users query available) */}
             <div>
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-                User ID <span className="text-red-500">*</span>
+              <label htmlFor="userId" className="block text-sm font-medium text-linear-text-secondary mb-1">
+                User ID <span className="text-linear-error">*</span>
               </label>
               <input
                 id="userId"
@@ -109,25 +109,25 @@ function AddTeamMemberModal({
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
                 placeholder="Enter user UUID"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent bg-linear-bg-secondary text-linear-text-primary"
                 required
                 disabled={loading}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-linear-text-tertiary mt-1">
                 Enter the UUID of the user to assign to this case.
               </p>
             </div>
 
             {/* Role Selection */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                Role <span className="text-red-500">*</span>
+              <label htmlFor="role" className="block text-sm font-medium text-linear-text-secondary mb-1">
+                Role <span className="text-linear-error">*</span>
               </label>
               <select
                 id="role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent bg-linear-bg-secondary text-linear-text-primary"
                 required
                 disabled={loading}
               >
@@ -138,11 +138,11 @@ function AddTeamMemberModal({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+            <div className="flex gap-3 justify-end pt-4 border-t border-linear-border-subtle">
               <Dialog.Close asChild>
                 <button
                   type="button"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-lg hover:bg-linear-bg-hover transition-colors"
                   disabled={loading}
                 >
                   Cancel
@@ -150,7 +150,7 @@ function AddTeamMemberModal({
               </Dialog.Close>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-lg hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading || !userId.trim()}
               >
                 {loading ? 'Assigning...' : 'Add Team Member'}
@@ -160,7 +160,7 @@ function AddTeamMemberModal({
 
           <Dialog.Close asChild>
             <button
-              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute top-4 right-4 p-1 text-linear-text-muted hover:text-linear-text-secondary transition-colors"
               aria-label="Close"
             >
               <Cross2Icon className="h-5 w-5" />
@@ -192,11 +192,11 @@ function RemoveConfirmDialog({
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fadeIn" />
-        <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md focus:outline-none">
-          <AlertDialog.Title className="text-xl font-semibold text-gray-900 mb-2">
+        <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-linear-bg-elevated rounded-lg shadow-xl p-6 w-full max-w-md focus:outline-none">
+          <AlertDialog.Title className="text-xl font-semibold text-linear-text-primary mb-2">
             Remove Team Member
           </AlertDialog.Title>
-          <AlertDialog.Description className="text-sm text-gray-600 mb-6">
+          <AlertDialog.Description className="text-sm text-linear-text-secondary mb-6">
             Are you sure you want to remove <strong>{memberName}</strong> from this case team? This
             action cannot be undone.
           </AlertDialog.Description>
@@ -204,7 +204,7 @@ function RemoveConfirmDialog({
           <div className="flex gap-3 justify-end">
             <AlertDialog.Cancel asChild>
               <button
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-lg hover:bg-linear-bg-hover transition-colors"
                 disabled={loading}
               >
                 Cancel
@@ -213,7 +213,7 @@ function RemoveConfirmDialog({
             <AlertDialog.Action asChild>
               <button
                 onClick={onConfirm}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-linear-error rounded-lg hover:bg-linear-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 {loading ? 'Removing...' : 'Remove'}
@@ -277,7 +277,7 @@ export function TeamManagement({ caseId, teamMembers, currentUserRole }: TeamMan
         <div className="flex justify-end">
           <button
             onClick={() => setAddModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-lg hover:bg-linear-accent-hover transition-colors"
           >
             <PlusIcon className="mr-2 h-4 w-4" />
             Add Team Member
@@ -294,19 +294,19 @@ export function TeamManagement({ caseId, teamMembers, currentUserRole }: TeamMan
             return (
               <div
                 key={member.id}
-                className="flex items-start justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                className="flex items-start justify-between p-4 bg-linear-bg-primary rounded-lg border border-linear-border-subtle"
               >
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">
+                  <h4 className="font-medium text-linear-text-primary">
                     {member.user.firstName} {member.user.lastName}
                   </h4>
-                  <p className="text-sm text-gray-600 mt-1">{member.user.email}</p>
+                  <p className="text-sm text-linear-text-secondary mt-1">{member.user.email}</p>
                   <div className="flex items-center gap-3 mt-2">
-                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                    <span className="inline-block px-2 py-1 bg-linear-accent/15 text-linear-accent text-xs font-medium rounded">
                       {member.role}
                     </span>
                     {member.assignedAt && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-linear-text-tertiary">
                         Assigned {formatDate(member.assignedAt)}
                       </span>
                     )}
@@ -318,7 +318,7 @@ export function TeamManagement({ caseId, teamMembers, currentUserRole }: TeamMan
                   <button
                     onClick={() => handleRemoveClick(member)}
                     disabled={!removable}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    className="p-2 text-linear-error hover:bg-linear-error/10 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                     aria-label={`Remove ${member.user.firstName} ${member.user.lastName}`}
                     title={
                       !removable && member.role === 'Lead'
@@ -334,7 +334,7 @@ export function TeamManagement({ caseId, teamMembers, currentUserRole }: TeamMan
           })}
         </div>
       ) : (
-        <p className="text-gray-500 text-sm text-center py-6">No team members assigned yet.</p>
+        <p className="text-linear-text-tertiary text-sm text-center py-6">No team members assigned yet.</p>
       )}
 
       {/* Add Team Member Modal */}

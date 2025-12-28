@@ -1,6 +1,7 @@
 /**
  * WidgetContainer Component
  * Base wrapper for all dashboard widgets with header, actions, and loading states
+ * Migrated to Linear design system (OPS-333)
  */
 
 'use client';
@@ -13,9 +14,8 @@ import React, {
   createContext,
   useContext,
 } from 'react';
-import { Card } from '@legal-platform/ui';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { clsx } from 'clsx';
+import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /**
@@ -93,11 +93,11 @@ function WidgetActionMenu({
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
-          className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-linear-bg-hover transition-colors focus:outline-none focus:ring-2 focus:ring-linear-accent"
           aria-label="Widget actions"
         >
           <svg
-            className="w-5 h-5 text-gray-600"
+            className="w-5 h-5 text-linear-text-secondary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -114,12 +114,12 @@ function WidgetActionMenu({
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
-          className="min-w-[180px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+          className="min-w-[180px] bg-linear-bg-elevated rounded-lg shadow-lg border border-linear-border-subtle py-1 z-50"
           sideOffset={5}
         >
           {onRefresh && (
             <DropdownMenu.Item
-              className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none transition-colors"
+              className="flex items-center px-3 py-2 text-sm text-linear-text-secondary hover:bg-linear-bg-hover cursor-pointer outline-none transition-colors"
               onSelect={onRefresh}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,7 +136,7 @@ function WidgetActionMenu({
 
           {onConfigure && (
             <DropdownMenu.Item
-              className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none transition-colors"
+              className="flex items-center px-3 py-2 text-sm text-linear-text-secondary hover:bg-linear-bg-hover cursor-pointer outline-none transition-colors"
               onSelect={onConfigure}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,9 +159,9 @@ function WidgetActionMenu({
 
           {onRemove && (
             <>
-              <DropdownMenu.Separator className="h-px bg-gray-200 my-1" />
+              <DropdownMenu.Separator className="h-px bg-linear-border-subtle my-1" />
               <DropdownMenu.Item
-                className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer outline-none transition-colors"
+                className="flex items-center px-3 py-2 text-sm text-linear-error hover:bg-linear-error/10 cursor-pointer outline-none transition-colors"
                 onSelect={onRemove}
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,8 +261,8 @@ export function WidgetContainer({
   const widgetHeader = (
     <div className="flex items-center justify-between widget-drag-handle">
       <div className="flex items-center gap-2">
-        {icon && <div className="text-gray-600">{icon}</div>}
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+        {icon && <div className="text-linear-text-secondary">{icon}</div>}
+        <h3 className="text-base font-semibold text-linear-text-primary">{title}</h3>
       </div>
       <div className="flex items-center gap-2">
         {onToggleCollapse && (
@@ -271,12 +271,12 @@ export function WidgetContainer({
               e.stopPropagation();
               onToggleCollapse();
             }}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-linear-bg-hover transition-colors focus:outline-none focus:ring-2 focus:ring-linear-accent"
             aria-label={collapsed ? 'Extinde' : 'Restrânge'}
           >
             <svg
-              className={clsx(
-                'w-4 h-4 text-gray-600 transition-transform',
+              className={cn(
+                'w-4 h-4 text-linear-text-secondary transition-transform',
                 collapsed && 'rotate-180'
               )}
               fill="none"
@@ -302,7 +302,7 @@ export function WidgetContainer({
   const content = (
     <div
       ref={contentRef}
-      className={clsx(enableExpansion && 'transition-all duration-300 ease-in-out')}
+      className={cn(enableExpansion && 'transition-all duration-300 ease-in-out')}
     >
       {isLoading ? <WidgetSkeleton /> : children}
     </div>
@@ -322,25 +322,31 @@ export function WidgetContainer({
     <div
       key={id}
       data-widget-id={id}
-      className={clsx('widget-container', className)}
+      className={cn('widget-container', className)}
       data-expanded={enableExpansion ? isExpanded : undefined}
     >
-      <Card
-        variant="elevated"
-        header={widgetHeader}
-        headerClassName="bg-gray-50"
-        bodyClassName={collapsed ? 'hidden' : ''}
-        className={clsx(
-          'flex flex-col transition-all duration-200',
-          isHovered && 'shadow-lg',
+      {/* Linear-styled widget card */}
+      <div
+        className={cn(
+          'overflow-hidden rounded-lg border border-linear-border-subtle bg-linear-bg-secondary',
+          'transition-all duration-200',
+          'hover:border-linear-border hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)]',
           isClicked && 'scale-[0.98]'
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleClick}
       >
-        {wrappedContent}
-      </Card>
+        {/* Widget header */}
+        <div className="border-b border-linear-border-subtle bg-linear-bg-tertiary px-5 py-3">
+          {widgetHeader}
+        </div>
+
+        {/* Widget body */}
+        <div className={cn('px-5 py-4', collapsed && 'hidden')}>
+          {wrappedContent}
+        </div>
+      </div>
     </div>
   );
 }

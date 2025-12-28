@@ -112,25 +112,25 @@ export function AIDraftResponsePanel() {
   if (!thread) return null;
 
   return (
-    <div className="border-t bg-white">
+    <div className="border-t border-linear-border-subtle bg-linear-bg-secondary">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-linear-bg-hover transition-colors"
       >
         <span className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-purple-500" />
+          <Sparkles className="h-4 w-4 text-linear-accent" />
           Sugestie răspuns AI
-          {loading && <Loader2 className="h-3 w-3 animate-spin text-purple-500" />}
+          {loading && <Loader2 className="h-3 w-3 animate-spin text-linear-accent" />}
         </span>
         {isExpanded ? (
-          <ChevronUp className="h-4 w-4 text-gray-500" />
+          <ChevronUp className="h-4 w-4 text-linear-text-tertiary" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-gray-500" />
+          <ChevronDown className="h-4 w-4 text-linear-text-tertiary" />
         )}
       </button>
 
       {isExpanded && (
-        <div className="p-4 border-t space-y-3 max-h-80 overflow-y-auto">
+        <div className="p-4 border-t border-linear-border-subtle space-y-3 max-h-80 overflow-y-auto">
           {/* Tone selector */}
           <div className="flex gap-2">
             {(['formal', 'professional', 'brief'] as const).map((t) => (
@@ -139,7 +139,7 @@ export function AIDraftResponsePanel() {
                 onClick={() => handleToneChange(t)}
                 disabled={loading}
                 className={`px-3 py-1 text-sm rounded transition-colors disabled:opacity-50 ${
-                  tone === t ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  tone === t ? 'bg-linear-accent text-white' : 'bg-linear-bg-tertiary hover:bg-linear-bg-hover'
                 }`}
               >
                 {TONE_LABELS[t]}
@@ -149,11 +149,11 @@ export function AIDraftResponsePanel() {
 
           {/* Error state */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded text-sm flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+            <div className="p-3 bg-linear-error/10 border border-linear-error/30 rounded text-sm flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-linear-error mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-red-800 font-medium">Eroare la generare</p>
-                <p className="text-red-600 text-xs mt-1">{error.message}</p>
+                <p className="text-linear-error font-medium">Eroare la generare</p>
+                <p className="text-linear-error/80 text-xs mt-1">{error.message}</p>
               </div>
             </div>
           )}
@@ -161,44 +161,44 @@ export function AIDraftResponsePanel() {
           {/* Draft content or generate button */}
           {generatedDraft ? (
             <>
-              <div className="p-3 bg-gray-50 rounded text-sm whitespace-pre-wrap max-h-64 overflow-y-auto">
+              <div className="p-3 bg-linear-bg-tertiary rounded text-sm whitespace-pre-wrap max-h-64 overflow-y-auto">
                 {generatedDraft.body}
               </div>
 
               {/* Confidence indicator */}
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-linear-text-tertiary">
                 <span>
                   Încredere AI:{' '}
                   <span
                     className={
                       generatedDraft.confidence >= 0.8
-                        ? 'text-green-600'
+                        ? 'text-linear-success'
                         : generatedDraft.confidence >= 0.5
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
+                          ? 'text-linear-warning'
+                          : 'text-linear-error'
                     }
                   >
                     {Math.round(generatedDraft.confidence * 100)}%
                   </span>
                 </span>
-                <span className="text-gray-400">Ton: {generatedDraft.tone}</span>
+                <span className="text-linear-text-muted">Ton: {generatedDraft.tone}</span>
               </div>
 
               {/* Actions */}
               <div className="flex gap-2">
                 <button
                   onClick={handleUseDraft}
-                  className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors flex items-center gap-1"
                 >
                   Folosește draft
                 </button>
                 <button
                   onClick={handleCopyDraft}
-                  className="px-3 py-1.5 text-sm bg-gray-100 rounded hover:bg-gray-200 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 text-sm bg-linear-bg-tertiary rounded hover:bg-linear-bg-hover transition-colors flex items-center gap-1"
                 >
                   {copied ? (
                     <>
-                      <Check className="h-3 w-3 text-green-600" />
+                      <Check className="h-3 w-3 text-linear-success" />
                       Copiat
                     </>
                   ) : (
@@ -211,7 +211,7 @@ export function AIDraftResponsePanel() {
                 <button
                   onClick={handleGenerateDraft}
                   disabled={loading}
-                  className="px-3 py-1.5 text-sm bg-gray-100 rounded hover:bg-gray-200 transition-colors flex items-center gap-1 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm bg-linear-bg-tertiary rounded hover:bg-linear-bg-hover transition-colors flex items-center gap-1 disabled:opacity-50"
                 >
                   <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
                   Regenerează
@@ -220,13 +220,13 @@ export function AIDraftResponsePanel() {
             </>
           ) : (
             <div className="text-center py-4">
-              <p className="text-sm text-gray-500 mb-3">
+              <p className="text-sm text-linear-text-tertiary mb-3">
                 Generați un răspuns automat bazat pe conversația curentă
               </p>
               <button
                 onClick={handleGenerateDraft}
                 disabled={loading || !emailId}
-                className="px-4 py-2 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                className="px-4 py-2 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
               >
                 {loading ? (
                   <>
@@ -241,7 +241,7 @@ export function AIDraftResponsePanel() {
                 )}
               </button>
               {!emailId && (
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-linear-text-muted mt-2">
                   Selectați o conversație pentru a genera un răspuns
                 </p>
               )}

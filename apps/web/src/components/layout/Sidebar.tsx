@@ -179,7 +179,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
       {/* Backdrop overlay when sidebar is expanded */}
       {!isSidebarCollapsed && (
         <div
-          className="fixed inset-0 bg-black/20 z-[55] transition-opacity duration-300"
+          className="fixed inset-0 bg-black/50 z-[55] transition-opacity duration-300"
           onClick={toggleSidebar}
           aria-hidden="true"
         />
@@ -189,7 +189,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
         className={`
           ${className}
           flex flex-col
-          bg-white border-r border-gray-200
+          bg-linear-bg-secondary border-r border-linear-border-subtle
           transition-all duration-300 ease-in-out
           ${isSidebarCollapsed ? 'w-16' : 'w-64'}
           h-screen fixed top-0 left-0 z-[60]
@@ -197,9 +197,22 @@ export function Sidebar({ className = '' }: SidebarProps) {
         `}
         aria-label="Main navigation"
       >
-        <div className="flex-1 p-4">
-          <NavigationMenu.Root orientation="vertical" className="flex flex-col gap-2">
-            <NavigationMenu.List className="flex flex-col gap-2">
+        {/* Logo/Branding area */}
+        <div
+          className={`flex items-center h-14 px-4 border-b border-linear-border-subtle ${isSidebarCollapsed ? 'justify-center' : ''}`}
+        >
+          <span
+            className={`text-linear-text-primary font-semibold tracking-tight ${isSidebarCollapsed ? 'text-base' : 'text-[15px]'}`}
+          >
+            {isSidebarCollapsed ? 'LP' : 'Legal Platform'}
+          </span>
+        </div>
+
+        <div className="flex-1 p-3">
+          {/* Section title */}
+          {!isSidebarCollapsed && <p className="section-header px-3 py-2">Navigare</p>}
+          <NavigationMenu.Root orientation="vertical" className="flex flex-col gap-1">
+            <NavigationMenu.List className="flex flex-col gap-1">
               {visibleItems.map((item) => {
                 const active = isActive(item);
                 const IconComponent = iconMap[item.icon];
@@ -211,31 +224,34 @@ export function Sidebar({ className = '' }: SidebarProps) {
                         onClick={() => handleItemClick(item.section)}
                         data-active={active}
                         className={`
-                        flex items-center gap-3 px-3 py-2 rounded-lg
-                        transition-colors duration-200
+                        relative flex items-center gap-3 px-3 py-2 rounded-md
+                        transition-all duration-150
                         ${
                           active
-                            ? 'bg-blue-50 text-blue-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            ? 'bg-linear-accent-muted text-linear-accent font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-full before:bg-linear-accent'
+                            : 'text-linear-text-secondary hover:bg-linear-bg-hover hover:text-linear-text-primary hover:-mx-1 hover:px-4'
                         }
-                        ${isSidebarCollapsed ? 'justify-center' : ''}
-                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                        ${isSidebarCollapsed ? 'justify-center before:!left-0 hover:!mx-0 hover:!px-3' : ''}
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent focus-visible:ring-offset-2 focus-visible:ring-offset-linear-bg-secondary
                       `}
                         aria-current={active ? 'page' : undefined}
                         title={isSidebarCollapsed ? item.label : undefined}
                       >
                         {IconComponent && (
-                          <IconComponent className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                          <IconComponent
+                            className={`w-[18px] h-[18px] flex-shrink-0 ${active ? 'text-linear-accent' : ''}`}
+                            aria-hidden="true"
+                          />
                         )}
                         {!isSidebarCollapsed && (
-                          <span className="truncate flex-1">{item.label}</span>
+                          <span className="truncate flex-1 text-[13px]">{item.label}</span>
                         )}
                         {/* Show badge count for pending approvals on Cases link for Partners */}
                         {item.id === 'cases' &&
                           userRole === 'Partner' &&
                           pendingCount > 0 &&
                           !isSidebarCollapsed && (
-                            <span className="ml-auto bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                            <span className="ml-auto bg-linear-accent text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                               {pendingCount}
                             </span>
                           )}
@@ -250,7 +266,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
 
         {/* Quick Actions */}
         {!isSidebarCollapsed && (
-          <div className="border-t border-gray-200 pb-4">
+          <div className="border-t border-linear-border-subtle pb-4">
             <QuickActions mode="sidebar" />
           </div>
         )}

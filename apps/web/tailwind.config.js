@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -8,6 +9,37 @@ module.exports = {
   ],
   theme: {
     extend: {
+      colors: {
+        // Linear-inspired semantic colors (use CSS variables for theme switching)
+        'linear-bg': {
+          primary: 'var(--linear-bg-primary)',
+          secondary: 'var(--linear-bg-secondary)',
+          tertiary: 'var(--linear-bg-tertiary)',
+          elevated: 'var(--linear-bg-elevated)',
+          hover: 'var(--linear-bg-hover)',
+        },
+        'linear-accent': {
+          DEFAULT: 'var(--linear-accent)',
+          hover: 'var(--linear-accent-hover)',
+          muted: 'var(--linear-accent-muted)',
+        },
+        'linear-text': {
+          primary: 'var(--linear-text-primary)',
+          secondary: 'var(--linear-text-secondary)',
+          tertiary: 'var(--linear-text-tertiary)',
+          muted: 'var(--linear-text-muted)',
+        },
+        'linear-border': {
+          subtle: 'var(--linear-border-subtle)',
+          DEFAULT: 'var(--linear-border-default)',
+        },
+        'linear-success': 'var(--linear-success)',
+        'linear-warning': 'var(--linear-warning)',
+        'linear-error': 'var(--linear-error)',
+      },
+      fontFamily: {
+        sans: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+      },
       keyframes: {
         slideDown: {
           from: { height: '0', opacity: '0' },

@@ -175,33 +175,33 @@ export function MentionAutocomplete({
         autoFocus={autoFocus}
         disabled={disabled}
         rows={3}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:text-gray-500"
+        className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent resize-none disabled:bg-linear-bg-tertiary disabled:text-linear-text-tertiary"
       />
 
       {/* Autocomplete dropdown */}
       {showDropdown && users.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto"
+          className="absolute left-0 right-0 top-full mt-1 bg-linear-bg-secondary border border-linear-border-subtle rounded-md shadow-lg z-50 max-h-48 overflow-y-auto"
         >
           {users.map((user, index) => (
             <button
               key={user.id}
               type="button"
               onClick={() => selectUser(user)}
-              className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-gray-50 ${
-                index === selectedIndex ? 'bg-blue-50' : ''
+              className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-linear-bg-hover ${
+                index === selectedIndex ? 'bg-linear-accent/10' : ''
               }`}
             >
-              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-medium">
+              <div className="w-6 h-6 rounded-full bg-linear-accent/15 flex items-center justify-center text-linear-accent text-xs font-medium">
                 {user.firstName[0]}
                 {user.lastName[0]}
               </div>
               <div>
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-linear-text-primary">
                   {user.firstName} {user.lastName}
                 </div>
-                <div className="text-xs text-gray-500">{user.email}</div>
+                <div className="text-xs text-linear-text-tertiary">{user.email}</div>
               </div>
             </button>
           ))}
@@ -210,7 +210,7 @@ export function MentionAutocomplete({
 
       {/* Loading state */}
       {showDropdown && searchQuery && users.length === 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 px-3 py-2 text-sm text-gray-500">
+        <div className="absolute left-0 right-0 top-full mt-1 bg-linear-bg-secondary border border-linear-border-subtle rounded-md shadow-lg z-50 px-3 py-2 text-sm text-linear-text-tertiary">
           {searchQuery.length < 1 ? 'Tastează pentru a căuta...' : 'Niciun utilizator găsit'}
         </div>
       )}

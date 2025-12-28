@@ -3,12 +3,14 @@
 /**
  * Documents Page - Case-Organized with Folder Structure
  * OPS-089: /documents Section with Case Navigation and Folder Structure
+ * OPS-328: Mobile Page Consistency - Added mobile view
  *
  * Two-column layout for document management:
  * - Left: Case sidebar with nested folder trees
  * - Right: Document list and preview
  *
  * Supports URL routing: /documents?case={caseId}&folder={folderId}
+ * On mobile devices (< 768px), shows MobileDocuments instead.
  */
 
 import { Suspense, useEffect, useCallback } from 'react';
@@ -19,12 +21,15 @@ import { clsx } from 'clsx';
 // Components
 import { DocumentsSidebar } from '../../components/documents/DocumentsSidebar';
 import { DocumentsContentPanel } from '../../components/documents/DocumentsContentPanel';
+import { PageLayout } from '../../components/linear/PageLayout';
+import { MobileDocuments } from '../../components/mobile';
 
 // Hooks
 import { useCases } from '../../hooks/useCases';
 import { useCaseFolderTree } from '../../hooks/useDocumentFolders';
 import { useDocumentFoldersStore } from '../../stores/document-folders.store';
 import { useSetAIContext } from '../../contexts/AIAssistantContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // ============================================================================
 // URL Routing Helper
@@ -126,22 +131,22 @@ function DocumentsPageContent() {
   const isLoading = casesLoading;
 
   return (
-    <div className="flex h-full bg-white">
+    <PageLayout className="flex h-full p-0">
       {/* Left Sidebar - Cases and Folders */}
-      <div className="w-80 border-r border-gray-200 flex flex-col bg-gray-50">
+      <div className="flex w-80 flex-col border-r border-linear-border-subtle bg-linear-bg-secondary">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-200 bg-white">
+        <div className="border-b border-linear-border-subtle bg-linear-bg-tertiary px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-gray-600" />
-              <h1 className="text-lg font-semibold text-gray-900">Documente</h1>
+              <FileText className="h-5 w-5 text-linear-text-secondary" />
+              <h1 className="text-lg font-semibold text-linear-text-primary">Documente</h1>
             </div>
             <button
               onClick={handleRefresh}
               disabled={isLoading}
               className={clsx(
-                'p-1.5 rounded-md transition-colors',
-                isLoading ? 'text-gray-300' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                'rounded-md p-1.5 transition-colors',
+                isLoading ? 'text-linear-text-tertiary' : 'text-linear-text-secondary hover:bg-linear-bg-hover hover:text-linear-text-primary'
               )}
               title="Reîmprospătează"
             >
@@ -163,7 +168,7 @@ function DocumentsPageContent() {
       </div>
 
       {/* Right Panel - Documents */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <DocumentsContentPanel
           caseId={selectedCaseId}
           folderId={selectedFolderId}
@@ -172,7 +177,7 @@ function DocumentsPageContent() {
           loading={foldersLoading}
         />
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
@@ -181,12 +186,20 @@ function DocumentsPageContent() {
 // ============================================================================
 
 export default function DocumentsPage() {
+  const isMobile = useIsMobile();
+
+  // On mobile, render MobileDocuments
+  if (isMobile) {
+    return <MobileDocuments />;
+  }
+
+  // Desktop: render full documents page
   return (
     <Suspense
       fallback={
-        <div className="flex h-full items-center justify-center">
-          <div className="text-sm text-gray-500">Se încarcă...</div>
-        </div>
+        <PageLayout className="flex h-full items-center justify-center p-0">
+          <div className="text-sm text-linear-text-secondary">Se încarcă...</div>
+        </PageLayout>
       }
     >
       <DocumentsPageContent />

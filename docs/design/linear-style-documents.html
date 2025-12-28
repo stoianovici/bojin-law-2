@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documente - Linear Style Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       CSS CUSTOM PROPERTIES (Design Tokens)
+       ============================================ */
+    :root {
+      /* Colors - Background */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+
+      /* Colors - Border */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      /* Colors - Text */
+      --text-primary: #FAFAFA;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Colors - Accent */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6E7AE2;
+      --accent-secondary: #8B5CF6;
+
+      /* Colors - Semantic */
+      --color-success: #22C55E;
+      --color-warning: #F59E0B;
+      --color-error: #EF4444;
+      --color-info: #3B82F6;
+
+      /* Document Type Colors */
+      --doc-contract: #3B82F6;
+      --doc-pleading: #8B5CF6;
+      --doc-evidence: #F59E0B;
+      --doc-correspondence: #22C55E;
+      --doc-invoice: #EC4899;
+      --doc-other: #71717A;
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+
+      /* Typography */
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-size-xs: 11px;
+      --font-size-sm: 12px;
+      --font-size-base: 13px;
+      --font-size-md: 14px;
+      --font-size-lg: 16px;
+      --font-size-xl: 18px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+      /* Gradients */
+      --gradient-accent: linear-gradient(135deg, #5E6AD2 0%, #8B5CF6 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: var(--font-size-base);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============================================
+       LAYOUT
+       ============================================ */
+    .app-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      font-size: var(--font-size-lg);
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--gradient-accent);
+      border-radius: var(--radius-md);
+    }
+
+    /* Navigation */
+    .nav-section {
+      padding: var(--space-3);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      color: var(--text-secondary);
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .nav-icon {
+      font-size: var(--font-size-md);
+      width: 20px;
+      text-align: center;
+    }
+
+    .nav-label {
+      font-size: var(--font-size-sm);
+    }
+
+    /* Folder Tree */
+    .folder-section {
+      padding: var(--space-4);
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-title button {
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      font-size: var(--font-size-md);
+    }
+
+    .section-title button:hover {
+      color: var(--text-primary);
+    }
+
+    .folder-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: var(--text-secondary);
+    }
+
+    .folder-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .folder-item.active {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .folder-icon {
+      font-size: var(--font-size-sm);
+    }
+
+    .folder-name {
+      font-size: var(--font-size-sm);
+      flex: 1;
+    }
+
+    .folder-count {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+    }
+
+    .folder-children {
+      padding-left: var(--space-5);
+    }
+
+    /* Storage Info */
+    .storage-info {
+      padding: var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .storage-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-2);
+    }
+
+    .storage-bar {
+      height: 4px;
+      background: var(--bg-tertiary);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: var(--space-2);
+    }
+
+    .storage-bar-fill {
+      height: 100%;
+      width: 45%;
+      background: var(--gradient-accent);
+      border-radius: 2px;
+    }
+
+    .storage-text {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      height: 52px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-sm);
+    }
+
+    .breadcrumb-item {
+      color: var(--text-tertiary);
+      cursor: pointer;
+    }
+
+    .breadcrumb-item:hover {
+      color: var(--text-primary);
+    }
+
+    .breadcrumb-item.current {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .breadcrumb-sep {
+      color: var(--text-muted);
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      width: 280px;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent-primary);
+    }
+
+    .search-icon {
+      color: var(--text-muted);
+      font-size: var(--font-size-sm);
+    }
+
+    .search-input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: var(--font-size-sm);
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-shortcut {
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .view-toggle {
+      display: flex;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 2px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .view-btn {
+      padding: var(--space-2);
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+    }
+
+    .view-btn.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .upload-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--accent-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      color: white;
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .upload-btn:hover {
+      background: var(--accent-primary-hover);
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-6);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+    }
+
+    .filter-chip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-3);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-chip:hover {
+      border-color: var(--border-default);
+      color: var(--text-primary);
+    }
+
+    .filter-chip.active {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: white;
+    }
+
+    .filter-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border-subtle);
+    }
+
+    /* Document Grid */
+    .document-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-6);
+    }
+
+    .document-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .document-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .document-card:hover {
+      border-color: var(--border-default);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .document-card.selected {
+      border-color: var(--accent-primary);
+      background: rgba(94, 106, 210, 0.05);
+    }
+
+    .document-preview {
+      height: 120px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .document-preview-icon {
+      font-size: 48px;
+      opacity: 0.5;
+    }
+
+    .document-preview-badge {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .document-preview-badge.pdf { background: #EF4444; color: white; }
+    .document-preview-badge.docx { background: #3B82F6; color: white; }
+    .document-preview-badge.xlsx { background: #22C55E; color: white; }
+    .document-preview-badge.jpg { background: #F59E0B; color: white; }
+
+    .document-name {
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .document-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .document-type-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      margin-top: var(--space-2);
+    }
+
+    .document-type-tag.contract {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93C5FD;
+    }
+
+    .document-type-tag.pleading {
+      background: rgba(139, 92, 246, 0.2);
+      color: #C4B5FD;
+    }
+
+    .document-type-tag.evidence {
+      background: rgba(245, 158, 11, 0.2);
+      color: #FCD34D;
+    }
+
+    .document-type-tag.correspondence {
+      background: rgba(34, 197, 94, 0.2);
+      color: #86EFAC;
+    }
+
+    /* Document List View */
+    .document-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .document-row {
+      display: grid;
+      grid-template-columns: 32px 1fr 120px 100px 120px 80px;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .document-row:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--border-default);
+    }
+
+    .document-row.selected {
+      border-color: var(--accent-primary);
+      background: rgba(94, 106, 210, 0.05);
+    }
+
+    .document-row-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-lg);
+    }
+
+    .document-row-name {
+      font-size: var(--font-size-sm);
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .document-row-case {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .document-row-type {
+      font-size: var(--font-size-xs);
+    }
+
+    .document-row-date {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .document-row-size {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    /* List Header */
+    .list-header {
+      display: grid;
+      grid-template-columns: 32px 1fr 120px 100px 120px 80px;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: var(--space-2);
+    }
+
+    .list-header span:last-child {
+      text-align: right;
+    }
+
+    /* Recent Section */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .section-header h2 {
+      font-size: var(--font-size-md);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .section-link {
+      font-size: var(--font-size-xs);
+      color: var(--accent-primary);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .section-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-8);
+      text-align: center;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      opacity: 0.3;
+      margin-bottom: var(--space-4);
+    }
+
+    .empty-state-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    .empty-state-text {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      max-width: 300px;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-default);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border-strong);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon"></div>
+          <span>Bojin Legal</span>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="nav-section">
+        <a href="#" class="nav-item">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-label">Acasă</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">📁</span>
+          <span class="nav-label">Dosare</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">✉️</span>
+          <span class="nav-label">Comunicări</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">✓</span>
+          <span class="nav-label">Sarcini</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">📅</span>
+          <span class="nav-label">Calendar</span>
+        </a>
+        <a href="#" class="nav-item active">
+          <span class="nav-icon">📄</span>
+          <span class="nav-label">Documente</span>
+        </a>
+      </nav>
+
+      <!-- Folder Tree -->
+      <div class="folder-section">
+        <div class="section-title">
+          Dosare
+          <button>+</button>
+        </div>
+
+        <div class="folder-item active">
+          <span class="folder-icon">📂</span>
+          <span class="folder-name">Toate Documentele</span>
+          <span class="folder-count">847</span>
+        </div>
+
+        <div class="folder-item">
+          <span class="folder-icon">⭐</span>
+          <span class="folder-name">Favorite</span>
+          <span class="folder-count">23</span>
+        </div>
+
+        <div class="folder-item">
+          <span class="folder-icon">🕐</span>
+          <span class="folder-name">Recente</span>
+          <span class="folder-count">15</span>
+        </div>
+
+        <div class="folder-item">
+          <span class="folder-icon">🗑️</span>
+          <span class="folder-name">Coș de Gunoi</span>
+          <span class="folder-count">3</span>
+        </div>
+
+        <div class="section-title" style="margin-top: var(--space-4);">
+          Categorii
+        </div>
+
+        <div class="folder-item">
+          <span class="folder-icon">📝</span>
+          <span class="folder-name">Contracte</span>
+          <span class="folder-count">156</span>
+        </div>
+
+        <div class="folder-item">
+          <span class="folder-icon">⚖️</span>
+          <span class="folder-name">Acte Procedurale</span>
+          <span class="folder-count">312</span>
+        </div>
+
+        <div class="folder-item">
+          <span class="folder-icon">🔍</span>
+          <span class="folder-name">Probe</span>
+          <span class="folder-count">89</span>
+        </div>
+
+        <div class="folder-item">
+          <span class="folder-icon">💬</span>
+          <span class="folder-name">Corespondență</span>
+          <span class="folder-count">234</span>
+        </div>
+
+        <div class="folder-item">
+          <span class="folder-icon">💰</span>
+          <span class="folder-name">Facturi</span>
+          <span class="folder-count">56</span>
+        </div>
+      </div>
+
+      <!-- Storage Info -->
+      <div class="storage-info">
+        <div class="storage-label">Spațiu utilizat</div>
+        <div class="storage-bar">
+          <div class="storage-bar-fill"></div>
+        </div>
+        <div class="storage-text">4.5 GB din 10 GB utilizat</div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <div class="breadcrumb">
+            <span class="breadcrumb-item">Documente</span>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-item current">Toate Documentele</span>
+          </div>
+
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Caută documente...">
+            <span class="search-shortcut">⌘K</span>
+          </div>
+        </div>
+
+        <div class="top-bar-right">
+          <div class="view-toggle">
+            <button class="view-btn">☰</button>
+            <button class="view-btn active">⊞</button>
+          </div>
+          <button class="upload-btn">
+            <span>↑</span>
+            Încarcă
+          </button>
+        </div>
+      </header>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-chip active">Toate</div>
+        <div class="filter-chip">PDF</div>
+        <div class="filter-chip">Word</div>
+        <div class="filter-chip">Excel</div>
+        <div class="filter-chip">Imagini</div>
+        <div class="filter-divider"></div>
+        <div class="filter-chip">Săptămâna asta</div>
+        <div class="filter-chip">Luna asta</div>
+      </div>
+
+      <!-- Document Area -->
+      <div class="document-area">
+        <!-- Recent Section -->
+        <div class="section-header">
+          <h2>Documente Recente</h2>
+          <a class="section-link">Vezi toate →</a>
+        </div>
+
+        <div class="document-grid">
+          <!-- Document Card 1 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📄</span>
+              <span class="document-preview-badge pdf">PDF</span>
+            </div>
+            <div class="document-name">Contract_Prestari_Servicii_Alpha.pdf</div>
+            <div class="document-meta">
+              <span>2.4 MB</span>
+              <span>•</span>
+              <span>Azi, 14:32</span>
+            </div>
+            <div class="document-type-tag contract">Contract</div>
+          </div>
+
+          <!-- Document Card 2 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📄</span>
+              <span class="document-preview-badge docx">DOCX</span>
+            </div>
+            <div class="document-name">Cerere_Reconventionala_2847.docx</div>
+            <div class="document-meta">
+              <span>156 KB</span>
+              <span>•</span>
+              <span>Ieri, 09:15</span>
+            </div>
+            <div class="document-type-tag pleading">Act Procedural</div>
+          </div>
+
+          <!-- Document Card 3 -->
+          <div class="document-card selected">
+            <div class="document-preview">
+              <span class="document-preview-icon">📊</span>
+              <span class="document-preview-badge xlsx">XLSX</span>
+            </div>
+            <div class="document-name">Situatie_Financiara_Q4_2024.xlsx</div>
+            <div class="document-meta">
+              <span>890 KB</span>
+              <span>•</span>
+              <span>Ieri, 16:45</span>
+            </div>
+            <div class="document-type-tag evidence">Probă</div>
+          </div>
+
+          <!-- Document Card 4 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📄</span>
+              <span class="document-preview-badge pdf">PDF</span>
+            </div>
+            <div class="document-name">Intampinare_Dosar_1892.pdf</div>
+            <div class="document-meta">
+              <span>1.2 MB</span>
+              <span>•</span>
+              <span>18 Dec</span>
+            </div>
+            <div class="document-type-tag pleading">Act Procedural</div>
+          </div>
+
+          <!-- Document Card 5 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📸</span>
+              <span class="document-preview-badge jpg">JPG</span>
+            </div>
+            <div class="document-name">Dovada_Transfer_Bancar.jpg</div>
+            <div class="document-meta">
+              <span>3.1 MB</span>
+              <span>•</span>
+              <span>17 Dec</span>
+            </div>
+            <div class="document-type-tag evidence">Probă</div>
+          </div>
+
+          <!-- Document Card 6 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📄</span>
+              <span class="document-preview-badge pdf">PDF</span>
+            </div>
+            <div class="document-name">Notificare_Client_Beta_SRL.pdf</div>
+            <div class="document-meta">
+              <span>245 KB</span>
+              <span>•</span>
+              <span>16 Dec</span>
+            </div>
+            <div class="document-type-tag correspondence">Corespondență</div>
+          </div>
+
+          <!-- Document Card 7 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📄</span>
+              <span class="document-preview-badge docx">DOCX</span>
+            </div>
+            <div class="document-name">Acord_Confidentialitate_v2.docx</div>
+            <div class="document-meta">
+              <span>89 KB</span>
+              <span>•</span>
+              <span>15 Dec</span>
+            </div>
+            <div class="document-type-tag contract">Contract</div>
+          </div>
+
+          <!-- Document Card 8 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📄</span>
+              <span class="document-preview-badge pdf">PDF</span>
+            </div>
+            <div class="document-name">Hotarare_Judecatoreasca_3421.pdf</div>
+            <div class="document-meta">
+              <span>567 KB</span>
+              <span>•</span>
+              <span>14 Dec</span>
+            </div>
+            <div class="document-type-tag pleading">Act Procedural</div>
+          </div>
+
+          <!-- Document Card 9 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📄</span>
+              <span class="document-preview-badge pdf">PDF</span>
+            </div>
+            <div class="document-name">Raport_Expertiza_Tehnica.pdf</div>
+            <div class="document-meta">
+              <span>4.8 MB</span>
+              <span>•</span>
+              <span>12 Dec</span>
+            </div>
+            <div class="document-type-tag evidence">Probă</div>
+          </div>
+
+          <!-- Document Card 10 -->
+          <div class="document-card">
+            <div class="document-preview">
+              <span class="document-preview-icon">📄</span>
+              <span class="document-preview-badge docx">DOCX</span>
+            </div>
+            <div class="document-name">Procura_Reprezentare_Ionescu.docx</div>
+            <div class="document-meta">
+              <span>67 KB</span>
+              <span>•</span>
+              <span>10 Dec</span>
+            </div>
+            <div class="document-type-tag contract">Contract</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

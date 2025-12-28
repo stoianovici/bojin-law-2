@@ -55,39 +55,39 @@ function getAdoptionLevel(score: number): {
   if (score >= ADOPTION_THRESHOLDS.excellent) {
     return {
       label: 'Excelent',
-      color: 'text-emerald-700',
-      bg: 'bg-emerald-100',
+      color: 'text-linear-success',
+      bg: 'bg-linear-success/15',
       icon: '🏆',
     };
   }
   if (score >= ADOPTION_THRESHOLDS.good) {
     return {
       label: 'Bun',
-      color: 'text-blue-700',
-      bg: 'bg-blue-100',
+      color: 'text-linear-accent',
+      bg: 'bg-linear-accent/15',
       icon: '⭐',
     };
   }
   if (score >= ADOPTION_THRESHOLDS.moderate) {
     return {
       label: 'Moderat',
-      color: 'text-amber-700',
-      bg: 'bg-amber-100',
+      color: 'text-linear-warning',
+      bg: 'bg-linear-warning/15',
       icon: '📈',
     };
   }
   if (score >= ADOPTION_THRESHOLDS.low) {
     return {
       label: 'Scăzut',
-      color: 'text-orange-700',
-      bg: 'bg-orange-100',
+      color: 'text-linear-warning',
+      bg: 'bg-linear-warning/15',
       icon: '📊',
     };
   }
   return {
     label: 'Foarte scăzut',
-    color: 'text-red-700',
-    bg: 'bg-red-100',
+    color: 'text-linear-error',
+    bg: 'bg-linear-error/15',
     icon: '⚠️',
   };
 }
@@ -95,13 +95,13 @@ function getAdoptionLevel(score: number): {
 function getRankBadge(rank: number): { bg: string; text: string } {
   switch (rank) {
     case 1:
-      return { bg: 'bg-yellow-400', text: 'text-yellow-900' }; // Gold
+      return { bg: 'bg-linear-warning', text: 'text-linear-warning' }; // Gold
     case 2:
-      return { bg: 'bg-gray-300', text: 'text-gray-700' }; // Silver
+      return { bg: 'bg-linear-bg-hover', text: 'text-linear-text-secondary' }; // Silver
     case 3:
-      return { bg: 'bg-amber-600', text: 'text-amber-100' }; // Bronze
+      return { bg: 'bg-linear-warning/80', text: 'text-white' }; // Bronze
     default:
-      return { bg: 'bg-gray-100', text: 'text-gray-600' };
+      return { bg: 'bg-linear-bg-tertiary', text: 'text-linear-text-secondary' };
   }
 }
 
@@ -116,11 +116,11 @@ function formatNumber(num: number): string {
 
 function LoadingSkeleton() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-      <div className="h-5 bg-gray-200 rounded w-48 mb-6" />
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 animate-pulse">
+      <div className="h-5 bg-linear-bg-hover rounded w-48 mb-6" />
       <div className="space-y-3">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-16 bg-gray-100 rounded" />
+          <div key={i} className="h-16 bg-linear-bg-tertiary rounded" />
         ))}
       </div>
     </div>
@@ -141,11 +141,11 @@ function SortHeader({ field, label, currentSort, direction, onSort }: SortHeader
     <button
       onClick={() => onSort(field)}
       className={`flex items-center gap-1 text-xs font-medium uppercase tracking-wider ${
-        isActive ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
+        isActive ? 'text-linear-accent' : 'text-linear-text-tertiary hover:text-linear-text-secondary'
       }`}
     >
       {label}
-      {isActive && <span className="text-blue-600">{direction === 'asc' ? '↑' : '↓'}</span>}
+      {isActive && <span className="text-linear-accent">{direction === 'asc' ? '↑' : '↓'}</span>}
     </button>
   );
 }
@@ -167,8 +167,8 @@ function UserRow({ user, rank, featuresUsedCount, totalFeatures, onClick }: User
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-4 p-3 rounded-lg transition-colors text-left ${
-        onClick ? 'hover:bg-gray-50 cursor-pointer' : ''
-      } ${isTopThree ? 'bg-gray-50' : ''}`}
+        onClick ? 'hover:bg-linear-bg-hover cursor-pointer' : ''
+      } ${isTopThree ? 'bg-linear-bg-tertiary' : ''}`}
     >
       {/* Rank */}
       <div
@@ -180,17 +180,17 @@ function UserRow({ user, rank, featuresUsedCount, totalFeatures, onClick }: User
       {/* User Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900 truncate">{user.userName}</span>
+          <span className="font-medium text-linear-text-primary truncate">{user.userName}</span>
           {isTopThree && <span>{adoptionLevel.icon}</span>}
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-linear-text-tertiary">
           {formatNumber(user.totalRequests)} cereri • {featuresUsedCount}/{totalFeatures} funcții
         </div>
       </div>
 
       {/* Adoption Score */}
       <div className="text-right">
-        <div className="text-lg font-bold text-gray-900">{user.adoptionScore}%</div>
+        <div className="text-lg font-bold text-linear-text-primary">{user.adoptionScore}%</div>
         <span
           className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${adoptionLevel.bg} ${adoptionLevel.color}`}
         >
@@ -200,7 +200,7 @@ function UserRow({ user, rank, featuresUsedCount, totalFeatures, onClick }: User
 
       {/* Progress Bar */}
       <div className="w-24 hidden md:block">
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-linear-bg-hover rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all"
             style={{
@@ -221,7 +221,7 @@ function UserRow({ user, rank, featuresUsedCount, totalFeatures, onClick }: User
       {/* Arrow */}
       {onClick && (
         <svg
-          className="w-5 h-5 text-gray-400"
+          className="w-5 h-5 text-linear-text-muted"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -309,23 +309,23 @@ export function UserAdoptionLeaderboard({
 
   if (users.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6 text-center text-gray-500">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 text-center text-linear-text-tertiary">
         Nu există date de utilizatori disponibile
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Clasament adopție AI</h3>
-        <div className="text-sm text-gray-500">{users.length} utilizatori</div>
+        <h3 className="text-lg font-semibold text-linear-text-primary">Clasament adopție AI</h3>
+        <div className="text-sm text-linear-text-tertiary">{users.length} utilizatori</div>
       </div>
 
       {/* Sort Controls */}
-      <div className="flex gap-4 mb-4 pb-4 border-b border-gray-200">
-        <span className="text-xs text-gray-400">Sortare:</span>
+      <div className="flex gap-4 mb-4 pb-4 border-b border-linear-border-subtle">
+        <span className="text-xs text-linear-text-muted">Sortare:</span>
         <SortHeader
           field="adoptionScore"
           label="Scor"
@@ -372,9 +372,9 @@ export function UserAdoptionLeaderboard({
 
       {/* Underutilized Section */}
       {showUnderutilized && underutilizedUsers.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        <div className="mt-6 pt-6 border-t border-linear-border-subtle">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-medium text-amber-700">
+            <span className="text-sm font-medium text-linear-warning">
               ⚠️ Necesită training ({underutilizedUsers.length})
             </span>
           </div>
@@ -383,19 +383,19 @@ export function UserAdoptionLeaderboard({
               <button
                 key={user.userId}
                 onClick={() => onUserClick?.(user.userId)}
-                className="w-full flex items-center justify-between p-2 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors"
+                className="w-full flex items-center justify-between p-2 rounded-lg bg-linear-warning/10 hover:bg-linear-warning/15 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">{user.userName}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-sm font-medium text-linear-text-primary">{user.userName}</span>
+                  <span className="text-xs text-linear-text-tertiary">
                     {formatNumber(user.totalRequests)} cereri
                   </span>
                 </div>
-                <span className="text-sm font-bold text-amber-700">{user.adoptionScore}%</span>
+                <span className="text-sm font-bold text-linear-warning">{user.adoptionScore}%</span>
               </button>
             ))}
             {underutilizedUsers.length > 3 && (
-              <div className="text-xs text-gray-500 text-center">
+              <div className="text-xs text-linear-text-tertiary text-center">
                 +{underutilizedUsers.length - 3} alți utilizatori
               </div>
             )}

@@ -77,28 +77,28 @@ function SectionHeader({
   return (
     <button
       onClick={onClick}
-      className="w-full px-3 py-2 bg-gray-100 border-b border-gray-200 sticky top-0 z-10"
+      className="w-full px-3 py-2 bg-linear-bg-tertiary border-b border-linear-border-subtle sticky top-0 z-10"
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <FolderOpen className="h-4 w-4 text-gray-500" />
+        <div className="flex items-center gap-2 text-sm font-semibold text-linear-text-secondary">
+          <FolderOpen className="h-4 w-4 text-linear-text-tertiary" />
           FOLDERE OUTLOOK
         </div>
         <div className="flex items-center gap-2">
           {totalUnread > 0 && (
-            <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+            <span className="px-2 py-0.5 text-xs font-medium bg-linear-accent/15 text-linear-accent rounded-full">
               {totalUnread}
             </span>
           )}
           {totalCount > 0 && (
-            <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-600 rounded-full">
+            <span className="px-2 py-0.5 text-xs font-medium bg-linear-bg-hover text-linear-text-tertiary rounded-full">
               {totalCount}
             </span>
           )}
           {isCollapsed ? (
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-linear-text-muted" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-gray-400" />
+            <ChevronDown className="h-4 w-4 text-linear-text-muted" />
           )}
         </div>
       </div>
@@ -122,28 +122,28 @@ function FolderAccordionItem({
   onAssignToCase?: (emailId: string) => void;
 }) {
   return (
-    <div className="border-b border-gray-100">
+    <div className="border-b border-linear-border-subtle">
       {/* Folder Header */}
       <button
         onClick={onToggle}
-        className="w-full px-3 py-2.5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full px-3 py-2.5 text-left flex items-center justify-between hover:bg-linear-bg-tertiary transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <ChevronDown className="h-4 w-4 text-linear-text-muted flex-shrink-0" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <ChevronRight className="h-4 w-4 text-linear-text-muted flex-shrink-0" />
           )}
-          <Mail className="h-4 w-4 text-purple-500 flex-shrink-0" />
-          <span className="font-medium text-sm text-gray-900 truncate">{folder.name}</span>
+          <Mail className="h-4 w-4 text-linear-accent flex-shrink-0" />
+          <span className="font-medium text-sm text-linear-text-primary truncate">{folder.name}</span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {folder.unreadCount > 0 && (
-            <span className="px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">
+            <span className="px-1.5 py-0.5 text-xs font-medium bg-linear-accent/15 text-linear-accent rounded">
               {folder.unreadCount}
             </span>
           )}
-          <span className="text-xs text-gray-400">({folder.emailCount})</span>
+          <span className="text-xs text-linear-text-muted">({folder.emailCount})</span>
         </div>
       </button>
 
@@ -151,14 +151,14 @@ function FolderAccordionItem({
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            className="bg-gray-50/50"
+            className="bg-linear-bg-tertiary/50"
             variants={listContainerVariants}
             initial="hidden"
             animate="visible"
             exit="hidden"
           >
             {folder.emails.length === 0 ? (
-              <div className="px-3 py-4 text-xs text-gray-500 text-center italic">
+              <div className="px-3 py-4 text-xs text-linear-text-tertiary text-center italic">
                 Folderul este gol
               </div>
             ) : (

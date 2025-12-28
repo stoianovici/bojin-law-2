@@ -17,23 +17,23 @@ interface CaseCardProps {
 }
 
 /**
- * Status color mapping
+ * Status color mapping - Linear Design System
  */
 const STATUS_COLORS: Record<CaseStatus, string> = {
-  PendingApproval: 'bg-orange-100 text-orange-800 border-orange-200', // Story 2.8.2
-  Active: 'bg-green-100 text-green-800 border-green-200',
-  OnHold: 'bg-gray-100 text-gray-800 border-gray-200',
-  Closed: 'bg-gray-100 text-gray-600 border-gray-200',
-  Archived: 'bg-gray-50 text-gray-500 border-gray-100',
+  PendingApproval: 'bg-linear-warning/15 text-linear-warning border-linear-warning/30',
+  Active: 'bg-linear-success/15 text-linear-success border-linear-success/30',
+  OnHold: 'bg-linear-bg-tertiary text-linear-text-primary border-linear-border-subtle',
+  Closed: 'bg-linear-bg-tertiary text-linear-text-secondary border-linear-border-subtle',
+  Archived: 'bg-linear-bg-tertiary text-linear-text-muted border-linear-border-subtle',
 };
 
 /**
- * Priority color mapping
+ * Priority color mapping - Linear Design System
  */
 const PRIORITY_COLORS: Record<CasePriority, string> = {
-  High: 'bg-red-100 text-red-800',
-  Medium: 'bg-amber-100 text-amber-800',
-  Low: 'bg-blue-100 text-blue-800',
+  High: 'bg-linear-error/15 text-linear-error',
+  Medium: 'bg-linear-warning/15 text-linear-warning',
+  Low: 'bg-linear-accent/15 text-linear-accent',
 };
 
 /**
@@ -57,7 +57,7 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
 
   return (
     <div
-      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-200 relative group"
+      className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle shadow-sm hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-200 relative group"
       onMouseEnter={() => setShowHoverStats(true)}
       onMouseLeave={() => setShowHoverStats(false)}
     >
@@ -65,11 +65,11 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
       <div className="absolute top-4 right-4">
         <button
           onClick={() => setShowQuickActions(!showQuickActions)}
-          className="p-1 rounded-md hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+          className="p-1 rounded-md hover:bg-linear-bg-hover transition-colors opacity-0 group-hover:opacity-100"
           aria-label="Quick actions"
         >
           <svg
-            className="w-5 h-5 text-gray-600"
+            className="w-5 h-5 text-linear-text-secondary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -85,23 +85,23 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
 
         {/* Quick Actions Dropdown */}
         {showQuickActions && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+          <div className="absolute right-0 mt-2 w-48 bg-linear-bg-elevated rounded-md shadow-lg border border-linear-border-subtle z-10">
             <div className="py-1">
               <button
                 onClick={() => handleQuickAction('addTask')}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                className="w-full text-left px-4 py-2 text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors"
               >
                 Adaugă Sarcină
               </button>
               <button
                 onClick={() => handleQuickAction('uploadDocument')}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                className="w-full text-left px-4 py-2 text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors"
               >
                 Încarcă Document
               </button>
               <button
                 onClick={() => handleQuickAction('markComplete')}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                className="w-full text-left px-4 py-2 text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors"
               >
                 Marchează Complet
               </button>
@@ -115,21 +115,21 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
         {/* Header: Title and Case Number */}
         <div className="mb-4">
           <div className="flex items-start justify-between mb-2">
-            <h3 className="text-lg font-semibold text-gray-900 pr-8">{caseItem.title}</h3>
+            <h3 className="text-lg font-semibold text-linear-text-primary pr-8">{caseItem.title}</h3>
           </div>
-          <p className="text-sm text-gray-500">Case #{caseItem.caseNumber}</p>
+          <p className="text-sm text-linear-text-tertiary">Case #{caseItem.caseNumber}</p>
         </div>
 
         {/* Client Name */}
         <div className="mb-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-linear-text-secondary">
             <span className="font-medium">Client:</span> {caseItem.clientName}
           </p>
         </div>
 
         {/* Case Type and Status */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-linear-accent/10 text-linear-accent border border-linear-accent/30">
             {caseItem.caseType}
           </span>
           <span
@@ -151,11 +151,11 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
 
         {/* Assigned Attorneys */}
         <div className="mb-4">
-          <p className="text-xs text-gray-500 mb-2">Avocați Asignați:</p>
+          <p className="text-xs text-linear-text-tertiary mb-2">Avocați Asignați:</p>
           <div className="flex items-center gap-2">
             {caseItem.assignedAttorneys.map((attorney) => (
               <div key={attorney.id} className="flex items-center gap-2" title={attorney.name}>
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-medium">
+                <div className="w-8 h-8 rounded-full bg-linear-accent flex items-center justify-center text-white text-xs font-medium">
                   {attorney.initials}
                 </div>
               </div>
@@ -166,15 +166,15 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
         {/* Dates: Last Activity and Next Deadline */}
         <div className="space-y-2 mb-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Ultima Activitate:</span>
-            <span className="text-gray-900 font-medium">
+            <span className="text-linear-text-secondary">Ultima Activitate:</span>
+            <span className="text-linear-text-primary font-medium">
               {format(caseItem.lastActivityDate, 'dd MMM yyyy', { locale: ro })}
             </span>
           </div>
           {caseItem.nextDeadline && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Termen Limită:</span>
-              <span className={`font-medium ${urgentDeadline ? 'text-red-600' : 'text-gray-900'}`}>
+              <span className="text-linear-text-secondary">Termen Limită:</span>
+              <span className={`font-medium ${urgentDeadline ? 'text-linear-error' : 'text-linear-text-primary'}`}>
                 {format(caseItem.nextDeadline, 'dd MMM yyyy', { locale: ro })}
                 {urgentDeadline && <span className="ml-1 text-xs font-semibold">⚠️ URGENT</span>}
               </span>
@@ -185,8 +185,8 @@ export function CaseCard({ case: caseItem, onQuickAction }: CaseCardProps) {
         {/* Hover Stats - Quick Document/Task Counts */}
         {showHoverStats &&
           (caseItem.documentCount !== undefined || caseItem.taskCount !== undefined) && (
-            <div className="border-t border-gray-200 pt-3 mt-3">
-              <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="border-t border-linear-border-subtle pt-3 mt-3">
+              <div className="flex items-center gap-4 text-sm text-linear-text-secondary">
                 {caseItem.documentCount !== undefined && (
                   <div className="flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

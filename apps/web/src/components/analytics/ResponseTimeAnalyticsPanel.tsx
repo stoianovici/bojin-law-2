@@ -64,19 +64,19 @@ function getRecipientTypeColor(type: string): { bg: string; text: string } {
 
 function LoadingSkeleton() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-      <div className="h-5 bg-gray-200 rounded w-48 mb-6" />
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 animate-pulse">
+      <div className="h-5 bg-linear-bg-hover rounded w-48 mb-6" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="space-y-2">
-            <div className="h-3 bg-gray-200 rounded w-20" />
-            <div className="h-8 bg-gray-200 rounded w-16" />
+            <div className="h-3 bg-linear-bg-hover rounded w-20" />
+            <div className="h-8 bg-linear-bg-hover rounded w-16" />
           </div>
         ))}
       </div>
       <div className="space-y-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-16 bg-gray-100 rounded" />
+          <div key={i} className="h-16 bg-linear-bg-tertiary rounded" />
         ))}
       </div>
     </div>
@@ -97,7 +97,7 @@ export function ResponseTimeAnalyticsPanel({
 
   if (!data) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6 text-center text-gray-500">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 text-center text-linear-text-tertiary">
         Nu există date de comunicare disponibile
       </div>
     );
@@ -108,12 +108,12 @@ export function ResponseTimeAnalyticsPanel({
   const isImproved = improvement > 0;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Analiză timp de răspuns</h3>
+        <h3 className="text-lg font-semibold text-linear-text-primary">Analiză timp de răspuns</h3>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-linear-text-tertiary">
             {currentResponseTime.totalEmailsAnalyzed.toLocaleString()} emailuri analizate
           </span>
         </div>
@@ -122,14 +122,14 @@ export function ResponseTimeAnalyticsPanel({
       {/* Overall Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         {/* Average Response Time */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-1">Medie</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="bg-linear-bg-tertiary rounded-lg p-4">
+          <div className="text-xs text-linear-text-tertiary mb-1">Medie</div>
+          <div className="text-2xl font-bold text-linear-text-primary">
             {formatHours(currentResponseTime.avgResponseTimeHours)}
           </div>
           {baselineComparison && (
             <div
-              className={`text-xs font-medium ${isImproved ? 'text-emerald-600' : 'text-red-600'}`}
+              className={`text-xs font-medium ${isImproved ? 'text-linear-success' : 'text-linear-error'}`}
             >
               {isImproved ? '↓' : '↑'} {Math.abs(improvement).toFixed(1)}%
             </div>
@@ -137,51 +137,51 @@ export function ResponseTimeAnalyticsPanel({
         </div>
 
         {/* Median Response Time */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-1">Mediană</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="bg-linear-bg-tertiary rounded-lg p-4">
+          <div className="text-xs text-linear-text-tertiary mb-1">Mediană</div>
+          <div className="text-2xl font-bold text-linear-text-primary">
             {formatHours(currentResponseTime.medianResponseTimeHours)}
           </div>
         </div>
 
         {/* P90 Response Time */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-1">P90</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="bg-linear-bg-tertiary rounded-lg p-4">
+          <div className="text-xs text-linear-text-tertiary mb-1">P90</div>
+          <div className="text-2xl font-bold text-linear-text-primary">
             {formatHours(currentResponseTime.p90ResponseTimeHours)}
           </div>
-          <div className="text-xs text-gray-400">90% sub această valoare</div>
+          <div className="text-xs text-linear-text-muted">90% sub această valoare</div>
         </div>
 
         {/* Within SLA */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-1">În SLA (24h)</div>
-          <div className="text-2xl font-bold text-emerald-600">
+        <div className="bg-linear-bg-tertiary rounded-lg p-4">
+          <div className="text-xs text-linear-text-tertiary mb-1">În SLA (24h)</div>
+          <div className="text-2xl font-bold text-linear-success">
             {currentResponseTime.withinSLAPercent.toFixed(1)}%
           </div>
-          <div className="text-xs text-gray-400">răspuns în max 24 ore</div>
+          <div className="text-xs text-linear-text-muted">răspuns în max 24 ore</div>
         </div>
 
         {/* Total Analyzed */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-xs text-gray-500 mb-1">Total analizat</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="bg-linear-bg-tertiary rounded-lg p-4">
+          <div className="text-xs text-linear-text-tertiary mb-1">Total analizat</div>
+          <div className="text-2xl font-bold text-linear-text-primary">
             {currentResponseTime.totalEmailsAnalyzed.toLocaleString()}
           </div>
-          <div className="text-xs text-gray-400">emailuri cu răspuns</div>
+          <div className="text-xs text-linear-text-muted">emailuri cu răspuns</div>
         </div>
       </div>
 
       {/* By Recipient Type */}
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-700">Timp răspuns pe tip destinatar</h4>
+        <h4 className="text-sm font-medium text-linear-text-secondary">Timp răspuns pe tip destinatar</h4>
         {byRecipientType.map((item) => {
           const colors = getRecipientTypeColor(item.emailType);
           const slaPercent = item.metrics.withinSLAPercent;
           const isGoodSLA = slaPercent >= 80;
 
           return (
-            <div key={item.emailType} className="flex items-center gap-4 p-3 rounded-lg bg-gray-50">
+            <div key={item.emailType} className="flex items-center gap-4 p-3 rounded-lg bg-linear-bg-tertiary">
               {/* Type Label */}
               <div
                 className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
@@ -193,28 +193,28 @@ export function ResponseTimeAnalyticsPanel({
               {/* Metrics */}
               <div className="flex-1 grid grid-cols-4 gap-4">
                 <div>
-                  <div className="text-xs text-gray-400">Medie</div>
-                  <div className="font-semibold text-gray-900">
+                  <div className="text-xs text-linear-text-muted">Medie</div>
+                  <div className="font-semibold text-linear-text-primary">
                     {formatHours(item.metrics.avgResponseTimeHours)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400">Mediană</div>
-                  <div className="font-semibold text-gray-900">
+                  <div className="text-xs text-linear-text-muted">Mediană</div>
+                  <div className="font-semibold text-linear-text-primary">
                     {formatHours(item.metrics.medianResponseTimeHours)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400">În SLA</div>
+                  <div className="text-xs text-linear-text-muted">În SLA</div>
                   <div
-                    className={`font-semibold ${isGoodSLA ? 'text-emerald-600' : 'text-amber-600'}`}
+                    className={`font-semibold ${isGoodSLA ? 'text-linear-success' : 'text-linear-warning'}`}
                   >
                     {slaPercent.toFixed(1)}%
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400">Volum</div>
-                  <div className="font-semibold text-gray-900">
+                  <div className="text-xs text-linear-text-muted">Volum</div>
+                  <div className="font-semibold text-linear-text-primary">
                     {item.volumeCount.toLocaleString()}
                   </div>
                 </div>
@@ -222,10 +222,10 @@ export function ResponseTimeAnalyticsPanel({
 
               {/* SLA Progress Bar */}
               <div className="w-32">
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-linear-bg-hover rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${
-                      isGoodSLA ? 'bg-emerald-500' : 'bg-amber-500'
+                      isGoodSLA ? 'bg-linear-success' : 'bg-linear-warning'
                     }`}
                     style={{ width: `${Math.min(slaPercent, 100)}%` }}
                   />
@@ -238,12 +238,12 @@ export function ResponseTimeAnalyticsPanel({
 
       {/* Baseline Comparison */}
       {baselineComparison && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        <div className="mt-6 pt-6 border-t border-linear-border-subtle">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">Comparație cu perioada de bază</div>
+            <div className="text-sm text-linear-text-secondary">Comparație cu perioada de bază</div>
             <div
               className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                isImproved ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                isImproved ? 'bg-linear-success/15 text-linear-success' : 'bg-linear-error/15 text-linear-error'
               }`}
             >
               {isImproved ? (
@@ -271,15 +271,15 @@ export function ResponseTimeAnalyticsPanel({
             </div>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500">Perioada anterioară</div>
-              <div className="text-lg font-semibold text-gray-900">
+            <div className="bg-linear-bg-tertiary rounded-lg p-3">
+              <div className="text-xs text-linear-text-tertiary">Perioada anterioară</div>
+              <div className="text-lg font-semibold text-linear-text-primary">
                 {formatHours(baselineComparison.baselinePeriod.avgResponseTimeHours)}
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500">Perioada curentă</div>
-              <div className="text-lg font-semibold text-gray-900">
+            <div className="bg-linear-bg-tertiary rounded-lg p-3">
+              <div className="text-xs text-linear-text-tertiary">Perioada curentă</div>
+              <div className="text-lg font-semibold text-linear-text-primary">
                 {formatHours(baselineComparison.currentPeriod.avgResponseTimeHours)}
               </div>
             </div>

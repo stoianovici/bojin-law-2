@@ -121,13 +121,13 @@ function DropdownItem({ suggestion, onSelect, isSelected }: DropdownItemProps) {
       onClick={onSelect}
       className={clsx(
         'w-full flex items-center justify-between gap-2 px-3 py-2 text-left',
-        'hover:bg-gray-50 transition-colors rounded',
-        isSelected && 'bg-blue-50'
+        'hover:bg-linear-bg-tertiary transition-colors rounded',
+        isSelected && 'bg-linear-accent/10'
       )}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{suggestion.title}</p>
-        {suggestion.caseNumber && <p className="text-xs text-gray-500">{suggestion.caseNumber}</p>}
+        <p className="text-sm font-medium text-linear-text-primary truncate">{suggestion.title}</p>
+        {suggestion.caseNumber && <p className="text-xs text-linear-text-tertiary">{suggestion.caseNumber}</p>}
       </div>
       <span
         className={clsx(
@@ -310,7 +310,7 @@ export function SplitAssignmentButton({
         <div
           className={clsx(
             'absolute z-50 mt-1 w-full min-w-[280px] max-h-64 overflow-y-auto',
-            'bg-white rounded-lg shadow-lg border border-gray-200',
+            'bg-linear-bg-secondary rounded-lg shadow-lg border border-linear-border-subtle',
             'animate-in fade-in-0 zoom-in-95 duration-150'
           )}
           role="listbox"
@@ -328,7 +328,7 @@ export function SplitAssignmentButton({
 
             {/* Separator */}
             {onPersonal && dropdownSuggestions.length > 0 && (
-              <div className="border-t border-gray-100 my-2" />
+              <div className="border-t border-linear-border-subtle my-2" />
             )}
 
             {/* Personal contact option */}
@@ -337,14 +337,14 @@ export function SplitAssignmentButton({
                 onClick={handlePersonalClick}
                 className={clsx(
                   'w-full flex items-center gap-2 px-3 py-2 text-left',
-                  'hover:bg-gray-50 transition-colors rounded',
-                  'text-gray-600'
+                  'hover:bg-linear-bg-tertiary transition-colors rounded',
+                  'text-linear-text-tertiary'
                 )}
               >
                 <User className="h-4 w-4" />
                 <div>
                   <p className="text-sm font-medium">Contact personal</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-linear-text-muted">
                     Nu mai sincroniza emailuri de la acest expeditor
                   </p>
                 </div>

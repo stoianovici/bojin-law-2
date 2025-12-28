@@ -60,10 +60,10 @@ export function DeltaBadge({
   // Get color classes based on whether change is good
   const colorClasses =
     isGood === null
-      ? 'bg-gray-100 text-gray-600'
+      ? 'bg-linear-bg-tertiary text-linear-text-secondary'
       : isGood
-        ? 'bg-green-100 text-green-700'
-        : 'bg-red-100 text-red-700';
+        ? 'bg-linear-success/10 text-linear-success'
+        : 'bg-linear-error/10 text-linear-error';
 
   // Get icon based on direction
   const Icon =

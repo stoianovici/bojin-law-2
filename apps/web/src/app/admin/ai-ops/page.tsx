@@ -15,6 +15,7 @@ import { CostTrendChart } from '@/components/admin/CostTrendChart';
 import { BudgetProgress } from '@/components/admin/BudgetProgress';
 import { FeatureStatusList } from '@/components/admin/FeatureStatusList';
 import { useAIOpsOverview } from '@/hooks/useAIOps';
+import { PageLayout, PageContent } from '@/components/linear/PageLayout';
 
 // ============================================================================
 // Helpers
@@ -55,36 +56,39 @@ export default function AIOpsDashboardPage() {
   // Error state
   if (error) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Operațiuni AI</h1>
-          <p className="text-gray-500 mt-1">Prezentare generală</p>
-        </div>
+      <PageLayout>
+        <PageContent className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-linear-text-primary">Operațiuni AI</h1>
+            <p className="mt-1 text-linear-text-secondary">Prezentare generală</p>
+          </div>
 
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-red-800 font-semibold mb-2">Eroare la încărcarea datelor</h2>
-          <p className="text-red-600 text-sm">
-            {error.message || 'A apărut o eroare neașteptată. Încercați din nou.'}
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Reîncarcă pagina
-          </button>
-        </div>
-      </div>
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6">
+            <h2 className="mb-2 font-semibold text-red-400">Eroare la încărcarea datelor</h2>
+            <p className="text-sm text-red-300">
+              {error.message || 'A apărut o eroare neașteptată. Încercați din nou.'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+            >
+              Reîncarcă pagina
+            </button>
+          </div>
+        </PageContent>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
+      <PageContent className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Operațiuni AI</h1>
-        <p className="text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-linear-text-primary">Operațiuni AI</h1>
+        <p className="mt-1 text-linear-text-secondary">
           Prezentare generală a costurilor și utilizării AI
-          {loading && <span className="ml-2 text-blue-500">(Se încarcă...)</span>}
+          {loading && <span className="ml-2 text-linear-accent">(Se încarcă...)</span>}
         </p>
       </div>
 
@@ -152,36 +156,37 @@ export default function AIOpsDashboardPage() {
         <FeatureStatusList features={features.batch} batchOnly loading={loading} maxItems={5} />
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Acțiuni Rapide</h3>
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="/admin/ai-ops/features"
-            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Gestionare Funcționalități
-          </a>
-          <a
-            href="/admin/ai-ops/costs"
-            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Detalii Costuri
-          </a>
-          <a
-            href="/admin/ai-ops/history"
-            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Istoric Joburi
-          </a>
-          <a
-            href="/admin/ai-ops/budget"
-            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Setări Buget
-          </a>
+        {/* Quick Actions */}
+        <div className="rounded-lg border border-linear-border-subtle bg-linear-bg-secondary p-6">
+          <h3 className="mb-4 text-lg font-semibold text-linear-text-primary">Acțiuni Rapide</h3>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="/admin/ai-ops/features"
+              className="rounded-lg bg-linear-bg-tertiary px-4 py-2 text-sm font-medium text-linear-text-secondary transition-colors hover:bg-linear-bg-hover hover:text-linear-text-primary"
+            >
+              Gestionare Funcționalități
+            </a>
+            <a
+              href="/admin/ai-ops/costs"
+              className="rounded-lg bg-linear-bg-tertiary px-4 py-2 text-sm font-medium text-linear-text-secondary transition-colors hover:bg-linear-bg-hover hover:text-linear-text-primary"
+            >
+              Detalii Costuri
+            </a>
+            <a
+              href="/admin/ai-ops/history"
+              className="rounded-lg bg-linear-bg-tertiary px-4 py-2 text-sm font-medium text-linear-text-secondary transition-colors hover:bg-linear-bg-hover hover:text-linear-text-primary"
+            >
+              Istoric Joburi
+            </a>
+            <a
+              href="/admin/ai-ops/budget"
+              className="rounded-lg bg-linear-bg-tertiary px-4 py-2 text-sm font-medium text-linear-text-secondary transition-colors hover:bg-linear-bg-hover hover:text-linear-text-primary"
+            >
+              Setări Buget
+            </a>
+          </div>
         </div>
-      </div>
-    </div>
+      </PageContent>
+    </PageLayout>
   );
 }

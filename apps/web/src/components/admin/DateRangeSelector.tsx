@@ -141,11 +141,11 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <Calendar className="h-4 w-4 text-gray-500" />
+      <Calendar className="h-4 w-4 text-linear-text-tertiary" />
 
       <Popover.Root open={isCustomPopoverOpen} onOpenChange={setIsCustomPopoverOpen}>
         <Select.Root value={currentPreset} onValueChange={handlePresetChange}>
-          <Select.Trigger className="inline-flex items-center justify-between gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-w-[200px]">
+          <Select.Trigger className="inline-flex items-center justify-between gap-2 rounded-md border border-linear-border bg-linear-bg-secondary px-4 py-2 text-sm font-medium text-linear-text-secondary hover:bg-linear-bg-hover focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 min-w-[200px]">
             <Select.Value>{getDisplayLabel()}</Select.Value>
             <Select.Icon>
               <ChevronDown className="h-4 w-4" />
@@ -153,17 +153,17 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
           </Select.Trigger>
 
           <Select.Portal>
-            <Select.Content className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg z-50">
+            <Select.Content className="overflow-hidden rounded-md border border-linear-border-subtle bg-linear-bg-secondary shadow-lg z-50">
               <Select.Viewport className="p-1">
                 {DATE_RANGE_OPTIONS.map((option) => (
                   <Select.Item
                     key={option.value}
                     value={option.value}
-                    className="relative flex cursor-pointer items-center rounded px-8 py-2 text-sm text-gray-900 outline-none hover:bg-blue-50 focus:bg-blue-50 data-[highlighted]:bg-blue-50"
+                    className="relative flex cursor-pointer items-center rounded px-8 py-2 text-sm text-linear-text-primary outline-none hover:bg-linear-accent/10 focus:bg-linear-accent/10 data-[highlighted]:bg-linear-accent/10"
                   >
                     <Select.ItemText>{option.label}</Select.ItemText>
                     <Select.ItemIndicator className="absolute left-2 inline-flex items-center">
-                      <Check className="h-4 w-4 text-blue-600" />
+                      <Check className="h-4 w-4 text-linear-accent" />
                     </Select.ItemIndicator>
                   </Select.Item>
                 ))}
@@ -175,15 +175,15 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
         {/* Custom Date Range Popover */}
         <Popover.Portal>
           <Popover.Content
-            className="w-80 rounded-lg border border-gray-200 bg-white p-4 shadow-xl z-50"
+            className="w-80 rounded-lg border border-linear-border-subtle bg-linear-bg-secondary p-4 shadow-xl z-50"
             sideOffset={5}
           >
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-900">Perioadă Personalizată</h3>
+              <h3 className="text-sm font-semibold text-linear-text-primary">Perioadă Personalizată</h3>
 
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="start-date" className="block text-xs font-medium text-gray-700">
+                  <label htmlFor="start-date" className="block text-xs font-medium text-linear-text-secondary">
                     Data de început
                   </label>
                   <input
@@ -191,12 +191,12 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
                     type="date"
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full rounded-md border border-linear-border px-3 py-2 text-sm focus:border-linear-accent focus:outline-none focus:ring-1 focus:ring-linear-accent"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="end-date" className="block text-xs font-medium text-gray-700">
+                  <label htmlFor="end-date" className="block text-xs font-medium text-linear-text-secondary">
                     Data de sfârșit
                   </label>
                   <input
@@ -204,27 +204,27 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
                     type="date"
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full rounded-md border border-linear-border px-3 py-2 text-sm focus:border-linear-accent focus:outline-none focus:ring-1 focus:ring-linear-accent"
                   />
                 </div>
               </div>
 
               <div className="flex justify-end gap-2">
                 <Popover.Close asChild>
-                  <button className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button className="rounded-md border border-linear-border bg-linear-bg-secondary px-3 py-1.5 text-sm font-medium text-linear-text-secondary hover:bg-linear-bg-hover">
                     Anulează
                   </button>
                 </Popover.Close>
                 <button
                   onClick={handleCustomDateApply}
                   disabled={!customStartDate || !customEndDate}
-                  className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-md bg-linear-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-linear-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Aplică
                 </button>
               </div>
             </div>
-            <Popover.Arrow className="fill-white" />
+            <Popover.Arrow className="fill-linear-bg-secondary" />
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>

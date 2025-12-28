@@ -25,23 +25,23 @@ export interface TaskKanbanBoardProps {
 const COLUMN_CONFIG: Record<TaskColumn, { title: string; color: string; badgeColor: string }> = {
   todo: {
     title: 'De Făcut',
-    color: 'border-gray-300',
-    badgeColor: 'bg-gray-100 text-gray-800',
+    color: 'border-linear-border-subtle',
+    badgeColor: 'bg-linear-bg-tertiary text-linear-text-primary',
   },
   'in-progress': {
     title: 'În Lucru',
-    color: 'border-blue-300',
-    badgeColor: 'bg-blue-100 text-blue-800',
+    color: 'border-linear-accent/50',
+    badgeColor: 'bg-linear-accent/15 text-linear-accent',
   },
   review: {
     title: 'În Revizuire',
-    color: 'border-yellow-300',
-    badgeColor: 'bg-yellow-100 text-yellow-800',
+    color: 'border-linear-warning/50',
+    badgeColor: 'bg-linear-warning/15 text-linear-warning',
   },
   complete: {
     title: 'Finalizat',
-    color: 'border-green-300',
-    badgeColor: 'bg-green-100 text-green-800',
+    color: 'border-linear-success/50',
+    badgeColor: 'bg-linear-success/15 text-linear-success',
   },
 };
 
@@ -72,11 +72,11 @@ function KanbanColumn({
   const getAssignee = (task: Task) => users.find((u) => u.id === task.assignedTo);
 
   return (
-    <div className="flex flex-col bg-gray-50 rounded-lg border-2 border-dashed min-h-[400px]">
+    <div className="flex flex-col bg-linear-bg-primary rounded-lg border-2 border-dashed min-h-[400px]">
       {/* Column Header */}
       <div className={clsx('p-4 border-b-2', config.color)}>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-900">{config.title}</h3>
+          <h3 className="text-sm font-semibold text-linear-text-primary">{config.title}</h3>
           <span
             className={clsx(
               'inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold',
@@ -88,7 +88,7 @@ function KanbanColumn({
         </div>
         <button
           onClick={onAddTask}
-          className="w-full inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          className="w-full inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary border border-linear-border hover:bg-linear-bg-hover focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 transition-colors"
         >
           <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -111,7 +111,7 @@ function KanbanColumn({
 
         {/* Empty State */}
         {taskCount === 0 && (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-8 text-linear-text-muted">
             <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -155,7 +155,7 @@ function TaskKanbanBoardComponent({
   const columns: TaskColumn[] = ['todo', 'in-progress', 'review', 'complete'];
 
   return (
-    <div className={clsx('h-full overflow-x-auto p-4 bg-white', className)}>
+    <div className={clsx('h-full overflow-x-auto p-4 bg-linear-bg-secondary', className)}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 min-w-[800px]">
         {columns.map((column) => (
           <KanbanColumn
@@ -171,7 +171,7 @@ function TaskKanbanBoardComponent({
       </div>
 
       {/* Drag-drop note */}
-      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+      <div className="mt-4 p-4 bg-linear-accent/10 border border-linear-accent/30 rounded-lg text-sm text-linear-accent">
         <div className="flex items-start gap-2">
           <svg
             className="w-5 h-5 flex-shrink-0 mt-0.5"

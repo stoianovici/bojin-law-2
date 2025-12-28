@@ -85,13 +85,13 @@ function getQualityColor(
   higherIsBetter: boolean = true
 ): string {
   if (higherIsBetter) {
-    if (value >= thresholds.good) return 'text-emerald-600';
-    if (value >= thresholds.medium) return 'text-amber-600';
-    return 'text-red-600';
+    if (value >= thresholds.good) return 'text-linear-success';
+    if (value >= thresholds.medium) return 'text-linear-warning';
+    return 'text-linear-error';
   } else {
-    if (value <= thresholds.good) return 'text-emerald-600';
-    if (value <= thresholds.medium) return 'text-amber-600';
-    return 'text-red-600';
+    if (value <= thresholds.good) return 'text-linear-success';
+    if (value <= thresholds.medium) return 'text-linear-warning';
+    return 'text-linear-error';
   }
 }
 
@@ -101,13 +101,13 @@ function getQualityBg(
   higherIsBetter: boolean = true
 ): string {
   if (higherIsBetter) {
-    if (value >= thresholds.good) return 'bg-emerald-50';
-    if (value >= thresholds.medium) return 'bg-amber-50';
-    return 'bg-red-50';
+    if (value >= thresholds.good) return 'bg-linear-success/10';
+    if (value >= thresholds.medium) return 'bg-linear-warning/10';
+    return 'bg-linear-error/10';
   } else {
-    if (value <= thresholds.good) return 'bg-emerald-50';
-    if (value <= thresholds.medium) return 'bg-amber-50';
-    return 'bg-red-50';
+    if (value <= thresholds.good) return 'bg-linear-success/10';
+    if (value <= thresholds.medium) return 'bg-linear-warning/10';
+    return 'bg-linear-error/10';
   }
 }
 
@@ -117,15 +117,15 @@ function getQualityBg(
 
 function LoadingSkeleton() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-      <div className="h-5 bg-gray-200 rounded w-48 mb-6" />
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 animate-pulse">
+      <div className="h-5 bg-linear-bg-hover rounded w-48 mb-6" />
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-gray-100 rounded" />
+          <div key={i} className="h-24 bg-linear-bg-tertiary rounded" />
         ))}
       </div>
-      <div className="h-64 bg-gray-100 rounded mb-4" />
-      <div className="h-48 bg-gray-100 rounded" />
+      <div className="h-64 bg-linear-bg-tertiary rounded mb-4" />
+      <div className="h-48 bg-linear-bg-tertiary rounded" />
     </div>
   );
 }
@@ -142,14 +142,14 @@ function MetricCard({
   title,
   value,
   subtitle,
-  colorClass = 'text-gray-900',
-  bgClass = 'bg-gray-50',
+  colorClass = 'text-linear-text-primary',
+  bgClass = 'bg-linear-bg-tertiary',
 }: MetricCardProps) {
   return (
     <div className={`rounded-lg p-4 ${bgClass}`}>
-      <div className="text-xs text-gray-500 mb-1">{title}</div>
+      <div className="text-xs text-linear-text-tertiary mb-1">{title}</div>
       <div className={`text-2xl font-bold ${colorClass}`}>{value}</div>
-      {subtitle && <div className="text-xs text-gray-400 mt-1">{subtitle}</div>}
+      {subtitle && <div className="text-xs text-linear-text-muted mt-1">{subtitle}</div>}
     </div>
   );
 }
@@ -206,7 +206,7 @@ function FirstTimeRightGauge({ percent }: FirstTimeRightGaugeProps) {
           <span className={`text-2xl font-bold ${colorClass}`}>{percent.toFixed(0)}%</span>
         </div>
       </div>
-      <div className="mt-2 text-sm text-gray-600 text-center">Corect din prima</div>
+      <div className="mt-2 text-sm text-linear-text-secondary text-center">Corect din prima</div>
     </div>
   );
 }
@@ -219,7 +219,7 @@ interface IssuesByCategoryChartProps {
 function IssuesByCategoryChart({ data, onCategoryClick }: IssuesByCategoryChartProps) {
   if (data.length === 0 || data.every((d) => d.count === 0)) {
     return (
-      <div className="h-48 flex items-center justify-center text-gray-500">
+      <div className="h-48 flex items-center justify-center text-linear-text-tertiary">
         Nu există probleme înregistrate
       </div>
     );
@@ -258,7 +258,7 @@ interface QualityTrendChartProps {
 function QualityTrendChart({ data, onDateClick }: QualityTrendChartProps) {
   if (data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-gray-500">
+      <div className="h-64 flex items-center justify-center text-linear-text-tertiary">
         Nu există date de tendință disponibile
       </div>
     );
@@ -355,7 +355,7 @@ export function DocumentQualityPanel({
 
   if (!data) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6 text-center text-gray-500">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 text-center text-linear-text-tertiary">
         Nu există date de calitate documente disponibile
       </div>
     );
@@ -364,11 +364,11 @@ export function DocumentQualityPanel({
   const { revisionMetrics, errorMetrics } = data;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Calitate documente</h3>
-        <div className="text-sm text-gray-500">
+        <h3 className="text-lg font-semibold text-linear-text-primary">Calitate documente</h3>
+        <div className="text-sm text-linear-text-tertiary">
           {revisionMetrics.totalDocumentsCreated.toLocaleString()} documente analizate
         </div>
       </div>
@@ -401,8 +401,8 @@ export function DocumentQualityPanel({
           title="Fără revizuiri"
           value={revisionMetrics.documentsWithZeroRevisions.toLocaleString()}
           subtitle="documente corecte din prima"
-          colorClass="text-emerald-600"
-          bgClass="bg-emerald-50"
+          colorClass="text-linear-success"
+          bgClass="bg-linear-success/10"
         />
 
         <MetricCard
@@ -412,8 +412,8 @@ export function DocumentQualityPanel({
           colorClass={
             revisionMetrics.documentsWithMultipleRevisions >
             revisionMetrics.totalDocumentsCreated * 0.3
-              ? 'text-amber-600'
-              : 'text-gray-900'
+              ? 'text-linear-warning'
+              : 'text-linear-text-primary'
           }
         />
 
@@ -438,8 +438,8 @@ export function DocumentQualityPanel({
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         {/* Issues by Category */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Probleme pe categorie</h4>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Probleme pe categorie</h4>
+          <div className="bg-linear-bg-tertiary rounded-lg p-4">
             <IssuesByCategoryChart data={categoryChartData} onCategoryClick={onCategoryClick} />
           </div>
           {/* Category Legend */}
@@ -447,12 +447,12 @@ export function DocumentQualityPanel({
             {categoryChartData.map((item) => (
               <button
                 key={item.category}
-                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs hover:bg-linear-bg-hover transition-colors"
                 onClick={() => onCategoryClick?.(item.category)}
               >
                 <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: item.color }} />
-                <span className="text-gray-600">{item.label}</span>
-                <span className="text-gray-400">({item.count})</span>
+                <span className="text-linear-text-secondary">{item.label}</span>
+                <span className="text-linear-text-muted">({item.count})</span>
               </button>
             ))}
           </div>
@@ -460,28 +460,28 @@ export function DocumentQualityPanel({
 
         {/* Review Metrics Summary */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Statistici revizuiri</h4>
-          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+          <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Statistici revizuiri</h4>
+          <div className="bg-linear-bg-tertiary rounded-lg p-4 space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Total revizuiri</span>
+              <span className="text-sm text-linear-text-secondary">Total revizuiri</span>
               <span className="font-semibold">
                 {errorMetrics.totalReviewsCompleted.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Cu probleme</span>
-              <span className="font-semibold text-amber-600">
+              <span className="text-sm text-linear-text-secondary">Cu probleme</span>
+              <span className="font-semibold text-linear-warning">
                 {errorMetrics.reviewsWithIssues.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Medie probleme/revizuire</span>
+              <span className="text-sm text-linear-text-secondary">Medie probleme/revizuire</span>
               <span className="font-semibold">{errorMetrics.avgIssuesPerReview.toFixed(2)}</span>
             </div>
-            <div className="pt-2 border-t">
+            <div className="pt-2 border-t border-linear-border-subtle">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Rată succes</span>
-                <span className="font-semibold text-emerald-600">
+                <span className="text-sm text-linear-text-secondary">Rată succes</span>
+                <span className="font-semibold text-linear-success">
                   {(
                     ((errorMetrics.totalReviewsCompleted - errorMetrics.reviewsWithIssues) /
                       Math.max(errorMetrics.totalReviewsCompleted, 1)) *
@@ -497,12 +497,12 @@ export function DocumentQualityPanel({
 
       {/* Quality Trend */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Tendință calitate în timp</h4>
-        <div className="bg-gray-50 rounded-lg p-4">
+        <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Tendință calitate în timp</h4>
+        <div className="bg-linear-bg-tertiary rounded-lg p-4">
           <QualityTrendChart data={trendChartData} onDateClick={onDateClick} />
         </div>
         {onDateClick && (
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-linear-text-muted mt-2">
             Click pe un punct pentru a vedea documentele din acea zi
           </p>
         )}

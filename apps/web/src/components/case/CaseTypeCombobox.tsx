@@ -238,56 +238,56 @@ export function CaseTypeCombobox({
         className={clsx(
           'w-full flex items-center justify-between gap-2 px-3 py-2',
           'border rounded-md text-sm transition-all',
-          'bg-white',
+          'bg-linear-bg-secondary',
           isOpen
-            ? 'border-blue-500 ring-2 ring-blue-500/20'
+            ? 'border-linear-accent ring-2 ring-linear-accent/20'
             : error
-              ? 'border-red-300'
-              : 'border-gray-300 hover:border-gray-400',
-          disabled && 'opacity-50 cursor-not-allowed bg-gray-50',
-          !selectedType && 'text-gray-400'
+              ? 'border-linear-error/50'
+              : 'border-linear-border hover:border-linear-border-subtle',
+          disabled && 'opacity-50 cursor-not-allowed bg-linear-bg-tertiary',
+          !selectedType && 'text-linear-text-muted'
         )}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-required={required}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <Tag className="h-4 w-4 text-blue-500 flex-shrink-0" />
+          <Tag className="h-4 w-4 text-linear-accent flex-shrink-0" />
           {selectedType ? (
-            <span className="text-gray-900 truncate">{selectedType.name}</span>
+            <span className="text-linear-text-primary truncate">{selectedType.name}</span>
           ) : (
-            <span className="text-gray-400">
+            <span className="text-linear-text-muted">
               {placeholder}
-              {required && <span className="text-red-500 ml-1">*</span>}
+              {required && <span className="text-linear-error ml-1">*</span>}
             </span>
           )}
         </div>
         <ChevronDown
           className={clsx(
-            'h-4 w-4 text-gray-400 transition-transform flex-shrink-0',
+            'h-4 w-4 text-linear-text-muted transition-transform flex-shrink-0',
             isOpen && 'rotate-180'
           )}
         />
       </button>
 
       {/* Error Message */}
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-sm text-linear-error">{error}</p>}
 
       {/* Dropdown Menu */}
       {isOpen && (
         <div
           className={clsx(
             'absolute top-full left-0 mt-1 w-full max-h-80',
-            'bg-white rounded-lg shadow-lg border border-gray-200',
+            'bg-linear-bg-elevated rounded-lg shadow-lg border border-linear-border-subtle',
             'animate-in fade-in-0 slide-in-from-top-2 duration-150',
             'flex flex-col overflow-hidden z-50'
           )}
           role="listbox"
         >
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-100 flex-shrink-0">
+          <div className="p-2 border-b border-linear-border-subtle flex-shrink-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-linear-text-muted" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -297,8 +297,8 @@ export function CaseTypeCombobox({
                 placeholder="Caută tip dosar..."
                 className={clsx(
                   'w-full pl-9 pr-3 py-2 text-sm',
-                  'border border-gray-200 rounded-md',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                  'border border-linear-border rounded-md bg-linear-bg-secondary text-linear-text-primary',
+                  'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent'
                 )}
               />
             </div>
@@ -308,10 +308,10 @@ export function CaseTypeCombobox({
           <div ref={listRef} className="flex-1 overflow-y-auto">
             {typesLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                <Loader2 className="h-5 w-5 animate-spin text-linear-accent" />
               </div>
             ) : filteredTypes.length === 0 ? (
-              <div className="py-6 text-center text-sm text-gray-500">
+              <div className="py-6 text-center text-sm text-linear-text-tertiary">
                 {searchQuery ? 'Nu s-au găsit tipuri de dosar' : 'Nu există tipuri de dosar'}
               </div>
             ) : (
@@ -330,18 +330,18 @@ export function CaseTypeCombobox({
                       className={clsx(
                         'w-full flex items-center gap-3 px-3 py-2.5 text-left',
                         'transition-colors',
-                        isHighlighted && 'bg-blue-50',
-                        isSelected && 'bg-blue-100'
+                        isHighlighted && 'bg-linear-accent/10',
+                        isSelected && 'bg-linear-accent/20'
                       )}
                       role="option"
                       aria-selected={isSelected}
                     >
-                      <Tag className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      <Tag className="h-4 w-4 text-linear-accent flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900">{typeItem.name}</p>
-                        <p className="text-xs text-gray-500">{typeItem.code}</p>
+                        <p className="text-sm font-medium text-linear-text-primary">{typeItem.name}</p>
+                        <p className="text-xs text-linear-text-tertiary">{typeItem.code}</p>
                       </div>
-                      {isSelected && <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />}
+                      {isSelected && <Check className="h-4 w-4 text-linear-accent flex-shrink-0" />}
                     </button>
                   );
                 })}
@@ -351,24 +351,24 @@ export function CaseTypeCombobox({
 
           {/* Create New Type Section (Partners only) */}
           {canCreate && (
-            <div className="border-t border-gray-100 flex-shrink-0">
+            <div className="border-t border-linear-border-subtle flex-shrink-0">
               {showCreateForm ? (
-                <div className="p-3 space-y-3 bg-gray-50">
+                <div className="p-3 space-y-3 bg-linear-bg-tertiary">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-linear-text-secondary mb-1">
                       Nume tip nou
                     </label>
                     <input
                       type="text"
                       value={newTypeName}
                       onChange={(e) => handleTypeNameChange(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 text-sm border border-linear-border rounded-md bg-linear-bg-secondary text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent"
                       placeholder="ex: Insolvență"
                       autoFocus
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-linear-text-secondary mb-1">
                       Cod (generat automat)
                     </label>
                     <input
@@ -377,7 +377,7 @@ export function CaseTypeCombobox({
                       onChange={(e) =>
                         setNewTypeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))
                       }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                      className="w-full px-3 py-2 text-sm border border-linear-border rounded-md bg-linear-bg-tertiary text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent"
                       placeholder="INSOLVENTA"
                     />
                   </div>
@@ -389,7 +389,7 @@ export function CaseTypeCombobox({
                         setNewTypeName('');
                         setNewTypeCode('');
                       }}
-                      className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                      className="px-3 py-1.5 text-sm text-linear-text-secondary hover:text-linear-text-primary"
                     >
                       Anulează
                     </button>
@@ -397,7 +397,7 @@ export function CaseTypeCombobox({
                       type="button"
                       disabled={!newTypeName.trim() || !newTypeCode.trim() || createLoading}
                       onClick={handleCreateType}
-                      className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
                       {createLoading && (
                         <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
@@ -425,7 +425,7 @@ export function CaseTypeCombobox({
                 <button
                   type="button"
                   onClick={() => setShowCreateForm(true)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-linear-accent hover:bg-linear-accent/10 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Adaugă tip nou</span>

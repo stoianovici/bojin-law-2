@@ -1,15 +1,15 @@
 /**
  * TaskFilterBar Component
- * Provides filtering options for task views (user assignment, status, priority, etc.)
+ * Provides filtering options for task views using Linear design patterns
  */
 
 'use client';
 
 import React from 'react';
-import * as Checkbox from '@radix-ui/react-checkbox';
-import { CheckIcon } from '@radix-ui/react-icons';
 import type { TaskFilters } from '@legal-platform/types';
 import { useFirmUsers } from '../../hooks/useFirmUsers';
+import { FilterChip, FilterChipsRow, IconButton } from '@/components/linear/FilterChips';
+import { X } from 'lucide-react';
 
 /**
  * TaskFilterBar Props
@@ -35,7 +35,7 @@ export function TaskFilterBar({ filters, onFiltersChange, onClearFilters }: Task
   }));
 
   /**
-   * Handle user checkbox toggle
+   * Handle user chip toggle
    */
   const handleUserToggle = (userId: string) => {
     const isCurrentlySelected = selectedUsers.includes(userId);
@@ -66,68 +66,52 @@ export function TaskFilterBar({ filters, onFiltersChange, onClearFilters }: Task
     (filters.searchQuery && filters.searchQuery.trim() !== '');
 
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
+    <div className="bg-linear-bg-secondary border-b border-linear-border-subtle px-6 py-3">
+      <div className="flex items-center justify-between gap-4">
         {/* Filter Section */}
-        <div className="flex items-center gap-6">
-          {/* User Filter */}
+        <div className="flex items-center gap-4 min-w-0">
+          {/* User Filter Chips */}
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">Filtru utilizatori:</span>
-            <div className="flex items-center gap-3">
-              {users.map((user) => {
-                const isChecked = selectedUsers.includes(user.id);
-
-                return (
-                  <label
-                    key={user.id}
-                    className="flex items-center gap-2 cursor-pointer group"
-                    htmlFor={`user-filter-${user.id}`}
-                  >
-                    <Checkbox.Root
-                      id={`user-filter-${user.id}`}
-                      checked={isChecked}
-                      onCheckedChange={() => handleUserToggle(user.id)}
-                      className="w-5 h-5 rounded border-2 border-gray-300 bg-white hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 transition-colors"
-                    >
-                      <Checkbox.Indicator className="flex items-center justify-center text-white">
-                        <CheckIcon className="w-4 h-4" />
-                      </Checkbox.Indicator>
-                    </Checkbox.Root>
-                    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors select-none">
-                      {user.name}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
+            <span className="text-xs font-medium text-linear-text-tertiary shrink-0">Utilizatori:</span>
+            <FilterChipsRow gap="sm">
+              {users.map((user) => (
+                <FilterChip
+                  key={user.id}
+                  selected={selectedUsers.includes(user.id)}
+                  onClick={() => handleUserToggle(user.id)}
+                >
+                  {user.initials}
+                </FilterChip>
+              ))}
+            </FilterChipsRow>
           </div>
         </div>
 
         {/* Clear Filters Button */}
         {hasActiveFilters && (
-          <button
+          <IconButton
             onClick={onClearFilters}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            aria-label="Șterge toate filtrele"
           >
-            Șterge filtre
-          </button>
+            <X className="w-4 h-4" />
+          </IconButton>
         )}
       </div>
 
       {/* Active Filter Summary */}
       {hasActiveFilters && (
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500">Filtre active:</span>
-          <div className="flex items-center gap-2">
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-[11px] text-linear-text-muted">Active:</span>
+          <div className="flex items-center gap-1.5">
             {selectedUsers.length > 0 && (
-              <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded">
-                <span>Utilizatori: {selectedUsers.length}</span>
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-linear-accent-muted text-linear-accent text-[11px] font-medium rounded-full">
+                <span>{selectedUsers.length} {selectedUsers.length === 1 ? 'utilizator' : 'utilizatori'}</span>
                 <button
                   onClick={() => onFiltersChange({ assignedTo: undefined })}
-                  className="ml-1 hover:text-blue-900"
+                  className="hover:text-linear-accent-hover transition-colors"
                   aria-label="Șterge filtru utilizatori"
                 >
-                  ×
+                  <X className="w-3 h-3" />
                 </button>
               </div>
             )}

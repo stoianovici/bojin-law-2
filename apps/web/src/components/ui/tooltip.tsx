@@ -24,7 +24,7 @@ const TooltipContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+        'z-50 overflow-hidden rounded-md border border-linear-border-subtle bg-linear-bg-elevated px-3 py-1.5 text-sm text-linear-text-primary shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
         className
       )}
       {...props}
@@ -69,7 +69,7 @@ export function SimpleTooltip({
 export const FeatureTooltips = {
   AISuggestions: () => (
     <SimpleTooltip content="AI-ul analizează contextul cazului pentru a sugera documente relevante">
-      <div className="w-5 h-5 text-gray-400 hover:text-gray-600 cursor-help">
+      <div className="w-5 h-5 text-linear-text-tertiary hover:text-linear-text-secondary cursor-help">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
@@ -84,7 +84,7 @@ export const FeatureTooltips = {
 
   NaturalLanguageInput: () => (
     <SimpleTooltip content="Tastați în limbaj natural, de exemplu: 'Verifică contract până vineri pentru cazul Tech Solutions'">
-      <div className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+      <div className="w-4 h-4 text-linear-text-tertiary hover:text-linear-text-secondary cursor-help">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
@@ -99,7 +99,7 @@ export const FeatureTooltips = {
 
   ExtractedItems: () => (
     <SimpleTooltip content="AI-ul extrage automat termene, angajamente și acțiuni din email-uri">
-      <div className="w-4 h-4 text-blue-500 hover:text-blue-700 cursor-help">
+      <div className="w-4 h-4 text-linear-accent hover:text-linear-accent-hover cursor-help">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
@@ -114,7 +114,7 @@ export const FeatureTooltips = {
 
   CaseStatus: (status: string) => (
     <SimpleTooltip content={`Status: ${status}. Faceți clic pentru detalii`}>
-      <div className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+      <div className="w-4 h-4 text-linear-text-tertiary hover:text-linear-text-secondary cursor-help">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"

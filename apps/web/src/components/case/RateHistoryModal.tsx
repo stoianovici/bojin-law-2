@@ -70,7 +70,7 @@ function TimelineEntry({ entry, isLast }: { entry: RateHistoryEntry; isLast: boo
       {/* Timeline connector line */}
       {!isLast && (
         <span
-          className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200"
+          className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-linear-border-subtle"
           aria-hidden="true"
         />
       )}
@@ -78,27 +78,27 @@ function TimelineEntry({ entry, isLast }: { entry: RateHistoryEntry; isLast: boo
       <div className="relative flex items-start space-x-3">
         {/* Timeline dot */}
         <div className="relative">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 ring-8 ring-white">
-            <div className="h-3 w-3 rounded-full bg-blue-600" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-accent/15 ring-8 ring-linear-bg-secondary">
+            <div className="h-3 w-3 rounded-full bg-linear-accent" />
           </div>
         </div>
 
         {/* Content */}
-        <div className="min-w-0 flex-1 bg-gray-50 rounded-lg p-4">
+        <div className="min-w-0 flex-1 bg-linear-bg-tertiary rounded-lg p-4">
           {/* Header */}
           <div className="flex items-start justify-between mb-2">
             <div>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-linear-text-primary">
                 {formatRateType(entry.rateType)} Updated
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-linear-text-tertiary">
                 {formatDate(entry.changedAt)} at {formatTime(entry.changedAt)}
               </p>
             </div>
             {rateChanged && (
               <span
                 className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                  isIncrease ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  isIncrease ? 'bg-linear-success/15 text-linear-success' : 'bg-linear-error/15 text-linear-error'
                 }`}
               >
                 {isIncrease ? '↑' : '↓'} {isIncrease ? 'Increased' : 'Decreased'}
@@ -108,20 +108,20 @@ function TimelineEntry({ entry, isLast }: { entry: RateHistoryEntry; isLast: boo
 
           {/* Rate change details */}
           <div className="flex items-center space-x-3 mb-2">
-            <span className="text-sm text-gray-600">${centsToDollars(entry.oldRate)}</span>
-            <span className="text-gray-400">→</span>
-            <span className="text-sm font-semibold text-gray-900">
+            <span className="text-sm text-linear-text-secondary">${centsToDollars(entry.oldRate)}</span>
+            <span className="text-linear-text-muted">→</span>
+            <span className="text-sm font-semibold text-linear-text-primary">
               ${centsToDollars(entry.newRate)}
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-linear-text-tertiary">
               ({isIncrease ? '+' : ''}${centsToDollars(Math.abs(entry.newRate - entry.oldRate))})
             </span>
           </div>
 
           {/* Changed by */}
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-linear-text-tertiary">
             Changed by:{' '}
-            <span className="font-medium text-gray-700">
+            <span className="font-medium text-linear-text-secondary">
               {entry.changedBy.firstName} {entry.changedBy.lastName}
             </span>
           </p>
@@ -138,7 +138,7 @@ function EmptyState() {
   return (
     <div className="text-center py-12">
       <svg
-        className="mx-auto h-12 w-12 text-gray-400"
+        className="mx-auto h-12 w-12 text-linear-text-muted"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -150,8 +150,8 @@ function EmptyState() {
           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
         />
       </svg>
-      <h3 className="mt-2 text-sm font-medium text-gray-900">No rate changes</h3>
-      <p className="mt-1 text-sm text-gray-500">This case has no rate change history yet.</p>
+      <h3 className="mt-2 text-sm font-medium text-linear-text-primary">No rate changes</h3>
+      <p className="mt-1 text-sm text-linear-text-tertiary">This case has no rate change history yet.</p>
     </div>
   );
 }
@@ -196,15 +196,15 @@ export function RateHistoryModal({ caseId, isOpen, onClose }: RateHistoryModalPr
     >
       {/* Modal Content */}
       <div
-        className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col"
+        className="bg-linear-bg-secondary rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Rate Change History</h2>
+        <div className="px-6 py-4 border-b border-linear-border-subtle flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-linear-text-primary">Rate Change History</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-linear-text-muted hover:text-linear-text-secondary transition-colors"
             aria-label="Close"
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +219,7 @@ export function RateHistoryModal({ caseId, isOpen, onClose }: RateHistoryModalPr
         </div>
 
         {/* Filters */}
-        <div className="px-6 py-4 border-b border-gray-200 space-y-3">
+        <div className="px-6 py-4 border-b border-linear-border-subtle space-y-3">
           {/* Search */}
           <div>
             <label htmlFor="search" className="sr-only">
@@ -231,20 +231,20 @@ export function RateHistoryModal({ caseId, isOpen, onClose }: RateHistoryModalPr
               placeholder="Search by user name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent bg-linear-bg-secondary text-linear-text-primary"
             />
           </div>
 
           {/* Rate Type Filter */}
           <div className="flex items-center space-x-2">
-            <label htmlFor="rateTypeFilter" className="text-sm font-medium text-gray-700">
+            <label htmlFor="rateTypeFilter" className="text-sm font-medium text-linear-text-secondary">
               Filter by type:
             </label>
             <select
               id="rateTypeFilter"
               value={filterRateType}
               onChange={(e) => setFilterRateType(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 border border-linear-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-linear-accent bg-linear-bg-secondary text-linear-text-primary"
             >
               <option value="all">All Changes</option>
               <option value="partner">Partner Rate</option>
@@ -254,7 +254,7 @@ export function RateHistoryModal({ caseId, isOpen, onClose }: RateHistoryModalPr
             </select>
 
             {/* Result count */}
-            <span className="text-sm text-gray-500 ml-auto">
+            <span className="text-sm text-linear-text-tertiary ml-auto">
               {filteredHistory.length} {filteredHistory.length === 1 ? 'change' : 'changes'}
             </span>
           </div>
@@ -264,25 +264,25 @@ export function RateHistoryModal({ caseId, isOpen, onClose }: RateHistoryModalPr
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-linear-accent" />
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <p className="text-red-600">Failed to load rate history</p>
-              <p className="text-sm text-gray-500 mt-1">{error.message}</p>
+              <p className="text-linear-error">Failed to load rate history</p>
+              <p className="text-sm text-linear-text-tertiary mt-1">{error.message}</p>
             </div>
           ) : filteredHistory.length === 0 ? (
             history.length === 0 ? (
               <EmptyState />
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-600">No changes match your filters</p>
+                <p className="text-linear-text-secondary">No changes match your filters</p>
                 <button
                   onClick={() => {
                     setFilterRateType('all');
                     setSearchTerm('');
                   }}
-                  className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+                  className="mt-2 text-sm text-linear-accent hover:text-linear-accent-hover"
                 >
                   Clear filters
                 </button>
@@ -302,10 +302,10 @@ export function RateHistoryModal({ caseId, isOpen, onClose }: RateHistoryModalPr
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+        <div className="px-6 py-4 border-t border-linear-border-subtle flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-md hover:bg-linear-bg-hover transition-colors"
           >
             Close
           </button>

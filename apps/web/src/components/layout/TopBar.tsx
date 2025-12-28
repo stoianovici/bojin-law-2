@@ -106,8 +106,7 @@ export function TopBar({
         sticky top-0 z-50
         flex items-center justify-between
         h-16 px-4
-        bg-white border-b border-gray-200
-        shadow-sm
+        bg-linear-bg-secondary/80 backdrop-blur-xl border-b border-linear-border-subtle
       `}
     >
       {/* Left section: Hamburger menu and Logo */}
@@ -116,14 +115,14 @@ export function TopBar({
           onClick={toggleSidebar}
           className="
             p-2 rounded-lg
-            hover:bg-gray-100
-            focus:outline-none focus:ring-2 focus:ring-blue-500
+            hover:bg-linear-bg-hover
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent
             transition-colors
           "
           aria-label="Toggle sidebar"
         >
           <svg
-            className="w-6 h-6 text-gray-700"
+            className="w-6 h-6 text-linear-text-secondary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -138,7 +137,9 @@ export function TopBar({
           </svg>
         </button>
 
-        <h1 className="text-xl font-semibold text-gray-900 hidden sm:block">{getPageTitle()}</h1>
+        <h1 className="text-xl font-semibold text-linear-text-primary hidden sm:block">
+          {getPageTitle()}
+        </h1>
       </div>
 
       {/* Center section: Search Button (opens Command Menu) */}
@@ -147,9 +148,9 @@ export function TopBar({
           onClick={openCommandPalette}
           className="
             w-full flex items-center gap-3 px-4 py-2
-            text-sm text-gray-500
-            bg-gray-100 hover:bg-gray-200
-            border border-gray-200
+            text-sm text-linear-text-tertiary
+            bg-linear-bg-tertiary hover:bg-linear-bg-hover
+            border border-linear-border-subtle
             rounded-lg
             transition-colors
             cursor-pointer
@@ -158,7 +159,7 @@ export function TopBar({
         >
           <Search className="w-4 h-4" />
           <span className="flex-1 text-left">Caută dosare, documente, clienți...</span>
-          <kbd className="hidden lg:inline-flex px-2 py-0.5 text-xs font-medium bg-white border border-gray-300 rounded">
+          <kbd className="hidden lg:inline-flex px-2 py-0.5 text-xs font-medium bg-linear-bg-elevated border border-linear-border-default rounded text-linear-text-tertiary">
             ⌘K
           </kbd>
         </button>
@@ -172,19 +173,19 @@ export function TopBar({
           className="
             md:hidden
             p-2 rounded-lg
-            hover:bg-gray-100
-            focus:outline-none focus:ring-2 focus:ring-blue-500
+            hover:bg-linear-bg-hover
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent
             transition-colors
           "
           aria-label="Open search"
         >
-          <Search className="w-5 h-5 text-gray-700" />
+          <Search className="w-5 h-5 text-linear-text-secondary" />
         </button>
 
         {/* Current time indicator */}
-        <div className="hidden lg:flex items-center text-sm text-gray-500">
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-linear-text-tertiary bg-linear-bg-tertiary/50 rounded-md">
           <svg
-            className="w-4 h-4 mr-1"
+            className="w-3.5 h-3.5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -197,7 +198,7 @@ export function TopBar({
               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          {currentTimeDisplay}
+          <span className="font-medium">{currentTimeDisplay}</span>
         </div>
 
         {/* Notification Center */}
@@ -210,13 +211,13 @@ export function TopBar({
               className="
                 flex items-center gap-2
                 p-2 rounded-lg
-                hover:bg-gray-100
-                focus:outline-none focus:ring-2 focus:ring-blue-500
+                hover:bg-linear-bg-hover
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent
                 transition-colors
               "
               aria-label="User menu"
             >
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-linear-accent flex items-center justify-center">
                 <span className="text-white text-sm font-medium">
                   {userName
                     .split(' ')
@@ -226,11 +227,11 @@ export function TopBar({
                 </span>
               </div>
               <div className="hidden md:block text-left">
-                <div className="text-sm font-medium text-gray-900">{userName}</div>
-                <div className="text-xs text-gray-500">{userRole}</div>
+                <div className="text-sm font-medium text-linear-text-primary">{userName}</div>
+                <div className="text-xs text-linear-text-tertiary">{userRole}</div>
               </div>
               <svg
-                className="w-4 h-4 text-gray-500 hidden md:block"
+                className="w-4 h-4 text-linear-text-tertiary hidden md:block"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -250,8 +251,8 @@ export function TopBar({
             <DropdownMenu.Content
               className="
                 min-w-[220px] p-2
-                bg-white rounded-lg
-                shadow-lg border border-gray-200
+                bg-linear-bg-elevated rounded-lg
+                shadow-lg border border-linear-border-subtle
                 z-50
               "
               align="end"
@@ -260,11 +261,11 @@ export function TopBar({
               <DropdownMenu.Item
                 className="
                   flex items-center gap-3 px-3 py-2
-                  text-sm text-gray-700
+                  text-sm text-linear-text-secondary
                   rounded-md
                   cursor-pointer
-                  hover:bg-gray-100
-                  focus:bg-gray-100 focus:outline-none
+                  hover:bg-linear-bg-hover hover:text-linear-text-primary
+                  focus:bg-linear-bg-hover focus:outline-none
                   transition-colors
                 "
                 onSelect={onProfile}
@@ -291,11 +292,11 @@ export function TopBar({
                   href="/settings/billing"
                   className="
                     flex items-center gap-3 px-3 py-2
-                    text-sm text-gray-700
+                    text-sm text-linear-text-secondary
                     rounded-md
                     cursor-pointer
-                    hover:bg-gray-100
-                    focus:bg-gray-100 focus:outline-none
+                    hover:bg-linear-bg-hover hover:text-linear-text-primary
+                    focus:bg-linear-bg-hover focus:outline-none
                     transition-colors
                   "
                 >
@@ -326,18 +327,18 @@ export function TopBar({
               {/* User Management - Partner only */}
               {currentRole === 'Partner' && (
                 <>
-                  <DropdownMenu.Separator className="h-px my-2 bg-gray-200" />
+                  <DropdownMenu.Separator className="h-px my-2 bg-linear-border-subtle" />
 
                   <DropdownMenu.Item asChild>
                     <Link
                       href="/admin/users/pending"
                       className="
                         flex items-center gap-3 px-3 py-2
-                        text-sm text-gray-700
+                        text-sm text-linear-text-secondary
                         rounded-md
                         cursor-pointer
-                        hover:bg-gray-100
-                        focus:bg-gray-100 focus:outline-none
+                        hover:bg-linear-bg-hover hover:text-linear-text-primary
+                        focus:bg-linear-bg-hover focus:outline-none
                         transition-colors
                       "
                     >
@@ -364,11 +365,11 @@ export function TopBar({
                       href="/admin/ai-ops"
                       className="
                         flex items-center gap-3 px-3 py-2
-                        text-sm text-gray-700
+                        text-sm text-linear-text-secondary
                         rounded-md
                         cursor-pointer
-                        hover:bg-gray-100
-                        focus:bg-gray-100 focus:outline-none
+                        hover:bg-linear-bg-hover hover:text-linear-text-primary
+                        focus:bg-linear-bg-hover focus:outline-none
                         transition-colors
                       "
                     >
@@ -379,16 +380,16 @@ export function TopBar({
                 </>
               )}
 
-              <DropdownMenu.Separator className="h-px my-2 bg-gray-200" />
+              <DropdownMenu.Separator className="h-px my-2 bg-linear-border-subtle" />
 
               <DropdownMenu.Item
                 className="
                   flex items-center gap-3 px-3 py-2
-                  text-sm text-red-600
+                  text-sm text-linear-error
                   rounded-md
                   cursor-pointer
-                  hover:bg-red-50
-                  focus:bg-red-50 focus:outline-none
+                  hover:bg-linear-error/10
+                  focus:bg-linear-error/10 focus:outline-none
                   transition-colors
                 "
                 onSelect={onLogout}

@@ -67,17 +67,17 @@ function TagInput({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <label className="block text-sm font-medium text-linear-text-secondary mb-2">{label}</label>
 
       {/* Tags display */}
       <div className="flex flex-wrap gap-2 mb-2">
         {values.length === 0 ? (
-          <span className="text-sm text-gray-400 italic">Niciun element adăugat</span>
+          <span className="text-sm text-linear-text-muted italic">Niciun element adăugat</span>
         ) : (
           values.map((value, index) => (
             <span
               key={index}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-sm"
+              className="inline-flex items-center gap-1 px-2 py-1 bg-linear-accent/15 text-linear-accent rounded-md text-sm"
             >
               {value}
               {!readOnly && (
@@ -85,7 +85,7 @@ function TagInput({
                   type="button"
                   onClick={() => onRemove(index)}
                   disabled={disabled}
-                  className="hover:text-blue-900 disabled:opacity-50"
+                  className="hover:text-linear-accent disabled:opacity-50"
                   aria-label={`Șterge ${value}`}
                 >
                   <Cross2Icon className="h-3 w-3" />
@@ -106,13 +106,13 @@ function TagInput({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+            className="flex-1 px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent disabled:bg-linear-bg-tertiary"
           />
           <button
             type="button"
             onClick={handleAdd}
             disabled={disabled || !inputValue.trim()}
-            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-linear-accent bg-linear-accent/15 border border-linear-accent/30 rounded-md hover:bg-linear-accent/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <PlusIcon className="h-4 w-4" />
             Adaugă
@@ -219,12 +219,12 @@ export function CaseMetadataEditor({
 
       {/* Action Buttons */}
       {!readOnly && hasChanges && (
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <div className="flex justify-end gap-3 pt-4 border-t border-linear-border-subtle">
           <button
             type="button"
             onClick={handleReset}
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary border border-linear-border rounded-md hover:bg-linear-bg-hover transition-colors disabled:opacity-50"
           >
             Anulează
           </button>
@@ -232,7 +232,7 @@ export function CaseMetadataEditor({
             type="button"
             onClick={handleSave}
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {loading && (
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">

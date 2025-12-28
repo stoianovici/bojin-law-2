@@ -50,7 +50,7 @@ export function AnalyticsTabBar({ activeTab }: AnalyticsTabBarProps) {
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 shadow-sm">
+    <div className="bg-linear-bg-secondary border-b border-linear-border-subtle shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex space-x-1" aria-label="Analytics sections">
           {tabs.map((tab) => (
@@ -61,8 +61,8 @@ export function AnalyticsTabBar({ activeTab }: AnalyticsTabBarProps) {
                 flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors
                 ${
                   activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600 bg-blue-50/50'
-                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'border-linear-accent text-linear-accent bg-linear-accent/5'
+                    : 'border-transparent text-linear-text-secondary hover:text-linear-text-primary hover:border-linear-border hover:bg-linear-bg-tertiary'
                 }
               `}
               aria-current={activeTab === tab.id ? 'page' : undefined}

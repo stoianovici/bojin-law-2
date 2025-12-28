@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react';
 import { ClientHeader, ClientCasesTable } from '../../../components/client';
 import { useClient } from '../../../hooks/useClient';
 import { ErrorBoundary } from '../../../components/errors/ErrorBoundary';
+import { PageLayout, PageContent } from '../../../components/linear/PageLayout';
 
 // ============================================================================
 // Types
@@ -31,31 +32,31 @@ interface ClientProfilePageProps {
 
 function LoadingSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 animate-pulse">
+    <PageLayout className="animate-pulse p-0">
       {/* Header skeleton */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="border-b border-linear-border-subtle bg-linear-bg-secondary">
+        <PageContent className="px-6 py-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-gray-200" />
+            <div className="h-14 w-14 rounded-full bg-linear-bg-tertiary" />
             <div>
-              <div className="h-8 bg-gray-200 rounded w-48 mb-2" />
-              <div className="h-5 bg-gray-200 rounded w-32" />
+              <div className="mb-2 h-8 w-48 rounded bg-linear-bg-tertiary" />
+              <div className="h-5 w-32 rounded bg-linear-bg-tertiary" />
             </div>
           </div>
-        </div>
+        </PageContent>
       </div>
       {/* Table skeleton */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="h-6 bg-gray-200 rounded w-24 mb-6" />
+      <PageContent className="px-6 py-6">
+        <div className="rounded-lg border border-linear-border-subtle bg-linear-bg-secondary p-6">
+          <div className="mb-6 h-6 w-24 rounded bg-linear-bg-tertiary" />
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 bg-gray-100 rounded" />
+              <div key={i} className="h-12 rounded bg-linear-bg-tertiary" />
             ))}
           </div>
         </div>
-      </div>
-    </div>
+      </PageContent>
+    </PageLayout>
   );
 }
 
@@ -65,19 +66,19 @@ function LoadingSkeleton() {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <PageLayout className="flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Eroare la încărcare</h1>
-        <p className="text-gray-600 mb-4">{message}</p>
+        <h1 className="mb-2 text-2xl font-bold text-linear-text-primary">Eroare la încărcare</h1>
+        <p className="mb-4 text-linear-text-secondary">{message}</p>
         <Link
           href="/cases"
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          className="inline-flex items-center gap-2 text-linear-accent hover:text-linear-accent-hover"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" />
           Înapoi la dosare
         </Link>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
@@ -87,21 +88,21 @@ function ErrorState({ message }: { message: string }) {
 
 function NotFoundState({ clientId }: { clientId: string }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <PageLayout className="flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Client negăsit</h1>
-        <p className="text-gray-600 mb-4">
+        <h1 className="mb-2 text-2xl font-bold text-linear-text-primary">Client negăsit</h1>
+        <p className="mb-4 text-linear-text-secondary">
           Clientul cu ID {clientId} nu există sau nu aveți acces la acesta.
         </p>
         <Link
           href="/cases"
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          className="inline-flex items-center gap-2 text-linear-accent hover:text-linear-accent-hover"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" />
           Înapoi la dosare
         </Link>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
@@ -134,28 +135,28 @@ export default function ClientProfilePage({ params }: ClientProfilePageProps) {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
+      <PageLayout className="p-0">
         {/* Back navigation */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-6 py-3">
+        <div className="border-b border-linear-border-subtle bg-linear-bg-secondary">
+          <PageContent className="px-6 py-3">
             <Link
               href="/cases"
-              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+              className="inline-flex items-center gap-2 text-sm text-linear-text-secondary hover:text-linear-text-primary"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="h-4 w-4" />
               Înapoi la dosare
             </Link>
-          </div>
+          </PageContent>
         </div>
 
         {/* Client Header */}
         <ClientHeader client={client} />
 
         {/* Cases Table */}
-        <div className="max-w-7xl mx-auto px-6 py-6">
+        <PageContent className="px-6 py-6">
           <ClientCasesTable cases={client.cases} />
-        </div>
-      </div>
+        </PageContent>
+      </PageLayout>
     </ErrorBoundary>
   );
 }

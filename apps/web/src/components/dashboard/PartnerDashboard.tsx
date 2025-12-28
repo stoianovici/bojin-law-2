@@ -11,6 +11,7 @@ import { DashboardGrid } from './DashboardGrid';
 // TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
 import { useDashboardStore } from '../../stores/dashboard.store';
 import { usePartnerDashboard } from '../../hooks/usePartnerDashboard';
+import { useMyTasks, useTasks } from '../../hooks/useTasks';
 import { SupervisedCasesWidget } from './widgets/SupervisedCasesWidget';
 import { FirmCasesOverviewWidget } from './widgets/FirmCasesOverviewWidget';
 import { FirmTasksOverviewWidget } from './widgets/FirmTasksOverviewWidget';
@@ -103,6 +104,16 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
   const { updateLayout } = useDashboardStore();
   const { supervisedCases, highValueCases, atRiskCases, loading } = usePartnerDashboard();
 
+  // Fetch user's tasks for "Sarcinile Mele" widget
+  const { tasks: myTasks, loading: myTasksLoading } = useMyTasks({
+    statuses: ['Pending', 'InProgress'],
+  });
+
+  // Fetch all firm tasks for overview widget
+  const { tasks: allTasks, loading: allTasksLoading } = useTasks({
+    statuses: ['Pending', 'InProgress'],
+  });
+
   const handleLayoutChange = (newLayout: WidgetPosition[]) => {
     updateLayout('Partner', newLayout);
     onLayoutChange?.(newLayout);
@@ -165,10 +176,79 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
     [atRiskCases, highValueCases]
   );
 
+  // Transform my tasks for the TodayTasksWidget
+  const myTasksWidget: TaskListWidget = useMemo(
+    () => ({
+      id: 'my-tasks',
+      type: 'taskList',
+      title: 'Sarcinile Mele',
+      position: { i: 'my-tasks', x: 6, y: 0, w: 6, h: 5 },
+      tasks: myTasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        dueDate: t.dueDate || undefined,
+        priority: t.priority as 'Low' | 'Medium' | 'High' | 'Urgent',
+        status: t.status as 'Pending' | 'InProgress' | 'Completed',
+        caseNumber: t.case?.caseNumber,
+        caseTitle: t.case?.title,
+      })),
+    }),
+    [myTasks]
+  );
+
+  // Calculate firm task metrics for overview widget
+  const firmTasksOverviewWidget: FirmTasksOverviewWidgetType = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+    const overdue = allTasks.filter(
+      (t) => t.dueDate && new Date(t.dueDate) < today && t.status !== 'Completed'
+    );
+    const dueToday = allTasks.filter((t) => {
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      due.setHours(0, 0, 0, 0);
+      return due.getTime() === today.getTime();
+    });
+    const dueThisWeek = allTasks.filter((t) => {
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      return due >= today && due <= endOfWeek;
+    });
+
+    return {
+      id: 'firm-tasks-overview',
+      type: 'firmTasksOverview',
+      title: 'Prezentare Sarcini Firmă',
+      position: { i: 'firm-tasks-overview', x: 8, y: 5, w: 4, h: 5 },
+      taskMetrics: {
+        totalActiveTasks: allTasks.length,
+        overdueCount: overdue.length,
+        dueTodayCount: dueToday.length,
+        dueThisWeekCount: dueThisWeek.length,
+        completionRate: 0,
+        avgCompletionRateTrend: 'neutral',
+      },
+      taskBreakdown: [],
+      priorityTasks: allTasks
+        .filter((t) => t.priority === 'Urgent' || t.priority === 'High')
+        .slice(0, 5)
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          priority: t.priority as 'Low' | 'Medium' | 'High' | 'Urgent',
+          dueDate: t.dueDate || undefined,
+          assignee: t.assignee ? `${t.assignee.firstName} ${t.assignee.lastName}` : 'Unassigned',
+        })),
+    };
+  }, [allTasks]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-linear-accent"></div>
       </div>
     );
   }
@@ -189,7 +269,7 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
         </div>
 
         <div key="my-tasks">
-          <TodayTasksWidget widget={emptyMyTasksWidget} />
+          <TodayTasksWidget widget={myTasksWidget} />
         </div>
 
         {/* AI Suggestions - HIDDEN (may be revived later)
@@ -200,7 +280,7 @@ export function PartnerDashboard({ isEditing = false, onLayoutChange }: PartnerD
 
         {/* Row 2: Firm Tasks Overview (left, tall) */}
         <div key="firm-tasks-overview">
-          <FirmTasksOverviewWidget widget={emptyFirmTasksOverviewWidget} />
+          <FirmTasksOverviewWidget widget={firmTasksOverviewWidget} />
         </div>
 
         {/* Row 2: Right side container (stacked widgets) */}

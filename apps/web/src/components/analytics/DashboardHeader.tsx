@@ -33,13 +33,13 @@ export function DashboardHeader({ className = '' }: DashboardHeaderProps) {
   return (
     <div className={`flex items-center justify-between ${className}`}>
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Panou Financiar</h1>
+        <h1 className="text-2xl font-bold text-linear-text-primary">Panou Financiar</h1>
 
         {/* Data Scope Badge */}
         {scope && (
           <span
             className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full ${
-              isBusinessOwner ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+              isBusinessOwner ? 'bg-linear-accent/10 text-linear-accent' : 'bg-linear-accent/10 text-linear-accent'
             }`}
           >
             {isBusinessOwner ? (

@@ -110,22 +110,22 @@ function ConfirmationDialog({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirm Billing Type Change</h3>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="bg-linear-bg-secondary rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 className="text-lg font-semibold text-linear-text-primary mb-2">Confirm Billing Type Change</h3>
+        <p className="text-sm text-linear-text-secondary mb-4">
           Are you sure you want to change billing type from <strong>{fromType}</strong> to{' '}
           <strong>{toType}</strong>? This will affect how revenue is calculated for this case.
         </p>
         <div className="flex justify-end space-x-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-md hover:bg-linear-bg-hover transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover transition-colors"
           >
             Confirm Change
           </button>
@@ -276,19 +276,19 @@ export function EditRatesModal({
       >
         {/* Modal Content */}
         <div
-          className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+          className="bg-linear-bg-secondary rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Edit Billing Rates</h2>
+          <div className="px-6 py-4 border-b border-linear-border-subtle">
+            <h2 className="text-xl font-semibold text-linear-text-primary">Edit Billing Rates</h2>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-4 space-y-6">
             {/* Billing Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Billing Type</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-2">Billing Type</label>
               <div className="flex space-x-4">
                 <label className="flex items-center">
                   <input
@@ -298,7 +298,7 @@ export function EditRatesModal({
                     onChange={(e) => handleBillingTypeChange(e.target.value as BillingType)}
                     className="mr-2"
                   />
-                  <span className="text-sm text-gray-700">Hourly Billing</span>
+                  <span className="text-sm text-linear-text-secondary">Hourly Billing</span>
                 </label>
                 <label className="flex items-center">
                   <input
@@ -308,7 +308,7 @@ export function EditRatesModal({
                     onChange={(e) => handleBillingTypeChange(e.target.value as BillingType)}
                     className="mr-2"
                   />
-                  <span className="text-sm text-gray-700">Fixed Fee</span>
+                  <span className="text-sm text-linear-text-secondary">Fixed Fee</span>
                 </label>
               </div>
             </div>
@@ -318,9 +318,9 @@ export function EditRatesModal({
               <div>
                 <label
                   htmlFor="fixedAmount"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-linear-text-secondary mb-1"
                 >
-                  Fixed Amount ($) <span className="text-red-500">*</span>
+                  Fixed Amount ($) <span className="text-linear-error">*</span>
                 </label>
                 <input
                   id="fixedAmount"
@@ -328,11 +328,11 @@ export function EditRatesModal({
                   step="0.01"
                   min="0"
                   {...register('fixedAmount')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent bg-linear-bg-secondary text-linear-text-primary"
                   placeholder="0.00"
                 />
                 {errors.fixedAmount && (
-                  <p className="mt-1 text-sm text-red-600">{errors.fixedAmount.message}</p>
+                  <p className="mt-1 text-sm text-linear-error">{errors.fixedAmount.message}</p>
                 )}
               </div>
             )}
@@ -340,12 +340,12 @@ export function EditRatesModal({
             {/* Custom Rates Section */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700">Hourly Rates</label>
+                <label className="block text-sm font-medium text-linear-text-secondary">Hourly Rates</label>
                 <button
                   type="button"
                   onClick={revertToDefaults}
                   disabled={!useCustomRates}
-                  className="text-xs text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  className="text-xs text-linear-accent hover:text-linear-accent-hover disabled:text-linear-text-muted disabled:cursor-not-allowed"
                 >
                   Revert to Default Rates
                 </button>
@@ -354,14 +354,14 @@ export function EditRatesModal({
               {/* Use Custom Rates Toggle */}
               <label className="flex items-center mb-4">
                 <input type="checkbox" {...register('useCustomRates')} className="mr-2" />
-                <span className="text-sm text-gray-700">Use custom rates for this case</span>
+                <span className="text-sm text-linear-text-secondary">Use custom rates for this case</span>
               </label>
 
               {/* Rate Inputs */}
               <div className="space-y-4">
                 {/* Partner Rate */}
                 <div className="flex items-center space-x-4">
-                  <label className="w-24 text-sm text-gray-700">Partner</label>
+                  <label className="w-24 text-sm text-linear-text-secondary">Partner</label>
                   <div className="flex-1">
                     <input
                       type="number"
@@ -369,7 +369,7 @@ export function EditRatesModal({
                       min="0"
                       {...register('partnerRate')}
                       disabled={!useCustomRates}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:bg-linear-bg-tertiary disabled:cursor-not-allowed bg-linear-bg-secondary text-linear-text-primary"
                       placeholder={
                         defaultRates && !defaultRatesLoading
                           ? `Default: $${centsToDollars(defaultRates.partnerRate)}/hr`
@@ -377,9 +377,9 @@ export function EditRatesModal({
                       }
                     />
                   </div>
-                  <span className="text-sm text-gray-500">/hr</span>
+                  <span className="text-sm text-linear-text-tertiary">/hr</span>
                   {defaultRates && useCustomRates && (
-                    <span className="text-xs text-gray-400 w-32">
+                    <span className="text-xs text-linear-text-muted w-32">
                       Default: ${centsToDollars(defaultRates.partnerRate)}
                     </span>
                   )}
@@ -387,7 +387,7 @@ export function EditRatesModal({
 
                 {/* Associate Rate */}
                 <div className="flex items-center space-x-4">
-                  <label className="w-24 text-sm text-gray-700">Associate</label>
+                  <label className="w-24 text-sm text-linear-text-secondary">Associate</label>
                   <div className="flex-1">
                     <input
                       type="number"
@@ -395,7 +395,7 @@ export function EditRatesModal({
                       min="0"
                       {...register('associateRate')}
                       disabled={!useCustomRates}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:bg-linear-bg-tertiary disabled:cursor-not-allowed bg-linear-bg-secondary text-linear-text-primary"
                       placeholder={
                         defaultRates && !defaultRatesLoading
                           ? `Default: $${centsToDollars(defaultRates.associateRate)}/hr`
@@ -403,9 +403,9 @@ export function EditRatesModal({
                       }
                     />
                   </div>
-                  <span className="text-sm text-gray-500">/hr</span>
+                  <span className="text-sm text-linear-text-tertiary">/hr</span>
                   {defaultRates && useCustomRates && (
-                    <span className="text-xs text-gray-400 w-32">
+                    <span className="text-xs text-linear-text-muted w-32">
                       Default: ${centsToDollars(defaultRates.associateRate)}
                     </span>
                   )}
@@ -413,7 +413,7 @@ export function EditRatesModal({
 
                 {/* Paralegal Rate */}
                 <div className="flex items-center space-x-4">
-                  <label className="w-24 text-sm text-gray-700">Paralegal</label>
+                  <label className="w-24 text-sm text-linear-text-secondary">Paralegal</label>
                   <div className="flex-1">
                     <input
                       type="number"
@@ -421,7 +421,7 @@ export function EditRatesModal({
                       min="0"
                       {...register('paralegalRate')}
                       disabled={!useCustomRates}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:bg-linear-bg-tertiary disabled:cursor-not-allowed bg-linear-bg-secondary text-linear-text-primary"
                       placeholder={
                         defaultRates && !defaultRatesLoading
                           ? `Default: $${centsToDollars(defaultRates.paralegalRate)}/hr`
@@ -429,28 +429,28 @@ export function EditRatesModal({
                       }
                     />
                   </div>
-                  <span className="text-sm text-gray-500">/hr</span>
+                  <span className="text-sm text-linear-text-tertiary">/hr</span>
                   {defaultRates && useCustomRates && (
-                    <span className="text-xs text-gray-400 w-32">
+                    <span className="text-xs text-linear-text-muted w-32">
                       Default: ${centsToDollars(defaultRates.paralegalRate)}
                     </span>
                   )}
                 </div>
 
                 {errors.partnerRate && (
-                  <p className="text-sm text-red-600">{errors.partnerRate.message}</p>
+                  <p className="text-sm text-linear-error">{errors.partnerRate.message}</p>
                 )}
               </div>
             </div>
           </form>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <div className="px-6 py-4 border-t border-linear-border-subtle flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
               disabled={updateLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-md hover:bg-linear-bg-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Cancel
             </button>
@@ -458,7 +458,7 @@ export function EditRatesModal({
               type="submit"
               onClick={handleSubmit(onSubmit)}
               disabled={updateLoading || !isDirty}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {updateLoading ? 'Saving...' : 'Save Changes'}
             </button>

@@ -59,9 +59,9 @@ interface ConfidenceBadgeProps {
 
 function ConfidenceBadge({ level }: ConfidenceBadgeProps) {
   const config = {
-    High: { bg: 'bg-green-100', text: 'text-green-800', label: 'High confidence' },
-    Medium: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Medium confidence' },
-    Low: { bg: 'bg-red-100', text: 'text-red-800', label: 'Low confidence' },
+    High: { bg: 'bg-linear-success/15', text: 'text-linear-success', label: 'High confidence' },
+    Medium: { bg: 'bg-linear-warning/15', text: 'text-linear-warning', label: 'Medium confidence' },
+    Low: { bg: 'bg-linear-error/15', text: 'text-linear-error', label: 'Low confidence' },
   };
 
   const { bg, text, label } = config[level];
@@ -100,7 +100,7 @@ function SectionHeader({
   return (
     <button
       onClick={onToggle}
-      className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+      className="w-full p-3 text-left text-sm font-semibold flex items-center justify-between hover:bg-linear-bg-hover focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-inset"
       aria-expanded={isExpanded}
       aria-controls={sectionId}
     >
@@ -109,9 +109,9 @@ function SectionHeader({
         {title} ({count})
       </span>
       {isExpanded ? (
-        <ChevronDown className="h-4 w-4 text-gray-500" aria-hidden="true" />
+        <ChevronDown className="h-4 w-4 text-linear-text-tertiary" aria-hidden="true" />
       ) : (
-        <ChevronRight className="h-4 w-4 text-gray-500" aria-hidden="true" />
+        <ChevronRight className="h-4 w-4 text-linear-text-tertiary" aria-hidden="true" />
       )}
     </button>
   );
@@ -145,7 +145,7 @@ function ItemActions({
       <button
         onClick={onConvert}
         disabled={isConverting}
-        className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        className="flex items-center gap-1 px-2 py-1 text-xs bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-1"
         aria-label={`Convert ${itemType} to task`}
       >
         {isConverting ? (
@@ -158,7 +158,7 @@ function ItemActions({
       {hasCalendarAction && onAddToCalendar && (
         <button
           onClick={onAddToCalendar}
-          className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
+          className="flex items-center gap-1 px-2 py-1 text-xs bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-1"
           aria-label="Add to calendar"
         >
           <Calendar className="h-3 w-3" aria-hidden="true" />
@@ -168,7 +168,7 @@ function ItemActions({
       <button
         onClick={onDismiss}
         disabled={isDismissing}
-        className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
+        className="flex items-center gap-1 px-2 py-1 text-xs text-linear-text-secondary border border-linear-border rounded hover:bg-linear-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-linear-border focus:ring-offset-1"
         aria-label={`Dismiss ${itemType}`}
       >
         {isDismissing ? (
@@ -196,7 +196,7 @@ function EmailLink({ email }: EmailLinkProps) {
   return (
     <a
       href={`/emails?id=${email.id}`}
-      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="inline-flex items-center gap-1 text-xs text-linear-accent hover:underline focus:outline-none focus:ring-2 focus:ring-linear-accent"
       aria-label={`View source email: ${email.subject}`}
     >
       <Mail className="h-3 w-3" aria-hidden="true" />
@@ -349,8 +349,8 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
   ) {
     return (
       <div className="p-4 flex items-center justify-center" role="status" aria-busy="true">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-500" aria-hidden="true" />
-        <span className="ml-2 text-sm text-gray-600">Loading extracted items...</span>
+        <Loader2 className="h-6 w-6 animate-spin text-linear-accent" aria-hidden="true" />
+        <span className="ml-2 text-sm text-linear-text-secondary">Loading extracted items...</span>
       </div>
     );
   }
@@ -360,11 +360,11 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
     console.warn('[ExtractedItemsPanel] Failed to load:', error.message);
     return (
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 mb-2">Elemente extrase</h3>
-        <p className="text-sm text-gray-500 mb-3">Nu s-au putut încărca elementele extrase.</p>
+        <h3 className="font-semibold text-linear-text-primary mb-2">Elemente extrase</h3>
+        <p className="text-sm text-linear-text-tertiary mb-3">Nu s-au putut încărca elementele extrase.</p>
         <button
           onClick={() => refetch()}
-          className="text-sm text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-sm text-linear-accent hover:underline focus:outline-none focus:ring-2 focus:ring-linear-accent"
         >
           Încearcă din nou
         </button>
@@ -377,8 +377,8 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
   // Empty state
   if (totalItems === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
-        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" aria-hidden="true" />
+      <div className="p-4 text-center text-linear-text-tertiary">
+        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-linear-success" aria-hidden="true" />
         <p className="text-sm">Nu există elemente în așteptare</p>
         <p className="text-xs mt-1">Toate elementele au fost procesate sau respinse</p>
       </div>
@@ -394,7 +394,7 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
         <SectionHeader
           title="Deadlines"
           count={deadlines.length}
-          icon={<Clock className="h-4 w-4 text-orange-500" aria-hidden="true" />}
+          icon={<Clock className="h-4 w-4 text-linear-warning" aria-hidden="true" />}
           isExpanded={expandedSections.has('deadlines')}
           onToggle={() => toggleSection('deadlines')}
           sectionId="deadlines-list"
@@ -407,18 +407,18 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
             aria-label="Deadlines list"
           >
             {deadlines.length === 0 ? (
-              <p className="text-sm text-gray-500">No deadlines detected</p>
+              <p className="text-sm text-linear-text-tertiary">No deadlines detected</p>
             ) : (
               deadlines.map((deadline) => (
                 <div
                   key={deadline.id}
-                  className="p-3 bg-orange-50 rounded-lg border border-orange-100"
+                  className="p-3 bg-linear-warning/10 rounded-lg border border-linear-warning/30"
                   role="listitem"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{deadline.description}</div>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
+                      <div className="flex items-center gap-2 mt-1 text-xs text-linear-text-tertiary">
                         <span>Due: {format(new Date(deadline.dueDate), 'MMM d, yyyy')}</span>
                         <ConfidenceBadge level={deadline.confidenceLevel} />
                       </div>
@@ -448,7 +448,7 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
         <SectionHeader
           title="Commitments"
           count={commitments.length}
-          icon={<ClipboardList className="h-4 w-4 text-blue-500" aria-hidden="true" />}
+          icon={<ClipboardList className="h-4 w-4 text-linear-accent" aria-hidden="true" />}
           isExpanded={expandedSections.has('commitments')}
           onToggle={() => toggleSection('commitments')}
           sectionId="commitments-list"
@@ -461,19 +461,19 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
             aria-label="Commitments list"
           >
             {commitments.length === 0 ? (
-              <p className="text-sm text-gray-500">No commitments detected</p>
+              <p className="text-sm text-linear-text-tertiary">No commitments detected</p>
             ) : (
               commitments.map((commitment) => (
                 <div
                   key={commitment.id}
-                  className="p-3 bg-blue-50 rounded-lg border border-blue-100"
+                  className="p-3 bg-linear-accent/10 rounded-lg border border-linear-accent/30"
                   role="listitem"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{commitment.party}</div>
-                      <div className="text-sm text-gray-700 mt-1">{commitment.commitmentText}</div>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
+                      <div className="text-sm text-linear-text-secondary mt-1">{commitment.commitmentText}</div>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-linear-text-tertiary">
                         {commitment.dueDate && (
                           <span>Due: {format(new Date(commitment.dueDate), 'MMM d, yyyy')}</span>
                         )}
@@ -507,7 +507,7 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
         <SectionHeader
           title="Action Items"
           count={actionItems.length}
-          icon={<CheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />}
+          icon={<CheckCircle className="h-4 w-4 text-linear-success" aria-hidden="true" />}
           isExpanded={expandedSections.has('actionItems')}
           onToggle={() => toggleSection('actionItems')}
           sectionId="action-items-list"
@@ -520,27 +520,27 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
             aria-label="Action items list"
           >
             {actionItems.length === 0 ? (
-              <p className="text-sm text-gray-500">No action items detected</p>
+              <p className="text-sm text-linear-text-tertiary">No action items detected</p>
             ) : (
               actionItems.map((action) => (
                 <div
                   key={action.id}
-                  className="p-3 bg-green-50 rounded-lg border border-green-100"
+                  className="p-3 bg-linear-success/10 rounded-lg border border-linear-success/30"
                   role="listitem"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{action.description}</div>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
+                      <div className="flex items-center gap-2 mt-1 text-xs text-linear-text-tertiary">
                         <span
                           className={`px-2 py-0.5 rounded ${
                             action.priority === 'Urgent'
-                              ? 'bg-red-100 text-red-800'
+                              ? 'bg-linear-error/15 text-linear-error'
                               : action.priority === 'High'
-                                ? 'bg-orange-100 text-orange-800'
+                                ? 'bg-linear-warning/15 text-linear-warning'
                                 : action.priority === 'Medium'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-gray-100 text-gray-800'
+                                  ? 'bg-linear-warning/10 text-linear-text-secondary'
+                                  : 'bg-linear-bg-tertiary text-linear-text-secondary'
                           }`}
                         >
                           {action.priority}
@@ -548,7 +548,7 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
                         <ConfidenceBadge level={action.confidenceLevel} />
                       </div>
                       {action.suggestedAssignee && (
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div className="text-xs text-linear-text-tertiary mt-1">
                           Suggested: {action.suggestedAssignee}
                         </div>
                       )}
@@ -576,7 +576,7 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
         <SectionHeader
           title="Questions"
           count={questions.length}
-          icon={<HelpCircle className="h-4 w-4 text-purple-500" aria-hidden="true" />}
+          icon={<HelpCircle className="h-4 w-4 text-linear-accent" aria-hidden="true" />}
           isExpanded={expandedSections.has('questions')}
           onToggle={() => toggleSection('questions')}
           sectionId="questions-list"
@@ -589,20 +589,20 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
             aria-label="Questions list"
           >
             {questions.length === 0 ? (
-              <p className="text-sm text-gray-500">No questions detected</p>
+              <p className="text-sm text-linear-text-tertiary">No questions detected</p>
             ) : (
               questions.map((question) => (
                 <div
                   key={question.id}
-                  className="p-3 bg-purple-50 rounded-lg border border-purple-100"
+                  className="p-3 bg-linear-accent/10 rounded-lg border border-linear-accent/30"
                   role="listitem"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{question.questionText}</div>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
+                      <div className="flex items-center gap-2 mt-1 text-xs text-linear-text-tertiary">
                         {question.respondBy && (
-                          <span className="text-red-600">
+                          <span className="text-linear-error">
                             Respond by: {format(new Date(question.respondBy), 'MMM d, yyyy')}
                           </span>
                         )}
@@ -616,7 +616,7 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
                   <div className="flex items-center gap-1 mt-2">
                     <button
                       onClick={() => handleMarkAnswered(question.id)}
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1"
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-linear-success text-white rounded hover:bg-linear-success-hover transition-colors focus:outline-none focus:ring-2 focus:ring-linear-success focus:ring-offset-1"
                       aria-label="Mark question as answered"
                     >
                       <CheckCircle className="h-3 w-3" aria-hidden="true" />
@@ -625,7 +625,7 @@ export function ExtractedItemsPanel({ caseId, onAddToCalendar }: ExtractedItemsP
                     <button
                       onClick={() => handleDismiss(question.id, 'question')}
                       disabled={dismissingId === question.id}
-                      className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
+                      className="flex items-center gap-1 px-2 py-1 text-xs text-linear-text-secondary border border-linear-border rounded hover:bg-linear-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-linear-border focus:ring-offset-1"
                       aria-label="Dismiss question"
                     >
                       {dismissingId === question.id ? (

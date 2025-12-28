@@ -97,14 +97,14 @@ export function SubtaskBuilder({ subtasks, onChange, disabled = false }: Subtask
           {subtasks.map((subtask) => (
             <li
               key={subtask.tempId}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg group"
+              className="flex items-center gap-2 px-3 py-2 bg-linear-bg-tertiary rounded-lg group"
             >
-              <span className="flex-1 text-sm text-gray-700">{subtask.title}</span>
+              <span className="flex-1 text-sm text-linear-text-secondary">{subtask.title}</span>
               {!disabled && (
                 <button
                   type="button"
                   onClick={() => handleRemoveSubtask(subtask.tempId)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-linear-text-muted hover:text-linear-error transition-opacity"
                   aria-label="Șterge sub-sarcină"
                 >
                   <X className="w-4 h-4" />
@@ -128,9 +128,9 @@ export function SubtaskBuilder({ subtasks, onChange, disabled = false }: Subtask
             placeholder="Titlu sub-sarcină"
             disabled={disabled}
             className={clsx(
-              'flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg',
-              'focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-              'disabled:bg-gray-100 disabled:cursor-not-allowed'
+              'flex-1 px-3 py-2 text-sm border border-linear-border rounded-lg',
+              'focus:ring-2 focus:ring-linear-accent focus:border-transparent',
+              'disabled:bg-linear-bg-tertiary disabled:cursor-not-allowed'
             )}
           />
         </div>
@@ -140,10 +140,10 @@ export function SubtaskBuilder({ subtasks, onChange, disabled = false }: Subtask
           onClick={handleShowInput}
           disabled={disabled}
           className={clsx(
-            'w-full py-2 border-2 border-dashed border-gray-200 rounded-lg',
-            'text-sm text-gray-500 flex items-center justify-center gap-1',
-            'hover:text-blue-600 hover:border-blue-300 transition-colors',
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:border-gray-200'
+            'w-full py-2 border-2 border-dashed border-linear-border-subtle rounded-lg',
+            'text-sm text-linear-text-tertiary flex items-center justify-center gap-1',
+            'hover:text-linear-accent hover:border-linear-accent/50 transition-colors',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-linear-text-tertiary disabled:hover:border-linear-border-subtle'
           )}
         >
           <Plus className="w-4 h-4" />

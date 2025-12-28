@@ -44,9 +44,9 @@ interface CardProps {
 
 function Card({ title, children, action, className }: CardProps) {
   return (
-    <div className={clsx('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+    <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle shadow-sm', className)}>
+      <div className="px-5 py-4 border-b border-linear-border-subtle flex items-center justify-between">
+        <h3 className="text-base font-semibold text-linear-text-primary">{title}</h3>
         {action}
       </div>
       <div className="p-5">{children}</div>
@@ -109,7 +109,7 @@ export function ContactsSection({ caseId, actors, editable, className }: Contact
         editable && !isAdding ? (
           <button
             onClick={handleStartAdd}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-linear-accent hover:text-linear-accent-hover hover:bg-linear-accent/10 rounded-lg transition-colors"
           >
             <PlusIcon className="h-4 w-4" />
             Adaugă
@@ -146,7 +146,7 @@ export function ContactsSection({ caseId, actors, editable, className }: Contact
             />
           ))
         ) : !isAdding ? (
-          <p className="text-sm text-gray-500 text-center py-4">
+          <p className="text-sm text-linear-text-tertiary text-center py-4">
             Nu au fost adăugate persoane de contact.
           </p>
         ) : null}

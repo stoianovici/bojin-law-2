@@ -72,17 +72,17 @@ function getStatusIndicator(status: string | null): {
 } {
   switch (status) {
     case 'completed':
-      return { icon: CheckCircle2, color: 'text-green-500', label: 'Complet' };
+      return { icon: CheckCircle2, color: 'text-linear-success', label: 'Complet' };
     case 'running':
-      return { icon: PlayCircle, color: 'text-blue-500', label: 'În curs' };
+      return { icon: PlayCircle, color: 'text-linear-accent', label: 'În curs' };
     case 'partial':
-      return { icon: AlertCircle, color: 'text-yellow-500', label: 'Parțial' };
+      return { icon: AlertCircle, color: 'text-linear-warning', label: 'Parțial' };
     case 'failed':
-      return { icon: XCircle, color: 'text-red-500', label: 'Eșuat' };
+      return { icon: XCircle, color: 'text-linear-error', label: 'Eșuat' };
     case 'skipped':
-      return { icon: Clock, color: 'text-gray-400', label: 'Omis' };
+      return { icon: Clock, color: 'text-linear-text-muted', label: 'Omis' };
     default:
-      return { icon: Clock, color: 'text-gray-400', label: 'Nepornit' };
+      return { icon: Clock, color: 'text-linear-text-muted', label: 'Nepornit' };
   }
 }
 
@@ -107,13 +107,13 @@ function FeatureStatusSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {[...Array(count)].map((_, i) => (
-        <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg animate-pulse">
-          <div className="w-8 h-8 rounded-full bg-gray-200" />
+        <div key={i} className="flex items-center gap-3 p-3 bg-linear-bg-tertiary rounded-lg animate-pulse">
+          <div className="w-8 h-8 rounded-full bg-linear-bg-hover" />
           <div className="flex-1">
-            <div className="h-4 w-32 bg-gray-200 rounded mb-1" />
-            <div className="h-3 w-20 bg-gray-200 rounded" />
+            <div className="h-4 w-32 bg-linear-bg-hover rounded mb-1" />
+            <div className="h-3 w-20 bg-linear-bg-hover rounded" />
           </div>
-          <div className="h-4 w-16 bg-gray-200 rounded" />
+          <div className="h-4 w-16 bg-linear-bg-hover rounded" />
         </div>
       ))}
     </div>
@@ -133,25 +133,25 @@ function FeatureItem({ feature }: FeatureItemProps) {
   const StatusIcon = status.icon;
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+    <div className="flex items-center gap-3 p-3 bg-linear-bg-tertiary rounded-lg hover:bg-linear-bg-hover transition-colors">
       {/* Enable/Disable indicator */}
       <div
         className={clsx(
           'w-8 h-8 rounded-full flex items-center justify-center',
-          feature.enabled ? 'bg-green-100' : 'bg-gray-200'
+          feature.enabled ? 'bg-linear-success/15' : 'bg-linear-bg-hover'
         )}
       >
         {feature.enabled ? (
-          <CheckCircle2 className="w-5 h-5 text-green-600" />
+          <CheckCircle2 className="w-5 h-5 text-linear-success" />
         ) : (
-          <XCircle className="w-5 h-5 text-gray-400" />
+          <XCircle className="w-5 h-5 text-linear-text-muted" />
         )}
       </div>
 
       {/* Feature info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{feature.featureName}</p>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <p className="text-sm font-medium text-linear-text-primary truncate">{feature.featureName}</p>
+        <div className="flex items-center gap-2 text-xs text-linear-text-tertiary">
           {feature.featureType === 'batch' && (
             <>
               <StatusIcon className={clsx('w-3 h-3', status.color)} />
@@ -164,10 +164,10 @@ function FeatureItem({ feature }: FeatureItemProps) {
 
       {/* Daily cost estimate */}
       <div className="text-right">
-        <p className="text-sm font-medium text-gray-900">
+        <p className="text-sm font-medium text-linear-text-primary">
           {formatCurrency(feature.dailyCostEstimate)}
         </p>
-        <p className="text-xs text-gray-500">/zi</p>
+        <p className="text-xs text-linear-text-tertiary">/zi</p>
       </div>
     </div>
   );
@@ -192,26 +192,26 @@ export function FeatureStatusList({
 
   if (loading) {
     return (
-      <div className={clsx('bg-white rounded-lg border border-gray-200 p-6', className)}>
-        <div className="h-6 w-40 bg-gray-200 rounded mb-4 animate-pulse" />
+      <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6', className)}>
+        <div className="h-6 w-40 bg-linear-bg-hover rounded mb-4 animate-pulse" />
         <FeatureStatusSkeleton count={maxItems || 5} />
       </div>
     );
   }
 
   return (
-    <div className={clsx('bg-white rounded-lg border border-gray-200 p-6', className)}>
+    <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6', className)}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-linear-text-primary">
           {batchOnly ? 'Procese Batch' : 'Funcționalități AI'}
         </h3>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-linear-text-tertiary">
           {filteredFeatures.filter((f) => f.enabled).length} / {filteredFeatures.length} active
         </span>
       </div>
 
       {displayFeatures.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">Nu sunt funcționalități configurate</div>
+        <div className="text-center py-8 text-linear-text-tertiary">Nu sunt funcționalități configurate</div>
       ) : (
         <div className="space-y-2">
           {displayFeatures.map((feature) => (
@@ -222,7 +222,7 @@ export function FeatureStatusList({
 
       {maxItems && filteredFeatures.length > maxItems && (
         <div className="mt-4 text-center">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-linear-text-tertiary">
             +{filteredFeatures.length - maxItems} alte funcționalități
           </span>
         </div>

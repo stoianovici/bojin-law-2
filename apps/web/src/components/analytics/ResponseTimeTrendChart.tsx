@@ -123,8 +123,8 @@ function CustomTooltip({ active, payload, label, slaThreshold }: CustomTooltipPr
   const isAboveSLA = responseTime && responseTime.value > slaThreshold;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 min-w-[200px]">
-      <div className="font-medium text-gray-900 mb-2 border-b pb-2">{label}</div>
+    <div className="bg-linear-bg-secondary border border-linear-border-subtle rounded-lg shadow-lg p-4 min-w-[200px]">
+      <div className="font-medium text-linear-text-primary mb-2 border-b pb-2">{label}</div>
       <div className="space-y-2">
         {/* Response Time */}
         {responseTime && (
@@ -134,9 +134,9 @@ function CustomTooltip({ active, payload, label, slaThreshold }: CustomTooltipPr
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: COLORS.responseLine }}
               />
-              <span className="text-sm text-gray-600">Timp răspuns</span>
+              <span className="text-sm text-linear-text-secondary">Timp răspuns</span>
             </div>
-            <span className={`font-semibold ${isAboveSLA ? 'text-red-600' : 'text-emerald-600'}`}>
+            <span className={`font-semibold ${isAboveSLA ? 'text-linear-error' : 'text-linear-success'}`}>
               {formatHours(responseTime.value)}
             </span>
           </div>
@@ -147,9 +147,9 @@ function CustomTooltip({ active, payload, label, slaThreshold }: CustomTooltipPr
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.volumeBar }} />
-              <span className="text-sm text-gray-600">Emailuri</span>
+              <span className="text-sm text-linear-text-secondary">Emailuri</span>
             </div>
-            <span className="font-semibold text-gray-900">{volume.value.toLocaleString()}</span>
+            <span className="font-semibold text-linear-text-primary">{volume.value.toLocaleString()}</span>
           </div>
         )}
 
@@ -157,7 +157,7 @@ function CustomTooltip({ active, payload, label, slaThreshold }: CustomTooltipPr
         <div className="pt-2 mt-2 border-t">
           <div
             className={`text-xs font-medium px-2 py-1 rounded text-center ${
-              isAboveSLA ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+              isAboveSLA ? 'bg-linear-error/15 text-linear-error' : 'bg-linear-success/15 text-linear-success'
             }`}
           >
             {isAboveSLA ? `Peste SLA (${slaThreshold}h)` : `În SLA (${slaThreshold}h)`}
@@ -174,9 +174,9 @@ function CustomTooltip({ active, payload, label, slaThreshold }: CustomTooltipPr
 
 function LoadingSkeleton({ height }: { height: number }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-      <div className="h-5 bg-gray-200 rounded w-48 mb-4" />
-      <div style={{ height }} className="bg-gray-100 rounded" />
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 animate-pulse">
+      <div className="h-5 bg-linear-bg-hover rounded w-48 mb-4" />
+      <div style={{ height }} className="bg-linear-bg-tertiary rounded" />
     </div>
   );
 }
@@ -237,9 +237,9 @@ export function ResponseTimeTrendChart({
 
   if (!trend || trend.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendință timp de răspuns</h3>
-        <div className="flex items-center justify-center text-gray-500" style={{ height }}>
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
+        <h3 className="text-lg font-semibold text-linear-text-primary mb-4">Tendință timp de răspuns</h3>
+        <div className="flex items-center justify-center text-linear-text-tertiary" style={{ height }}>
           Nu există date de tendință disponibile
         </div>
       </div>
@@ -247,18 +247,18 @@ export function ResponseTimeTrendChart({
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Tendință timp de răspuns</h3>
+        <h3 className="text-lg font-semibold text-linear-text-primary">Tendință timp de răspuns</h3>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-0.5" style={{ backgroundColor: COLORS.slaLine }} />
-            <span className="text-gray-500">SLA ({slaThresholdHours}h)</span>
+            <span className="text-linear-text-tertiary">SLA ({slaThresholdHours}h)</span>
           </div>
           <div
             className={`px-2 py-0.5 rounded text-xs font-medium ${
-              stats.daysAboveSLA > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+              stats.daysAboveSLA > 0 ? 'bg-linear-error/15 text-linear-error' : 'bg-linear-success/15 text-linear-success'
             }`}
           >
             {stats.daysAboveSLA === 0 ? 'Toate în SLA' : `${stats.daysAboveSLA} zile peste SLA`}
@@ -268,27 +268,27 @@ export function ResponseTimeTrendChart({
 
       {/* Summary Stats Row */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-xs text-gray-500">Medie perioadă</div>
-          <div className="text-lg font-bold text-gray-900">{formatHours(stats.avg)}</div>
+        <div className="bg-linear-bg-tertiary rounded-lg p-3 text-center">
+          <div className="text-xs text-linear-text-tertiary">Medie perioadă</div>
+          <div className="text-lg font-bold text-linear-text-primary">{formatHours(stats.avg)}</div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-xs text-gray-500">Minim</div>
-          <div className="text-lg font-bold text-emerald-600">{formatHours(stats.min)}</div>
+        <div className="bg-linear-bg-tertiary rounded-lg p-3 text-center">
+          <div className="text-xs text-linear-text-tertiary">Minim</div>
+          <div className="text-lg font-bold text-linear-success">{formatHours(stats.min)}</div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-xs text-gray-500">Maxim</div>
+        <div className="bg-linear-bg-tertiary rounded-lg p-3 text-center">
+          <div className="text-xs text-linear-text-tertiary">Maxim</div>
           <div
             className={`text-lg font-bold ${
-              stats.max > slaThresholdHours ? 'text-red-600' : 'text-gray-900'
+              stats.max > slaThresholdHours ? 'text-linear-error' : 'text-linear-text-primary'
             }`}
           >
             {formatHours(stats.max)}
           </div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-xs text-gray-500">Total emailuri</div>
-          <div className="text-lg font-bold text-blue-600">
+        <div className="bg-linear-bg-tertiary rounded-lg p-3 text-center">
+          <div className="text-xs text-linear-text-tertiary">Total emailuri</div>
+          <div className="text-lg font-bold text-linear-accent">
             {stats.totalVolume.toLocaleString()}
           </div>
         </div>
@@ -394,27 +394,27 @@ export function ResponseTimeTrendChart({
 
       {/* Recipient Type Context (if provided) */}
       {byRecipientType && byRecipientType.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Timp mediu per tip destinatar</h4>
+        <div className="mt-6 pt-4 border-t border-linear-border-subtle">
+          <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Timp mediu per tip destinatar</h4>
           <div className="flex flex-wrap gap-3">
             {byRecipientType.map((item) => (
               <div
                 key={item.emailType}
-                className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg"
+                className="flex items-center gap-2 px-3 py-2 bg-linear-bg-tertiary rounded-lg"
               >
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-linear-text-secondary">
                   {RECIPIENT_TYPE_LABELS[item.emailType] || item.emailType}:
                 </span>
                 <span
                   className={`font-semibold ${
                     item.metrics.avgResponseTimeHours > slaThresholdHours
-                      ? 'text-red-600'
-                      : 'text-emerald-600'
+                      ? 'text-linear-error'
+                      : 'text-linear-success'
                   }`}
                 >
                   {formatHours(item.metrics.avgResponseTimeHours)}
                 </span>
-                <span className="text-xs text-gray-400">({item.volumeCount} emailuri)</span>
+                <span className="text-xs text-linear-text-muted">({item.volumeCount} emailuri)</span>
               </div>
             ))}
           </div>

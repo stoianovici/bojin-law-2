@@ -49,7 +49,7 @@ function FileIcon({ fileType }: { fileType: string }) {
 
   if (type.includes('pdf')) {
     return (
-      <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+      <svg className="w-5 h-5 text-linear-error" fill="currentColor" viewBox="0 0 20 20">
         <path
           fillRule="evenodd"
           d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -61,7 +61,7 @@ function FileIcon({ fileType }: { fileType: string }) {
 
   if (type.includes('doc') || type.includes('word')) {
     return (
-      <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+      <svg className="w-5 h-5 text-linear-accent" fill="currentColor" viewBox="0 0 20 20">
         <path
           fillRule="evenodd"
           d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -73,7 +73,7 @@ function FileIcon({ fileType }: { fileType: string }) {
 
   if (type.includes('xls') || type.includes('excel')) {
     return (
-      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+      <svg className="w-5 h-5 text-linear-success" fill="currentColor" viewBox="0 0 20 20">
         <path
           fillRule="evenodd"
           d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -84,7 +84,7 @@ function FileIcon({ fileType }: { fileType: string }) {
   }
 
   return (
-    <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+    <svg className="w-5 h-5 text-linear-text-tertiary" fill="currentColor" viewBox="0 0 20 20">
       <path
         fillRule="evenodd"
         d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -113,8 +113,8 @@ function DocumentRow({
     <tr
       onClick={onToggle}
       className={clsx(
-        'cursor-pointer transition-colors border-b border-gray-100 last:border-0',
-        isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+        'cursor-pointer transition-colors border-b border-linear-border-subtle last:border-0',
+        isSelected ? 'bg-linear-accent/10' : 'hover:bg-linear-bg-hover'
       )}
     >
       <td className="px-4 py-3">
@@ -123,25 +123,25 @@ function DocumentRow({
           checked={isSelected}
           onChange={onToggle}
           onClick={(e) => e.stopPropagation()}
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="h-4 w-4 rounded border-linear-border text-linear-accent focus:ring-linear-accent"
         />
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
           <FileIcon fileType={document.fileType} />
-          <span className="text-sm font-medium text-gray-900 truncate max-w-xs">
+          <span className="text-sm font-medium text-linear-text-primary truncate max-w-xs">
             {document.fileName}
           </span>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600">{formatFileSize(document.fileSize)}</td>
-      <td className="px-4 py-3 text-sm text-gray-600">{uploaderName}</td>
-      <td className="px-4 py-3 text-sm text-gray-600">
+      <td className="px-4 py-3 text-sm text-linear-text-tertiary">{formatFileSize(document.fileSize)}</td>
+      <td className="px-4 py-3 text-sm text-linear-text-tertiary">{uploaderName}</td>
+      <td className="px-4 py-3 text-sm text-linear-text-tertiary">
         {format(new Date(document.uploadedAt), 'dd MMM yyyy')}
       </td>
       <td className="px-4 py-3">
         {linkedCaseCount > 0 && (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/15 text-purple-400">
             Linked to {linkedCaseCount} {linkedCaseCount === 1 ? 'case' : 'cases'}
           </span>
         )}
@@ -178,11 +178,11 @@ function CaseGroup({
     : 'Client Documents (No Case)';
 
   return (
-    <div className="border border-gray-200 rounded-lg mb-3 overflow-hidden">
+    <div className="border border-linear-border-subtle rounded-lg mb-3 overflow-hidden">
       {/* Group Header */}
       <div
         onClick={onToggleExpand}
-        className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-between px-4 py-3 bg-linear-bg-tertiary cursor-pointer hover:bg-linear-bg-hover transition-colors"
       >
         <div className="flex items-center gap-3">
           <input
@@ -193,11 +193,11 @@ function CaseGroup({
             }}
             onChange={() => onToggleAll(documentIds, !allSelected)}
             onClick={(e) => e.stopPropagation()}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-linear-border text-linear-accent focus:ring-linear-accent"
           />
           <svg
             className={clsx(
-              'w-4 h-4 text-gray-500 transition-transform',
+              'w-4 h-4 text-linear-text-tertiary transition-transform',
               isExpanded && 'transform rotate-90'
             )}
             fill="none"
@@ -207,14 +207,14 @@ function CaseGroup({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
           <div>
-            <span className="font-medium text-gray-900">{caseName}</span>
-            <span className="ml-2 text-sm text-gray-500">
+            <span className="font-medium text-linear-text-primary">{caseName}</span>
+            <span className="ml-2 text-sm text-linear-text-tertiary">
               ({group.documentCount} {group.documentCount === 1 ? 'document' : 'documents'})
             </span>
           </div>
         </div>
         {group.case?.status && (
-          <span className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700">
+          <span className="text-xs px-2 py-1 rounded bg-linear-bg-hover text-linear-text-secondary">
             {group.case.status}
           </span>
         )}
@@ -223,22 +223,22 @@ function CaseGroup({
       {/* Documents Table */}
       {isExpanded && (
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-t border-gray-200">
+          <thead className="bg-linear-bg-tertiary border-t border-linear-border-subtle">
             <tr>
               <th className="px-4 py-2 w-10"></th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-linear-text-tertiary uppercase">
                 File Name
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-linear-text-tertiary uppercase">
                 Size
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-linear-text-tertiary uppercase">
                 Uploaded By
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-linear-text-tertiary uppercase">
                 Date
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-linear-text-tertiary uppercase">
                 Linked
               </th>
             </tr>
@@ -391,18 +391,18 @@ export function DocumentBrowserModal({
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+        <div className="relative bg-linear-bg-secondary rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-linear-border-subtle">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Import Documents</h2>
-              <p className="mt-1 text-sm text-gray-500">
+              <h2 className="text-lg font-semibold text-linear-text-primary">Import Documents</h2>
+              <p className="mt-1 text-sm text-linear-text-tertiary">
                 Select documents to import into <span className="font-medium">{caseName}</span>
               </p>
             </div>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-gray-500 transition-colors"
+              className="text-linear-text-muted hover:text-linear-text-tertiary transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -416,10 +416,10 @@ export function DocumentBrowserModal({
           </div>
 
           {/* Search */}
-          <div className="px-6 py-3 border-b border-gray-200">
+          <div className="px-6 py-3 border-b border-linear-border-subtle">
             <div className="relative">
               <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-linear-text-muted"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -436,10 +436,10 @@ export function DocumentBrowserModal({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search documents by filename..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-linear-border rounded-lg bg-linear-bg-primary text-linear-text-primary placeholder:text-linear-text-muted focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
               />
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+            <div className="mt-2 flex items-center justify-between text-sm text-linear-text-tertiary">
               <span>
                 {totalDocuments} {totalDocuments === 1 ? 'document' : 'documents'} available
               </span>
@@ -451,10 +451,10 @@ export function DocumentBrowserModal({
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-linear-accent" />
               </div>
             ) : error ? (
-              <div className="flex flex-col items-center justify-center py-12 text-red-600">
+              <div className="flex flex-col items-center justify-center py-12 text-linear-error">
                 <svg
                   className="w-12 h-12 mb-2"
                   fill="none"
@@ -471,13 +471,13 @@ export function DocumentBrowserModal({
                 <p className="font-medium">Failed to load documents</p>
                 <button
                   onClick={() => refetch()}
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-linear-accent hover:underline"
                 >
                   Try again
                 </button>
               </div>
             ) : filteredGroups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+              <div className="flex flex-col items-center justify-center py-12 text-linear-text-tertiary">
                 <svg
                   className="w-12 h-12 mb-2"
                   fill="none"
@@ -499,7 +499,7 @@ export function DocumentBrowserModal({
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="mt-2 text-sm text-blue-600 hover:underline"
+                    className="mt-2 text-sm text-linear-accent hover:underline"
                   >
                     Clear search
                   </button>
@@ -524,10 +524,10 @@ export function DocumentBrowserModal({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-linear-border-subtle bg-linear-bg-tertiary">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary border border-linear-border rounded-lg hover:bg-linear-bg-hover transition-colors"
             >
               Cancel
             </button>
@@ -537,8 +537,8 @@ export function DocumentBrowserModal({
               className={clsx(
                 'px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors',
                 selectedIds.size === 0 || isImporting || linkLoading
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                  ? 'bg-linear-text-muted cursor-not-allowed'
+                  : 'bg-linear-accent hover:bg-linear-accent-hover'
               )}
             >
               {isImporting || linkLoading ? (

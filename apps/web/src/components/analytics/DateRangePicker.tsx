@@ -145,23 +145,23 @@ export function DateRangePicker({
     <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger asChild>
         <button
-          className={`inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors ${className}`}
+          className={`inline-flex items-center gap-2 px-4 py-2 bg-linear-bg-secondary border border-linear-border rounded-lg text-sm font-medium text-linear-text-secondary hover:bg-linear-bg-tertiary focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 transition-colors ${className}`}
         >
-          <Calendar className="w-4 h-4 text-gray-500" />
+          <Calendar className="w-4 h-4 text-linear-text-tertiary" />
           <span>{displayText}</span>
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+          <ChevronDown className="w-4 h-4 text-linear-text-muted" />
         </button>
       </Popover.Trigger>
 
       <Popover.Portal>
         <Popover.Content
-          className="z-50 w-80 bg-white rounded-lg shadow-lg border border-gray-200 p-4"
+          className="z-50 w-80 bg-linear-bg-secondary rounded-lg shadow-lg border border-linear-border-subtle p-4"
           sideOffset={8}
           align="start"
         >
           {/* Preset buttons */}
           <div className="space-y-2 mb-4">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <p className="text-xs font-medium text-linear-text-tertiary uppercase tracking-wide">
               Selectare rapidă
             </p>
             <div className="flex flex-wrap gap-2">
@@ -171,8 +171,8 @@ export function DateRangePicker({
                   onClick={() => handlePresetClick(presetOption)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     preset === presetOption
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-linear-accent text-white'
+                      : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
                   }`}
                 >
                   {presetLabels[presetOption]}
@@ -182,13 +182,13 @@ export function DateRangePicker({
           </div>
 
           {/* Custom date range */}
-          <div className="border-t border-gray-200 pt-4">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+          <div className="border-t border-linear-border-subtle pt-4">
+            <p className="text-xs font-medium text-linear-text-tertiary uppercase tracking-wide mb-3">
               Interval personalizat
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="start-date" className="block text-xs text-gray-500 mb-1">
+                <label htmlFor="start-date" className="block text-xs text-linear-text-tertiary mb-1">
                   Data de început
                 </label>
                 <input
@@ -196,11 +196,11 @@ export function DateRangePicker({
                   type="date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-linear-accent"
                 />
               </div>
               <div>
-                <label htmlFor="end-date" className="block text-xs text-gray-500 mb-1">
+                <label htmlFor="end-date" className="block text-xs text-linear-text-tertiary mb-1">
                   Data de sfârșit
                 </label>
                 <input
@@ -208,7 +208,7 @@ export function DateRangePicker({
                   type="date"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-linear-accent"
                 />
               </div>
             </div>
@@ -216,13 +216,13 @@ export function DateRangePicker({
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-3 py-1.5 text-sm text-linear-text-secondary hover:text-linear-text-primary transition-colors"
               >
                 Anulează
               </button>
               <button
                 onClick={handleApplyCustom}
-                className="px-4 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                className="px-4 py-1.5 text-sm font-medium bg-linear-accent text-white rounded-md hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 transition-colors"
               >
                 Aplică
               </button>
@@ -233,7 +233,7 @@ export function DateRangePicker({
 
           {/* Close button */}
           <Popover.Close
-            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
+            className="absolute top-2 right-2 p-1 text-linear-text-muted hover:text-linear-text-secondary rounded-md hover:bg-linear-bg-tertiary transition-colors"
             aria-label="Close"
           >
             <X className="w-4 h-4" />

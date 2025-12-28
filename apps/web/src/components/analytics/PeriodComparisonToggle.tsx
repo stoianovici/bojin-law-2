@@ -37,16 +37,16 @@ export function PeriodComparisonToggle({ className = '' }: PeriodComparisonToggl
         id="period-comparison"
         checked={comparisonEnabled}
         onCheckedChange={toggleComparison}
-        className="w-10 h-6 bg-gray-200 rounded-full relative data-[state=checked]:bg-blue-600 outline-none cursor-pointer transition-colors"
+        className="w-10 h-6 bg-linear-bg-hover rounded-full relative data-[state=checked]:bg-linear-accent outline-none cursor-pointer transition-colors"
       >
         <Switch.Thumb className="block w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-100 translate-x-0.5 will-change-transform data-[state=checked]:translate-x-[18px]" />
       </Switch.Root>
 
       <label
         htmlFor="period-comparison"
-        className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none"
+        className="flex items-center gap-2 text-sm text-linear-text-secondary cursor-pointer select-none"
       >
-        <GitCompareArrows className="w-4 h-4 text-gray-500" />
+        <GitCompareArrows className="w-4 h-4 text-linear-text-tertiary" />
         <span>Compară cu perioada anterioară</span>
       </label>
     </div>

@@ -51,27 +51,27 @@ function CancelConfirmDialog({ open, onOpenChange, onConfirm }: CancelConfirmDia
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fadeIn z-50" />
-        <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md focus:outline-none z-50">
-          <AlertDialog.Title className="text-xl font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+        <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-linear-bg-secondary rounded-lg shadow-xl p-6 w-full max-w-md focus:outline-none z-50">
+          <AlertDialog.Title className="text-xl font-semibold text-linear-text-primary mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-linear-warning" />
             Anulare modificări
           </AlertDialog.Title>
 
-          <AlertDialog.Description className="text-sm text-gray-600 mb-6">
+          <AlertDialog.Description className="text-sm text-linear-text-secondary mb-6">
             Aveți modificări nesalvate. Sunteți sigur că doriți să anulați? Toate modificările vor
             fi pierdute.
           </AlertDialog.Description>
 
           <div className="flex gap-3 justify-end">
             <AlertDialog.Cancel asChild>
-              <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              <button className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-lg hover:bg-linear-bg-hover transition-colors">
                 Continuă editarea
               </button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
               <button
                 onClick={onConfirm}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-white bg-linear-error rounded-lg hover:bg-linear-error/80 transition-colors flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
                 Anulează modificările
@@ -123,11 +123,11 @@ export function DraftModeToolbar({
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-linear-border-subtle bg-linear-bg-secondary shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           {/* Approval Notice for Associates */}
           {showApprovalNotice && (
-            <div className="mb-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            <div className="mb-3 flex items-center gap-2 rounded-lg bg-linear-warning/15 px-3 py-2 text-sm text-linear-warning">
               <AlertTriangle className="h-4 w-4 flex-shrink-0" />
               <span>Dosarul va fi trimis spre aprobare</span>
             </div>
@@ -135,7 +135,7 @@ export function DraftModeToolbar({
 
           {/* Validation Errors */}
           {validationErrors.length > 0 && (
-            <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <div className="mb-3 rounded-lg bg-linear-error/15 px-3 py-2 text-sm text-linear-error">
               {validationErrors.join(', ')}
             </div>
           )}

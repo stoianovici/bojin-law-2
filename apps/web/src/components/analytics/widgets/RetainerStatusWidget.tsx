@@ -41,9 +41,9 @@ function getStatusText(rate: number): string {
  * Get status icon based on utilization
  */
 function getStatusIcon(rate: number) {
-  if (rate > 100) return <AlertCircle className="w-4 h-4 text-red-500" />;
-  if (rate >= 80) return <AlertCircle className="w-4 h-4 text-amber-500" />;
-  return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+  if (rate > 100) return <AlertCircle className="w-4 h-4 text-linear-error" />;
+  if (rate >= 80) return <AlertCircle className="w-4 h-4 text-linear-warning" />;
+  return <CheckCircle2 className="w-4 h-4 text-linear-success" />;
 }
 
 export interface RetainerStatusWidgetProps {
@@ -104,9 +104,9 @@ export function RetainerStatusWidget({
     return (
       <BaseWidget title="Status Abonamente" className={className}>
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <Wallet className="w-10 h-10 text-gray-300 mb-3" />
-          <p className="text-gray-500 text-sm">Nu există abonamente</p>
-          <p className="text-gray-400 text-xs mt-1">
+          <Wallet className="w-10 h-10 text-linear-text-muted mb-3" />
+          <p className="text-linear-text-tertiary text-sm">Nu există abonamente</p>
+          <p className="text-linear-text-muted text-xs mt-1">
             Statisticile vor apărea când aveți contracte de tip abonament active
           </p>
         </div>
@@ -157,7 +157,7 @@ export function RetainerStatusWidget({
             <span className="text-2xl font-bold" style={{ color: statusColor }}>
               {formatPercent(utilization)}
             </span>
-            <span className="text-xs text-gray-500">utilizare medie</span>
+            <span className="text-xs text-linear-text-tertiary">utilizare medie</span>
           </div>
         </div>
 
@@ -177,26 +177,26 @@ export function RetainerStatusWidget({
         </div>
 
         {/* Case count */}
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
+        <div className="bg-linear-bg-tertiary rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <Wallet className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600">Abonamente active</span>
+            <Wallet className="w-4 h-4 text-linear-text-tertiary" />
+            <span className="text-sm text-linear-text-secondary">Abonamente active</span>
           </div>
-          <span className="text-2xl font-bold text-gray-900">
+          <span className="text-2xl font-bold text-linear-text-primary">
             {formatNumber(retainerCasesCount)}
           </span>
-          <span className="text-sm text-gray-500 ml-1">
+          <span className="text-sm text-linear-text-tertiary ml-1">
             {retainerCasesCount === 1 ? 'dosar' : 'dosare'}
           </span>
         </div>
 
         {/* Warning for overage */}
         {utilization > 100 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="bg-linear-error/10 border border-linear-error/30 rounded-lg p-3 flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-linear-error flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-red-800">Ore de abonament depășite</p>
-              <p className="text-xs text-red-600 mt-0.5">
+              <p className="text-sm font-medium text-linear-error">Ore de abonament depășite</p>
+              <p className="text-xs text-linear-error mt-0.5">
                 Unele contracte de abonament sunt supra-utilizate. Verificați facturarea pentru
                 dosarele afectate.
               </p>

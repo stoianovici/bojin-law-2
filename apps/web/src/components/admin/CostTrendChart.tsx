@@ -85,19 +85,19 @@ function CustomTooltip({ active, payload, label }: any) {
   const data = payload[0].payload;
 
   return (
-    <div className="bg-white px-4 py-3 shadow-lg rounded-lg border border-gray-200">
-      <p className="text-sm font-medium text-gray-900 mb-2">{formatDate(label)}</p>
+    <div className="bg-linear-bg-secondary px-4 py-3 shadow-lg rounded-lg border border-linear-border-subtle">
+      <p className="text-sm font-medium text-linear-text-primary mb-2">{formatDate(label)}</p>
       <div className="space-y-1 text-sm">
         <div className="flex justify-between gap-4">
-          <span className="text-gray-600">Cost:</span>
-          <span className="font-medium text-blue-600">{formatCurrency(data.cost)}</span>
+          <span className="text-linear-text-secondary">Cost:</span>
+          <span className="font-medium text-linear-accent">{formatCurrency(data.cost)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-gray-600">Tokeni:</span>
+          <span className="text-linear-text-secondary">Tokeni:</span>
           <span className="font-medium">{data.tokens.toLocaleString('ro-RO')}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-gray-600">Apeluri:</span>
+          <span className="text-linear-text-secondary">Apeluri:</span>
           <span className="font-medium">{data.calls.toLocaleString('ro-RO')}</span>
         </div>
       </div>
@@ -115,9 +115,9 @@ const SKELETON_HEIGHTS = [45, 72, 38, 65, 55, 80, 42, 68, 50, 75];
 function ChartSkeleton({ height }: { height: number }) {
   return (
     <div className="animate-pulse" style={{ height }}>
-      <div className="h-full bg-gray-100 rounded-lg flex items-end justify-evenly px-4 pb-4">
+      <div className="h-full bg-linear-bg-tertiary rounded-lg flex items-end justify-evenly px-4 pb-4">
         {SKELETON_HEIGHTS.map((h, i) => (
-          <div key={i} className="w-4 bg-gray-200 rounded-t" style={{ height: `${h}%` }} />
+          <div key={i} className="w-4 bg-linear-bg-hover rounded-t" style={{ height: `${h}%` }} />
         ))}
       </div>
     </div>
@@ -137,8 +137,8 @@ export function CostTrendChart({
 }: CostTrendChartProps) {
   if (loading) {
     return (
-      <div className={clsx('bg-white rounded-lg border border-gray-200 p-6', className)}>
-        <div className="h-6 w-40 bg-gray-200 rounded mb-4 animate-pulse" />
+      <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6', className)}>
+        <div className="h-6 w-40 bg-linear-bg-hover rounded mb-4 animate-pulse" />
         <ChartSkeleton height={height} />
       </div>
     );
@@ -147,20 +147,20 @@ export function CostTrendChart({
   const hasData = data.length > 0;
 
   return (
-    <div className={clsx('bg-white rounded-lg border border-gray-200 p-6', className)}>
+    <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6', className)}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Tendință Costuri</h3>
+        <h3 className="text-lg font-semibold text-linear-text-primary">Tendință Costuri</h3>
         {dailyBudget && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span className="w-3 h-0.5 bg-red-400" />
+          <div className="flex items-center gap-2 text-sm text-linear-text-tertiary">
+            <span className="w-3 h-0.5 bg-linear-error" />
             <span>Limită zilnică: {formatCurrency(dailyBudget)}</span>
           </div>
         )}
       </div>
 
       {!hasData ? (
-        <div className="flex items-center justify-center bg-gray-50 rounded-lg" style={{ height }}>
-          <p className="text-gray-500">Nu există date pentru această perioadă</p>
+        <div className="flex items-center justify-center bg-linear-bg-tertiary rounded-lg" style={{ height }}>
+          <p className="text-linear-text-tertiary">Nu există date pentru această perioadă</p>
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={height}>

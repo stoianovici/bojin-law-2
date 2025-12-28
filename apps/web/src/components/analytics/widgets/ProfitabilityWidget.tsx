@@ -22,15 +22,15 @@ import type { KPIDelta } from '../../../hooks/useFinancialKPIsComparison';
  * Billing type badge colors
  */
 const BILLING_TYPE_COLORS: Record<string, string> = {
-  Hourly: 'bg-blue-100 text-blue-700',
-  HOURLY: 'bg-blue-100 text-blue-700',
-  Orar: 'bg-blue-100 text-blue-700',
-  Fixed: 'bg-green-100 text-green-700',
-  FIXED: 'bg-green-100 text-green-700',
-  Fix: 'bg-green-100 text-green-700',
-  Retainer: 'bg-amber-100 text-amber-700',
-  RETAINER: 'bg-amber-100 text-amber-700',
-  Abonament: 'bg-amber-100 text-amber-700',
+  Hourly: 'bg-linear-accent/10 text-linear-accent',
+  HOURLY: 'bg-linear-accent/10 text-linear-accent',
+  Orar: 'bg-linear-accent/10 text-linear-accent',
+  Fixed: 'bg-linear-success/10 text-linear-success',
+  FIXED: 'bg-linear-success/10 text-linear-success',
+  Fix: 'bg-linear-success/10 text-linear-success',
+  Retainer: 'bg-linear-warning/10 text-linear-warning',
+  RETAINER: 'bg-linear-warning/10 text-linear-warning',
+  Abonament: 'bg-linear-warning/10 text-linear-warning',
 };
 
 /**
@@ -88,43 +88,43 @@ export interface ProfitabilityWidgetProps {
 function CaseItem({ caseData, isTop }: { caseData: CaseProfitability; isTop: boolean }) {
   const marginColor =
     caseData.marginPercent >= 20
-      ? 'text-green-600'
+      ? 'text-linear-success'
       : caseData.marginPercent >= 0
-        ? 'text-amber-600'
-        : 'text-red-600';
+        ? 'text-linear-warning'
+        : 'text-linear-error';
 
   return (
     <Link
       href={`/cases/${caseData.caseId}`}
-      className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+      className="flex items-center gap-3 p-2 rounded-lg hover:bg-linear-bg-tertiary transition-colors group"
     >
       {/* Icon */}
       <div
         className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-          isTop ? 'bg-green-100' : 'bg-red-100'
+          isTop ? 'bg-linear-success/10' : 'bg-linear-error/10'
         }`}
       >
         {isTop ? (
-          <TrendingUp className="w-4 h-4 text-green-600" />
+          <TrendingUp className="w-4 h-4 text-linear-success" />
         ) : (
-          <AlertTriangle className="w-4 h-4 text-red-600" />
+          <AlertTriangle className="w-4 h-4 text-linear-error" />
         )}
       </div>
 
       {/* Case info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600">
+        <p className="text-sm font-medium text-linear-text-primary truncate group-hover:text-linear-accent">
           {caseData.caseName}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
           <span
             className={`text-xs px-1.5 py-0.5 rounded ${
-              BILLING_TYPE_COLORS[caseData.billingType] || 'bg-gray-100 text-gray-600'
+              BILLING_TYPE_COLORS[caseData.billingType] || 'bg-linear-bg-tertiary text-linear-text-secondary'
             }`}
           >
             {BILLING_TYPE_LABELS[caseData.billingType] || caseData.billingType}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-linear-text-tertiary">
             Venit: {formatCurrencyWithCents(caseData.revenue)}
           </span>
         </div>
@@ -135,7 +135,7 @@ function CaseItem({ caseData, isTop }: { caseData: CaseProfitability; isTop: boo
         <p className={`text-sm font-semibold ${marginColor}`}>
           {formatPercent(caseData.marginPercent)}
         </p>
-        <ExternalLink className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+        <ExternalLink className="w-3 h-3 text-linear-text-muted opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
       </div>
     </Link>
   );
@@ -181,11 +181,11 @@ export function ProfitabilityWidget({
     >
       <div className="space-y-4">
         {/* Effective Hourly Rate */}
-        <div className="flex items-start justify-between pb-4 border-b border-gray-100">
+        <div className="flex items-start justify-between pb-4 border-b border-linear-border-subtle/50">
           <div>
-            <p className="text-sm text-gray-500 mb-1">Tarif orar efectiv</p>
+            <p className="text-sm text-linear-text-tertiary mb-1">Tarif orar efectiv</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-gray-900">
+              <span className="text-2xl font-bold text-linear-text-primary">
                 {formatCurrencyWithCents(effectiveHourlyRate)}/oră
               </span>
             </div>
@@ -196,8 +196,8 @@ export function ProfitabilityWidget({
         {/* Top Performers */}
         {topCases.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-2 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-green-500" />
+            <p className="text-xs font-medium text-linear-text-tertiary uppercase mb-2 flex items-center gap-1">
+              <TrendingUp className="w-3 h-3 text-linear-success" />
               Cele mai performante
             </p>
             <div className="space-y-1">
@@ -210,9 +210,9 @@ export function ProfitabilityWidget({
 
         {/* Bottom Performers */}
         {bottomCases.length > 0 && (
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-medium text-gray-500 uppercase mb-2 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3 text-amber-500" />
+          <div className="border-t border-linear-border-subtle/50 pt-4">
+            <p className="text-xs font-medium text-linear-text-tertiary uppercase mb-2 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 text-linear-warning" />
               Necesită atenție
             </p>
             <div className="space-y-1">

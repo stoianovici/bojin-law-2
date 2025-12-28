@@ -1,9 +1,11 @@
 /**
  * Cases List Page
  * Story 2.8: Case CRUD Operations UI
+ * OPS-328: Mobile Page Consistency - Added mobile view
  *
  * Displays all cases with filtering, search, and create functionality.
  * For Partners viewing PendingApproval status, shows approval queue inline.
+ * On mobile devices (< 768px), shows MobileCases instead.
  */
 
 'use client';
@@ -19,6 +21,9 @@ import { useCases } from '../../hooks/useCases';
 import { usePendingCases } from '../../hooks/usePendingCases';
 import { useAuthorization } from '../../hooks/useAuthorization';
 import { useCaseFiltersStore } from '../../stores/caseFiltersStore';
+import { PageLayout, PageContent } from '../../components/linear/PageLayout';
+import { MobileCases } from '../../components/mobile';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 function CasesPageContent() {
   const router = useRouter();
@@ -66,31 +71,31 @@ function CasesPageContent() {
 
   if (displayError) {
     return (
-      <main className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h2 className="text-red-800 font-semibold mb-2">Eroare la încărcarea dosarelor</h2>
-            <p className="text-red-600">{displayError.message}</p>
+      <PageLayout>
+        <PageContent>
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+            <h2 className="mb-2 font-semibold text-red-400">Eroare la încărcarea dosarelor</h2>
+            <p className="text-red-300">{displayError.message}</p>
           </div>
-        </div>
-      </main>
+        </PageContent>
+      </PageLayout>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <PageLayout>
+      <PageContent>
         {/* Page Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dosare</h1>
-          <p className="text-gray-600">Gestionați și urmăriți toate dosarele juridice</p>
+          <h1 className="mb-2 text-2xl font-semibold text-linear-text-primary">Dosare</h1>
+          <p className="text-sm text-linear-text-secondary">Gestionați și urmăriți toate dosarele juridice</p>
         </div>
 
         {/* Search and Actions Bar */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <CaseSearchBar />
           <Link href="/cases/new">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
+            <button className="rounded-md bg-linear-accent px-4 py-2 font-medium text-white transition-colors hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 focus:ring-offset-linear-bg-primary">
               + Dosar nou
             </button>
           </Link>
@@ -105,14 +110,14 @@ function CasesPageContent() {
         {showPendingApprovalQueue && (
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-gray-900">Coadă de aprobare</h2>
+              <h2 className="text-lg font-semibold text-linear-text-primary">Coadă de aprobare</h2>
               {displayCases.length > 0 && (
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                <span className="rounded-full bg-linear-accent/20 px-3 py-1 text-sm font-medium text-linear-accent">
                   {displayCases.length} în așteptare
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-linear-text-tertiary">
               Dosarele sunt sortate după data trimiterii (cele mai vechi primele)
             </p>
           </div>
@@ -120,12 +125,12 @@ function CasesPageContent() {
 
         {/* Loading State */}
         {isLoading && displayCases.length === 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div key={i} className="animate-pulse rounded-lg border border-linear-border-subtle bg-linear-bg-secondary p-6">
+                <div className="mb-4 h-4 w-3/4 rounded bg-linear-bg-tertiary"></div>
+                <div className="mb-4 h-4 w-1/2 rounded bg-linear-bg-tertiary"></div>
+                <div className="h-4 w-full rounded bg-linear-bg-tertiary"></div>
               </div>
             ))}
           </div>
@@ -133,9 +138,9 @@ function CasesPageContent() {
 
         {/* Empty State */}
         {!isLoading && displayCases.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <div className="rounded-lg border border-linear-border-subtle bg-linear-bg-secondary py-12 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400 mb-4"
+              className="mx-auto mb-4 h-12 w-12 text-linear-text-tertiary"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -149,12 +154,12 @@ function CasesPageContent() {
                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               )}
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="mb-2 text-lg font-medium text-linear-text-primary">
               {showPendingApprovalQueue
                 ? 'Nu sunt dosare în așteptare pentru aprobare'
                 : 'Nu s-au găsit dosare'}
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="mb-4 text-linear-text-secondary">
               {showPendingApprovalQueue
                 ? 'Toate dosarele trimise au fost revizuite. Dosarele noi vor apărea aici.'
                 : filters.status || filters.assignedToMe
@@ -164,7 +169,7 @@ function CasesPageContent() {
             <div className="flex items-center justify-center gap-3">
               {!filters.status && !filters.assignedToMe && !showPendingApprovalQueue && (
                 <Link href="/cases/new">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
+                  <button className="rounded-md bg-linear-accent px-4 py-2 font-medium text-white transition-colors hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 focus:ring-offset-linear-bg-primary">
                     + Dosar nou
                   </button>
                 </Link>
@@ -172,7 +177,7 @@ function CasesPageContent() {
               {(filters.status || filters.assignedToMe) && (
                 <button
                   onClick={() => useCaseFiltersStore.getState().clearFilters()}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  className="rounded-md border border-linear-border-default bg-linear-bg-secondary px-4 py-2 text-sm font-medium text-linear-text-secondary transition-colors hover:bg-linear-bg-tertiary focus:outline-none focus:ring-2 focus:ring-linear-accent"
                 >
                   Șterge filtrele
                 </button>
@@ -191,27 +196,35 @@ function CasesPageContent() {
 
         {/* Results Count */}
         {displayCases.length > 0 && (
-          <div className="mt-6 text-sm text-gray-600 text-center">
+          <div className="mt-6 text-center text-sm text-linear-text-secondary">
             Se afișează {displayCases.length} {displayCases.length === 1 ? 'dosar' : 'dosare'}
           </div>
         )}
-      </div>
-    </main>
+      </PageContent>
+    </PageLayout>
   );
 }
 
 export default function CasesPage() {
+  const isMobile = useIsMobile();
+
+  // On mobile, render MobileCases
+  if (isMobile) {
+    return <MobileCases />;
+  }
+
+  // Desktop: render full cases page
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-gray-50">
-          <div className="container mx-auto px-4 py-8">
+        <PageLayout>
+          <PageContent>
             <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+              <div className="mb-4 h-8 w-1/4 rounded bg-linear-bg-tertiary"></div>
+              <div className="mb-8 h-4 w-1/2 rounded bg-linear-bg-tertiary"></div>
             </div>
-          </div>
-        </main>
+          </PageContent>
+        </PageLayout>
       }
     >
       <CasesPageContent />

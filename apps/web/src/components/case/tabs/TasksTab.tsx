@@ -78,14 +78,14 @@ export function TasksTab({
   }, [filteredTasks, sort]);
 
   return (
-    <div className={clsx('flex flex-col h-full bg-white', className)}>
+    <div className={clsx('flex flex-col h-full bg-linear-bg-secondary', className)}>
       {/* Controls Bar */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+      <div className="px-4 py-3 border-b border-linear-border-subtle bg-linear-bg-tertiary">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           {/* View Toggle (for future) */}
           <div className="flex items-center gap-2">
             <button
-              className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600"
+              className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-white bg-linear-accent"
               disabled
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +99,7 @@ export function TasksTab({
               Vizualizare Tablă
             </button>
             <button
-              className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary border border-linear-border hover:bg-linear-bg-hover transition-colors"
               disabled
               title="Vizualizare listă - în dezvoltare"
             >
@@ -118,14 +118,14 @@ export function TasksTab({
           <div className="flex items-center gap-3">
             {/* Filter Dropdown */}
             <div className="flex items-center gap-2">
-              <label htmlFor="filter-select" className="text-sm font-medium text-gray-700">
+              <label htmlFor="filter-select" className="text-sm font-medium text-linear-text-secondary">
                 Filtru:
               </label>
               <select
                 id="filter-select"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as FilterType)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent bg-linear-bg-secondary"
               >
                 <option value="all">Toate Sarcinile</option>
                 <option value="my-tasks">Sarcinile Mele</option>
@@ -135,14 +135,14 @@ export function TasksTab({
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <label htmlFor="sort-select" className="text-sm font-medium text-gray-700">
+              <label htmlFor="sort-select" className="text-sm font-medium text-linear-text-secondary">
                 Sortare:
               </label>
               <select
                 id="sort-select"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortType)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent bg-linear-bg-secondary"
               >
                 <option value="due-date">Dată Scadență</option>
                 <option value="priority">Prioritate</option>
@@ -153,7 +153,7 @@ export function TasksTab({
         </div>
 
         {/* Task Count */}
-        <div className="mt-2 text-xs text-gray-600">
+        <div className="mt-2 text-xs text-linear-text-tertiary">
           Afișare {sortedTasks.length} din {tasks.length} sarcini
         </div>
       </div>

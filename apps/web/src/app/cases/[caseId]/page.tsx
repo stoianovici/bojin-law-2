@@ -73,13 +73,13 @@ interface CaseWorkspaceData {
  */
 function LoadingSkeleton() {
   return (
-    <div className="h-screen flex flex-col bg-gray-50 animate-pulse">
-      <div className="bg-white border-b border-gray-200 p-6">
-        <div className="h-8 bg-gray-200 rounded w-1/3 mb-4" />
-        <div className="h-4 bg-gray-200 rounded w-1/2" />
+    <div className="flex h-screen animate-pulse flex-col bg-linear-bg-primary">
+      <div className="border-b border-linear-border-subtle bg-linear-bg-secondary p-6">
+        <div className="mb-4 h-8 w-1/3 rounded bg-linear-bg-tertiary" />
+        <div className="h-4 w-1/2 rounded bg-linear-bg-tertiary" />
       </div>
       <div className="flex-1 p-6">
-        <div className="h-full bg-white rounded-lg" />
+        <div className="h-full rounded-lg bg-linear-bg-secondary" />
       </div>
     </div>
   );
@@ -202,10 +202,10 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
 
   if (error) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-linear-bg-primary">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Case</h1>
-          <p className="text-gray-600">{error.message}</p>
+          <h1 className="mb-2 text-2xl font-bold text-linear-text-primary">Error Loading Case</h1>
+          <p className="text-linear-text-secondary">{error.message}</p>
         </div>
       </div>
     );
@@ -213,10 +213,10 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
 
   if (!caseData) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-linear-bg-primary">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Case Not Found</h1>
-          <p className="text-gray-600">
+          <h1 className="mb-2 text-2xl font-bold text-linear-text-primary">Case Not Found</h1>
+          <p className="text-linear-text-secondary">
             The case with ID {caseId} does not exist or you don&apos;t have access to it.
           </p>
         </div>
@@ -273,7 +273,7 @@ export default function CaseWorkspacePage({ params }: CaseWorkspacePageProps) {
   return (
     <ErrorBoundary>
       {/* Remove MainLayout padding for full-width workspace */}
-      <div className="flex flex-col bg-gray-50 min-h-full -m-6">
+      <div className="-m-6 flex min-h-full flex-col bg-linear-bg-primary">
         {/* Case Header */}
         <CaseHeader
           case={caseData.case}

@@ -160,13 +160,13 @@ export function DocumentUploadModal({
   const getStatusColor = (status: UploadProgress['status']): string => {
     switch (status) {
       case 'complete':
-        return 'text-green-600';
+        return 'text-linear-success';
       case 'error':
-        return 'text-red-600';
+        return 'text-linear-error';
       case 'uploading':
-        return 'text-blue-600';
+        return 'text-linear-accent';
       default:
-        return 'text-gray-500';
+        return 'text-linear-text-tertiary';
     }
   };
 
@@ -177,20 +177,20 @@ export function DocumentUploadModal({
       <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          className="fixed inset-0 bg-black/50 transition-opacity"
           onClick={handleClose}
         />
 
         {/* Modal */}
-        <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:align-middle">
+        <div className="inline-block transform overflow-hidden rounded-lg bg-linear-bg-elevated text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:align-middle">
           {/* Header */}
-          <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+          <div className="border-b border-linear-border-subtle bg-linear-bg-tertiary px-6 py-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Upload Documents</h3>
+              <h3 className="text-lg font-semibold text-linear-text-primary">Upload Documents</h3>
               <button
                 onClick={handleClose}
                 disabled={uploading}
-                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 disabled:opacity-50"
+                className="rounded-md p-1 text-linear-text-muted hover:bg-linear-bg-hover hover:text-linear-text-secondary disabled:opacity-50"
               >
                 <span className="sr-only">Close</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -203,7 +203,7 @@ export function DocumentUploadModal({
                 </svg>
               </button>
             </div>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-linear-text-tertiary">
               Upload to: <span className="font-medium">{caseName}</span>
             </p>
           </div>
@@ -218,7 +218,7 @@ export function DocumentUploadModal({
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={`relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                dragActive ? 'border-linear-accent bg-linear-accent/10' : 'border-linear-border hover:border-linear-border-subtle'
               }`}
             >
               <input
@@ -231,7 +231,7 @@ export function DocumentUploadModal({
               />
               <div className="space-y-2">
                 <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
+                  className="mx-auto h-12 w-12 text-linear-text-muted"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -243,13 +243,13 @@ export function DocumentUploadModal({
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                   />
                 </svg>
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium text-blue-600 hover:text-blue-500">
+                <div className="text-sm text-linear-text-secondary">
+                  <span className="font-medium text-linear-accent hover:text-linear-accent-hover">
                     Click to upload
                   </span>{' '}
                   or drag and drop
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-linear-text-tertiary">
                   PDF, Word, Excel, PowerPoint, Images up to 100MB
                 </p>
               </div>
@@ -257,8 +257,8 @@ export function DocumentUploadModal({
 
             {/* Validation errors */}
             {validationErrors.length > 0 && (
-              <div className="mt-4 rounded-md bg-red-50 p-3">
-                <div className="text-sm text-red-700">
+              <div className="mt-4 rounded-md bg-linear-error/10 p-3">
+                <div className="text-sm text-linear-error">
                   {validationErrors.map((err, idx) => (
                     <p key={idx}>{err}</p>
                   ))}
@@ -269,25 +269,25 @@ export function DocumentUploadModal({
             {/* Selected files */}
             {selectedFiles.length > 0 && !uploading && (
               <div className="mt-4 space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">
+                <h4 className="text-sm font-medium text-linear-text-secondary">
                   Selected Files ({selectedFiles.length})
                 </h4>
-                <div className="max-h-48 overflow-y-auto rounded-md border border-gray-200">
+                <div className="max-h-48 overflow-y-auto rounded-md border border-linear-border-subtle">
                   {selectedFiles.map((file, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between border-b border-gray-100 px-4 py-2 last:border-b-0"
+                      className="flex items-center justify-between border-b border-linear-border-subtle px-4 py-2 last:border-b-0"
                     >
                       <div className="flex items-center space-x-3">
                         <span className="text-lg">{getFileIcon(file.type)}</span>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                          <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                          <p className="text-sm font-medium text-linear-text-primary">{file.name}</p>
+                          <p className="text-xs text-linear-text-tertiary">{formatFileSize(file.size)}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => removeFile(idx)}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-500"
+                        className="rounded p-1 text-linear-text-muted hover:bg-linear-bg-hover hover:text-linear-error"
                       >
                         <svg
                           className="h-4 w-4"
@@ -312,12 +312,12 @@ export function DocumentUploadModal({
             {/* Upload progress */}
             {uploading && progress.length > 0 && (
               <div className="mt-4 space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">Uploading to OneDrive...</h4>
-                <div className="max-h-48 overflow-y-auto rounded-md border border-gray-200">
+                <h4 className="text-sm font-medium text-linear-text-secondary">Uploading to OneDrive...</h4>
+                <div className="max-h-48 overflow-y-auto rounded-md border border-linear-border-subtle">
                   {progress.map((item: UploadProgress, idx: number) => (
-                    <div key={idx} className="border-b border-gray-100 px-4 py-3 last:border-b-0">
+                    <div key={idx} className="border-b border-linear-border-subtle px-4 py-3 last:border-b-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900">{item.fileName}</p>
+                        <p className="text-sm font-medium text-linear-text-primary">{item.fileName}</p>
                         <span className={`text-xs font-medium ${getStatusColor(item.status)}`}>
                           {item.status === 'complete' && 'Uploaded'}
                           {item.status === 'error' && 'Failed'}
@@ -325,19 +325,19 @@ export function DocumentUploadModal({
                           {item.status === 'pending' && 'Waiting'}
                         </span>
                       </div>
-                      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-linear-bg-tertiary">
                         <div
                           className={`h-full rounded-full transition-all ${
                             item.status === 'error'
-                              ? 'bg-red-500'
+                              ? 'bg-linear-error'
                               : item.status === 'complete'
-                                ? 'bg-green-500'
-                                : 'bg-blue-500'
+                                ? 'bg-linear-success'
+                                : 'bg-linear-accent'
                           }`}
                           style={{ width: `${item.progress}%` }}
                         />
                       </div>
-                      {item.error && <p className="mt-1 text-xs text-red-600">{item.error}</p>}
+                      {item.error && <p className="mt-1 text-xs text-linear-error">{item.error}</p>}
                     </div>
                   ))}
                 </div>
@@ -346,26 +346,26 @@ export function DocumentUploadModal({
 
             {/* Error message */}
             {error && (
-              <div className="mt-4 rounded-md bg-red-50 p-3">
-                <p className="text-sm text-red-700">{error.message}</p>
+              <div className="mt-4 rounded-md bg-linear-error/10 p-3">
+                <p className="text-sm text-linear-error">{error.message}</p>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
+          <div className="border-t border-linear-border-subtle bg-linear-bg-tertiary px-6 py-4">
             <div className="flex justify-end space-x-3">
               <button
                 onClick={handleClose}
                 disabled={uploading}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-md border border-linear-border bg-linear-bg-secondary px-4 py-2 text-sm font-medium text-linear-text-secondary hover:bg-linear-bg-hover disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpload}
                 disabled={uploading || selectedFiles.length === 0}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-md bg-linear-accent px-4 py-2 text-sm font-medium text-white hover:bg-linear-accent-hover disabled:opacity-50"
               >
                 {uploading
                   ? 'Uploading...'

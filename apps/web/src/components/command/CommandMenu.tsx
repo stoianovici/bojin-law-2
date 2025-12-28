@@ -64,6 +64,18 @@ interface CommandGroup {
 const DEBOUNCE_MS = 300;
 const MAX_RESULTS_PER_GROUP = 5;
 
+// Linear-style group heading classes
+const GROUP_HEADING_STYLES = 'mb-2 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-linear-text-tertiary [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5';
+
+// Linear-style item classes
+const ITEM_STYLES = clsx(
+  'flex items-center gap-3 px-3 py-2 rounded-md',
+  'cursor-pointer',
+  'aria-selected:bg-linear-bg-hover',
+  'hover:bg-linear-bg-hover',
+  'transition-colors duration-100'
+);
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -294,22 +306,23 @@ export function CommandMenu({ className }: CommandMenuProps) {
         }
       }}
       label="Meniu de comandă"
-      className={clsx('fixed inset-0 z-50', 'flex items-start justify-center pt-[15vh]', className)}
+      className={clsx('fixed inset-0 z-50', 'flex items-start justify-center pt-[20vh]', className)}
     >
-      {/* Backdrop */}
+      {/* Backdrop - Linear style with blur */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/60 backdrop-blur-[4px]"
         onClick={closeCommandPalette}
         aria-hidden="true"
       />
 
-      {/* Dialog Content */}
+      {/* Dialog Content - Linear dark elevated style */}
       <div
         className={clsx(
           'relative z-10',
-          'w-full max-w-2xl mx-4',
-          'bg-white rounded-xl shadow-2xl',
-          'border border-gray-200',
+          'w-full max-w-[560px] mx-4',
+          'bg-linear-bg-elevated rounded-xl',
+          'border border-linear-border',
+          'shadow-[0_8px_24px_rgba(0,0,0,0.5)]',
           'overflow-hidden',
           'animate-in fade-in-0 zoom-in-95 duration-200'
         )}
@@ -319,29 +332,29 @@ export function CommandMenu({ className }: CommandMenuProps) {
           <Dialog.Title>Meniu de comandă</Dialog.Title>
         </VisuallyHidden.Root>
 
-        {/* Search Input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200">
+        {/* Search Input - Linear transparent style */}
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-linear-border-subtle">
           {searchLoading ? (
-            <Loader2 className="w-5 h-5 text-gray-400 animate-spin flex-shrink-0" />
+            <Loader2 className="w-5 h-5 text-linear-text-muted animate-spin flex-shrink-0" />
           ) : (
-            <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            <Search className="w-5 h-5 text-linear-text-muted flex-shrink-0" />
           )}
           <Command.Input
             value={inputValue}
             onValueChange={setInputValue}
             placeholder="Caută sau rulează o comandă..."
             className={clsx(
-              'flex-1 text-base bg-transparent',
+              'flex-1 text-[15px] bg-transparent',
               'border-none outline-none',
-              'placeholder:text-gray-400 text-gray-900'
+              'placeholder:text-linear-text-muted text-linear-text-primary'
             )}
           />
           <kbd
             className={clsx(
               'hidden sm:inline-flex',
-              'px-2 py-1 text-xs font-medium',
-              'text-gray-500 bg-gray-100',
-              'border border-gray-300 rounded'
+              'px-2 py-1 text-[11px] font-medium',
+              'text-linear-text-tertiary bg-linear-bg-tertiary',
+              'border border-linear-border rounded'
             )}
           >
             ESC
@@ -350,7 +363,7 @@ export function CommandMenu({ className }: CommandMenuProps) {
 
         {/* Command List */}
         <Command.List className={clsx('max-h-[60vh] overflow-y-auto p-2', 'scroll-py-2')}>
-          <Command.Empty className="py-8 text-center text-gray-500">
+          <Command.Empty className="py-8 text-center text-linear-text-tertiary">
             Niciun rezultat găsit.
           </Command.Empty>
 
@@ -359,26 +372,20 @@ export function CommandMenu({ className }: CommandMenuProps) {
             <>
               {/* Case Results */}
               {groupedResults.cases.length > 0 && (
-                <Command.Group heading="Dosare" className="mb-2">
+                <Command.Group heading="Dosare" className={GROUP_HEADING_STYLES}>
                   {groupedResults.cases.map((result) => (
                     <Command.Item
                       key={`case-${result.case.id}`}
                       value={`case ${result.case.caseNumber} ${result.case.title}`}
                       onSelect={() => handleResultSelect(result)}
-                      className={clsx(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg',
-                        'cursor-pointer',
-                        'aria-selected:bg-blue-50 aria-selected:text-blue-900',
-                        'hover:bg-gray-100',
-                        'transition-colors'
-                      )}
+                      className={ITEM_STYLES}
                     >
-                      <Briefcase className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                      <Briefcase className="w-5 h-5 text-linear-accent flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">
+                        <div className="font-medium truncate text-linear-text-primary">
                           {result.case.caseNumber}: {result.case.title}
                         </div>
-                        <div className="text-sm text-gray-500 truncate">
+                        <div className="text-sm text-linear-text-tertiary truncate">
                           {result.case.client?.name || 'Client necunoscut'}
                         </div>
                       </div>
@@ -389,24 +396,18 @@ export function CommandMenu({ className }: CommandMenuProps) {
 
               {/* Document Results */}
               {groupedResults.documents.length > 0 && (
-                <Command.Group heading="Documente" className="mb-2">
+                <Command.Group heading="Documente" className={GROUP_HEADING_STYLES}>
                   {groupedResults.documents.map((result) => (
                     <Command.Item
                       key={`doc-${result.document.id}`}
                       value={`document ${result.document.fileName}`}
                       onSelect={() => handleResultSelect(result)}
-                      className={clsx(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg',
-                        'cursor-pointer',
-                        'aria-selected:bg-green-50 aria-selected:text-green-900',
-                        'hover:bg-gray-100',
-                        'transition-colors'
-                      )}
+                      className={ITEM_STYLES}
                     >
-                      <FileText className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <FileText className="w-5 h-5 text-linear-success flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{result.document.fileName}</div>
-                        <div className="text-sm text-gray-500 truncate">
+                        <div className="font-medium truncate text-linear-text-primary">{result.document.fileName}</div>
+                        <div className="text-sm text-linear-text-tertiary truncate">
                           {result.document.fileType} •{' '}
                           {result.document.client?.name || 'Fără client'}
                         </div>
@@ -418,25 +419,19 @@ export function CommandMenu({ className }: CommandMenuProps) {
 
               {/* Client Results */}
               {groupedResults.clients.length > 0 && (
-                <Command.Group heading="Clienți" className="mb-2">
+                <Command.Group heading="Clienți" className={GROUP_HEADING_STYLES}>
                   {groupedResults.clients.map((result) => (
                     <Command.Item
                       key={`client-${result.client.id}`}
                       value={`client ${result.client.name}`}
                       onSelect={() => handleResultSelect(result)}
-                      className={clsx(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg',
-                        'cursor-pointer',
-                        'aria-selected:bg-purple-50 aria-selected:text-purple-900',
-                        'hover:bg-gray-100',
-                        'transition-colors'
-                      )}
+                      className={ITEM_STYLES}
                     >
-                      <User className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                      <User className="w-5 h-5 text-linear-warning flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{result.client.name}</div>
+                        <div className="font-medium truncate text-linear-text-primary">{result.client.name}</div>
                         {result.client.address && (
-                          <div className="text-sm text-gray-500 truncate">
+                          <div className="text-sm text-linear-text-tertiary truncate">
                             {result.client.address}
                           </div>
                         )}
@@ -454,12 +449,7 @@ export function CommandMenu({ className }: CommandMenuProps) {
                     router.push(`/search?q=${encodeURIComponent(debouncedValue)}`);
                     closeCommandPalette();
                   }}
-                  className={clsx(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg',
-                    'cursor-pointer text-blue-600',
-                    'hover:bg-blue-50',
-                    'transition-colors'
-                  )}
+                  className={clsx(ITEM_STYLES, 'text-linear-accent')}
                 >
                   <Search className="w-5 h-5 flex-shrink-0" />
                   <span>Vezi toate rezultatele pentru &quot;{debouncedValue}&quot;</span>
@@ -470,23 +460,17 @@ export function CommandMenu({ className }: CommandMenuProps) {
 
           {/* Recent Searches - shown when no search query */}
           {!showSearchResults && recentSearches.length > 0 && (
-            <Command.Group heading="Căutări recente" className="mb-2">
+            <Command.Group heading="Căutări recente" className={GROUP_HEADING_STYLES}>
               {recentSearches.map((recent) => (
                 <Command.Item
                   key={recent.id}
                   value={`recent ${recent.query}`}
                   onSelect={() => handleRecentSearchSelect(recent.query)}
-                  className={clsx(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg',
-                    'cursor-pointer',
-                    'aria-selected:bg-gray-100',
-                    'hover:bg-gray-100',
-                    'transition-colors'
-                  )}
+                  className={ITEM_STYLES}
                 >
-                  <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="flex-1 truncate text-gray-700">{recent.query}</span>
-                  <span className="text-xs text-gray-400">{recent.resultCount} rezultate</span>
+                  <Clock className="w-4 h-4 text-linear-text-muted flex-shrink-0" />
+                  <span className="flex-1 truncate text-linear-text-secondary">{recent.query}</span>
+                  <span className="text-xs text-linear-text-muted">{recent.resultCount} rezultate</span>
                 </Command.Item>
               ))}
             </Command.Group>
@@ -495,7 +479,7 @@ export function CommandMenu({ className }: CommandMenuProps) {
           {/* Static Command Groups */}
           {!showSearchResults &&
             commandGroups.map((group) => (
-              <Command.Group key={group.heading} heading={group.heading} className="mb-2">
+              <Command.Group key={group.heading} heading={group.heading} className={GROUP_HEADING_STYLES}>
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -503,19 +487,13 @@ export function CommandMenu({ className }: CommandMenuProps) {
                       key={item.id}
                       value={`${item.label} ${item.keywords?.join(' ') || ''}`}
                       onSelect={item.action}
-                      className={clsx(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg',
-                        'cursor-pointer',
-                        'aria-selected:bg-blue-50 aria-selected:text-blue-900',
-                        'hover:bg-gray-100',
-                        'transition-colors'
-                      )}
+                      className={ITEM_STYLES}
                     >
-                      <Icon className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                      <Icon className="w-5 h-5 text-linear-text-tertiary flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium">{item.label}</div>
+                        <div className="font-medium text-linear-text-primary">{item.label}</div>
                         {item.description && (
-                          <div className="text-sm text-gray-500">{item.description}</div>
+                          <div className="text-sm text-linear-text-tertiary">{item.description}</div>
                         )}
                       </div>
                     </Command.Item>
@@ -525,25 +503,25 @@ export function CommandMenu({ className }: CommandMenuProps) {
             ))}
         </Command.List>
 
-        {/* Footer with keyboard hints */}
+        {/* Footer with keyboard hints - Linear style */}
         <div
           className={clsx(
-            'px-4 py-2 border-t border-gray-200 bg-gray-50',
+            'px-4 py-2.5 border-t border-linear-border-subtle bg-linear-bg-tertiary',
             'flex items-center justify-center gap-4',
-            'text-xs text-gray-500'
+            'text-xs text-linear-text-muted'
           )}
         >
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded">↑</kbd>
-            <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded">↓</kbd>
+            <kbd className="px-1.5 py-0.5 bg-linear-bg-elevated border border-linear-border rounded text-linear-text-tertiary">↑</kbd>
+            <kbd className="px-1.5 py-0.5 bg-linear-bg-elevated border border-linear-border rounded text-linear-text-tertiary">↓</kbd>
             navigare
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded">↵</kbd>
+            <kbd className="px-1.5 py-0.5 bg-linear-bg-elevated border border-linear-border rounded text-linear-text-tertiary">↵</kbd>
             selectare
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded">esc</kbd>
+            <kbd className="px-1.5 py-0.5 bg-linear-bg-elevated border border-linear-border rounded text-linear-text-tertiary">esc</kbd>
             închide
           </span>
         </div>

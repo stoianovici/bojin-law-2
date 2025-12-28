@@ -59,9 +59,9 @@ interface CardProps {
 
 function Card({ title, children, className }: CardProps) {
   return (
-    <div className={clsx('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
-      <div className="px-5 py-4 border-b border-gray-200">
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+    <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle shadow-sm', className)}>
+      <div className="px-5 py-4 border-b border-linear-border-subtle">
+        <h3 className="text-base font-semibold text-linear-text-primary">{title}</h3>
       </div>
       <div className="p-5">{children}</div>
     </div>
@@ -166,7 +166,7 @@ export function CaseDetailsSection({
 
   return (
     <Card title="Detalii Dosar" className={className}>
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-linear-border-subtle">
         {/* Title */}
         <InlineEditField
           caseId={caseId}
@@ -200,7 +200,7 @@ export function CaseDetailsSection({
 
         {/* Type - with Add New button for Partners */}
         <div className="py-3">
-          <dt className="text-sm font-medium text-gray-500 mb-1">Tip dosar</dt>
+          <dt className="text-sm font-medium text-linear-text-tertiary mb-1">Tip dosar</dt>
           <div className="flex items-start gap-2">
             <div className="flex-1">
               <InlineEditField
@@ -218,7 +218,7 @@ export function CaseDetailsSection({
               <button
                 type="button"
                 onClick={() => setShowAddType(!showAddType)}
-                className="mt-1 px-2 py-1 text-xs font-medium text-blue-600 border border-blue-300 rounded hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors whitespace-nowrap"
+                className="mt-1 px-2 py-1 text-xs font-medium text-linear-accent border border-linear-accent/30 rounded hover:bg-linear-accent/10 focus:outline-none focus:ring-2 focus:ring-linear-accent transition-colors whitespace-nowrap"
               >
                 + Tip nou
               </button>
@@ -227,19 +227,19 @@ export function CaseDetailsSection({
 
           {/* Add New Type Form */}
           {showAddType && isPartner && (
-            <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md space-y-3">
+            <div className="mt-3 p-3 bg-linear-bg-tertiary border border-linear-border-subtle rounded-md space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Nume tip nou</label>
+                <label className="block text-xs font-medium text-linear-text-secondary mb-1">Nume tip nou</label>
                 <input
                   type="text"
                   value={newTypeName}
                   onChange={(e) => handleTypeNameChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-linear-border rounded-md bg-linear-bg-secondary text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent"
                   placeholder="ex: Insolvență"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-linear-text-secondary mb-1">
                   Cod (generat automat)
                 </label>
                 <input
@@ -248,7 +248,7 @@ export function CaseDetailsSection({
                   onChange={(e) =>
                     setNewTypeCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))
                   }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                  className="w-full px-3 py-2 text-sm border border-linear-border rounded-md bg-linear-bg-tertiary text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent"
                   placeholder="INSOLVENTA"
                 />
               </div>
@@ -260,7 +260,7 @@ export function CaseDetailsSection({
                     setNewTypeName('');
                     setNewTypeCode('');
                   }}
-                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                  className="px-3 py-1.5 text-sm text-linear-text-secondary hover:text-linear-text-primary"
                 >
                   Anulează
                 </button>
@@ -268,7 +268,7 @@ export function CaseDetailsSection({
                   type="button"
                   disabled={!newTypeName.trim() || !newTypeCode.trim() || createLoading}
                   onClick={handleCreateType}
-                  className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  className="px-3 py-1.5 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   {createLoading && (
                     <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
@@ -298,12 +298,12 @@ export function CaseDetailsSection({
         {/* Client (read-only - links to client profile) */}
         {caseData.clientName && (
           <div className="py-3">
-            <dt className="text-sm font-medium text-gray-500 mb-1">Client</dt>
-            <dd className="text-base text-gray-900">
+            <dt className="text-sm font-medium text-linear-text-tertiary mb-1">Client</dt>
+            <dd className="text-base text-linear-text-primary">
               {caseData.clientId ? (
                 <Link
                   href={`/clients/${caseData.clientId}`}
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                  className="text-linear-accent hover:text-linear-accent-hover hover:underline"
                 >
                   {caseData.clientName}
                 </Link>
@@ -316,8 +316,8 @@ export function CaseDetailsSection({
 
         {/* Opened Date (read-only) */}
         <div className="py-3">
-          <dt className="text-sm font-medium text-gray-500 mb-1">Data deschidere</dt>
-          <dd className="text-base text-gray-900">{formattedOpenedDate}</dd>
+          <dt className="text-sm font-medium text-linear-text-tertiary mb-1">Data deschidere</dt>
+          <dd className="text-base text-linear-text-primary">{formattedOpenedDate}</dd>
         </div>
 
         {/* Value (financial - wrapped in FinancialData) */}

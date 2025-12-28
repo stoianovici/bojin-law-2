@@ -557,10 +557,10 @@ describe.skip('ExtractedItemsSidebar', () => {
       fireEvent.click(saveButton);
 
       await waitFor(() => {
-        // Find the item card container (now converted with green background)
-        const convertedItem = screen.getByText('Revizuire contract').closest('.bg-green-50');
+        // Find the item card container (now converted with success background)
+        const convertedItem = screen.getByText('Revizuire contract').closest('.bg-linear-success\\/10');
         expect(convertedItem).toBeInTheDocument();
-        expect(convertedItem).toHaveClass('border-green-200');
+        expect(convertedItem).toHaveClass('border-linear-success/30');
       });
     });
 
@@ -580,16 +580,16 @@ describe.skip('ExtractedItemsSidebar', () => {
       });
     });
 
-    it('should show yellow background for unconverted deadlines', () => {
+    it('should show warning background for unconverted deadlines', () => {
       mockGetSelectedThread.mockReturnValue(mockThread);
       render(<ExtractedItemsSidebar />);
 
       // Find the item card container (parent with background color class)
-      const unconvertedItem = screen.getByText('Revizuire contract').closest('.bg-yellow-50');
+      const unconvertedItem = screen.getByText('Revizuire contract').closest('.bg-linear-warning\\/10');
       expect(unconvertedItem).toBeInTheDocument();
     });
 
-    it('should show blue background for unconverted commitments', () => {
+    it('should show accent background for unconverted commitments', () => {
       mockGetSelectedThread.mockReturnValue(mockThread);
       render(<ExtractedItemsSidebar />);
 
@@ -598,11 +598,11 @@ describe.skip('ExtractedItemsSidebar', () => {
       fireEvent.click(commitmentsHeader);
 
       // Find the item card container (parent with background color class)
-      const unconvertedItem = screen.getByText('Elena Popescu').closest('.bg-blue-50');
+      const unconvertedItem = screen.getByText('Elena Popescu').closest('.bg-linear-accent\\/10');
       expect(unconvertedItem).toBeInTheDocument();
     });
 
-    it('should show green background for unconverted action items', () => {
+    it('should show success background for unconverted action items', () => {
       mockGetSelectedThread.mockReturnValue(mockThread);
       render(<ExtractedItemsSidebar />);
 
@@ -611,7 +611,7 @@ describe.skip('ExtractedItemsSidebar', () => {
       fireEvent.click(actionsHeader);
 
       // Find the item card container (parent with background color class)
-      const unconvertedItem = screen.getByText('Pregătire raport legal').closest('.bg-green-50');
+      const unconvertedItem = screen.getByText('Pregătire raport legal').closest('.bg-linear-success\\/10');
       expect(unconvertedItem).toBeInTheDocument();
     });
   });

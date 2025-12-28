@@ -72,12 +72,12 @@ export function UserUsageTable({ data, loading }: UserUsageTableProps) {
   // Get sort icon for column
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
-      return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
+      return <ArrowUpDown className="h-4 w-4 text-linear-text-muted" />;
     }
     return sortDirection === 'asc' ? (
-      <ArrowUp className="h-4 w-4 text-blue-600" />
+      <ArrowUp className="h-4 w-4 text-linear-accent" />
     ) : (
-      <ArrowDown className="h-4 w-4 text-blue-600" />
+      <ArrowDown className="h-4 w-4 text-linear-accent" />
     );
   };
 
@@ -87,38 +87,38 @@ export function UserUsageTable({ data, loading }: UserUsageTableProps) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
+      <div className="bg-linear-bg-secondary rounded-lg shadow overflow-hidden">
+        <div className="p-6 border-b border-linear-border-subtle">
+          <div className="h-6 w-48 bg-linear-bg-hover rounded animate-pulse" />
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-linear-border-subtle">
+            <thead className="bg-linear-bg-tertiary">
               <tr>
                 {['Utilizator', 'Cost', 'Tokeni', 'Apeluri'].map((h) => (
                   <th
                     key={h}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
                   >
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
               {[1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-20 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-12 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                 </tr>
               ))}
@@ -131,11 +131,11 @@ export function UserUsageTable({ data, loading }: UserUsageTableProps) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Cost pe Utilizator</h3>
+      <div className="bg-linear-bg-secondary rounded-lg shadow overflow-hidden">
+        <div className="p-6 border-b border-linear-border-subtle">
+          <h3 className="text-lg font-semibold text-linear-text-primary">Cost pe Utilizator</h3>
         </div>
-        <div className="flex items-center justify-center h-48 text-gray-500">
+        <div className="flex items-center justify-center h-48 text-linear-text-tertiary">
           Nu există date pentru perioada selectată
         </div>
       </div>
@@ -148,20 +148,20 @@ export function UserUsageTable({ data, loading }: UserUsageTableProps) {
   const totalCalls = data.reduce((sum, u) => sum + u.calls, 0);
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Cost pe Utilizator</h3>
-        <p className="mt-1 text-sm text-gray-500">
+    <div className="bg-linear-bg-secondary rounded-lg shadow overflow-hidden">
+      <div className="p-6 border-b border-linear-border-subtle">
+        <h3 className="text-lg font-semibold text-linear-text-primary">Cost pe Utilizator</h3>
+        <p className="mt-1 text-sm text-linear-text-tertiary">
           Nu se înregistrează conținutul conversațiilor, doar metrici agregate.
         </p>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-linear-border-subtle">
+          <thead className="bg-linear-bg-tertiary">
             <tr>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover"
                 onClick={() => handleSort('userName')}
               >
                 <div className="flex items-center gap-1">
@@ -170,7 +170,7 @@ export function UserUsageTable({ data, loading }: UserUsageTableProps) {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover"
                 onClick={() => handleSort('cost')}
               >
                 <div className="flex items-center justify-end gap-1">
@@ -179,7 +179,7 @@ export function UserUsageTable({ data, loading }: UserUsageTableProps) {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover"
                 onClick={() => handleSort('tokens')}
               >
                 <div className="flex items-center justify-end gap-1">
@@ -188,7 +188,7 @@ export function UserUsageTable({ data, loading }: UserUsageTableProps) {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover"
                 onClick={() => handleSort('calls')}
               >
                 <div className="flex items-center justify-end gap-1">
@@ -198,46 +198,46 @@ export function UserUsageTable({ data, loading }: UserUsageTableProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
             {sortedData.map((user) => {
               const isClickable = user.userId !== 'batch';
               return (
                 <tr
                   key={user.userId}
-                  className={`hover:bg-gray-50 ${isClickable ? 'cursor-pointer' : ''}`}
+                  className={`hover:bg-linear-bg-hover ${isClickable ? 'cursor-pointer' : ''}`}
                   onClick={isClickable ? () => handleRowClick(user.userId) : undefined}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-linear-text-primary">
                     <div className="flex items-center gap-2">
                       {user.userName}
-                      {isClickable && <ChevronRight className="h-4 w-4 text-gray-400" />}
+                      {isClickable && <ChevronRight className="h-4 w-4 text-linear-text-muted" />}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-primary text-right">
                     {formatCost(user.cost)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-secondary text-right">
                     {formatNumber(user.tokens)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-secondary text-right">
                     {formatNumber(user.calls)}
                   </td>
                 </tr>
               );
             })}
           </tbody>
-          <tfoot className="bg-gray-50">
+          <tfoot className="bg-linear-bg-tertiary">
             <tr className="font-medium">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-primary">
                 Total ({data.length} utilizatori)
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-primary text-right">
                 {formatCost(totalCost)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-secondary text-right">
                 {formatNumber(totalTokens)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-secondary text-right">
                 {formatNumber(totalCalls)}
               </td>
             </tr>

@@ -44,9 +44,9 @@ const COLORS = [
 ];
 
 const PRIORITY_BADGES: Record<string, { bg: string; text: string }> = {
-  high: { bg: 'bg-red-100', text: 'text-red-800' },
-  medium: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
-  low: { bg: 'bg-green-100', text: 'text-green-800' },
+  high: { bg: 'bg-linear-error/10', text: 'text-linear-error' },
+  medium: { bg: 'bg-linear-warning/10', text: 'text-linear-warning' },
+  low: { bg: 'bg-linear-success/10', text: 'text-linear-success' },
 };
 
 // ============================================================================
@@ -60,14 +60,14 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-24 bg-gray-100 animate-pulse rounded-lg" />
-        <div className="h-64 bg-gray-100 animate-pulse rounded-lg" />
+        <div className="h-24 bg-linear-bg-tertiary animate-pulse rounded-lg" />
+        <div className="h-64 bg-linear-bg-tertiary animate-pulse rounded-lg" />
       </div>
     );
   }
 
   if (!data) {
-    return <div className="text-center py-8 text-gray-500">Nu există date despre delegări</div>;
+    return <div className="text-center py-8 text-linear-text-tertiary">Nu există date despre delegări</div>;
   }
 
   const successRateData = data.byUser.map((user, index) => ({
@@ -83,23 +83,23 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
   return (
     <div className="space-y-6">
       {/* Summary Header */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+      <div className="bg-linear-accent/10 border border-linear-accent/20 rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-blue-800">Analize delegări</h3>
-            <p className="text-sm text-blue-600">Tipare de delegare și performanța echipei</p>
+            <h3 className="text-lg font-semibold text-linear-accent">Analize delegări</h3>
+            <p className="text-sm text-linear-accent/80">Tipare de delegare și performanța echipei</p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-blue-600">
+            <div className="text-3xl font-bold text-linear-accent">
               {(data.firmWideSuccessRate * 100).toFixed(1)}%
             </div>
-            <div className="text-sm text-blue-500">Rata de succes la nivel de firmă</div>
+            <div className="text-sm text-linear-accent/70">Rata de succes la nivel de firmă</div>
           </div>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-linear-border-subtle">
         <nav className="flex gap-4">
           {[
             { id: 'overview', label: 'Sumar echipă' },
@@ -114,8 +114,8 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
               onClick={() => setSelectedTab(tab.id as typeof selectedTab)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 selectedTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-linear-accent text-linear-accent'
+                  : 'border-transparent text-linear-text-tertiary hover:text-linear-text-secondary'
               }`}
             >
               {tab.label}
@@ -128,7 +128,7 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
       {selectedTab === 'overview' && (
         <div className="space-y-6">
           {/* Success Rate Chart */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
             <h4 className="text-md font-semibold mb-4">Rată succes pe membru echipă</h4>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -155,10 +155,10 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
             {data.byUser.map((user, index) => (
               <div
                 key={user.userId}
-                className={`bg-white rounded-lg border p-4 cursor-pointer transition-all ${
+                className={`bg-linear-bg-secondary rounded-lg border p-4 cursor-pointer transition-all ${
                   selectedUser === user.userId
-                    ? 'border-blue-500 ring-2 ring-blue-200'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-linear-accent ring-2 ring-linear-accent/20'
+                    : 'border-linear-border-subtle hover:border-linear-border'
                 }`}
                 onClick={() => setSelectedUser(selectedUser === user.userId ? null : user.userId)}
               >
@@ -171,26 +171,26 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
                   </div>
                   <div>
                     <div className="font-medium">{user.userName}</div>
-                    <div className="text-xs text-gray-500">{user.role}</div>
+                    <div className="text-xs text-linear-text-tertiary">{user.role}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-gray-500">Primite:</span>{' '}
+                    <span className="text-linear-text-tertiary">Primite:</span>{' '}
                     <span className="font-medium">{user.delegationsReceived}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Date:</span>{' '}
+                    <span className="text-linear-text-tertiary">Date:</span>{' '}
                     <span className="font-medium">{user.delegationsGiven}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Succes:</span>{' '}
-                    <span className="font-medium text-green-600">
+                    <span className="text-linear-text-tertiary">Succes:</span>{' '}
+                    <span className="font-medium text-linear-success">
                       {(user.successRate * 100).toFixed(0)}%
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Zile medii:</span>{' '}
+                    <span className="text-linear-text-tertiary">Zile medii:</span>{' '}
                     <span className="font-medium">{user.avgCompletionDays.toFixed(1)}</span>
                   </div>
                 </div>
@@ -200,40 +200,40 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
 
           {/* Selected User Details */}
           {selectedUserData && (
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
+            <div className="bg-linear-bg-tertiary rounded-lg border border-linear-border-subtle p-6">
               <h4 className="text-md font-semibold mb-4">
                 {selectedUserData.userName} - Analiză detaliată
               </h4>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Puncte forte</h5>
+                  <h5 className="text-sm font-medium text-linear-text-secondary mb-2">Puncte forte</h5>
                   <div className="flex flex-wrap gap-2">
                     {selectedUserData.strengthAreas.map((area) => (
                       <span
                         key={area}
-                        className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded"
+                        className="text-xs bg-linear-success/10 text-linear-success px-2 py-1 rounded"
                       >
                         {area}
                       </span>
                     ))}
                     {selectedUserData.strengthAreas.length === 0 && (
-                      <span className="text-sm text-gray-500">Încă nu există date</span>
+                      <span className="text-sm text-linear-text-muted">Încă nu există date</span>
                     )}
                   </div>
                 </div>
                 <div>
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Arii de îmbunătățit</h5>
+                  <h5 className="text-sm font-medium text-linear-text-secondary mb-2">Arii de îmbunătățit</h5>
                   <div className="flex flex-wrap gap-2">
                     {selectedUserData.struggleAreas.map((area) => (
                       <span
                         key={area}
-                        className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded"
+                        className="text-xs bg-linear-error/10 text-linear-error px-2 py-1 rounded"
                       >
                         {area}
                       </span>
                     ))}
                     {selectedUserData.struggleAreas.length === 0 && (
-                      <span className="text-sm text-gray-500">Încă nu există date</span>
+                      <span className="text-sm text-linear-text-muted">Încă nu există date</span>
                     )}
                   </div>
                 </div>
@@ -244,15 +244,15 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
       )}
 
       {selectedTab === 'flows' && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
           <h4 className="text-md font-semibold mb-4">Principalele fluxuri de delegare</h4>
           <div className="space-y-3">
             {data.topDelegationFlows.map((flow, index) => (
               <div
                 key={`${flow.fromUserId}-${flow.toUserId}`}
-                className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+                className="flex items-center gap-4 p-4 bg-linear-bg-tertiary rounded-lg"
               >
-                <div className="text-lg font-bold text-gray-400 w-6">{index + 1}</div>
+                <div className="text-lg font-bold text-linear-text-muted w-6">{index + 1}</div>
                 <div className="flex items-center gap-2 flex-1">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
@@ -262,7 +262,7 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
                   </div>
                   <span className="font-medium">{flow.fromUserName}</span>
                 </div>
-                <div className="text-gray-400">→</div>
+                <div className="text-linear-text-muted">→</div>
                 <div className="flex items-center gap-2 flex-1">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
@@ -274,14 +274,14 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
                 </div>
                 <div className="text-right">
                   <div className="font-semibold">{flow.count} delegări</div>
-                  <div className="text-sm text-green-600">
+                  <div className="text-sm text-linear-success">
                     {(flow.avgSuccessRate * 100).toFixed(0)}% succes
                   </div>
                 </div>
               </div>
             ))}
             {data.topDelegationFlows.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-linear-text-tertiary">
                 Nu există date despre fluxurile de delegare
               </div>
             )}
@@ -294,17 +294,17 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
           {data.trainingOpportunities.map((opportunity) => (
             <div
               key={opportunity.userId}
-              className="bg-white rounded-lg border border-amber-200 p-6"
+              className="bg-linear-bg-secondary rounded-lg border border-linear-warning/30 p-6"
             >
-              <h4 className="font-semibold text-gray-900 mb-4">{opportunity.userName}</h4>
+              <h4 className="font-semibold text-linear-text-primary mb-4">{opportunity.userName}</h4>
               <div className="space-y-3">
                 {opportunity.suggestions.map((suggestion, index) => {
                   const priority = PRIORITY_BADGES[suggestion.priority] || PRIORITY_BADGES.medium;
                   return (
-                    <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div key={index} className="bg-linear-bg-tertiary rounded-lg p-4 border border-linear-border-subtle">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">{suggestion.skillArea}</span>
+                          <span className="font-medium text-linear-text-primary">{suggestion.skillArea}</span>
                           <span
                             className={`text-xs px-2 py-1 rounded ${priority.bg} ${priority.text}`}
                           >
@@ -312,12 +312,12 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
                           </span>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{suggestion.reason}</p>
-                      <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                        <span className="text-xs font-medium text-blue-800">
+                      <p className="text-sm text-linear-text-secondary mb-2">{suggestion.reason}</p>
+                      <div className="bg-linear-accent/10 border border-linear-accent/20 rounded p-2">
+                        <span className="text-xs font-medium text-linear-accent">
                           Acțiune sugerată:{' '}
                         </span>
-                        <span className="text-xs text-blue-700">{suggestion.suggestedAction}</span>
+                        <span className="text-xs text-linear-accent/80">{suggestion.suggestedAction}</span>
                       </div>
                     </div>
                   );
@@ -326,7 +326,7 @@ export function DelegationAnalysisPanel({ data, loading }: DelegationAnalysisPan
             </div>
           ))}
           {data.trainingOpportunities.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-linear-text-tertiary">
               Nu au fost identificate oportunități de instruire
             </div>
           )}

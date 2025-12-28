@@ -526,19 +526,19 @@ export function AttachmentPreviewPanel({
   return (
     <div
       ref={panelRef}
-      className="h-full border-l bg-white flex flex-col shadow-lg"
+      className="h-full border-l bg-linear-bg-secondary flex flex-col shadow-lg"
       style={{ width: panelWidth }}
     >
       {/* Resize Handle */}
       <div
         className={clsx(
-          'absolute left-0 top-0 bottom-0 w-1 cursor-col-resize group hover:bg-blue-500/50 transition-colors z-10',
-          isResizing && 'bg-blue-500'
+          'absolute left-0 top-0 bottom-0 w-1 cursor-col-resize group hover:bg-linear-accent/50 transition-colors z-10',
+          isResizing && 'bg-linear-accent'
         )}
         onMouseDown={handleResizeStart}
       >
         <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical className="h-6 w-6 text-gray-400" />
+          <GripVertical className="h-6 w-6 text-linear-text-muted" />
         </div>
       </div>
 
@@ -546,19 +546,19 @@ export function AttachmentPreviewPanel({
       <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
         <div className="min-w-0 flex-1 mr-3">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-gray-900 truncate text-sm">
+            <h3 className="font-semibold text-linear-text-primary truncate text-sm">
               {selectedAttachment?.name || 'Atașament'}
             </h3>
             {/* OPS-175: Show "Editat" badge for promoted attachments */}
             {selectedAttachment?.isPromoted && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded flex-shrink-0">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-linear-warning bg-linear-warning/10 border border-linear-warning/30 rounded flex-shrink-0">
                 <FileEdit className="h-3 w-3" />
                 Editat
               </span>
             )}
           </div>
           {selectedAttachment && (
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-linear-text-tertiary mt-0.5">
               De la {selectedAttachment.messageSender} •{' '}
               {format(selectedAttachment.messageDate, 'dd.MM.yyyy')}
             </p>
@@ -566,7 +566,7 @@ export function AttachmentPreviewPanel({
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+          className="p-1.5 text-linear-text-muted hover:text-linear-text-secondary hover:bg-linear-bg-hover rounded transition-colors flex-shrink-0"
           aria-label="Închide panoul"
         >
           <X className="h-5 w-5" />
@@ -574,13 +574,13 @@ export function AttachmentPreviewPanel({
       </div>
 
       {/* Preview Area */}
-      <div className="flex-1 relative overflow-hidden bg-gray-100">
+      <div className="flex-1 relative overflow-hidden bg-linear-bg-tertiary">
         {/* Loading State */}
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+          <div className="absolute inset-0 flex items-center justify-center bg-linear-bg-secondary/80 z-10">
             <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <span className="text-sm text-gray-600">Se încarcă...</span>
+              <Loader2 className="h-8 w-8 animate-spin text-linear-accent" />
+              <span className="text-sm text-linear-text-secondary">Se încarcă...</span>
             </div>
           </div>
         )}
@@ -589,17 +589,17 @@ export function AttachmentPreviewPanel({
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center p-6">
             <div className="flex flex-col items-center gap-4 text-center max-w-xs">
-              <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
-                <AlertCircle className="h-7 w-7 text-amber-600" />
+              <div className="w-14 h-14 rounded-full bg-linear-warning/15 flex items-center justify-center">
+                <AlertCircle className="h-7 w-7 text-linear-warning" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 mb-1">Previzualizare indisponibilă</h4>
-                <p className="text-sm text-gray-600">{error}</p>
+                <h4 className="font-medium text-linear-text-primary mb-1">Previzualizare indisponibilă</h4>
+                <p className="text-sm text-linear-text-secondary">{error}</p>
               </div>
               {selectedAttachment && (
                 <button
                   onClick={handleDownload}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-lg hover:bg-linear-accent-hover transition-colors"
                 >
                   <Download className="h-4 w-4" />
                   Descarcă fișierul
@@ -632,7 +632,7 @@ export function AttachmentPreviewPanel({
                   className="w-full h-full"
                   title={`Previzualizare: ${selectedAttachment?.name}`}
                 >
-                  <p className="text-center text-gray-500 p-8">
+                  <p className="text-center text-linear-text-tertiary p-8">
                     Browserul nu poate afișa acest PDF.
                   </p>
                 </object>
@@ -649,18 +649,18 @@ export function AttachmentPreviewPanel({
             {isOffice && isBlobUrl && (
               <div className="absolute inset-0 flex items-center justify-center p-6">
                 <div className="flex flex-col items-center gap-4 text-center max-w-xs">
-                  <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-linear-accent/15 flex items-center justify-center">
                     {getFileIcon(selectedAttachment?.contentType || '')}
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-1">Fișier Office</h4>
-                    <p className="text-sm text-gray-600">
+                    <h4 className="font-medium text-linear-text-primary mb-1">Fișier Office</h4>
+                    <p className="text-sm text-linear-text-secondary">
                       Descărcați sau deschideți în Microsoft 365 pentru vizualizare.
                     </p>
                   </div>
                   <button
                     onClick={handleDownload}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-lg hover:bg-linear-accent-hover transition-colors"
                   >
                     <Download className="h-4 w-4" />
                     Descarcă
@@ -693,7 +693,7 @@ export function AttachmentPreviewPanel({
       </div>
 
       {/* OPS-140: Action Footer - OPS-197: Always show, but disable save when email not assigned */}
-      <div className="flex items-center justify-between p-3 border-t bg-gray-50 flex-shrink-0">
+      <div className="flex items-center justify-between p-3 border-t bg-linear-bg-tertiary flex-shrink-0">
         {/* Primary actions - left side */}
         <div className="flex items-center gap-2">
           <button
@@ -702,10 +702,10 @@ export function AttachmentPreviewPanel({
             className={clsx(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors',
               isAttachmentSaved
-                ? 'bg-green-100 text-green-700 cursor-default'
+                ? 'bg-linear-success/15 text-linear-success cursor-default'
                 : canSaveToDocuments
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-linear-accent text-white hover:bg-linear-accent-hover disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'bg-linear-bg-hover text-linear-text-muted cursor-not-allowed'
             )}
             title={
               disabledTooltip ||
@@ -729,8 +729,8 @@ export function AttachmentPreviewPanel({
               className={clsx(
                 'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors',
                 canSaveToDocuments
-                  ? 'text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed'
-                  : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
+                  ? 'text-linear-warning bg-linear-warning/10 border border-linear-warning/30 hover:bg-linear-warning/15 disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'text-linear-text-muted bg-linear-bg-tertiary border border-linear-border-subtle cursor-not-allowed'
               )}
               title={disabledTooltip || 'Editează ca document de lucru'}
             >
@@ -744,7 +744,7 @@ export function AttachmentPreviewPanel({
           )}
           <button
             onClick={handleDownload}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary border border-linear-border rounded hover:bg-linear-bg-tertiary transition-colors"
             title="Descarcă"
           >
             <Download className="h-4 w-4" />
@@ -759,7 +759,7 @@ export function AttachmentPreviewPanel({
               href={previewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              className="p-2 text-linear-text-tertiary hover:text-linear-accent hover:bg-linear-accent/10 rounded transition-colors"
               title="Deschide în fereastră nouă"
             >
               <ExternalLink className="h-4 w-4" />
@@ -768,7 +768,7 @@ export function AttachmentPreviewPanel({
           <button
             onClick={handleMarkIrrelevant}
             disabled={markingIrrelevant}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 text-linear-text-tertiary hover:text-linear-error hover:bg-linear-error/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Marchează ca irelevant"
           >
             {markingIrrelevant ? (
@@ -781,37 +781,37 @@ export function AttachmentPreviewPanel({
       </div>
 
       {/* Navigation Actions */}
-      <div className="flex items-center justify-between p-3 border-t bg-white flex-shrink-0">
+      <div className="flex items-center justify-between p-3 border-t bg-linear-bg-secondary flex-shrink-0">
         <div className="flex items-center gap-1">
           <button
             disabled={!hasPrev}
             onClick={handlePrev}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-linear-text-secondary hover:bg-linear-bg-hover rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             title="Anterior (←)"
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Anterior</span>
           </button>
-          <span className="text-xs text-gray-500 px-2">
+          <span className="text-xs text-linear-text-tertiary px-2">
             {currentIndex + 1} / {threadAttachments.length}
           </span>
           <button
             disabled={!hasNext}
             onClick={handleNext}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-linear-text-secondary hover:bg-linear-bg-hover rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             title="Următor (→)"
           >
             <span className="hidden sm:inline">Următor</span>
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <span className="text-xs text-gray-400">← → pentru navigare</span>
+        <span className="text-xs text-linear-text-muted">← → pentru navigare</span>
       </div>
 
       {/* All Attachments List - OPS-270: Grouped by time period */}
-      <div className="border-t bg-gray-50 flex-shrink-0 max-h-56 overflow-y-auto">
+      <div className="border-t bg-linear-bg-tertiary flex-shrink-0 max-h-56 overflow-y-auto">
         <div className="p-3">
-          <p className="text-xs font-medium text-gray-500 mb-2">
+          <p className="text-xs font-medium text-linear-text-tertiary mb-2">
             Atașamente în conversație ({threadAttachments.length})
           </p>
           <div className="space-y-2">
@@ -832,15 +832,15 @@ export function AttachmentPreviewPanel({
                       className={clsx(
                         'w-full text-left px-2.5 py-2 rounded text-sm flex items-center gap-2 transition-colors',
                         att.id === selectedAttachment?.id
-                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                          : 'hover:bg-gray-100 text-gray-700'
+                          ? 'bg-linear-accent/15 text-linear-accent border border-linear-accent/30'
+                          : 'hover:bg-linear-bg-hover text-linear-text-secondary'
                       )}
                     >
-                      <span className="text-gray-400 flex-shrink-0">
+                      <span className="text-linear-text-muted flex-shrink-0">
                         {getFileIcon(att.contentType)}
                       </span>
                       <span className="truncate flex-1">{att.name}</span>
-                      <span className="text-xs text-gray-400 flex-shrink-0">
+                      <span className="text-xs text-linear-text-muted flex-shrink-0">
                         {formatFileSize(att.size)}
                       </span>
                     </button>

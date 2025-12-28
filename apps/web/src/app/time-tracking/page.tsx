@@ -8,16 +8,17 @@
 import { SummaryView } from '../../components/time-tracking/SummaryView';
 import { NaturalLanguageEntry } from '../../components/time-tracking/NaturalLanguageEntry';
 import { TasksInProgress } from '../../components/time-tracking/TasksInProgress';
+import { PageLayout, PageContent } from '../../components/linear/PageLayout';
 
 export default function TimeTrackingPage() {
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
+    <PageLayout>
+      <PageContent>
         {/* Summary Panel */}
         <SummaryView />
 
         {/* Two-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Left Column - Natural Language Entry */}
           <div className="lg:col-span-1">
             <NaturalLanguageEntry />
@@ -28,7 +29,7 @@ export default function TimeTrackingPage() {
             <TasksInProgress />
           </div>
         </div>
-      </div>
-    </main>
+      </PageContent>
+    </PageLayout>
   );
 }

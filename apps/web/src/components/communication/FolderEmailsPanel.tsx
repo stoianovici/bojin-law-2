@@ -81,31 +81,31 @@ export function FolderEmailsPanel({
   const isEmpty = emails.length === 0 && !loading;
 
   return (
-    <div className={clsx('flex flex-col h-full bg-white', className)}>
+    <div className={clsx('flex flex-col h-full bg-linear-bg-secondary', className)}>
       {/* Header */}
-      <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 sticky top-0 z-10">
+      <div className="px-3 py-2 bg-linear-bg-tertiary border-b border-linear-border-subtle sticky top-0 z-10">
         <div className="flex items-center gap-2">
           {onBack && (
             <button
               onClick={onBack}
-              className="p-1 rounded hover:bg-gray-200 transition-colors"
+              className="p-1 rounded hover:bg-linear-bg-hover transition-colors"
               aria-label="Înapoi"
             >
-              <ArrowLeft className="h-4 w-4 text-gray-500" />
+              <ArrowLeft className="h-4 w-4 text-linear-text-tertiary" />
             </button>
           )}
           <div className="flex items-center justify-between flex-1">
-            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <Inbox className="h-4 w-4 text-gray-500" />
+            <div className="flex items-center gap-2 text-sm font-semibold text-linear-text-secondary">
+              <Inbox className="h-4 w-4 text-linear-text-tertiary" />
               {folder.name}
             </div>
             <div className="flex items-center gap-2">
               {folder.unreadCount > 0 && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                <span className="px-2 py-0.5 text-xs font-medium bg-linear-accent/15 text-linear-accent rounded-full">
                   {folder.unreadCount} necitite
                 </span>
               )}
-              <span className="text-xs text-gray-400">({folder.emailCount})</span>
+              <span className="text-xs text-linear-text-muted">({folder.emailCount})</span>
             </div>
           </div>
         </div>
@@ -119,20 +119,20 @@ export function FolderEmailsPanel({
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="animate-pulse">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="h-4 bg-gray-200 rounded w-32" />
-                  <div className="h-3 bg-gray-200 rounded w-16" />
+                  <div className="h-4 bg-linear-bg-tertiary rounded w-32" />
+                  <div className="h-3 bg-linear-bg-tertiary rounded w-16" />
                 </div>
-                <div className="h-3 bg-gray-200 rounded w-48 mt-2" />
-                <div className="h-3 bg-gray-200 rounded w-full mt-1" />
+                <div className="h-3 bg-linear-bg-tertiary rounded w-48 mt-2" />
+                <div className="h-3 bg-linear-bg-tertiary rounded w-full mt-1" />
               </div>
             ))}
           </div>
         ) : isEmpty ? (
           // Empty state
           <div className="flex flex-col items-center justify-center h-full py-12 px-4">
-            <Mail className="h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500 text-center">Folderul este gol</p>
-            <p className="text-xs text-gray-400 text-center mt-1">
+            <Mail className="h-12 w-12 text-linear-text-muted mb-3" />
+            <p className="text-sm text-linear-text-tertiary text-center">Folderul este gol</p>
+            <p className="text-xs text-linear-text-muted text-center mt-1">
               Nu există emailuri neatribuite în acest folder
             </p>
           </div>
@@ -161,11 +161,11 @@ export function FolderEmailsPanel({
 
         {/* Load more button */}
         {hasMore && onLoadMore && !loading && (
-          <div className="p-3 border-t border-gray-100">
+          <div className="p-3 border-t border-linear-border-subtle">
             <button
               onClick={onLoadMore}
               disabled={loadingMore}
-              className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2 text-sm text-linear-accent hover:text-linear-accent-hover hover:bg-linear-accent/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loadingMore ? 'Se încarcă...' : 'Încarcă mai multe emailuri'}
             </button>

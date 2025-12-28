@@ -1,12 +1,13 @@
 /**
  * MorningBriefing - AI-generated morning briefing component
  * Story 5.4: Proactive AI Suggestions System (Task 21)
+ * Migrated to Linear design system (OPS-333)
  */
 
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BriefingCard } from '@/components/linear/WidgetGrid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -160,18 +161,20 @@ function CollapsibleSection({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
         <button
-          className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-muted/50 transition-colors"
+          className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-linear-bg-hover transition-colors"
           aria-expanded={isOpen}
         >
           <div className="flex items-center gap-2">
             {icon}
-            <HeadingTag className="text-base font-medium">{title}</HeadingTag>
+            <HeadingTag className="text-base font-medium text-linear-text-primary">
+              {title}
+            </HeadingTag>
             <Badge variant="secondary" className="ml-2">
               {count}
             </Badge>
           </div>
           <ChevronDownIcon
-            className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            className={`transition-transform duration-200 text-linear-text-tertiary ${isOpen ? 'rotate-180' : ''}`}
           />
         </button>
       </CollapsibleTrigger>
@@ -181,15 +184,15 @@ function CollapsibleSection({
 }
 
 const severityColors = {
-  critical: 'bg-red-100 text-red-800 border-red-200',
-  warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  info: 'bg-blue-100 text-blue-800 border-blue-200',
+  critical: 'bg-linear-error/10 text-linear-error border-linear-error/20',
+  warning: 'bg-linear-warning/10 text-linear-warning border-linear-warning/20',
+  info: 'bg-linear-accent/10 text-linear-accent border-linear-accent/20',
 };
 
 const riskSeverityColors = {
-  high: 'bg-red-100 text-red-800 border-red-200',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  low: 'bg-blue-100 text-blue-800 border-blue-200',
+  high: 'bg-linear-error/10 text-linear-error border-linear-error/20',
+  medium: 'bg-linear-warning/10 text-linear-warning border-linear-warning/20',
+  low: 'bg-linear-accent/10 text-linear-accent border-linear-accent/20',
 };
 
 /**
@@ -227,104 +230,103 @@ export function MorningBriefing({
 
   if (loading) {
     return (
-      <Card role="region" aria-label="Morning briefing" aria-busy="true">
-        <CardHeader className="flex flex-row items-center gap-3">
-          <SparklesIcon className="text-primary animate-pulse" />
-          <CardTitle>Briefing-ul de Dimineață</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-20" />
-          </div>
-        </CardContent>
-      </Card>
+      <BriefingCard
+        role="region"
+        aria-label="Morning briefing"
+        aria-busy="true"
+        icon={<SparklesIcon className="text-linear-accent animate-pulse" />}
+        title="Briefing-ul de Dimineață"
+      >
+        <div className="space-y-4">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-20" />
+        </div>
+      </BriefingCard>
     );
   }
 
   if (error) {
     return (
-      <Card role="region" aria-label="Morning briefing">
-        <CardHeader className="flex flex-row items-center gap-3">
-          <SparklesIcon className="text-muted-foreground" />
-          <CardTitle>Briefing-ul de Dimineață</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <p className="text-muted-foreground mb-4">
-              Nu am putut încărca briefing-ul. Vă rugăm încercați din nou.
-            </p>
-            <Button onClick={() => generateBriefing()}>
-              <RefreshIcon className="mr-2" />
-              Reîncarcă
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <BriefingCard
+        role="region"
+        aria-label="Morning briefing"
+        icon={<SparklesIcon className="text-linear-text-tertiary" />}
+        title="Briefing-ul de Dimineață"
+      >
+        <div className="text-center py-6">
+          <p className="text-linear-text-tertiary mb-4">
+            Nu am putut încărca briefing-ul. Vă rugăm încercați din nou.
+          </p>
+          <Button onClick={() => generateBriefing()}>
+            <RefreshIcon className="mr-2" />
+            Reîncarcă
+          </Button>
+        </div>
+      </BriefingCard>
     );
   }
 
   if (!hasBriefing) {
     return (
-      <Card role="region" aria-label="Morning briefing">
-        <CardHeader className="flex flex-row items-center gap-3">
-          <SparklesIcon className="text-primary" />
-          <CardTitle>Briefing-ul de Dimineață</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <p className="text-muted-foreground mb-4">
-              Nu există un briefing pentru astăzi. Generați unul acum?
-            </p>
-            <Button onClick={() => generateBriefing()}>
-              <SparklesIcon className="mr-2 h-4 w-4" />
-              Generează Briefing
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <BriefingCard
+        role="region"
+        aria-label="Morning briefing"
+        icon={<SparklesIcon className="text-linear-accent" />}
+        title="Briefing-ul de Dimineață"
+      >
+        <div className="text-center py-6">
+          <p className="text-linear-text-tertiary mb-4">
+            Nu există un briefing pentru astăzi. Generați unul acum?
+          </p>
+          <Button onClick={() => generateBriefing()}>
+            <SparklesIcon className="mr-2 h-4 w-4" />
+            Generează Briefing
+          </Button>
+        </div>
+      </BriefingCard>
     );
   }
 
+  const dateSubtitle = briefing?.briefingDate
+    ? new Date(briefing.briefingDate).toLocaleDateString('ro-RO', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'Astăzi';
+
   return (
-    <Card role="region" aria-label="Morning briefing">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex items-center gap-3">
-          <SparklesIcon className="text-primary" />
-          <div>
-            <CardTitle>Briefing-ul de Dimineață</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {briefing?.briefingDate
-                ? new Date(briefing.briefingDate).toLocaleDateString('ro-RO', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })
-                : 'Astăzi'}
-            </p>
-          </div>
-        </div>
+    <BriefingCard
+      role="region"
+      aria-label="Morning briefing"
+      icon={<SparklesIcon className="text-linear-accent" />}
+      title="Briefing-ul de Dimineață"
+      subtitle={dateSubtitle}
+      action={
         <Button variant="ghost" size="sm" onClick={() => generateBriefing()}>
           <RefreshIcon className="mr-1" />
           Actualizează
         </Button>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
+      }
+    >
+      <div className="space-y-6">
         {/* AI Summary Section */}
         {summary && (
-          <div className="p-4 bg-primary/5 rounded-lg border border-primary/10" aria-live="polite">
+          <div
+            className="p-4 bg-linear-accent/5 rounded-lg border border-linear-accent/10"
+            aria-live="polite"
+          >
             <h3 className="sr-only">Rezumat AI</h3>
-            <p className="text-sm leading-relaxed">{summary}</p>
+            <p className="text-sm leading-relaxed text-linear-text-secondary">{summary}</p>
           </div>
         )}
 
         {/* Prioritized Tasks Section */}
         <CollapsibleSection
           title="Task-uri Prioritizate"
-          icon={<ClockIcon className="text-blue-600" />}
+          icon={<ClockIcon className="text-linear-accent" />}
           count={prioritizedTasks.length}
           defaultOpen={true}
           headingLevel="h3"
@@ -342,7 +344,7 @@ export function MorningBriefing({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+            <p className="text-sm text-linear-text-tertiary py-4 text-center">
               Nu aveți task-uri prioritizate pentru astăzi.
             </p>
           )}
@@ -351,7 +353,7 @@ export function MorningBriefing({
         {/* Key Deadlines Section */}
         <CollapsibleSection
           title="Termene Cheie"
-          icon={<ClockIcon className="text-orange-600" />}
+          icon={<ClockIcon className="text-linear-warning" />}
           count={keyDeadlines.length}
           defaultOpen={keyDeadlines.some((d: DeadlineInfo) => d.severity === 'critical')}
           headingLevel="h3"
@@ -378,10 +380,10 @@ export function MorningBriefing({
                   <Badge
                     className={
                       deadline.severity === 'critical'
-                        ? 'bg-red-600 text-white'
+                        ? 'bg-linear-error text-white'
                         : deadline.severity === 'warning'
-                          ? 'bg-yellow-600 text-white'
-                          : 'bg-blue-600 text-white'
+                          ? 'bg-linear-warning text-white'
+                          : 'bg-linear-accent text-white'
                     }
                   >
                     {deadline.severity === 'critical'
@@ -394,7 +396,7 @@ export function MorningBriefing({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+            <p className="text-sm text-linear-text-tertiary py-4 text-center">
               Nu aveți termene cheie în această perioadă.
             </p>
           )}
@@ -404,7 +406,7 @@ export function MorningBriefing({
         {riskAlerts.length > 0 && (
           <CollapsibleSection
             title="Alerte de Risc"
-            icon={<AlertTriangleIcon className="text-red-600" />}
+            icon={<AlertTriangleIcon className="text-linear-error" />}
             count={riskAlerts.length}
             defaultOpen={riskAlerts.some((r: RiskAlert) => r.severity === 'high')}
             headingLevel="h3"
@@ -425,10 +427,10 @@ export function MorningBriefing({
                     <Badge
                       className={
                         alert.severity === 'high'
-                          ? 'bg-red-600 text-white'
+                          ? 'bg-linear-error text-white'
                           : alert.severity === 'medium'
-                            ? 'bg-yellow-600 text-white'
-                            : 'bg-blue-600 text-white'
+                            ? 'bg-linear-warning text-white'
+                            : 'bg-linear-accent text-white'
                       }
                     >
                       {alert.severity === 'high'
@@ -439,7 +441,7 @@ export function MorningBriefing({
                     </Badge>
                   </div>
                   {alert.suggestedAction && (
-                    <p className="text-sm mt-2 text-muted-foreground">
+                    <p className="text-sm mt-2 text-linear-text-tertiary">
                       <span className="font-medium">Acțiune sugerată:</span> {alert.suggestedAction}
                     </p>
                   )}
@@ -452,7 +454,7 @@ export function MorningBriefing({
         {/* AI Suggestions Section */}
         <CollapsibleSection
           title="Sugestii AI"
-          icon={<LightbulbIcon className="text-purple-600" />}
+          icon={<LightbulbIcon className="text-linear-accent" />}
           count={suggestions.length}
           defaultOpen={suggestions.length > 0}
           headingLevel="h3"
@@ -462,20 +464,22 @@ export function MorningBriefing({
               {suggestions.map((suggestion: AISuggestion) => (
                 <div
                   key={suggestion.id}
-                  className="p-3 rounded-lg border bg-purple-50 border-purple-200"
+                  className="p-3 rounded-lg border bg-linear-accent/10 border-linear-accent/20"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-purple-900">{suggestion.title}</p>
-                      <p className="text-sm mt-1 text-purple-700">{suggestion.description}</p>
+                      <p className="font-medium text-linear-text-primary">{suggestion.title}</p>
+                      <p className="text-sm mt-1 text-linear-text-secondary">
+                        {suggestion.description}
+                      </p>
                     </div>
                     <Badge
                       className={
                         suggestion.priority === 'Urgent'
-                          ? 'bg-red-600 text-white'
+                          ? 'bg-linear-error text-white'
                           : suggestion.priority === 'High'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-purple-600 text-white'
+                            ? 'bg-linear-warning text-white'
+                            : 'bg-linear-accent text-white'
                       }
                     >
                       {suggestion.priority === 'Urgent'
@@ -501,13 +505,13 @@ export function MorningBriefing({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+            <p className="text-sm text-linear-text-tertiary py-4 text-center">
               Nu există sugestii AI pentru moment.
             </p>
           )}
         </CollapsibleSection>
-      </CardContent>
-    </Card>
+      </div>
+    </BriefingCard>
   );
 }
 

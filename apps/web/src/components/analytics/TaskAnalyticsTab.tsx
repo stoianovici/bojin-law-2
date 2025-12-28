@@ -95,13 +95,13 @@ const datePresets = [
 // Loading skeleton
 function WidgetSkeleton() {
   return (
-    <div className="bg-white rounded-lg shadow p-6 animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-      <div className="h-8 bg-gray-200 rounded w-1/2 mb-6"></div>
+    <div className="bg-linear-bg-secondary rounded-lg shadow p-6 animate-pulse">
+      <div className="h-4 bg-linear-bg-hover rounded w-1/3 mb-4"></div>
+      <div className="h-8 bg-linear-bg-hover rounded w-1/2 mb-6"></div>
       <div className="space-y-3">
-        <div className="h-3 bg-gray-200 rounded"></div>
-        <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-        <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+        <div className="h-3 bg-linear-bg-hover rounded"></div>
+        <div className="h-3 bg-linear-bg-hover rounded w-5/6"></div>
+        <div className="h-3 bg-linear-bg-hover rounded w-4/6"></div>
       </div>
     </div>
   );
@@ -125,15 +125,15 @@ function SummaryCard({
 }) {
   const trendColor =
     trendDirection === 'up'
-      ? 'text-green-600'
+      ? 'text-linear-success'
       : trendDirection === 'down'
-        ? 'text-red-600'
-        : 'text-gray-500';
+        ? 'text-linear-error'
+        : 'text-linear-text-tertiary';
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-linear-bg-secondary rounded-lg shadow p-6">
       <div className="flex items-center justify-between">
-        <div className="p-2 bg-blue-50 rounded-lg">{icon}</div>
+        <div className="p-2 bg-linear-accent/10 rounded-lg">{icon}</div>
         {trend !== undefined && (
           <span className={`text-sm font-medium ${trendColor}`}>
             {trendDirection === 'up' ? '+' : trendDirection === 'down' ? '' : ''}
@@ -142,9 +142,9 @@ function SummaryCard({
         )}
       </div>
       <div className="mt-4">
-        <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-        <p className="text-sm text-gray-600 mt-1">{title}</p>
-        {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+        <h3 className="text-2xl font-bold text-linear-text-primary">{value}</h3>
+        <p className="text-sm text-linear-text-secondary mt-1">{title}</p>
+        {subtitle && <p className="text-xs text-linear-text-tertiary mt-1">{subtitle}</p>}
       </div>
     </div>
   );
@@ -198,19 +198,19 @@ function OverviewTab() {
           title="Timp mediu finalizare"
           value={`${completionData?.firmMetrics.avgCompletionTimeHours.toFixed(1) || 0}h`}
           subtitle="Pentru toate tipurile de sarcini"
-          icon={<Clock className="w-5 h-5 text-blue-600" />}
+          icon={<Clock className="w-5 h-5 text-linear-accent" />}
         />
         <SummaryCard
           title="Sarcini întârziate"
           value={overdueData?.totalOverdue || 0}
           subtitle={`${overdueData?.bottleneckPatterns.length || 0} blocaje detectate`}
-          icon={<AlertTriangle className="w-5 h-5 text-orange-600" />}
+          icon={<AlertTriangle className="w-5 h-5 text-linear-warning" />}
         />
         <SummaryCard
           title="Viteză curentă"
           value={velocityData?.firmVelocity.current.toFixed(1) || '0'}
           subtitle="Sarcini finalizate pe zi"
-          icon={<TrendingUp className="w-5 h-5 text-green-600" />}
+          icon={<TrendingUp className="w-5 h-5 text-linear-success" />}
           trend={velocityData?.firmVelocity.percentageChange}
           trendDirection={
             velocityData?.firmVelocity.trend === 'improving'
@@ -224,7 +224,7 @@ function OverviewTab() {
           title="Tipare detectate"
           value={patternsData?.totalPatternsFound || 0}
           subtitle={`${patternsData?.highConfidenceCount || 0} cu încredere ridicată`}
-          icon={<Workflow className="w-5 h-5 text-purple-600" />}
+          icon={<Workflow className="w-5 h-5 text-linear-accent" />}
         />
       </div>
 
@@ -234,41 +234,41 @@ function OverviewTab() {
           title="Rata succes delegări"
           value={`${((delegationData?.firmWideSuccessRate || 0) * 100).toFixed(0)}%`}
           subtitle="Media firmei"
-          icon={<Users className="w-5 h-5 text-indigo-600" />}
+          icon={<Users className="w-5 h-5 text-linear-accent" />}
         />
         <SummaryCard
           title="Oportunități instruire"
           value={delegationData?.trainingOpportunities.length || 0}
           subtitle="Utilizatori cu sugestii"
-          icon={<Users className="w-5 h-5 text-yellow-600" />}
+          icon={<Users className="w-5 h-5 text-linear-warning" />}
         />
         <SummaryCard
           title="Timp economisit"
           value={`${roiData?.currentPeriod?.totalTimeSavedHours?.toFixed(0) || 0}h`}
           subtitle="Perioada curentă"
-          icon={<Clock className="w-5 h-5 text-teal-600" />}
+          icon={<Clock className="w-5 h-5 text-linear-success" />}
         />
         <SummaryCard
           title="Valoare economisită"
           value={`${(roiData?.currentPeriod?.totalValueSaved || 0).toLocaleString()} RON`}
           subtitle={`${roiData?.projectedAnnualSavings?.toLocaleString() || 0} RON proiectat anual`}
-          icon={<DollarSign className="w-5 h-5 text-emerald-600" />}
+          icon={<DollarSign className="w-5 h-5 text-linear-success" />}
         />
       </div>
 
       {/* Critical alerts */}
       {overdueData && overdueData.criticalTasks.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">
+        <div className="bg-linear-error/10 border border-linear-error/30 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-linear-error mb-2">
             Sarcini critice întârziate ({overdueData.criticalTasks.length})
           </h3>
           <ul className="space-y-2">
             {overdueData.criticalTasks.slice(0, 5).map((task) => (
               <li key={task.taskId} className="flex items-center justify-between text-sm">
-                <span className="text-red-700">
+                <span className="text-linear-error">
                   {task.taskTitle} - {task.assigneeName}
                 </span>
-                <span className="text-red-600 font-medium">{task.daysOverdue} zile întârziere</span>
+                <span className="text-linear-error font-medium">{task.daysOverdue} zile întârziere</span>
               </li>
             ))}
           </ul>
@@ -457,14 +457,14 @@ export function TaskAnalyticsTab() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-linear-bg-primary">
       {/* Header */}
-      <div className="bg-white shadow">
+      <div className="bg-linear-bg-secondary shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Analize Sarcini</h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <h1 className="text-2xl font-bold text-linear-text-primary">Analize Sarcini</h1>
+              <p className="text-sm text-linear-text-secondary mt-1">
                 Urmărește productivitatea, identifică tipare și optimizează fluxurile de lucru
               </p>
             </div>
@@ -473,11 +473,11 @@ export function TaskAnalyticsTab() {
             <div className="flex items-center gap-3">
               {/* Date range selector */}
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
+                <Calendar className="w-4 h-4 text-linear-text-tertiary" />
                 <select
                   value={preset}
                   onChange={(e) => setPreset(e.target.value as typeof preset)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="border border-linear-border-subtle rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-linear-accent focus:border-linear-accent bg-linear-bg-secondary"
                   aria-label="Selectează perioada"
                 >
                   {datePresets.map((p) => (
@@ -492,7 +492,7 @@ export function TaskAnalyticsTab() {
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="inline-flex items-center px-3 py-2 border border-linear-border-subtle rounded-md text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary hover:bg-linear-bg-hover focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:opacity-50"
                 aria-label="Reîmprospătează analizele"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -503,7 +503,7 @@ export function TaskAnalyticsTab() {
               <button
                 onClick={handleExport}
                 disabled={isExporting}
-                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="inline-flex items-center px-3 py-2 bg-linear-accent text-white rounded-md text-sm font-medium hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:opacity-50"
                 aria-label="Exportă analizele"
               >
                 <Download className="w-4 h-4 mr-2" />
@@ -515,7 +515,7 @@ export function TaskAnalyticsTab() {
       </div>
 
       {/* Sub-tab navigation */}
-      <div className="bg-white border-b">
+      <div className="bg-linear-bg-secondary border-b border-linear-border-subtle">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex -mb-px overflow-x-auto" aria-label="Secțiuni analize">
             {tabs.map((tab) => (
@@ -526,8 +526,8 @@ export function TaskAnalyticsTab() {
                   flex items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 whitespace-nowrap
                   ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-linear-accent text-linear-accent'
+                      : 'border-transparent text-linear-text-tertiary hover:text-linear-text-secondary hover:border-linear-border-subtle'
                   }
                 `}
                 aria-current={activeTab === tab.id ? 'page' : undefined}
@@ -543,7 +543,7 @@ export function TaskAnalyticsTab() {
       {/* Content area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Date range display */}
-        <div className="mb-6 text-sm text-gray-600">
+        <div className="mb-6 text-sm text-linear-text-secondary">
           Date afișate din{' '}
           <span className="font-medium">{dateRange.start.toLocaleDateString('ro-RO')}</span> până în{' '}
           <span className="font-medium">{dateRange.end.toLocaleDateString('ro-RO')}</span>

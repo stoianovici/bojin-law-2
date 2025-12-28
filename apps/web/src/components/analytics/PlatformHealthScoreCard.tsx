@@ -67,14 +67,14 @@ function getScoreDescription(score: number): string {
 export function PlatformHealthScoreCard({ score, loading = false }: PlatformHealthScoreCardProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+      <div className="bg-linear-bg-secondary rounded-xl border border-linear-border-subtle p-6 animate-pulse">
         <div className="flex items-center justify-between">
           <div className="space-y-3">
-            <div className="h-4 bg-gray-200 rounded w-32" />
-            <div className="h-8 bg-gray-200 rounded w-24" />
-            <div className="h-3 bg-gray-200 rounded w-48" />
+            <div className="h-4 bg-linear-bg-hover rounded w-32" />
+            <div className="h-8 bg-linear-bg-hover rounded w-24" />
+            <div className="h-3 bg-linear-bg-hover rounded w-48" />
           </div>
-          <div className="w-32 h-32 bg-gray-200 rounded-full" />
+          <div className="w-32 h-32 bg-linear-bg-hover rounded-full" />
         </div>
       </div>
     );
@@ -91,16 +91,16 @@ export function PlatformHealthScoreCard({ score, loading = false }: PlatformHeal
   const rotation = -90; // Start from top
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-xl border border-linear-border-subtle p-6 shadow-sm">
       <div className="flex items-center justify-between">
         {/* Text Content */}
         <div className="space-y-2">
-          <div className="text-sm font-medium text-gray-500">Scor sănătate platformă</div>
+          <div className="text-sm font-medium text-linear-text-tertiary">Scor sănătate platformă</div>
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-bold" style={{ color }}>
               {score}
             </span>
-            <span className="text-xl text-gray-400">/100</span>
+            <span className="text-xl text-linear-text-muted">/100</span>
           </div>
           <div
             className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -111,7 +111,7 @@ export function PlatformHealthScoreCard({ score, loading = false }: PlatformHeal
           >
             {label}
           </div>
-          <p className="text-sm text-gray-600 max-w-xs mt-2">{description}</p>
+          <p className="text-sm text-linear-text-secondary max-w-xs mt-2">{description}</p>
         </div>
 
         {/* Gauge SVG */}
@@ -140,30 +140,30 @@ export function PlatformHealthScoreCard({ score, loading = false }: PlatformHeal
           {/* Center score text */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <span className="text-2xl font-bold text-gray-900">{score}</span>
-              <span className="text-xs text-gray-500 block">puncte</span>
+              <span className="text-2xl font-bold text-linear-text-primary">{score}</span>
+              <span className="text-xs text-linear-text-tertiary block">puncte</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Score breakdown hint */}
-      <div className="mt-4 pt-4 border-t border-gray-100">
-        <div className="flex items-center gap-4 text-xs text-gray-500">
+      <div className="mt-4 pt-4 border-t border-linear-border-subtle/50">
+        <div className="flex items-center gap-4 text-xs text-linear-text-tertiary">
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <div className="w-2 h-2 rounded-full bg-linear-success" />
             <span>80-100 Excelent</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-amber-500" />
+            <div className="w-2 h-2 rounded-full bg-linear-warning" />
             <span>60-79 Bun</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-orange-500" />
+            <div className="w-2 h-2 rounded-full bg-linear-warning" />
             <span>40-59 Mediu</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <div className="w-2 h-2 rounded-full bg-linear-error" />
             <span>0-39 Critic</span>
           </div>
         </div>

@@ -131,7 +131,7 @@ export function EmailImportWizard({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
         {trigger || (
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-linear-accent bg-linear-accent/15 border border-linear-accent/30 rounded-md hover:bg-linear-accent/20 focus:outline-none focus:ring-2 focus:ring-linear-accent transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -149,23 +149,23 @@ export function EmailImportWizard({
         <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 z-50" />
 
         <Dialog.Content
-          className="fixed z-50 bg-white shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 overflow-hidden
+          className="fixed z-50 bg-linear-bg-secondary shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 overflow-hidden
             inset-0 md:inset-auto
             md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2
             md:w-full md:max-w-4xl md:max-h-[90vh] md:rounded-lg
             flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-linear-border-subtle">
             <div>
-              <Dialog.Title className="text-xl font-semibold text-gray-900">
+              <Dialog.Title className="text-xl font-semibold text-linear-text-primary">
                 Importă Emailuri în Dosar
               </Dialog.Title>
-              {caseTitle && <p className="text-sm text-gray-500 mt-1">{caseTitle}</p>}
+              {caseTitle && <p className="text-sm text-linear-text-tertiary mt-1">{caseTitle}</p>}
             </div>
             <Dialog.Close
               onClick={handleClose}
-              className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
+              className="text-linear-text-muted hover:text-linear-text-secondary focus:outline-none focus:ring-2 focus:ring-linear-accent rounded p-1"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -179,7 +179,7 @@ export function EmailImportWizard({
           </div>
 
           {/* Progress Steps */}
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div className="px-6 py-4 border-b border-linear-border-subtle bg-linear-bg-tertiary">
             {(() => {
               // OPS-030: Dynamic steps based on whether classification is needed
               // Show 5 steps if client has multiple cases (even before classification is loaded)
@@ -201,10 +201,10 @@ export function EmailImportWizard({
                           className={clsx(
                             'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
                             step === s
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-linear-accent text-white'
                               : step === 'complete' || idx < currentIdx
-                                ? 'bg-green-500 text-white'
-                                : 'bg-gray-200 text-gray-500'
+                                ? 'bg-linear-success text-white'
+                                : 'bg-linear-bg-tertiary text-linear-text-tertiary'
                           )}
                         >
                           {idx + 1}
@@ -213,14 +213,14 @@ export function EmailImportWizard({
                           <div
                             className={clsx(
                               'w-12 h-0.5 mx-1',
-                              idx < currentIdx ? 'bg-green-500' : 'bg-gray-200'
+                              idx < currentIdx ? 'bg-linear-success' : 'bg-linear-bg-tertiary'
                             )}
                           />
                         )}
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-between mt-2 text-xs text-gray-500">
+                  <div className="flex justify-between mt-2 text-xs text-linear-text-tertiary">
                     {labels.map((label, idx) => (
                       <span key={idx}>{label}</span>
                     ))}
@@ -235,7 +235,7 @@ export function EmailImportWizard({
             {/* Step 1: Enter Email Addresses */}
             {step === 'input' && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-linear-text-secondary">
                   Introduceți adresele de email ale contactelor pentru care doriți să importați
                   corespondența.
                 </p>
@@ -253,13 +253,13 @@ export function EmailImportWizard({
                       }
                     }}
                     placeholder="exemplu@email.com"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent"
                   />
                   <button
                     type="button"
                     onClick={handleAddEmail}
                     disabled={!emailInput.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-linear-accent text-white rounded-md hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Adaugă
                   </button>
@@ -271,13 +271,13 @@ export function EmailImportWizard({
                     {emailAddresses.map((email) => (
                       <span
                         key={email}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-linear-accent/15 text-linear-accent rounded-full text-sm"
                       >
                         {email}
                         <button
                           type="button"
                           onClick={() => handleRemoveEmail(email)}
-                          className="text-blue-400 hover:text-blue-600"
+                          className="text-linear-accent/60 hover:text-linear-accent"
                         >
                           <svg
                             className="w-4 h-4"
@@ -300,7 +300,7 @@ export function EmailImportWizard({
 
                 {/* Error */}
                 {previewError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                  <div className="p-3 bg-linear-error/15 border border-linear-error/30 rounded-md text-sm text-linear-error">
                     {previewError.message}
                   </div>
                 )}
@@ -312,49 +312,49 @@ export function EmailImportWizard({
               <div className="space-y-6">
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 bg-blue-50 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-blue-700">{preview.emailCount}</div>
-                    <div className="text-xs text-blue-600">Emailuri găsite</div>
+                  <div className="p-4 bg-linear-accent/15 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-linear-accent">{preview.emailCount}</div>
+                    <div className="text-xs text-linear-accent/80">Emailuri găsite</div>
                   </div>
-                  <div className="p-4 bg-green-50 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-green-700">{preview.threadCount}</div>
-                    <div className="text-xs text-green-600">Conversații</div>
+                  <div className="p-4 bg-linear-success/15 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-linear-success">{preview.threadCount}</div>
+                    <div className="text-xs text-linear-success/80">Conversații</div>
                   </div>
-                  <div className="p-4 bg-purple-50 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-purple-700">
+                  <div className="p-4 bg-purple-500/15 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-purple-500">
                       {preview.contacts.length}
                     </div>
-                    <div className="text-xs text-purple-600">Contacte</div>
+                    <div className="text-xs text-purple-500/80">Contacte</div>
                   </div>
-                  <div className="p-4 bg-orange-50 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-orange-700">
+                  <div className="p-4 bg-linear-warning/15 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-linear-warning">
                       {preview.attachmentCount}
                     </div>
-                    <div className="text-xs text-orange-600">Atașamente</div>
+                    <div className="text-xs text-linear-warning/80">Atașamente</div>
                   </div>
                 </div>
 
                 {/* Date Range */}
                 {preview.dateRange.start && (
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm font-medium text-gray-700 mb-1">Interval de timp</div>
-                    <div className="text-sm text-gray-600">
+                  <div className="p-4 bg-linear-bg-tertiary rounded-lg">
+                    <div className="text-sm font-medium text-linear-text-secondary mb-1">Interval de timp</div>
+                    <div className="text-sm text-linear-text-secondary">
                       {formatDate(preview.dateRange.start)} - {formatDate(preview.dateRange.end)}
                     </div>
                   </div>
                 )}
 
                 {/* Import Attachments Toggle */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                <label className="flex items-center gap-3 p-4 bg-linear-bg-tertiary rounded-lg cursor-pointer hover:bg-linear-bg-hover transition-colors">
                   <input
                     type="checkbox"
                     checked={importAttachments}
                     onChange={(e) => setImportAttachments(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-linear-accent border-linear-border rounded focus:ring-linear-accent"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Importă atașamentele</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-medium text-linear-text-primary">Importă atașamentele</div>
+                    <div className="text-sm text-linear-text-tertiary">
                       Atașamentele vor fi salvate ca documente în dosar
                     </div>
                   </div>
@@ -362,10 +362,10 @@ export function EmailImportWizard({
 
                 {/* No Emails Warning */}
                 {!hasEmails && (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="p-4 bg-linear-warning/15 border border-linear-warning/30 rounded-lg">
                     <div className="flex items-start gap-3">
                       <svg
-                        className="w-5 h-5 text-yellow-600 mt-0.5"
+                        className="w-5 h-5 text-linear-warning mt-0.5"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -378,8 +378,8 @@ export function EmailImportWizard({
                         />
                       </svg>
                       <div>
-                        <div className="font-medium text-yellow-800">Nu s-au găsit emailuri</div>
-                        <div className="text-sm text-yellow-700">
+                        <div className="font-medium text-linear-warning">Nu s-au găsit emailuri</div>
+                        <div className="text-sm text-linear-warning/80">
                           Nu există emailuri sincronizate pentru adresele specificate. Asigurați-vă
                           că emailurile au fost sincronizate din Microsoft 365.
                         </div>
@@ -393,7 +393,7 @@ export function EmailImportWizard({
             {/* Step 3: Classification (OPS-030) */}
             {step === 'classify' && classificationPreview && (
               <div className="space-y-6">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-linear-text-secondary">
                   Clientul are mai multe dosare active. Sistemul a clasificat automat emailurile.
                   Verificați și ajustați dacă este necesar.
                 </p>
@@ -403,15 +403,15 @@ export function EmailImportWizard({
                   {classificationPreview.byCase.map((summary) => (
                     <div
                       key={summary.caseId}
-                      className="p-3 bg-blue-50 rounded-lg border border-blue-100"
+                      className="p-3 bg-linear-accent/15 rounded-lg border border-linear-accent/30"
                     >
-                      <div className="text-sm font-medium text-blue-800 truncate">
+                      <div className="text-sm font-medium text-linear-accent truncate">
                         {summary.case.title}
                       </div>
-                      <div className="text-2xl font-bold text-blue-700 mt-1">
+                      <div className="text-2xl font-bold text-linear-accent mt-1">
                         {summary.emailCount}
                       </div>
-                      <div className="text-xs text-blue-600">
+                      <div className="text-xs text-linear-accent/80">
                         {summary.autoClassified} auto • {summary.needsReview} de verificat
                       </div>
                     </div>
@@ -420,10 +420,10 @@ export function EmailImportWizard({
 
                 {/* Needs Review Banner */}
                 {classificationPreview.needsReview > 0 && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="p-3 bg-linear-warning/15 border border-linear-warning/30 rounded-lg">
                     <div className="flex items-center gap-2">
                       <svg
-                        className="w-5 h-5 text-yellow-600"
+                        className="w-5 h-5 text-linear-warning"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -435,7 +435,7 @@ export function EmailImportWizard({
                           d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                         />
                       </svg>
-                      <span className="text-sm text-yellow-800">
+                      <span className="text-sm text-linear-warning">
                         {classificationPreview.needsReview} emailuri necesită verificare manuală
                       </span>
                     </div>
@@ -457,10 +457,10 @@ export function EmailImportWizard({
                         className={clsx(
                           'p-3 rounded-lg border',
                           isExcluded
-                            ? 'bg-gray-100 border-gray-200 opacity-60'
+                            ? 'bg-linear-bg-tertiary border-linear-border-subtle opacity-60'
                             : classification.needsHumanReview
-                              ? 'bg-yellow-50 border-yellow-200'
-                              : 'bg-white border-gray-200'
+                              ? 'bg-linear-warning/15 border-linear-warning/30'
+                              : 'bg-linear-bg-secondary border-linear-border-subtle'
                         )}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -472,24 +472,24 @@ export function EmailImportWizard({
                               onChange={(e) =>
                                 setEmailExcluded(classification.emailId, !e.target.checked)
                               }
-                              className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              className="mt-1 w-4 h-4 text-linear-accent border-linear-border rounded focus:ring-linear-accent"
                             />
 
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-900 truncate">
+                              <div className="text-sm font-medium text-linear-text-primary truncate">
                                 {classification.email?.subject || '(fără subiect)'}
                               </div>
-                              <div className="text-xs text-gray-500 truncate">
+                              <div className="text-xs text-linear-text-tertiary truncate">
                                 De la:{' '}
                                 {classification.email?.fromName || classification.email?.from}
                               </div>
                               {classification.needsHumanReview && (
-                                <div className="text-xs text-yellow-700 mt-1">
+                                <div className="text-xs text-linear-warning mt-1">
                                   ⚠️ {classification.reviewReason}
                                 </div>
                               )}
                               {classification.isGlobalSource && (
-                                <div className="text-xs text-blue-600 mt-1">
+                                <div className="text-xs text-linear-accent mt-1">
                                   📧 {classification.globalSourceName}
                                 </div>
                               )}
@@ -504,7 +504,7 @@ export function EmailImportWizard({
                               setClassificationOverride(classification.emailId, newCaseId);
                             }}
                             disabled={isExcluded}
-                            className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px]"
+                            className="px-2 py-1 text-xs border border-linear-border rounded focus:outline-none focus:ring-2 focus:ring-linear-accent max-w-[150px]"
                           >
                             <option value="">Fără dosar</option>
                             {classificationPreview.byCase.map((summary) => (
@@ -521,16 +521,16 @@ export function EmailImportWizard({
                             className={clsx(
                               'text-xs px-2 py-0.5 rounded-full',
                               classification.confidence >= 0.85
-                                ? 'bg-green-100 text-green-700'
+                                ? 'bg-linear-success/15 text-linear-success'
                                 : classification.confidence >= 0.5
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-red-100 text-red-700'
+                                  ? 'bg-linear-warning/15 text-linear-warning'
+                                  : 'bg-linear-error/15 text-linear-error'
                             )}
                           >
                             {Math.round(classification.confidence * 100)}% încredere
                           </div>
                           {classification.reasons.length > 0 && (
-                            <div className="text-xs text-gray-500 truncate">
+                            <div className="text-xs text-linear-text-tertiary truncate">
                               {classification.reasons[0]}
                             </div>
                           )}
@@ -542,7 +542,7 @@ export function EmailImportWizard({
 
                 {/* Excluded Count */}
                 {excludedEmailIds.length > 0 && (
-                  <div className="text-sm text-gray-500 text-center">
+                  <div className="text-sm text-linear-text-tertiary text-center">
                     {excludedEmailIds.length} emailuri excluse din import
                   </div>
                 )}
@@ -552,13 +552,13 @@ export function EmailImportWizard({
             {/* Step 4: Assign Roles */}
             {step === 'assign' && preview && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-linear-text-secondary mb-4">
                   Selectați rolul pentru fiecare contact descoperit. Contactele fără rol nu vor fi
                   adăugate.
                 </p>
 
                 {preview.contacts.length === 0 ? (
-                  <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
+                  <div className="p-4 bg-linear-bg-tertiary rounded-lg text-center text-linear-text-tertiary">
                     Nu s-au descoperit contacte noi din emailuri.
                   </div>
                 ) : (
@@ -570,16 +570,16 @@ export function EmailImportWizard({
                       return (
                         <div
                           key={contact.email}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-4 bg-linear-bg-tertiary rounded-lg"
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">
+                            <div className="font-medium text-linear-text-primary truncate">
                               {contact.name || contact.email}
                             </div>
                             {contact.name && (
-                              <div className="text-sm text-gray-500 truncate">{contact.email}</div>
+                              <div className="text-sm text-linear-text-tertiary truncate">{contact.email}</div>
                             )}
-                            <div className="text-xs text-gray-400 mt-1">
+                            <div className="text-xs text-linear-text-muted mt-1">
                               {contact.occurrences}{' '}
                               {contact.occurrences === 1 ? 'email' : 'emailuri'}
                             </div>
@@ -590,7 +590,7 @@ export function EmailImportWizard({
                               const value = e.target.value as ContactRoleAssignment['role'] | '';
                               updateContactAssignment(contact.email, value || null);
                             }}
-                            className="ml-4 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="ml-4 px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-sm"
                           >
                             <option value="">Fără rol</option>
                             {ROLE_OPTIONS.map((opt) => (
@@ -612,11 +612,11 @@ export function EmailImportWizard({
               <div className="space-y-6">
                 {step === 'importing' && (
                   <div className="flex flex-col items-center justify-center py-12">
-                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4" />
-                    <div className="text-lg font-medium text-gray-900">
+                    <div className="w-12 h-12 border-4 border-linear-accent/30 border-t-linear-accent rounded-full animate-spin mb-4" />
+                    <div className="text-lg font-medium text-linear-text-primary">
                       Se importă emailurile...
                     </div>
-                    <div className="text-sm text-gray-500 mt-2">Vă rugăm așteptați</div>
+                    <div className="text-sm text-linear-text-tertiary mt-2">Vă rugăm așteptați</div>
                   </div>
                 )}
 
@@ -627,14 +627,14 @@ export function EmailImportWizard({
                       className={clsx(
                         'p-4 rounded-lg',
                         result.success
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-red-50 border border-red-200'
+                          ? 'bg-linear-success/15 border border-linear-success/30'
+                          : 'bg-linear-error/15 border border-linear-error/30'
                       )}
                     >
                       <div className="flex items-center gap-3">
                         {result.success ? (
                           <svg
-                            className="w-6 h-6 text-green-600"
+                            className="w-6 h-6 text-linear-success"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -648,7 +648,7 @@ export function EmailImportWizard({
                           </svg>
                         ) : (
                           <svg
-                            className="w-6 h-6 text-red-600"
+                            className="w-6 h-6 text-linear-error"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -665,7 +665,7 @@ export function EmailImportWizard({
                           <div
                             className={clsx(
                               'font-medium',
-                              result.success ? 'text-green-800' : 'text-red-800'
+                              result.success ? 'text-linear-success' : 'text-linear-error'
                             )}
                           >
                             {result.success ? 'Import finalizat cu succes!' : 'Eroare la import'}
@@ -676,31 +676,31 @@ export function EmailImportWizard({
 
                     {/* Results Summary */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="p-4 bg-blue-50 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-blue-700">
+                      <div className="p-4 bg-linear-accent/15 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-linear-accent">
                           {result.emailsLinked}
                         </div>
-                        <div className="text-xs text-blue-600">Emailuri importate</div>
+                        <div className="text-xs text-linear-accent/80">Emailuri importate</div>
                       </div>
-                      <div className="p-4 bg-green-50 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-green-700">
+                      <div className="p-4 bg-linear-success/15 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-linear-success">
                           {result.contactsCreated}
                         </div>
-                        <div className="text-xs text-green-600">Contacte create</div>
+                        <div className="text-xs text-linear-success/80">Contacte create</div>
                       </div>
-                      <div className="p-4 bg-purple-50 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-purple-700">
+                      <div className="p-4 bg-purple-500/15 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-purple-500">
                           {result.attachmentsImported}
                         </div>
-                        <div className="text-xs text-purple-600">Atașamente</div>
+                        <div className="text-xs text-purple-500/80">Atașamente</div>
                       </div>
                     </div>
 
                     {/* Errors */}
                     {result.errors.length > 0 && (
-                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="font-medium text-yellow-800 mb-2">Avertismente:</div>
-                        <ul className="text-sm text-yellow-700 space-y-1">
+                      <div className="p-4 bg-linear-warning/15 border border-linear-warning/30 rounded-lg">
+                        <div className="font-medium text-linear-warning mb-2">Avertismente:</div>
+                        <ul className="text-sm text-linear-warning/80 space-y-1">
                           {result.errors.map((err, idx) => (
                             <li key={idx}>• {err}</li>
                           ))}
@@ -714,13 +714,13 @@ export function EmailImportWizard({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex justify-between items-center p-6 border-t border-linear-border-subtle bg-linear-bg-tertiary">
             <div>
               {step !== 'input' && step !== 'importing' && step !== 'complete' && (
                 <button
                   type="button"
                   onClick={goBack}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                  className="px-4 py-2 text-sm font-medium text-linear-text-secondary hover:text-linear-text-primary"
                 >
                   ← Înapoi
                 </button>
@@ -730,7 +730,7 @@ export function EmailImportWizard({
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary border border-linear-border rounded-md hover:bg-linear-bg-hover focus:outline-none focus:ring-2 focus:ring-linear-accent"
               >
                 {step === 'complete' ? 'Închide' : 'Anulează'}
               </button>
@@ -740,7 +740,7 @@ export function EmailImportWizard({
                   type="button"
                   onClick={loadPreview}
                   disabled={!canLoadPreview || previewLoading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {previewLoading && (
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -776,7 +776,7 @@ export function EmailImportWizard({
                     }
                   }}
                   disabled={!hasEmails || classificationLoading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {classificationLoading && (
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -804,7 +804,7 @@ export function EmailImportWizard({
                 <button
                   type="button"
                   onClick={goToAssignFromClassification}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent"
                 >
                   Continuă la Roluri
                 </button>
@@ -822,7 +822,7 @@ export function EmailImportWizard({
                     }
                   }}
                   disabled={importLoading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-md hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {importLoading && (
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -850,7 +850,7 @@ export function EmailImportWizard({
                 <button
                   type="button"
                   onClick={handleComplete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 text-sm font-medium text-white bg-linear-success rounded-md hover:bg-linear-success/80 focus:outline-none focus:ring-2 focus:ring-linear-success"
                 >
                   Finalizare
                 </button>

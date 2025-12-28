@@ -9,67 +9,20 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
-import type { Task, TaskType, TaskSortConfig } from '@legal-platform/types';
+import type { Task, TaskSortConfig } from '@legal-platform/types';
 
 // TODO: Replace with real user data from API
 const USERS: { id: string; name: string; initials: string }[] = [];
 import { QuickTimeLog } from '@/components/time/QuickTimeLog';
 import { useLogTimeAgainstTask } from '@/hooks/useTimeEntries';
 import { Clock } from 'lucide-react';
-
-/**
- * Task type color mapping (same as CalendarView and KanbanBoard)
- */
-const TASK_TYPE_COLORS: Record<TaskType, string> = {
-  Research: '#3B82F6',
-  DocumentCreation: '#10B981',
-  DocumentRetrieval: '#8B5CF6',
-  CourtDate: '#EF4444',
-  Meeting: '#F59E0B',
-  BusinessTrip: '#6366F1',
-};
-
-/**
- * Task type labels in Romanian
- */
-const TASK_TYPE_LABELS: Record<TaskType, string> = {
-  Research: 'Cercetare',
-  DocumentCreation: 'Creare Document',
-  DocumentRetrieval: 'Recuperare Document',
-  CourtDate: 'Termen Instanță',
-  Meeting: 'Întâlnire',
-  BusinessTrip: 'Deplasare',
-};
-
-/**
- * Status labels in Romanian
- */
-const STATUS_LABELS: Record<Task['status'], string> = {
-  Pending: 'În Așteptare',
-  InProgress: 'În Progres',
-  Completed: 'Finalizat',
-  Cancelled: 'Anulat',
-};
-
-/**
- * Priority labels in Romanian
- */
-const PRIORITY_LABELS: Record<Task['priority'], string> = {
-  Low: 'Scăzută',
-  Medium: 'Medie',
-  High: 'Ridicată',
-  Urgent: 'Urgentă',
-};
-
-/**
- * Priority indicator colors
- */
-const PRIORITY_COLORS: Record<Task['priority'], string> = {
-  Low: '#10B981',
-  Medium: '#F59E0B',
-  High: '#EF4444',
-  Urgent: '#DC2626',
-};
+import {
+  TASK_TYPE_COLORS,
+  TASK_TYPE_LABELS,
+  PRIORITY_COLORS,
+  PRIORITY_LABELS,
+  STATUS_LABELS,
+} from '@/utils/task-colors';
 
 /**
  * ListView Props
@@ -190,7 +143,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
     if (sortConfig.field !== field) {
       return (
         <svg
-          className="w-4 h-4 text-gray-400"
+          className="w-4 h-4 text-linear-text-muted"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -206,11 +159,11 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
     }
 
     return sortConfig.direction === 'asc' ? (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 text-linear-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
       </svg>
     ) : (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 text-linear-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
       </svg>
     );
@@ -219,14 +172,14 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
   return (
     <div className="list-view-container h-full flex flex-col">
       {/* Table container with horizontal scroll on mobile */}
-      <div className="flex-1 overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="flex-1 overflow-x-auto bg-linear-bg-secondary rounded-lg shadow-sm border border-linear-border-subtle">
+        <table className="min-w-full divide-y divide-linear-border-subtle">
           {/* Table header */}
-          <thead className="bg-gray-50">
+          <thead className="bg-linear-bg-tertiary">
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover transition-colors"
                 onClick={() => handleSort('title')}
               >
                 <div className="flex items-center gap-2">
@@ -236,7 +189,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover transition-colors"
                 onClick={() => handleSort('caseId')}
               >
                 <div className="flex items-center gap-2">
@@ -246,7 +199,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover transition-colors"
                 onClick={() => handleSort('assignedTo')}
               >
                 <div className="flex items-center gap-2">
@@ -256,7 +209,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover transition-colors"
                 onClick={() => handleSort('dueDate')}
               >
                 <div className="flex items-center gap-2">
@@ -266,7 +219,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover transition-colors"
                 onClick={() => handleSort('priority')}
               >
                 <div className="flex items-center gap-2">
@@ -276,7 +229,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider cursor-pointer hover:bg-linear-bg-hover transition-colors"
                 onClick={() => handleSort('status')}
               >
                 <div className="flex items-center gap-2">
@@ -286,7 +239,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider"
               >
                 Acțiuni
               </th>
@@ -294,11 +247,11 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
           </thead>
 
           {/* Table body */}
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
             {paginatedTasks.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center">
-                  <div className="flex flex-col items-center justify-center text-gray-400">
+                  <div className="flex flex-col items-center justify-center text-linear-text-muted">
                     <svg
                       className="w-12 h-12 mb-3 opacity-50"
                       fill="none"
@@ -323,7 +276,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                   <tr
                     key={task.id}
                     onClick={() => onTaskClick(task)}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="hover:bg-linear-bg-hover cursor-pointer transition-colors"
                   >
                     {/* Title with type color indicator and optional duration */}
                     <td className="py-4 whitespace-normal">
@@ -333,12 +286,12 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                         title={TASK_TYPE_LABELS[task.type]}
                       >
                         <div className="flex items-start gap-2">
-                          <span className="text-sm font-medium text-gray-900 line-clamp-2">
+                          <span className="text-sm font-medium text-linear-text-primary line-clamp-2">
                             {task.title}
                           </span>
                           {task.estimatedHours && task.estimatedHours > 0 && (
                             <span
-                              className="shrink-0 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+                              className="shrink-0 text-[10px] font-medium text-linear-text-tertiary bg-linear-bg-tertiary px-1.5 py-0.5 rounded"
                               title={`Durată estimată: ${task.estimatedHours} ore`}
                             >
                               {task.estimatedHours}h
@@ -350,7 +303,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
 
                     {/* Case */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-700 line-clamp-1">{caseName || '—'}</span>
+                      <span className="text-sm text-linear-text-secondary line-clamp-1">{caseName || '—'}</span>
                     </td>
 
                     {/* Assignee */}
@@ -366,7 +319,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                               >
                                 {user?.initials || 'U'}
                               </div>
-                              <span className="text-sm text-gray-700">
+                              <span className="text-sm text-linear-text-secondary">
                                 {user?.name || task.assignedTo}
                               </span>
                             </>
@@ -377,10 +330,10 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
 
                     {/* Due Date */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-linear-text-primary">
                         {format(new Date(task.dueDate), 'dd.MM.yyyy', { locale: ro })}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-linear-text-tertiary">
                         {format(new Date(task.dueDate), 'HH:mm', { locale: ro })}
                       </div>
                     </td>
@@ -392,7 +345,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
                         />
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-linear-text-secondary">
                           {PRIORITY_LABELS[task.priority]}
                         </span>
                       </div>
@@ -400,7 +353,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
 
                     {/* Status */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-700">{STATUS_LABELS[task.status]}</span>
+                      <span className="text-sm text-linear-text-secondary">{STATUS_LABELS[task.status]}</span>
                     </td>
 
                     {/* Actions */}
@@ -428,7 +381,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                         <button
                           type="button"
                           onClick={() => setLogTimeTaskId(task.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium"
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-linear-accent text-linear-accent rounded-md hover:bg-linear-accent/10 transition-colors font-medium"
                         >
                           <Clock className="h-4 w-4" />
                           <span>Înregistrează</span>
@@ -445,8 +398,8 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
 
       {/* Pagination controls */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200 rounded-b-lg">
-          <div className="text-sm text-gray-700">
+        <div className="flex items-center justify-between px-6 py-4 bg-linear-bg-secondary border-t border-linear-border-subtle rounded-b-lg">
+          <div className="text-sm text-linear-text-secondary">
             Afișare {(currentPage - 1) * ITEMS_PER_PAGE + 1} -{' '}
             {Math.min(currentPage * ITEMS_PER_PAGE, sortedTasks.length)} din {sortedTasks.length}{' '}
             sarcini
@@ -456,7 +409,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 border border-linear-border rounded-md text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary hover:bg-linear-bg-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Anterior
             </button>
@@ -468,8 +421,8 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
                   onClick={() => handlePageChange(page)}
                   className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
                     currentPage === page
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      ? 'bg-linear-accent text-white border-linear-accent'
+                      : 'bg-linear-bg-secondary text-linear-text-secondary border-linear-border hover:bg-linear-bg-hover'
                   }`}
                 >
                   {page}
@@ -480,7 +433,7 @@ export function ListView({ tasks, onTaskClick, onSortChange }: ListViewProps) {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 border border-linear-border rounded-md text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary hover:bg-linear-bg-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Următor
             </button>

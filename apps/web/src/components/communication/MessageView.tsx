@@ -624,20 +624,20 @@ function Message({
   return (
     <div
       className={`border-b ${
-        isSentByUser ? 'ml-8 border-l-4 border-l-blue-400 bg-blue-50/50 p-3' : 'p-4'
+        isSentByUser ? 'ml-8 border-l-4 border-l-linear-accent bg-linear-accent/10/50 p-3' : 'p-4'
       }`}
     >
       <div className="flex items-start justify-between cursor-pointer" onClick={onToggle}>
         <div className="flex-1">
           <div className="flex items-center gap-2">
             {isSentByUser && (
-              <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+              <span className="inline-flex items-center rounded bg-linear-accent/15 px-1.5 py-0.5 text-xs font-medium text-linear-accent">
                 Dvs.
               </span>
             )}
             <div
               className={`rounded-full flex items-center justify-center text-sm ${
-                isSentByUser ? 'w-6 h-6 bg-blue-400 text-white' : 'w-8 h-8 bg-blue-500 text-white'
+                isSentByUser ? 'w-6 h-6 bg-linear-accent text-white' : 'w-8 h-8 bg-linear-accent text-white'
               }`}
             >
               {message.senderName.charAt(0).toUpperCase()}
@@ -646,11 +646,11 @@ function Message({
               <div className={`font-semibold ${isSentByUser ? 'text-xs' : 'text-sm'}`}>
                 {message.senderName}
               </div>
-              <div className="text-xs text-gray-500">{message.senderEmail}</div>
+              <div className="text-xs text-linear-text-tertiary">{message.senderEmail}</div>
             </div>
           </div>
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-linear-text-tertiary">
           {message.sentDate && !isNaN(new Date(message.sentDate).getTime())
             ? format(new Date(message.sentDate), 'dd.MM.yyyy HH:mm')
             : '—'}
@@ -664,7 +664,7 @@ function Message({
             <div className="flex items-center gap-2 mb-2 text-xs">
               <button
                 onClick={() => setShowOriginal(!showOriginal)}
-                className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+                className="flex items-center gap-1 text-linear-text-tertiary hover:text-linear-text-secondary transition-colors"
                 title={showOriginal ? 'Arată versiunea curată' : 'Arată originalul'}
               >
                 {showOriginal ? (
@@ -698,7 +698,7 @@ function Message({
               return (
                 <iframe
                   srcDoc={contentToShow}
-                  className="w-full min-h-[200px] border-0 bg-white"
+                  className="w-full min-h-[200px] border-0 bg-linear-bg-secondary"
                   sandbox="allow-same-origin"
                   title="Email content"
                   style={{ height: 'auto' }}
@@ -720,16 +720,16 @@ function Message({
             <div className="mt-3 space-y-1">
               {message.attachments.map((att: any) => (
                 <div key={att.id} className="flex items-center gap-2">
-                  <Paperclip className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-700 truncate">
+                  <Paperclip className="h-4 w-4 text-linear-text-muted flex-shrink-0" />
+                  <span className="text-sm text-linear-text-secondary truncate">
                     {att.name || att.filename || 'Attachment'}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-linear-text-tertiary">
                     ({Math.round((att.size || att.fileSize || 0) / 1024)} KB)
                   </span>
                   {/* OPS-175: Show "Editat" badge for promoted attachments */}
                   {att.isPromoted && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-linear-warning bg-linear-warning/10 border border-linear-warning/30 rounded">
                       <FileEdit className="h-3 w-3" />
                       Editat
                     </span>
@@ -737,7 +737,7 @@ function Message({
                   {/* Preview button */}
                   <button
                     onClick={(e) => handlePreviewAttachment(e, att)}
-                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    className="p-1 text-linear-text-tertiary hover:text-linear-accent hover:bg-linear-accent/10 rounded transition-colors"
                     title="Previzualizează"
                     aria-label="Previzualizează"
                   >
@@ -747,7 +747,7 @@ function Message({
                   <button
                     onClick={(e) => handleDownloadAttachment(e, att.id, att.name)}
                     disabled={downloadingId === att.id}
-                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                    className="p-1 text-linear-text-tertiary hover:text-linear-accent hover:bg-linear-accent/10 rounded transition-colors disabled:opacity-50"
                     title="Descarcă"
                     aria-label="Descarcă"
                   >
@@ -768,7 +768,7 @@ function Message({
                 <button
                   onClick={handleSyncAttachments}
                   disabled={syncingAttachments}
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 text-sm text-linear-accent hover:text-linear-accent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {syncingAttachments ? (
                     <>
@@ -788,20 +788,20 @@ function Message({
                     e.stopPropagation();
                     onReconnectMicrosoft?.();
                   }}
-                  className="flex items-center gap-2 text-sm text-amber-600 hover:text-amber-700"
+                  className="flex items-center gap-2 text-sm text-linear-warning hover:text-linear-warning"
                 >
                   <Link2 className="h-4 w-4" />
                   <span>Conectează Microsoft pentru atașamente</span>
                 </button>
               )}
-              {syncError && <p className="text-xs text-red-500 mt-1">{syncError}</p>}
+              {syncError && <p className="text-xs text-linear-error mt-1">{syncError}</p>}
             </div>
           )}
           <div className="mt-4 flex items-center gap-2">
             <button
               onClick={handleReplyClick}
               onKeyDown={handleReplyKeyDown}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-linear-accent hover:text-linear-accent hover:bg-linear-accent/10 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-1"
               aria-label="Răspunde la acest mesaj"
             >
               <Reply className="h-4 w-4" />
@@ -951,7 +951,7 @@ export function MessageView() {
 
   if (!thread) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
+      <div className="flex items-center justify-center h-full text-linear-text-tertiary">
         <p>Selectați o conversație</p>
       </div>
     );
@@ -1028,13 +1028,13 @@ export function MessageView() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b p-4 bg-white space-y-3">
+      <div className="border-b p-4 bg-linear-bg-secondary space-y-3">
         <div>
           <h2 className="font-semibold text-lg mb-1">{thread.subject}</h2>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-linear-text-secondary">
             {thread.caseName} • {allMessages.length} mesaje
             {sentMessageCount > 0 && (
-              <span className="text-blue-500 ml-1">
+              <span className="text-linear-accent ml-1">
                 ({sentMessageCount} {sentMessageCount === 1 ? 'trimis' : 'trimise'})
               </span>
             )}
@@ -1043,15 +1043,15 @@ export function MessageView() {
 
         {/* Unassigned email banner */}
         {isUnassigned && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800 mb-2">
+          <div className="p-3 bg-linear-accent/10 border border-linear-accent/30 rounded-lg">
+            <p className="text-sm text-linear-accent mb-2">
               Această conversație nu este asociată cu un dosar.
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowAssignModal(true)}
                 disabled={assigning}
-                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="px-3 py-1.5 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
                 <FolderInput className="h-4 w-4" />
                 Atribuie la dosar
@@ -1059,7 +1059,7 @@ export function MessageView() {
               <button
                 onClick={handleIgnoreThread}
                 disabled={ignoring}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                className="px-3 py-1.5 text-sm bg-linear-bg-tertiary text-linear-text-secondary rounded hover:bg-linear-bg-hover transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
                 {ignoring ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1074,8 +1074,8 @@ export function MessageView() {
 
         {/* Processing Stats */}
         {unconvertedCount > 0 && (
-          <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-            <p className="text-yellow-800">
+          <div className="p-2 bg-linear-warning/10 border border-linear-warning/30 rounded text-sm">
+            <p className="text-linear-warning">
               ⚠️ Au mai rămas {unconvertedCount} elemente neconvertite
             </p>
           </div>
@@ -1085,7 +1085,7 @@ export function MessageView() {
         <div className="flex items-center gap-3">
           <button
             onClick={toggleMessageOrder}
-            className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
+            className="text-sm text-linear-text-secondary hover:text-linear-text-primary flex items-center gap-1"
             title={
               messageOrder === 'newest'
                 ? 'Sortare: cele mai noi primele'
@@ -1097,14 +1097,14 @@ export function MessageView() {
           </button>
           <button
             onClick={allExpanded ? collapseAllMessages : expandAllMessages}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-linear-accent hover:underline"
           >
             {allExpanded ? 'Restrânge tot' : 'Extinde tot'}
           </button>
           {/* + Nou button - opens Outlook compose */}
           <button
             onClick={openOutlookCompose}
-            className="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 text-sm border border-linear-border text-linear-text-secondary rounded hover:bg-linear-bg-tertiary transition-colors flex items-center gap-1.5"
           >
             <Plus className="h-4 w-4" />
             Nou
@@ -1112,7 +1112,7 @@ export function MessageView() {
           {/* Răspunde button - opens Outlook reply */}
           <button
             onClick={handleReply}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors flex items-center gap-1.5"
           >
             <Reply className="h-4 w-4" />
             Răspunde
@@ -1120,7 +1120,7 @@ export function MessageView() {
           </button>
           <button
             onClick={handleMarkAsProcessed}
-            className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+            className="px-3 py-1.5 text-sm bg-linear-success text-white rounded hover:bg-linear-success-hover transition-colors"
           >
             Marchează ca Procesat
           </button>
@@ -1152,7 +1152,7 @@ export function MessageView() {
       {/* Assign to Case Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-linear-bg-secondary rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-semibold text-lg">Atribuie la dosar</h3>
               <button
@@ -1160,28 +1160,28 @@ export function MessageView() {
                   setShowAssignModal(false);
                   setSelectedCaseId('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-linear-text-muted hover:text-linear-text-secondary"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-4">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-linear-text-secondary mb-4">
                 Selectați dosarul la care doriți să atribuiți această conversație.
               </p>
               {casesLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  <Loader2 className="h-6 w-6 animate-spin text-linear-accent" />
                 </div>
               ) : userCases.length === 0 ? (
-                <p className="text-sm text-gray-500 py-4 text-center">
+                <p className="text-sm text-linear-text-tertiary py-4 text-center">
                   Nu aveți dosare disponibile.
                 </p>
               ) : (
                 <select
                   value={selectedCaseId}
                   onChange={(e) => setSelectedCaseId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 >
                   <option value="">Selectați un dosar...</option>
                   {userCases.map((c) => (
@@ -1192,20 +1192,20 @@ export function MessageView() {
                 </select>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 p-4 border-t bg-gray-50">
+            <div className="flex items-center justify-end gap-3 p-4 border-t bg-linear-bg-tertiary">
               <button
                 onClick={() => {
                   setShowAssignModal(false);
                   setSelectedCaseId('');
                 }}
-                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
+                className="px-4 py-2 text-sm text-linear-text-secondary hover:text-linear-text-primary"
               >
                 Anulează
               </button>
               <button
                 onClick={handleAssignToCase}
                 disabled={!selectedCaseId || assigning}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {assigning && <Loader2 className="h-4 w-4 animate-spin" />}
                 Atribuie

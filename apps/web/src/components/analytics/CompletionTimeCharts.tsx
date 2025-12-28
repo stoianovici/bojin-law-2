@@ -77,10 +77,10 @@ function formatHours(hours: number): string {
 }
 
 function getComparisonColor(value: number | null | undefined): string {
-  if (value === null || value === undefined) return 'text-gray-500';
-  if (value < -5) return 'text-green-600';
-  if (value > 5) return 'text-red-600';
-  return 'text-gray-500';
+  if (value === null || value === undefined) return 'text-linear-text-tertiary';
+  if (value < -5) return 'text-linear-success';
+  if (value > 5) return 'text-linear-error';
+  return 'text-linear-text-tertiary';
 }
 
 function getComparisonArrow(value: number | null | undefined): string {
@@ -102,15 +102,15 @@ export function CompletionTimeCharts({
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-64 bg-gray-100 animate-pulse rounded-lg" />
-        <div className="h-64 bg-gray-100 animate-pulse rounded-lg" />
+        <div className="h-64 bg-linear-bg-tertiary animate-pulse rounded-lg" />
+        <div className="h-64 bg-linear-bg-tertiary animate-pulse rounded-lg" />
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-linear-text-tertiary">
         Nu există date despre timpul de finalizare
       </div>
     );
@@ -136,41 +136,41 @@ export function CompletionTimeCharts({
   return (
     <div className="space-y-8">
       {/* Firm-wide Summary */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
         <h3 className="text-lg font-semibold mb-4">Metrici la nivel de firmă</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="text-center p-4 bg-linear-bg-tertiary rounded-lg">
+            <div className="text-2xl font-bold text-linear-accent">
               {formatHours(data.firmMetrics.avgCompletionTimeHours)}
             </div>
-            <div className="text-sm text-gray-500">Timp mediu</div>
+            <div className="text-sm text-linear-text-tertiary">Timp mediu</div>
           </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-emerald-600">
+          <div className="text-center p-4 bg-linear-bg-tertiary rounded-lg">
+            <div className="text-2xl font-bold text-linear-success">
               {formatHours(data.firmMetrics.medianCompletionTimeHours)}
             </div>
-            <div className="text-sm text-gray-500">Timp median</div>
+            <div className="text-sm text-linear-text-tertiary">Timp median</div>
           </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-amber-600">
+          <div className="text-center p-4 bg-linear-bg-tertiary rounded-lg">
+            <div className="text-2xl font-bold text-linear-warning">
               {formatHours(data.firmMetrics.minCompletionTimeHours)}
             </div>
-            <div className="text-sm text-gray-500">Cel mai rapid</div>
+            <div className="text-sm text-linear-text-tertiary">Cel mai rapid</div>
           </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">
+          <div className="text-center p-4 bg-linear-bg-tertiary rounded-lg">
+            <div className="text-2xl font-bold text-linear-error">
               {formatHours(data.firmMetrics.maxCompletionTimeHours)}
             </div>
-            <div className="text-sm text-gray-500">Cel mai lent</div>
+            <div className="text-sm text-linear-text-tertiary">Cel mai lent</div>
           </div>
         </div>
-        <div className="mt-4 text-center text-sm text-gray-500">
+        <div className="mt-4 text-center text-sm text-linear-text-tertiary">
           Bazat pe {data.firmMetrics.totalTasksAnalyzed} sarcini finalizate
         </div>
       </div>
 
       {/* By Task Type Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
         <h3 className="text-lg font-semibold mb-4">Timp finalizare pe tip de sarcină</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -215,7 +215,7 @@ export function CompletionTimeCharts({
       </div>
 
       {/* By User Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
         <h3 className="text-lg font-semibold mb-4">Timp finalizare pe utilizator</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -241,7 +241,7 @@ export function CompletionTimeCharts({
         </div>
         {/* vs Team Average */}
         <div className="mt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">vs. Media echipei</h4>
+          <h4 className="text-sm font-medium text-linear-text-secondary mb-2">vs. Media echipei</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {byUserData.map((item) => (
               <div key={item.name} className="flex items-center gap-2 text-sm">
@@ -252,7 +252,7 @@ export function CompletionTimeCharts({
                     ? `${Math.abs(item.vsTeam).toFixed(1)}%`
                     : 'N/D'}
                 </span>
-                <span className="text-gray-400">({item.taskCount} sarcini)</span>
+                <span className="text-linear-text-muted">({item.taskCount} sarcini)</span>
               </div>
             ))}
           </div>

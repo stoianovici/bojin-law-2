@@ -54,12 +54,12 @@ const COLORS = [
 
 const TREND_CONFIG: Record<string, { color: string; icon: string; bg: string }> = {
   // TrendDirection values
-  improving: { color: 'text-green-600', icon: '↑', bg: 'bg-green-50' },
-  declining: { color: 'text-red-600', icon: '↓', bg: 'bg-red-50' },
-  stable: { color: 'text-gray-600', icon: '→', bg: 'bg-gray-50' },
+  improving: { color: 'text-linear-success', icon: '↑', bg: 'bg-linear-success/10' },
+  declining: { color: 'text-linear-error', icon: '↓', bg: 'bg-linear-error/10' },
+  stable: { color: 'text-linear-text-secondary', icon: '→', bg: 'bg-linear-bg-tertiary' },
   // TrendDirectionSimple values
-  up: { color: 'text-green-600', icon: '↑', bg: 'bg-green-50' },
-  down: { color: 'text-red-600', icon: '↓', bg: 'bg-red-50' },
+  up: { color: 'text-linear-success', icon: '↑', bg: 'bg-linear-success/10' },
+  down: { color: 'text-linear-error', icon: '↓', bg: 'bg-linear-error/10' },
 };
 
 // ============================================================================
@@ -76,14 +76,14 @@ export function VelocityTrendsChart({
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-24 bg-gray-100 animate-pulse rounded-lg" />
-        <div className="h-72 bg-gray-100 animate-pulse rounded-lg" />
+        <div className="h-24 bg-linear-bg-tertiary animate-pulse rounded-lg" />
+        <div className="h-72 bg-linear-bg-tertiary animate-pulse rounded-lg" />
       </div>
     );
   }
 
   if (!data) {
-    return <div className="text-center py-8 text-gray-500">Nu există date despre viteză</div>;
+    return <div className="text-center py-8 text-linear-text-tertiary">Nu există date despre viteză</div>;
   }
 
   const trendConfig = TREND_CONFIG[data.firmVelocity.trend] || TREND_CONFIG.stable;
@@ -110,8 +110,8 @@ export function VelocityTrendsChart({
               onClick={() => onIntervalChange?.(int)}
               className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                 interval === int
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-linear-accent text-white'
+                  : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
               }`}
             >
               {int === 'daily' ? 'Zilnic' : int === 'weekly' ? 'Săptămânal' : 'Lunar'}
@@ -121,10 +121,10 @@ export function VelocityTrendsChart({
       </div>
 
       {/* Firm Velocity Summary */}
-      <div className={`rounded-lg border p-6 ${trendConfig.bg}`}>
+      <div className={`rounded-lg border border-linear-border-subtle p-6 ${trendConfig.bg}`}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-gray-500 mb-1">Scor viteză firmă</div>
+            <div className="text-sm text-linear-text-tertiary mb-1">Scor viteză firmă</div>
             <div className="flex items-baseline gap-3">
               <span className="text-4xl font-bold">{data.firmVelocity.current.toFixed(1)}</span>
               <span className={`flex items-center gap-1 ${trendConfig.color}`}>
@@ -134,12 +134,12 @@ export function VelocityTrendsChart({
                 </span>
               </span>
             </div>
-            <div className="text-sm text-gray-500 mt-1">
+            <div className="text-sm text-linear-text-tertiary mt-1">
               Anterior: {data.firmVelocity.previous.toFixed(1)}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-500">Tendință</div>
+            <div className="text-sm text-linear-text-tertiary">Tendință</div>
             <div className={`text-lg font-medium capitalize ${trendConfig.color}`}>
               {data.firmVelocity.trend === 'improving'
                 ? 'În creștere'
@@ -152,7 +152,7 @@ export function VelocityTrendsChart({
       </div>
 
       {/* Time Series Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
         <h4 className="text-md font-semibold mb-4">Sarcini create vs finalizate</h4>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -196,13 +196,13 @@ export function VelocityTrendsChart({
       </div>
 
       {/* User Velocity Breakdown */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
         <h4 className="text-md font-semibold mb-4">Viteză echipă</h4>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.byUser.map((user, index) => {
             const userTrend = TREND_CONFIG[user.trendDirection] || TREND_CONFIG.stable;
             return (
-              <div key={user.userId} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div key={user.userId} className="bg-linear-bg-tertiary rounded-lg p-4 border border-linear-border-subtle">
                 <div className="flex items-center gap-3 mb-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
@@ -212,13 +212,13 @@ export function VelocityTrendsChart({
                   </div>
                   <div>
                     <div className="font-medium">{user.userName}</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-linear-text-tertiary">
                       Curent: {user.currentVelocity.toFixed(1)}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-linear-text-tertiary">
                     Anterior: {user.previousVelocity.toFixed(1)}
                   </div>
                   <div className={`flex items-center gap-1 ${userTrend.color}`}>
@@ -229,7 +229,7 @@ export function VelocityTrendsChart({
                   </div>
                 </div>
                 {/* Mini progress bar */}
-                <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="mt-3 h-2 bg-linear-bg-hover rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{
@@ -243,7 +243,7 @@ export function VelocityTrendsChart({
           })}
         </div>
         {data.byUser.length === 0 && (
-          <div className="text-center py-4 text-gray-500">
+          <div className="text-center py-4 text-linear-text-tertiary">
             Nu există date despre viteza utilizatorilor
           </div>
         )}

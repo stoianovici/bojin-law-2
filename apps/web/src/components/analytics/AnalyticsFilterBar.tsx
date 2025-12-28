@@ -109,15 +109,15 @@ export function AnalyticsFilterBar({
     selectedTaskTypes.length + selectedUserIds.length + (preset !== 'last30' ? 1 : 0);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4">
       <div className="flex flex-wrap items-center gap-4">
         {/* Date Range Preset */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Period:</label>
+          <label className="text-sm font-medium text-linear-text-secondary">Period:</label>
           <select
             value={preset}
             onChange={(e) => onPresetChange(e.target.value as DateRangePreset)}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="text-sm border border-linear-border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-linear-accent focus:border-linear-accent"
           >
             {PRESETS.map((p) => (
               <option key={p.value} value={p.value}>
@@ -134,14 +134,14 @@ export function AnalyticsFilterBar({
               type="date"
               value={dateRange.start.toISOString().split('T')[0]}
               onChange={(e) => onDateRangeChange({ ...dateRange, start: new Date(e.target.value) })}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-linear-border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-linear-accent"
             />
-            <span className="text-gray-500">to</span>
+            <span className="text-linear-text-tertiary">to</span>
             <input
               type="date"
               value={dateRange.end.toISOString().split('T')[0]}
               onChange={(e) => onDateRangeChange({ ...dateRange, end: new Date(e.target.value) })}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-linear-border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-linear-accent"
             />
           </div>
         )}
@@ -152,13 +152,13 @@ export function AnalyticsFilterBar({
             onClick={() => setShowTaskTypeDropdown(!showTaskTypeDropdown)}
             className={`text-sm border rounded-lg px-3 py-1.5 flex items-center gap-2 ${
               selectedTaskTypes.length > 0
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-300 text-gray-700'
+                ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                : 'border-linear-border text-linear-text-secondary'
             }`}
           >
             <span>Task Types</span>
             {selectedTaskTypes.length > 0 && (
-              <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+              <span className="bg-linear-accent text-white text-xs px-1.5 py-0.5 rounded-full">
                 {selectedTaskTypes.length}
               </span>
             )}
@@ -174,17 +174,17 @@ export function AnalyticsFilterBar({
           {showTaskTypeDropdown && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowTaskTypeDropdown(false)} />
-              <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-2 max-h-64 overflow-y-auto">
+              <div className="absolute top-full left-0 mt-1 w-56 bg-linear-bg-secondary border border-linear-border-subtle rounded-lg shadow-lg z-20 py-2 max-h-64 overflow-y-auto">
                 {TASK_TYPES.map((type) => (
                   <label
                     key={type.value}
-                    className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-linear-bg-tertiary cursor-pointer"
                   >
                     <input
                       type="checkbox"
                       checked={selectedTaskTypes.includes(type.value)}
                       onChange={() => handleTaskTypeToggle(type.value)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-linear-border text-linear-accent focus:ring-linear-accent"
                     />
                     <span className="text-sm">{type.label}</span>
                   </label>
@@ -201,13 +201,13 @@ export function AnalyticsFilterBar({
               onClick={() => setShowUserDropdown(!showUserDropdown)}
               className={`text-sm border rounded-lg px-3 py-1.5 flex items-center gap-2 ${
                 selectedUserIds.length > 0
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-300 text-gray-700'
+                  ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                  : 'border-linear-border text-linear-text-secondary'
               }`}
             >
               <span>Users</span>
               {selectedUserIds.length > 0 && (
-                <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                <span className="bg-linear-accent text-white text-xs px-1.5 py-0.5 rounded-full">
                   {selectedUserIds.length}
                 </span>
               )}
@@ -223,17 +223,17 @@ export function AnalyticsFilterBar({
             {showUserDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowUserDropdown(false)} />
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-2 max-h-64 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-linear-bg-secondary border border-linear-border-subtle rounded-lg shadow-lg z-20 py-2 max-h-64 overflow-y-auto">
                   {availableUsers.map((user) => (
                     <label
                       key={user.id}
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-linear-bg-tertiary cursor-pointer"
                     >
                       <input
                         type="checkbox"
                         checked={selectedUserIds.includes(user.id)}
                         onChange={() => handleUserToggle(user.id)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-linear-border text-linear-accent focus:ring-linear-accent"
                       />
                       <span className="text-sm">{user.name}</span>
                     </label>
@@ -250,9 +250,9 @@ export function AnalyticsFilterBar({
             type="checkbox"
             checked={comparisonEnabled}
             onChange={onComparisonToggle}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-linear-border text-linear-accent focus:ring-linear-accent"
           />
-          <span className="text-sm text-gray-700">Compare to previous period</span>
+          <span className="text-sm text-linear-text-secondary">Compare to previous period</span>
         </label>
 
         {/* Spacer */}
@@ -260,7 +260,7 @@ export function AnalyticsFilterBar({
 
         {/* Reset Button */}
         {activeFiltersCount > 0 && (
-          <button onClick={onReset} className="text-sm text-gray-500 hover:text-gray-700">
+          <button onClick={onReset} className="text-sm text-linear-text-tertiary hover:text-linear-text-secondary">
             Reset filters
           </button>
         )}
@@ -270,7 +270,7 @@ export function AnalyticsFilterBar({
           <button
             onClick={() => setShowExportDropdown(!showExportDropdown)}
             disabled={isExporting}
-            className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-3 py-1.5 flex items-center gap-2 disabled:opacity-50"
+            className="text-sm bg-linear-bg-tertiary hover:bg-linear-bg-hover text-linear-text-secondary rounded-lg px-3 py-1.5 flex items-center gap-2 disabled:opacity-50"
           >
             {isExporting ? (
               <>
@@ -308,13 +308,13 @@ export function AnalyticsFilterBar({
           {showExportDropdown && !isExporting && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowExportDropdown(false)} />
-              <div className="absolute top-full right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-2">
+              <div className="absolute top-full right-0 mt-1 w-40 bg-linear-bg-secondary border border-linear-border-subtle rounded-lg shadow-lg z-20 py-2">
                 <button
                   onClick={() => {
                     onExport('csv');
                     setShowExportDropdown(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-linear-bg-tertiary"
                 >
                   Export as CSV
                 </button>
@@ -323,7 +323,7 @@ export function AnalyticsFilterBar({
                     onExport('pdf');
                     setShowExportDropdown(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-linear-bg-tertiary"
                 >
                   Export as PDF
                 </button>
@@ -335,13 +335,13 @@ export function AnalyticsFilterBar({
 
       {/* Active Filters Summary */}
       {activeFiltersCount > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2">
+        <div className="mt-3 pt-3 border-t border-linear-border-subtle/50 flex flex-wrap gap-2">
           {preset !== 'last30' && (
-            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full flex items-center gap-1">
+            <span className="text-xs bg-linear-bg-tertiary text-linear-text-secondary px-2 py-1 rounded-full flex items-center gap-1">
               {PRESETS.find((p) => p.value === preset)?.label}
               <button
                 onClick={() => onPresetChange('last30')}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-linear-text-muted hover:text-linear-text-secondary"
               >
                 ×
               </button>
@@ -350,12 +350,12 @@ export function AnalyticsFilterBar({
           {selectedTaskTypes.map((type) => (
             <span
               key={type}
-              className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center gap-1"
+              className="text-xs bg-linear-accent/10 text-linear-accent px-2 py-1 rounded-full flex items-center gap-1"
             >
               {TASK_TYPES.find((t) => t.value === type)?.label || type}
               <button
                 onClick={() => handleTaskTypeToggle(type)}
-                className="text-blue-400 hover:text-blue-600"
+                className="text-linear-accent/60 hover:text-linear-accent"
               >
                 ×
               </button>
@@ -366,12 +366,12 @@ export function AnalyticsFilterBar({
             return (
               <span
                 key={userId}
-                className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1"
+                className="text-xs bg-linear-success/10 text-linear-success px-2 py-1 rounded-full flex items-center gap-1"
               >
                 {user?.name || userId}
                 <button
                   onClick={() => handleUserToggle(userId)}
-                  className="text-green-400 hover:text-green-600"
+                  className="text-linear-success/60 hover:text-linear-success"
                 >
                   ×
                 </button>

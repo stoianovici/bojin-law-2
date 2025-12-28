@@ -72,8 +72,8 @@ export function CaseLinksPopover({
         <button
           className={clsx(
             'inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium',
-            'bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+            'bg-linear-accent/15 text-linear-accent rounded hover:bg-linear-accent/25 transition-colors',
+            'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-1',
             className
           )}
           aria-label={`Email în ${caseLinks.length} dosare`}
@@ -84,19 +84,19 @@ export function CaseLinksPopover({
 
       <Popover.Portal>
         <Popover.Content
-          className="z-50 w-72 bg-white rounded-lg shadow-lg border border-gray-200 p-3"
+          className="z-50 w-72 bg-linear-bg-secondary rounded-lg shadow-lg border border-linear-border-subtle p-3"
           sideOffset={5}
           align="start"
         >
           <div className="space-y-2">
-            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-              <h4 className="text-sm font-medium text-gray-900">Dosare asociate</h4>
+            <div className="flex items-center justify-between pb-2 border-b border-linear-border-subtle/50">
+              <h4 className="text-sm font-medium text-linear-text-primary">Dosare asociate</h4>
               <Popover.Close asChild>
                 <button
-                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  className="p-1 rounded hover:bg-linear-bg-hover transition-colors"
                   aria-label="Închide"
                 >
-                  <X className="h-4 w-4 text-gray-400" />
+                  <X className="h-4 w-4 text-linear-text-muted" />
                 </button>
               </Popover.Close>
             </div>
@@ -111,21 +111,21 @@ export function CaseLinksPopover({
                     key={link.id}
                     className={clsx(
                       'flex items-center justify-between gap-2 p-2 rounded',
-                      isCurrentCase ? 'bg-blue-50' : 'hover:bg-gray-50'
+                      isCurrentCase ? 'bg-linear-accent/10' : 'hover:bg-linear-bg-hover'
                     )}
                   >
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/cases/${link.caseId}`}
-                        className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate block"
+                        className="text-sm font-medium text-linear-text-primary hover:text-linear-accent truncate block"
                         onClick={() => setIsOpen(false)}
                       >
                         {link.case.title}
                       </Link>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-500">{link.case.caseNumber}</span>
+                        <span className="text-xs text-linear-text-tertiary">{link.case.caseNumber}</span>
                         {link.isPrimary && (
-                          <span className="px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded">
+                          <span className="px-1.5 py-0.5 text-xs font-medium bg-linear-success/15 text-linear-success rounded">
                             Principal
                           </span>
                         )}
@@ -135,11 +135,11 @@ export function CaseLinksPopover({
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <Link
                         href={`/cases/${link.caseId}`}
-                        className="p-1 rounded hover:bg-gray-200 transition-colors"
+                        className="p-1 rounded hover:bg-linear-bg-hover transition-colors"
                         aria-label={`Deschide ${link.case.title}`}
                         onClick={() => setIsOpen(false)}
                       >
-                        <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+                        <ExternalLink className="h-3.5 w-3.5 text-linear-text-muted" />
                       </Link>
 
                       {!link.isPrimary && (
@@ -148,7 +148,7 @@ export function CaseLinksPopover({
                           disabled={isUnlinking || unlinking}
                           className={clsx(
                             'p-1 rounded transition-colors',
-                            'hover:bg-red-100 text-gray-400 hover:text-red-600',
+                            'hover:bg-linear-error/15 text-linear-text-muted hover:text-linear-error',
                             'disabled:opacity-50 disabled:cursor-not-allowed'
                           )}
                           aria-label={`Elimină din ${link.case.title}`}
@@ -168,7 +168,7 @@ export function CaseLinksPopover({
             </ul>
           </div>
 
-          <Popover.Arrow className="fill-white" />
+          <Popover.Arrow className="fill-linear-bg-secondary" />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

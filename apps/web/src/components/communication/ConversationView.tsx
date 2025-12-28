@@ -611,7 +611,7 @@ export function ConversationView({
   // Empty state
   if (!thread) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
+      <div className="flex items-center justify-center h-full text-linear-text-tertiary">
         <p>Selectați o conversație</p>
       </div>
     );
@@ -634,7 +634,7 @@ export function ConversationView({
   const isUnassigned = !thread.caseId;
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-linear-bg-tertiary">
       {/* Header - OPS-201: Added new compose button */}
       <ConversationHeader
         thread={thread}
@@ -646,9 +646,9 @@ export function ConversationView({
 
       {/* OPS-194: Private email indicator banner */}
       {threadIsPrivate && (
-        <div className="mx-4 mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2">
-          <Lock className="h-4 w-4 text-purple-600 flex-shrink-0" />
-          <p className="text-sm text-purple-800">
+        <div className="mx-4 mt-3 p-3 bg-linear-accent/10 border border-linear-accent/30 rounded-lg flex items-center gap-2">
+          <Lock className="h-4 w-4 text-linear-accent flex-shrink-0" />
+          <p className="text-sm text-linear-accent">
             Această conversație este privată (doar pentru tine)
           </p>
         </div>
@@ -656,14 +656,14 @@ export function ConversationView({
 
       {/* Unassigned email banner */}
       {isUnassigned && (
-        <div className="mx-4 mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <p className="text-sm text-amber-800 mb-2">
+        <div className="mx-4 mt-3 p-3 bg-linear-warning/10 border border-linear-warning/30 rounded-lg">
+          <p className="text-sm text-linear-warning mb-2">
             Această conversație nu este asociată cu un dosar.
           </p>
           <button
             onClick={() => setShowAssignModal(true)}
             disabled={assigning}
-            className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-linear-warning text-white rounded hover:bg-linear-warning/90 transition-colors flex items-center gap-1.5 disabled:opacity-50"
           >
             <FolderInput className="h-4 w-4" />
             Atribuie la dosar
@@ -673,14 +673,14 @@ export function ConversationView({
 
       {/* OPS-195: Multi-case confirmation banner */}
       {needsConfirmation && unconfirmedCaseLink && (
-        <div className="mx-4 mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+        <div className="mx-4 mt-3 p-3 bg-linear-warning/10 border border-linear-warning/30 rounded-lg">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-linear-warning flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-orange-800 mb-1">
+              <p className="text-sm font-medium text-linear-warning mb-1">
                 Confirmați dosarul pentru acest email
               </p>
-              <p className="text-sm text-orange-700 mb-3">
+              <p className="text-sm text-linear-warning/80 mb-3">
                 Expeditorul are mai multe dosare active. Confirmați dosarul corect înainte de a
                 răspunde.
               </p>
@@ -689,7 +689,7 @@ export function ConversationView({
                 <button
                   onClick={() => handleConfirmAssignment(unconfirmedCaseLink.case.id)}
                   disabled={confirming}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-linear-warning text-white rounded-lg hover:bg-linear-warning/90 transition-colors disabled:opacity-50"
                 >
                   {confirming ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -705,7 +705,7 @@ export function ConversationView({
                     key={alt.case.id}
                     onClick={() => handleConfirmAssignment(alt.case.id)}
                     disabled={confirming}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white text-orange-700 border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-linear-bg-secondary text-linear-warning border border-linear-warning/30 rounded-lg hover:bg-linear-warning/10 transition-colors disabled:opacity-50"
                   >
                     {alt.case.caseNumber}
                   </button>
@@ -713,7 +713,7 @@ export function ConversationView({
 
                 {/* Show more - link to full case list */}
                 {(alternativeCases?.length ?? 0) > 3 && (
-                  <span className="text-sm text-orange-600 self-center">
+                  <span className="text-sm text-linear-warning self-center">
                     +{(alternativeCases?.length ?? 0) - 3} altele
                   </span>
                 )}
@@ -762,7 +762,7 @@ export function ConversationView({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="border-t bg-amber-50 px-4 py-3"
+            className="border-t border-linear-border-subtle bg-linear-warning/10 px-4 py-3"
           >
             <div className="flex items-center gap-3">
               {/* OPS-204/OPS-206: SplitAssignmentButton or CasePickerDropup */}
@@ -791,7 +791,7 @@ export function ConversationView({
               <button
                 onClick={handleNeclarReply}
                 disabled={classifying || markingPersonal}
-                className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-full hover:bg-white transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-4 py-2.5 border border-linear-border text-linear-text-secondary rounded-full hover:bg-linear-bg-secondary transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Reply className="h-4 w-4" />
                 Răspunde
@@ -802,7 +802,7 @@ export function ConversationView({
               <button
                 onClick={handleMarkSenderAsPersonal}
                 disabled={markingPersonal || classifying}
-                className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-full hover:bg-white transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-4 py-2.5 border border-linear-border text-linear-text-secondary rounded-full hover:bg-linear-bg-secondary transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {markingPersonal ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -820,7 +820,7 @@ export function ConversationView({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="border-t bg-white px-4 py-3"
+            className="border-t border-linear-border-subtle bg-linear-bg-secondary px-4 py-3"
           >
             <div className="flex items-center gap-3">
               {/* OPS-203: Răspunde button - opens ComposeInterface with AI draft panel */}
@@ -831,8 +831,8 @@ export function ConversationView({
                 title={needsConfirmation ? 'Confirmați dosarul înainte de a răspunde' : undefined}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full transition-colors font-medium ${
                   needsConfirmation
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                    ? 'bg-linear-bg-hover text-linear-text-muted cursor-not-allowed'
+                    : 'bg-linear-accent text-white hover:bg-linear-accent-hover'
                 }`}
               >
                 <Reply className="h-4 w-4" />
@@ -848,8 +848,8 @@ export function ConversationView({
                 }
                 className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-colors font-medium ${
                   needsConfirmation
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    ? 'bg-linear-bg-tertiary text-linear-text-muted cursor-not-allowed'
+                    : 'border border-linear-border text-linear-text-secondary hover:bg-linear-bg-hover'
                 }`}
               >
                 <Forward className="h-4 w-4" />
@@ -863,8 +863,8 @@ export function ConversationView({
                 title={needsConfirmation ? 'Confirmați dosarul înainte de a notifica' : undefined}
                 className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-colors font-medium ${
                   needsConfirmation
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    ? 'bg-linear-bg-tertiary text-linear-text-muted cursor-not-allowed'
+                    : 'border border-linear-border text-linear-text-secondary hover:bg-linear-bg-hover'
                 }`}
               >
                 <Users className="h-4 w-4" />
@@ -883,8 +883,8 @@ export function ConversationView({
                   }
                   className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-colors font-medium ${
                     threadIsPrivate
-                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      ? 'bg-linear-accent/15 text-linear-accent hover:bg-linear-accent/25'
+                      : 'border border-linear-border text-linear-text-secondary hover:bg-linear-bg-hover'
                   } ${privacyLoading ? 'opacity-50 cursor-wait' : ''}`}
                 >
                   {privacyLoading ? (
@@ -905,36 +905,36 @@ export function ConversationView({
       {/* Assign to Case Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-semibold text-lg">Atribuie la dosar</h3>
+          <div className="bg-linear-bg-secondary rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-linear-border-subtle">
+              <h3 className="font-semibold text-lg text-linear-text-primary">Atribuie la dosar</h3>
               <button
                 onClick={() => {
                   setShowAssignModal(false);
                   setSelectedCaseId('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-linear-text-muted hover:text-linear-text-secondary"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-4">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-linear-text-secondary mb-4">
                 Selectați dosarul la care doriți să atribuiți această conversație.
               </p>
               {casesLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  <Loader2 className="h-6 w-6 animate-spin text-linear-accent" />
                 </div>
               ) : userCases.length === 0 ? (
-                <p className="text-sm text-gray-500 py-4 text-center">
+                <p className="text-sm text-linear-text-tertiary py-4 text-center">
                   Nu aveți dosare disponibile.
                 </p>
               ) : (
                 <select
                   value={selectedCaseId}
                   onChange={(e) => setSelectedCaseId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-linear-border-subtle bg-linear-bg-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 >
                   <option value="">Selectați un dosar...</option>
                   {userCases.map((c) => (
@@ -945,20 +945,20 @@ export function ConversationView({
                 </select>
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 p-4 border-t bg-gray-50">
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-linear-border-subtle bg-linear-bg-tertiary">
               <button
                 onClick={() => {
                   setShowAssignModal(false);
                   setSelectedCaseId('');
                 }}
-                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
+                className="px-4 py-2 text-sm text-linear-text-secondary hover:text-linear-text-primary"
               >
                 Anulează
               </button>
               <button
                 onClick={handleAssignToCase}
                 disabled={!selectedCaseId || assigning}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {assigning && <Loader2 className="h-4 w-4 animate-spin" />}
                 Atribuie

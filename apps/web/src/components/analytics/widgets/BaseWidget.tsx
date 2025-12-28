@@ -95,10 +95,10 @@ export function BaseWidget({
   skeleton,
 }: BaseWidgetProps) {
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 ${className}`}>
+    <div className={`bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4 transition-all duration-200 hover:border-linear-border hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-linear-text-primary">{title}</h3>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
 
@@ -115,15 +115,15 @@ export function BaseWidget({
           className="flex flex-col items-center justify-center py-8 text-center"
           data-testid="widget-error"
         >
-          <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
-          <p className="text-red-600 font-medium mb-2">Eroare la încărcarea datelor</p>
-          <p className="text-gray-500 text-sm mb-4">
+          <AlertCircle className="w-10 h-10 text-linear-error mb-3" />
+          <p className="text-linear-error font-medium mb-2">Eroare la încărcarea datelor</p>
+          <p className="text-linear-text-tertiary text-sm mb-4">
             {error.message || 'A apărut o eroare neașteptată'}
           </p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-linear-accent bg-linear-accent/10 rounded-lg hover:bg-linear-accent/15 focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Reîncearcă
@@ -138,7 +138,7 @@ export function BaseWidget({
           className="flex flex-col items-center justify-center py-8 text-center"
           data-testid="widget-empty"
         >
-          <p className="text-gray-500">{emptyMessage}</p>
+          <p className="text-linear-text-tertiary">{emptyMessage}</p>
         </div>
       )}
 

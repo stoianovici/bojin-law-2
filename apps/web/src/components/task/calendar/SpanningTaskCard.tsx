@@ -10,25 +10,13 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import type { Task, TaskType } from '@legal-platform/types';
+import type { Task } from '@legal-platform/types';
 import {
   type CardPosition,
   getDayAbbreviation,
   isTimeSpecificTask,
 } from '@/utils/workloadDistribution';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const TASK_TYPE_COLORS: Record<TaskType, string> = {
-  Research: '#3B82F6',
-  DocumentCreation: '#10B981',
-  DocumentRetrieval: '#8B5CF6',
-  CourtDate: '#EF4444',
-  Meeting: '#F59E0B',
-  BusinessTrip: '#6366F1',
-};
+import { TASK_TYPE_COLORS } from '@/utils/task-colors';
 
 const PRIORITY_STYLES: Record<Task['priority'], string> = {
   Low: 'border-l-2',
@@ -99,9 +87,9 @@ export function SpanningTaskCard({
         }
       }}
       className={`
-        absolute rounded-md cursor-move transition-all bg-white pointer-events-auto
+        absolute rounded-md cursor-move transition-all bg-linear-bg-secondary pointer-events-auto
         hover:shadow-lg hover:scale-[1.01] hover:z-20
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+        focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-1
         ${priorityBorder}
         ${isSpanning ? 'shadow-md' : 'shadow-sm'}
       `}
@@ -113,8 +101,8 @@ export function SpanningTaskCard({
         borderLeftColor: borderColor,
         // Gradient for spanning cards: fades toward due date
         background: isSpanning
-          ? `linear-gradient(90deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,1) 100%)`
-          : 'white',
+          ? `linear-gradient(90deg, rgba(var(--linear-bg-secondary), 0.9) 0%, rgba(var(--linear-bg-secondary), 1) 100%)`
+          : 'var(--linear-bg-secondary)',
         marginLeft: '4px',
         zIndex: 10,
       }}
@@ -125,19 +113,19 @@ export function SpanningTaskCard({
           <div className="flex items-start gap-1.5 min-w-0 flex-1">
             {/* Start day indicator for spanning cards */}
             {isSpanning && (
-              <span className="text-[10px] font-medium text-gray-400 shrink-0 mt-0.5">
+              <span className="text-[10px] font-medium text-linear-text-muted shrink-0 mt-0.5">
                 [{getDayAbbreviation(startDay)}]
               </span>
             )}
             {/* Time badge for time-specific tasks */}
             {hasTime && (
-              <span className="text-xs font-bold text-gray-700 shrink-0">
+              <span className="text-xs font-bold text-linear-text-secondary shrink-0">
                 {format(new Date(task.dueDate), 'HH:mm')}
               </span>
             )}
             {/* Title */}
             <span
-              className={`text-sm font-medium text-gray-900 ${isSpanning ? 'line-clamp-1' : 'line-clamp-2'}`}
+              className={`text-sm font-medium text-linear-text-primary ${isSpanning ? 'line-clamp-1' : 'line-clamp-2'}`}
             >
               {task.title}
             </span>
@@ -145,7 +133,7 @@ export function SpanningTaskCard({
           {/* Duration badge */}
           {hasDuration && (
             <span
-              className="shrink-0 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+              className="shrink-0 text-[10px] font-medium text-linear-text-tertiary bg-linear-bg-tertiary px-1.5 py-0.5 rounded"
               title={`Durată estimată: ${task.estimatedHours} ore`}
             >
               {task.estimatedHours}h
@@ -156,12 +144,12 @@ export function SpanningTaskCard({
         {/* Case name + due day indicator */}
         <div className="mt-1 flex items-center justify-between gap-1">
           {caseName && (
-            <span className="text-[11px] text-gray-500 line-clamp-1 flex-1">{caseName}</span>
+            <span className="text-[11px] text-linear-text-tertiary line-clamp-1 flex-1">{caseName}</span>
           )}
           {/* Due day indicator for spanning cards */}
           {isSpanning && (
-            <span className="text-[10px] font-semibold text-gray-600 shrink-0 flex items-center gap-0.5">
-              <span className="text-gray-400">▸</span>
+            <span className="text-[10px] font-semibold text-linear-text-secondary shrink-0 flex items-center gap-0.5">
+              <span className="text-linear-text-muted">▸</span>
               {getDayAbbreviation(endDay)}
             </span>
           )}

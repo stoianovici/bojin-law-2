@@ -94,9 +94,9 @@ interface CardProps {
 
 function Card({ title, children, action, className }: CardProps) {
   return (
-    <div className={clsx('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+    <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle shadow-sm', className)}>
+      <div className="px-5 py-4 border-b border-linear-border-subtle flex items-center justify-between">
+        <h3 className="text-base font-semibold text-linear-text-primary">{title}</h3>
         {action}
       </div>
       <div className="p-5">{children}</div>
@@ -162,7 +162,7 @@ export function OverviewTab({
   const referencesCount = references.length;
 
   return (
-    <div className={clsx('h-full overflow-y-auto bg-gray-50 p-6', className)}>
+    <div className={clsx('h-full overflow-y-auto bg-linear-bg-tertiary p-6', className)}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* ================================================================== */}
         {/* EDITABLE SECTION GROUP - "Informații Dosar"                       */}
@@ -230,22 +230,22 @@ export function OverviewTab({
                     return (
                       <div key={member.id} className="flex items-center gap-3">
                         <Avatar.Root className="inline-flex h-10 w-10 rounded-full">
-                          <Avatar.Fallback className="flex h-full w-full items-center justify-center rounded-full bg-blue-600 text-white text-sm font-medium">
+                          <Avatar.Fallback className="flex h-full w-full items-center justify-center rounded-full bg-linear-accent text-white text-sm font-medium">
                             {initials}
                           </Avatar.Fallback>
                         </Avatar.Root>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-linear-text-primary">
                             {firstName} {lastName}
                           </p>
-                          <p className="text-xs text-gray-600">{member.role || 'Team Member'}</p>
+                          <p className="text-xs text-linear-text-secondary">{member.role || 'Team Member'}</p>
                         </div>
-                        <div className="text-xs text-gray-500">{member.email || ''}</div>
+                        <div className="text-xs text-linear-text-tertiary">{member.email || ''}</div>
                       </div>
                     );
                   })}
                   {teamMembers.length === 0 && (
-                    <p className="text-sm text-gray-500">Niciun membru în echipă</p>
+                    <p className="text-sm text-linear-text-tertiary">Niciun membru în echipă</p>
                   )}
                 </div>
               </Card>
@@ -255,10 +255,10 @@ export function OverviewTab({
                 <div className="space-y-3">
                   {recentActivity.slice(0, 10).map((activity) => (
                     <div key={activity.id} className="flex gap-3">
-                      <div className="flex-shrink-0 w-2 h-2 mt-1.5 rounded-full bg-blue-600" />
+                      <div className="flex-shrink-0 w-2 h-2 mt-1.5 rounded-full bg-linear-accent" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900">{activity.description}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        <p className="text-sm text-linear-text-primary">{activity.description}</p>
+                        <p className="text-xs text-linear-text-tertiary mt-0.5">
                           {format(activity.timestamp, "dd MMM 'la' HH:mm", {
                             locale: ro,
                           })}
@@ -267,7 +267,7 @@ export function OverviewTab({
                     </div>
                   ))}
                   {recentActivity.length === 0 && (
-                    <p className="text-sm text-gray-500">Nicio activitate recentă</p>
+                    <p className="text-sm text-linear-text-tertiary">Nicio activitate recentă</p>
                   )}
                 </div>
               </Card>
@@ -277,17 +277,17 @@ export function OverviewTab({
                 <div className="space-y-3">
                   {upcomingDeadlines.map((deadline) => {
                     const statusColors = {
-                      upcoming: 'text-blue-700 bg-blue-50',
-                      today: 'text-yellow-700 bg-yellow-50',
-                      overdue: 'text-red-700 bg-red-50',
+                      upcoming: 'text-linear-accent bg-linear-accent/10',
+                      today: 'text-linear-warning bg-linear-warning/10',
+                      overdue: 'text-linear-error bg-linear-error/10',
                     };
                     return (
                       <div key={deadline.id} className="flex items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-sm font-medium text-linear-text-primary truncate">
                             {deadline.title}
                           </p>
-                          <p className="text-xs text-gray-600 mt-0.5">
+                          <p className="text-xs text-linear-text-secondary mt-0.5">
                             {format(deadline.date, 'dd MMMM yyyy', { locale: ro })}
                           </p>
                         </div>
@@ -310,7 +310,7 @@ export function OverviewTab({
                     );
                   })}
                   {upcomingDeadlines.length === 0 && (
-                    <p className="text-sm text-gray-500">Niciun termen programat</p>
+                    <p className="text-sm text-linear-text-tertiary">Niciun termen programat</p>
                   )}
                 </div>
               </Card>
@@ -320,34 +320,34 @@ export function OverviewTab({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Total Documents */}
                   <div key="total-documents" className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-blue-600" />
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-linear-accent/15 flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-linear-accent" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalDocuments}</p>
-                      <p className="text-sm text-gray-600">Total Documente</p>
+                      <p className="text-2xl font-bold text-linear-text-primary">{stats.totalDocuments}</p>
+                      <p className="text-sm text-linear-text-secondary">Total Documente</p>
                     </div>
                   </div>
 
                   {/* Open Tasks */}
                   <div key="open-tasks" className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
-                      <ClipboardList className="w-6 h-6 text-yellow-600" />
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-linear-warning/15 flex items-center justify-center">
+                      <ClipboardList className="w-6 h-6 text-linear-warning" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">{stats.openTasks}</p>
-                      <p className="text-sm text-gray-600">Sarcini Deschise</p>
+                      <p className="text-2xl font-bold text-linear-text-primary">{stats.openTasks}</p>
+                      <p className="text-sm text-linear-text-secondary">Sarcini Deschise</p>
                     </div>
                   </div>
 
                   {/* Billable Hours */}
                   <div key="billable-hours" className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                      <Clock className="w-6 h-6 text-green-600" />
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-linear-success/15 flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-linear-success" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">{stats.billableHours}</p>
-                      <p className="text-sm text-gray-600">Ore Facturabile</p>
+                      <p className="text-2xl font-bold text-linear-text-primary">{stats.billableHours}</p>
+                      <p className="text-sm text-linear-text-secondary">Ore Facturabile</p>
                     </div>
                   </div>
                 </div>

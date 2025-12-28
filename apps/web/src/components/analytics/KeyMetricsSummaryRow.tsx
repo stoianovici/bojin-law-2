@@ -36,8 +36,7 @@ interface MetricCardProps {
   value: string | number;
   subValue?: string;
   trend?: number;
-  color: string;
-  bgColor: string;
+  variant: 'success' | 'accent' | 'warning' | 'info' | 'error';
 }
 
 // ============================================================================
@@ -67,22 +66,31 @@ function formatPercent(value: number): string {
 // Metric Card Component
 // ============================================================================
 
-function MetricCard({ icon, label, value, subValue, trend, color, bgColor }: MetricCardProps) {
+function MetricCard({ icon, label, value, subValue, trend, variant }: MetricCardProps) {
+  const variantStyles: Record<string, { iconBg: string; iconColor: string }> = {
+    success: { iconBg: 'bg-linear-success/15', iconColor: 'text-linear-success' },
+    accent: { iconBg: 'bg-linear-accent/15', iconColor: 'text-linear-accent' },
+    warning: { iconBg: 'bg-linear-warning/15', iconColor: 'text-linear-warning' },
+    info: { iconBg: 'bg-linear-accent/15', iconColor: 'text-linear-accent' }, // Uses accent (blue) for info
+    error: { iconBg: 'bg-linear-error/15', iconColor: 'text-linear-error' },
+  };
+
+  const styles = variantStyles[variant] || variantStyles.accent;
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-start gap-3 shadow-sm">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4 flex items-start gap-3 transition-all duration-200 hover:border-linear-border hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
       <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: bgColor }}
+        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${styles.iconBg}`}
       >
-        <div style={{ color }}>{icon}</div>
+        <div className={styles.iconColor}>{icon}</div>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-xs text-gray-500 truncate">{label}</div>
-        <div className="text-xl font-bold text-gray-900 truncate">{value}</div>
-        {subValue && <div className="text-xs text-gray-500 truncate">{subValue}</div>}
+        <div className="text-xs text-linear-text-tertiary truncate">{label}</div>
+        <div className="text-xl font-bold text-linear-text-primary truncate">{value}</div>
+        {subValue && <div className="text-xs text-linear-text-tertiary truncate">{subValue}</div>}
         {trend !== undefined && (
           <div
-            className={`text-xs font-medium ${trend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+            className={`text-xs font-medium ${trend >= 0 ? 'text-linear-success' : 'text-linear-error'}`}
           >
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}% vs. perioada anterioară
           </div>
@@ -100,13 +108,13 @@ function LoadingSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+        <div key={i} className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4 animate-pulse">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+            <div className="w-10 h-10 bg-linear-bg-hover rounded-lg" />
             <div className="flex-1 space-y-2">
-              <div className="h-3 bg-gray-200 rounded w-16" />
-              <div className="h-6 bg-gray-200 rounded w-20" />
-              <div className="h-2 bg-gray-200 rounded w-24" />
+              <div className="h-3 bg-linear-bg-hover rounded w-16" />
+              <div className="h-6 bg-linear-bg-hover rounded w-20" />
+              <div className="h-2 bg-linear-bg-hover rounded w-24" />
             </div>
           </div>
         </div>
@@ -146,8 +154,7 @@ export function KeyMetricsSummaryRow({
         label="Timp economisit"
         value={formatHours(efficiency?.totalTimeSavedHours ?? 0)}
         subValue="în această perioadă"
-        color="#10B981"
-        bgColor="#D1FAE5"
+        variant="success"
       />
 
       {/* AI-Assisted Actions */}
@@ -165,8 +172,7 @@ export function KeyMetricsSummaryRow({
         label="Acțiuni AI"
         value={efficiency?.aiAssistedActions ?? 0}
         subValue="asistări AI"
-        color="#8B5CF6"
-        bgColor="#EDE9FE"
+        variant="accent"
       />
 
       {/* Automation Triggers */}
@@ -184,8 +190,7 @@ export function KeyMetricsSummaryRow({
         label="Automatizări"
         value={efficiency?.automationTriggers ?? 0}
         subValue="declanșări"
-        color="#F59E0B"
-        bgColor="#FEF3C7"
+        variant="warning"
       />
 
       {/* Task Completion Rate */}
@@ -203,8 +208,7 @@ export function KeyMetricsSummaryRow({
         label="Rată finalizare"
         value={formatPercent(taskCompletion?.completionRate ?? 0)}
         subValue="sarcini finalizate"
-        color="#3B82F6"
-        bgColor="#DBEAFE"
+        variant="info"
       />
 
       {/* Deadline Adherence */}
@@ -222,8 +226,7 @@ export function KeyMetricsSummaryRow({
         label="Respectare termene"
         value={formatPercent(taskCompletion?.deadlineAdherence ?? 0)}
         subValue={`${taskCompletion?.overdueCount ?? 0} întârziate`}
-        color="#EC4899"
-        bgColor="#FCE7F3"
+        variant="error"
       />
 
       {/* Value Saved */}
@@ -241,8 +244,7 @@ export function KeyMetricsSummaryRow({
         label="Valoare economisită"
         value={formatCurrency(roi?.totalValueSaved ?? 0)}
         subValue={`${formatHours(roi?.billableHoursRecovered ?? 0)} ore facturabile`}
-        color="#059669"
-        bgColor="#D1FAE5"
+        variant="success"
       />
     </div>
   );

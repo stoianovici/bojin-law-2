@@ -288,26 +288,26 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">
                 Subiect Cercetare
               </label>
               <input
                 type="text"
                 value={(formData.metadata.researchTopic as string) || ''}
                 onChange={(e) => updateMetadata('researchTopic', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Jurisprudență CEDO privind..."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">
                 Domeniu Juridic
               </label>
               <input
                 type="text"
                 value={(formData.metadata.legalArea as string) || ''}
                 onChange={(e) => updateMetadata('legalArea', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Drept Civil, Drept Penal"
               />
             </div>
@@ -318,22 +318,22 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tip Document</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Tip Document</label>
               <input
                 type="text"
                 value={(formData.metadata.documentType as string) || ''}
                 onChange={(e) => updateMetadata('documentType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Contract, Cerere, Memoriu"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nume Client</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Nume Client</label>
               <input
                 type="text"
                 value={(formData.metadata.clientName as string) || ''}
                 onChange={(e) => updateMetadata('clientName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Ion Popescu"
               />
             </div>
@@ -344,22 +344,22 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nume Document</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Nume Document</label>
               <input
                 type="text"
                 value={(formData.metadata.documentName as string) || ''}
                 onChange={(e) => updateMetadata('documentName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Certificat fiscal client"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Locație Sursă</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Locație Sursă</label>
               <input
                 type="text"
                 value={(formData.metadata.sourceLocation as string) || ''}
                 onChange={(e) => updateMetadata('sourceLocation', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Arhiva Cabinet, Primărie"
               />
             </div>
@@ -370,42 +370,42 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nume Instanță</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Nume Instanță</label>
               <input
                 type="text"
                 value={(formData.metadata.courtName as string) || ''}
                 onChange={(e) => updateMetadata('courtName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Judecătoria Sector 1"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tip Ședință</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Tip Ședință</label>
               <input
                 type="text"
                 value={(formData.metadata.hearingType as string) || ''}
                 onChange={(e) => updateMetadata('hearingType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Fond, Apel, Recurs"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Număr Dosar</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Număr Dosar</label>
               <input
                 type="text"
                 value={(formData.metadata.caseNumber as string) || ''}
                 onChange={(e) => updateMetadata('caseNumber', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: 1234/2025"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Locație</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Locație</label>
               <input
                 type="text"
                 value={(formData.metadata.location as string) || ''}
                 onChange={(e) => updateMetadata('location', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Sala 12"
               />
             </div>
@@ -416,32 +416,32 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tip Întâlnire</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Tip Întâlnire</label>
               <input
                 type="text"
                 value={(formData.metadata.meetingType as string) || ''}
                 onChange={(e) => updateMetadata('meetingType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Consultare Client, Negociere"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Locație</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Locație</label>
               <input
                 type="text"
                 value={(formData.metadata.location as string) || ''}
                 onChange={(e) => updateMetadata('location', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Cabinet, Sediu Client, Online"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Participanți</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Participanți</label>
               <input
                 type="text"
                 value={(formData.metadata.attendees as string) || ''}
                 onChange={(e) => updateMetadata('attendees', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Ion Popescu, Maria Ionescu"
               />
             </div>
@@ -452,32 +452,32 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Destinație</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Destinație</label>
               <input
                 type="text"
                 value={(formData.metadata.destination as string) || ''}
                 onChange={(e) => updateMetadata('destination', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Cluj-Napoca, Timișoara"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Scop</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Scop</label>
               <input
                 type="text"
                 value={(formData.metadata.purpose as string) || ''}
                 onChange={(e) => updateMetadata('purpose', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Participare la termen"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cazare</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1">Cazare</label>
               <input
                 type="text"
                 value={(formData.metadata.accommodation as string) || ''}
                 onChange={(e) => updateMetadata('accommodation', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 placeholder="Ex: Hotel Continental"
               />
             </div>
@@ -492,22 +492,22 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto z-50 p-6"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-linear-bg-secondary rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-4 duration-200 focus:outline-none"
           onEscapeKeyDown={onClose}
         >
           {/* Modal header */}
-          <div className="flex items-center justify-between mb-6">
-            <Dialog.Title className="text-xl font-bold text-gray-900">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-linear-border-subtle/50">
+            <Dialog.Title className="text-lg font-semibold text-linear-text-primary">
               {isEditMode ? 'Editare Sarcină' : 'Sarcină Nouă'}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1.5 text-linear-text-muted hover:text-linear-text-secondary hover:bg-linear-bg-tertiary rounded-lg transition-colors"
                 aria-label="Închide"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -519,24 +519,26 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
             </Dialog.Close>
           </div>
 
+          {/* Scrollable content */}
+          <div className="max-h-[calc(90vh-140px)] overflow-y-auto px-6 py-4">
           {/* Form */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSave();
             }}
-            className="space-y-6"
+            className="space-y-5"
           >
             {/* Task Type */}
             <div>
-              <label htmlFor="taskType" className="block text-sm font-medium text-gray-700 mb-1">
-                Tip Sarcină <span className="text-red-500">*</span>
+              <label htmlFor="taskType" className="block text-sm font-medium text-linear-text-secondary mb-1">
+                Tip Sarcină <span className="text-linear-error">*</span>
               </label>
               <select
                 id="taskType"
                 value={formData.type}
                 onChange={(e) => updateField('type', e.target.value as TaskType)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
               >
                 {TASK_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -548,43 +550,43 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
 
             {/* Title */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                Titlu <span className="text-red-500">*</span>
+              <label htmlFor="title" className="block text-sm font-medium text-linear-text-secondary mb-1">
+                Titlu <span className="text-linear-error">*</span>
               </label>
               <input
                 id="title"
                 type="text"
                 value={formData.title}
                 onChange={(e) => updateField('title', e.target.value)}
-                className={`w-full px-3 py-2 border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                className={`w-full px-3 py-2 border ${errors.title ? 'border-linear-error' : 'border-linear-border'} rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent`}
                 placeholder="Introduceți titlul sarcinii"
               />
-              {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+              {errors.title && <p className="mt-1 text-sm text-linear-error">{errors.title}</p>}
             </div>
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Descriere <span className="text-red-500">*</span>
+              <label htmlFor="description" className="block text-sm font-medium text-linear-text-secondary mb-1">
+                Descriere <span className="text-linear-error">*</span>
               </label>
               <textarea
                 id="description"
                 value={formData.description ?? ''}
                 onChange={(e) => updateField('description', e.target.value)}
                 rows={4}
-                className={`w-full px-3 py-2 border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                className={`w-full px-3 py-2 border ${errors.description ? 'border-linear-error' : 'border-linear-border'} rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent`}
                 placeholder="Descrieți sarcina în detaliu"
               />
               {errors.description && (
-                <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                <p className="mt-1 text-sm text-linear-error">{errors.description}</p>
               )}
             </div>
 
             {/* Due Date and Time */}
             <div>
-              <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="dueDate" className="block text-sm font-medium text-linear-text-secondary mb-1">
                 {requiresTime ? 'Data și Ora' : 'Data Scadenței'}{' '}
-                <span className="text-red-500">*</span>
+                <span className="text-linear-error">*</span>
               </label>
               <div className={`flex gap-3 ${requiresTime ? '' : ''}`}>
                 {/* Date input - always shown */}
@@ -593,7 +595,7 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => updateField('dueDate', e.target.value)}
-                  className={`${requiresTime ? 'flex-1' : 'w-full'} px-3 py-2 border ${errors.dueDate ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  className={`${requiresTime ? 'flex-1' : 'w-full'} px-3 py-2 border ${errors.dueDate ? 'border-linear-error' : 'border-linear-border'} rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent`}
                 />
                 {/* Time input - only for Meeting and CourtDate */}
                 {requiresTime && (
@@ -602,14 +604,14 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
                     type="time"
                     value={formData.dueTime}
                     onChange={(e) => updateField('dueTime', e.target.value)}
-                    className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-32 px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                     placeholder="HH:mm"
                   />
                 )}
               </div>
-              {errors.dueDate && <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>}
+              {errors.dueDate && <p className="mt-1 text-sm text-linear-error">{errors.dueDate}</p>}
               {!requiresTime && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-linear-text-tertiary">
                   Sarcinile de tip cercetare, documente și deplasări nu necesită oră specifică.
                 </p>
               )}
@@ -617,14 +619,14 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
 
             {/* Priority */}
             <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="priority" className="block text-sm font-medium text-linear-text-secondary mb-1">
                 Prioritate
               </label>
               <select
                 id="priority"
                 value={formData.priority}
                 onChange={(e) => updateField('priority', e.target.value as Task['priority'])}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
               >
                 {PRIORITY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -636,14 +638,14 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
 
             {/* Status */}
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="status" className="block text-sm font-medium text-linear-text-secondary mb-1">
                 Status
               </label>
               <select
                 id="status"
                 value={formData.status}
                 onChange={(e) => updateField('status', e.target.value as Task['status'])}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md focus:ring-2 focus:ring-linear-accent focus:border-transparent"
               >
                 {STATUS_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -654,20 +656,20 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
             </div>
 
             {/* Type-specific fields */}
-            <div className="pt-4 border-t border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">Detalii Specifice</h3>
+            <div className="pt-4 border-t border-linear-border-subtle">
+              <h3 className="text-sm font-semibold text-linear-text-secondary mb-4">Detalii Specifice</h3>
               {renderTypeSpecificFields()}
             </div>
 
             {/* Time Tracking Section (only show in edit mode) */}
             {isEditMode && task && (
-              <div className="pt-4 border-t border-gray-200 space-y-3">
+              <div className="pt-4 border-t border-linear-border-subtle space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-700">Timp Înregistrat</h3>
+                  <h3 className="text-sm font-semibold text-linear-text-secondary">Timp Înregistrat</h3>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-linear-text-secondary">
                       Total:{' '}
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-linear-text-primary">
                         {totalLoggedHours.toFixed(2)}h
                       </span>
                     </span>
@@ -675,7 +677,7 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
                       <button
                         type="button"
                         onClick={() => setShowQuickLog(true)}
-                        className="px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium"
+                        className="px-3 py-1 text-sm border border-linear-accent text-linear-accent rounded-md hover:bg-linear-accent/10 transition-colors font-medium"
                       >
                         Înregistrează Timp
                       </button>
@@ -698,9 +700,9 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
 
             {/* Collaboration Sections (Story 4.6) - only show in edit mode */}
             {isEditMode && task && (
-              <div className="pt-4 border-t border-gray-200">
+              <div className="pt-4 border-t border-linear-border-subtle">
                 {/* Tab Navigation */}
-                <div className="flex border-b border-gray-200 mb-4">
+                <div className="flex border-b border-linear-border-subtle mb-4">
                   {[
                     { key: 'comments', label: 'Comentarii' },
                     { key: 'subtasks', label: 'Sub-sarcini' },
@@ -713,8 +715,8 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
                       onClick={() => setActiveCollabTab(tab.key as typeof activeCollabTab)}
                       className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                         activeCollabTab === tab.key
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          ? 'border-linear-accent text-linear-accent'
+                          : 'border-transparent text-linear-text-tertiary hover:text-linear-text-secondary hover:border-linear-border'
                       }`}
                     >
                       {tab.label}
@@ -738,59 +740,62 @@ export function TaskDetailModal({ isOpen, onClose, task, onSave, onDelete }: Tas
               </div>
             )}
 
-            {/* Action buttons */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-              <div>
-                {isEditMode && onDelete && (
-                  <>
-                    {!showDeleteConfirm ? (
+          </form>
+          </div>
+
+          {/* Footer with action buttons */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-linear-border-subtle/50 bg-linear-bg-tertiary rounded-b-xl">
+            <div>
+              {isEditMode && onDelete && (
+                <>
+                  {!showDeleteConfirm ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="px-3 py-2 text-sm text-linear-error hover:bg-linear-error/10 rounded-lg transition-colors font-medium"
+                    >
+                      Șterge Sarcina
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-linear-text-secondary">Sigur doriți să ștergeți?</span>
                       <button
                         type="button"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors font-medium"
+                        onClick={handleDelete}
+                        className="px-3 py-1.5 bg-linear-error text-white rounded-lg hover:bg-linear-error/90 transition-colors text-sm font-medium"
                       >
-                        Șterge Sarcina
+                        Da, Șterge
                       </button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Sigur doriți să ștergeți?</span>
-                        <button
-                          type="button"
-                          onClick={handleDelete}
-                          className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
-                        >
-                          Da, Șterge
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowDeleteConfirm(false)}
-                          className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
-                        >
-                          Anulează
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Anulează
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  {isEditMode ? 'Salvează Modificările' : 'Creează Sarcina'}
-                </button>
-              </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="px-3 py-1.5 bg-linear-bg-secondary text-linear-text-secondary rounded-lg hover:bg-linear-bg-hover transition-colors text-sm font-medium"
+                      >
+                        Anulează
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          </form>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-linear-text-secondary border border-linear-border rounded-lg hover:bg-linear-bg-hover transition-colors"
+              >
+                Anulează
+              </button>
+              <button
+                type="submit"
+                onClick={handleSave}
+                className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-lg hover:bg-linear-accent-hover transition-colors"
+              >
+                {isEditMode ? 'Salvează Modificările' : 'Creează Sarcina'}
+              </button>
+            </div>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

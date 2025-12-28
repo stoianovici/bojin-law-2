@@ -18,6 +18,7 @@ import { FinancialData } from '../../components/auth/FinancialData';
 import { FinancialAnalyticsTab } from '../../components/analytics/FinancialAnalyticsTab';
 import { TaskAnalyticsTab } from '../../components/analytics/TaskAnalyticsTab';
 import { AnalyticsTabBar } from '../../components/analytics/AnalyticsTabBar';
+import { PageLayout } from '../../components/linear/PageLayout';
 
 type AnalyticsMainTab = 'financial' | 'tasks';
 
@@ -46,14 +47,14 @@ function AnalyticsDashboard() {
     searchParams.get('tab') === 'tasks' ? 'tasks' : 'financial';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageLayout className="flex h-full flex-col p-0">
       {/* Shared analytics tab navigation */}
       <AnalyticsTabBar activeTab={activeMainTab} />
 
       {/* Tab content */}
       {activeMainTab === 'financial' && <FinancialAnalyticsTab />}
       {activeMainTab === 'tasks' && <TaskAnalyticsTab />}
-    </div>
+    </PageLayout>
   );
 }
 

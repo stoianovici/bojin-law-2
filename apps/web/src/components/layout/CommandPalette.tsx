@@ -1,5 +1,6 @@
 /**
  * Command Palette Component
+ * OPS-330: Linear Design Migration
  * Modal for quick navigation and actions
  * Supports keyboard navigation and Romanian diacritics
  */
@@ -221,7 +222,7 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
             fixed left-1/2 top-1/2 z-50
             -translate-x-1/2 -translate-y-1/2
             w-full max-w-2xl max-h-[80vh]
-            bg-white rounded-lg shadow-2xl
+            bg-linear-bg-elevated rounded-lg shadow-2xl border border-linear-border-subtle
             flex flex-col
             data-[state=open]:animate-in data-[state=closed]:animate-out
             data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
@@ -236,9 +237,9 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
           </Dialog.Description>
 
           {/* Search Input */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-linear-border-subtle">
             <div className="flex items-center gap-3">
-              <Search className="w-5 h-5 text-gray-400 flex-shrink-0" aria-hidden="true" />
+              <Search className="w-5 h-5 text-linear-text-tertiary flex-shrink-0" aria-hidden="true" />
               <input
                 type="text"
                 role="textbox"
@@ -252,11 +253,11 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
                 className="
                   flex-1 text-base
                   bg-transparent border-none outline-none
-                  placeholder-gray-400 text-gray-900
+                  placeholder-linear-text-muted text-linear-text-primary
                 "
                 aria-label="Search commands"
               />
-              <kbd className="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 border border-gray-300 rounded">
+              <kbd className="px-2 py-1 text-xs font-medium text-linear-text-tertiary bg-linear-bg-tertiary border border-linear-border rounded">
                 ESC
               </kbd>
             </div>
@@ -265,7 +266,7 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
           {/* Command List */}
           <div className="flex-1 overflow-y-auto p-2">
             {filteredCommands.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">No commands found</div>
+              <div className="p-8 text-center text-linear-text-tertiary">No commands found</div>
             ) : (
               <div className="space-y-1" role="listbox">
                 {filteredCommands.map((command, index) => {
@@ -280,10 +281,10 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
                         text-left transition-colors
                         ${
                           index === selectedIndex
-                            ? 'bg-blue-50 text-blue-900'
-                            : 'hover:bg-gray-100 text-gray-900'
+                            ? 'bg-linear-accent-muted text-linear-accent'
+                            : 'hover:bg-linear-bg-hover text-linear-text-primary'
                         }
-                        focus:outline-none focus:bg-blue-50
+                        focus:outline-none focus:bg-linear-accent-muted
                       `}
                       role="option"
                       aria-selected={index === selectedIndex}
@@ -293,7 +294,7 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{command.label}</div>
-                        <div className="text-sm text-gray-500 truncate">{command.description}</div>
+                        <div className="text-sm text-linear-text-tertiary truncate">{command.description}</div>
                       </div>
                     </button>
                   );
@@ -303,14 +304,14 @@ export function CommandPalette({ className = '' }: CommandPaletteProps) {
           </div>
 
           {/* Footer hint */}
-          <div className="p-3 border-t border-gray-200 bg-gray-50 text-xs text-gray-500 flex items-center justify-center gap-4">
+          <div className="p-3 border-t border-linear-border-subtle bg-linear-bg-tertiary text-xs text-linear-text-tertiary flex items-center justify-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-linear-bg-secondary border border-linear-border rounded">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-linear-bg-secondary border border-linear-border rounded">↓</kbd>
               to navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-linear-bg-secondary border border-linear-border rounded">↵</kbd>
               to select
             </span>
           </div>

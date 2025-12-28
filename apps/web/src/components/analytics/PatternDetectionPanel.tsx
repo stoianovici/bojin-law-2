@@ -41,9 +41,9 @@ const TASK_TYPE_LABELS: Record<string, string> = {
 };
 
 const CONFIDENCE_COLORS = {
-  high: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
-  medium: { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' },
-  low: { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' },
+  high: { bg: 'bg-linear-success/10', text: 'text-linear-success', border: 'border-linear-success/30' },
+  medium: { bg: 'bg-linear-warning/10', text: 'text-linear-warning', border: 'border-linear-warning/30' },
+  low: { bg: 'bg-linear-bg-tertiary', text: 'text-linear-text-secondary', border: 'border-linear-border-subtle' },
 };
 
 // ============================================================================
@@ -78,14 +78,14 @@ export function PatternDetectionPanel({
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-32 bg-gray-100 animate-pulse rounded-lg" />
+          <div key={i} className="h-32 bg-linear-bg-tertiary animate-pulse rounded-lg" />
         ))}
       </div>
     );
   }
 
   if (!data) {
-    return <div className="text-center py-8 text-gray-500">Nu există date despre tipare</div>;
+    return <div className="text-center py-8 text-linear-text-tertiary">Nu există date despre tipare</div>;
   }
 
   const filteredPatterns = data.patterns.filter((pattern) => {
@@ -97,22 +97,22 @@ export function PatternDetectionPanel({
   return (
     <div className="space-y-6">
       {/* Summary Header */}
-      <div className="bg-violet-50 border border-violet-200 rounded-lg p-6">
+      <div className="bg-linear-accent/10 border border-linear-accent/20 rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-violet-800">Detecție tipare AI</h3>
-            <p className="text-sm text-violet-600">
+            <h3 className="text-lg font-semibold text-linear-accent">Detecție tipare AI</h3>
+            <p className="text-sm text-linear-accent/80">
               Secvențe de sarcini frecvente detectate în fluxul de lucru
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-violet-600">{data.totalPatternsFound}</div>
-            <div className="text-sm text-violet-500">
+            <div className="text-3xl font-bold text-linear-accent">{data.totalPatternsFound}</div>
+            <div className="text-sm text-linear-accent/70">
               tipare găsite ({data.highConfidenceCount} cu încredere ridicată)
             </div>
           </div>
         </div>
-        <div className="mt-4 text-xs text-violet-500">
+        <div className="mt-4 text-xs text-linear-accent/60">
           Ultima analiză: {new Date(data.analysisDate).toLocaleString('ro-RO')}
         </div>
       </div>
@@ -129,8 +129,8 @@ export function PatternDetectionPanel({
             onClick={() => setFilter(tab.id as typeof filter)}
             className={`px-4 py-2 text-sm rounded-lg transition-colors ${
               filter === tab.id
-                ? 'bg-violet-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-linear-accent text-white'
+                : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
             }`}
           >
             {tab.label}
@@ -148,11 +148,11 @@ export function PatternDetectionPanel({
           return (
             <div
               key={pattern.id}
-              className={`bg-white rounded-lg border ${colors.border} overflow-hidden`}
+              className={`bg-linear-bg-secondary rounded-lg border ${colors.border} overflow-hidden`}
             >
               {/* Pattern Header */}
               <div
-                className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="p-4 cursor-pointer hover:bg-linear-bg-tertiary transition-colors"
                 onClick={() => setExpandedPattern(isExpanded ? null : pattern.id)}
               >
                 <div className="flex items-start justify-between">
@@ -161,21 +161,21 @@ export function PatternDetectionPanel({
                       <span className={`text-xs px-2 py-1 rounded ${colors.bg} ${colors.text}`}>
                         {(pattern.confidence * 100).toFixed(0)}% încredere
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-linear-text-tertiary">
                         {pattern.occurrenceCount} apariții
                       </span>
                       {pattern.isTemplateCreated && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        <span className="text-xs bg-linear-accent/10 text-linear-accent px-2 py-1 rounded">
                           Șablon creat
                         </span>
                       )}
                     </div>
-                    <h4 className="font-medium text-gray-900">{pattern.suggestedTemplateName}</h4>
-                    <div className="mt-2 text-sm text-gray-600">
+                    <h4 className="font-medium text-linear-text-primary">{pattern.suggestedTemplateName}</h4>
+                    <div className="mt-2 text-sm text-linear-text-secondary">
                       {formatTaskTypes(pattern.taskTypes)}
                     </div>
                   </div>
-                  <button className="text-gray-400 hover:text-gray-600">
+                  <button className="text-linear-text-muted hover:text-linear-text-secondary">
                     <svg
                       className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                       fill="none"
@@ -195,20 +195,20 @@ export function PatternDetectionPanel({
 
               {/* Expanded Details */}
               {isExpanded && (
-                <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="border-t border-linear-border-subtle p-4 bg-linear-bg-tertiary">
                   <div className="grid md:grid-cols-2 gap-6">
                     {/* Task Sequence */}
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Secvență sarcini</h5>
+                      <h5 className="text-sm font-medium text-linear-text-secondary mb-3">Secvență sarcini</h5>
                       <div className="space-y-2">
                         {pattern.taskTypes.map((type, index) => (
                           <div key={index} className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-medium">
+                            <div className="w-6 h-6 rounded-full bg-linear-accent/10 text-linear-accent flex items-center justify-center text-xs font-medium">
                               {index + 1}
                             </div>
                             <span className="text-sm">{TASK_TYPE_LABELS[type] || type}</span>
                             {index < pattern.taskTypes.length - 1 && (
-                              <span className="text-gray-400 text-xs ml-auto">
+                              <span className="text-linear-text-muted text-xs ml-auto">
                                 ~{pattern.avgSequenceGapDays?.toFixed(1) || '?'} zile interval
                               </span>
                             )}
@@ -219,7 +219,7 @@ export function PatternDetectionPanel({
 
                     {/* Common Assignees */}
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">
+                      <h5 className="text-sm font-medium text-linear-text-secondary mb-3">
                         Responsabili frecvenți
                       </h5>
                       <div className="space-y-2">
@@ -229,11 +229,11 @@ export function PatternDetectionPanel({
                             className="flex items-center justify-between text-sm"
                           >
                             <span>{assignee.userName}</span>
-                            <span className="text-gray-500">de {assignee.frequency} ori</span>
+                            <span className="text-linear-text-tertiary">de {assignee.frequency} ori</span>
                           </div>
                         ))}
                         {pattern.commonAssignees.length === 0 && (
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-linear-text-tertiary">
                             Nicio informație despre responsabili
                           </span>
                         )}
@@ -242,33 +242,33 @@ export function PatternDetectionPanel({
 
                     {/* Sample Cases */}
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Exemple de dosare</h5>
+                      <h5 className="text-sm font-medium text-linear-text-secondary mb-3">Exemple de dosare</h5>
                       <div className="space-y-1">
                         {pattern.sampleCases.slice(0, 3).map((sample) => (
-                          <div key={sample.caseId} className="text-sm text-gray-600">
+                          <div key={sample.caseId} className="text-sm text-linear-text-secondary">
                             {sample.caseTitle}
                           </div>
                         ))}
                         {pattern.sampleCases.length === 0 && (
-                          <span className="text-sm text-gray-500">Niciun exemplu de dosar</span>
+                          <span className="text-sm text-linear-text-tertiary">Niciun exemplu de dosar</span>
                         )}
                       </div>
                     </div>
 
                     {/* Case Types */}
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Tipuri de dosare</h5>
+                      <h5 className="text-sm font-medium text-linear-text-secondary mb-3">Tipuri de dosare</h5>
                       <div className="flex flex-wrap gap-2">
                         {pattern.caseTypes.map((caseType) => (
                           <span
                             key={caseType}
-                            className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded"
+                            className="text-xs bg-linear-bg-hover text-linear-text-secondary px-2 py-1 rounded"
                           >
                             {caseType}
                           </span>
                         ))}
                         {pattern.caseTypes.length === 0 && (
-                          <span className="text-sm text-gray-500">Toate tipurile de dosare</span>
+                          <span className="text-sm text-linear-text-tertiary">Toate tipurile de dosare</span>
                         )}
                       </div>
                     </div>
@@ -276,17 +276,17 @@ export function PatternDetectionPanel({
 
                   {/* Actions */}
                   {!pattern.isTemplateCreated && (
-                    <div className="mt-6 flex gap-3 pt-4 border-t border-gray-200">
+                    <div className="mt-6 flex gap-3 pt-4 border-t border-linear-border-subtle">
                       <button
                         onClick={() => onCreateTemplate(pattern)}
                         disabled={isCreatingTemplate}
-                        className="flex-1 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex-1 px-4 py-2 bg-linear-accent text-white rounded-lg hover:bg-linear-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {isCreatingTemplate ? 'Se creează...' : 'Creează șablon'}
                       </button>
                       <button
                         onClick={() => onDismissPattern(pattern.id)}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                        className="px-4 py-2 bg-linear-bg-hover text-linear-text-secondary rounded-lg hover:bg-linear-bg-tertiary transition-colors"
                       >
                         Ignoră
                       </button>
@@ -299,7 +299,7 @@ export function PatternDetectionPanel({
         })}
 
         {filteredPatterns.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-linear-text-tertiary">
             Niciun tipar nu corespunde filtrului curent
           </div>
         )}

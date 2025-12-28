@@ -86,7 +86,7 @@ function FileIcon({ fileType }: { fileType: string }) {
 
   if (type.includes('pdf')) {
     return (
-      <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+      <svg className="w-8 h-8 text-linear-error" fill="currentColor" viewBox="0 0 20 20">
         <path
           fillRule="evenodd"
           d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -98,7 +98,7 @@ function FileIcon({ fileType }: { fileType: string }) {
 
   if (type.includes('doc') || type.includes('word')) {
     return (
-      <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+      <svg className="w-8 h-8 text-linear-accent" fill="currentColor" viewBox="0 0 20 20">
         <path
           fillRule="evenodd"
           d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -110,7 +110,7 @@ function FileIcon({ fileType }: { fileType: string }) {
 
   if (type.includes('xls') || type.includes('excel')) {
     return (
-      <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+      <svg className="w-8 h-8 text-linear-success" fill="currentColor" viewBox="0 0 20 20">
         <path
           fillRule="evenodd"
           d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -121,7 +121,7 @@ function FileIcon({ fileType }: { fileType: string }) {
   }
 
   return (
-    <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+    <svg className="w-8 h-8 text-linear-text-tertiary" fill="currentColor" viewBox="0 0 20 20">
       <path
         fillRule="evenodd"
         d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
@@ -159,14 +159,14 @@ function ConfirmModal({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onCancel} />
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-sm text-gray-600 mb-6">{message}</p>
+        <div className="relative bg-linear-bg-secondary rounded-lg shadow-xl w-full max-w-md p-6">
+          <h3 className="text-lg font-semibold text-linear-text-primary mb-2">{title}</h3>
+          <p className="text-sm text-linear-text-secondary mb-6">{message}</p>
           <div className="flex justify-end gap-3">
             <button
               onClick={onCancel}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-secondary border border-linear-border rounded-lg hover:bg-linear-bg-hover"
             >
               Cancel
             </button>
@@ -176,8 +176,8 @@ function ConfirmModal({
               className={clsx(
                 'px-4 py-2 text-sm font-medium text-white rounded-lg',
                 confirmVariant === 'danger'
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-yellow-600 hover:bg-yellow-700',
+                  ? 'bg-linear-error hover:bg-linear-error/80'
+                  : 'bg-linear-warning hover:bg-linear-warning/80',
                 isLoading && 'opacity-50 cursor-not-allowed'
               )}
             >
@@ -192,9 +192,9 @@ function ConfirmModal({
 
 // Status badge colors (Story 2.9)
 const STATUS_COLORS: Record<DocumentStatus, string> = {
-  DRAFT: 'bg-yellow-100 text-yellow-800',
-  FINAL: 'bg-green-100 text-green-800',
-  ARCHIVED: 'bg-gray-100 text-gray-800',
+  DRAFT: 'bg-linear-warning/15 text-linear-warning',
+  FINAL: 'bg-linear-success/15 text-linear-success',
+  ARCHIVED: 'bg-linear-bg-tertiary text-linear-text-secondary',
 };
 
 /**
@@ -234,16 +234,16 @@ function ListDocumentCard({
   return (
     <div
       onClick={onPreview}
-      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-linear-bg-secondary border border-linear-border-subtle rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
     >
       <div className="flex items-start gap-4">
         <FileIcon fileType={document.fileType} />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-medium text-gray-900 truncate">{document.fileName}</h4>
+            <h4 className="font-medium text-linear-text-primary truncate">{document.fileName}</h4>
             {!isOriginal && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/15 text-purple-500">
                 Imported
               </span>
             )}
@@ -258,7 +258,7 @@ function ListDocumentCard({
             </span>
             {/* Story 2.9: OneDrive indicator */}
             {hasOneDrive && (
-              <span className="inline-flex items-center text-blue-600" title="Stored in OneDrive">
+              <span className="inline-flex items-center text-linear-accent" title="Stored in OneDrive">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
@@ -266,24 +266,24 @@ function ListDocumentCard({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-linear-text-tertiary">
             <span>{formatFileSize(document.fileSize)}</span>
             <span>Uploaded by {uploaderName}</span>
             <span>{format(new Date(document.uploadedAt), 'dd MMM yyyy')}</span>
             {/* Story 2.9: Version info */}
             {document.versions && document.versions.length > 0 && (
-              <span className="text-blue-600">v{document.versions[0].versionNumber}</span>
+              <span className="text-linear-accent">v{document.versions[0].versionNumber}</span>
             )}
           </div>
 
           {!isOriginal && sourceCase && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-linear-text-tertiary">
               From: {sourceCase.caseNumber} - {sourceCase.title}
             </p>
           )}
 
           {!isOriginal && (
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-linear-text-muted">
               Linked by {linkerName} on {format(new Date(linkedAt), 'dd MMM yyyy')}
             </p>
           )}
@@ -295,7 +295,7 @@ function ListDocumentCard({
           <button
             onClick={onAddToMapa}
             title="Adaugă în mapă"
-            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            className="p-2 text-linear-text-muted hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -312,7 +312,7 @@ function ListDocumentCard({
             <button
               onClick={onOpenInWord}
               title="Deschide în Word"
-              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              className="p-2 text-linear-text-muted hover:text-linear-accent hover:bg-linear-accent/10 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -330,7 +330,7 @@ function ListDocumentCard({
             <button
               onClick={onRename}
               title="Redenumește"
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-linear-text-muted hover:text-linear-text-secondary hover:bg-linear-bg-hover rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -348,7 +348,7 @@ function ListDocumentCard({
             <button
               onClick={onLinkToCase}
               title="Asociază la alt dosar"
-              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              className="p-2 text-linear-text-muted hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -365,7 +365,7 @@ function ListDocumentCard({
             <button
               onClick={onDelete}
               title="Șterge permanent"
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 text-linear-text-muted hover:text-linear-error hover:bg-linear-error/10 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -714,12 +714,12 @@ export function CaseDocumentsList({
   );
 
   return (
-    <div className={clsx('bg-white rounded-lg border border-gray-200', className)}>
+    <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle', className)}>
       {/* Header - Story 2.9: Added upload button, OPS-111: Added view toggle */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-linear-border-subtle">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Documente</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="text-lg font-semibold text-linear-text-primary">Documente</h3>
+          <p className="text-sm text-linear-text-tertiary">
             {viewMode === 'grid' ? gridTotalCount : documents.length}{' '}
             {(viewMode === 'grid' ? gridTotalCount : documents.length) === 1
               ? 'document'
@@ -729,14 +729,14 @@ export function CaseDocumentsList({
         </div>
         <div className="flex items-center gap-3">
           {/* OPS-111: View mode toggle */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center bg-linear-bg-tertiary rounded-lg p-1">
             <button
               onClick={() => setViewMode('list')}
               className={clsx(
                 'p-2 rounded-md transition-colors',
                 viewMode === 'list'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-linear-bg-secondary text-linear-text-primary shadow-sm'
+                  : 'text-linear-text-tertiary hover:text-linear-text-secondary'
               )}
               title="Vizualizare listă"
             >
@@ -754,8 +754,8 @@ export function CaseDocumentsList({
               className={clsx(
                 'p-2 rounded-md transition-colors',
                 viewMode === 'grid'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-linear-bg-secondary text-linear-text-primary shadow-sm'
+                  : 'text-linear-text-tertiary hover:text-linear-text-secondary'
               )}
               title="Vizualizare grilă"
             >
@@ -773,7 +773,7 @@ export function CaseDocumentsList({
           {/* Story 2.9: Upload button */}
           <button
             onClick={() => setIsUploadOpen(true)}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-linear-success rounded-lg hover:bg-linear-success/80 transition-colors"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -787,7 +787,7 @@ export function CaseDocumentsList({
           </button>
           <button
             onClick={() => setIsBrowserOpen(true)}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-lg hover:bg-linear-accent-hover transition-colors"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -808,12 +808,12 @@ export function CaseDocumentsList({
         {viewMode === 'grid' ? (
           gridLoading && gridDocuments.length === 0 ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-linear-accent" />
             </div>
           ) : gridDocuments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+            <div className="flex flex-col items-center justify-center py-12 text-linear-text-tertiary">
               <svg
-                className="w-16 h-16 mb-4 text-gray-300"
+                className="w-16 h-16 mb-4 text-linear-text-muted"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -829,7 +829,7 @@ export function CaseDocumentsList({
               <p className="text-sm mb-4">Încărcați sau importați documente pentru acest dosar</p>
               <button
                 onClick={() => setIsUploadOpen(true)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-linear-accent bg-linear-accent/15 rounded-lg hover:bg-linear-accent/20 transition-colors"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -846,7 +846,7 @@ export function CaseDocumentsList({
             <div className="space-y-4">
               {/* Sort dropdown */}
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-linear-text-secondary">
                   <span className="font-medium">{gridTotalCount}</span>{' '}
                   {gridTotalCount === 1 ? 'document' : 'documente'}
                 </p>
@@ -860,7 +860,7 @@ export function CaseDocumentsList({
                       ];
                       handleSortChange(field, dir);
                     }}
-                    className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="appearance-none bg-linear-bg-secondary border border-linear-border rounded-lg px-3 py-2 pr-8 text-sm font-medium text-linear-text-secondary hover:bg-linear-bg-hover cursor-pointer"
                   >
                     <option value="LINKED_AT-DESC">Cele mai recente</option>
                     <option value="LINKED_AT-ASC">Cele mai vechi</option>
@@ -870,7 +870,7 @@ export function CaseDocumentsList({
                     <option value="FILE_SIZE-ASC">Dimensiune (mic)</option>
                   </select>
                   <svg
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-linear-text-muted pointer-events-none"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -912,7 +912,7 @@ export function CaseDocumentsList({
               {gridHasMore && (
                 <div className="flex justify-center pt-4">
                   {gridLoading ? (
-                    <div className="flex items-center gap-2 text-gray-500">
+                    <div className="flex items-center gap-2 text-linear-text-tertiary">
                       <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle
                           className="opacity-25"
@@ -933,7 +933,7 @@ export function CaseDocumentsList({
                   ) : (
                     <button
                       onClick={gridLoadMore}
-                      className="px-6 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                      className="px-6 py-2 text-sm font-medium text-linear-accent bg-linear-accent/15 rounded-lg hover:bg-linear-accent/20 transition-colors"
                     >
                       Încarcă mai multe
                     </button>
@@ -945,10 +945,10 @@ export function CaseDocumentsList({
         ) : /* OPS-269: List View with time period grouping */
         loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-linear-accent" />
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center py-12 text-red-600">
+          <div className="flex flex-col items-center justify-center py-12 text-linear-error">
             <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -960,15 +960,15 @@ export function CaseDocumentsList({
             <p className="font-medium">Eroare la încărcarea documentelor</p>
             <button
               onClick={() => refetch()}
-              className="mt-2 text-sm text-blue-600 hover:underline"
+              className="mt-2 text-sm text-linear-accent hover:underline"
             >
               Încearcă din nou
             </button>
           </div>
         ) : documents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+          <div className="flex flex-col items-center justify-center py-12 text-linear-text-tertiary">
             <svg
-              className="w-16 h-16 mb-4 text-gray-300"
+              className="w-16 h-16 mb-4 text-linear-text-muted"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -986,7 +986,7 @@ export function CaseDocumentsList({
             </p>
             <button
               onClick={() => setIsBrowserOpen(true)}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-linear-accent bg-linear-accent/15 rounded-lg hover:bg-linear-accent/20 transition-colors"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

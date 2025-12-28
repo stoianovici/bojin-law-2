@@ -156,7 +156,7 @@ export function WorkspaceTabs({ children, className }: WorkspaceTabsProps) {
     >
       {/* Tab List */}
       <Tabs.List
-        className="flex border-b border-gray-200 bg-white px-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+        className="flex border-b border-linear-border-subtle bg-linear-bg-secondary px-6 overflow-x-auto scrollbar-thin scrollbar-thumb-linear-border scrollbar-track-linear-bg-primary"
         aria-label="Workspace tabs"
       >
         {tabConfigs.map((tab) => (
@@ -165,12 +165,12 @@ export function WorkspaceTabs({ children, className }: WorkspaceTabsProps) {
             value={tab.value}
             className={clsx(
               'flex items-center gap-2 px-4 py-3 border-b-2 text-sm font-medium transition-all whitespace-nowrap',
-              'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white',
-              'hover:text-gray-900 hover:bg-gray-50',
+              'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 focus:ring-offset-linear-bg-secondary',
+              'hover:text-linear-text-primary hover:bg-linear-bg-hover',
               // Inactive state
-              'text-gray-600 border-transparent',
+              'text-linear-text-secondary border-transparent',
               // Active state - using data-state attribute from Radix
-              'data-[state=active]:text-blue-600 data-[state=active]:border-blue-600 data-[state=active]:font-semibold'
+              'data-[state=active]:text-linear-accent data-[state=active]:border-linear-accent data-[state=active]:font-semibold'
             )}
           >
             {tab.icon}
@@ -204,7 +204,7 @@ export function TabContent({
     <Tabs.Content
       value={value}
       className={clsx(
-        'flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+        'flex-1 focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2',
         className
       )}
     >

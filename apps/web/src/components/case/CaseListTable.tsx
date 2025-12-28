@@ -1,6 +1,7 @@
 /**
  * Case List Table Component
  * Story 2.8: Case CRUD Operations UI - Task 3
+ * OPS-330: Linear Design Migration
  *
  * Displays cases in table format with accessibility features
  */
@@ -46,15 +47,15 @@ interface CaseListTableProps {
 function getStatusColor(status: CaseStatus): string {
   switch (status) {
     case 'Active':
-      return 'bg-green-100 text-green-800';
+      return 'bg-linear-success/15 text-linear-success';
     case 'OnHold':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-linear-warning/15 text-linear-warning';
     case 'Closed':
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-linear-bg-tertiary text-linear-text-tertiary';
     case 'Archived':
-      return 'bg-slate-100 text-slate-800';
+      return 'bg-linear-bg-tertiary text-linear-text-muted';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-linear-bg-tertiary text-linear-text-tertiary';
   }
 }
 
@@ -92,20 +93,20 @@ function TeamMemberAvatar({ member }: { member: TeamMember }) {
     <Tooltip.Provider delayDuration={300}>
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
-          <Avatar.Root className="inline-flex h-8 w-8 select-none items-center justify-center overflow-hidden rounded-full bg-blue-100 align-middle">
-            <Avatar.Fallback className="text-xs font-medium text-blue-700">
+          <Avatar.Root className="inline-flex h-8 w-8 select-none items-center justify-center overflow-hidden rounded-full bg-linear-accent-muted align-middle">
+            <Avatar.Fallback className="text-xs font-medium text-linear-accent">
               {initials}
             </Avatar.Fallback>
           </Avatar.Root>
         </Tooltip.Trigger>
         <Tooltip.Portal>
           <Tooltip.Content
-            className="z-50 rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white shadow-md animate-in fade-in-0 zoom-in-95"
+            className="z-50 rounded-md bg-linear-bg-elevated border border-linear-border-subtle px-3 py-1.5 text-sm text-linear-text-primary shadow-md animate-in fade-in-0 zoom-in-95"
             sideOffset={5}
           >
             {fullName}
-            {member.role && <span className="text-gray-300"> ({member.role})</span>}
-            <Tooltip.Arrow className="fill-gray-900" />
+            {member.role && <span className="text-linear-text-tertiary"> ({member.role})</span>}
+            <Tooltip.Arrow className="fill-linear-bg-elevated" />
           </Tooltip.Content>
         </Tooltip.Portal>
       </Tooltip.Root>
@@ -125,58 +126,58 @@ export function CaseListTable({ cases }: CaseListTableProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
+    <div className="overflow-hidden rounded-lg border border-linear-border-subtle bg-linear-bg-secondary shadow">
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 table-fixed">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-linear-border-subtle table-fixed">
+          <thead className="bg-linear-bg-tertiary">
             <tr>
               <th
                 scope="col"
-                className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-32 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
               >
                 Nr. Dosar
               </th>
               <th
                 scope="col"
-                className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-1/4 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
               >
                 Titlu
               </th>
               <th
                 scope="col"
-                className="w-1/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-1/5 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
               >
                 Client
               </th>
               <th
                 scope="col"
-                className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-28 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
               >
                 Status
               </th>
               <th
                 scope="col"
-                className="w-24 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-24 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
               >
                 Tip
               </th>
               <th
                 scope="col"
-                className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-28 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
               >
                 Echipă
               </th>
               <th
                 scope="col"
-                className="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-20 px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
               >
                 Acțiuni
               </th>
             </tr>
           </thead>
           <motion.tbody
-            className="bg-white divide-y divide-gray-200"
+            className="bg-linear-bg-secondary divide-y divide-linear-border-subtle"
             initial="hidden"
             animate="visible"
             variants={{
@@ -188,7 +189,7 @@ export function CaseListTable({ cases }: CaseListTableProps) {
               <motion.tr
                 key={caseItem.id}
                 onClick={() => handleRowClick(caseItem.id)}
-                className="hover:bg-gray-50 cursor-pointer transition-colors duration-150 focus-within:bg-gray-50"
+                className="hover:bg-linear-bg-hover cursor-pointer transition-colors duration-150 focus-within:bg-linear-bg-hover"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -201,19 +202,19 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                   visible: { opacity: 1, y: 0 },
                 }}
               >
-                <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                <td className="px-4 py-4 text-sm font-medium text-linear-text-primary">
                   <div className="truncate" title={caseItem.caseNumber}>
                     {caseItem.caseNumber.length > 12
                       ? `${caseItem.caseNumber.slice(-12)}`
                       : caseItem.caseNumber}
                   </div>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-900">
+                <td className="px-4 py-4 text-sm text-linear-text-primary">
                   <div className="truncate" title={caseItem.title}>
                     {caseItem.title}
                   </div>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-500">
+                <td className="px-4 py-4 text-sm text-linear-text-secondary">
                   <div className="truncate" title={caseItem.client.name}>
                     {caseItem.client.name}
                   </div>
@@ -227,7 +228,7 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                     {getStatusLabel(caseItem.status)}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-500">
+                <td className="px-4 py-4 text-sm text-linear-text-secondary">
                   <div className="truncate">{getTypeLabel(caseItem.type)}</div>
                 </td>
                 <td className="px-4 py-4">
@@ -236,19 +237,19 @@ export function CaseListTable({ cases }: CaseListTableProps) {
                       <TeamMemberAvatar key={member.id} member={member} />
                     ))}
                     {caseItem.teamMembers.length > 3 && (
-                      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600">
+                      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-linear-bg-tertiary text-xs font-medium text-linear-text-secondary">
                         +{caseItem.teamMembers.length - 3}
                       </div>
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-500">
+                <td className="px-4 py-4 text-sm text-linear-text-secondary">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRowClick(caseItem.id);
                     }}
-                    className="text-blue-600 hover:text-blue-900 font-medium focus:outline-none focus:underline"
+                    className="text-linear-accent hover:text-linear-accent-hover font-medium focus:outline-none focus:underline transition-colors"
                     aria-label={`Vezi detalii pentru dosarul ${caseItem.caseNumber}`}
                   >
                     Vezi
@@ -262,7 +263,7 @@ export function CaseListTable({ cases }: CaseListTableProps) {
 
       {/* Mobile Card View */}
       <motion.div
-        className="md:hidden divide-y divide-gray-200"
+        className="md:hidden divide-y divide-linear-border-subtle"
         initial="hidden"
         animate="visible"
         variants={{
@@ -274,7 +275,7 @@ export function CaseListTable({ cases }: CaseListTableProps) {
           <motion.div
             key={caseItem.id}
             onClick={() => handleRowClick(caseItem.id)}
-            className="p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+            className="p-4 hover:bg-linear-bg-hover cursor-pointer transition-colors duration-150"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -291,12 +292,12 @@ export function CaseListTable({ cases }: CaseListTableProps) {
           >
             <div className="flex items-start justify-between mb-2">
               <div className="min-w-0 flex-1 mr-2">
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <div className="text-sm font-medium text-linear-text-primary truncate">
                   {caseItem.caseNumber.length > 12
                     ? `${caseItem.caseNumber.slice(-12)}`
                     : caseItem.caseNumber}
                 </div>
-                <div className="text-sm text-gray-500 mt-1 truncate">{caseItem.title}</div>
+                <div className="text-sm text-linear-text-secondary mt-1 truncate">{caseItem.title}</div>
               </div>
               <span
                 className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
@@ -308,21 +309,21 @@ export function CaseListTable({ cases }: CaseListTableProps) {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Client:</span>
-                <span className="text-gray-900 truncate ml-2">{caseItem.client.name}</span>
+                <span className="text-linear-text-tertiary">Client:</span>
+                <span className="text-linear-text-primary truncate ml-2">{caseItem.client.name}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Tip:</span>
-                <span className="text-gray-900">{getTypeLabel(caseItem.type)}</span>
+                <span className="text-linear-text-tertiary">Tip:</span>
+                <span className="text-linear-text-primary">{getTypeLabel(caseItem.type)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Echipă:</span>
+                <span className="text-linear-text-tertiary">Echipă:</span>
                 <div className="flex -space-x-2">
                   {caseItem.teamMembers.slice(0, 3).map((member) => (
                     <TeamMemberAvatar key={member.id} member={member} />
                   ))}
                   {caseItem.teamMembers.length > 3 && (
-                    <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600">
+                    <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-linear-bg-tertiary text-xs font-medium text-linear-text-secondary">
                       +{caseItem.teamMembers.length - 3}
                     </div>
                   )}

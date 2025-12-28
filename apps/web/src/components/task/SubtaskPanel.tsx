@@ -84,12 +84,12 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
   if (loading) {
     return (
       <div className="animate-pulse space-y-3">
-        <div className="h-4 bg-gray-200 rounded w-1/4" />
+        <div className="h-4 bg-linear-bg-hover rounded w-1/4" />
         <div className="space-y-2">
           {[1, 2].map((i) => (
             <div key={i} className="flex items-center gap-3">
-              <div className="w-5 h-5 bg-gray-200 rounded" />
-              <div className="h-4 bg-gray-200 rounded flex-1" />
+              <div className="w-5 h-5 bg-linear-bg-hover rounded" />
+              <div className="h-4 bg-linear-bg-hover rounded flex-1" />
             </div>
           ))}
         </div>
@@ -98,7 +98,7 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
   }
 
   if (error) {
-    return <div className="text-red-600 text-sm">Eroare la încărcarea sub-sarcinilor</div>;
+    return <div className="text-linear-error text-sm">Eroare la încărcarea sub-sarcinilor</div>;
   }
 
   return (
@@ -106,18 +106,18 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
       {/* Header with progress */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-gray-900">Sub-sarcini</h3>
-          <p className="text-xs text-gray-500">{summary}</p>
+          <h3 className="font-semibold text-linear-text-primary">Sub-sarcini</h3>
+          <p className="text-xs text-linear-text-tertiary">{summary}</p>
         </div>
         {subtasks.length > 0 && (
           <div className="flex items-center gap-2">
-            <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="w-24 h-2 bg-linear-bg-hover rounded-full overflow-hidden">
               <div
-                className="h-full bg-green-500 transition-all"
+                className="h-full bg-linear-success transition-all"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-xs text-gray-500">{progress}%</span>
+            <span className="text-xs text-linear-text-tertiary">{progress}%</span>
           </div>
         )}
       </div>
@@ -140,13 +140,13 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
       {canEdit && (
         <>
           {showAddForm ? (
-            <div className="p-3 bg-gray-50 rounded-lg space-y-3">
+            <div className="p-3 bg-linear-bg-tertiary rounded-lg space-y-3">
               <input
                 type="text"
                 value={newSubtask.title}
                 onChange={(e) => setNewSubtask((prev) => ({ ...prev, title: e.target.value }))}
                 placeholder="Titlu sub-sarcină"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-md text-sm focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 autoFocus
               />
 
@@ -157,7 +157,7 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
                 }
                 placeholder="Descriere (opțional)"
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-linear-border rounded-md text-sm focus:ring-2 focus:ring-linear-accent focus:border-transparent resize-none"
               />
 
               <div className="flex gap-3">
@@ -169,7 +169,7 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
                       priority: e.target.value as Task['priority'],
                     }))
                   }
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-linear-border rounded-md text-sm focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 >
                   {PRIORITY_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -182,7 +182,7 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
                   type="date"
                   value={newSubtask.dueDate || ''}
                   onChange={(e) => setNewSubtask((prev) => ({ ...prev, dueDate: e.target.value }))}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-linear-border rounded-md text-sm focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                 />
               </div>
 
@@ -192,14 +192,14 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
                     setShowAddForm(false);
                     setNewSubtask({ title: '', description: '', priority: 'Medium' });
                   }}
-                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                  className="px-3 py-1.5 text-sm text-linear-text-secondary hover:text-linear-text-primary"
                 >
                   Anulează
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={creating || !newSubtask.title?.trim()}
-                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm bg-linear-accent text-white rounded-md hover:bg-linear-accent-hover disabled:opacity-50"
                 >
                   {creating ? 'Se adaugă...' : 'Adaugă'}
                 </button>
@@ -208,7 +208,7 @@ export function SubtaskPanel({ parentTaskId, caseId: _caseId, canEdit = true }: 
           ) : (
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:text-blue-600 hover:border-blue-300 transition-colors flex items-center justify-center gap-1"
+              className="w-full py-2 border-2 border-dashed border-linear-border-subtle rounded-lg text-sm text-linear-text-tertiary hover:text-linear-accent hover:border-linear-accent/50 transition-colors flex items-center justify-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -237,16 +237,16 @@ function SubtaskItem({ subtask, canEdit, onToggle }: SubtaskItemProps) {
   const isCompleted = subtask.status === 'Completed';
 
   const priorityColors: Record<string, string> = {
-    Low: 'bg-gray-100 text-gray-600',
-    Medium: 'bg-blue-100 text-blue-600',
-    High: 'bg-orange-100 text-orange-600',
-    Urgent: 'bg-red-100 text-red-600',
+    Low: 'bg-linear-bg-tertiary text-linear-text-secondary',
+    Medium: 'bg-linear-accent/15 text-linear-accent',
+    High: 'bg-linear-warning/15 text-linear-warning',
+    Urgent: 'bg-linear-error/15 text-linear-error',
   };
 
   return (
     <div
       className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-        isCompleted ? 'bg-gray-50 border-gray-100' : 'bg-white border-gray-200'
+        isCompleted ? 'bg-linear-bg-tertiary border-linear-border-subtle/50' : 'bg-linear-bg-secondary border-linear-border-subtle'
       }`}
     >
       {/* Checkbox */}
@@ -255,8 +255,8 @@ function SubtaskItem({ subtask, canEdit, onToggle }: SubtaskItemProps) {
         disabled={!canEdit}
         className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-colors mt-0.5 ${
           isCompleted
-            ? 'bg-green-500 border-green-500 text-white'
-            : 'border-gray-300 hover:border-blue-500'
+            ? 'bg-linear-success border-linear-success text-white'
+            : 'border-linear-border hover:border-linear-accent'
         } disabled:cursor-not-allowed`}
       >
         {isCompleted && (
@@ -270,7 +270,7 @@ function SubtaskItem({ subtask, canEdit, onToggle }: SubtaskItemProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span
-            className={`text-sm font-medium ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}
+            className={`text-sm font-medium ${isCompleted ? 'text-linear-text-muted line-through' : 'text-linear-text-primary'}`}
           >
             {subtask.title}
           </span>
@@ -280,12 +280,12 @@ function SubtaskItem({ subtask, canEdit, onToggle }: SubtaskItemProps) {
         </div>
 
         {subtask.description && (
-          <p className={`text-xs mt-1 ${isCompleted ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className={`text-xs mt-1 ${isCompleted ? 'text-linear-text-muted' : 'text-linear-text-tertiary'}`}>
             {subtask.description}
           </p>
         )}
 
-        <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+        <div className="flex items-center gap-3 mt-1 text-xs text-linear-text-muted">
           {subtask.assignee && (
             <span>
               {subtask.assignee.firstName} {subtask.assignee.lastName}

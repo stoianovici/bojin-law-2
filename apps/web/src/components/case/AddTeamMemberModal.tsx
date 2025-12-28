@@ -79,26 +79,26 @@ export function AddTeamMemberModal({ caseId, open, onOpenChange }: AddTeamMember
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fadeIn z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto focus:outline-none z-50">
-          <Dialog.Title className="text-xl font-semibold text-gray-900 mb-4">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-linear-bg-elevated rounded-lg shadow-xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto focus:outline-none z-50">
+          <Dialog.Title className="text-xl font-semibold text-linear-text-primary mb-4">
             Adaugă Membru în Echipă
           </Dialog.Title>
 
-          <Dialog.Description className="text-sm text-gray-600 mb-6">
+          <Dialog.Description className="text-sm text-linear-text-secondary mb-6">
             Selectați un utilizator pentru a-l adăuga la echipa dosarului.
           </Dialog.Description>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* User Selection */}
             <div>
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-                Utilizator <span className="text-red-500">*</span>
+              <label htmlFor="userId" className="block text-sm font-medium text-linear-text-secondary mb-1">
+                Utilizator <span className="text-linear-error">*</span>
               </label>
               <select
                 id="userId"
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent bg-linear-bg-secondary text-linear-text-primary"
                 required
                 disabled={loading || usersLoading}
               >
@@ -113,19 +113,19 @@ export function AddTeamMemberModal({ caseId, open, onOpenChange }: AddTeamMember
                   )
                 )}
               </select>
-              {selectedUser && <p className="text-xs text-gray-500 mt-1">{selectedUser.email}</p>}
+              {selectedUser && <p className="text-xs text-linear-text-tertiary mt-1">{selectedUser.email}</p>}
             </div>
 
             {/* Role Selection */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                Rol <span className="text-red-500">*</span>
+              <label htmlFor="role" className="block text-sm font-medium text-linear-text-secondary mb-1">
+                Rol <span className="text-linear-error">*</span>
               </label>
               <select
                 id="role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent bg-linear-bg-secondary text-linear-text-primary"
                 required
                 disabled={loading}
               >
@@ -138,11 +138,11 @@ export function AddTeamMemberModal({ caseId, open, onOpenChange }: AddTeamMember
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+            <div className="flex gap-3 justify-end pt-4 border-t border-linear-border-subtle">
               <Dialog.Close asChild>
                 <button
                   type="button"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-lg hover:bg-linear-bg-hover transition-colors"
                   disabled={loading}
                 >
                   Anulează
@@ -150,7 +150,7 @@ export function AddTeamMemberModal({ caseId, open, onOpenChange }: AddTeamMember
               </Dialog.Close>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-white bg-linear-accent rounded-lg hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 disabled={loading || !selectedUserId}
               >
                 {loading && (
@@ -178,7 +178,7 @@ export function AddTeamMemberModal({ caseId, open, onOpenChange }: AddTeamMember
 
           <Dialog.Close asChild>
             <button
-              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute top-4 right-4 p-1 text-linear-text-muted hover:text-linear-text-secondary transition-colors"
               aria-label="Închide"
             >
               <Cross2Icon className="h-5 w-5" />

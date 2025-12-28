@@ -93,10 +93,10 @@ export function SectionGroup({
   // Styling based on variant
   const isEditable = variant === 'editable';
   const Icon = isEditable ? Pencil1Icon : EyeOpenIcon;
-  const iconColor = isEditable ? 'text-blue-600' : 'text-gray-500';
-  const bgColor = isEditable ? 'bg-white' : 'bg-gray-50';
-  const borderColor = isEditable ? 'border-blue-200' : 'border-gray-200';
-  const headerBg = isEditable ? 'hover:bg-blue-50/50' : 'hover:bg-gray-100/50';
+  const iconColor = isEditable ? 'text-linear-accent' : 'text-linear-text-tertiary';
+  const bgColor = isEditable ? 'bg-linear-bg-secondary' : 'bg-linear-bg-tertiary';
+  const borderColor = isEditable ? 'border-linear-accent/30' : 'border-linear-border-subtle';
+  const headerBg = isEditable ? 'hover:bg-linear-accent/5' : 'hover:bg-linear-bg-quaternary';
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className={className}>
@@ -118,12 +118,12 @@ export function SectionGroup({
         >
           <div className="flex items-center gap-3">
             <Icon className={clsx('h-5 w-5', iconColor)} />
-            <span className="text-base font-semibold text-gray-900">{title}</span>
+            <span className="text-base font-semibold text-linear-text-primary">{title}</span>
             {count !== undefined && count > 0 && (
               <span
                 className={clsx(
                   'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  isEditable ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
+                  isEditable ? 'bg-linear-accent/15 text-linear-accent' : 'bg-linear-bg-quaternary text-linear-text-secondary'
                 )}
               >
                 {count}
@@ -134,13 +134,13 @@ export function SectionGroup({
             className={clsx(
               'flex h-7 w-7 items-center justify-center rounded-full',
               'transition-colors duration-150',
-              isOpen ? 'bg-gray-200' : 'bg-gray-100'
+              isOpen ? 'bg-linear-bg-quaternary' : 'bg-linear-bg-tertiary'
             )}
           >
             {isOpen ? (
-              <ChevronUp className="h-4 w-4 text-gray-600" />
+              <ChevronUp className="h-4 w-4 text-linear-text-secondary" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-gray-600" />
+              <ChevronDown className="h-4 w-4 text-linear-text-secondary" />
             )}
           </div>
         </CollapsibleTrigger>
@@ -152,7 +152,7 @@ export function SectionGroup({
               'px-5 pb-5 pt-2',
               // Add top border when expanded
               'border-t',
-              isEditable ? 'border-blue-100' : 'border-gray-100'
+              isEditable ? 'border-linear-accent/20' : 'border-linear-border-subtle'
             )}
           >
             {children}

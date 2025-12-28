@@ -74,18 +74,18 @@ export function DiscoveryStatusPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-linear-accent"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Error: {error}</p>
+      <div className="bg-linear-error/10 border border-linear-error/30 rounded-lg p-4">
+        <p className="text-linear-error">Error: {error}</p>
         <button
           onClick={fetchStatus}
-          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+          className="mt-2 text-sm text-linear-error hover:text-linear-error underline"
         >
           Retry
         </button>
@@ -138,26 +138,26 @@ export function DiscoveryStatusPanel() {
 
       {/* Pending Review Items */}
       {status.pendingReviewItems && status.pendingReviewItems.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
+          <h2 className="text-lg font-semibold text-linear-text-primary mb-4">
             Items Pending Review ({status.pendingReviewItems.length})
           </h2>
           <div className="space-y-3">
             {status.pendingReviewItems.slice(0, 5).map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center justify-between p-3 bg-linear-bg-tertiary rounded-lg hover:bg-linear-bg-hover transition-colors"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900">{item.discoveredTypeOriginal}</div>
-                  <div className="text-sm text-gray-600">
+                  <div className="font-medium text-linear-text-primary">{item.discoveredTypeOriginal}</div>
+                  <div className="text-sm text-linear-text-secondary">
                     {item.totalOccurrences} occurrences • {item.estimatedMonthlySavings}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <div className="text-xs text-gray-500">Priority Score</div>
-                    <div className="font-semibold text-gray-900">
+                    <div className="text-xs text-linear-text-tertiary">Priority Score</div>
+                    <div className="font-semibold text-linear-text-primary">
                       {(item.priorityScore * 100).toFixed(0)}
                     </div>
                   </div>
@@ -166,7 +166,7 @@ export function DiscoveryStatusPanel() {
             ))}
           </div>
           {status.pendingReviewItems.length > 5 && (
-            <button className="mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium">
+            <button className="mt-4 text-sm text-linear-accent hover:text-linear-accent-hover font-medium">
               View all {status.pendingReviewItems.length} items →
             </button>
           )}
@@ -175,53 +175,53 @@ export function DiscoveryStatusPanel() {
 
       {/* Top Document Types */}
       {status.documentTypes && status.documentTypes.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
+          <h2 className="text-lg font-semibold text-linear-text-primary mb-4">
             Top Document Types by Priority
           </h2>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-linear-border-subtle">
               <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                     Document Type
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                     Language
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                     Occurrences
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                     Monthly Savings
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                     Priority
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
                 {status.documentTypes.slice(0, 10).map((type) => (
-                  <tr key={type.id} className="hover:bg-gray-50">
+                  <tr key={type.id} className="hover:bg-linear-bg-hover">
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-linear-text-primary">
                         {type.discoveredTypeOriginal}
                       </div>
-                      <div className="text-xs text-gray-500">{type.discoveredTypeEnglish}</div>
+                      <div className="text-xs text-linear-text-tertiary">{type.discoveredTypeEnglish}</div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-linear-text-secondary">
                       {type.primaryLanguage.toUpperCase()}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-linear-text-primary">
                       {type.totalOccurrences}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <StatusBadge status={type.mappingStatus} />
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-linear-text-primary">
                       {type.estimatedMonthlySavings}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -239,7 +239,7 @@ export function DiscoveryStatusPanel() {
       <div className="flex justify-end">
         <button
           onClick={fetchStatus}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-linear-accent text-white rounded-lg hover:bg-linear-accent-hover transition-colors"
         >
           Refresh Data
         </button>
@@ -264,9 +264,9 @@ function StatCard({
   highlight?: boolean;
 }) {
   const colorClasses = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    yellow: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    green: 'bg-green-50 text-green-700 border-green-200',
+    blue: 'bg-linear-accent/10 text-linear-accent border-linear-accent/30',
+    yellow: 'bg-linear-warning/10 text-linear-warning border-linear-warning/30',
+    green: 'bg-linear-success/10 text-linear-success border-linear-success/30',
     purple: 'bg-purple-50 text-purple-700 border-purple-200',
   };
 
@@ -274,13 +274,13 @@ function StatCard({
     <div
       className={clsx(
         'rounded-lg border p-6 transition-all',
-        highlight ? 'bg-yellow-50 border-yellow-300 shadow-md' : 'bg-white border-gray-200'
+        highlight ? 'bg-linear-warning/10 border-linear-warning/30 shadow-md' : 'bg-linear-bg-secondary border-linear-border-subtle'
       )}
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">{label}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+          <p className="text-sm font-medium text-linear-text-secondary">{label}</p>
+          <p className="text-3xl font-bold text-linear-text-primary mt-2">{value}</p>
         </div>
         <div className={clsx('text-4xl p-3 rounded-lg', colorClasses[color])}>{icon}</div>
       </div>
@@ -298,13 +298,13 @@ function MetricCard({
   percentage?: number;
 }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <div className="text-sm font-medium text-gray-600 mb-2">{label}</div>
-      <div className="text-2xl font-bold text-gray-900">{value}</div>
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-4">
+      <div className="text-sm font-medium text-linear-text-secondary mb-2">{label}</div>
+      <div className="text-2xl font-bold text-linear-text-primary">{value}</div>
       {percentage !== undefined && (
-        <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+        <div className="mt-2 w-full bg-linear-bg-hover rounded-full h-2">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all"
+            className="bg-linear-accent h-2 rounded-full transition-all"
             style={{ width: `${Math.min(percentage, 100)}%` }}
           />
         </div>
@@ -315,10 +315,10 @@ function MetricCard({
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    mapped: 'bg-green-100 text-green-800',
-    pending_review: 'bg-yellow-100 text-yellow-800',
-    auto_mapped: 'bg-blue-100 text-blue-800',
-    unmapped: 'bg-gray-100 text-gray-800',
+    mapped: 'bg-linear-success/15 text-linear-success',
+    pending_review: 'bg-linear-warning/15 text-linear-warning',
+    auto_mapped: 'bg-linear-accent/15 text-linear-accent',
+    unmapped: 'bg-linear-bg-tertiary text-linear-text-secondary',
   };
 
   const labels: Record<string, string> = {
@@ -349,10 +349,10 @@ function PriorityBadge({ score }: { score: number }) {
   else if (percentage >= 40) color = 'yellow';
 
   const colorClasses: Record<string, string> = {
-    red: 'bg-red-100 text-red-800',
-    orange: 'bg-orange-100 text-orange-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    gray: 'bg-gray-100 text-gray-800',
+    red: 'bg-linear-error/15 text-linear-error',
+    orange: 'bg-linear-warning/15 text-linear-warning',
+    yellow: 'bg-linear-warning/10 text-linear-warning',
+    gray: 'bg-linear-bg-tertiary text-linear-text-secondary',
   };
 
   return (

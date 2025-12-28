@@ -155,13 +155,13 @@ export function AttachmentUploadModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+      <div className="bg-linear-bg-secondary rounded-lg shadow-xl max-w-lg w-full p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Încarcă Atașamente</h3>
           <button
             onClick={onClose}
             disabled={uploading}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="text-linear-text-muted hover:text-linear-text-secondary disabled:opacity-50"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -182,7 +182,7 @@ export function AttachmentUploadModal({
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+            isDragging ? 'border-linear-accent bg-linear-accent/10' : 'border-linear-border hover:border-linear-border-hover'
           }`}
         >
           <input
@@ -195,7 +195,7 @@ export function AttachmentUploadModal({
           />
 
           <svg
-            className="w-12 h-12 mx-auto text-gray-400 mb-3"
+            className="w-12 h-12 mx-auto text-linear-text-muted mb-3"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -208,19 +208,19 @@ export function AttachmentUploadModal({
             />
           </svg>
 
-          <p className="text-gray-600 mb-1">
-            Trageți fișierele aici sau <span className="text-blue-600">click pentru selectare</span>
+          <p className="text-linear-text-secondary mb-1">
+            Trageți fișierele aici sau <span className="text-linear-accent">click pentru selectare</span>
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-linear-text-tertiary">
             PDF, Word, Excel, PowerPoint, imagini. Max 50MB per fișier.
           </p>
         </div>
 
         {/* Errors */}
         {errors.length > 0 && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mt-4 p-3 bg-linear-error/10 border border-linear-error/30 rounded-lg">
             {errors.map((error, i) => (
-              <p key={i} className="text-sm text-red-600">
+              <p key={i} className="text-sm text-linear-error">
                 {error}
               </p>
             ))}
@@ -231,22 +231,22 @@ export function AttachmentUploadModal({
         {files.length > 0 && (
           <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
             {files.map((file, index) => (
-              <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+              <div key={index} className="flex items-center gap-3 p-2 bg-linear-bg-tertiary rounded-lg">
                 <span className="text-xl">{getFileIcon(file.type)}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                  <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                  <p className="text-sm font-medium text-linear-text-primary truncate">{file.name}</p>
+                  <p className="text-xs text-linear-text-tertiary">{formatFileSize(file.size)}</p>
                 </div>
                 {uploading ? (
                   <div className="w-16">
                     {uploadProgress[file.name] === -1 ? (
-                      <span className="text-xs text-red-600">Eroare</span>
+                      <span className="text-xs text-linear-error">Eroare</span>
                     ) : uploadProgress[file.name] === 100 ? (
-                      <span className="text-xs text-green-600">Gata</span>
+                      <span className="text-xs text-linear-success">Gata</span>
                     ) : (
-                      <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-linear-bg-hover rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-600 transition-all"
+                          className="h-full bg-linear-accent transition-all"
                           style={{ width: `${uploadProgress[file.name] || 0}%` }}
                         />
                       </div>
@@ -258,7 +258,7 @@ export function AttachmentUploadModal({
                       e.stopPropagation();
                       removeFile(index);
                     }}
-                    className="p-1 text-gray-400 hover:text-red-600"
+                    className="p-1 text-linear-text-muted hover:text-linear-error"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -280,14 +280,14 @@ export function AttachmentUploadModal({
           <button
             onClick={onClose}
             disabled={uploading}
-            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md disabled:opacity-50"
+            className="px-4 py-2 text-sm text-linear-text-secondary hover:bg-linear-bg-tertiary rounded-md disabled:opacity-50"
           >
             Anulează
           </button>
           <button
             onClick={handleUpload}
             disabled={uploading || files.length === 0}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 text-sm bg-linear-accent text-white rounded-md hover:bg-linear-accent-hover disabled:opacity-50 flex items-center gap-2"
           >
             {uploading ? (
               <>

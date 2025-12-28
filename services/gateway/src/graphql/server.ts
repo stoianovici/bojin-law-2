@@ -69,6 +69,7 @@ import { actorTypeResolvers } from './resolvers/actor-type.resolvers';
 import { clientResolvers } from './resolvers/client.resolvers';
 import { aiOpsResolvers } from './resolvers/ai-ops.resolvers';
 import { teamActivityResolvers } from './resolvers/team-activity.resolvers';
+import { briefResolvers } from './resolvers/brief.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -130,6 +131,7 @@ const resolvers = {
     ...clientResolvers.Query,
     ...aiOpsResolvers.Query,
     ...teamActivityResolvers.Query,
+    ...briefResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -316,6 +318,8 @@ const resolvers = {
   ActorTypeConfig: actorTypeResolvers.ActorTypeConfig,
   // Team Activity resolvers (OPS-272)
   ActivityEntry: teamActivityResolvers.ActivityEntry,
+  // Brief Feed resolvers (OPS-298: Mobile Home)
+  BriefItem: briefResolvers.BriefItem,
 };
 
 /**

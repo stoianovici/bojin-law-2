@@ -116,22 +116,22 @@ export function CaseConversationSummaryPanel({
   // No summary yet - show generate button
   if (!summary && !loading) {
     return (
-      <div className="p-6 text-center bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-100">
-        <Brain className="h-12 w-12 mx-auto mb-3 text-purple-400" aria-hidden="true" />
-        <h4 className="font-medium text-gray-800 mb-2">Rezumat AI al Comunicărilor</h4>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="p-6 text-center bg-gradient-to-br from-linear-accent/10 to-linear-bg-tertiary rounded-lg border border-linear-accent/20">
+        <Brain className="h-12 w-12 mx-auto mb-3 text-linear-accent" aria-hidden="true" />
+        <h4 className="font-medium text-linear-text-primary mb-2">Rezumat AI al Comunicărilor</h4>
+        <p className="text-sm text-linear-text-secondary mb-4">
           Generează un rezumat complet al tuturor comunicărilor din acest dosar, incluzând
           cronologia evenimentelor și dezvoltările cheie.
         </p>
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-linear-accent text-white rounded-lg hover:bg-linear-accent-hover transition-colors disabled:opacity-50"
         >
           <Brain className="h-4 w-4" />
           Generează Rezumat
         </button>
-        {error && <p className="mt-3 text-sm text-red-600">Eroare: {error.message}</p>}
+        {error && <p className="mt-3 text-sm text-linear-error">Eroare: {error.message}</p>}
       </div>
     );
   }
@@ -139,10 +139,10 @@ export function CaseConversationSummaryPanel({
   // Loading state
   if (loading) {
     return (
-      <div className="p-8 text-center bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-100">
-        <Loader2 className="h-10 w-10 mx-auto mb-4 text-purple-500 animate-spin" />
-        <h4 className="font-medium text-gray-800 mb-2">Se analizează comunicările...</h4>
-        <p className="text-sm text-gray-600">
+      <div className="p-8 text-center bg-gradient-to-br from-linear-accent/10 to-linear-bg-tertiary rounded-lg border border-linear-accent/20">
+        <Loader2 className="h-10 w-10 mx-auto mb-4 text-linear-accent animate-spin" />
+        <h4 className="font-medium text-linear-text-primary mb-2">Se analizează comunicările...</h4>
+        <p className="text-sm text-linear-text-secondary">
           AI-ul analizează toate emailurile pentru a genera un rezumat complet. Aceasta poate dura
           câteva secunde.
         </p>
@@ -154,9 +154,9 @@ export function CaseConversationSummaryPanel({
   if (!summary) return null;
 
   const significanceColors = {
-    high: 'bg-red-100 text-red-800 border-red-200',
-    medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    low: 'bg-gray-100 text-gray-600 border-gray-200',
+    high: 'bg-linear-error/15 text-linear-error border-linear-error/30',
+    medium: 'bg-linear-warning/15 text-linear-warning border-linear-warning/30',
+    low: 'bg-linear-bg-tertiary text-linear-text-secondary border-linear-border-subtle',
   };
 
   return (
@@ -164,19 +164,19 @@ export function CaseConversationSummaryPanel({
       {/* Header with refresh */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-purple-500" />
-          <h4 className="font-semibold text-gray-800">Rezumat AI</h4>
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+          <Brain className="h-5 w-5 text-linear-accent" />
+          <h4 className="font-semibold text-linear-text-primary">Rezumat AI</h4>
+          <span className="text-xs text-linear-text-tertiary bg-linear-bg-tertiary px-2 py-0.5 rounded">
             {summary.emailCount} emailuri analizate
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-linear-text-tertiary">
           <Clock className="h-3 w-3" />
           <span>Generat {formatDistanceToNow(new Date(summary.generatedAt))} în urmă</span>
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="ml-2 p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+            className="ml-2 p-1.5 text-linear-text-tertiary hover:text-linear-accent hover:bg-linear-accent/10 rounded transition-colors"
             title="Regenerează rezumatul"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -185,36 +185,36 @@ export function CaseConversationSummaryPanel({
       </div>
 
       {/* Executive Summary */}
-      <div className="p-4 bg-white rounded-lg border border-gray-200">
-        <h5 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-          <Mail className="h-4 w-4 text-blue-500" />
+      <div className="p-4 bg-linear-bg-secondary rounded-lg border border-linear-border-subtle">
+        <h5 className="font-medium text-linear-text-secondary mb-2 flex items-center gap-2">
+          <Mail className="h-4 w-4 text-linear-accent" />
           Rezumat Executiv
         </h5>
-        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+        <p className="text-sm text-linear-text-secondary leading-relaxed whitespace-pre-wrap">
           {summary.executiveSummary}
         </p>
       </div>
 
       {/* Current Status */}
-      <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-        <h5 className="font-medium text-blue-800 text-sm mb-1 flex items-center gap-2">
+      <div className="p-3 bg-linear-accent/10 rounded-lg border border-linear-accent/20">
+        <h5 className="font-medium text-linear-accent text-sm mb-1 flex items-center gap-2">
           <CheckCircle className="h-4 w-4" />
           Status Curent
         </h5>
-        <p className="text-sm text-blue-700">{summary.currentStatus}</p>
+        <p className="text-sm text-linear-accent">{summary.currentStatus}</p>
       </div>
 
       {/* Key Developments */}
       {summary.keyDevelopments.length > 0 && (
-        <div className="p-4 bg-white rounded-lg border border-gray-200">
-          <h5 className="font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <Lightbulb className="h-4 w-4 text-yellow-500" />
+        <div className="p-4 bg-linear-bg-secondary rounded-lg border border-linear-border-subtle">
+          <h5 className="font-medium text-linear-text-secondary mb-2 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-linear-warning" />
             Dezvoltări Cheie
           </h5>
           <ul className="space-y-1.5">
             {summary.keyDevelopments.map((dev, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+              <li key={idx} className="flex items-start gap-2 text-sm text-linear-text-secondary">
+                <ArrowRight className="h-4 w-4 text-linear-text-muted flex-shrink-0 mt-0.5" />
                 <span>{dev}</span>
               </li>
             ))}
@@ -224,27 +224,27 @@ export function CaseConversationSummaryPanel({
 
       {/* Chronology (collapsible) */}
       {summary.chronology.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle overflow-hidden">
           <button
             onClick={() => setIsChronologyExpanded(!isChronologyExpanded)}
-            className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+            className="w-full p-4 text-left flex items-center justify-between hover:bg-linear-bg-hover transition-colors"
           >
-            <h5 className="font-medium text-gray-700 flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-green-500" />
+            <h5 className="font-medium text-linear-text-secondary flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-linear-success" />
               Cronologie ({summary.chronology.length} evenimente)
             </h5>
             {isChronologyExpanded ? (
-              <ChevronUp className="h-4 w-4 text-gray-400" />
+              <ChevronUp className="h-4 w-4 text-linear-text-muted" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-linear-text-muted" />
             )}
           </button>
           {isChronologyExpanded && (
-            <div className="px-4 pb-4 border-t border-gray-100">
+            <div className="px-4 pb-4 border-t border-linear-border-subtle/50">
               <div className="mt-3 space-y-3">
                 {summary.chronology.map((event, idx) => (
                   <div key={idx} className="flex gap-3 text-sm">
-                    <div className="flex-shrink-0 w-20 text-gray-500 font-mono text-xs pt-0.5">
+                    <div className="flex-shrink-0 w-20 text-linear-text-tertiary font-mono text-xs pt-0.5">
                       {event.date}
                     </div>
                     <div className="flex-1">
@@ -259,16 +259,16 @@ export function CaseConversationSummaryPanel({
                               : 'Rutină'}
                         </span>
                       </div>
-                      <p className="mt-1 text-gray-700">{event.summary}</p>
+                      <p className="mt-1 text-linear-text-secondary">{event.summary}</p>
                       {event.parties.length > 0 && (
-                        <p className="mt-0.5 text-xs text-gray-500">
+                        <p className="mt-0.5 text-xs text-linear-text-tertiary">
                           Părți: {event.parties.join(', ')}
                         </p>
                       )}
                       {event.emailId && onEmailClick && (
                         <button
                           onClick={() => onEmailClick(event.emailId)}
-                          className="mt-1 text-xs text-blue-600 hover:underline"
+                          className="mt-1 text-xs text-linear-accent hover:underline"
                         >
                           Vezi email →
                         </button>
@@ -284,15 +284,15 @@ export function CaseConversationSummaryPanel({
 
       {/* Open Issues */}
       {summary.openIssues.length > 0 && (
-        <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
-          <h5 className="font-medium text-orange-800 mb-2 flex items-center gap-2">
+        <div className="p-4 bg-linear-warning/10 rounded-lg border border-linear-warning/20">
+          <h5 className="font-medium text-linear-warning mb-2 flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
             Probleme Nerezolvate
           </h5>
           <ul className="space-y-1.5">
             {summary.openIssues.map((issue, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-orange-700">
-                <span className="text-orange-400">•</span>
+              <li key={idx} className="flex items-start gap-2 text-sm text-linear-warning">
+                <span className="text-linear-warning">•</span>
                 <span>{issue}</span>
               </li>
             ))}
@@ -302,15 +302,15 @@ export function CaseConversationSummaryPanel({
 
       {/* Next Steps */}
       {summary.nextSteps.length > 0 && (
-        <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-          <h5 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+        <div className="p-4 bg-linear-success/10 rounded-lg border border-linear-success/20">
+          <h5 className="font-medium text-linear-success mb-2 flex items-center gap-2">
             <ArrowRight className="h-4 w-4" />
             Pași Următori Recomandați
           </h5>
           <ul className="space-y-1.5">
             {summary.nextSteps.map((step, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-green-700">
-                <span className="font-medium text-green-600">{idx + 1}.</span>
+              <li key={idx} className="flex items-start gap-2 text-sm text-linear-success">
+                <span className="font-medium text-linear-success">{idx + 1}.</span>
                 <span>{step}</span>
               </li>
             ))}

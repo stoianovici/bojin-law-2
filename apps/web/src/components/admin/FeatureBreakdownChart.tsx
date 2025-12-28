@@ -57,21 +57,21 @@ function CustomTooltip({
 
   const item = payload[0].payload;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-      <p className="font-medium text-gray-900">{item.featureName}</p>
+    <div className="bg-linear-bg-secondary border border-linear-border-subtle rounded-lg shadow-lg p-3">
+      <p className="font-medium text-linear-text-primary">{item.featureName}</p>
       <div className="mt-1 space-y-0.5 text-sm">
-        <p className="text-gray-600">
-          Cost: <span className="font-medium text-gray-900">€{item.cost.toFixed(2)}</span>
+        <p className="text-linear-text-secondary">
+          Cost: <span className="font-medium text-linear-text-primary">€{item.cost.toFixed(2)}</span>
         </p>
-        <p className="text-gray-600">
-          Tokeni: <span className="font-medium text-gray-900">{item.tokens.toLocaleString()}</span>
+        <p className="text-linear-text-secondary">
+          Tokeni: <span className="font-medium text-linear-text-primary">{item.tokens.toLocaleString()}</span>
         </p>
-        <p className="text-gray-600">
-          Apeluri: <span className="font-medium text-gray-900">{item.calls.toLocaleString()}</span>
+        <p className="text-linear-text-secondary">
+          Apeluri: <span className="font-medium text-linear-text-primary">{item.calls.toLocaleString()}</span>
         </p>
-        <p className="text-gray-600">
+        <p className="text-linear-text-secondary">
           Procent:{' '}
-          <span className="font-medium text-gray-900">{item.percentOfTotal.toFixed(1)}%</span>
+          <span className="font-medium text-linear-text-primary">{item.percentOfTotal.toFixed(1)}%</span>
         </p>
       </div>
     </div>
@@ -85,13 +85,13 @@ function CustomTooltip({
 export function FeatureBreakdownChart({ data, loading }: FeatureBreakdownChartProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-6" />
+      <div className="bg-linear-bg-secondary rounded-lg shadow p-6">
+        <div className="h-6 w-48 bg-linear-bg-hover rounded animate-pulse mb-6" />
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex items-center gap-4">
-              <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-              <div className="flex-1 h-8 bg-gray-100 rounded animate-pulse" />
+              <div className="h-4 w-32 bg-linear-bg-hover rounded animate-pulse" />
+              <div className="flex-1 h-8 bg-linear-bg-tertiary rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -101,9 +101,9 @@ export function FeatureBreakdownChart({ data, loading }: FeatureBreakdownChartPr
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost pe Funcționalitate</h3>
-        <div className="flex items-center justify-center h-64 text-gray-500">
+      <div className="bg-linear-bg-secondary rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-linear-text-primary mb-4">Cost pe Funcționalitate</h3>
+        <div className="flex items-center justify-center h-64 text-linear-text-tertiary">
           Nu există date pentru perioada selectată
         </div>
       </div>
@@ -114,8 +114,8 @@ export function FeatureBreakdownChart({ data, loading }: FeatureBreakdownChartPr
   const sortedData = [...data].sort((a, b) => b.cost - a.cost);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Cost pe Funcționalitate</h3>
+    <div className="bg-linear-bg-secondary rounded-lg shadow p-6">
+      <h3 className="text-lg font-semibold text-linear-text-primary mb-6">Cost pe Funcționalitate</h3>
 
       <ResponsiveContainer width="100%" height={Math.max(300, sortedData.length * 50)}>
         <BarChart data={sortedData} layout="vertical" margin={{ left: 20, right: 20 }}>
@@ -151,8 +151,8 @@ export function FeatureBreakdownChart({ data, loading }: FeatureBreakdownChartPr
               className="w-3 h-3 rounded-sm flex-shrink-0"
               style={{ backgroundColor: COLORS[index % COLORS.length] }}
             />
-            <span className="text-sm text-gray-600 truncate">{item.featureName}</span>
-            <span className="text-sm font-medium text-gray-900 ml-auto">
+            <span className="text-sm text-linear-text-secondary truncate">{item.featureName}</span>
+            <span className="text-sm font-medium text-linear-text-primary ml-auto">
               {formatCost(item.cost)} ({item.percentOfTotal.toFixed(1)}%)
             </span>
           </div>

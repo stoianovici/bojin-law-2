@@ -133,26 +133,26 @@ export function InternalNoteComposer({
 
   return (
     <div
-      className={`rounded-lg border border-gray-200 bg-white transition-shadow ${
-        isFocused ? 'shadow-md ring-2 ring-blue-100' : ''
+      className={`rounded-lg border border-linear-border-subtle bg-linear-bg-secondary transition-shadow ${
+        isFocused ? 'shadow-md ring-2 ring-linear-accent/20' : ''
       } ${className}`}
     >
       <fieldset>
         <legend className="sr-only">Create internal note</legend>
 
         {/* Header */}
-        <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-2">
-          <FileText className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-700">Notă Internă</span>
+        <div className="flex items-center gap-2 border-b border-linear-border-subtle px-4 py-2">
+          <FileText className="h-4 w-4 text-linear-text-muted" />
+          <span className="text-sm font-medium text-linear-text-secondary">Notă Internă</span>
         </div>
 
         {/* Toolbar */}
         {isFocused && (
-          <div className="flex items-center gap-1 border-b border-gray-100 px-3 py-1">
+          <div className="flex items-center gap-1 border-b border-linear-border-subtle px-3 py-1">
             <button
               type="button"
               onClick={() => insertFormatting('**')}
-              className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              className="rounded p-1.5 text-linear-text-tertiary hover:bg-linear-bg-hover hover:text-linear-text-secondary"
               title="Bold (Ctrl+B)"
             >
               <Bold className="h-4 w-4" />
@@ -160,7 +160,7 @@ export function InternalNoteComposer({
             <button
               type="button"
               onClick={() => insertFormatting('_')}
-              className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              className="rounded p-1.5 text-linear-text-tertiary hover:bg-linear-bg-hover hover:text-linear-text-secondary"
               title="Italic (Ctrl+I)"
             >
               <Italic className="h-4 w-4" />
@@ -168,7 +168,7 @@ export function InternalNoteComposer({
             <button
               type="button"
               onClick={() => insertFormatting('\n- ', '')}
-              className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              className="rounded p-1.5 text-linear-text-tertiary hover:bg-linear-bg-hover hover:text-linear-text-secondary"
               title="List"
             >
               <List className="h-4 w-4" />
@@ -193,7 +193,7 @@ export function InternalNoteComposer({
             }}
             onKeyDown={handleKeyDown}
             placeholder="Adaugă o notă internă..."
-            className="w-full resize-none border-0 p-0 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+            className="w-full resize-none border-0 p-0 text-sm text-linear-text-primary placeholder:text-linear-text-muted focus:outline-none focus:ring-0"
             rows={isFocused ? 4 : 2}
             aria-label="Note content"
           />
@@ -201,7 +201,7 @@ export function InternalNoteComposer({
 
         {/* Error message */}
         {(error || errorMessage) && (
-          <div className="flex items-center gap-2 border-t border-red-100 bg-red-50 px-4 py-2 text-sm text-red-600">
+          <div className="flex items-center gap-2 border-t border-linear-error/20 bg-linear-error/10 px-4 py-2 text-sm text-linear-error">
             <AlertCircle className="h-4 w-4" />
             {error?.message || errorMessage}
           </div>
@@ -209,14 +209,14 @@ export function InternalNoteComposer({
 
         {/* Actions */}
         {isFocused && (
-          <div className="note-actions flex items-center justify-between border-t border-gray-100 px-3 py-2">
+          <div className="note-actions flex items-center justify-between border-t border-linear-border-subtle px-3 py-2">
             <div className="flex items-center gap-2">
               {/* Privacy selector */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowPrivacyMenu(!showPrivacyMenu)}
-                  className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                  className="flex items-center gap-1 rounded-lg border border-linear-border bg-linear-bg-secondary px-2 py-1.5 text-sm text-linear-text-secondary hover:bg-linear-bg-tertiary"
                   aria-expanded={showPrivacyMenu}
                   aria-haspopup="listbox"
                 >
@@ -227,7 +227,7 @@ export function InternalNoteComposer({
 
                 {showPrivacyMenu && (
                   <div
-                    className="absolute bottom-full left-0 z-10 mb-1 w-64 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+                    className="absolute bottom-full left-0 z-10 mb-1 w-64 rounded-lg border border-linear-border-subtle bg-linear-bg-secondary py-1 shadow-lg"
                     role="listbox"
                   >
                     {PRIVACY_OPTIONS.map((option) => (
@@ -238,16 +238,16 @@ export function InternalNoteComposer({
                           setPrivacyLevel(option.value);
                           setShowPrivacyMenu(false);
                         }}
-                        className={`flex w-full items-start gap-3 px-3 py-2 text-left hover:bg-gray-50 ${
-                          privacyLevel === option.value ? 'bg-blue-50' : ''
+                        className={`flex w-full items-start gap-3 px-3 py-2 text-left hover:bg-linear-bg-tertiary ${
+                          privacyLevel === option.value ? 'bg-linear-accent/10' : ''
                         }`}
                         role="option"
                         aria-selected={privacyLevel === option.value}
                       >
                         <span className="mt-0.5">{option.icon}</span>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{option.label}</div>
-                          <div className="text-xs text-gray-500">{option.description}</div>
+                          <div className="text-sm font-medium text-linear-text-primary">{option.label}</div>
+                          <div className="text-xs text-linear-text-tertiary">{option.description}</div>
                         </div>
                       </button>
                     ))}
@@ -258,7 +258,7 @@ export function InternalNoteComposer({
               {/* Attachment button (placeholder) */}
               <button
                 type="button"
-                className="rounded-lg border border-gray-300 bg-white p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                className="rounded-lg border border-linear-border bg-linear-bg-secondary p-1.5 text-linear-text-tertiary hover:bg-linear-bg-tertiary hover:text-linear-text-secondary"
                 title="Attach file"
                 disabled
               >
@@ -273,7 +273,7 @@ export function InternalNoteComposer({
                   setBody('');
                   setIsFocused(false);
                 }}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-linear-text-tertiary hover:text-linear-text-secondary"
               >
                 Anulează
               </button>
@@ -281,7 +281,7 @@ export function InternalNoteComposer({
                 type="button"
                 onClick={handleSubmit}
                 disabled={!body.trim() || loading}
-                className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-1 rounded-lg bg-linear-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-linear-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -297,9 +297,9 @@ export function InternalNoteComposer({
 
       {/* Keyboard shortcut hint */}
       {isFocused && (
-        <div className="border-t border-gray-100 px-3 py-1 text-xs text-gray-400">
-          Apasă <kbd className="rounded bg-gray-100 px-1">Ctrl</kbd>+
-          <kbd className="rounded bg-gray-100 px-1">Enter</kbd> pentru a salva
+        <div className="border-t border-linear-border-subtle px-3 py-1 text-xs text-linear-text-muted">
+          Apasă <kbd className="rounded bg-linear-bg-tertiary px-1">Ctrl</kbd>+
+          <kbd className="rounded bg-linear-bg-tertiary px-1">Enter</kbd> pentru a salva
         </div>
       )}
     </div>

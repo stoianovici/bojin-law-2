@@ -1,8 +1,9 @@
 /**
  * Toast Notification Component
  * Story 2.8: Case CRUD Operations UI - Task 9
+ * OPS-330: Linear Design Migration
  *
- * Toast notification system using Radix UI Toast
+ * Toast notification system using Radix UI Toast with Linear design tokens
  */
 
 'use client';
@@ -23,7 +24,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           className={`
             fixed bottom-4 right-4 sm:bottom-6 sm:right-6
             w-full max-w-sm
-            bg-white rounded-lg shadow-lg border
+            bg-linear-bg-elevated rounded-lg shadow-lg border
             p-4
             flex items-start gap-3
             data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom-5
@@ -33,12 +34,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             data-[swipe=end]:animate-out data-[swipe=end]:slide-out-to-right-full
             ${
               notification.type === 'success'
-                ? 'border-green-200'
+                ? 'border-linear-success/30'
                 : notification.type === 'error'
-                  ? 'border-red-200'
+                  ? 'border-linear-error/30'
                   : notification.type === 'warning'
-                    ? 'border-yellow-200'
-                    : 'border-blue-200'
+                    ? 'border-linear-warning/30'
+                    : 'border-linear-accent/30'
             }
           `}
           duration={notification.duration}
@@ -52,7 +53,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div className="flex-shrink-0">
             {notification.type === 'success' && (
               <svg
-                className="h-6 w-6 text-green-600"
+                className="h-6 w-6 text-linear-success"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -65,7 +66,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             )}
             {notification.type === 'error' && (
               <svg
-                className="h-6 w-6 text-red-600"
+                className="h-6 w-6 text-linear-error"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -78,7 +79,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             )}
             {notification.type === 'warning' && (
               <svg
-                className="h-6 w-6 text-yellow-600"
+                className="h-6 w-6 text-linear-warning"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -91,7 +92,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             )}
             {notification.type === 'info' && (
               <svg
-                className="h-6 w-6 text-blue-600"
+                className="h-6 w-6 text-linear-accent"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -106,11 +107,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <ToastPrimitive.Title className="text-sm font-semibold text-gray-900">
+            <ToastPrimitive.Title className="text-sm font-semibold text-linear-text-primary">
               {notification.title}
             </ToastPrimitive.Title>
             {notification.message && (
-              <ToastPrimitive.Description className="mt-1 text-sm text-gray-600">
+              <ToastPrimitive.Description className="mt-1 text-sm text-linear-text-secondary">
                 {notification.message}
               </ToastPrimitive.Description>
             )}
@@ -118,7 +119,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
           {/* Close button */}
           <ToastPrimitive.Close
-            className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            className="flex-shrink-0 text-linear-text-tertiary hover:text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent rounded transition-colors"
             aria-label="Close notification"
           >
             <svg

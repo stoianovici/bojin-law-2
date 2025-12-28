@@ -29,6 +29,7 @@ Input: $ARGUMENTS
 
 **Status**: {from ops-log}
 **Priority**: {from ops-log}
+**Platform**: {Mobile / Desktop / Both} ← IMPORTANT: Confirm before working
 
 ### Previous State
 {from handoff file - what was done, where it left off}
@@ -39,6 +40,8 @@ Input: $ARGUMENTS
 ### Key Files
 {from handoff}
 ```
+
+**Platform Clarification**: If platform is unclear from the issue file, ASK before proceeding. We have separate Mobile and Desktop UI tracks that should not interfere with each other.
 
 ## 4. Work Based on Status
 

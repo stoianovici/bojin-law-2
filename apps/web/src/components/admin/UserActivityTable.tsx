@@ -39,41 +39,41 @@ export function UserActivityTable({ data, loading, hasMore, onLoadMore }: UserAc
 
   if (loading && data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
+      <div className="bg-linear-bg-secondary rounded-lg shadow overflow-hidden">
+        <div className="p-6 border-b border-linear-border-subtle">
+          <div className="h-6 w-48 bg-linear-bg-hover rounded animate-pulse" />
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-linear-border-subtle">
+            <thead className="bg-linear-bg-tertiary">
               <tr>
                 {['Data', 'Funcționalitate', 'Tokeni', 'Cost', 'Durată'].map((h) => (
                   <th
                     key={h}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider"
                   >
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
               {[1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-28 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-20 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                   <td className="px-6 py-4">
-                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-linear-bg-hover rounded animate-pulse" />
                   </td>
                 </tr>
               ))}
@@ -86,11 +86,11 @@ export function UserActivityTable({ data, loading, hasMore, onLoadMore }: UserAc
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Activitate Recentă</h3>
+      <div className="bg-linear-bg-secondary rounded-lg shadow overflow-hidden">
+        <div className="p-6 border-b border-linear-border-subtle">
+          <h3 className="text-lg font-semibold text-linear-text-primary">Activitate Recentă</h3>
         </div>
-        <div className="flex items-center justify-center h-48 text-gray-500">
+        <div className="flex items-center justify-center h-48 text-linear-text-tertiary">
           Nu există activitate înregistrată
         </div>
       </div>
@@ -98,48 +98,48 @@ export function UserActivityTable({ data, loading, hasMore, onLoadMore }: UserAc
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Activitate Recentă</h3>
-        <p className="mt-1 text-sm text-gray-500">
+    <div className="bg-linear-bg-secondary rounded-lg shadow overflow-hidden">
+      <div className="p-6 border-b border-linear-border-subtle">
+        <h3 className="text-lg font-semibold text-linear-text-primary">Activitate Recentă</h3>
+        <p className="mt-1 text-sm text-linear-text-tertiary">
           Ultimele apeluri AI pentru acest utilizator. Nu se înregistrează conținut, doar metrici.
         </p>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-linear-border-subtle">
+          <thead className="bg-linear-bg-tertiary">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                 Data
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                 Funcționalitate
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                 Tokeni
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                 Cost
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                 Durată
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                 Context
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
             {data.map((entry) => {
               const totalTokens = entry.inputTokens + entry.outputTokens;
               const createdAt = new Date(entry.createdAt);
 
               return (
-                <tr key={entry.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <tr key={entry.id} className="hover:bg-linear-bg-hover">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-secondary">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
+                      <Clock className="h-4 w-4 text-linear-text-muted" />
                       <span title={createdAt.toLocaleString('ro-RO')}>
                         {formatDistanceToNow(createdAt, {
                           addSuffix: true,
@@ -149,32 +149,32 @@ export function UserActivityTable({ data, loading, hasMore, onLoadMore }: UserAc
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-linear-accent/15 text-linear-accent">
                       <Zap className="h-3 w-3" />
                       {entry.featureName}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-secondary text-right">
                     <span
                       title={`${formatNumber(entry.inputTokens)} input + ${formatNumber(entry.outputTokens)} output`}
                     >
                       {formatNumber(totalTokens)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-primary text-right font-medium">
                     {formatCost(entry.costEur)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-secondary text-right">
                     {formatDuration(entry.durationMs)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-linear-text-tertiary">
                     {entry.entityType && entry.entityId ? (
                       <span className="flex items-center gap-1">
                         <span className="capitalize">{entry.entityType}</span>
                         <ExternalLink className="h-3 w-3" />
                       </span>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-linear-text-muted">—</span>
                     )}
                   </td>
                 </tr>
@@ -186,11 +186,11 @@ export function UserActivityTable({ data, loading, hasMore, onLoadMore }: UserAc
 
       {/* Load more button */}
       {hasMore && onLoadMore && (
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-linear-border-subtle">
           <button
             onClick={onLoadMore}
             disabled={loading}
-            className="w-full py-2 px-4 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2 px-4 text-sm font-medium text-linear-accent hover:bg-linear-accent/10 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Se încarcă...' : 'Încarcă mai multe'}
           </button>

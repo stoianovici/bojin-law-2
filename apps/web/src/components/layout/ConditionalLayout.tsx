@@ -11,7 +11,9 @@ import React, { type ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { MainLayout } from './MainLayout';
 import { AssistantPill } from '../assistant';
+import { AssistantFAB, AssistantSheet, MobileTabBar } from '../mobile';
 import { useAuth } from '../../lib/hooks/useAuth';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface ConditionalLayoutProps {
   children: ReactNode;
@@ -24,6 +26,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
+  const isMobile = useIsMobile();
   // Track if we've verified the session independently (to avoid race conditions with AuthContext)
   const [sessionVerified, setSessionVerified] = useState<boolean | null>(null);
 
@@ -97,6 +100,28 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
           <p className="mt-4 text-gray-600">Se verifică sesiunea...</p>
         </div>
       </div>
+    );
+  }
+
+  // On mobile, render children directly without MainLayout (MobileHome has its own layout)
+  // Add global MobileTabBar, AssistantFAB, and AssistantSheet for mobile pages
+  if (isMobile) {
+    return (
+      <>
+        {/* Main content with bottom padding for tab bar */}
+        <div
+          className="pb-14"
+          style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}
+        >
+          {children}
+        </div>
+        {/* Tab bar at bottom */}
+        <MobileTabBar />
+        {/* FAB above tab bar */}
+        <AssistantFAB />
+        {/* Sheet overlays everything */}
+        <AssistantSheet />
+      </>
     );
   }
 

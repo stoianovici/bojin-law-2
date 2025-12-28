@@ -47,7 +47,7 @@ function TreeNode({ node, level, selectedNodeId, onSelectNode }: TreeNodeProps) 
         onClick={handleClick}
         className={clsx(
           'flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-md transition-colors text-left',
-          isSelected ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'
+          isSelected ? 'bg-linear-accent/10 text-linear-accent font-medium' : 'text-linear-text-secondary hover:bg-linear-bg-hover'
         )}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
@@ -87,7 +87,7 @@ function TreeNode({ node, level, selectedNodeId, onSelectNode }: TreeNodeProps) 
 function FolderClosedIcon({ className }: { className?: string }) {
   return (
     <svg
-      className={clsx('w-4 h-4 text-yellow-600', className)}
+      className={clsx('w-4 h-4 text-linear-warning', className)}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -105,7 +105,7 @@ function FolderClosedIcon({ className }: { className?: string }) {
 function FolderOpenIcon({ className }: { className?: string }) {
   return (
     <svg
-      className={clsx('w-4 h-4 text-yellow-600', className)}
+      className={clsx('w-4 h-4 text-linear-warning', className)}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -123,7 +123,7 @@ function FolderOpenIcon({ className }: { className?: string }) {
 function FileIcon({ className }: { className?: string }) {
   return (
     <svg
-      className={clsx('w-4 h-4 text-blue-600', className)}
+      className={clsx('w-4 h-4 text-linear-accent', className)}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -141,7 +141,7 @@ function FileIcon({ className }: { className?: string }) {
 function ChevronIcon({ className }: { className?: string }) {
   return (
     <svg
-      className={clsx('w-4 h-4 text-gray-500', className)}
+      className={clsx('w-4 h-4 text-linear-text-tertiary', className)}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -164,8 +164,8 @@ export function DocumentFolderTree({
 }: DocumentFolderTreeProps) {
   return (
     <div className={clsx('flex flex-col h-full', className)}>
-      <div className="px-2 py-3 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-900">Documente</h3>
+      <div className="px-2 py-3 border-b border-linear-border-subtle">
+        <h3 className="text-sm font-semibold text-linear-text-primary">Documente</h3>
       </div>
       <div className="flex-1 overflow-y-auto p-2">
         {tree.map((node) => (

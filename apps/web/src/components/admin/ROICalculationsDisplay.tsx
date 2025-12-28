@@ -139,18 +139,18 @@ export function ROICalculationsDisplay() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-linear-accent"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Error: {error}</p>
+      <div className="bg-linear-error/10 border border-linear-error/30 rounded-lg p-4">
+        <p className="text-linear-error">Error: {error}</p>
         <button
           onClick={fetchStatus}
-          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+          className="mt-2 text-sm text-linear-error hover:text-linear-error underline"
         >
           Retry
         </button>
@@ -190,21 +190,21 @@ export function ROICalculationsDisplay() {
 
       {/* Additional Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600 mb-2">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
+          <div className="text-sm font-medium text-linear-text-secondary mb-2">
             Average Time Saved per Document
           </div>
-          <div className="text-3xl font-bold text-gray-900">
+          <div className="text-3xl font-bold text-linear-text-primary">
             {metrics.averageTimePerDocument.toFixed(1)} hours
           </div>
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-linear-text-secondary">
             Across {selectedTypes.size} selected document types
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600 mb-2">Cost-Benefit Ratio</div>
-          <div className="text-3xl font-bold text-gray-900">
+        <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
+          <div className="text-sm font-medium text-linear-text-secondary mb-2">Cost-Benefit Ratio</div>
+          <div className="text-3xl font-bold text-linear-text-primary">
             {metrics.documentTypesWithTemplates > 0
               ? `${(
                   metrics.totalAnnualSavings /
@@ -212,26 +212,26 @@ export function ROICalculationsDisplay() {
                 ).toFixed(1)}x`
               : 'N/A'}
           </div>
-          <div className="mt-2 text-sm text-gray-600">Return on investment multiplier</div>
+          <div className="mt-2 text-sm text-linear-text-secondary">Return on investment multiplier</div>
         </div>
       </div>
 
       {/* Document Type Selection */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-linear-text-primary">
             Document Types ({selectedTypes.size} selected)
           </h2>
           <div className="flex gap-2">
             <button
               onClick={() => setSelectedTypes(new Set(documentTypes.map((t) => t.id)))}
-              className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="px-3 py-1 text-sm text-linear-accent hover:text-linear-accent-hover font-medium"
             >
               Select All
             </button>
             <button
               onClick={() => setSelectedTypes(new Set())}
-              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 font-medium"
+              className="px-3 py-1 text-sm text-linear-text-secondary hover:text-linear-text-primary font-medium"
             >
               Clear All
             </button>
@@ -239,7 +239,7 @@ export function ROICalculationsDisplay() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-linear-border-subtle">
             <thead>
               <tr>
                 <th className="px-4 py-3 text-left">
@@ -257,27 +257,27 @@ export function ROICalculationsDisplay() {
                     }}
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                   Document Type
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                   Occurrences
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                   Time Saved/Doc
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                   Total Hours
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                   Monthly Value
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-tertiary uppercase tracking-wider">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-linear-bg-secondary divide-y divide-linear-border-subtle">
               {documentTypes.map((type) => {
                 const totalHours = type.estimatedTimeSavings * type.totalOccurrences;
                 const monthlyValue = (totalHours * HOURLY_RATE) / 12;
@@ -286,8 +286,8 @@ export function ROICalculationsDisplay() {
                   <tr
                     key={type.id}
                     className={clsx(
-                      'hover:bg-gray-50 cursor-pointer',
-                      selectedTypes.has(type.id) && 'bg-blue-50'
+                      'hover:bg-linear-bg-hover cursor-pointer',
+                      selectedTypes.has(type.id) && 'bg-linear-accent/10'
                     )}
                     onClick={() => toggleTypeSelection(type.id)}
                   >
@@ -300,32 +300,32 @@ export function ROICalculationsDisplay() {
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-linear-text-primary">
                         {type.discoveredTypeOriginal}
                       </div>
                       {type.discoveredTypeEnglish && (
-                        <div className="text-xs text-gray-500">{type.discoveredTypeEnglish}</div>
+                        <div className="text-xs text-linear-text-tertiary">{type.discoveredTypeEnglish}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-linear-text-primary">
                       {type.totalOccurrences}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-linear-text-primary">
                       {type.estimatedTimeSavings.toFixed(1)}h
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-linear-text-primary">
                       {totalHours.toFixed(1)}h
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-700">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-linear-success">
                       €{monthlyValue.toFixed(0)}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {type.mappedSkillId ? (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-linear-success/15 text-linear-success">
                           Template
                         </span>
                       ) : (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-linear-bg-tertiary text-linear-text-secondary">
                           No Template
                         </span>
                       )}
@@ -339,16 +339,16 @@ export function ROICalculationsDisplay() {
       </div>
 
       {/* ROI Projection Chart Placeholder */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">ROI Projection</h2>
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
+        <h2 className="text-lg font-semibold text-linear-text-primary mb-4">ROI Projection</h2>
         <div className="space-y-4">
           {/* Development Cost */}
-          <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-linear-error/10 rounded-lg">
             <div>
-              <div className="font-medium text-gray-900">Development Cost</div>
-              <div className="text-sm text-gray-600">One-time investment for templates</div>
+              <div className="font-medium text-linear-text-primary">Development Cost</div>
+              <div className="text-sm text-linear-text-secondary">One-time investment for templates</div>
             </div>
-            <div className="text-2xl font-bold text-red-700">
+            <div className="text-2xl font-bold text-linear-error">
               -€{(metrics.documentTypesWithTemplates * DEVELOPMENT_COST_PER_TEMPLATE).toFixed(0)}
             </div>
           </div>
@@ -363,17 +363,17 @@ export function ROICalculationsDisplay() {
             return (
               <div
                 key={months}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-4 bg-linear-bg-tertiary rounded-lg"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-linear-text-primary">
                     After {months} month{months > 1 ? 's' : ''}
                   </div>
-                  <div className="mt-2 w-full bg-gray-200 rounded-full h-3">
+                  <div className="mt-2 w-full bg-linear-bg-hover rounded-full h-3">
                     <div
                       className={clsx(
                         'h-3 rounded-full transition-all',
-                        isPositive ? 'bg-green-500' : 'bg-yellow-500'
+                        isPositive ? 'bg-linear-success' : 'bg-linear-warning'
                       )}
                       style={{
                         width: `${Math.min((savings / (cost * 2)) * 100, 100)}%`,
@@ -385,12 +385,12 @@ export function ROICalculationsDisplay() {
                   <div
                     className={clsx(
                       'text-2xl font-bold',
-                      isPositive ? 'text-green-700' : 'text-yellow-700'
+                      isPositive ? 'text-linear-success' : 'text-linear-warning'
                     )}
                   >
                     {isPositive ? '+' : ''}€{netValue.toFixed(0)}
                   </div>
-                  <div className="text-sm text-gray-600">net value</div>
+                  <div className="text-sm text-linear-text-secondary">net value</div>
                 </div>
               </div>
             );
@@ -417,19 +417,19 @@ function ROICard({
   color: 'green' | 'blue' | 'purple';
 }) {
   const colorClasses = {
-    green: 'bg-green-50 text-green-700 border-green-200',
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
+    green: 'bg-linear-success/10 text-linear-success border-linear-success/30',
+    blue: 'bg-linear-accent/10 text-linear-accent border-linear-accent/30',
     purple: 'bg-purple-50 text-purple-700 border-purple-200',
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
       <div className="flex items-center justify-between mb-4">
-        <div className="text-sm font-medium text-gray-600">{label}</div>
+        <div className="text-sm font-medium text-linear-text-secondary">{label}</div>
         <div className={clsx('text-3xl p-2 rounded-lg', colorClasses[color])}>{icon}</div>
       </div>
-      <div className="text-3xl font-bold text-gray-900 mb-2">{value}</div>
-      <div className="text-sm text-gray-600">{subtitle}</div>
+      <div className="text-3xl font-bold text-linear-text-primary mb-2">{value}</div>
+      <div className="text-sm text-linear-text-secondary">{subtitle}</div>
     </div>
   );
 }

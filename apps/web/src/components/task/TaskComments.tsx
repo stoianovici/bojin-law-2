@@ -92,11 +92,11 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
     return (
       <div
         key={comment.id}
-        className={`${isReply ? 'ml-8 mt-3' : 'mt-4'} ${isReply ? 'border-l-2 border-gray-200 pl-4' : ''}`}
+        className={`${isReply ? 'ml-8 mt-3' : 'mt-4'} ${isReply ? 'border-l-2 border-linear-border-subtle pl-4' : ''}`}
       >
         <div className="flex items-start gap-3">
           {/* Avatar */}
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-linear-accent/15 flex items-center justify-center text-linear-accent text-sm font-medium">
             {comment.author.firstName[0]}
             {comment.author.lastName[0]}
           </div>
@@ -104,16 +104,16 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-gray-900 text-sm">
+              <span className="font-medium text-linear-text-primary text-sm">
                 {comment.author.firstName} {comment.author.lastName}
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-linear-text-tertiary">
                 {formatDistanceToNow(new Date(comment.createdAt), {
                   addSuffix: true,
                   locale: ro,
                 })}
               </span>
-              {comment.editedAt && <span className="text-xs text-gray-400">(editat)</span>}
+              {comment.editedAt && <span className="text-xs text-linear-text-muted">(editat)</span>}
             </div>
 
             {isEditing ? (
@@ -126,7 +126,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleUpdate(comment.id)}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="px-3 py-1 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover"
                   >
                     Salvează
                   </button>
@@ -135,7 +135,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                       setEditingId(null);
                       setEditContent('');
                     }}
-                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                    className="px-3 py-1 text-sm text-linear-text-secondary hover:text-linear-text-primary"
                   >
                     Anulează
                   </button>
@@ -143,7 +143,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
               </div>
             ) : (
               <>
-                <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                <p className="text-linear-text-secondary text-sm whitespace-pre-wrap">
                   {renderContentWithMentions(comment.content, comment.mentionedUsers)}
                 </p>
 
@@ -155,7 +155,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                         setReplyingTo(comment.id);
                         setEditContent('');
                       }}
-                      className="text-xs text-gray-500 hover:text-blue-600"
+                      className="text-xs text-linear-text-tertiary hover:text-linear-accent"
                     >
                       Răspunde
                     </button>
@@ -164,13 +164,13 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                     <>
                       <button
                         onClick={() => startEditing(comment)}
-                        className="text-xs text-gray-500 hover:text-blue-600"
+                        className="text-xs text-linear-text-tertiary hover:text-linear-accent"
                       >
                         Editează
                       </button>
                       <button
                         onClick={() => handleDelete(comment.id)}
-                        className="text-xs text-gray-500 hover:text-red-600"
+                        className="text-xs text-linear-text-tertiary hover:text-linear-error"
                       >
                         Șterge
                       </button>
@@ -194,7 +194,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                     type="button"
                     onClick={(e) => handleSubmit(e, comment.id)}
                     disabled={creating || !editContent.trim()}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    className="px-3 py-1 text-sm bg-linear-accent text-white rounded hover:bg-linear-accent-hover disabled:opacity-50"
                   >
                     Răspunde
                   </button>
@@ -204,7 +204,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
                       setReplyingTo(null);
                       setEditContent('');
                     }}
-                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                    className="px-3 py-1 text-sm text-linear-text-secondary hover:text-linear-text-primary"
                   >
                     Anulează
                   </button>
@@ -225,10 +225,10 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
       <div className="animate-pulse space-y-4">
         {[1, 2].map((i) => (
           <div key={i} className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-gray-200" />
+            <div className="w-8 h-8 rounded-full bg-linear-bg-hover" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-1/4" />
-              <div className="h-3 bg-gray-200 rounded w-3/4" />
+              <div className="h-4 bg-linear-bg-hover rounded w-1/4" />
+              <div className="h-3 bg-linear-bg-hover rounded w-3/4" />
             </div>
           </div>
         ))}
@@ -237,12 +237,12 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
   }
 
   if (error) {
-    return <div className="text-red-600 text-sm">Eroare la încărcarea comentariilor</div>;
+    return <div className="text-linear-error text-sm">Eroare la încărcarea comentariilor</div>;
   }
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-gray-900">Comentarii ({comments.length})</h3>
+      <h3 className="font-semibold text-linear-text-primary">Comentarii ({comments.length})</h3>
 
       {/* New comment section */}
       <div className="space-y-2">
@@ -256,7 +256,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
             type="button"
             onClick={(e) => handleSubmit(e)}
             disabled={creating || !newComment.trim()}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-linear-accent text-white rounded-md hover:bg-linear-accent-hover disabled:opacity-50"
           >
             {creating ? 'Se trimite...' : 'Comentează'}
           </button>
@@ -266,7 +266,7 @@ export function TaskComments({ taskId, currentUserId }: TaskCommentsProps) {
       {/* Comments list */}
       <div className="divide-y divide-gray-100">
         {comments.length === 0 ? (
-          <p className="text-gray-500 text-sm py-4 text-center">
+          <p className="text-linear-text-tertiary text-sm py-4 text-center">
             Fără comentarii încă. Fiți primul care comentează!
           </p>
         ) : (
@@ -294,7 +294,7 @@ function renderContentWithMentions(
     <React.Fragment key={index}>
       {part}
       {mentions[index] && (
-        <span className="text-blue-600 font-medium bg-blue-50 px-1 rounded">{mentions[index]}</span>
+        <span className="text-linear-accent font-medium bg-linear-accent/10 px-1 rounded">{mentions[index]}</span>
       )}
     </React.Fragment>
   ));

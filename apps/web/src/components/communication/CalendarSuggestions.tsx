@@ -61,10 +61,10 @@ interface PriorityBadgeProps {
 
 function PriorityBadge({ priority }: PriorityBadgeProps) {
   const config = {
-    Urgent: { bg: 'bg-red-100', text: 'text-red-800', icon: AlertTriangle },
-    High: { bg: 'bg-orange-100', text: 'text-orange-800', icon: Clock },
-    Medium: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
-    Low: { bg: 'bg-gray-100', text: 'text-gray-700', icon: Clock },
+    Urgent: { bg: 'bg-linear-error/15', text: 'text-linear-error', icon: AlertTriangle },
+    High: { bg: 'bg-linear-warning/15', text: 'text-linear-warning', icon: Clock },
+    Medium: { bg: 'bg-linear-warning/15', text: 'text-linear-warning', icon: Clock },
+    Low: { bg: 'bg-linear-bg-tertiary', text: 'text-linear-text-secondary', icon: Clock },
   };
 
   const { bg, text, icon: Icon } = config[priority];
@@ -90,9 +90,9 @@ interface SourceTypeBadgeProps {
 
 function SourceTypeBadge({ sourceType }: SourceTypeBadgeProps) {
   const config = {
-    deadline: { bg: 'bg-orange-50', text: 'text-orange-700', label: 'Deadline' },
-    commitment: { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Commitment' },
-    meeting: { bg: 'bg-purple-50', text: 'text-purple-700', label: 'Meeting' },
+    deadline: { bg: 'bg-linear-warning/15', text: 'text-linear-warning', label: 'Deadline' },
+    commitment: { bg: 'bg-linear-accent/15', text: 'text-linear-accent', label: 'Commitment' },
+    meeting: { bg: 'bg-linear-accent/15', text: 'text-linear-accent', label: 'Meeting' },
   };
 
   const { bg, text, label } = config[sourceType];
@@ -122,7 +122,7 @@ function ReminderDisplay({ reminderMinutes }: ReminderDisplayProps) {
   };
 
   return (
-    <div className="flex items-center gap-1 text-xs text-gray-500">
+    <div className="flex items-center gap-1 text-xs text-linear-text-tertiary">
       <Bell className="h-3 w-3" aria-hidden="true" />
       <span
         aria-label={`Reminders: ${reminderMinutes.map((m) => formatReminder(m)).join(', ')} before`}
@@ -154,7 +154,7 @@ function Toast({ message, type, onClose }: ToastProps) {
       role="status"
       aria-live="polite"
       className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${
-        type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        type === 'success' ? 'bg-linear-success/15 text-linear-success' : 'bg-linear-error/15 text-linear-error'
       }`}
     >
       {type === 'success' ? (
@@ -165,7 +165,7 @@ function Toast({ message, type, onClose }: ToastProps) {
       <span>{message}</span>
       <button
         onClick={onClose}
-        className="ml-2 p-1 hover:bg-white/50 rounded"
+        className="ml-2 p-1 hover:bg-linear-bg-hover rounded"
         aria-label="Dismiss notification"
       >
         <X className="h-4 w-4" aria-hidden="true" />
@@ -205,8 +205,8 @@ function SuggestionCard({
     <div
       role="listitem"
       className={`border rounded-lg transition-all ${
-        isOverdue ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white'
-      } ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+        isOverdue ? 'border-linear-error/30 bg-linear-error/10' : 'border-linear-border-subtle bg-linear-bg-secondary'
+      } ${isSelected ? 'ring-2 ring-linear-accent' : ''}`}
     >
       {/* Header */}
       <div className="p-4">
@@ -217,7 +217,7 @@ function SuggestionCard({
               type="checkbox"
               checked={isSelected}
               onChange={(e) => onSelect(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-linear-border text-linear-accent focus:ring-linear-accent"
               aria-label={`Select ${suggestion.title} for batch add`}
             />
           </label>
@@ -225,7 +225,7 @@ function SuggestionCard({
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-sm text-gray-900 truncate">{suggestion.title}</h3>
+              <h3 className="font-medium text-sm text-linear-text-primary truncate">{suggestion.title}</h3>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <SourceTypeBadge sourceType={suggestion.sourceType} />
                 <PriorityBadge priority={suggestion.priority} />
@@ -233,19 +233,19 @@ function SuggestionCard({
             </div>
 
             {/* Date/Time */}
-            <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+            <div className="mt-2 flex items-center gap-4 text-sm text-linear-text-secondary">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" aria-hidden="true" />
                 <span>
                   {format(startDate, suggestion.isAllDay ? 'MMM d, yyyy' : 'MMM d, yyyy h:mm a')}
                 </span>
               </div>
-              {suggestion.isAllDay && <span className="text-xs text-gray-500">(All day)</span>}
+              {suggestion.isAllDay && <span className="text-xs text-linear-text-tertiary">(All day)</span>}
             </div>
 
             {/* Time until/overdue */}
             <div
-              className={`mt-1 text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+              className={`mt-1 text-xs ${isOverdue ? 'text-linear-error font-medium' : 'text-linear-text-tertiary'}`}
             >
               {isOverdue
                 ? `Overdue by ${formatDistanceToNow(startDate)}`
@@ -263,7 +263,7 @@ function SuggestionCard({
         <div className="mt-3 flex items-center justify-between">
           <button
             onClick={onToggleExpand}
-            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+            className="text-xs text-linear-text-tertiary hover:text-linear-text-primary flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-linear-accent rounded px-1"
             aria-expanded={isExpanded}
             aria-controls={descriptionId}
           >
@@ -283,7 +283,7 @@ function SuggestionCard({
           <button
             onClick={onAddToCalendar}
             disabled={isAdding}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-linear-accent text-white rounded-md hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2"
             aria-label={`Add ${suggestion.title} to calendar`}
             aria-describedby={isExpanded ? descriptionId : undefined}
           >
@@ -304,13 +304,13 @@ function SuggestionCard({
 
       {/* Expanded Details */}
       {isExpanded && (
-        <div id={descriptionId} className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50">
-          <h4 className="text-xs font-medium text-gray-700 mb-2">Event Description</h4>
-          <p className="text-sm text-gray-600 whitespace-pre-wrap">{suggestion.description}</p>
+        <div id={descriptionId} className="px-4 pb-4 pt-2 border-t border-linear-border-subtle/50 bg-linear-bg-tertiary">
+          <h4 className="text-xs font-medium text-linear-text-secondary mb-2">Event Description</h4>
+          <p className="text-sm text-linear-text-secondary whitespace-pre-wrap">{suggestion.description}</p>
           {suggestion.caseId && (
             <a
               href={`/cases/${suggestion.caseId}`}
-              className="mt-3 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-3 inline-flex items-center gap-1 text-xs text-linear-accent hover:underline focus:outline-none focus:ring-2 focus:ring-linear-accent"
             >
               View case
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -476,8 +476,8 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
         aria-busy="true"
         aria-label="Loading calendar suggestions"
       >
-        <Loader2 className="h-6 w-6 animate-spin text-blue-500" aria-hidden="true" />
-        <span className="ml-2 text-sm text-gray-600">Loading calendar suggestions...</span>
+        <Loader2 className="h-6 w-6 animate-spin text-linear-accent" aria-hidden="true" />
+        <span className="ml-2 text-sm text-linear-text-secondary">Loading calendar suggestions...</span>
       </div>
     );
   }
@@ -485,14 +485,14 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
   // Error state
   if (error) {
     return (
-      <div className="p-6 bg-red-50 rounded-lg" role="alert">
-        <div className="flex items-center gap-2 text-red-800">
+      <div className="p-6 bg-linear-error/10 rounded-lg" role="alert">
+        <div className="flex items-center gap-2 text-linear-error">
           <AlertTriangle className="h-5 w-5" aria-hidden="true" />
           <span className="font-medium">Failed to load calendar suggestions</span>
         </div>
         <button
           onClick={() => refetch()}
-          className="mt-2 text-sm text-red-600 hover:underline focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="mt-2 text-sm text-linear-error hover:underline focus:outline-none focus:ring-2 focus:ring-linear-error"
         >
           Try again
         </button>
@@ -504,9 +504,9 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
   if (displaySuggestions.length === 0) {
     return (
       <div className="p-6 text-center">
-        <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" aria-hidden="true" />
-        <p className="text-sm text-gray-500">No calendar suggestions</p>
-        <p className="text-xs text-gray-400 mt-1">
+        <Calendar className="h-12 w-12 mx-auto mb-3 text-linear-text-muted" aria-hidden="true" />
+        <p className="text-sm text-linear-text-tertiary">No calendar suggestions</p>
+        <p className="text-xs text-linear-text-muted mt-1">
           Calendar events will be suggested from extracted deadlines and commitments
         </p>
       </div>
@@ -521,14 +521,14 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
       {/* Header with batch actions */}
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-lg flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-blue-500" aria-hidden="true" />
+          <Calendar className="h-5 w-5 text-linear-accent" aria-hidden="true" />
           Calendar Suggestions
-          <span className="text-sm font-normal text-gray-500">({displaySuggestions.length})</span>
+          <span className="text-sm font-normal text-linear-text-tertiary">({displaySuggestions.length})</span>
         </h2>
 
         {/* Outlook sync status indicator */}
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <div className="h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
+        <div className="flex items-center gap-2 text-xs text-linear-text-tertiary">
+          <div className="h-2 w-2 rounded-full bg-linear-success" aria-hidden="true" />
           <span>Connected to Outlook</span>
         </div>
       </div>
@@ -538,7 +538,7 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
         <div
           role="group"
           aria-label="Batch selection controls"
-          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+          className="flex items-center justify-between p-3 bg-linear-bg-tertiary rounded-lg"
         >
           <label className="flex items-center gap-2">
             <input
@@ -548,10 +548,10 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
                 if (el) el.indeterminate = someSelected && !allSelected;
               }}
               onChange={toggleSelectAll}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-linear-border text-linear-accent focus:ring-linear-accent"
               aria-label={allSelected ? 'Deselect all suggestions' : 'Select all suggestions'}
             />
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-linear-text-secondary">
               {someSelected ? `${selectedIds.size} selected` : 'Select all'}
             </span>
           </label>
@@ -560,7 +560,7 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
             <button
               onClick={handleBatchAdd}
               disabled={isBatchAdding}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-linear-accent text-white rounded-md hover:bg-linear-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2"
               aria-label={`Add ${selectedIds.size} selected events to calendar`}
             >
               {isBatchAdding ? (
@@ -606,7 +606,7 @@ export function CalendarSuggestions({ caseId, maxItems }: CalendarSuggestionsPro
         <div className="text-center">
           <a
             href={`/cases/${caseId}?tab=intelligence`}
-            className="text-sm text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm text-linear-accent hover:underline focus:outline-none focus:ring-2 focus:ring-linear-accent"
           >
             View all {suggestions.length} suggestions
           </a>

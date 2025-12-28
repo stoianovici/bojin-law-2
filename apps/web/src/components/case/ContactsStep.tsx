@@ -79,21 +79,21 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
   // OPS-219: Expanded actor roles for Romanian legal practice
   const getRoleBadgeColor = (role: CaseActorRole) => {
     const colorMap: Record<CaseActorRole, string> = {
-      Client: 'bg-blue-100 text-blue-800',
-      OpposingParty: 'bg-red-100 text-red-800',
-      OpposingCounsel: 'bg-orange-100 text-orange-800',
-      Witness: 'bg-green-100 text-green-800',
-      Expert: 'bg-purple-100 text-purple-800',
-      Intervenient: 'bg-cyan-100 text-cyan-800',
-      Mandatar: 'bg-indigo-100 text-indigo-800',
-      Court: 'bg-amber-100 text-amber-800',
-      Prosecutor: 'bg-rose-100 text-rose-800',
-      Bailiff: 'bg-slate-100 text-slate-800',
-      Notary: 'bg-emerald-100 text-emerald-800',
-      LegalRepresentative: 'bg-violet-100 text-violet-800',
-      Other: 'bg-gray-100 text-gray-800',
+      Client: 'bg-linear-accent/15 text-linear-accent',
+      OpposingParty: 'bg-linear-error/15 text-linear-error',
+      OpposingCounsel: 'bg-linear-warning/15 text-linear-warning',
+      Witness: 'bg-linear-success/15 text-linear-success',
+      Expert: 'bg-purple-500/15 text-purple-500',
+      Intervenient: 'bg-cyan-500/15 text-cyan-500',
+      Mandatar: 'bg-indigo-500/15 text-indigo-500',
+      Court: 'bg-linear-warning/15 text-linear-warning',
+      Prosecutor: 'bg-rose-500/15 text-rose-500',
+      Bailiff: 'bg-slate-500/15 text-slate-500',
+      Notary: 'bg-emerald-500/15 text-emerald-500',
+      LegalRepresentative: 'bg-violet-500/15 text-violet-500',
+      Other: 'bg-linear-bg-tertiary text-linear-text-secondary',
     };
-    return colorMap[role] || 'bg-gray-100 text-gray-800';
+    return colorMap[role] || 'bg-linear-bg-tertiary text-linear-text-secondary';
   };
 
   const getRoleLabel = (role: CaseActorRole) => {
@@ -116,7 +116,7 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
   };
 
   return (
-    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+    <div className="p-4 bg-linear-bg-tertiary rounded-lg border border-linear-border-subtle">
       <div className="flex items-start justify-between mb-3">
         <span
           className={`inline-block px-2 py-1 text-xs font-medium rounded ${getRoleBadgeColor(contact.role)}`}
@@ -128,7 +128,7 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
           <button
             type="button"
             onClick={() => onRemove(index)}
-            className="text-gray-400 hover:text-red-600 transition-colors"
+            className="text-linear-text-muted hover:text-linear-error transition-colors"
             aria-label="Șterge contact"
           >
             <Cross2Icon className="h-4 w-4" />
@@ -139,50 +139,50 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
       <div className="space-y-3">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nume {contact.role === 'Client' && <span className="text-red-500">*</span>}
+          <label className="block text-sm font-medium text-linear-text-secondary mb-1">
+            Nume {contact.role === 'Client' && <span className="text-linear-error">*</span>}
           </label>
           <input
             type="text"
             value={contact.name}
             onChange={(e) => handleFieldChange('name', e.target.value)}
             placeholder="Nume complet sau denumire"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent"
           />
         </div>
 
         {/* Organization */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Organizație</label>
+          <label className="block text-sm font-medium text-linear-text-secondary mb-1">Organizație</label>
           <input
             type="text"
             value={contact.organization || ''}
             onChange={(e) => handleFieldChange('organization', e.target.value)}
             placeholder="Numele firmei sau organizației"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent"
           />
         </div>
 
         {/* Email and Phone grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-linear-text-secondary mb-1">Email</label>
             <input
               type="email"
               value={contact.email || ''}
               onChange={(e) => handleFieldChange('email', e.target.value)}
               placeholder="email@exemplu.ro"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+            <label className="block text-sm font-medium text-linear-text-secondary mb-1">Telefon</label>
             <input
               type="tel"
               value={contact.phone || ''}
               onChange={(e) => handleFieldChange('phone', e.target.value)}
               placeholder="+40 721 123 456"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent"
             />
           </div>
         </div>
@@ -192,7 +192,7 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
           <button
             type="button"
             onClick={() => setShowEmailDomains(!showEmailDomains)}
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            className="text-sm text-linear-accent hover:text-linear-accent flex items-center gap-1"
           >
             <PlusIcon className="h-3 w-3" />
             {showEmailDomains ? 'Ascunde' : 'Adaugă'} adrese email suplimentare
@@ -205,13 +205,13 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
                   {contact.emailDomains.map((email, i) => (
                     <span
                       key={i}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs"
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-linear-accent/15 text-linear-accent rounded text-xs"
                     >
                       {email}
                       <button
                         type="button"
                         onClick={() => handleRemoveEmailDomain(i)}
-                        className="hover:text-blue-900"
+                        className="hover:text-linear-accent"
                       >
                         <Cross2Icon className="h-3 w-3" />
                       </button>
@@ -225,7 +225,7 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
                   value={newEmailDomain}
                   onChange={(e) => setNewEmailDomain(e.target.value)}
                   placeholder="alt.email@exemplu.ro"
-                  className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1 text-sm border border-linear-border rounded focus:outline-none focus:ring-2 focus:ring-linear-accent"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -237,7 +237,7 @@ function ContactCard({ contact, index, onUpdate, onRemove, showRemove }: Contact
                   type="button"
                   onClick={handleAddEmailDomain}
                   disabled={!newEmailDomain.trim()}
-                  className="px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 disabled:opacity-50"
+                  className="px-2 py-1 text-xs font-medium text-linear-accent bg-linear-accent/15 border border-linear-accent/30 rounded hover:bg-linear-accent/20 disabled:opacity-50"
                 >
                   Adaugă
                 </button>
@@ -327,16 +327,16 @@ export function ContactsStep({ data, onChange, errors }: ContactsStepProps) {
     <div className="space-y-6">
       {/* Contacts Section */}
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Contacte</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 className="text-lg font-medium text-linear-text-primary mb-2">Contacte</h3>
+        <p className="text-sm text-linear-text-secondary mb-4">
           Adăugați persoanele de contact relevante pentru acest dosar. Este obligatoriu să aveți cel
           puțin un client.
         </p>
 
         {/* Error message */}
         {errors?.client && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{errors.client}</p>
+          <div className="mb-4 p-3 bg-linear-error/15 border border-linear-error/30 rounded-md">
+            <p className="text-sm text-linear-error">{errors.client}</p>
           </div>
         )}
 
@@ -360,7 +360,7 @@ export function ContactsStep({ data, onChange, errors }: ContactsStepProps) {
             <button
               type="button"
               onClick={() => handleAddContact('Client')}
-              className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-linear-accent bg-linear-accent/15 border border-linear-accent/30 rounded-md hover:bg-linear-accent/20 transition-colors"
             >
               <PlusIcon className="h-4 w-4" />
               Adaugă client
@@ -369,7 +369,7 @@ export function ContactsStep({ data, onChange, errors }: ContactsStepProps) {
           <button
             type="button"
             onClick={() => handleAddContact('OpposingParty')}
-            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors"
+            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary border border-linear-border-subtle rounded-md hover:bg-linear-bg-hover transition-colors"
           >
             <PlusIcon className="h-4 w-4" />
             Parte adversă
@@ -377,7 +377,7 @@ export function ContactsStep({ data, onChange, errors }: ContactsStepProps) {
           <button
             type="button"
             onClick={() => handleAddContact('OpposingCounsel')}
-            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors"
+            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary border border-linear-border-subtle rounded-md hover:bg-linear-bg-hover transition-colors"
           >
             <PlusIcon className="h-4 w-4" />
             Avocat parte adversă
@@ -386,9 +386,9 @@ export function ContactsStep({ data, onChange, errors }: ContactsStepProps) {
       </div>
 
       {/* Reference Numbers Section */}
-      <div className="pt-6 border-t border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Numere dosar instanță</h3>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="pt-6 border-t border-linear-border-subtle">
+        <h3 className="text-lg font-medium text-linear-text-primary mb-2">Numere dosar instanță</h3>
+        <p className="text-sm text-linear-text-secondary mb-4">
           Adăugați numerele de dosar de la instanță (opțional). Acestea ajută la clasificarea
           automată a emailurilor.
         </p>
@@ -396,18 +396,18 @@ export function ContactsStep({ data, onChange, errors }: ContactsStepProps) {
         {/* Reference Numbers Tags */}
         <div className="flex flex-wrap gap-2 mb-3">
           {data.referenceNumbers.length === 0 ? (
-            <span className="text-sm text-gray-400 italic">Niciun număr de dosar adăugat</span>
+            <span className="text-sm text-linear-text-muted italic">Niciun număr de dosar adăugat</span>
           ) : (
             data.referenceNumbers.map((refNum, index) => (
               <span
                 key={index}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-sm"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-linear-bg-tertiary text-linear-text-secondary rounded-md text-sm"
               >
                 {refNum}
                 <button
                   type="button"
                   onClick={() => handleRemoveRefNumber(index)}
-                  className="hover:text-gray-900"
+                  className="hover:text-linear-text-primary"
                   aria-label={`Șterge ${refNum}`}
                 >
                   <Cross2Icon className="h-3 w-3" />
@@ -424,7 +424,7 @@ export function ContactsStep({ data, onChange, errors }: ContactsStepProps) {
             value={newRefNumber}
             onChange={(e) => setNewRefNumber(e.target.value)}
             placeholder="ex: 1234/5/2024"
-            className="flex-1 max-w-xs px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 max-w-xs px-3 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -436,7 +436,7 @@ export function ContactsStep({ data, onChange, errors }: ContactsStepProps) {
             type="button"
             onClick={handleAddRefNumber}
             disabled={!newRefNumber.trim()}
-            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary border border-linear-border-subtle rounded-md hover:bg-linear-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <PlusIcon className="h-4 w-4" />
             Adaugă

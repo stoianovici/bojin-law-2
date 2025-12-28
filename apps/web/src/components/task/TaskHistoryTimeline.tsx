@@ -52,10 +52,10 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
       <div className="animate-pulse space-y-4">
         {[1, 2, 3].map((i) => (
           <div key={i} className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-gray-200" />
+            <div className="w-8 h-8 rounded-full bg-linear-bg-hover" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-1/3" />
-              <div className="h-3 bg-gray-200 rounded w-2/3" />
+              <div className="h-4 bg-linear-bg-hover rounded w-1/3" />
+              <div className="h-3 bg-linear-bg-hover rounded w-2/3" />
             </div>
           </div>
         ))}
@@ -64,17 +64,17 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
   }
 
   if (error) {
-    return <div className="text-red-600 text-sm">Eroare la încărcarea istoricului</div>;
+    return <div className="text-linear-error text-sm">Eroare la încărcarea istoricului</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">Istoric Modificări</h3>
+        <h3 className="font-semibold text-linear-text-primary">Istoric Modificări</h3>
         <select
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value as TaskHistoryAction | 'all')}
-          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="text-sm border border-linear-border rounded-md px-2 py-1 focus:ring-2 focus:ring-linear-accent focus:border-transparent"
         >
           {ACTION_FILTER_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -85,11 +85,11 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
       </div>
 
       {history.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center py-4">Niciun istoric de afișat</p>
+        <p className="text-linear-text-tertiary text-sm text-center py-4">Niciun istoric de afișat</p>
       ) : (
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-linear-border-subtle" />
 
           <div className="space-y-4">
             {history.map((entry) => (
@@ -100,7 +100,7 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
           {/* Load more button */}
           {history.length >= limit && (
             <div className="mt-4 text-center">
-              <button onClick={loadMore} className="text-sm text-blue-600 hover:text-blue-800">
+              <button onClick={loadMore} className="text-sm text-linear-accent hover:text-linear-accent-hover">
                 Încarcă mai multe
               </button>
             </div>
@@ -123,28 +123,28 @@ function HistoryEntryItem({ entry }: HistoryEntryItemProps) {
   return (
     <div className="relative flex gap-3 pl-1">
       {/* Icon */}
-      <div className="relative z-10 flex-shrink-0 w-8 h-8 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center text-sm">
+      <div className="relative z-10 flex-shrink-0 w-8 h-8 rounded-full bg-linear-bg-secondary border-2 border-linear-border-subtle flex items-center justify-center text-sm">
         {icon}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0 pb-4">
         <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium text-gray-900">{actorName}</span>
-          <span className="text-gray-600">{label}</span>
+          <span className="font-medium text-linear-text-primary">{actorName}</span>
+          <span className="text-linear-text-tertiary">{label}</span>
         </div>
 
         {/* Show field changes */}
         {entry.field && (entry.oldValue || entry.newValue) && (
-          <div className="mt-1 text-sm text-gray-500">
+          <div className="mt-1 text-sm text-linear-text-tertiary">
             <span className="font-medium">{formatFieldName(entry.field)}:</span>{' '}
             {entry.oldValue && (
-              <span className="line-through text-red-600 mr-1">
+              <span className="line-through text-linear-error mr-1">
                 {formatFieldValue(entry.field, entry.oldValue)}
               </span>
             )}
             {entry.newValue && (
-              <span className="text-green-600">
+              <span className="text-linear-success">
                 {formatFieldValue(entry.field, entry.newValue)}
               </span>
             )}
@@ -153,12 +153,12 @@ function HistoryEntryItem({ entry }: HistoryEntryItemProps) {
 
         {/* Metadata */}
         {entry.metadata && Object.keys(entry.metadata).length > 0 && (
-          <div className="mt-1 text-xs text-gray-400">{JSON.stringify(entry.metadata)}</div>
+          <div className="mt-1 text-xs text-linear-text-muted">{JSON.stringify(entry.metadata)}</div>
         )}
 
         {/* Timestamp */}
         <div
-          className="mt-1 text-xs text-gray-400"
+          className="mt-1 text-xs text-linear-text-muted"
           title={format(new Date(entry.createdAt), 'dd MMM yyyy HH:mm', { locale: ro })}
         >
           {formatDistanceToNow(new Date(entry.createdAt), {

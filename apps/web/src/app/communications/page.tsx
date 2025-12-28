@@ -3,9 +3,11 @@
 /**
  * Communications Page - Case-Organized Redesign
  * OPS-041: /communications Case-Organized Redesign
+ * OPS-328: Mobile Page Consistency - Added mobile view
  *
  * User's email workspace organized by case with separate sections
  * for court emails (INSTANȚE) and uncertain classifications (NECLAR).
+ * On mobile devices (< 768px), shows MobileCommunications instead.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -27,6 +29,8 @@ import { ConversationView } from '../../components/communication/ConversationVie
 import { ComposeInterface } from '../../components/communication/ComposeInterface';
 import { MoveThreadModal } from '../../components/communication/MoveThreadModal';
 import { AttachmentPreviewPanel } from '../../components/communication/AttachmentPreviewPanel';
+import { MobileCommunications } from '../../components/mobile';
+import { PageLayout } from '../../components/linear/PageLayout';
 
 // Hooks
 import { useMyEmailsByCase } from '../../hooks/useMyEmailsByCase';
@@ -36,6 +40,7 @@ import { useCommunicationStore } from '../../stores/communication.store';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSetAIContext } from '../../contexts/AIAssistantContext';
 import { useThreadAttachments, findAttachmentById } from '../../hooks/useThreadAttachments';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 
@@ -106,6 +111,18 @@ interface NeclarEmailData {
 // ============================================================================
 
 export default function CommunicationsPage() {
+  const isMobile = useIsMobile();
+
+  // On mobile, render MobileCommunications
+  if (isMobile) {
+    return <MobileCommunications />;
+  }
+
+  // Desktop: render full communications page
+  return <CommunicationsPageDesktop />;
+}
+
+function CommunicationsPageDesktop() {
   // Set AI assistant context to communications
   useSetAIContext('communications');
 
@@ -519,7 +536,7 @@ export default function CommunicationsPage() {
       : null;
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-gray-50">
+    <PageLayout className="flex h-screen flex-col overflow-hidden p-0">
       {/* Page Header */}
       <div className="border-b bg-white px-6 py-4 flex items-center justify-between flex-shrink-0">
         {/* Left: Sync status and button */}
@@ -919,6 +936,6 @@ export default function CommunicationsPage() {
           onMoved={handleMoveThreadComplete}
         />
       )}
-    </main>
+    </PageLayout>
   );
 }

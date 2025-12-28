@@ -112,17 +112,17 @@ function SectionHeader({
   isWarning?: boolean;
 }) {
   return (
-    <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 sticky top-0 z-10">
+    <div className="px-3 py-2 bg-linear-bg-tertiary border-b border-linear-border-subtle sticky top-0 z-10">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <Icon className={clsx('h-4 w-4', isWarning ? 'text-amber-500' : 'text-gray-500')} />
+        <div className="flex items-center gap-2 text-sm font-semibold text-linear-text-secondary">
+          <Icon className={clsx('h-4 w-4', isWarning ? 'text-linear-warning' : 'text-linear-text-tertiary')} />
           {title}
         </div>
         {count !== undefined && count > 0 && (
           <span
             className={clsx(
               'px-2 py-0.5 text-xs font-medium rounded-full',
-              isWarning ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-600'
+              isWarning ? 'bg-linear-warning/15 text-linear-warning' : 'bg-linear-bg-hover text-linear-text-secondary'
             )}
           >
             {count}
@@ -175,8 +175,8 @@ function ThreadItem({
         className={clsx(
           'w-full px-3 py-2 text-left text-sm transition-colors',
           isSelected
-            ? 'bg-blue-50 border-l-2 border-blue-500'
-            : 'hover:bg-gray-50 border-l-2 border-transparent'
+            ? 'bg-linear-accent/10 border-l-2 border-linear-accent'
+            : 'hover:bg-linear-bg-hover border-l-2 border-transparent'
         )}
       >
         <div className="flex items-start justify-between gap-2">
@@ -184,13 +184,13 @@ function ThreadItem({
             <p
               className={clsx(
                 'truncate',
-                thread.hasUnread ? 'font-semibold text-gray-900' : 'text-gray-700'
+                thread.hasUnread ? 'font-semibold text-linear-text-primary' : 'text-linear-text-secondary'
               )}
             >
               {thread.subject || '(Fără subiect)'}
             </p>
             {thread.latestFrom && (
-              <p className="text-xs text-gray-500 truncate mt-0.5">
+              <p className="text-xs text-linear-text-tertiary truncate mt-0.5">
                 {thread.latestFrom.name || thread.latestFrom.address}
               </p>
             )}
@@ -199,20 +199,20 @@ function ThreadItem({
             {/* OPS-062: Multi-case badge */}
             {(thread.linkedCasesCount ?? 0) > 1 && (
               <span
-                className="inline-flex items-center gap-0.5 px-1 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded"
+                className="inline-flex items-center gap-0.5 px-1 py-0.5 text-xs font-medium bg-linear-accent/10 text-linear-accent rounded"
                 title={`Email în ${thread.linkedCasesCount} dosare`}
               >
                 <Link2 className="h-2.5 w-2.5" />+{(thread.linkedCasesCount ?? 0) - 1}
               </span>
             )}
-            {thread.hasAttachments && <Paperclip className="h-3 w-3 text-gray-400" />}
-            {thread.hasUnread && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+            {thread.hasAttachments && <Paperclip className="h-3 w-3 text-linear-text-muted" />}
+            {thread.hasUnread && <span className="w-2 h-2 bg-linear-accent rounded-full" />}
           </div>
         </div>
         <div className="flex items-center justify-between mt-1">
-          <span className="text-xs text-gray-400">{formattedDate}</span>
+          <span className="text-xs text-linear-text-muted">{formattedDate}</span>
           {thread.messageCount > 1 && (
-            <span className="text-xs text-gray-400">{thread.messageCount} mesaje</span>
+            <span className="text-xs text-linear-text-muted">{thread.messageCount} mesaje</span>
           )}
         </div>
       </button>
@@ -223,21 +223,21 @@ function ThreadItem({
           onClick={handleMenuClick}
           onBlur={handleBlur}
           className={clsx(
-            'absolute right-2 top-2 p-1 rounded hover:bg-gray-200 transition-opacity',
+            'absolute right-2 top-2 p-1 rounded hover:bg-linear-bg-hover transition-opacity',
             showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           )}
           aria-label="Opțiuni"
         >
-          <MoreVertical className="h-4 w-4 text-gray-500" />
+          <MoreVertical className="h-4 w-4 text-linear-text-tertiary" />
         </button>
       )}
 
       {/* Dropdown menu */}
       {showMenu && (
-        <div className="absolute right-2 top-8 z-20 bg-white border border-gray-200 rounded-md shadow-lg py-1 min-w-[160px]">
+        <div className="absolute right-2 top-8 z-20 bg-linear-bg-secondary border border-linear-border-subtle rounded-md shadow-lg py-1 min-w-[160px]">
           <button
             onClick={handleMoveClick}
-            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            className="w-full px-3 py-2 text-left text-sm text-linear-text-secondary hover:bg-linear-bg-hover flex items-center gap-2"
           >
             <ArrowRightLeft className="h-4 w-4" />
             Mută în alt dosar
@@ -264,28 +264,28 @@ function CaseAccordionItem({
   onMoveThread?: (info: MoveThreadInfo) => void;
 }) {
   return (
-    <div className="border-b border-gray-100">
+    <div className="border-b border-linear-border-subtle/50">
       {/* Case Header */}
       <button
         onClick={onToggle}
-        className="w-full px-3 py-2.5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full px-3 py-2.5 text-left flex items-center justify-between hover:bg-linear-bg-hover transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <ChevronDown className="h-4 w-4 text-linear-text-muted flex-shrink-0" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <ChevronRight className="h-4 w-4 text-linear-text-muted flex-shrink-0" />
           )}
-          <Folder className="h-4 w-4 text-blue-500 flex-shrink-0" />
-          <span className="font-medium text-sm text-gray-900 truncate">{caseData.title}</span>
+          <Folder className="h-4 w-4 text-linear-accent flex-shrink-0" />
+          <span className="font-medium text-sm text-linear-text-primary truncate">{caseData.title}</span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {caseData.unreadCount > 0 && (
-            <span className="px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">
+            <span className="px-1.5 py-0.5 text-xs font-medium bg-linear-accent/15 text-linear-accent rounded">
               {caseData.unreadCount}
             </span>
           )}
-          <span className="text-xs text-gray-400">({caseData.totalThreads})</span>
+          <span className="text-xs text-linear-text-muted">({caseData.totalThreads})</span>
         </div>
       </button>
 
@@ -293,7 +293,7 @@ function CaseAccordionItem({
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            className="bg-gray-50/50"
+            className="bg-linear-bg-tertiary/50"
             variants={listContainerVariants}
             initial="hidden"
             animate="visible"
@@ -350,23 +350,23 @@ function CourtEmailItem({
     <button
       onClick={onClick}
       className={clsx(
-        'w-full px-3 py-2.5 text-left transition-colors border-b border-gray-100',
+        'w-full px-3 py-2.5 text-left transition-colors border-b border-linear-border-subtle/50',
         isSelected
-          ? 'bg-blue-50 border-l-2 border-blue-500'
-          : 'hover:bg-gray-50 border-l-2 border-transparent'
+          ? 'bg-linear-accent/10 border-l-2 border-linear-accent'
+          : 'hover:bg-linear-bg-hover border-l-2 border-transparent'
       )}
     >
       {/* Sender name - prominent */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-gray-900 truncate">{senderName}</p>
-        <span className="text-xs text-gray-400 flex-shrink-0">{formattedDate}</span>
+        <p className="text-sm font-medium text-linear-text-primary truncate">{senderName}</p>
+        <span className="text-xs text-linear-text-muted flex-shrink-0">{formattedDate}</span>
       </div>
 
       {/* Email address - only if we have a name */}
-      {hasName && <p className="text-xs text-gray-500 truncate mt-0.5">{senderEmail}</p>}
+      {hasName && <p className="text-xs text-linear-text-tertiary truncate mt-0.5">{senderEmail}</p>}
 
       {/* Subject - smaller, quoted style */}
-      <p className="text-xs text-gray-600 italic truncate mt-1">
+      <p className="text-xs text-linear-text-secondary italic truncate mt-1">
         &ldquo;{email.subject || 'Fără subiect'}&rdquo;
       </p>
 
@@ -374,7 +374,7 @@ function CourtEmailItem({
       {email.extractedReferences.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
           {email.extractedReferences.slice(0, 2).map((ref, idx) => (
-            <span key={idx} className="px-1.5 py-0.5 text-xs bg-purple-50 text-purple-700 rounded">
+            <span key={idx} className="px-1.5 py-0.5 text-xs bg-linear-accent/10 text-linear-accent rounded">
               {ref}
             </span>
           ))}
@@ -407,29 +407,29 @@ function UncertainEmailItem({
     <button
       onClick={onClick}
       className={clsx(
-        'w-full px-3 py-2.5 text-left transition-colors border-b border-gray-100',
+        'w-full px-3 py-2.5 text-left transition-colors border-b border-linear-border-subtle/50',
         isSelected
-          ? 'bg-amber-50 border-l-2 border-amber-500'
-          : 'hover:bg-gray-50 border-l-2 border-transparent'
+          ? 'bg-linear-warning/10 border-l-2 border-linear-warning'
+          : 'hover:bg-linear-bg-hover border-l-2 border-transparent'
       )}
     >
       {/* Sender name - prominent */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-gray-900 truncate">{senderName}</p>
-        <span className="text-xs text-gray-400 flex-shrink-0">{formattedDate}</span>
+        <p className="text-sm font-medium text-linear-text-primary truncate">{senderName}</p>
+        <span className="text-xs text-linear-text-muted flex-shrink-0">{formattedDate}</span>
       </div>
 
       {/* Email address - only if we have a name, otherwise it's redundant */}
-      {hasName && <p className="text-xs text-gray-500 truncate mt-0.5">{senderEmail}</p>}
+      {hasName && <p className="text-xs text-linear-text-tertiary truncate mt-0.5">{senderEmail}</p>}
 
       {/* Subject - smaller, quoted style */}
-      <p className="text-xs text-gray-600 italic truncate mt-1">
+      <p className="text-xs text-linear-text-secondary italic truncate mt-1">
         &ldquo;{email.subject || 'Fără subiect'}&rdquo;
       </p>
 
       {/* Suggested cases indicator */}
       {email.suggestedCases.length > 0 && (
-        <p className="mt-1.5 text-xs text-amber-600">
+        <p className="mt-1.5 text-xs text-linear-warning">
           {email.suggestedCases.length} dosar{email.suggestedCases.length === 1 ? '' : 'e'} sugerat
           {email.suggestedCases.length === 1 ? '' : 'e'}
         </p>
@@ -466,35 +466,35 @@ function UnassignedThreadItem({
     <button
       onClick={onClick}
       className={clsx(
-        'w-full px-3 py-2.5 text-left transition-colors border-b border-gray-100',
+        'w-full px-3 py-2.5 text-left transition-colors border-b border-linear-border-subtle/50',
         isSelected
-          ? 'bg-amber-50 border-l-2 border-amber-500'
-          : 'hover:bg-gray-50 border-l-2 border-transparent'
+          ? 'bg-linear-warning/10 border-l-2 border-linear-warning'
+          : 'hover:bg-linear-bg-hover border-l-2 border-transparent'
       )}
     >
       {/* Sender name - prominent */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-gray-900 truncate">{senderName}</p>
-        <span className="text-xs text-gray-400 flex-shrink-0">{formattedDate}</span>
+        <p className="text-sm font-medium text-linear-text-primary truncate">{senderName}</p>
+        <span className="text-xs text-linear-text-muted flex-shrink-0">{formattedDate}</span>
       </div>
 
       {/* Email address - only if we have a name */}
       {hasName && senderEmail && (
-        <p className="text-xs text-gray-500 truncate mt-0.5">{senderEmail}</p>
+        <p className="text-xs text-linear-text-tertiary truncate mt-0.5">{senderEmail}</p>
       )}
 
       {/* Subject - smaller, quoted style */}
-      <p className="text-xs text-gray-600 italic truncate mt-1">
+      <p className="text-xs text-linear-text-secondary italic truncate mt-1">
         &ldquo;{thread.subject || 'Fără subiect'}&rdquo;
       </p>
 
       {/* Thread meta: message count, unread, attachments */}
       <div className="flex items-center gap-2 mt-1.5">
         {thread.messageCount > 1 && (
-          <span className="text-xs text-gray-400">{thread.messageCount} mesaje</span>
+          <span className="text-xs text-linear-text-muted">{thread.messageCount} mesaje</span>
         )}
-        {thread.hasUnread && <span className="w-2 h-2 bg-amber-500 rounded-full" />}
-        {thread.hasAttachments && <Paperclip className="h-3 w-3 text-gray-400" />}
+        {thread.hasUnread && <span className="w-2 h-2 bg-linear-warning rounded-full" />}
+        {thread.hasAttachments && <Paperclip className="h-3 w-3 text-linear-text-muted" />}
       </div>
     </button>
   );
@@ -579,7 +579,7 @@ export function CaseSidebar({
   const hasMergedNeclar = mergedNeclarCount > 0;
 
   return (
-    <div className={clsx('flex flex-col h-full bg-white', className)}>
+    <div className={clsx('flex flex-col h-full bg-linear-bg-secondary', className)}>
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         {/* DOSARE Section */}
@@ -593,8 +593,8 @@ export function CaseSidebar({
             <>
               {/* OPS-206: Check only assigned cases (unassigned moved to NECLAR) */}
               {cases.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-gray-500 text-center">
-                  <Mail className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                <div className="px-3 py-4 text-sm text-linear-text-tertiary text-center">
+                  <Mail className="h-8 w-8 text-linear-text-muted mx-auto mb-2" />
                   Nu aveți emailuri în dosare active
                 </div>
               ) : (
@@ -615,11 +615,11 @@ export function CaseSidebar({
 
                   {/* OPS-132: Load more button */}
                   {hasMoreThreads && onLoadMore && (
-                    <div className="p-3 border-t border-gray-100">
+                    <div className="p-3 border-t border-linear-border-subtle/50">
                       <button
                         onClick={onLoadMore}
                         disabled={loadingMore}
-                        className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-2 text-sm text-linear-accent hover:text-linear-accent-hover hover:bg-linear-accent/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {loadingMore ? 'Se încarcă...' : 'Încarcă mai multe conversații'}
                       </button>

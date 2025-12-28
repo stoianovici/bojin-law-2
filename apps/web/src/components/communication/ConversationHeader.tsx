@@ -56,17 +56,17 @@ export function ConversationHeader({
   const isUnassigned = !thread.caseId;
 
   return (
-    <div className="bg-white border-b px-4 py-3">
+    <div className="bg-linear-bg-secondary border-b border-linear-border-subtle px-4 py-3">
       {/* Subject line with new compose button - OPS-201 */}
       <div className="flex items-start justify-between gap-3 mb-2">
-        <h2 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 flex-1">
+        <h2 className="font-semibold text-linear-text-primary text-base leading-tight line-clamp-2 flex-1">
           {thread.subject || '(Fără subiect)'}
         </h2>
         {onNewCompose && (
           <button
             onClick={onNewCompose}
             title="Email nou"
-            className="flex-shrink-0 p-1.5 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
+            className="flex-shrink-0 p-1.5 rounded-md bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover hover:text-linear-text-primary transition-colors"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -74,9 +74,9 @@ export function ConversationHeader({
       </div>
 
       {/* Metadata row */}
-      <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+      <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-linear-text-tertiary">
         {/* Case badge */}
-        <div className={clsx('flex items-center gap-1.5', isUnassigned && 'text-amber-600')}>
+        <div className={clsx('flex items-center gap-1.5', isUnassigned && 'text-linear-warning')}>
           <Folder className="h-4 w-4" />
           <span className={clsx(isUnassigned && 'font-medium')}>
             {thread.caseName || 'Neatribuit'}
@@ -87,7 +87,7 @@ export function ConversationHeader({
         <div className="flex items-center gap-1.5">
           <Users className="h-4 w-4" />
           <span className="truncate max-w-[200px]">{formatParticipants()}</span>
-          {userEmail && <span className="text-gray-400">, Dvs.</span>}
+          {userEmail && <span className="text-linear-text-muted">, Dvs.</span>}
         </div>
 
         {/* Message counts */}
@@ -99,7 +99,7 @@ export function ConversationHeader({
             </span>
           </div>
           {sentCount > 0 && (
-            <div className="flex items-center gap-1 text-blue-500">
+            <div className="flex items-center gap-1 text-linear-accent">
               <Send className="h-3.5 w-3.5" />
               <span>
                 {sentCount} {sentCount === 1 ? 'trimis' : 'trimise'}

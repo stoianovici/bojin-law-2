@@ -1,0 +1,68 @@
+# Brief Feed Schema
+# Mobile activity feed showing company-wide communications and document activity
+
+"""
+Types of items that appear in the Brief feed
+"""
+enum BriefItemType {
+  EMAIL_RECEIVED
+  EMAIL_SENT
+  DOCUMENT_RECEIVED
+  DOCUMENT_APPROVED
+  DOCUMENT_UPLOADED
+  NOTE_ADDED
+  DEADLINE_SET
+}
+
+"""
+A single item in the mobile Brief feed
+"""
+type BriefItem {
+  # Identity
+  id: ID!
+  type: BriefItemType!
+
+  # Display content
+  title: String!
+  subtitle: String
+  preview: String
+
+  # Context
+  caseName: String
+  caseId: ID
+  actorName: String
+  actorId: ID
+
+  # Entity reference (for deep linking)
+  entityType: String!
+  entityId: ID!
+
+  # Timestamps
+  occurredAt: DateTime!
+  relativeTime: String!
+}
+
+"""
+Paginated Brief feed response
+"""
+type BriefFeedResult {
+  items: [BriefItem!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+"""
+Input for Brief feed query
+"""
+input BriefFeedInput {
+  limit: Int = 20
+  offset: Int = 0
+}
+
+extend type Query {
+  """
+  Get the Brief feed for mobile home screen.
+  Returns recent company activity: emails received/sent, documents approved/uploaded.
+  """
+  briefFeed(input: BriefFeedInput): BriefFeedResult!
+}

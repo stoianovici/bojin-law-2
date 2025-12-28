@@ -62,10 +62,10 @@ const PATTERN_ICONS: Record<string, string> = {
 };
 
 const PRIORITY_BADGES: Record<string, { bg: string; text: string }> = {
-  Critical: { bg: 'bg-red-100', text: 'text-red-800' },
-  High: { bg: 'bg-orange-100', text: 'text-orange-800' },
-  Medium: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
-  Low: { bg: 'bg-gray-100', text: 'text-gray-800' },
+  Critical: { bg: 'bg-linear-error/15', text: 'text-linear-error' },
+  High: { bg: 'bg-linear-warning/15', text: 'text-linear-warning' },
+  Medium: { bg: 'bg-linear-warning/10', text: 'text-linear-warning' },
+  Low: { bg: 'bg-linear-bg-tertiary', text: 'text-linear-text-secondary' },
 };
 
 // ============================================================================
@@ -82,14 +82,14 @@ export function OverdueAnalysisPanel({
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />
-        <div className="h-64 bg-gray-100 animate-pulse rounded-lg" />
+        <div className="h-32 bg-linear-bg-tertiary animate-pulse rounded-lg" />
+        <div className="h-64 bg-linear-bg-tertiary animate-pulse rounded-lg" />
       </div>
     );
   }
 
   if (!data) {
-    return <div className="text-center py-8 text-gray-500">Nu există date despre întârzieri</div>;
+    return <div className="text-center py-8 text-linear-text-tertiary">Nu există date despre întârzieri</div>;
   }
 
   const byTypeData = data.overdueByType.map((item, index) => ({
@@ -102,18 +102,18 @@ export function OverdueAnalysisPanel({
   return (
     <div className="space-y-6">
       {/* Summary Header */}
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+      <div className="bg-linear-error/10 border border-linear-error/30 rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-red-800">Sarcini întârziate</h3>
-            <p className="text-sm text-red-600">Sarcini cu termen depășit care necesită atenție</p>
+            <h3 className="text-lg font-semibold text-linear-error">Sarcini întârziate</h3>
+            <p className="text-sm text-linear-error">Sarcini cu termen depășit care necesită atenție</p>
           </div>
-          <div className="text-4xl font-bold text-red-600">{data.totalOverdue}</div>
+          <div className="text-4xl font-bold text-linear-error">{data.totalOverdue}</div>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-linear-border-subtle">
         <nav className="flex gap-4">
           {[
             { id: 'overview', label: 'Sumar' },
@@ -125,8 +125,8 @@ export function OverdueAnalysisPanel({
               onClick={() => setSelectedTab(tab.id as typeof selectedTab)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 selectedTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-linear-accent text-linear-accent'
+                  : 'border-transparent text-linear-text-tertiary hover:text-linear-text-secondary'
               }`}
             >
               {tab.label}
@@ -139,7 +139,7 @@ export function OverdueAnalysisPanel({
       {selectedTab === 'overview' && (
         <div className="grid md:grid-cols-2 gap-6">
           {/* By Type Chart */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
             <h4 className="text-md font-semibold mb-4">Pe tip de sarcină</h4>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -171,13 +171,13 @@ export function OverdueAnalysisPanel({
           </div>
 
           {/* By User */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
             <h4 className="text-md font-semibold mb-4">Pe responsabil</h4>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {data.overdueByUser.map((user, index) => (
                 <div
                   key={user.userId}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-linear-bg-tertiary rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -188,11 +188,11 @@ export function OverdueAnalysisPanel({
                     </div>
                     <span className="font-medium">{user.userName}</span>
                   </div>
-                  <span className="text-red-600 font-semibold">{user.count} întârziate</span>
+                  <span className="text-linear-error font-semibold">{user.count} întârziate</span>
                 </div>
               ))}
               {data.overdueByUser.length === 0 && (
-                <div className="text-center py-4 text-gray-500">
+                <div className="text-center py-4 text-linear-text-tertiary">
                   Nicio sarcină întârziată pe utilizator
                 </div>
               )}
@@ -204,25 +204,25 @@ export function OverdueAnalysisPanel({
       {selectedTab === 'patterns' && (
         <div className="space-y-4">
           {data.bottleneckPatterns.map((pattern, index) => (
-            <div key={index} className="bg-white rounded-lg border border-amber-200 p-6">
+            <div key={index} className="bg-linear-bg-secondary rounded-lg border border-linear-warning/30 p-6">
               <div className="flex items-start gap-4">
                 <div className="text-3xl">{PATTERN_ICONS[pattern.patternType] || '📊'}</div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs uppercase font-semibold text-amber-600 bg-amber-100 px-2 py-1 rounded">
+                    <span className="text-xs uppercase font-semibold text-linear-warning bg-linear-warning/15 px-2 py-1 rounded">
                       {pattern.patternType.replace(/_/g, ' ')}
                     </span>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-linear-text-tertiary">
                       {pattern.affectedTasks} sarcini afectate
                     </span>
                   </div>
-                  <p className="text-gray-700 mb-3">{pattern.description}</p>
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                    <span className="text-sm font-medium text-blue-800">Acțiune sugerată:</span>
-                    <p className="text-sm text-blue-700 mt-1">{pattern.suggestedAction}</p>
+                  <p className="text-linear-text-secondary mb-3">{pattern.description}</p>
+                  <div className="bg-linear-accent/10 border border-linear-accent/30 rounded p-3">
+                    <span className="text-sm font-medium text-linear-accent">Acțiune sugerată:</span>
+                    <p className="text-sm text-linear-accent mt-1">{pattern.suggestedAction}</p>
                   </div>
                   {pattern.relatedUsers && pattern.relatedUsers.length > 0 && (
-                    <div className="mt-3 text-sm text-gray-500">
+                    <div className="mt-3 text-sm text-linear-text-tertiary">
                       Utilizatori implicați: {pattern.relatedUsers.join(', ')}
                     </div>
                   )}
@@ -231,7 +231,7 @@ export function OverdueAnalysisPanel({
             </div>
           ))}
           {data.bottleneckPatterns.length === 0 && (
-            <div className="text-center py-8 text-gray-500">Niciun blocaj detectat</div>
+            <div className="text-center py-8 text-linear-text-tertiary">Niciun blocaj detectat</div>
           )}
         </div>
       )}
@@ -241,54 +241,54 @@ export function OverdueAnalysisPanel({
           {data.criticalTasks.map((task) => {
             const priority = PRIORITY_BADGES[task.estimatedImpact] || PRIORITY_BADGES.Medium;
             return (
-              <div key={task.taskId} className="bg-white rounded-lg border border-red-200 p-6">
+              <div key={task.taskId} className="bg-linear-bg-secondary rounded-lg border border-linear-error/30 p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold text-gray-900">{task.taskTitle}</h4>
+                      <h4 className="font-semibold text-linear-text-primary">{task.taskTitle}</h4>
                       <span className={`text-xs px-2 py-1 rounded ${priority.bg} ${priority.text}`}>
                         {task.estimatedImpact}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-500">Tip:</span>{' '}
+                        <span className="text-linear-text-tertiary">Tip:</span>{' '}
                         <span className="font-medium">
                           {TASK_TYPE_LABELS[task.taskType] || task.taskType}
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Responsabil:</span>{' '}
+                        <span className="text-linear-text-tertiary">Responsabil:</span>{' '}
                         <span className="font-medium">{task.assigneeName}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Dosar:</span>{' '}
+                        <span className="text-linear-text-tertiary">Dosar:</span>{' '}
                         <span className="font-medium">{task.caseTitle}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Termen:</span>{' '}
-                        <span className="font-medium text-red-600">
+                        <span className="text-linear-text-tertiary">Termen:</span>{' '}
+                        <span className="font-medium text-linear-error">
                           {new Date(task.dueDate).toLocaleDateString('ro-RO')}
                         </span>
                       </div>
                     </div>
                     {task.blockedBy && task.blockedBy.length > 0 && (
                       <div className="mt-3 text-sm">
-                        <span className="text-gray-500">Blocat de:</span>{' '}
-                        <span className="text-amber-600">{task.blockedBy.join(', ')}</span>
+                        <span className="text-linear-text-tertiary">Blocat de:</span>{' '}
+                        <span className="text-linear-warning">{task.blockedBy.join(', ')}</span>
                       </div>
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-red-600">{task.daysOverdue}</div>
-                    <div className="text-sm text-gray-500">zile întârziere</div>
+                    <div className="text-2xl font-bold text-linear-error">{task.daysOverdue}</div>
+                    <div className="text-sm text-linear-text-tertiary">zile întârziere</div>
                   </div>
                 </div>
               </div>
             );
           })}
           {data.criticalTasks.length === 0 && (
-            <div className="text-center py-8 text-gray-500">Nicio sarcină critică întârziată</div>
+            <div className="text-center py-8 text-linear-text-tertiary">Nicio sarcină critică întârziată</div>
           )}
         </div>
       )}

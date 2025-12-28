@@ -168,7 +168,7 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
       // Add text before entity
       if (entity.start > lastIndex) {
         parts.push(
-          <span key={`text-${idx}`} className="text-gray-700">
+          <span key={`text-${idx}`} className="text-linear-text-secondary">
             {inputValue.substring(lastIndex, entity.start)}
           </span>
         );
@@ -191,7 +191,7 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
     // Add remaining text
     if (lastIndex < inputValue.length) {
       parts.push(
-        <span key="text-end" className="text-gray-700">
+        <span key="text-end" className="text-linear-text-secondary">
           {inputValue.substring(lastIndex)}
         </span>
       );
@@ -228,11 +228,11 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
   };
 
   return (
-    <div className="task-creation-bar bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+    <div className="task-creation-bar bg-linear-bg-secondary rounded-lg shadow-md border border-linear-border-subtle p-6 mb-6">
       <div className="flex items-start gap-4">
         {/* Input section */}
         <div className="flex-1">
-          <label htmlFor="task-input" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label htmlFor="task-input" className="block text-sm font-semibold text-linear-text-secondary mb-2">
             Creează o sarcină nouă
           </label>
 
@@ -245,14 +245,14 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Creează o sarcină de cercetare pentru contractul X până pe 15 noiembrie"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-3 border border-linear-border rounded-lg focus:ring-2 focus:ring-linear-accent focus:border-transparent text-sm"
             />
 
             {/* Clear button */}
             {inputValue && (
               <button
                 onClick={() => setInputValue('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-linear-text-muted hover:text-linear-text-secondary"
                 aria-label="Șterge text"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,8 +269,8 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
 
           {/* Highlighted parsed text preview */}
           {inputValue && parsedEntities.length > 0 && (
-            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="text-xs font-semibold text-gray-600 mb-2">Elemente detectate:</div>
+            <div className="mt-3 p-3 bg-linear-bg-tertiary rounded-lg border border-linear-border-subtle">
+              <div className="text-xs font-semibold text-linear-text-tertiary mb-2">Elemente detectate:</div>
               <div className="text-sm leading-relaxed">{highlightedText}</div>
 
               {/* Parsed entity badges */}
@@ -282,7 +282,7 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
                     style={{ backgroundColor: `${entity.color}20`, color: entity.color }}
                   >
                     <span className="capitalize">{entity.type}</span>
-                    <span className="text-gray-600">•</span>
+                    <span className="text-linear-text-tertiary">•</span>
                     <span>{entity.value}</span>
                   </div>
                 ))}
@@ -293,13 +293,13 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
           {/* Task suggestions */}
           {!inputValue && (
             <div className="mt-4">
-              <div className="text-xs font-semibold text-gray-600 mb-2">Sugestii:</div>
+              <div className="text-xs font-semibold text-linear-text-tertiary mb-2">Sugestii:</div>
               <div className="flex flex-wrap gap-2">
                 {TASK_SUGGESTIONS.map((suggestion, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded-md transition-colors border border-gray-300"
+                    className="px-3 py-1.5 bg-linear-bg-tertiary hover:bg-linear-bg-hover text-linear-text-secondary text-xs rounded-md transition-colors border border-linear-border-subtle"
                   >
                     {suggestion}
                   </button>
@@ -313,7 +313,7 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
         <button
           onClick={handleCreateTask}
           disabled={!inputValue.trim()}
-          className="mt-8 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          className="mt-8 px-6 py-3 bg-linear-accent text-white font-semibold rounded-lg hover:bg-linear-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
         >
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,8 +330,8 @@ export function TaskCreationBar({ onCreateTask }: TaskCreationBarProps) {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+      <div className="mt-4 pt-4 border-t border-linear-border-subtle">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-linear-text-tertiary">
           <span className="font-semibold">Elemente care pot fi detectate:</span>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }} />

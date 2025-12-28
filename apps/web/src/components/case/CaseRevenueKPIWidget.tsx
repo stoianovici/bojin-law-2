@@ -58,14 +58,14 @@ function CaseRevenueKPIWidgetContent({
   // Loading state
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
-          <div className="h-8 w-8 bg-gray-200 rounded animate-pulse" />
+          <div className="h-6 bg-linear-bg-tertiary rounded w-1/3 animate-pulse" />
+          <div className="h-8 w-8 bg-linear-bg-tertiary rounded animate-pulse" />
         </div>
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-100 rounded animate-pulse" />
+            <div key={i} className="h-16 bg-linear-bg-tertiary rounded animate-pulse" />
           ))}
         </div>
       </div>
@@ -75,8 +75,8 @@ function CaseRevenueKPIWidgetContent({
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-red-200 p-6">
-        <div className="flex items-center gap-2 text-red-600 mb-2">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-error/30 p-6">
+        <div className="flex items-center gap-2 text-linear-error mb-2">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -89,7 +89,7 @@ function CaseRevenueKPIWidgetContent({
         </div>
         <button
           onClick={handleRefresh}
-          className="text-sm text-blue-600 hover:text-blue-700 underline"
+          className="text-sm text-linear-accent hover:text-linear-accent-hover underline"
         >
           Try again
         </button>
@@ -100,9 +100,9 @@ function CaseRevenueKPIWidgetContent({
   // No data available (null KPI - cannot calculate)
   if (!kpi) {
     return (
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-        <h3 className="font-semibold text-gray-700 mb-2">Revenue KPI</h3>
-        <p className="text-gray-500 text-sm">
+      <div className="bg-linear-bg-tertiary rounded-lg border border-linear-border-subtle p-6">
+        <h3 className="font-semibold text-linear-text-secondary mb-2">Revenue KPI</h3>
+        <p className="text-linear-text-tertiary text-sm">
           KPI cannot be calculated. Please ensure billing rates are set.
         </p>
       </div>
@@ -112,12 +112,12 @@ function CaseRevenueKPIWidgetContent({
   // No time entries yet
   if (kpi.timeEntriesCount === 0) {
     return (
-      <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
+      <div className="bg-linear-accent/10 rounded-lg border border-linear-accent/30 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-blue-900">Revenue KPI</h3>
+          <h3 className="font-semibold text-linear-accent">Revenue KPI</h3>
           <button
             onClick={handleRefresh}
-            className="text-blue-600 hover:text-blue-700 p-1.5 rounded hover:bg-blue-100 transition-colors"
+            className="text-linear-accent hover:text-linear-accent-hover p-1.5 rounded hover:bg-linear-accent/20 transition-colors"
             title="Refresh KPI"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -131,15 +131,15 @@ function CaseRevenueKPIWidgetContent({
           </button>
         </div>
         <div className="text-center py-4">
-          <p className="text-gray-700 font-medium mb-1">No time tracked yet</p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-linear-text-secondary font-medium mb-1">No time tracked yet</p>
+          <p className="text-linear-text-tertiary text-sm">
             KPI will be available once time entries are logged
           </p>
         </div>
-        <div className="mt-4 pt-4 border-t border-blue-200">
+        <div className="mt-4 pt-4 border-t border-linear-accent/30">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">Fixed Amount:</span>
-            <span className="font-semibold text-gray-900">{formatCurrency(kpi.actualRevenue)}</span>
+            <span className="text-linear-text-tertiary">Fixed Amount:</span>
+            <span className="font-semibold text-linear-text-primary">{formatCurrency(kpi.actualRevenue)}</span>
           </div>
         </div>
       </div>
@@ -148,9 +148,9 @@ function CaseRevenueKPIWidgetContent({
 
   // Determine variance color
   const getVarianceColor = (variance: number) => {
-    if (variance > 0) return 'text-green-600 bg-green-50 border-green-200';
-    if (variance < 0) return 'text-red-600 bg-red-50 border-red-200';
-    return 'text-gray-600 bg-gray-50 border-gray-200';
+    if (variance > 0) return 'text-linear-success bg-linear-success/15 border-linear-success/30';
+    if (variance < 0) return 'text-linear-error bg-linear-error/15 border-linear-error/30';
+    return 'text-linear-text-tertiary bg-linear-bg-tertiary border-linear-border-subtle';
   };
 
   const getVarianceIcon = (variance: number) => {
@@ -182,13 +182,13 @@ function CaseRevenueKPIWidgetContent({
   const varianceColor = getVarianceColor(kpi.variance);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900">Revenue KPI</h3>
+        <h3 className="font-semibold text-linear-text-primary">Revenue KPI</h3>
         <button
           onClick={handleRefresh}
-          className="text-gray-600 hover:text-gray-700 p-1.5 rounded hover:bg-gray-100 transition-colors"
+          className="text-linear-text-tertiary hover:text-linear-text-secondary p-1.5 rounded hover:bg-linear-bg-hover transition-colors"
           title="Refresh KPI"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -205,20 +205,20 @@ function CaseRevenueKPIWidgetContent({
       {/* KPI Metrics */}
       <div className="space-y-3">
         {/* Fixed Amount */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm text-gray-600 mb-1">Fixed Fee Amount</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="bg-linear-bg-tertiary rounded-lg p-4">
+          <div className="text-sm text-linear-text-tertiary mb-1">Fixed Fee Amount</div>
+          <div className="text-2xl font-bold text-linear-text-primary">
             {formatCurrency(kpi.actualRevenue)}
           </div>
         </div>
 
         {/* Projected Hourly Revenue */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm text-gray-600 mb-1">Projected Hourly Revenue</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="bg-linear-bg-tertiary rounded-lg p-4">
+          <div className="text-sm text-linear-text-tertiary mb-1">Projected Hourly Revenue</div>
+          <div className="text-2xl font-bold text-linear-text-primary">
             {formatCurrency(kpi.projectedRevenue)}
           </div>
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-linear-text-muted mt-1">
             Based on {kpi.totalHours.toFixed(1)} billable hours
           </div>
         </div>
@@ -237,8 +237,8 @@ function CaseRevenueKPIWidgetContent({
       </div>
 
       {/* Footer */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <span className="text-xs text-gray-500">Updated {formatTimestamp(lastUpdated)}</span>
+      <div className="mt-4 pt-4 border-t border-linear-border-subtle">
+        <span className="text-xs text-linear-text-muted">Updated {formatTimestamp(lastUpdated)}</span>
       </div>
     </div>
   );

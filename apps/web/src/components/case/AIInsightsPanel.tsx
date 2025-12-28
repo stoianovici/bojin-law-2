@@ -72,7 +72,7 @@ function SuggestionIcon({ type }: { type: IconType }) {
           d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
         />
       ),
-      color: 'text-blue-600',
+      color: 'text-linear-accent',
     },
     deadline: {
       icon: (
@@ -83,7 +83,7 @@ function SuggestionIcon({ type }: { type: IconType }) {
           d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
         />
       ),
-      color: 'text-red-600',
+      color: 'text-linear-error',
     },
     task: {
       icon: (
@@ -94,7 +94,7 @@ function SuggestionIcon({ type }: { type: IconType }) {
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
         />
       ),
-      color: 'text-yellow-600',
+      color: 'text-linear-warning',
     },
     precedent: {
       icon: (
@@ -105,7 +105,7 @@ function SuggestionIcon({ type }: { type: IconType }) {
           d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
         />
       ),
-      color: 'text-purple-600',
+      color: 'text-linear-accent',
     },
     communication: {
       icon: (
@@ -116,7 +116,7 @@ function SuggestionIcon({ type }: { type: IconType }) {
           d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
         />
       ),
-      color: 'text-green-600',
+      color: 'text-linear-success',
     },
   };
 
@@ -140,9 +140,9 @@ function SuggestionIcon({ type }: { type: IconType }) {
 function getPriorityBadge(priority: string): { color: string; label: string } | null {
   switch (priority) {
     case 'Urgent':
-      return { color: 'bg-red-100 text-red-800', label: 'Urgent' };
+      return { color: 'bg-linear-error/15 text-linear-error', label: 'Urgent' };
     case 'High':
-      return { color: 'bg-orange-100 text-orange-800', label: 'Prioritar' };
+      return { color: 'bg-linear-warning/15 text-linear-warning', label: 'Prioritar' };
     default:
       return null;
   }
@@ -163,14 +163,14 @@ function SuggestionItem({ suggestion, onDismiss, onAction }: SuggestionItemProps
   const timestamp = new Date(suggestion.createdAt);
 
   return (
-    <div className="p-4 bg-white rounded-lg border border-purple-200 hover:border-purple-300 hover:shadow-sm transition-all">
+    <div className="p-4 bg-linear-bg-secondary rounded-lg border border-linear-accent/30 hover:border-linear-accent/50 hover:shadow-sm transition-all">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
           <SuggestionIcon type={iconType} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h4 className="text-sm font-medium text-gray-900">{suggestion.title}</h4>
+            <h4 className="text-sm font-medium text-linear-text-primary">{suggestion.title}</h4>
             {priorityBadge && (
               <span
                 className={clsx('px-1.5 py-0.5 text-xs font-medium rounded', priorityBadge.color)}
@@ -179,10 +179,10 @@ function SuggestionItem({ suggestion, onDismiss, onAction }: SuggestionItemProps
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-600 mb-2">{suggestion.description}</p>
+          <p className="text-sm text-linear-text-secondary mb-2">{suggestion.description}</p>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-linear-text-tertiary">
                 {formatDistanceToNow(timestamp, {
                   addSuffix: true,
                   locale: ro,
@@ -190,7 +190,7 @@ function SuggestionItem({ suggestion, onDismiss, onAction }: SuggestionItemProps
               </span>
               {suggestion.confidence > 0.8 && (
                 <span
-                  className="text-xs text-green-600"
+                  className="text-xs text-linear-success"
                   title={`Încredere: ${Math.round(suggestion.confidence * 100)}%`}
                 >
                   • Încredere înaltă
@@ -201,14 +201,14 @@ function SuggestionItem({ suggestion, onDismiss, onAction }: SuggestionItemProps
               {suggestion.suggestedAction && (
                 <button
                   onClick={onAction}
-                  className="text-xs font-medium text-purple-600 hover:text-purple-700 hover:underline"
+                  className="text-xs font-medium text-linear-accent hover:text-linear-accent-hover hover:underline"
                 >
                   {suggestion.suggestedAction}
                 </button>
               )}
               <button
                 onClick={onDismiss}
-                className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                className="p-1 rounded text-linear-text-muted hover:text-linear-text-secondary hover:bg-linear-bg-hover"
                 aria-label="Respinge sugestie"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +252,7 @@ function AIInsightsPanelComponent({
   return (
     <div
       className={clsx(
-        'fixed top-16 right-0 bg-white border-l border-gray-200 shadow-lg transition-all duration-300 z-40',
+        'fixed top-16 right-0 bg-linear-bg-secondary border-l border-linear-border-subtle shadow-lg transition-all duration-300 z-40',
         'h-[calc(100vh-4rem)]', // Full height minus TopBar (4rem = 64px)
         aiPanelCollapsed ? 'w-12' : 'w-80',
         className
@@ -262,11 +262,11 @@ function AIInsightsPanelComponent({
       {aiPanelCollapsed && (
         <button
           onClick={toggleAIPanel}
-          className="w-full h-16 flex items-center justify-center border-b border-gray-200 hover:bg-purple-50 transition-colors group"
+          className="w-full h-16 flex items-center justify-center border-b border-linear-border-subtle hover:bg-linear-accent/10 transition-colors group"
           aria-label="Deschide panoul AI"
         >
           <svg
-            className="w-6 h-6 text-purple-600 group-hover:text-purple-700"
+            className="w-6 h-6 text-linear-accent group-hover:text-linear-accent-hover"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -280,11 +280,11 @@ function AIInsightsPanelComponent({
       {!aiPanelCollapsed && (
         <>
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-white">
+          <div className="px-4 py-3 border-b border-linear-border-subtle bg-linear-accent/10">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <svg
-                  className="w-5 h-5 text-purple-600"
+                  className="w-5 h-5 text-linear-accent"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -296,11 +296,11 @@ function AIInsightsPanelComponent({
                     d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
                 </svg>
-                <h3 className="text-sm font-semibold text-gray-900">Sugestii AI</h3>
+                <h3 className="text-sm font-semibold text-linear-text-primary">Sugestii AI</h3>
               </div>
               <button
                 onClick={toggleAIPanel}
-                className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-white transition-colors"
+                className="p-1 rounded text-linear-text-muted hover:text-linear-text-secondary hover:bg-linear-bg-secondary transition-colors"
                 aria-label="Închide panoul"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,7 +313,7 @@ function AIInsightsPanelComponent({
                 </svg>
               </button>
             </div>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-linear-text-secondary">
               Sugestii pentru <span className="font-medium">{caseName}</span>
             </p>
           </div>
@@ -322,9 +322,9 @@ function AIInsightsPanelComponent({
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-3 animate-pulse">
+                <div className="w-16 h-16 rounded-full bg-linear-accent/15 flex items-center justify-center mb-3 animate-pulse">
                   <svg
-                    className="w-8 h-8 text-purple-600 animate-spin"
+                    className="w-8 h-8 text-linear-accent animate-spin"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -337,8 +337,8 @@ function AIInsightsPanelComponent({
                     />
                   </svg>
                 </div>
-                <p className="text-sm font-medium text-gray-900 mb-1">Se încarcă sugestiile...</p>
-                <p className="text-xs text-gray-600">AI analizează cazul dvs.</p>
+                <p className="text-sm font-medium text-linear-text-primary mb-1">Se încarcă sugestiile...</p>
+                <p className="text-xs text-linear-text-secondary">AI analizează cazul dvs.</p>
               </div>
             ) : visibleSuggestions.length > 0 ? (
               visibleSuggestions.map((suggestion) => (
@@ -351,9 +351,9 @@ function AIInsightsPanelComponent({
               ))
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-3">
+                <div className="w-16 h-16 rounded-full bg-linear-accent/15 flex items-center justify-center mb-3">
                   <svg
-                    className="w-8 h-8 text-purple-600"
+                    className="w-8 h-8 text-linear-accent"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -366,8 +366,8 @@ function AIInsightsPanelComponent({
                     />
                   </svg>
                 </div>
-                <p className="text-sm font-medium text-gray-900 mb-1">Nicio sugestie disponibilă</p>
-                <p className="text-xs text-gray-600">
+                <p className="text-sm font-medium text-linear-text-primary mb-1">Nicio sugestie disponibilă</p>
+                <p className="text-xs text-linear-text-secondary">
                   AI analizează cazul dvs. pentru a genera sugestii utile
                 </p>
               </div>
@@ -375,8 +375,8 @@ function AIInsightsPanelComponent({
           </div>
 
           {/* Footer Note */}
-          <div className="px-4 py-3 border-t border-gray-200 bg-purple-50">
-            <p className="text-xs text-purple-800">
+          <div className="px-4 py-3 border-t border-linear-border-subtle bg-linear-accent/10">
+            <p className="text-xs text-linear-accent">
               <strong>Notă:</strong> Sugestiile AI sunt generate automat și ar trebui verificate de
               un profesionist legal.
             </p>

@@ -221,8 +221,8 @@ export function InlineEditField({
   // Render edit mode
   if (isEditing) {
     return (
-      <div className="py-3 border-b border-gray-200 last:border-0">
-        <dt className="text-sm font-medium text-gray-500 mb-1">{label}</dt>
+      <div className="py-3 border-b border-linear-border-subtle last:border-0">
+        <dt className="text-sm font-medium text-linear-text-tertiary mb-1">{label}</dt>
         <dd className="flex items-start gap-2">
           <div className="flex-1">
             {fieldType === 'textarea' ? (
@@ -231,7 +231,7 @@ export function InlineEditField({
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full px-3 py-2 border border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 resize-none"
+                className="w-full px-3 py-2 border border-linear-accent rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary resize-none"
                 rows={3}
                 disabled={loading}
               />
@@ -241,7 +241,7 @@ export function InlineEditField({
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full px-3 py-2 border border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full px-3 py-2 border border-linear-accent rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary"
                 disabled={loading}
               >
                 {options.map((option) => (
@@ -259,19 +259,19 @@ export function InlineEditField({
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onFocus={() => searchValue && setShowAutocomplete(true)}
-                  className="w-full px-3 py-2 border border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full px-3 py-2 border border-linear-accent rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary"
                   disabled={loading}
                   placeholder={placeholder}
                 />
                 {showAutocomplete && (
                   <div
                     ref={autocompleteRef}
-                    className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto"
+                    className="absolute z-10 w-full mt-1 bg-linear-bg-secondary border border-linear-border-subtle rounded-md shadow-lg max-h-60 overflow-auto"
                   >
                     {autocompleteLoading ? (
-                      <div className="px-3 py-2 text-sm text-gray-500">Se încarcă...</div>
+                      <div className="px-3 py-2 text-sm text-linear-text-tertiary">Se încarcă...</div>
                     ) : autocompleteOptions.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-gray-500">
+                      <div className="px-3 py-2 text-sm text-linear-text-tertiary">
                         {searchValue.length < 2
                           ? 'Tastați pentru a căuta...'
                           : 'Niciun rezultat găsit'}
@@ -282,7 +282,7 @@ export function InlineEditField({
                           key={option.value}
                           type="button"
                           onClick={() => handleSelectOption(option)}
-                          className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                          className="w-full px-3 py-2 text-left text-sm text-linear-text-primary hover:bg-linear-accent/10 focus:bg-linear-accent/10 focus:outline-none"
                         >
                           {option.label}
                         </button>
@@ -298,19 +298,19 @@ export function InlineEditField({
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full px-3 py-2 border border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full px-3 py-2 border border-linear-accent rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary"
                 disabled={loading}
                 step={fieldType === 'number' ? 'any' : undefined}
               />
             )}
-            {validationError && <p className="mt-1 text-sm text-red-600">{validationError}</p>}
-            <p className="mt-1 text-xs text-gray-500">Press Enter to save, ESC to cancel</p>
+            {validationError && <p className="mt-1 text-sm text-linear-error">{validationError}</p>}
+            <p className="mt-1 text-xs text-linear-text-tertiary">Press Enter to save, ESC to cancel</p>
           </div>
           <div className="flex gap-1 pt-2">
             <button
               onClick={handleSave}
               disabled={loading}
-              className="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50"
+              className="p-1.5 text-linear-success hover:bg-linear-success/10 rounded-md transition-colors disabled:opacity-50"
               title="Save"
               type="button"
             >
@@ -319,7 +319,7 @@ export function InlineEditField({
             <button
               onClick={handleCancel}
               disabled={loading}
-              className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+              className="p-1.5 text-linear-error hover:bg-linear-error/10 rounded-md transition-colors disabled:opacity-50"
               title="Cancel"
               type="button"
             >
@@ -343,21 +343,21 @@ export function InlineEditField({
 
   return (
     <div
-      className={`py-3 border-b border-gray-200 last:border-0 group ${
+      className={`py-3 border-b border-linear-border-subtle last:border-0 group ${
         editable ? 'cursor-pointer' : ''
       }`}
       onClick={handleEdit}
     >
-      <dt className="text-sm font-medium text-gray-500 mb-1 flex items-center justify-between">
+      <dt className="text-sm font-medium text-linear-text-tertiary mb-1 flex items-center justify-between">
         <span>{label}</span>
         {editable && (
-          <Pencil1Icon className="h-3.5 w-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Pencil1Icon className="h-3.5 w-3.5 text-linear-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
         )}
       </dt>
       <dd
         className={`text-base ${
-          value !== null && value !== undefined ? 'text-gray-900' : 'text-gray-400'
-        } ${editable ? 'hover:text-blue-600 transition-colors' : ''}`}
+          value !== null && value !== undefined ? 'text-linear-text-primary' : 'text-linear-text-muted'
+        } ${editable ? 'hover:text-linear-accent transition-colors' : ''}`}
       >
         {displayContent}
       </dd>

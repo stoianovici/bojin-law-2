@@ -18,15 +18,15 @@ export function FilterBar() {
   ].filter(Boolean).length;
 
   return (
-    <div className="p-4 border-b bg-white space-y-3">
+    <div className="p-4 border-b bg-linear-bg-secondary space-y-3">
       {/* Processing Status Tabs */}
       <div className="flex border rounded-lg overflow-hidden">
         <button
           onClick={() => setShowProcessed(false)}
           className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm transition-colors ${
             !showProcessed
-              ? 'bg-blue-50 text-blue-700 font-medium'
-              : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-linear-accent/10 text-linear-accent font-medium'
+              : 'text-linear-text-secondary hover:bg-linear-bg-tertiary'
           }`}
           title="Emailuri de procesat"
         >
@@ -37,8 +37,8 @@ export function FilterBar() {
           onClick={() => setShowProcessed(true)}
           className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border-l transition-colors ${
             showProcessed
-              ? 'bg-blue-50 text-blue-700 font-medium'
-              : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-linear-accent/10 text-linear-accent font-medium'
+              : 'text-linear-text-secondary hover:bg-linear-bg-tertiary'
           }`}
           title="Include emailuri procesate"
         >
@@ -50,7 +50,7 @@ export function FilterBar() {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Filtre</h2>
         {activeFilterCount > 0 && (
-          <button onClick={clearFilters} className="text-xs text-blue-600 hover:underline">
+          <button onClick={clearFilters} className="text-xs text-linear-accent hover:underline">
             Șterge toate ({activeFilterCount})
           </button>
         )}

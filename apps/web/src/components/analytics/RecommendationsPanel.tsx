@@ -46,9 +46,9 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    bgColor: 'bg-blue-50',
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-200',
+    bgColor: 'bg-linear-accent/10',
+    textColor: 'text-linear-accent',
+    borderColor: 'border-linear-accent/30',
   },
   communication: {
     label: 'Comunicare',
@@ -62,9 +62,9 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    bgColor: 'bg-green-50',
-    textColor: 'text-green-700',
-    borderColor: 'border-green-200',
+    bgColor: 'bg-linear-success/10',
+    textColor: 'text-linear-success',
+    borderColor: 'border-linear-success/30',
   },
   quality: {
     label: 'Calitate',
@@ -78,9 +78,9 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    bgColor: 'bg-purple-50',
-    textColor: 'text-purple-700',
-    borderColor: 'border-purple-200',
+    bgColor: 'bg-linear-accent/10',
+    textColor: 'text-linear-accent',
+    borderColor: 'border-linear-accent/30',
   },
   adoption: {
     label: 'Adopție',
@@ -94,9 +94,9 @@ const CATEGORY_CONFIG: Record<
         />
       </svg>
     ),
-    bgColor: 'bg-orange-50',
-    textColor: 'text-orange-700',
-    borderColor: 'border-orange-200',
+    bgColor: 'bg-linear-warning/10',
+    textColor: 'text-linear-warning',
+    borderColor: 'border-linear-warning/30',
   },
 };
 
@@ -106,20 +106,20 @@ const PRIORITY_CONFIG: Record<
 > = {
   high: {
     label: 'Prioritate ridicată',
-    bgColor: 'bg-red-100',
-    textColor: 'text-red-800',
+    bgColor: 'bg-linear-error/15',
+    textColor: 'text-linear-error',
     order: 0,
   },
   medium: {
     label: 'Prioritate medie',
-    bgColor: 'bg-yellow-100',
-    textColor: 'text-yellow-800',
+    bgColor: 'bg-linear-warning/15',
+    textColor: 'text-linear-warning',
     order: 1,
   },
   low: {
     label: 'Prioritate scăzută',
-    bgColor: 'bg-gray-100',
-    textColor: 'text-gray-700',
+    bgColor: 'bg-linear-bg-tertiary',
+    textColor: 'text-linear-text-secondary',
     order: 2,
   },
 };
@@ -184,7 +184,7 @@ export function RecommendationsPanel({
     return (
       <div className="space-y-4" aria-label="Se încarcă recomandările">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-24 bg-gray-100 animate-pulse rounded-lg" />
+          <div key={i} className="h-24 bg-linear-bg-tertiary animate-pulse rounded-lg" />
         ))}
       </div>
     );
@@ -192,9 +192,9 @@ export function RecommendationsPanel({
 
   if (recommendations.length === 0) {
     return (
-      <div className="text-center py-12 bg-green-50 rounded-lg border border-green-200">
+      <div className="text-center py-12 bg-linear-success/10 rounded-lg border border-linear-success/30">
         <svg
-          className="w-12 h-12 mx-auto text-green-500 mb-4"
+          className="w-12 h-12 mx-auto text-linear-success mb-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -206,8 +206,8 @@ export function RecommendationsPanel({
             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <h3 className="text-lg font-medium text-green-800">Platforma funcționează optim</h3>
-        <p className="text-sm text-green-600 mt-1">
+        <h3 className="text-lg font-medium text-linear-success">Platforma funcționează optim</h3>
+        <p className="text-sm text-linear-success mt-1">
           Nu există recomandări de îmbunătățire în acest moment.
         </p>
       </div>
@@ -219,8 +219,8 @@ export function RecommendationsPanel({
       {/* Header with summary */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Recomandări de îmbunătățire</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="text-lg font-semibold text-linear-text-primary">Recomandări de îmbunătățire</h3>
+          <p className="text-sm text-linear-text-tertiary">
             {recommendations.length} recomandări bazate pe analiza platformei
           </p>
         </div>
@@ -228,7 +228,7 @@ export function RecommendationsPanel({
           <span className="text-2xl font-bold text-violet-600">
             {recommendations.filter((r) => r.priority === 'high').length}
           </span>
-          <span className="text-sm text-gray-500 ml-1">prioritare</span>
+          <span className="text-sm text-linear-text-tertiary ml-1">prioritare</span>
         </div>
       </div>
 
@@ -240,8 +240,8 @@ export function RecommendationsPanel({
           onClick={() => setFilter('all')}
           className={`px-4 py-2 text-sm rounded-lg transition-colors ${
             filter === 'all'
-              ? 'bg-violet-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-linear-accent text-white'
+              : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
           }`}
         >
           Toate ({categoryCounts.all})
@@ -259,8 +259,8 @@ export function RecommendationsPanel({
               onClick={() => setFilter(category)}
               className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${
                 filter === category
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-linear-accent text-white'
+                  : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
               }`}
             >
               {config.label} ({count})
@@ -278,14 +278,14 @@ export function RecommendationsPanel({
           const categoryConfig = CATEGORY_CONFIG[recommendation.category] ?? {
             label: recommendation.category ?? 'General',
             icon: null,
-            bgColor: 'bg-gray-50',
-            textColor: 'text-gray-700',
-            borderColor: 'border-gray-200',
+            bgColor: 'bg-linear-bg-tertiary',
+            textColor: 'text-linear-text-secondary',
+            borderColor: 'border-linear-border-subtle',
           };
           const priorityConfig = PRIORITY_CONFIG[recommendation.priority] ?? {
             label: recommendation.priority ?? 'Nedefinit',
-            bgColor: 'bg-gray-100',
-            textColor: 'text-gray-700',
+            bgColor: 'bg-linear-bg-tertiary',
+            textColor: 'text-linear-text-secondary',
             order: 999,
           };
 
@@ -293,14 +293,14 @@ export function RecommendationsPanel({
             <div
               key={originalIndex}
               role="listitem"
-              className={`bg-white rounded-lg border overflow-hidden transition-opacity ${
+              className={`bg-linear-bg-secondary rounded-lg border overflow-hidden transition-opacity ${
                 isAddressed ? 'opacity-60' : ''
               } ${categoryConfig.borderColor}`}
             >
               {/* Recommendation Header */}
               <div
-                className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  isAddressed ? 'bg-gray-50' : ''
+                className={`p-4 cursor-pointer hover:bg-linear-bg-hover transition-colors ${
+                  isAddressed ? 'bg-linear-bg-tertiary' : ''
                 }`}
                 onClick={() => toggleExpand(originalIndex)}
                 role="button"
@@ -338,7 +338,7 @@ export function RecommendationsPanel({
                       </span>
                       {/* Addressed Badge */}
                       {isAddressed && (
-                        <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
+                        <span className="text-xs px-2 py-0.5 rounded bg-linear-success/15 text-linear-success">
                           Rezolvat
                         </span>
                       )}
@@ -346,14 +346,14 @@ export function RecommendationsPanel({
 
                     {/* Message */}
                     <p
-                      className={`text-sm ${isAddressed ? 'text-gray-500 line-through' : 'text-gray-900'}`}
+                      className={`text-sm ${isAddressed ? 'text-linear-text-tertiary line-through' : 'text-linear-text-primary'}`}
                     >
                       {recommendation.message}
                     </p>
 
                     {/* Action steps count hint */}
                     {(recommendation.actionableSteps?.length ?? 0) > 0 && !isExpanded && (
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-linear-text-muted mt-1">
                         {recommendation.actionableSteps.length} pași de acțiune
                       </p>
                     )}
@@ -361,7 +361,7 @@ export function RecommendationsPanel({
 
                   {/* Expand Icon */}
                   <button
-                    className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                    className="flex-shrink-0 text-linear-text-muted hover:text-linear-text-secondary"
                     aria-label={isExpanded ? 'Restrânge' : 'Extinde'}
                   >
                     <svg
@@ -383,28 +383,28 @@ export function RecommendationsPanel({
 
               {/* Expanded Action Steps */}
               {isExpanded && (recommendation.actionableSteps?.length ?? 0) > 0 && (
-                <div className="border-t border-gray-200 p-4 bg-gray-50">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Pași de acțiune:</h4>
+                <div className="border-t border-linear-border-subtle p-4 bg-linear-bg-tertiary">
+                  <h4 className="text-sm font-medium text-linear-text-secondary mb-3">Pași de acțiune:</h4>
                   <ol className="space-y-2">
                     {recommendation.actionableSteps.map((step, stepIndex) => (
                       <li key={stepIndex} className="flex items-start gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-medium">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-linear-accent/10 text-linear-accent flex items-center justify-center text-xs font-medium">
                           {stepIndex + 1}
                         </span>
-                        <span className="text-sm text-gray-600">{step}</span>
+                        <span className="text-sm text-linear-text-secondary">{step}</span>
                       </li>
                     ))}
                   </ol>
 
                   {/* Mark as addressed action */}
                   {onMarkAsAddressed && !isAddressed && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="mt-4 pt-4 border-t border-linear-border-subtle">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onMarkAsAddressed(originalIndex);
                         }}
-                        className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        className="px-4 py-2 text-sm bg-linear-success text-white rounded-lg hover:bg-linear-success/90 transition-colors"
                       >
                         Marchează ca rezolvat
                       </button>
@@ -417,7 +417,7 @@ export function RecommendationsPanel({
         })}
 
         {sortedAndFilteredRecommendations.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-linear-text-tertiary">
             Nicio recomandare pentru categoria selectată
           </div>
         )}
@@ -425,7 +425,7 @@ export function RecommendationsPanel({
 
       {/* Accessibility: Summary Table */}
       <details className="mt-4">
-        <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
+        <summary className="text-sm text-linear-text-tertiary cursor-pointer hover:text-linear-text-secondary">
           Vizualizare tabel (accesibilitate)
         </summary>
         <table className="mt-2 w-full text-sm border-collapse">

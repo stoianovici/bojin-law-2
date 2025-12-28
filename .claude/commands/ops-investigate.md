@@ -11,6 +11,8 @@ This can be:
 - A symptom description (e.g., "documents not appearing")
 - An OPS issue ID (e.g., "OPS-024")
 
+**Platform context**: If investigating a UI issue, clarify whether it affects Mobile, Desktop, or Both. We have separate UI tracks.
+
 ---
 
 ## Phase 1: Quick Triage (60 seconds max)
@@ -144,11 +146,12 @@ Add to `docs/ops/operations-log.md`:
 ```markdown
 ### [OPS-XXX] {symptom as title}
 
-| Field        | Value            |
-| ------------ | ---------------- |
-| **Status**   | Root Cause Found |
-| **Priority** | {P1/P2/P3}       |
-| **Created**  | {date}           |
+| Field        | Value                 |
+| ------------ | --------------------- |
+| **Status**   | Root Cause Found      |
+| **Priority** | {P1/P2/P3}            |
+| **Platform** | {Mobile/Desktop/Both} |
+| **Created**  | {date}                |
 
 **Symptom**: {what user reported}
 

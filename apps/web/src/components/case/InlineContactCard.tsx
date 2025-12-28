@@ -75,19 +75,19 @@ const ROLE_LABELS: Record<CaseActorRole, string> = {
 };
 
 const ROLE_COLORS: Record<CaseActorRole, string> = {
-  Client: 'bg-blue-100 text-blue-800',
-  OpposingParty: 'bg-red-100 text-red-800',
-  OpposingCounsel: 'bg-orange-100 text-orange-800',
-  Witness: 'bg-green-100 text-green-800',
-  Expert: 'bg-purple-100 text-purple-800',
-  Intervenient: 'bg-cyan-100 text-cyan-800',
-  Mandatar: 'bg-indigo-100 text-indigo-800',
-  Court: 'bg-amber-100 text-amber-800',
-  Prosecutor: 'bg-rose-100 text-rose-800',
-  Bailiff: 'bg-slate-100 text-slate-800',
-  Notary: 'bg-emerald-100 text-emerald-800',
-  LegalRepresentative: 'bg-violet-100 text-violet-800',
-  Other: 'bg-gray-100 text-gray-800',
+  Client: 'bg-linear-accent/15 text-linear-accent',
+  OpposingParty: 'bg-linear-error/15 text-linear-error',
+  OpposingCounsel: 'bg-linear-warning/15 text-linear-warning',
+  Witness: 'bg-linear-success/15 text-linear-success',
+  Expert: 'bg-purple-500/15 text-purple-500',
+  Intervenient: 'bg-cyan-500/15 text-cyan-500',
+  Mandatar: 'bg-indigo-500/15 text-indigo-500',
+  Court: 'bg-linear-warning/15 text-linear-warning',
+  Prosecutor: 'bg-rose-500/15 text-rose-500',
+  Bailiff: 'bg-slate-500/15 text-slate-500',
+  Notary: 'bg-emerald-500/15 text-emerald-500',
+  LegalRepresentative: 'bg-violet-500/15 text-violet-500',
+  Other: 'bg-linear-bg-tertiary text-linear-text-secondary',
 };
 
 // ============================================================================
@@ -111,11 +111,11 @@ function DeleteConfirmDialog({
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fadeIn" />
-        <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md focus:outline-none">
-          <AlertDialog.Title className="text-lg font-semibold text-gray-900 mb-2">
+        <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-linear-bg-secondary rounded-lg shadow-xl p-6 w-full max-w-md focus:outline-none">
+          <AlertDialog.Title className="text-lg font-semibold text-linear-text-primary mb-2">
             Ștergere contact
           </AlertDialog.Title>
-          <AlertDialog.Description className="text-sm text-gray-600 mb-6">
+          <AlertDialog.Description className="text-sm text-linear-text-secondary mb-6">
             Sigur doriți să ștergeți <strong>{actorName}</strong>? Această acțiune nu poate fi
             anulată.
           </AlertDialog.Description>
@@ -123,7 +123,7 @@ function DeleteConfirmDialog({
           <div className="flex gap-3 justify-end">
             <AlertDialog.Cancel asChild>
               <button
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-linear-text-secondary bg-linear-bg-tertiary rounded-lg hover:bg-linear-bg-hover transition-colors"
                 disabled={loading}
               >
                 Anulează
@@ -132,7 +132,7 @@ function DeleteConfirmDialog({
             <AlertDialog.Action asChild>
               <button
                 onClick={onConfirm}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-white bg-linear-error rounded-lg hover:bg-linear-error/80 transition-colors disabled:opacity-50"
                 disabled={loading}
               >
                 {loading ? 'Se șterge...' : 'Șterge'}
@@ -203,9 +203,9 @@ export function InlineContactCard({
   const getRoleColor = useMemo(() => {
     return (role: CaseActorRole, customCode: string | null) => {
       // Custom roles get neutral styling
-      if (customCode) return 'bg-gray-100 text-gray-800';
+      if (customCode) return 'bg-linear-bg-tertiary text-linear-text-secondary';
       // Built-in roles use predefined colors
-      return ROLE_COLORS[role] || 'bg-gray-100 text-gray-800';
+      return ROLE_COLORS[role] || 'bg-linear-bg-tertiary text-linear-text-secondary';
     };
   }, []);
 
@@ -300,7 +300,7 @@ export function InlineContactCard({
   if (!isEditMode && actor) {
     return (
       <>
-        <div className="border border-gray-200 rounded-lg p-3 bg-white hover:border-gray-300 transition-colors">
+        <div className="border border-linear-border-subtle rounded-lg p-3 bg-linear-bg-secondary hover:border-linear-border transition-colors">
           <div className="flex justify-between items-start gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -312,21 +312,21 @@ export function InlineContactCard({
                 >
                   {getRoleLabel(actor.role, actor.customRoleCode || null)}
                 </span>
-                <span className="font-medium text-gray-900 truncate">{actor.name}</span>
+                <span className="font-medium text-linear-text-primary truncate">{actor.name}</span>
               </div>
               {actor.email && (
-                <div className="text-sm text-gray-500 mt-1 truncate">
-                  <a href={`mailto:${actor.email}`} className="hover:text-blue-600">
+                <div className="text-sm text-linear-text-tertiary mt-1 truncate">
+                  <a href={`mailto:${actor.email}`} className="hover:text-linear-accent">
                     {actor.email}
                   </a>
                 </div>
               )}
               {actor.organization && (
-                <div className="text-sm text-gray-500 truncate">{actor.organization}</div>
+                <div className="text-sm text-linear-text-tertiary truncate">{actor.organization}</div>
               )}
               {actor.phone && (
-                <div className="text-sm text-gray-500 truncate">
-                  <a href={`tel:${actor.phone}`} className="hover:text-blue-600">
+                <div className="text-sm text-linear-text-tertiary truncate">
+                  <a href={`tel:${actor.phone}`} className="hover:text-linear-accent">
                     {actor.phone}
                   </a>
                 </div>
@@ -336,14 +336,14 @@ export function InlineContactCard({
               <div className="flex gap-1 flex-shrink-0">
                 <button
                   onClick={onEdit}
-                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  className="p-1.5 text-linear-text-muted hover:text-linear-accent hover:bg-linear-accent/10 rounded transition-colors"
                   title="Editează"
                 >
                   <Pencil1Icon className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setDeleteDialogOpen(true)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                  className="p-1.5 text-linear-text-muted hover:text-linear-error hover:bg-linear-error/10 rounded transition-colors"
                   title="Șterge"
                 >
                   <TrashIcon className="h-4 w-4" />
@@ -369,15 +369,15 @@ export function InlineContactCard({
   // -------------------------------------------------------------------------
 
   return (
-    <div className="border-2 border-blue-500 rounded-lg p-3 bg-blue-50/30 space-y-3">
+    <div className="border-2 border-linear-accent rounded-lg p-3 bg-linear-accent/10 space-y-3">
       {/* Role Selection (only for new actors) - OPS-223: Dynamic actor types */}
       {isNew && (
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Rol</label>
+          <label className="block text-xs font-medium text-linear-text-secondary mb-1">Rol</label>
           <select
             value={form.customRoleCode || form.role}
             onChange={(e) => handleRoleChange(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            className="w-full px-3 py-1.5 text-sm border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent bg-linear-bg-secondary"
             disabled={loading}
           >
             {roleOptions.map((opt) => (
@@ -391,15 +391,15 @@ export function InlineContactCard({
 
       {/* Name */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          Nume <span className="text-red-500">*</span>
+        <label className="block text-xs font-medium text-linear-text-secondary mb-1">
+          Nume <span className="text-linear-error">*</span>
         </label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           placeholder="Nume complet"
-          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-1.5 text-sm border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
           disabled={loading}
           autoFocus
         />
@@ -407,39 +407,39 @@ export function InlineContactCard({
 
       {/* Email */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+        <label className="block text-xs font-medium text-linear-text-secondary mb-1">Email</label>
         <input
           type="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           placeholder="email@exemplu.ro"
-          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-1.5 text-sm border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
           disabled={loading}
         />
       </div>
 
       {/* Organization */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Organizație</label>
+        <label className="block text-xs font-medium text-linear-text-secondary mb-1">Organizație</label>
         <input
           type="text"
           value={form.organization}
           onChange={(e) => setForm({ ...form, organization: e.target.value })}
           placeholder="Numele firmei sau organizației"
-          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-1.5 text-sm border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
           disabled={loading}
         />
       </div>
 
       {/* Phone */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Telefon</label>
+        <label className="block text-xs font-medium text-linear-text-secondary mb-1">Telefon</label>
         <input
           type="tel"
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
           placeholder="+40 721 123 456"
-          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-1.5 text-sm border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
           disabled={loading}
         />
       </div>
@@ -449,7 +449,7 @@ export function InlineContactCard({
         <button
           type="button"
           onClick={handleCancel}
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-linear-text-secondary hover:text-linear-text-primary hover:bg-linear-bg-hover rounded-lg transition-colors"
           disabled={loading}
         >
           <Cross2Icon className="h-3.5 w-3.5" />
@@ -458,7 +458,7 @@ export function InlineContactCard({
         <button
           type="button"
           onClick={handleSave}
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-linear-accent hover:bg-linear-accent-hover rounded-lg transition-colors disabled:opacity-50"
           disabled={loading || !form.name.trim()}
         >
           <CheckIcon className="h-3.5 w-3.5" />

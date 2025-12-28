@@ -113,22 +113,22 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
 
   return (
     <div
-      className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg"
+      className="bg-linear-error/10 border-l-4 border-linear-error p-4 rounded-r-lg"
       role="alert"
       aria-live="assertive"
       onKeyDown={handleKeyDown}
     >
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className="flex-shrink-0 text-red-500">{getRiskIcon(risk.riskType)}</div>
+        <div className="flex-shrink-0 text-linear-error">{getRiskIcon(risk.riskType)}</div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center gap-2">
-            <span className="font-medium text-red-800">{getRiskTypeLabel(risk.riskType)}</span>
+            <span className="font-medium text-linear-error">{getRiskTypeLabel(risk.riskType)}</span>
             <span
-              className="px-2 py-0.5 rounded text-xs font-medium bg-red-200 text-red-900"
+              className="px-2 py-0.5 rounded text-xs font-medium bg-linear-error/20 text-linear-error"
               aria-label="Severity: High"
             >
               High Severity
@@ -136,7 +136,7 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
           </div>
 
           {/* Description */}
-          <p className="text-sm text-red-700 mt-1">{risk.description}</p>
+          <p className="text-sm text-linear-error mt-1">{risk.description}</p>
 
           {/* Expandable evidence */}
           {risk.evidence && (
@@ -144,7 +144,7 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
               <button
                 ref={expandButtonRef}
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="text-xs text-red-600 hover:text-red-800 flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+                className="text-xs text-linear-error hover:text-linear-error/80 flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-linear-error rounded"
                 aria-expanded={isExpanded}
                 aria-controls={`evidence-${risk.id}`}
               >
@@ -163,7 +163,7 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
               {isExpanded && (
                 <div
                   id={`evidence-${risk.id}`}
-                  className="mt-2 p-2 bg-red-100 rounded text-xs text-red-800"
+                  className="mt-2 p-2 bg-linear-error/15 rounded text-xs text-linear-error"
                 >
                   <p className="font-medium mb-1">Evidence:</p>
                   <p className="italic">&ldquo;{risk.evidence}&rdquo;</p>
@@ -183,7 +183,7 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
             {onViewEmail && (
               <button
                 onClick={onViewEmail}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-white border border-red-300 rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-linear-error bg-linear-bg-secondary border border-linear-error/30 rounded hover:bg-linear-error/10 focus:outline-none focus:ring-2 focus:ring-linear-error focus:ring-offset-1"
                 aria-label="View source email"
               >
                 <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -196,7 +196,7 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
                 ref={resolveButtonRef}
                 onClick={() => setShowResolveForm(true)}
                 disabled={isResolving}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-linear-success rounded hover:bg-linear-success/90 focus:outline-none focus:ring-2 focus:ring-linear-success focus:ring-offset-1 disabled:opacity-50"
                 aria-label="Resolve this risk"
               >
                 <CheckCircle className="h-3 w-3" aria-hidden="true" />
@@ -209,19 +209,19 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
                   value={resolutionNote}
                   onChange={(e) => setResolutionNote(e.target.value)}
                   placeholder="Add resolution note (optional)"
-                  className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-2 py-1 text-xs bg-linear-bg-secondary border border-linear-border rounded text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-success"
                   aria-label="Resolution note"
                 />
                 <button
                   onClick={handleResolve}
                   disabled={isResolving}
-                  className="px-2 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+                  className="px-2 py-1 text-xs font-medium text-white bg-linear-success rounded hover:bg-linear-success/90 focus:outline-none focus:ring-2 focus:ring-linear-success disabled:opacity-50"
                 >
                   {isResolving ? 'Saving...' : 'Confirm'}
                 </button>
                 <button
                   onClick={() => setShowResolveForm(false)}
-                  className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  className="px-2 py-1 text-xs text-linear-text-secondary hover:text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent"
                 >
                   Cancel
                 </button>
@@ -233,7 +233,7 @@ function RiskAlert({ risk, onResolve, onViewEmail, onDismiss, isResolving }: Ris
         {/* Dismiss button */}
         <button
           onClick={onDismiss}
-          className="flex-shrink-0 p-1 text-red-400 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
+          className="flex-shrink-0 p-1 text-linear-error/60 hover:text-linear-error focus:outline-none focus:ring-2 focus:ring-linear-error rounded"
           aria-label={`Dismiss risk alert: ${risk.description}`}
         >
           <X className="h-4 w-4" aria-hidden="true" />

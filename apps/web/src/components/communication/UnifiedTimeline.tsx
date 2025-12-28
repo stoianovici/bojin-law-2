@@ -93,11 +93,11 @@ export function UnifiedTimeline({
 
   if (error) {
     return (
-      <div className={`rounded-lg border border-red-200 bg-red-50 p-4 ${className}`}>
-        <p className="text-sm text-red-600">Eroare la încărcarea cronologiei: {error.message}</p>
+      <div className={`rounded-lg border border-linear-error/30 bg-linear-error/10 p-4 ${className}`}>
+        <p className="text-sm text-linear-error">Eroare la încărcarea cronologiei: {error.message}</p>
         <button
           onClick={() => refetch()}
-          className="mt-2 text-sm text-red-700 underline hover:no-underline"
+          className="mt-2 text-sm text-linear-error underline hover:no-underline"
         >
           Încearcă din nou
         </button>
@@ -108,10 +108,10 @@ export function UnifiedTimeline({
   return (
     <div className={`flex flex-col ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-linear-border-subtle pb-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Cronologie Comunicări</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-linear-text-primary">Cronologie Comunicări</h2>
+          <p className="text-sm text-linear-text-tertiary">
             {totalCount} {totalCount === 1 ? 'înregistrare' : 'înregistrări'}
             {activeFilterCount > 0 && ` (filtrat)`}
           </p>
@@ -142,8 +142,8 @@ export function UnifiedTimeline({
         className="mt-4 space-y-4"
       >
         {entries.length === 0 && !loading ? (
-          <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-            <p className="text-sm text-gray-500">
+          <div className="rounded-lg border border-dashed border-linear-border p-8 text-center">
+            <p className="text-sm text-linear-text-tertiary">
               {activeFilterCount > 0
                 ? 'Nicio comunicare nu corespunde filtrelor'
                 : 'Nu există comunicări încă'}
@@ -151,7 +151,7 @@ export function UnifiedTimeline({
             {activeFilterCount > 0 && (
               <button
                 onClick={handleClearFilters}
-                className="mt-2 text-sm text-blue-600 hover:underline"
+                className="mt-2 text-sm text-linear-accent hover:underline"
               >
                 Șterge filtrele
               </button>
@@ -177,14 +177,14 @@ export function UnifiedTimeline({
         {/* Loading state */}
         {loading && (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-            <span className="ml-2 text-sm text-gray-500">Se încarcă...</span>
+            <Loader2 className="h-6 w-6 animate-spin text-linear-text-muted" />
+            <span className="ml-2 text-sm text-linear-text-tertiary">Se încarcă...</span>
           </div>
         )}
 
         {/* End of list */}
         {!hasMore && entries.length > 0 && !loading && (
-          <p className="py-4 text-center text-sm text-gray-400">Sfârșitul cronologiei</p>
+          <p className="py-4 text-center text-sm text-linear-text-muted">Sfârșitul cronologiei</p>
         )}
       </div>
     </div>
@@ -198,13 +198,13 @@ export function UnifiedTimelineSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="animate-pulse rounded-lg border border-gray-200 p-4">
+        <div key={i} className="animate-pulse rounded-lg border border-linear-border-subtle p-4">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-full bg-gray-200" />
+            <div className="h-10 w-10 rounded-full bg-linear-bg-hover" />
             <div className="flex-1">
-              <div className="h-4 w-1/4 rounded bg-gray-200" />
-              <div className="mt-2 h-3 w-1/3 rounded bg-gray-200" />
-              <div className="mt-3 h-16 w-full rounded bg-gray-200" />
+              <div className="h-4 w-1/4 rounded bg-linear-bg-hover" />
+              <div className="mt-2 h-3 w-1/3 rounded bg-linear-bg-hover" />
+              <div className="mt-3 h-16 w-full rounded bg-linear-bg-hover" />
             </div>
           </div>
         </div>

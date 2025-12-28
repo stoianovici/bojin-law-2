@@ -66,13 +66,13 @@ function formatCost(cost: number | null): string {
 function getStatusIcon(status: string | null) {
   switch (status) {
     case 'completed':
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      return <CheckCircle className="h-4 w-4 text-linear-success" />;
     case 'partial':
-      return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      return <AlertTriangle className="h-4 w-4 text-linear-warning" />;
     case 'failed':
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      return <XCircle className="h-4 w-4 text-linear-error" />;
     case 'running':
-      return <Clock className="h-4 w-4 text-blue-500 animate-spin" />;
+      return <Clock className="h-4 w-4 text-linear-accent animate-spin" />;
     default:
       return null;
   }
@@ -112,7 +112,7 @@ export function FeatureCard({
   const isBatch = feature.featureType === 'batch';
 
   return (
-    <div className="p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
+    <div className="p-4 bg-linear-bg-secondary border border-linear-border-subtle rounded-lg hover:border-linear-border transition-colors">
       {/* Main row: Feature info + controls */}
       <div className="flex items-center justify-between">
         {/* Left section: Status and info */}
@@ -120,14 +120,14 @@ export function FeatureCard({
           {/* Status indicator */}
           <div
             className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-              feature.enabled ? 'bg-green-500' : 'bg-gray-300'
+              feature.enabled ? 'bg-linear-success' : 'bg-linear-text-muted'
             }`}
           />
 
           {/* Feature info */}
           <div className="min-w-0">
-            <h3 className="font-medium text-gray-900">{feature.featureName}</h3>
-            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+            <h3 className="font-medium text-linear-text-primary">{feature.featureName}</h3>
+            <div className="flex items-center gap-2 mt-1 text-sm text-linear-text-tertiary">
               {isBatch && feature.lastRunAt && (
                 <>
                   <span>Ultima rulare: {formatDate(feature.lastRunAt)}</span>
@@ -148,7 +148,7 @@ export function FeatureCard({
         {/* Right section: Cost, toggle, run now */}
         <div className="flex items-center gap-4">
           {/* Daily cost estimate */}
-          <span className="text-sm text-gray-500 tabular-nums">
+          <span className="text-sm text-linear-text-tertiary tabular-nums">
             ~{formatCost(feature.dailyCostEstimate)}/zi
           </span>
 
@@ -177,8 +177,8 @@ export function FeatureCard({
       </div>
 
       {/* Model selector row */}
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-sm text-gray-500">Model Claude:</span>
+      <div className="mt-3 pt-3 border-t border-linear-border-subtle/50 flex items-center justify-between">
+        <span className="text-sm text-linear-text-tertiary">Model Claude:</span>
         <ModelSelector
           models={models}
           value={feature.model}

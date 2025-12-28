@@ -24,7 +24,7 @@ function highlightMatch(text: string, query: string): JSX.Element {
     <>
       {parts.map((part, index) =>
         regex.test(part) ? (
-          <mark key={index} className="bg-yellow-200 text-gray-900 font-semibold">
+          <mark key={index} className="bg-linear-warning/30 text-linear-text-primary font-semibold">
             {part}
           </mark>
         ) : (
@@ -80,10 +80,10 @@ export function CaseSearchBar() {
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           placeholder="Căutare dosare (min 3 caractere)..."
-          className="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 pl-10 pr-4 bg-linear-bg-secondary border border-linear-border rounded-md text-linear-text-primary placeholder-linear-text-muted focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
         />
         <svg
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+          className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-linear-text-muted"
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -97,11 +97,11 @@ export function CaseSearchBar() {
 
       {/* Search Results Dropdown */}
       {isOpen && query.length >= 3 && (
-        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-10 mt-1 w-full bg-linear-bg-elevated border border-linear-border-subtle rounded-md shadow-lg max-h-96 overflow-y-auto">
           {loading ? (
-            <div className="px-4 py-3 text-sm text-gray-500">Se caută...</div>
+            <div className="px-4 py-3 text-sm text-linear-text-tertiary">Se caută...</div>
           ) : results.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-gray-500">
+            <div className="px-4 py-3 text-sm text-linear-text-tertiary">
               Nu s-au găsit dosare pentru &quot;{query}&quot;
             </div>
           ) : (
@@ -110,15 +110,15 @@ export function CaseSearchBar() {
                 <li key={caseItem.id}>
                   <button
                     onClick={() => handleResultClick(caseItem.id)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors"
+                    className="w-full px-4 py-3 text-left hover:bg-linear-bg-hover focus:bg-linear-bg-hover focus:outline-none transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-linear-text-primary">
                           {highlightMatch(caseItem.caseNumber, query)} -{' '}
                           {highlightMatch(caseItem.title, query)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-linear-text-tertiary">
                           Client: {highlightMatch(caseItem.client.name, query)}
                         </div>
                       </div>
@@ -126,12 +126,12 @@ export function CaseSearchBar() {
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                           ${
                             caseItem.status === 'Active'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-linear-success/15 text-linear-success'
                               : caseItem.status === 'OnHold'
-                                ? 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-linear-warning/15 text-linear-warning'
                                 : caseItem.status === 'Closed'
-                                  ? 'bg-gray-100 text-gray-800'
-                                  : 'bg-slate-100 text-slate-800'
+                                  ? 'bg-linear-bg-tertiary text-linear-text-primary'
+                                  : 'bg-linear-bg-tertiary text-linear-text-muted'
                           }`}
                       >
                         {caseItem.status}
@@ -147,7 +147,7 @@ export function CaseSearchBar() {
 
       {/* Hint text */}
       {query.length > 0 && query.length < 3 && (
-        <div className="absolute mt-1 text-xs text-gray-500">
+        <div className="absolute mt-1 text-xs text-linear-text-tertiary">
           Introduceți cel puțin 3 caractere pentru căutare
         </div>
       )}

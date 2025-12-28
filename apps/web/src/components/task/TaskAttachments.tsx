@@ -49,11 +49,11 @@ export function TaskAttachments({ taskId, currentUserId, canEdit = true }: TaskA
     return (
       <div className="animate-pulse space-y-3">
         {[1, 2].map((i) => (
-          <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-            <div className="w-10 h-10 bg-gray-200 rounded" />
+          <div key={i} className="flex items-center gap-3 p-3 bg-linear-bg-tertiary rounded-lg">
+            <div className="w-10 h-10 bg-linear-bg-hover rounded" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-1/2" />
-              <div className="h-3 bg-gray-200 rounded w-1/3" />
+              <div className="h-4 bg-linear-bg-hover rounded w-1/2" />
+              <div className="h-3 bg-linear-bg-hover rounded w-1/3" />
             </div>
           </div>
         ))}
@@ -62,17 +62,17 @@ export function TaskAttachments({ taskId, currentUserId, canEdit = true }: TaskA
   }
 
   if (error) {
-    return <div className="text-red-600 text-sm">Eroare la încărcarea atașamentelor</div>;
+    return <div className="text-linear-error text-sm">Eroare la încărcarea atașamentelor</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">Atașamente ({attachments.length})</h3>
+        <h3 className="font-semibold text-linear-text-primary">Atașamente ({attachments.length})</h3>
         {canEdit && (
           <button
             onClick={() => setShowUploadModal(true)}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
+            className="px-3 py-1.5 text-sm bg-linear-accent text-white rounded-md hover:bg-linear-accent-hover flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -88,9 +88,9 @@ export function TaskAttachments({ taskId, currentUserId, canEdit = true }: TaskA
       </div>
 
       {attachments.length === 0 ? (
-        <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+        <div className="text-center py-8 border-2 border-dashed border-linear-border-subtle rounded-lg">
           <svg
-            className="w-12 h-12 mx-auto text-gray-400 mb-3"
+            className="w-12 h-12 mx-auto text-linear-text-muted mb-3"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -102,11 +102,11 @@ export function TaskAttachments({ taskId, currentUserId, canEdit = true }: TaskA
               d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
             />
           </svg>
-          <p className="text-gray-500 text-sm">Fără atașamente</p>
+          <p className="text-linear-text-tertiary text-sm">Fără atașamente</p>
           {canEdit && (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+              className="mt-2 text-sm text-linear-accent hover:text-linear-accent-hover"
             >
               Adaugă primul atașament
             </button>
@@ -166,9 +166,9 @@ function AttachmentItem({
   const isOwner = attachment.uploadedBy === currentUserId;
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
+    <div className="flex items-center gap-3 p-3 bg-linear-bg-tertiary rounded-lg hover:bg-linear-bg-hover transition-colors group">
       {/* File icon */}
-      <div className="flex-shrink-0 w-10 h-10 bg-white rounded border border-gray-200 flex items-center justify-center text-xl">
+      <div className="flex-shrink-0 w-10 h-10 bg-linear-bg-secondary rounded border border-linear-border-subtle flex items-center justify-center text-xl">
         {icon}
       </div>
 
@@ -179,17 +179,17 @@ function AttachmentItem({
             href={attachment.storageUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate"
+            className="text-sm font-medium text-linear-text-primary hover:text-linear-accent truncate"
           >
             {attachment.fileName}
           </a>
           {attachment.version > 1 && (
-            <button onClick={onViewVersions} className="text-xs text-gray-500 hover:text-blue-600">
+            <button onClick={onViewVersions} className="text-xs text-linear-text-tertiary hover:text-linear-accent">
               v{attachment.version}
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-linear-text-tertiary">
           <span>{formatFileSize(attachment.fileSize)}</span>
           <span>•</span>
           <span>
@@ -210,7 +210,7 @@ function AttachmentItem({
         <a
           href={attachment.storageUrl}
           download={attachment.fileName}
-          className="p-1.5 text-gray-500 hover:text-blue-600 rounded"
+          className="p-1.5 text-linear-text-tertiary hover:text-linear-accent rounded"
           title="Descarcă"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,7 +225,7 @@ function AttachmentItem({
         {canEdit && isOwner && (
           <button
             onClick={onDelete}
-            className="p-1.5 text-gray-500 hover:text-red-600 rounded"
+            className="p-1.5 text-linear-text-tertiary hover:text-linear-error rounded"
             title="Șterge"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,10 +254,10 @@ function VersionHistoryModal({ attachment, onClose }: VersionHistoryModalProps) 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div className="bg-linear-bg-secondary rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Istoric Versiuni</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h3 className="text-lg font-semibold text-linear-text-primary">Istoric Versiuni</h3>
+          <button onClick={onClose} className="text-linear-text-muted hover:text-linear-text-secondary">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -270,12 +270,12 @@ function VersionHistoryModal({ attachment, onClose }: VersionHistoryModalProps) 
         </div>
 
         <div className="space-y-3">
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="p-3 bg-linear-accent/10 border border-linear-accent/30 rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Versiunea {attachment.version}</span>
-              <span className="text-xs text-blue-600">Curentă</span>
+              <span className="text-sm font-medium text-linear-text-primary">Versiunea {attachment.version}</span>
+              <span className="text-xs text-linear-accent">Curentă</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-linear-text-tertiary mt-1">
               Încărcat de {attachment.uploader.firstName} {attachment.uploader.lastName}
             </p>
           </div>
@@ -284,7 +284,7 @@ function VersionHistoryModal({ attachment, onClose }: VersionHistoryModalProps) 
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+            className="px-4 py-2 text-sm text-linear-text-secondary hover:bg-linear-bg-hover rounded-md"
           >
             Închide
           </button>

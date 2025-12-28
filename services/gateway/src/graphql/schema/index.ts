@@ -150,6 +150,8 @@ export function loadSchema(): string {
   const aiOpsSchema = readFileSync(join(schemaDir, 'ai-ops.graphql'), 'utf-8');
   // OPS-272: Team Activity View Mode
   const teamActivitySchema = readFileSync(join(schemaDir, 'team-activity.graphql'), 'utf-8');
+  // OPS-298: Mobile Home Brief Feed
+  const briefSchema = readFileSync(join(schemaDir, 'brief.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -204,6 +206,7 @@ export function loadSchema(): string {
     clientSchema,
     aiOpsSchema,
     teamActivitySchema,
+    briefSchema,
   ].join('\n\n');
 }
 

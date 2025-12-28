@@ -80,42 +80,42 @@ export function OutlookFolderEmailItem({
       <button
         onClick={onClick}
         className={clsx(
-          'w-full px-3 py-2.5 text-left transition-colors border-b border-gray-100',
+          'w-full px-3 py-2.5 text-left transition-colors border-b border-linear-border-subtle',
           isSelected
-            ? 'bg-blue-50 border-l-2 border-blue-500'
-            : 'hover:bg-gray-50 border-l-2 border-transparent'
+            ? 'bg-linear-accent/10 border-l-2 border-linear-accent'
+            : 'hover:bg-linear-bg-tertiary border-l-2 border-transparent'
         )}
       >
         {/* Sender name - prominent */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {!email.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />}
+            {!email.isRead && <span className="w-2 h-2 bg-linear-accent rounded-full flex-shrink-0" />}
             <p
               className={clsx(
                 'text-sm truncate',
-                email.isRead ? 'text-gray-700' : 'font-semibold text-gray-900'
+                email.isRead ? 'text-linear-text-secondary' : 'font-semibold text-linear-text-primary'
               )}
             >
               {senderName}
             </p>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {email.hasAttachments && <Paperclip className="h-3 w-3 text-gray-400" />}
-            <span className="text-xs text-gray-400">{formattedDate}</span>
+            {email.hasAttachments && <Paperclip className="h-3 w-3 text-linear-text-muted" />}
+            <span className="text-xs text-linear-text-muted">{formattedDate}</span>
           </div>
         </div>
 
         {/* Email address - only if we have a name */}
-        {hasName && <p className="text-xs text-gray-500 truncate mt-0.5 ml-4">{senderEmail}</p>}
+        {hasName && <p className="text-xs text-linear-text-tertiary truncate mt-0.5 ml-4">{senderEmail}</p>}
 
         {/* Subject - smaller, quoted style */}
-        <p className="text-xs text-gray-600 italic truncate mt-1">
+        <p className="text-xs text-linear-text-tertiary italic truncate mt-1">
           &ldquo;{email.subject || 'Fără subiect'}&rdquo;
         </p>
 
         {/* Body preview - raw content, no AI cleaning */}
         {email.bodyPreview && (
-          <p className="text-xs text-gray-400 truncate mt-1 line-clamp-2">{email.bodyPreview}</p>
+          <p className="text-xs text-linear-text-muted truncate mt-1 line-clamp-2">{email.bodyPreview}</p>
         )}
       </button>
 
@@ -125,21 +125,21 @@ export function OutlookFolderEmailItem({
           onClick={handleMenuClick}
           onBlur={handleBlur}
           className={clsx(
-            'absolute right-2 top-2 p-1 rounded hover:bg-gray-200 transition-opacity',
+            'absolute right-2 top-2 p-1 rounded hover:bg-linear-bg-hover transition-opacity',
             showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           )}
           aria-label="Opțiuni"
         >
-          <MoreVertical className="h-4 w-4 text-gray-500" />
+          <MoreVertical className="h-4 w-4 text-linear-text-tertiary" />
         </button>
       )}
 
       {/* Dropdown menu */}
       {showMenu && (
-        <div className="absolute right-2 top-8 z-20 bg-white border border-gray-200 rounded-md shadow-lg py-1 min-w-[160px]">
+        <div className="absolute right-2 top-8 z-20 bg-linear-bg-secondary border border-linear-border-subtle rounded-md shadow-lg py-1 min-w-[160px]">
           <button
             onClick={handleAssignClick}
-            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            className="w-full px-3 py-2 text-left text-sm text-linear-text-secondary hover:bg-linear-bg-tertiary flex items-center gap-2"
           >
             <FolderPlus className="h-4 w-4" />
             Atribuie la dosar

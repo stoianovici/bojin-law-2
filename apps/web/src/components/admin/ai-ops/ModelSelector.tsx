@@ -37,13 +37,13 @@ function formatCost(costPerMillion: number): string {
 function getCategoryColor(category: string): string {
   switch (category) {
     case 'haiku':
-      return 'text-green-600';
+      return 'text-linear-success';
     case 'sonnet':
-      return 'text-blue-600';
+      return 'text-linear-accent';
     case 'opus':
       return 'text-purple-600';
     default:
-      return 'text-gray-600';
+      return 'text-linear-text-secondary';
   }
 }
 
@@ -92,34 +92,34 @@ export function ModelSelector({ models, value, onChange, disabled = false }: Mod
               <span className={getCategoryColor(selectedModel?.category || '')}>
                 {getCategoryLabel(selectedModel?.category || '')}
               </span>
-              <span className="text-gray-500">•</span>
+              <span className="text-linear-text-tertiary">•</span>
               <span>{selectedModel?.name}</span>
             </span>
           ) : (
-            <span className="text-gray-500">Implicit ({defaultModel?.name || 'Sonnet 4'})</span>
+            <span className="text-linear-text-tertiary">Implicit ({defaultModel?.name || 'Sonnet 4'})</span>
           )}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {/* Default option */}
         <SelectItem value="__default__" className="text-sm">
-          <span className="text-gray-500">Implicit ({defaultModel?.name || 'Sonnet 4'})</span>
+          <span className="text-linear-text-tertiary">Implicit ({defaultModel?.name || 'Sonnet 4'})</span>
         </SelectItem>
 
         {/* Separator */}
-        <div className="h-px bg-gray-200 my-1" />
+        <div className="h-px bg-linear-border-subtle my-1" />
 
         {/* Haiku models (cheap) */}
         {haikuModels.length > 0 && (
           <>
-            <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase">
+            <div className="px-2 py-1 text-xs font-medium text-linear-text-muted uppercase">
               Haiku (Rapid, Ieftin)
             </div>
             {haikuModels.map((model) => (
               <SelectItem key={model.id} value={model.id} className="text-sm">
                 <div className="flex items-center justify-between w-full gap-4">
                   <span>{model.name}</span>
-                  <span className="text-xs text-gray-400 tabular-nums">
+                  <span className="text-xs text-linear-text-muted tabular-nums">
                     {formatCost(model.inputCostPerMillion)} in /{' '}
                     {formatCost(model.outputCostPerMillion)} out
                   </span>
@@ -132,7 +132,7 @@ export function ModelSelector({ models, value, onChange, disabled = false }: Mod
         {/* Sonnet models (balanced) */}
         {sonnetModels.length > 0 && (
           <>
-            <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase mt-1">
+            <div className="px-2 py-1 text-xs font-medium text-linear-text-muted uppercase mt-1">
               Sonnet (Echilibrat)
             </div>
             {sonnetModels.map((model) => (
@@ -141,10 +141,10 @@ export function ModelSelector({ models, value, onChange, disabled = false }: Mod
                   <span>
                     {model.name}
                     {model.isDefault && (
-                      <span className="ml-2 text-xs text-blue-500">(implicit)</span>
+                      <span className="ml-2 text-xs text-linear-accent">(implicit)</span>
                     )}
                   </span>
-                  <span className="text-xs text-gray-400 tabular-nums">
+                  <span className="text-xs text-linear-text-muted tabular-nums">
                     {formatCost(model.inputCostPerMillion)} /{' '}
                     {formatCost(model.outputCostPerMillion)}
                   </span>
@@ -157,14 +157,14 @@ export function ModelSelector({ models, value, onChange, disabled = false }: Mod
         {/* Opus models (expensive) */}
         {opusModels.length > 0 && (
           <>
-            <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase mt-1">
+            <div className="px-2 py-1 text-xs font-medium text-linear-text-muted uppercase mt-1">
               Opus (Performant, Scump)
             </div>
             {opusModels.map((model) => (
               <SelectItem key={model.id} value={model.id} className="text-sm">
                 <div className="flex items-center justify-between w-full gap-4">
                   <span>{model.name}</span>
-                  <span className="text-xs text-gray-400 tabular-nums">
+                  <span className="text-xs text-linear-text-muted tabular-nums">
                     {formatCost(model.inputCostPerMillion)} /{' '}
                     {formatCost(model.outputCostPerMillion)}
                   </span>

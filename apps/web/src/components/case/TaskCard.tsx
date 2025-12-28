@@ -29,9 +29,9 @@ interface PriorityBadgeProps {
 
 function PriorityBadge({ priority }: PriorityBadgeProps) {
   const priorityConfig: Record<'High' | 'Medium' | 'Low', { label: string; className: string }> = {
-    High: { label: 'Înaltă', className: 'bg-red-100 text-red-800 border-red-200' },
-    Medium: { label: 'Medie', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    Low: { label: 'Scăzută', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+    High: { label: 'Înaltă', className: 'bg-linear-error/15 text-linear-error border-linear-error/30' },
+    Medium: { label: 'Medie', className: 'bg-linear-warning/15 text-linear-warning border-linear-warning/30' },
+    Low: { label: 'Scăzută', className: 'bg-linear-bg-tertiary text-linear-text-primary border-linear-border-subtle' },
   };
 
   const config = priorityConfig[priority];
@@ -61,12 +61,12 @@ function DueDateBadge({ dueDate }: DueDateBadgeProps) {
   const urgencyConfig = {
     className:
       daysUntil < 0
-        ? 'text-red-700 bg-red-50'
+        ? 'text-linear-error bg-linear-error/10'
         : daysUntil < 3
-          ? 'text-red-700 bg-red-50'
+          ? 'text-linear-error bg-linear-error/10'
           : daysUntil < 7
-            ? 'text-yellow-700 bg-yellow-50'
-            : 'text-blue-700 bg-blue-50',
+            ? 'text-linear-warning bg-linear-warning/10'
+            : 'text-linear-accent bg-linear-accent/10',
   };
 
   const label = daysUntil < 0 ? 'Întârziat' : format(dueDate, 'dd MMM', { locale: ro });
@@ -110,20 +110,20 @@ export function TaskCard({ task, assignee, onTaskClick, onMenuClick, className }
   return (
     <div
       className={clsx(
-        'bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer group',
+        'bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer group',
         className
       )}
       onClick={() => onTaskClick?.(task)}
     >
       {/* Header: Title and Menu */}
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="text-sm font-semibold text-gray-900 leading-snug flex-1">{task.title}</h4>
+        <h4 className="text-sm font-semibold text-linear-text-primary leading-snug flex-1">{task.title}</h4>
         <button
           onClick={(e) => {
             e.stopPropagation();
             onMenuClick?.(task);
           }}
-          className="flex-shrink-0 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="flex-shrink-0 p-1 rounded text-linear-text-muted hover:text-linear-text-secondary hover:bg-linear-bg-hover opacity-0 group-hover:opacity-100 transition-opacity"
           aria-label="Opțiuni sarcină"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +139,7 @@ export function TaskCard({ task, assignee, onTaskClick, onMenuClick, className }
 
       {/* Description */}
       {truncatedDescription && (
-        <p className="text-xs text-gray-600 mb-3 line-clamp-2">{truncatedDescription}</p>
+        <p className="text-xs text-linear-text-secondary mb-3 line-clamp-2">{truncatedDescription}</p>
       )}
 
       {/* Footer: Priority, Due Date, Assignee */}
@@ -155,7 +155,7 @@ export function TaskCard({ task, assignee, onTaskClick, onMenuClick, className }
             className="inline-flex h-6 w-6 rounded-full flex-shrink-0"
             title={`${assignee.firstName} ${assignee.lastName}`}
           >
-            <Avatar.Fallback className="flex h-full w-full items-center justify-center rounded-full bg-blue-600 text-white text-xs font-medium">
+            <Avatar.Fallback className="flex h-full w-full items-center justify-center rounded-full bg-linear-accent text-white text-xs font-medium">
               {initials}
             </Avatar.Fallback>
           </Avatar.Root>
@@ -163,8 +163,8 @@ export function TaskCard({ task, assignee, onTaskClick, onMenuClick, className }
       </div>
 
       {/* Drag hint tooltip (visual only) */}
-      <div className="mt-2 pt-2 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
-        <p className="text-xs text-gray-500 text-center">Trageți pentru a muta</p>
+      <div className="mt-2 pt-2 border-t border-linear-border-subtle opacity-0 group-hover:opacity-100 transition-opacity">
+        <p className="text-xs text-linear-text-tertiary text-center">Trageți pentru a muta</p>
       </div>
     </div>
   );

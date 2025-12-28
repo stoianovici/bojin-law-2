@@ -189,21 +189,21 @@ export function ConversationBubble({
       {/* Sender name + time header */}
       <div
         className={clsx(
-          'flex items-center gap-2 text-xs text-gray-500 mb-1',
+          'flex items-center gap-2 text-xs text-linear-text-tertiary mb-1',
           isSent ? 'justify-end' : 'justify-start'
         )}
       >
         {!isSent && (
           <>
             {/* Avatar for received messages */}
-            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
+            <div className="w-6 h-6 rounded-full bg-linear-bg-hover flex items-center justify-center text-xs font-medium text-linear-text-secondary">
               {(message.senderName || message.senderEmail || 'U').charAt(0).toUpperCase()}
             </div>
-            <span className="font-medium text-gray-700">{senderDisplay}</span>
+            <span className="font-medium text-linear-text-secondary">{senderDisplay}</span>
           </>
         )}
-        {isSent && <span className="font-medium text-blue-600">{senderDisplay}</span>}
-        <span className="text-gray-400">•</span>
+        {isSent && <span className="font-medium text-linear-accent">{senderDisplay}</span>}
+        <span className="text-linear-text-muted">•</span>
         <span>{formatMessageDate(message.sentDate)}</span>
       </div>
 
@@ -212,19 +212,19 @@ export function ConversationBubble({
         className={clsx(
           'rounded-2xl px-4 py-3 shadow-sm',
           isSent
-            ? 'bg-blue-500 text-white rounded-tr-sm'
-            : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
+            ? 'bg-linear-accent text-white rounded-tr-sm'
+            : 'bg-linear-bg-secondary border border-linear-border-subtle text-linear-text-primary rounded-tl-sm'
         )}
       >
         {/* Message content */}
         <div
           className={clsx(
             'text-sm whitespace-pre-wrap break-words',
-            isSent ? 'text-white' : 'text-gray-800'
+            isSent ? 'text-white' : 'text-linear-text-primary'
           )}
         >
           {content || (
-            <span className={clsx('italic', isSent ? 'text-blue-200' : 'text-gray-400')}>
+            <span className={clsx('italic', isSent ? 'text-linear-accent/60' : 'text-linear-text-muted')}>
               (Fără conținut)
             </span>
           )}
@@ -235,7 +235,7 @@ export function ConversationBubble({
           <div
             className={clsx(
               'mt-2 pt-2 flex flex-wrap gap-1.5',
-              isSent ? 'border-t border-blue-400/50' : 'border-t border-gray-100'
+              isSent ? 'border-t border-linear-accent/40' : 'border-t border-linear-border-subtle/50'
             )}
           >
             {attachments.map((att: Attachment) => (
@@ -246,8 +246,8 @@ export function ConversationBubble({
                   className={clsx(
                     'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full transition-colors',
                     isSent
-                      ? 'bg-blue-400/50 hover:bg-blue-400/70 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      ? 'bg-linear-accent/40 hover:bg-linear-accent/60 text-white'
+                      : 'bg-linear-bg-tertiary hover:bg-linear-bg-hover text-linear-text-secondary'
                   )}
                   title="Previzualizează"
                 >
@@ -263,7 +263,7 @@ export function ConversationBubble({
                     disabled={downloadingId === att.id}
                     className={clsx(
                       'p-1 rounded-full transition-colors',
-                      isSent ? 'hover:bg-blue-400/50 text-white' : 'hover:bg-gray-200 text-gray-500'
+                      isSent ? 'hover:bg-linear-accent/40 text-white' : 'hover:bg-linear-bg-hover text-linear-text-tertiary'
                     )}
                     title="Descarcă"
                   >

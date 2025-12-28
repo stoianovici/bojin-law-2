@@ -178,7 +178,7 @@ export function CreateTaskModal({
         <Dialog.Content
           className={clsx(
             'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
-            'bg-white rounded-xl shadow-2xl z-50',
+            'bg-linear-bg-secondary rounded-xl shadow-2xl z-50',
             'w-full max-w-md',
             'animate-in fade-in slide-in-from-bottom-4 duration-200',
             'focus:outline-none'
@@ -186,14 +186,14 @@ export function CreateTaskModal({
           onEscapeKeyDown={onClose}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <Dialog.Title className="text-lg font-semibold text-gray-900">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-linear-border-subtle/50">
+            <Dialog.Title className="text-lg font-semibold text-linear-text-primary">
               Sarcină Nouă
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 text-linear-text-muted hover:text-linear-text-secondary hover:bg-linear-bg-tertiary rounded-lg transition-colors"
                 aria-label="Închide"
               >
                 <X className="w-5 h-5" />
@@ -205,24 +205,24 @@ export function CreateTaskModal({
           <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
             {/* Case Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Dosar <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-1.5">
+                Dosar <span className="text-linear-error">*</span>
               </label>
               <CaseCombobox
                 value={form.caseId}
                 onChange={(caseId) => updateField('caseId', caseId)}
                 required
               />
-              {errors.caseId && <p className="mt-1 text-sm text-red-600">{errors.caseId}</p>}
+              {errors.caseId && <p className="mt-1 text-sm text-linear-error">{errors.caseId}</p>}
             </div>
 
             {/* Title */}
             <div>
               <label
                 htmlFor="task-title"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
+                className="block text-sm font-medium text-linear-text-secondary mb-1.5"
               >
-                Titlu <span className="text-red-500">*</span>
+                Titlu <span className="text-linear-error">*</span>
               </label>
               <input
                 id="task-title"
@@ -232,15 +232,15 @@ export function CreateTaskModal({
                 placeholder="Descrieți sarcina..."
                 className={clsx(
                   'w-full px-3 py-2.5 text-sm border rounded-lg',
-                  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                  'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent',
                   'transition-colors',
                   errors.title
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-linear-error/50 bg-linear-error/5'
+                    : 'border-linear-border-subtle hover:border-linear-border'
                 )}
                 disabled={loading}
               />
-              {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+              {errors.title && <p className="mt-1 text-sm text-linear-error">{errors.title}</p>}
             </div>
 
             {/* Due Date & Estimated Hours Row */}
@@ -249,12 +249,12 @@ export function CreateTaskModal({
               <div>
                 <label
                   htmlFor="task-due-date"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                  className="block text-sm font-medium text-linear-text-secondary mb-1.5"
                 >
-                  Termen <span className="text-red-500">*</span>
+                  Termen <span className="text-linear-error">*</span>
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-linear-text-muted" />
                   <input
                     id="task-due-date"
                     type="date"
@@ -262,28 +262,28 @@ export function CreateTaskModal({
                     onChange={(e) => updateField('dueDate', e.target.value)}
                     className={clsx(
                       'w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                      'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent',
                       'transition-colors',
                       errors.dueDate
-                        ? 'border-red-300 bg-red-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-linear-error/50 bg-linear-error/5'
+                        : 'border-linear-border-subtle hover:border-linear-border'
                     )}
                     disabled={loading}
                   />
                 </div>
-                {errors.dueDate && <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>}
+                {errors.dueDate && <p className="mt-1 text-sm text-linear-error">{errors.dueDate}</p>}
               </div>
 
               {/* Estimated Hours */}
               <div>
                 <label
                   htmlFor="task-hours"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                  className="block text-sm font-medium text-linear-text-secondary mb-1.5"
                 >
-                  Timp estimat <span className="text-red-500">*</span>
+                  Timp estimat <span className="text-linear-error">*</span>
                 </label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-linear-text-muted" />
                   <input
                     id="task-hours"
                     type="number"
@@ -294,20 +294,20 @@ export function CreateTaskModal({
                     placeholder="2"
                     className={clsx(
                       'w-full pl-9 pr-12 py-2.5 text-sm border rounded-lg',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                      'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent',
                       'transition-colors',
                       errors.estimatedHours
-                        ? 'border-red-300 bg-red-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-linear-error/50 bg-linear-error/5'
+                        : 'border-linear-border-subtle hover:border-linear-border'
                     )}
                     disabled={loading}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-linear-text-muted">
                     ore
                   </span>
                 </div>
                 {errors.estimatedHours && (
-                  <p className="mt-1 text-sm text-red-600">{errors.estimatedHours}</p>
+                  <p className="mt-1 text-sm text-linear-error">{errors.estimatedHours}</p>
                 )}
               </div>
             </div>
@@ -317,7 +317,7 @@ export function CreateTaskModal({
               <button
                 type="button"
                 onClick={() => setShowDescription(!showDescription)}
-                className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-linear-text-secondary hover:text-linear-text-primary transition-colors"
               >
                 {showDescription ? (
                   <ChevronUp className="w-4 h-4" />
@@ -336,8 +336,8 @@ export function CreateTaskModal({
                     rows={3}
                     className={clsx(
                       'w-full px-3 py-2.5 text-sm border rounded-lg',
-                      'border-gray-200 hover:border-gray-300',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                      'border-linear-border-subtle hover:border-linear-border',
+                      'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent',
                       'resize-none transition-colors'
                     )}
                     disabled={loading}
@@ -347,22 +347,22 @@ export function CreateTaskModal({
             </div>
 
             {/* Divider */}
-            <div className="border-t border-gray-100 pt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Sub-sarcini</h4>
+            <div className="border-t border-linear-border-subtle/50 pt-4">
+              <h4 className="text-sm font-medium text-linear-text-secondary mb-2">Sub-sarcini</h4>
               <SubtaskBuilder subtasks={subtasks} onChange={setSubtasks} disabled={loading} />
             </div>
           </form>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-linear-border-subtle/50 bg-linear-bg-tertiary rounded-b-xl">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
               className={clsx(
-                'px-4 py-2 text-sm font-medium text-gray-700',
-                'border border-gray-300 rounded-lg',
-                'hover:bg-gray-100 transition-colors',
+                'px-4 py-2 text-sm font-medium text-linear-text-secondary',
+                'border border-linear-border rounded-lg',
+                'hover:bg-linear-bg-hover transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
@@ -374,8 +374,8 @@ export function CreateTaskModal({
               disabled={loading}
               className={clsx(
                 'px-4 py-2 text-sm font-medium text-white',
-                'bg-blue-600 rounded-lg',
-                'hover:bg-blue-700 transition-colors',
+                'bg-linear-accent rounded-lg',
+                'hover:bg-linear-accent-hover transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 'flex items-center gap-2'
               )}

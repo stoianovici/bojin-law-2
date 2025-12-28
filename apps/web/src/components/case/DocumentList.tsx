@@ -25,18 +25,18 @@ export interface DocumentListProps {
  */
 function StatusBadge({ status }: { status: DocumentStatus }) {
   const statusConfig: Record<DocumentStatus, { label: string; className: string }> = {
-    Draft: { label: 'Ciornă', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+    Draft: { label: 'Ciornă', className: 'bg-linear-bg-tertiary text-linear-text-primary border-linear-border-subtle' },
     Review: {
       label: 'În Revizuire',
-      className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      className: 'bg-linear-warning/15 text-linear-warning border-linear-warning/30',
     },
     Approved: {
       label: 'Aprobat',
-      className: 'bg-green-100 text-green-800 border-green-200',
+      className: 'bg-linear-success/15 text-linear-success border-linear-success/30',
     },
     Filed: {
       label: 'Depus',
-      className: 'bg-blue-100 text-blue-800 border-blue-200',
+      className: 'bg-linear-accent/15 text-linear-accent border-linear-accent/30',
     },
   };
 
@@ -59,7 +59,7 @@ function StatusBadge({ status }: { status: DocumentStatus }) {
  */
 function VersionBadge({ version }: { version: number }) {
   return (
-    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
+    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-linear-accent/15 text-linear-accent border border-linear-accent/30">
       v{version}
     </span>
   );
@@ -78,7 +78,7 @@ function DocumentTypeLabel({ type }: { type: DocumentType }) {
     Other: 'Altele',
   };
 
-  return <span className="text-sm text-gray-600">{typeLabels[type]}</span>;
+  return <span className="text-sm text-linear-text-secondary">{typeLabels[type]}</span>;
 }
 
 /**
@@ -105,14 +105,14 @@ export function DocumentList({
   }, [documents, searchQuery]);
 
   return (
-    <div className={clsx('flex flex-col h-full bg-white', className)}>
+    <div className={clsx('flex flex-col h-full bg-linear-bg-secondary', className)}>
       {/* Header with search and new button */}
-      <div className="px-4 py-3 border-b border-gray-200">
+      <div className="px-4 py-3 border-b border-linear-border-subtle">
         <div className="flex items-center justify-between gap-3 mb-3">
-          <h3 className="text-sm font-semibold text-gray-900">Listă Documente</h3>
+          <h3 className="text-sm font-semibold text-linear-text-primary">Listă Documente</h3>
           <button
             onClick={onNewDocument}
-            className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium text-white bg-linear-accent hover:bg-linear-accent-hover focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2 transition-colors"
           >
             <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -129,7 +129,7 @@ export function DocumentList({
         {/* Search Bar */}
         <div className="relative">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-linear-text-muted"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -146,12 +146,12 @@ export function DocumentList({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Caută documente după nume..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent bg-linear-bg-secondary text-linear-text-primary"
           />
         </div>
 
         {/* Document Count */}
-        <p className="mt-2 text-xs text-gray-600">
+        <p className="mt-2 text-xs text-linear-text-secondary">
           Afișare {filteredDocuments.length} din {documents.length} documente
         </p>
       </div>
@@ -159,27 +159,27 @@ export function DocumentList({
       {/* Document Table */}
       <div className="flex-1 overflow-y-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+          <thead className="bg-linear-bg-primary border-b border-linear-border-subtle sticky top-0">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider">
                 Nume
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider">
                 Tip
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider">
                 Versiune
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-linear-text-secondary uppercase tracking-wider">
                 Modificat
               </th>
             </tr>
           </thead>
           <motion.tbody
-            className="divide-y divide-gray-200"
+            className="divide-y divide-linear-border-subtle"
             initial="hidden"
             animate="show"
             variants={{
@@ -193,7 +193,7 @@ export function DocumentList({
                 onClick={() => onSelectDocument?.(document)}
                 className={clsx(
                   'cursor-pointer transition-colors',
-                  selectedDocumentId === document.id ? 'bg-blue-50' : 'hover:bg-gray-50'
+                  selectedDocumentId === document.id ? 'bg-linear-accent/10' : 'hover:bg-linear-bg-hover'
                 )}
                 variants={{
                   hidden: { opacity: 0, y: 10 },
@@ -203,7 +203,7 @@ export function DocumentList({
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <svg
-                      className="w-4 h-4 text-blue-600 flex-shrink-0"
+                      className="w-4 h-4 text-linear-accent flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -215,9 +215,9 @@ export function DocumentList({
                         d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                       />
                     </svg>
-                    <span className="font-medium text-gray-900 truncate">{document.title}</span>
+                    <span className="font-medium text-linear-text-primary truncate">{document.title}</span>
                     {document.aiGenerated && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-linear-accent/15 text-linear-accent">
                         AI
                       </span>
                     )}
@@ -232,7 +232,7 @@ export function DocumentList({
                 <td className="px-4 py-3">
                   <StatusBadge status={document.status} />
                 </td>
-                <td className="px-4 py-3 text-gray-600">
+                <td className="px-4 py-3 text-linear-text-secondary">
                   {format(document.updatedAt, 'dd MMM yyyy', { locale: ro })}
                 </td>
               </motion.tr>
@@ -242,9 +242,9 @@ export function DocumentList({
 
         {/* Empty State */}
         {filteredDocuments.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+          <div className="flex flex-col items-center justify-center py-12 text-linear-text-tertiary">
             <svg
-              className="w-12 h-12 mb-3 text-gray-400"
+              className="w-12 h-12 mb-3 text-linear-text-muted"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

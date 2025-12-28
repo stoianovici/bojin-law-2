@@ -64,9 +64,9 @@ interface CardProps {
 
 function Card({ title, children, action, className }: CardProps) {
   return (
-    <div className={clsx('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+    <div className={clsx('bg-linear-bg-secondary rounded-lg border border-linear-border-subtle shadow-sm', className)}>
+      <div className="px-5 py-4 border-b border-linear-border-subtle flex items-center justify-between">
+        <h3 className="text-base font-semibold text-linear-text-primary">{title}</h3>
         {action}
       </div>
       <div className="p-5">{children}</div>
@@ -112,22 +112,22 @@ function ReferenceItem({ reference, editable, onEdit, onRemove, loading }: Refer
 
   if (isEditing) {
     return (
-      <div className="py-3 border-b border-gray-200 last:border-0">
-        <dt className="text-sm font-medium text-gray-500 mb-1">{typeLabel}</dt>
+      <div className="py-3 border-b border-linear-border-subtle last:border-0">
+        <dt className="text-sm font-medium text-linear-text-tertiary mb-1">{typeLabel}</dt>
         <dd className="flex items-center gap-2">
           <input
             type="text"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 px-3 py-2 border border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            className="flex-1 px-3 py-2 border border-linear-accent rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary bg-linear-bg-secondary"
             disabled={loading}
             autoFocus
           />
           <button
             onClick={handleSave}
             disabled={loading || !editValue.trim()}
-            className="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50"
+            className="p-1.5 text-linear-success hover:bg-linear-success/10 rounded-md transition-colors disabled:opacity-50"
             title="Salvează"
             type="button"
           >
@@ -136,14 +136,14 @@ function ReferenceItem({ reference, editable, onEdit, onRemove, loading }: Refer
           <button
             onClick={handleCancel}
             disabled={loading}
-            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
+            className="p-1.5 text-linear-text-tertiary hover:bg-linear-bg-hover rounded-md transition-colors disabled:opacity-50"
             title="Anulează"
             type="button"
           >
             <Cross2Icon className="h-4 w-4" />
           </button>
         </dd>
-        <p className="mt-1 text-xs text-gray-500">Enter pentru a salva, ESC pentru a anula</p>
+        <p className="mt-1 text-xs text-linear-text-muted">Enter pentru a salva, ESC pentru a anula</p>
       </div>
     );
   }
@@ -151,23 +151,23 @@ function ReferenceItem({ reference, editable, onEdit, onRemove, loading }: Refer
   return (
     <div
       className={clsx(
-        'py-3 border-b border-gray-200 last:border-0 group',
+        'py-3 border-b border-linear-border-subtle last:border-0 group',
         editable && 'cursor-pointer'
       )}
       onClick={() => editable && setIsEditing(true)}
     >
-      <dt className="text-sm font-medium text-gray-500 mb-1 flex items-center justify-between">
+      <dt className="text-sm font-medium text-linear-text-tertiary mb-1 flex items-center justify-between">
         <span>{typeLabel}</span>
         {editable && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Pencil1Icon className="h-3.5 w-3.5 text-gray-400" />
+            <Pencil1Icon className="h-3.5 w-3.5 text-linear-text-muted" />
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove();
               }}
               disabled={loading}
-              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+              className="p-1 text-linear-error hover:text-linear-error hover:bg-linear-error/10 rounded transition-colors"
               title="Șterge"
               type="button"
             >
@@ -178,8 +178,8 @@ function ReferenceItem({ reference, editable, onEdit, onRemove, loading }: Refer
       </dt>
       <dd
         className={clsx(
-          'text-base text-gray-900',
-          editable && 'hover:text-blue-600 transition-colors'
+          'text-base text-linear-text-primary',
+          editable && 'hover:text-linear-accent transition-colors'
         )}
       >
         {reference.value}
@@ -221,13 +221,13 @@ function AddReferenceForm({ existingTypes, onAdd, onCancel, loading }: AddRefere
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50">
+    <div className="border border-linear-border-subtle rounded-lg p-4 space-y-3 bg-linear-bg-tertiary">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Tip referință</label>
+        <label className="block text-sm font-medium text-linear-text-secondary mb-1">Tip referință</label>
         <select
           value={selectedType}
           onChange={(e) => setSelectedType(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+          className="w-full px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary bg-linear-bg-secondary"
           disabled={loading}
         >
           <option value="">Selectează tipul...</option>
@@ -241,27 +241,27 @@ function AddReferenceForm({ existingTypes, onAdd, onCancel, loading }: AddRefere
 
       {selectedType === 'custom' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Etichetă</label>
+          <label className="block text-sm font-medium text-linear-text-secondary mb-1">Etichetă</label>
           <input
             type="text"
             value={customLabel}
             onChange={(e) => setCustomLabel(e.target.value)}
             placeholder="ex: Nr. Referat"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            className="w-full px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary bg-linear-bg-secondary"
             disabled={loading}
           />
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Valoare</label>
+        <label className="block text-sm font-medium text-linear-text-secondary mb-1">Valoare</label>
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="ex: 1234/5/2024"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+          className="w-full px-3 py-2 border border-linear-border rounded-md focus:outline-none focus:ring-2 focus:ring-linear-accent text-linear-text-primary bg-linear-bg-secondary"
           disabled={loading}
           autoFocus
         />
@@ -272,7 +272,7 @@ function AddReferenceForm({ existingTypes, onAdd, onCancel, loading }: AddRefere
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 text-sm font-medium text-linear-text-secondary hover:bg-linear-bg-hover rounded-md transition-colors disabled:opacity-50"
         >
           Anulează
         </button>
@@ -280,7 +280,7 @@ function AddReferenceForm({ existingTypes, onAdd, onCancel, loading }: AddRefere
           type="button"
           onClick={handleSubmit}
           disabled={loading || !selectedType || !value.trim()}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 text-sm font-medium text-white bg-linear-accent hover:bg-linear-accent-hover rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Adaugă
         </button>
@@ -394,7 +394,7 @@ export function ReferencesSection({
         !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="inline-flex items-center gap-1 text-sm text-linear-accent hover:text-linear-accent-hover font-medium"
           >
             <PlusIcon className="h-4 w-4" />
             Adaugă
@@ -426,7 +426,7 @@ export function ReferencesSection({
         )}
 
         {references.length === 0 && !isAdding && (
-          <p className="text-gray-400 text-sm py-2">Nicio referință adăugată</p>
+          <p className="text-linear-text-muted text-sm py-2">Nicio referință adăugată</p>
         )}
       </div>
     </Card>

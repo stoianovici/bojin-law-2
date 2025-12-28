@@ -31,7 +31,7 @@ function MainLayoutContent({ children }: MainLayoutContentProps) {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-50">
+    <div className="h-screen overflow-hidden bg-linear-bg-primary">
       {/* Sidebar with QuickActions - Fixed position, overlays content */}
       <Sidebar />
 

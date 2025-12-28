@@ -189,33 +189,33 @@ export function CaseCombobox({
         className={clsx(
           'w-full flex items-center justify-between gap-2 px-3 py-2.5',
           'border rounded-lg text-sm transition-all',
-          'bg-white',
+          'bg-linear-bg-secondary',
           isOpen
-            ? 'border-amber-500 ring-2 ring-amber-500/20'
-            : 'border-gray-200 hover:border-gray-300',
-          disabled && 'opacity-50 cursor-not-allowed bg-gray-50',
-          !selectedCase && 'text-gray-400'
+            ? 'border-linear-warning ring-2 ring-linear-warning/20'
+            : 'border-linear-border-subtle hover:border-linear-border',
+          disabled && 'opacity-50 cursor-not-allowed bg-linear-bg-tertiary',
+          !selectedCase && 'text-linear-text-muted'
         )}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-required={required}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <Folder className="h-4 w-4 text-amber-500 flex-shrink-0" />
+          <Folder className="h-4 w-4 text-linear-warning flex-shrink-0" />
           {selectedCase ? (
             <div className="min-w-0 flex-1 text-left">
-              <span className="text-gray-900 truncate block">{selectedCase.title}</span>
+              <span className="text-linear-text-primary truncate block">{selectedCase.title}</span>
             </div>
           ) : (
-            <span className="text-gray-400">
+            <span className="text-linear-text-muted">
               {placeholder}
-              {required && <span className="text-red-500 ml-1">*</span>}
+              {required && <span className="text-linear-error ml-1">*</span>}
             </span>
           )}
         </div>
         <ChevronDown
           className={clsx(
-            'h-4 w-4 text-gray-400 transition-transform flex-shrink-0',
+            'h-4 w-4 text-linear-text-muted transition-transform flex-shrink-0',
             isOpen && 'rotate-180'
           )}
         />
@@ -226,16 +226,16 @@ export function CaseCombobox({
         <div
           className={clsx(
             'absolute top-full left-0 mt-1 w-full max-h-72',
-            'bg-white rounded-lg shadow-lg border border-gray-200',
+            'bg-linear-bg-secondary rounded-lg shadow-lg border border-linear-border-subtle',
             'animate-in fade-in-0 slide-in-from-top-2 duration-150',
             'flex flex-col overflow-hidden z-50'
           )}
           role="listbox"
         >
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-100 flex-shrink-0">
+          <div className="p-2 border-b border-linear-border-subtle/50 flex-shrink-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-linear-text-muted" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -245,8 +245,8 @@ export function CaseCombobox({
                 placeholder="Caută dosar..."
                 className={clsx(
                   'w-full pl-9 pr-3 py-2 text-sm',
-                  'border border-gray-200 rounded-md',
-                  'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent'
+                  'border border-linear-border-subtle rounded-md',
+                  'focus:outline-none focus:ring-2 focus:ring-linear-warning focus:border-transparent'
                 )}
               />
             </div>
@@ -256,10 +256,10 @@ export function CaseCombobox({
           <div ref={listRef} className="flex-1 overflow-y-auto">
             {casesLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                <Loader2 className="h-5 w-5 animate-spin text-linear-warning" />
               </div>
             ) : filteredCases.length === 0 ? (
-              <div className="py-6 text-center text-sm text-gray-500">
+              <div className="py-6 text-center text-sm text-linear-text-tertiary">
                 {searchQuery ? 'Nu s-au găsit dosare' : 'Nu aveți dosare disponibile'}
               </div>
             ) : (
@@ -278,25 +278,25 @@ export function CaseCombobox({
                       className={clsx(
                         'w-full flex items-start gap-3 px-3 py-2.5 text-left',
                         'transition-colors',
-                        isHighlighted && 'bg-amber-50',
-                        isSelected && 'bg-amber-100'
+                        isHighlighted && 'bg-linear-warning/10',
+                        isSelected && 'bg-linear-warning/15'
                       )}
                       role="option"
                       aria-selected={isSelected}
                     >
-                      <Folder className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <Folder className="h-4 w-4 text-linear-warning mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-linear-text-primary truncate">
                           {caseItem.title}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-xs text-linear-text-tertiary truncate">
                           {caseItem.caseNumber && <span>{caseItem.caseNumber}</span>}
                           {caseItem.caseNumber && caseItem.client?.name && <span> · </span>}
                           {caseItem.client?.name && <span>{caseItem.client.name}</span>}
                         </p>
                       </div>
                       {isSelected && (
-                        <Check className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <Check className="h-4 w-4 text-linear-warning flex-shrink-0 mt-0.5" />
                       )}
                     </button>
                   );

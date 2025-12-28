@@ -101,8 +101,8 @@ export function AssociateDashboard({ isEditing = false, onLayoutChange }: Associ
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Se încarcă dashboard-ul...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-linear-accent mx-auto mb-4"></div>
+          <p className="text-linear-text-secondary">Se încarcă dashboard-ul...</p>
         </div>
       </div>
     );

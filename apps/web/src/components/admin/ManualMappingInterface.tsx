@@ -146,18 +146,18 @@ export function ManualMappingInterface() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-linear-accent"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Error: {error}</p>
+      <div className="bg-linear-error/10 border border-linear-error/30 rounded-lg p-4">
+        <p className="text-linear-error">Error: {error}</p>
         <button
           onClick={fetchDocumentTypes}
-          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+          className="mt-2 text-sm text-linear-error hover:text-linear-error underline"
         >
           Retry
         </button>
@@ -168,8 +168,8 @@ export function ManualMappingInterface() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left Column: Document Types List */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
+        <h2 className="text-lg font-semibold text-linear-text-primary mb-4">
           Document Types ({documentTypes.length})
         </h2>
 
@@ -181,17 +181,17 @@ export function ManualMappingInterface() {
               className={clsx(
                 'w-full text-left p-4 rounded-lg border transition-all',
                 selectedType?.id === type.id
-                  ? 'bg-blue-50 border-blue-300 shadow-md'
-                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                  ? 'bg-linear-accent/10 border-linear-accent/30 shadow-md'
+                  : 'bg-linear-bg-tertiary border-linear-border-subtle hover:bg-linear-bg-hover'
               )}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900">{type.discoveredTypeOriginal}</div>
+                  <div className="font-medium text-linear-text-primary">{type.discoveredTypeOriginal}</div>
                   {type.discoveredTypeEnglish && (
-                    <div className="text-sm text-gray-600 mt-1">{type.discoveredTypeEnglish}</div>
+                    <div className="text-sm text-linear-text-secondary mt-1">{type.discoveredTypeEnglish}</div>
                   )}
-                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-3 mt-2 text-xs text-linear-text-tertiary">
                     <span>{type.totalOccurrences} occurrences</span>
                     <span>•</span>
                     <span>{type.primaryLanguage.toUpperCase()}</span>
@@ -201,15 +201,15 @@ export function ManualMappingInterface() {
                 </div>
                 <div className="ml-4">
                   {type.mappedSkillId ? (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-linear-success/15 text-linear-success">
                       Mapped
                     </span>
                   ) : type.mappingStatus === 'pending_review' ? (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-linear-warning/15 text-linear-warning">
                       Pending
                     </span>
                   ) : (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-linear-bg-tertiary text-linear-text-secondary">
                       Unmapped
                     </span>
                   )}
@@ -221,19 +221,19 @@ export function ManualMappingInterface() {
       </div>
 
       {/* Right Column: Mapping Form */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Manual Mapping</h2>
+      <div className="bg-linear-bg-secondary rounded-lg border border-linear-border-subtle p-6">
+        <h2 className="text-lg font-semibold text-linear-text-primary mb-4">Manual Mapping</h2>
 
         {successMessage && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 text-sm">{successMessage}</p>
+          <div className="mb-4 p-3 bg-linear-success/10 border border-linear-success/30 rounded-lg">
+            <p className="text-linear-success text-sm">{successMessage}</p>
           </div>
         )}
 
         {!selectedType ? (
           <div className="text-center py-12">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-linear-text-muted"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -245,24 +245,24 @@ export function ManualMappingInterface() {
                 d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
               />
             </svg>
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4 text-linear-text-secondary">
               Select a document type from the list to begin mapping
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Selected Document Type Info */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <div className="text-sm font-medium text-gray-600 mb-1">Selected Document Type</div>
-              <div className="font-semibold text-gray-900">
+            <div className="bg-linear-bg-tertiary rounded-lg p-4 border border-linear-border-subtle">
+              <div className="text-sm font-medium text-linear-text-secondary mb-1">Selected Document Type</div>
+              <div className="font-semibold text-linear-text-primary">
                 {selectedType.discoveredTypeOriginal}
               </div>
               {selectedType.discoveredTypeEnglish && (
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-linear-text-secondary mt-1">
                   {selectedType.discoveredTypeEnglish}
                 </div>
               )}
-              <div className="mt-2 flex gap-4 text-xs text-gray-600">
+              <div className="mt-2 flex gap-4 text-xs text-linear-text-secondary">
                 <span>{selectedType.totalOccurrences} occurrences</span>
                 <span>{selectedType.estimatedMonthlySavings}</span>
               </div>
@@ -270,7 +270,7 @@ export function ManualMappingInterface() {
 
             {/* Target Skill Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Target Skill *</label>
+              <label className="block text-sm font-medium text-linear-text-secondary mb-2">Target Skill *</label>
               <div className="space-y-2">
                 {AVAILABLE_SKILLS.map((skill) => (
                   <label
@@ -278,8 +278,8 @@ export function ManualMappingInterface() {
                     className={clsx(
                       'flex items-start p-3 border rounded-lg cursor-pointer transition-colors',
                       formData.targetSkill === skill.id
-                        ? 'bg-blue-50 border-blue-300'
-                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                        ? 'bg-linear-accent/10 border-linear-accent/30'
+                        : 'bg-linear-bg-secondary border-linear-border-subtle hover:bg-linear-bg-hover'
                     )}
                   >
                     <input
@@ -291,8 +291,8 @@ export function ManualMappingInterface() {
                       className="mt-1"
                     />
                     <div className="ml-3">
-                      <div className="font-medium text-gray-900">{skill.name}</div>
-                      <div className="text-sm text-gray-600">{skill.description}</div>
+                      <div className="font-medium text-linear-text-primary">{skill.name}</div>
+                      <div className="text-sm text-linear-text-secondary">{skill.description}</div>
                     </div>
                   </label>
                 ))}
@@ -301,7 +301,7 @@ export function ManualMappingInterface() {
 
             {/* Confidence Slider */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-linear-text-secondary mb-2">
                 Confidence Score: {(formData.confidence * 100).toFixed(0)}%
               </label>
               <input
@@ -315,7 +315,7 @@ export function ManualMappingInterface() {
                 }
                 className="w-full"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-linear-text-tertiary mt-1">
                 <span>Low Confidence</span>
                 <span>High Confidence</span>
               </div>
@@ -323,7 +323,7 @@ export function ManualMappingInterface() {
 
             {/* Reviewer Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-linear-text-secondary mb-2">
                 Your Name (Reviewer) *
               </label>
               <input
@@ -331,14 +331,14 @@ export function ManualMappingInterface() {
                 value={formData.reviewedBy}
                 onChange={(e) => setFormData({ ...formData, reviewedBy: e.target.value })}
                 placeholder="Enter your name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent"
                 required
               />
             </div>
 
             {/* Decision Basis */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-linear-text-secondary mb-2">
                 Decision Basis (Optional)
               </label>
               <textarea
@@ -346,7 +346,7 @@ export function ManualMappingInterface() {
                 onChange={(e) => setFormData({ ...formData, decisionBasis: e.target.value })}
                 placeholder="Explain why this mapping was chosen..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-linear-border rounded-lg focus:outline-none focus:ring-2 focus:ring-linear-accent"
               />
             </div>
 
@@ -357,7 +357,7 @@ export function ManualMappingInterface() {
                 disabled={submitting}
                 className={clsx(
                   'flex-1 px-4 py-2 rounded-lg text-white font-medium transition-colors',
-                  submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                  submitting ? 'bg-linear-text-muted cursor-not-allowed' : 'bg-linear-accent hover:bg-linear-accent-hover'
                 )}
               >
                 {submitting ? 'Mapping...' : 'Map Document Type'}
@@ -368,7 +368,7 @@ export function ManualMappingInterface() {
                   setSelectedType(null);
                   setSuccessMessage(null);
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-linear-border rounded-lg text-linear-text-secondary font-medium hover:bg-linear-bg-hover transition-colors"
               >
                 Cancel
               </button>
