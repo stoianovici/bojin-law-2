@@ -41,7 +41,7 @@ export function ProgressBar() {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-sm font-medium text-gray-700">
-            Loturile tale: {batchLabel}
+            Pagina curentă: {batchLabel}
             {pageLabel}
           </span>
           <span className="text-sm text-gray-500">
