@@ -47,6 +47,7 @@
     "deploy:production": "scripts/render/deploy.sh production",
     "logs:web": "scripts/render/logs.sh web",
     "logs:api": "scripts/render/logs.sh gateway",
+    "db:backup": "scripts/backup/backup-now.sh",
     "render:setup": "scripts/render/setup.sh",
     "render:status": "scripts/render/status.sh",
     "preflight": "scripts/preflight.sh",
