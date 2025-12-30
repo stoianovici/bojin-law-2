@@ -71,3 +71,6 @@ tmp/
 # Note: packages/database/dist/ is NOT committed to git
 # Dockerfiles compile TypeScript at build time to ensure parity with local dev
 .env.prod
+
+# Database backups
+db-backups/
