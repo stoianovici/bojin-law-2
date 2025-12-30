@@ -434,6 +434,13 @@ function ImportPageContent() {
 
   const isPartnerOrAdmin = user?.role === 'Partner' || user?.role === 'Admin';
 
+  // Force Paralegals/Assistants to categorization step (they can only categorize)
+  useEffect(() => {
+    if (!isLoadingSession && !isPartnerOrAdmin && session.sessionId) {
+      setCurrentStep('categorize');
+    }
+  }, [isLoadingSession, isPartnerOrAdmin, session.sessionId]);
+
   // Check for active session on mount (URL param takes priority, doesn't require auth)
   useEffect(() => {
     async function checkActiveSession() {
@@ -588,13 +595,16 @@ function ImportPageContent() {
     }
   }, [currentStep, fetchSessionStats]);
 
-  const steps = [
+  const allSteps = [
     { id: 'upload', label: 'Încarcă PST', icon: UploadCloud },
     { id: 'extract', label: 'Extrage documente', icon: FolderOpen },
     { id: 'categorize', label: 'Categorizează', icon: FileText },
     { id: 'dashboard', label: 'Panou control', icon: LayoutDashboard },
     { id: 'export', label: 'Export', icon: Settings },
   ];
+
+  // Paralegals only see categorization step
+  const steps = isPartnerOrAdmin ? allSteps : allSteps.filter((s) => s.id === 'categorize');
 
   // Show loading state while checking for active session
   if (isLoadingSession) {
@@ -626,12 +636,15 @@ function ImportPageContent() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={startNewSession}
-              className="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded-md transition-colors"
-            >
-              Începe sesiune nouă
-            </button>
+            {/* Only Partners can start new sessions */}
+            {isPartnerOrAdmin && (
+              <button
+                onClick={startNewSession}
+                className="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded-md transition-colors"
+              >
+                Începe sesiune nouă
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -726,20 +739,26 @@ function ImportPageContent() {
       {/* Categorize Step */}
       {currentStep === 'categorize' && session.sessionId && (
         <div className="space-y-4">
-          <ExtractionIncompleteBanner
-            sessionId={session.sessionId}
-            onContinueExtraction={() => setCurrentStep('extract')}
-          />
+          {/* Only Partners see extraction incomplete banner */}
+          {isPartnerOrAdmin && (
+            <ExtractionIncompleteBanner
+              sessionId={session.sessionId}
+              onContinueExtraction={() => setCurrentStep('extract')}
+            />
+          )}
           <CategorizationWorkspace sessionId={session.sessionId} />
-          <div className="flex justify-end">
-            <button
-              onClick={() => setCurrentStep('dashboard')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Mergi la panou
-            </button>
-          </div>
+          {/* Only Partners see dashboard navigation */}
+          {isPartnerOrAdmin && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => setCurrentStep('dashboard')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Mergi la panou
+              </button>
+            </div>
+          )}
         </div>
       )}
 
